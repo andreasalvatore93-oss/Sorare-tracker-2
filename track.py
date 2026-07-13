@@ -1,38 +1,13 @@
-import json
-import urllib.request
-import os
-import time
-import sys
-import smtplib
-from email.message import EmailMessage
-
-# Configurazione
-COOKIES = os.environ.get('SORARE_COOKIE')
-CSRF_TOKEN = os.environ.get('SORARE_CSRF')
-EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
-EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
-NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
-
-def send_email(subject, body):
-    if not EMAIL_USER or not EMAIL_PASS: return
-    msg = EmailMessage()
-    msg.set_content(body)
-    msg['Subject'] = subject
-    msg['From'] = EMAIL_USER
-    msg['To'] = NOTIFY_EMAIL
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(EMAIL_USER, EMAIL_PASS)
-        smtp.send_message(msg)
-
 def check_player(player_data, state):
     slug = player_data['slug']
     p_id = player_data['id']
     
     url = 'https://api.sorare.com/graphql'
+    # Questa query è più ampia e dovrebbe includere tutti i dati di mercato
     payload = {
-        "operationName": "AnyPlayerLayoutQuery",
-        "variables": {"onlyPrimary": False, "slug": slug},
-        "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
+        "operationName": "MarketplaceSearchQuery", 
+        "variables": {"slugs": [slug], "rarities": ["limited"]},
+        "extensions": {"operationId": "React/8651c890918738321287968531764014e854f4ba174c338"} 
     }
     
     headers = {
@@ -47,23 +22,19 @@ def check_player(player_data, state):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        player_info = data.get('data', {}).get('anyPlayer', {})
-        prices = []
+        # Estrattore dati Marketplace (logica diversa da AnyPlayer)
+        results = data.get('data', {}).get('cards', {}).get('nodes', [])
         
-        # 1. In-Season
-        is_card = player_info.get('lowestPriceLimitedCard')
-        if is_card and is_card.get('liveSingleSaleOffer'):
-            cents = is_card.get('liveSingleSaleOffer', {}).get('receiverSide', {}).get('amounts', {}).get('eurCents')
-            if cents: prices.append(cents)
-            
-        # 2. Classic
-        cl_card = player_info.get('lowestPriceClassicLimitedCard')
-        if cl_card and cl_card.get('liveSingleSaleOffer'):
-            cents = cl_card.get('liveSingleSaleOffer', {}).get('receiverSide', {}).get('amounts', {}).get('eurCents')
-            if cents: prices.append(cents)
+        # Filtriamo le offerte attive (senza distinzione Classic/In-Season, prendiamo il minimo assoluto)
+        prices = []
+        for card in results:
+            offer = card.get('liveSingleSaleOffer')
+            if offer:
+                cents = offer.get('receiverSide', {}).get('amounts', {}).get('eurCents')
+                if cents: prices.append(cents)
         
         if not prices:
-            print(f"{p_id}: Nessuna carta Limited disponibile.")
+            print(f"{p_id}: Nessuna offerta attiva trovata.")
             return
             
         price = min(prices) / 100
@@ -71,27 +42,10 @@ def check_player(player_data, state):
         old_price = state.get(p_id, 0)
         if old_price != price:
             print(f"Variazione {p_id}: {old_price}€ -> {price}€")
-            send_email(f"Notifica Sorare: {p_id}", f"Il prezzo minimo per {p_id} è ora {price}€")
+            send_email(f"Notifica Sorare: {p_id}", f"Prezzo minimo {p_id} aggiornato: {price}€")
             state[p_id] = price
         else:
             print(f"{p_id}: {price}€ (nessuna variazione)")
             
     except Exception as e:
         print(f"Errore su {p_id}: {e}")
-
-# Esecuzione
-with open('players_registry.json', 'r') as f:
-    players = json.load(f)
-
-try:
-    with open('state.json', 'r') as f:
-        state = json.load(f)
-except:
-    state = {}
-
-for p in players:
-    check_player(p, state)
-    time.sleep(4) 
-
-with open('state.json', 'w') as f:
-    json.dump(state, f)
