@@ -8,6 +8,7 @@ KNOWN_SLUGS = {
     "fran-garcia": "francisco-jose-garcia-torres",
     "ceballos": "daniel-ceballos-fernandez",
     "mbappe": "kylian-mbappe-lottin"
+    "brahim": "brahim-abdelkader-diaz"
 }
 
 # Funzione per testare gli slug (usiamo quella che sappiamo funzionare)
