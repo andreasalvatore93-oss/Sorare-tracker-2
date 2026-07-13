@@ -4,6 +4,8 @@ import urllib.request
 import smtplib
 from email.mime.text import MIMEText
 
+print("DEBUG: IL FILE E' STATO CARICATO CORRETTAMENTE")
+
 def send_email(subject, body):
     user = os.environ.get('GMAIL_ADDRESS')
     pwd = os.environ.get('GMAIL_APP_PASSWORD')
@@ -36,7 +38,6 @@ def check_sorare():
         soglia = target["soglia"]
         in_season_bool = "true" if tipo == "in_season" else "false"
         
-        # CORREZIONE: rarities -> rarity
         query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
@@ -66,7 +67,7 @@ def check_sorare():
                         receiver_side = card['liveSingleSaleOffer'].get('receiverSide')
                         if receiver_side and receiver_side.get('amounts'):
                             prezzo = float(receiver_side['amounts'].get('eurCents', 0)) / 100.0
-                            print(f"LOG -> {nome} ({tipo}): {prezzo}€")
+                            print(f"LOG -> {nome} ({tipo}): Prezzo rilevato {prezzo}€")
                             if prezzo <= soglia:
                                 send_email(f"🔔 ALERT: {nome}", f"Prezzo: {prezzo}€")
                         else:
