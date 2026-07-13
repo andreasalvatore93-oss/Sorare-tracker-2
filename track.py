@@ -1,6 +1,7 @@
 import json
 import os
 import urllib.request
+import urllib.error
 import smtplib
 from email.mime.text import MIMEText
 
@@ -28,8 +29,6 @@ def send_email(subject, body):
         print(f"Errore nell'invio della mail: {e}")
 
 def check_sorare():
-    # LISTA DEI TUOI GIOCATORI CONFIGURATA CON LE TUE SOGLIE ESATTE
-    # Puoi aggiungere altri giocatori qui sotto seguendo lo stesso schema
     lista_giocatori = [
         {"slug": "kylian-mbappe", "tipo": "in_season", "soglia": 100.0},
         {"slug": "kylian-mbappe", "tipo": "classic", "soglia": 96.0},
@@ -43,12 +42,12 @@ def check_sorare():
         soglia = target["soglia"]
         in_season_bool = "true" if tipo == "in_season" else "false"
         
-        # Query GraphQL per estrarre il prezzo minimo della carta Limited (Gialla)
+        # Corretto 'limited' in 'LIMITED' (Maiuscolo richiesto dalle specifiche GraphQL)
         query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
             name
-            lowestPriceAnyCard(rarities: [limited], inSeason: {in_season_bool})
+            lowestPriceAnyCard(rarities: [LIMITED], inSeason: {in_season_bool})
           }}
         }}
         """
@@ -72,7 +71,6 @@ def check_sorare():
                         prezzo = float(prezzo_raw)
                         print(f"LOG -> {nome} ({tipo}): Prezzo attuale {prezzo}€ | Soglia {soglia}€")
                         
-                        # Se il prezzo di mercato è inferiore o uguale alla tua soglia, scatta l'allarme
                         if prezzo <= soglia:
                             oggetto = f"🔔 ALERT SORARE: {nome} ({tipo}) sotto la soglia!"
                             corpo = f"La carta {tipo} di {nome} è in vendita a {prezzo}€!\nLa tua soglia impostata era di {soglia}€."
@@ -80,9 +78,14 @@ def check_sorare():
                     else:
                         print(f"LOG -> {nome} ({tipo}): Nessuna carta di questo tipo sul mercato al momento.")
                 else:
-                    print(f"LOG -> Errore nei dati ricevuti per {slug}: {res}")
+                    print(f"LOG -> Dati non strutturati per {slug}: {res}")
+                    
+        except urllib.error.HTTPError as e:
+            # Questa modifica permette di leggere la motivazione reale sputata dal server di Sorare
+            error_body = e.read().decode('utf-8')
+            print(f"Errore API Sorare per {slug} ({tipo}): Codice {e.code} - Dettaglio: {error_body}")
         except Exception as e:
-            print(f"Errore durante il controllo di {slug} ({tipo}): {e}")
+            print(f"Errore imprevisto durante il controllo di {slug} ({tipo}): {e}")
 
 if __name__ == '__main__':
     check_sorare()
