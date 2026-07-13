@@ -4,6 +4,11 @@ import os
 import smtplib
 from email.message import EmailMessage
 
+# 1. AGGIORNA QUESTO ID (Se ricevi 'Operation not found')
+# Per ottenerlo: Apri la console del browser (F12) su Sorare, clicca su un tab Classic/Season
+# e incolla questo: localStorage.getItem('sorare-operation-id-MarketSearchQuery')
+OPERATION_ID = "React/7d4e3a89e63b65e949646b9772390f727c621390fe40d"
+
 # Configurazione
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
@@ -25,15 +30,20 @@ def send_email(subject, body):
 def check_player(player_data, state):
     slug = player_data['slug']
     p_id = player_data['id']
-    target_classic = player_data['isClassic']
+    is_classic = player_data['isClassic']
     
     url = 'https://api.sorare.com/graphql'
     
-    # Query stabile: non scade mai
     payload = {
-        "operationName": "AnyPlayerLayoutQuery",
-        "variables": {"onlyPrimary": False, "slug": slug},
-        "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
+        "operationName": "MarketSearchQuery",
+        "variables": {
+            "filters": {
+                "playerSlugs": [slug],
+                "rarities": ["limited"],
+                "isClassic": is_classic
+            }
+        },
+        "extensions": {"operationId": OPERATION_ID}
     }
     
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN}
@@ -43,31 +53,30 @@ def check_player(player_data, state):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        # Filtriamo internamente le carte ricevute
-        cards = data['data']['anyPlayer']['allLimitedCards'] # O struttura simile
-        match = None
-        for card in cards:
-            if card.get('isClassic') == target_classic:
-                match = card
-                break
-        
-        if not match:
+        # Gestione errori API
+        if 'errors' in data:
+            print(f"Errore API per {p_id}: {data['errors'][0]['message']}")
+            return
+
+        nodes = data['data']['marketSearch']['nodes']
+        if not nodes:
             print(f"{p_id}: Nessuna carta trovata.")
             return
             
-        price = match['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
+        # Prezzo della carta più economica
+        price = nodes[0]['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
         
         old_price = state.get(p_id, 0)
         if old_price != price:
-            tipo = "Classic" if target_classic else "In-Season"
+            tipo = "Classic" if is_classic else "In-Season"
             print(f"Variazione {p_id} ({tipo}): {old_price} -> {price}")
-            send_email(f"Sorare: {p_id} ({tipo})", f"Prezzo cambiato: da {old_price} a {price}")
+            send_email(f"Notifica {tipo}: {p_id}", f"Prezzo {p_id} ({tipo}) cambiato: da {old_price} a {price}")
             state[p_id] = price
         else:
-            print(f"{p_id} ({'Classic' if target_classic else 'In-Season'}): Nessuna variazione ({price})")
+            print(f"{p_id} ({'Classic' if is_classic else 'In-Season'}): Nessuna variazione ({price})")
             
     except Exception as e:
-        print(f"Errore per {p_id}: {e}")
+        print(f"Errore critico per {p_id}: {str(e)}")
 
 # Esecuzione
 with open('players.json', 'r') as f:
