@@ -2,50 +2,63 @@ import json
 import urllib.request
 import os
 
+# Carica il registro
 with open('players_registry.json', 'r') as f:
     registry = json.load(f)
 
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
+HEADERS = {
+    'Content-Type': 'application/json',
+    'Cookie': COOKIES,
+    'x-csrf-token': CSRF_TOKEN,
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+}
 
-def get_correct_slug(player_id):
+def get_real_slug(name):
+    # Cerca il giocatore per nome e restituisce lo slug ufficiale
     url = 'https://api.sorare.com/graphql'
-    
-    # Struttura richiesta ottimizzata
     payload = {
         "operationName": "SearchPlayers",
-        "variables": {"query": player_id},
-        "extensions": {"operationId": "8b3f17d2a5d2b78125435905581977755f1a5857211848529367980313554449"}
+        "variables": {"query": name},
+        "query": "query SearchPlayers($query: String!) { searchPlayers(query: $query) { nodes { slug } } }"
     }
-    
-    headers = {
-        'Content-Type': 'application/json',
-        'Cookie': COOKIES,
-        'x-csrf-token': CSRF_TOKEN,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=HEADERS)
+    with urllib.request.urlopen(req) as response:
+        data = json.loads(response.read().decode())
+        nodes = data.get('data', {}).get('searchPlayers', {}).get('nodes', [])
+        return nodes[0]['slug'] if nodes else None
+
+def is_slug_valid(slug):
+    # Verifica se lo slug funziona davvero con la query di track.py
+    url = 'https://api.sorare.com/graphql'
+    payload = {
+        "operationName": "AnyPlayerLayoutQuery",
+        "variables": {"onlyPrimary": False, "slug": slug},
+        "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
-    
-    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=HEADERS)
     try:
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
-            players = data.get('data', {}).get('searchPlayers', {}).get('nodes', [])
-            return players[0]['slug'] if players else None
-    except Exception as e:
-        print(f"Errore su {player_id}: {e}")
-        return None
+            return data.get('data', {}).get('anyPlayer') is not None
+    except:
+        return False
 
 updated = False
 for p in registry:
-    new_slug = get_correct_slug(p['id'])
-    if new_slug and new_slug != p['slug']:
-        print(f"Aggiornato: {p['slug']} -> {new_slug}")
-        p['slug'] = new_slug
-        updated = True
+    # Se lo slug non è valido, cerchiamo quello giusto
+    if not is_slug_valid(p['slug']):
+        print(f"Slug errato per {p['id']}: {p['slug']}. Cerco quello corretto...")
+        correct_slug = get_real_slug(p['id'])
+        if correct_slug and correct_slug != p['slug']:
+            print(f"Trovato nuovo slug: {correct_slug}")
+            p['slug'] = correct_slug
+            updated = True
 
 if updated:
     with open('players_registry.json', 'w') as f:
         json.dump(registry, f, indent=4)
-    print("Registro aggiornato.")
+    print("Registro aggiornato automaticamente.")
 else:
-    print("Nessuna modifica necessaria.")
+    print("Tutti gli slug sono già validi.")
