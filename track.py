@@ -1,15 +1,32 @@
 import json
 import urllib.request
 import os
+import smtplib
+from email.message import EmailMessage
 
+# Configurazione
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
+EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
+EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
+NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
-def check_player(player_data):
+def send_email(subject, body):
+    if not EMAIL_USER or not EMAIL_PASS: return
+    msg = EmailMessage()
+    msg.set_content(body)
+    msg['Subject'] = subject
+    msg['From'] = EMAIL_USER
+    msg['To'] = NOTIFY_EMAIL
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(EMAIL_USER, EMAIL_PASS)
+        smtp.send_message(msg)
+
+def check_player(player_data, state):
     slug = player_data['slug']
-    url = 'https://api.sorare.com/graphql'
+    p_id = player_data['id']
     
-    # Query stabile
+    url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
         "variables": {"onlyPrimary": False, "slug": slug},
@@ -22,15 +39,42 @@ def check_player(player_data):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        # DEBUG: Stampiamo le chiavi principali per capire dove sono le carte
-        print(f"--- Dati ricevuti per {slug} ---")
-        player_root = data.get('data', {}).get('anyPlayer', {})
-        print(f"Chiavi disponibili in anyPlayer: {list(player_root.keys())}")
+        # Estraiamo la carta più economica
+        card = data['data']['anyPlayer']['lowestPriceLimitedCard']
+        if not card:
+            print(f"{p_id}: Nessuna carta trovata")
+            return
+            
+        price = card['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
+        is_classic = card.get('isClassic', False)
+        tipo = "Classic" if is_classic else "In-Season"
         
+        # Usiamo il tipo nel nome dello stato per monitorare la combinazione esatta
+        state_key = f"{p_id}_{tipo}"
+        old_price = state.get(state_key, 0)
+        
+        if old_price != price:
+            print(f"Variazione {p_id} ({tipo}): {old_price} -> {price}")
+            send_email(f"Sorare: {p_id} ({tipo})", f"Prezzo {p_id} ({tipo}) ora a {price}€")
+            state[state_key] = price
+        else:
+            print(f"{p_id} ({tipo}): Nessuna variazione ({price}€)")
+            
     except Exception as e:
-        print(f"Errore: {e}")
+        print(f"Errore per {p_id}: {e}")
 
+# Esecuzione
 with open('players.json', 'r') as f:
     players = json.load(f)
+
+try:
+    with open('state.json', 'r') as f:
+        state = json.load(f)
+except:
+    state = {}
+
 for p in players:
-    check_player(p)
+    check_player(p, state)
+
+with open('state.json', 'w') as f:
+    json.dump(state, f)
