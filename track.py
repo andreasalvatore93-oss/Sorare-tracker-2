@@ -25,13 +25,23 @@ def send_email(subject, body):
 def check_player(player_data, state):
     slug = player_data['slug']
     p_id = player_data['id']
+    is_classic = player_data['isClassic']
     
     url = 'https://api.sorare.com/graphql'
     
+    # Payload per MarketSearchQuery (con filtro isClassic)
     payload = {
-        "operationName": "AnyPlayerLayoutQuery",
-        "variables": {"onlyPrimary": False, "slug": slug},
-        "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
+        "operationName": "MarketSearchQuery",
+        "variables": {
+            "filters": {
+                "playerSlugs": [slug],
+                "rarities": ["limited"],
+                "isClassic": is_classic
+            }
+        },
+        # SE IL BOT DA ERRORE "Operation not found", 
+        # COPIA L'ID DAL TUO BROWSER (F12 -> Rete -> graphql -> Payload) E INCOLLALO QUI:
+        "extensions": {"operationId": "React/7d4e3a89e63b65e949646b9772390f727c621390fe40d"}
     }
     
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN}
@@ -39,33 +49,36 @@ def check_player(player_data, state):
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
+            raw_response = response.read().decode()
+            data = json.loads(raw_response)
         
-        card = data['data']['anyPlayer']['lowestPriceLimitedCard']
-        if not card:
-            print(f"{p_id}: Nessuna carta trovata")
+        # Verifica errore API
+        if 'data' not in data:
+            print(f"Errore API per {p_id}: {raw_response}")
+            return
+
+        # MarketSearchQuery ritorna una lista (nodes)
+        nodes = data['data']['marketSearch']['nodes']
+        if not nodes:
+            print(f"{p_id}: Nessuna carta trovata con isClassic={is_classic}")
             return
             
-        # Analisi del tipo di carta (Classic vs In-Season)
-        # Alcune versioni dell'API usano 'isClassic', altre 'season'
-        is_classic = card.get('isClassic', False)
-        tipo = "Classic" if is_classic else "In-Season"
-        price = card['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
+        # Prende la prima carta (la più economica ordinata di default)
+        price = nodes[0]['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
         
-        # Salviamo lo stato includendo anche il tipo
-        key = f"{p_id}_{tipo}"
-        old_price = state.get(key, 0)
-        
+        old_price = state.get(p_id, 0)
         if old_price != price:
+            tipo = "Classic" if is_classic else "In-Season"
             print(f"Variazione {p_id} ({tipo}): {old_price} -> {price}")
-            send_email("Notifica Sorare", f"Prezzo {p_id} ({tipo}) cambiato: da {old_price} a {price}")
-            state[key] = price
+            send_email(f"Notifica Sorare {tipo}", f"Prezzo {p_id} ({tipo}) cambiato: da {old_price} a {price}")
+            state[p_id] = price
         else:
-            print(f"{p_id} ({tipo}): Nessuna variazione ({price})")
+            print(f"{p_id}: Nessuna variazione ({price})")
             
     except Exception as e:
-        print(f"Errore per {p_id}: {e}")
+        print(f"Errore critico per {p_id}: {str(e)}")
 
+# Esecuzione
 with open('players.json', 'r') as f:
     players = json.load(f)
 
