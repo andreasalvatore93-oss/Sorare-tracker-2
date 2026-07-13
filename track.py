@@ -1,11 +1,9 @@
 import json
 import urllib.request
 import os
-import smtplib
-import time  # <--- Importante per il "respiro"
+import time
 from email.message import EmailMessage
 
-# Configurazione
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
@@ -40,21 +38,20 @@ def check_player(player_data, state):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        # Controllo sicurezza: esiste la chiave 'data'?
-        if 'data' not in data:
+        # Check profondo per evitare errori NoneType
+        player_info = data.get('data', {}).get('anyPlayer')
+        if not player_info:
             print(f"Errore: Nessuna risposta valida per {p_id}")
             return
-
-        # Estrai la carta
-        card = data['data']['anyPlayer'].get('lowestPriceLimitedCard')
+            
+        card = player_info.get('lowestPriceLimitedCard')
         if not card:
-            print(f"{p_id}: Nessuna carta Limited disponibile al momento.")
+            print(f"{p_id}: Nessuna carta in vendita")
             return
             
-        # Controllo sicurezza: esiste il prezzo?
         offer = card.get('liveSingleSaleOffer')
-        if not offer:
-            print(f"{p_id}: Nessuna offerta di vendita trovata.")
+        if not offer or not offer.get('receiverSide', {}).get('amounts', {}).get('eurCents'):
+            print(f"{p_id}: Carta trovata ma senza prezzo di vendita diretto")
             return
 
         price = offer['receiverSide']['amounts']['eurCents'] / 100
@@ -68,9 +65,8 @@ def check_player(player_data, state):
             print(f"{p_id}: Nessuna variazione ({price}€)")
             
     except Exception as e:
-        print(f"Errore imprevisto per {p_id}: {e}")
+        print(f"Errore critico per {p_id}: {e}")
 
-# Esecuzione
 with open('players.json', 'r') as f:
     players = json.load(f)
 
@@ -82,7 +78,7 @@ except:
 
 for p in players:
     check_player(p, state)
-    time.sleep(2)  # <--- Il bot aspetta 2 secondi prima del prossimo giocatore
+    time.sleep(3) # Aumentato il tempo per evitare blocchi
 
 with open('state.json', 'w') as f:
     json.dump(state, f)
