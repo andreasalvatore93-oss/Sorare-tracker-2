@@ -37,9 +37,15 @@ def check_player(player_data, state):
     with urllib.request.urlopen(req) as response:
         data = json.loads(response.read().decode())
     
-    # Qui dovrai affinare la logica per distinguere Season/Classic in futuro
-    # Per ora prendiamo il prezzo base come test
-    price = data['data']['anyPlayer']['lowestPriceLimitedCard']['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
+    # RIGA DI DEBUG AGGIUNTA
+    print(f"DEBUG DATA for {slug}: {data}")
+    
+    # Logic attuale (temporanea)
+    try:
+        price = data['data']['anyPlayer']['lowestPriceLimitedCard']['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
+    except (TypeError, KeyError):
+        print(f"Impossibile leggere il prezzo per {p_id}")
+        return
     
     old_price = state.get(p_id, 0)
     if old_price != price:
