@@ -1,17 +1,15 @@
 import json
 import os
 
-# "Memoria" del bot: quando trovi uno slug complesso, aggiungilo qui sotto!
 KNOWN_SLUGS = {
     "alaba": "david-olatukunbo-alaba",
     "vallejo": "jesus-vallejo-lazaro",
     "fran-garcia": "francisco-jose-garcia-torres",
     "ceballos": "daniel-ceballos-fernandez",
-    "mbappe": "kylian-mbappe-lottin"
+    "mbappe": "kylian-mbappe-lottin", # <--- AGGIUNTA VIRGOLA
     "brahim": "brahim-abdelkader-diaz"
 }
 
-# Funzione per testare gli slug (usiamo quella che sappiamo funzionare)
 def is_slug_valid(slug):
     import urllib.request
     url = 'https://api.sorare.com/graphql'
@@ -32,7 +30,6 @@ with open('players_registry.json', 'r') as f:
 
 updated = False
 for p in registry:
-    # 1. Prova slug noto
     target_slugs = [p['slug'], KNOWN_SLUGS.get(p['id']), f"{p['id']}-real-madrid", f"{p['id']}-2025"]
     
     if not is_slug_valid(p['slug']):
@@ -44,7 +41,7 @@ for p in registry:
                 updated = True
                 break
         else:
-            print(f"ATTENZIONE: Nessuno slug indovinato per {p['id']}. Aggiornalo a mano in KNOWN_SLUGS nel file .py")
+            print(f"ATTENZIONE: Nessuno slug indovinato per {p['id']}.")
 
 if updated:
     with open('players_registry.json', 'w') as f:
