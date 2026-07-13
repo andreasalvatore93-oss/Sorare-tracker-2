@@ -2,11 +2,9 @@ import json
 import urllib.request
 import os
 import time
-import sys
 import smtplib
 from email.message import EmailMessage
 
-# Configurazione
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
@@ -26,10 +24,10 @@ def send_email(subject, body):
 
 def check_player(player_data, state):
     p_id = player_data['id']
-    # Proviamo prima la lista 'slugs', se manca usiamo il vecchio 'slug' singolo
     candidates = player_data.get('slugs', [player_data.get('slug')])
     
     for slug in candidates:
+        if not slug: continue
         url = 'https://api.sorare.com/graphql'
         payload = {
             "operationName": "AnyPlayerLayoutQuery",
@@ -45,9 +43,7 @@ def check_player(player_data, state):
             
             player_info = data.get('data', {}).get('anyPlayer', {})
             
-            # Se player_info non è vuoto, lo slug è corretto
             if player_info:
-                # Logica prezzi (identica a prima)
                 prices = []
                 is_card = player_info.get('lowestPriceLimitedCard')
                 if is_card and is_card.get('liveSingleSaleOffer'):
@@ -55,26 +51,25 @@ def check_player(player_data, state):
                     if cents: prices.append(cents)
                 
                 if not prices:
-                    print(f"{p_id}: Slug '{slug}' trovato, ma nessuna carta Limited disponibile.")
-                    return # Trovato profilo, nessuna carta: ci fermiamo
+                    print(f"{p_id}: Trovato con slug '{slug}', ma nessuna carta Limited disponibile.")
+                    return
                 
                 price = min(prices) / 100
                 old_price = state.get(p_id, 0)
                 if old_price != price:
-                    print(f"Variazione {p_id} (via {slug}): {old_price}€ -> {price}€")
+                    print(f"Variazione {p_id} (slug: {slug}): {old_price}€ -> {price}€")
                     send_email(f"Notifica Sorare: {p_id}", f"Il prezzo minimo per {p_id} è {price}€")
                     state[p_id] = price
                 else:
                     print(f"{p_id}: {price}€ (nessuna variazione)")
-                return # Trovato e processato, usciamo dal ciclo for
+                return
                 
         except Exception as e:
-            print(f"Errore su slug '{slug}': {e}")
-            continue # Proviamo il prossimo slug in lista
+            print(f"Tentativo fallito per {slug}: {e}")
+            continue
 
-    print(f"{p_id}: Nessuno degli slug forniti ha prodotto risultati.")
+    print(f"{p_id}: Nessuno degli slug ha funzionato.")
 
-# Esecuzione
 with open('players_registry.json', 'r') as f:
     players = json.load(f)
 
