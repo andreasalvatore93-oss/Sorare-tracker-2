@@ -2,6 +2,7 @@ import json
 import urllib.request
 import os
 import time
+import smtplib
 from email.message import EmailMessage
 
 COOKIES = os.environ.get('SORARE_COOKIE')
@@ -31,7 +32,14 @@ def check_player(player_data, state):
         "variables": {"onlyPrimary": False, "slug": slug},
         "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
-    headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN}
+    
+    # Aggiunto User-Agent per evitare il blocco
+    headers = {
+        'Content-Type': 'application/json', 
+        'Cookie': COOKIES, 
+        'x-csrf-token': CSRF_TOKEN,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
     
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
@@ -50,8 +58,7 @@ def check_player(player_data, state):
             
         offer = card.get('liveSingleSaleOffer')
         if not offer:
-            # DEBUG: Se arriviamo qui, stampiamo cosa c'è nella carta
-            print(f"DEBUG {p_id}: Carta trovata ma senza 'liveSingleSaleOffer'. Dati carta: {card}")
+            print(f"DEBUG {p_id}: Carta trovata ma senza 'liveSingleSaleOffer'.")
             return
             
         price_cents = offer.get('receiverSide', {}).get('amounts', {}).get('eurCents')
@@ -73,7 +80,8 @@ def check_player(player_data, state):
         print(f"ERRORE CRITICO per {p_id}: {e}")
 
 # Esecuzione
-with open('players.json', 'r') as f:
+# Assicurati di leggere players_registry.json
+with open('players_registry.json', 'r') as f:
     players = json.load(f)
 
 try:
