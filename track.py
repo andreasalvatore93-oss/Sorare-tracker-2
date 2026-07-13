@@ -25,6 +25,19 @@ def check_player(player_data, state):
     slug = player_data['slug']
     p_id = player_data['id']
     
+    # Verifica validità slug (Controllo rapido URL)
+    url_check = f"https://sorare.com/cards/players/{slug}"
+    try:
+        req_check = urllib.request.Request(url_check, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req_check) as response:
+            if response.status != 200:
+                print(f"ERRORE SLUG: {p_id} ({slug}) non trovato su Sorare.")
+                return
+    except Exception:
+        print(f"ERRORE SLUG: {p_id} ({slug}) impossibile da verificare.")
+        return
+
+    # Se lo slug è valido, procediamo con la query API
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
@@ -38,20 +51,19 @@ def check_player(player_data, state):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        # Check profondo per evitare errori NoneType
         player_info = data.get('data', {}).get('anyPlayer')
         if not player_info:
-            print(f"Errore: Nessuna risposta valida per {p_id}")
+            print(f"ERRORE API: Nessun dato per {p_id}. (Rate Limit?)")
             return
             
         card = player_info.get('lowestPriceLimitedCard')
         if not card:
-            print(f"{p_id}: Nessuna carta in vendita")
+            print(f"{p_id}: Nessuna carta Limited in vendita")
             return
             
         offer = card.get('liveSingleSaleOffer')
-        if not offer or not offer.get('receiverSide', {}).get('amounts', {}).get('eurCents'):
-            print(f"{p_id}: Carta trovata ma senza prezzo di vendita diretto")
+        if not offer:
+            print(f"{p_id}: Carta trovata, ma nessun prezzo Buy-Now")
             return
 
         price = offer['receiverSide']['amounts']['eurCents'] / 100
@@ -65,8 +77,9 @@ def check_player(player_data, state):
             print(f"{p_id}: Nessuna variazione ({price}€)")
             
     except Exception as e:
-        print(f"Errore critico per {p_id}: {e}")
+        print(f"ERRORE CRITICO {p_id}: {e}")
 
+# Main
 with open('players.json', 'r') as f:
     players = json.load(f)
 
@@ -78,7 +91,7 @@ except:
 
 for p in players:
     check_player(p, state)
-    time.sleep(3) # Aumentato il tempo per evitare blocchi
+    time.sleep(3) 
 
 with open('state.json', 'w') as f:
     json.dump(state, f)
