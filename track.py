@@ -1,29 +1,20 @@
 import json
 import urllib.request
 import os
-import smtplib
-from email.message import EmailMessage
 
-# Configurazione (non serve più l'operationId)
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
-EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
-EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
-NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
-def check_player(player_data, state):
+def check_player(player_data):
     slug = player_data['slug']
-    p_id = player_data['id']
-    target_classic = player_data['isClassic']
+    url = 'https://api.sorare.com/graphql'
     
     # Query stabile
-    url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
         "variables": {"onlyPrimary": False, "slug": slug},
         "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
-    
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN}
     
     try:
@@ -31,25 +22,15 @@ def check_player(player_data, state):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        # Estrazione (se fallisce, stampa tutto per debug)
-        try:
-            # Qui cerchiamo nel layout le carte disponibili
-            market_cards = data['data']['anyPlayer']['allLimitedCards'] 
-            match = [c for c in market_cards if c.get('isClassic') == target_classic]
-            
-            if not match:
-                print(f"{p_id}: Nessuna carta trovata.")
-                return
-            
-            price = match[0]['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
-            
-            # (Logica di notifica qui...)
-            print(f"{p_id}: Prezzo trovato {price}")
-            
-        except KeyError:
-            print(f"DEBUG: Struttura dati cambiata. Ecco cosa ho ricevuto: {json.dumps(data, indent=2)}")
-            
+        # DEBUG: Stampiamo le chiavi principali per capire dove sono le carte
+        print(f"--- Dati ricevuti per {slug} ---")
+        player_root = data.get('data', {}).get('anyPlayer', {})
+        print(f"Chiavi disponibili in anyPlayer: {list(player_root.keys())}")
+        
     except Exception as e:
         print(f"Errore: {e}")
 
-# ... (restante logica)
+with open('players.json', 'r') as f:
+    players = json.load(f)
+for p in players:
+    check_player(p)
