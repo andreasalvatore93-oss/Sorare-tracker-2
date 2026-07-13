@@ -27,6 +27,7 @@ def check_player(player_data, state):
     p_id = player_data['id']
     
     url = 'https://api.sorare.com/graphql'
+    # Query stabile
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
         "variables": {"onlyPrimary": False, "slug": slug},
@@ -39,26 +40,22 @@ def check_player(player_data, state):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        # Estraiamo la carta più economica
+        # Estrai la carta più economica
         card = data['data']['anyPlayer']['lowestPriceLimitedCard']
         if not card:
             print(f"{p_id}: Nessuna carta trovata")
             return
             
         price = card['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
-        is_classic = card.get('isClassic', False)
-        tipo = "Classic" if is_classic else "In-Season"
         
-        # Usiamo il tipo nel nome dello stato per monitorare la combinazione esatta
-        state_key = f"{p_id}_{tipo}"
-        old_price = state.get(state_key, 0)
-        
+        # Confronta con l'ultimo prezzo salvato
+        old_price = state.get(p_id, 0)
         if old_price != price:
-            print(f"Variazione {p_id} ({tipo}): {old_price} -> {price}")
-            send_email(f"Sorare: {p_id} ({tipo})", f"Prezzo {p_id} ({tipo}) ora a {price}€")
-            state[state_key] = price
+            print(f"Variazione {p_id}: {old_price} -> {price}")
+            send_email(f"Notifica Sorare: {p_id}", f"Prezzo minimo {p_id} cambiato: da {old_price} a {price}€")
+            state[p_id] = price
         else:
-            print(f"{p_id} ({tipo}): Nessuna variazione ({price}€)")
+            print(f"{p_id}: Nessuna variazione ({price}€)")
             
     except Exception as e:
         print(f"Errore per {p_id}: {e}")
