@@ -26,6 +26,9 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Sync Registry
+        run: python sync_registry.py
+
       - name: Run tracker
         run: python track.py
 
@@ -34,5 +37,5 @@ jobs:
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
           git add state.json players_registry.json
-          git diff --cached --quiet || git commit -m "Update state and registry"
+          git diff --cached --quiet || git commit -m "Auto-update state and registry"
           git push
