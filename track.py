@@ -1,6 +1,7 @@
 import json
 import os
 import urllib.request
+import urllib.error
 import smtplib
 from email.mime.text import MIMEText
 
@@ -18,8 +19,9 @@ def send_email(subject, body):
         server.login(user, pwd)
         server.send_message(msg)
         server.quit()
+        print(f"Notifica inviata con successo: {subject}")
     except Exception as e:
-        print(f"Errore email: {e}")
+        print(f"Errore invio mail: {e}")
 
 def check_sorare():
     lista_giocatori = [
@@ -36,29 +38,51 @@ def check_sorare():
         soglia = target["soglia"]
         in_season_bool = "true" if tipo == "in_season" else "false"
         
+        # Query corretta: ora entriamo dentro la carta e prendiamo il prezzo dell'offerta attiva
         query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
             ... on Player {{
-              lowestPriceAnyCard(rarities: [LIMITED], inSeason: {in_season_bool})
+              lowestPriceAnyCard(rarities: [LIMITED], inSeason: {in_season_bool}) {{
+                ... on Card {{
+                  liveSingleSaleOffer {{
+                    price
+                  }}
+                }}
+              }}
             }}
           }}
         }}
         """
         req = urllib.request.Request('https://api.sorare.com/graphql', data=json.dumps({'query': query}).encode('utf-8'), headers={'Content-Type': 'application/json'})
+        
         try:
             with urllib.request.urlopen(req) as response:
                 res = json.loads(response.read().decode())
-                print(f"LOG COMPLETO -> {slug} ({tipo}): {res}")
+                
+                # Questa riga ci mostrerà nei log la struttura precisa del prezzo
+                print(f"DIAGNOSTICA -> Risposta per {slug} ({tipo}): {res}")
+                
                 if 'data' in res and res['data']['players'] and res['data']['players'][0]:
                     player = res['data']['players'][0]
-                    prezzo_raw = player.get('lowestPriceAnyCard')
-                    if prezzo_raw is not None:
-                        prezzo = float(prezzo_raw)
-                        if prezzo <= soglia:
-                            send_email(f"🔔 ALERT: {nome} {tipo}", f"Prezzo: {prezzo}€")
+                    card_data = player.get('lowestPriceAnyCard')
+                    
+                    if card_data and card_data.get('liveSingleSaleOffer'):
+                        price_raw = card_data['liveSingleSaleOffer'].get('price')
+                        
+                        if price_raw is not None:
+                            prezzo = float(price_raw)
+                            print(f"LOG -> {nome} ({tipo}): Prezzo di mercato rilevato: {prezzo} | Soglia impostata: {soglia}€")
+                            
+                            if prezzo <= soglia:
+                                send_email(
+                                    f"🔔 ALERT SORARE: {nome} ({tipo})", 
+                                    f"La carta {tipo} di {nome} è scesa a {prezzo}€! (Soglia: {soglia}€)"
+                                )
+                    else:
+                        print(f"LOG -> {nome} ({tipo}): Nessuna carta attualmente sul mercato alle tue condizioni.")
         except Exception as e:
-            print(f"Errore: {e}")
+            print(f"Errore durante il controllo di {slug}: {e}")
 
 if __name__ == '__main__':
     check_sorare()
