@@ -13,9 +13,8 @@ EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
 EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
-# Controllo immediato errori
 if not COOKIES or not CSRF_TOKEN:
-    print("ERRORE CRITICO: SORARE_COOKIE o SORARE_CSRF non trovati negli environment variables!")
+    print("ERRORE CRITICO: SORARE_COOKIE o SORARE_CSRF non trovati!")
     sys.exit(1)
 
 def send_email(subject, body):
@@ -57,7 +56,6 @@ def check_player(player_data, state):
             print(f"ERRORE API per {p_id}: Nessun dato dal server.")
             return
 
-        # LOGICA AGGIORNATA: cerchiamo il prezzo minore tra In-Season e Classic
         prices = []
         
         # 1. In-Season
@@ -66,8 +64,10 @@ def check_player(player_data, state):
             cents = in_season.get('liveSingleSaleOffer').get('receiverSide', {}).get('amounts', {}).get('eurCents')
             if cents: prices.append(cents)
             
-        # 2. Classic
+        # 2. Classic - DEBUG
         classic = player_info.get('lowestPriceClassicLimitedCard')
+        print(f"DEBUG {p_id}: Dati carta Classic trovati -> {classic is not None}")
+        
         if classic and classic.get('liveSingleSaleOffer'):
             cents = classic.get('liveSingleSaleOffer').get('receiverSide', {}).get('amounts', {}).get('eurCents')
             if cents: prices.append(cents)
@@ -78,7 +78,6 @@ def check_player(player_data, state):
             
         price = min(prices) / 100
         
-        # Confronto con lo stato
         old_price = state.get(p_id, 0)
         if old_price != price:
             print(f"Variazione {p_id}: {old_price} -> {price}")
@@ -90,7 +89,6 @@ def check_player(player_data, state):
     except Exception as e:
         print(f"ERRORE CRITICO per {p_id}: {e}")
 
-# Esecuzione
 with open('players_registry.json', 'r') as f:
     players = json.load(f)
 
