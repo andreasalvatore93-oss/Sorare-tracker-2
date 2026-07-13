@@ -1,65 +1,51 @@
 import json
-import urllib.request
 import os
 
-with open('players_registry.json', 'r') as f:
-    registry = json.load(f)
-
-COOKIES = os.environ.get('SORARE_COOKIE')
-CSRF_TOKEN = os.environ.get('SORARE_CSRF')
-HEADERS = {
-    'Content-Type': 'application/json',
-    'Cookie': COOKIES,
-    'x-csrf-token': CSRF_TOKEN,
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+# "Memoria" del bot: quando trovi uno slug complesso, aggiungilo qui sotto!
+KNOWN_SLUGS = {
+    "alaba": "david-olatukunbo-alaba",
+    "vallejo": "jesus-vallejo-lazaro",
+    "fran-garcia": "francisco-jose-garcia-torres",
+    "ceballos": "daniel-ceballos-fernandez",
+    "mbappe": "kylian-mbappe-lottin"
 }
 
-def get_real_slug(name):
-    url = 'https://api.sorare.com/graphql'
-    # Struttura semplificata che tenta di bypassare il 422
-    payload = {
-        "operationName": "SearchPlayers",
-        "variables": {"query": name},
-        "query": "query SearchPlayers($query: String!) { searchPlayers(query: $query) { nodes { slug } } }"
-    }
-    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=HEADERS)
-    try:
-        with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
-            nodes = data.get('data', {}).get('searchPlayers', {}).get('nodes', [])
-            return nodes[0]['slug'] if nodes else None
-    except Exception as e:
-        print(f"Skipping {name} (Errore ricerca API: {e})")
-        return None
-
+# Funzione per testare gli slug (usiamo quella che sappiamo funzionare)
 def is_slug_valid(slug):
+    import urllib.request
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
         "variables": {"onlyPrimary": False, "slug": slug},
         "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
+    HEADERS = {'Content-Type': 'application/json', 'Cookie': os.environ.get('SORARE_COOKIE')}
     req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=HEADERS)
     try:
         with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
-            return data.get('data', {}).get('anyPlayer') is not None
-    except:
-        return False
+            return json.loads(response.read().decode()).get('data', {}).get('anyPlayer') is not None
+    except: return False
+
+with open('players_registry.json', 'r') as f:
+    registry = json.load(f)
 
 updated = False
 for p in registry:
+    # 1. Prova slug noto
+    target_slugs = [p['slug'], KNOWN_SLUGS.get(p['id']), f"{p['id']}-real-madrid", f"{p['id']}-2025"]
+    
     if not is_slug_valid(p['slug']):
-        print(f"Slug errato per {p['id']}: {p['slug']}. Tentativo ricerca...")
-        correct_slug = get_real_slug(p['id'])
-        if correct_slug and correct_slug != p['slug']:
-            print(f"Aggiornato: {p['slug']} -> {correct_slug}")
-            p['slug'] = correct_slug
-            updated = True
+        print(f"Slug errato per {p['id']}: {p['slug']}. Provo tentativi intelligenti...")
+        for candidate in target_slugs:
+            if candidate and is_slug_valid(candidate):
+                print(f"Trovato slug corretto: {candidate}")
+                p['slug'] = candidate
+                updated = True
+                break
+        else:
+            print(f"ATTENZIONE: Nessuno slug indovinato per {p['id']}. Aggiornalo a mano in KNOWN_SLUGS nel file .py")
 
 if updated:
     with open('players_registry.json', 'w') as f:
         json.dump(registry, f, indent=4)
     print("Registro aggiornato.")
-else:
-    print("Nessuna modifica necessaria.")
