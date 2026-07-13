@@ -46,14 +46,12 @@ def main():
         'Origin': 'https://sorare.com'
     }
     
-    # Esecuzione richiesta
     req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
     
     try:
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             
-        # Estrazione prezzo
         player = data.get('data', {}).get('anyPlayer', {})
         limited_card = player.get('lowestPriceLimitedCard')
         
@@ -64,19 +62,19 @@ def main():
         current_price = limited_card['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
         print(f"Prezzo attuale: {current_price} EUR")
 
-        # Gestione stato (confronto)
         state_file = 'state.json'
         try:
             with open(state_file, 'r') as f:
                 state = json.load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError):
             state = {"price": 0}
 
-        if state.get("price") != current_price:
+        old_price = state.get("price", 0)
+
+        if old_price != current_price:
             print("Variazione rilevata!")
-            send_email("Notifica Sorare: Cambio Prezzo!", f"Il prezzo di Kylian Mbappé è passato da {state['price']}€ a {current_price}€.")
+            send_email("Notifica Sorare: Cambio Prezzo!", f"Il prezzo di Kylian Mbappé è passato da {old_price}€ a {current_price}€.")
             
-            # Aggiorna stato
             state["price"] = current_price
             with open(state_file, 'w') as f:
                 json.dump(state, f)
