@@ -11,7 +11,9 @@ def send_email(subject, body):
     user = os.environ.get('GMAIL_ADDRESS')
     pwd = os.environ.get('GMAIL_APP_PASSWORD')
     to_email = os.environ.get('NOTIFY_EMAIL')
-    if not user or not pwd or not to_email: return
+    if not user or not pwd or not to_email: 
+        log("Errore: Credenziali email non configurate.")
+        return
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = user
@@ -23,12 +25,25 @@ def send_email(subject, body):
         server.quit()
         log("Email inviata con successo.")
     except Exception as e:
-        log(f"Errore email: {e}")
+        log(f"Errore invio mail: {e}")
 
 def check_sorare():
-    log("--- INIZIO CONTROLLO CON SPORT: FOOTBALL ---")
+    log("--- SCRIPT AVVIATO ---")
+    lista_giocatori = [
+        {"slug": "kylian-mbappe", "nome": "Kylian Mbappé", "tipo": "in_season", "soglia": 110.0},
+    ]
     
-   query = f"""
+    for target in lista_giocatori:
+        slug = target["slug"]
+        nome = target["nome"]
+        tipo = target["tipo"]
+        soglia = target["soglia"]
+        in_season_bool = "true" if tipo == "in_season" else "false"
+        
+        log(f"--- CONTROLLO: {nome} ({tipo}) ---")
+        
+        # Query con rarity: Limited (con L maiuscola) e senza sport
+        query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
             ... on Player {{
@@ -45,31 +60,35 @@ def check_sorare():
           }}
         }}
         """
-    
-    try:
-        req = urllib.request.Request('https://api.sorare.com/graphql', 
-                                     data=json.dumps({'query': query}).encode('utf-8'), 
-                                     headers={'Content-Type': 'application/json'})
-        with urllib.request.urlopen(req) as response:
-            res = json.loads(response.read().decode())
-            
-            # Diagnostica
-            players = res.get('data', {}).get('players', [])
-            if players:
-                card = players[0].get('lowestPriceAnyCard')
+        
+        try:
+            req = urllib.request.Request('https://api.sorare.com/graphql', 
+                                         data=json.dumps({'query': query}).encode('utf-8'), 
+                                         headers={'Content-Type': 'application/json'})
+            with urllib.request.urlopen(req) as response:
+                res = json.loads(response.read().decode())
+                
+                # Debug se il giocatore non viene trovato
+                if not res.get('data', {}).get('players'):
+                    log(f"DEBUG - Nessun dato per {slug}. Risposta: {res}")
+                    continue
+
+                card = res['data']['players'][0].get('lowestPriceAnyCard')
                 if card and card.get('liveSingleSaleOffer'):
                     eur_cents = card['liveSingleSaleOffer']['receiverSide']['amounts'].get('eurCents')
-                    prezzo = float(eur_cents) / 100.0
-                    log(f"SUCCESS - Prezzo rilevato: {prezzo}€")
-                    if prezzo <= 110.0:
-                        send_email("🔔 TEST RIUSCITO", f"Mbappé trovato a {prezzo}€")
+                    if eur_cents is not None:
+                        prezzo = float(eur_cents) / 100.0
+                        log(f"SUCCESS - {nome} ({tipo}) trovato a {prezzo}€")
+                        if prezzo <= soglia:
+                            send_email(f"🔔 ALERT: {nome}", f"Prezzo: {prezzo}€")
+                    else:
+                        log(f"LOG -> {nome}: Offerta presente ma prezzo in euro non disponibile.")
                 else:
-                    log("Giocatore trovato, ma nessuna offerta attiva.")
-            else:
-                log(f"ERRORE - Ancora nessun giocatore trovato. Risposta: {res}")
-                
-    except Exception as e:
-        log(f"Errore query: {e}")
+                    log(f"LOG -> {nome}: Nessuna offerta attiva trovata.")
+        except Exception as e:
+            log(f"Errore query per {slug}: {e}")
+            
+    log("--- SCRIPT TERMINATO ---")
 
 if __name__ == '__main__':
     check_sorare()
