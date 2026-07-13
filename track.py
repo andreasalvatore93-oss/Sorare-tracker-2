@@ -12,6 +12,7 @@ EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
 def send_email(subject, body):
+    if not EMAIL_USER or not EMAIL_PASS: return
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
@@ -28,7 +29,7 @@ def check_player(player_data, state):
     
     url = 'https://api.sorare.com/graphql'
     
-    # Usiamo MarketSearchQuery per filtrare lato server
+    # Payload per la ricerca di mercato (MarketSearch)
     payload = {
         "operationName": "MarketSearchQuery",
         "variables": {
@@ -46,16 +47,21 @@ def check_player(player_data, state):
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
+            raw_response = response.read().decode()
+            data = json.loads(raw_response)
         
-        # Estrazione corretta per MarketSearchQuery
-        cards = data['data']['marketSearch']['nodes']
-        if not cards:
-            print(f"{p_id}: Nessuna carta trovata con filtro isClassic={is_classic}")
+        # Verifica se la risposta contiene dati validi
+        if 'data' not in data:
+            print(f"Errore: API ha risposto ma manca 'data'. Risposta: {raw_response}")
+            return
+
+        nodes = data['data']['marketSearch']['nodes']
+        if not nodes:
+            print(f"{p_id}: Nessuna carta trovata con isClassic={is_classic}")
             return
             
-        # Il primo elemento è il prezzo più basso (ordinamento di default)
-        price = cards[0]['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
+        # Prende il prezzo della carta più economica (prima della lista)
+        price = nodes[0]['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
         
         old_price = state.get(p_id, 0)
         if old_price != price:
@@ -66,7 +72,7 @@ def check_player(player_data, state):
             print(f"{p_id}: Nessuna variazione ({price})")
             
     except Exception as e:
-        print(f"Errore query per {p_id}: {e}")
+        print(f"Errore critico per {p_id}: {str(e)}")
 
 # Esecuzione
 with open('players.json', 'r') as f:
