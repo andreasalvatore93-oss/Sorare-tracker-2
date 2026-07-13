@@ -10,10 +10,7 @@ def send_email(subject, body):
     pwd = os.environ.get('GMAIL_APP_PASSWORD')
     to_email = os.environ.get('NOTIFY_EMAIL')
     
-    if not user or not pwd or not to_email:
-        print("Mancano i Secrets di GitHub. Impossibile inviare l'email.")
-        return
-
+    if not user or not pwd or not to_email: return
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = user
@@ -24,29 +21,30 @@ def send_email(subject, body):
         server.login(user, pwd)
         server.send_message(msg)
         server.quit()
-        print(f"Notifica email inviata con successo per: {subject}")
+        print(f"Notifica inviata: {subject}")
     except Exception as e:
-        print(f"Errore nell'invio della mail: {e}")
+        print(f"Errore invio mail: {e}")
 
 def check_sorare():
+    # Elenco locale comprensivo di Nome leggibile per i tuoi alert
     lista_giocatori = [
-        {"slug": "kylian-mbappe", "tipo": "in_season", "soglia": 100.0},
-        {"slug": "kylian-mbappe", "tipo": "classic", "soglia": 96.0},
-        {"slug": "hans-vanaken", "tipo": "in_season", "soglia": 8.0},
-        {"slug": "hans-vanaken", "tipo": "classic", "soglia": 7.0}
+        {"slug": "kylian-mbappe", "nome": "Kylian Mbappé", "tipo": "in_season", "soglia": 100.0},
+        {"slug": "kylian-mbappe", "nome": "Kylian Mbappé", "tipo": "classic", "soglia": 96.0},
+        {"slug": "hans-vanaken", "nome": "Hans Vanaken", "tipo": "in_season", "soglia": 8.0},
+        {"slug": "hans-vanaken", "nome": "Hans Vanaken", "tipo": "classic", "soglia": 7.0}
     ]
         
     for target in lista_giocatori:
         slug = target["slug"]
+        nome = target["nome"]
         tipo = target["tipo"]
         soglia = target["soglia"]
         in_season_bool = "true" if tipo == "in_season" else "false"
         
-        # Corretto 'limited' in 'LIMITED' (Maiuscolo richiesto dalle specifiche GraphQL)
+        # Query pulita: chiediamo solo il prezzo senza incappare in errori di interfaccia
         query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
-            name
             lowestPriceAnyCard(rarities: [LIMITED], inSeason: {in_season_bool})
           }}
         }}
@@ -64,7 +62,6 @@ def check_sorare():
                 
                 if 'data' in res and res['data']['players'] and res['data']['players'][0]:
                     player = res['data']['players'][0]
-                    nome = player['name']
                     prezzo_raw = player.get('lowestPriceAnyCard')
                     
                     if prezzo_raw is not None:
@@ -73,19 +70,17 @@ def check_sorare():
                         
                         if prezzo <= soglia:
                             oggetto = f"🔔 ALERT SORARE: {nome} ({tipo}) sotto la soglia!"
-                            corpo = f"La carta {tipo} di {nome} è in vendita a {prezzo}€!\nLa tua soglia impostata era di {soglia}€."
+                            corpo = f"La carta {tipo} di {nome} è in vendita a {prezzo}€!\nSoglia impostata: {soglia}€."
                             send_email(oggetto, corpo)
                     else:
-                        print(f"LOG -> {nome} ({tipo}): Nessuna carta di questo tipo sul mercato al momento.")
+                        print(f"LOG -> {nome} ({tipo}): Nessuna carta sul mercato.")
                 else:
-                    print(f"LOG -> Dati non strutturati per {slug}: {res}")
+                    print(f"LOG -> Nessun dato per {slug}")
                     
         except urllib.error.HTTPError as e:
-            # Questa modifica permette di leggere la motivazione reale sputata dal server di Sorare
-            error_body = e.read().decode('utf-8')
-            print(f"Errore API Sorare per {slug} ({tipo}): Codice {e.code} - Dettaglio: {error_body}")
+            print(f"Errore API per {slug}: {e.read().decode('utf-8')}")
         except Exception as e:
-            print(f"Errore imprevisto durante il controllo di {slug} ({tipo}): {e}")
+            print(f"Errore imprevisto per {slug}: {e}")
 
 if __name__ == '__main__':
     check_sorare()
