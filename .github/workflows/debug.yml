@@ -1,0 +1,19 @@
+name: Debug Script
+on:
+  workflow_dispatch: # Questo permette di lanciarlo manualmente quando vuoi
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Run debug script
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+        run: |
+          python debug_dump.py
