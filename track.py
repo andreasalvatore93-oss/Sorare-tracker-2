@@ -23,7 +23,73 @@ def send_email(subject, body):
     except Exception as e:
         print(f"Errore invio mail: {e}")
 
+def get_token_offer_fields():
+    """Interroga Sorare in tempo reale per scoprire i campi attuali di TokenOffer"""
+    query = """
+    query {
+      __type(name: "TokenOffer") {
+        fields {
+          name
+          type {
+            kind
+            name
+            ofType {
+              kind
+              name
+            }
+          }
+        }
+      }
+    }
+    """
+    req = urllib.request.Request('https://api.sorare.com/graphql', data=json.dumps({'query': query}).encode('utf-8'), headers={'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(req) as response:
+            res = json.loads(response.read().decode())
+            if 'data' in res and res['data']['__type'] and res['data']['__type']['fields']:
+                return res['data']['__type']['fields']
+    except Exception as e:
+        print(f"Errore durante l'introspezione dello schema: {e}")
+    return []
+
 def check_sorare():
+    # 1. Rilevamento automatico dei campi prezzo
+    fields_list = get_token_offer_fields()
+    field_names = [f['name'] for f in fields_list]
+    print(f"DIAGNOSTICA -> Campi attualmente disponibili su TokenOffer: {field_names}")
+    
+    # Cerchiamo il campo migliore per il prezzo in Euro/Fiat
+    preferences = ['priceInEur', 'fiatAmount', 'fiatPrice', 'amountInCents', 'price']
+    selected_field = None
+    
+    for pref in preferences:
+        if pref in field_names:
+            selected_field = next(f for f in fields_list if f['name'] == pref)
+            break
+            
+    if not selected_field:
+        # Fallback se hanno cambiato totalmente nome (cerchiamo parole chiave)
+        for f in fields_list:
+            if 'eur' in f['name'].lower() or 'fiat' in f['name'].lower() or 'price' in f['name'].lower():
+                selected_field = f
+                break
+                
+    if not selected_field:
+        print("LOG -> Impossibile trovare un campo prezzo valido. Interrompo per evitare l'errore 422.")
+        return
+
+    field_name = selected_field['name']
+    
+    # Controlliamo se il campo è un oggetto o un numero semplice
+    kind = selected_field['type'].get('kind')
+    if kind == 'NON_NULL' and selected_field['type'].get('ofType'):
+        kind = selected_field['type']['ofType'].get('kind')
+        
+    is_object = (kind == 'OBJECT')
+    query_selection = f"{field_name} {{ amount }}" if is_object else field_name
+    print(f"LOG -> Campo selezionato dinamicamente per la query: {query_selection}")
+
+    # 2. Monitoraggio Giocatori
     lista_giocatori = [
         {"slug": "kylian-mbappe", "nome": "Kylian Mbappé", "tipo": "in_season", "soglia": 100.0},
         {"slug": "kylian-mbappe", "nome": "Kylian Mbappé", "tipo": "classic", "soglia": 96.0},
@@ -38,31 +104,24 @@ def check_sorare():
         soglia = target["soglia"]
         in_season_bool = "true" if tipo == "in_season" else "false"
         
-        # Query corretta: usiamo amount e currency accettati dal tipo TokenOffer
         query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
             ... on Player {{
               lowestPriceAnyCard(rarities: [LIMITED], inSeason: {in_season_bool}) {{
                 liveSingleSaleOffer {{
-                  amount
-                  currency
+                  {query_selection}
                 }}
               }}
             }}
           }}
         }}
         """
-        req = urllib.request.Request(
-            'https://api.sorare.com/graphql', 
-            data=json.dumps({'query': query}).encode('utf-8'), 
-            headers={'Content-Type': 'application/json'}
-        )
+        req = urllib.request.Request('https://api.sorare.com/graphql', data=json.dumps({'query': query}).encode('utf-8'), headers={'Content-Type': 'application/json'})
         
         try:
             with urllib.request.urlopen(req) as response:
                 res = json.loads(response.read().decode())
-                print(f"LOG -> Risposta ricevuta per {slug} ({tipo}): {res}")
                 
                 if 'data' in res and res['data']['players'] and res['data']['players'][0]:
                     player = res['data']['players'][0]
@@ -70,25 +129,30 @@ def check_sorare():
                     
                     if card_data and card_data.get('liveSingleSaleOffer'):
                         offer = card_data['liveSingleSaleOffer']
-                        amount_raw = offer.get('amount')
-                        currency = offer.get('currency', 'EUR')
                         
-                        if amount_raw is not None:
-                            prezzo = float(amount_raw)
-                            print(f"LOG -> {nome} ({tipo}): Offerta live: {prezzo} {currency} | Soglia impostata: {soglia}€")
+                        # Estraiamo il prezzo in base a com'è strutturato il campo
+                        if is_object and offer.get(field_name):
+                            price_raw = offer[field_name].get('amount')
+                        else:
+                            price_raw = offer.get(field_name)
+                            
+                        if price_raw is not None:
+                            prezzo = float(price_raw)
+                            # Se Sorare restituisce il prezzo in centesimi (es. 9500 anziché 95.00), lo corregge
+                            if prezzo > 2000 and soglia < 500: 
+                                prezzo = prezzo / 100.0
+                                
+                            print(f"LOG -> {nome} ({tipo}): Prezzo rilevato {prezzo}€ | Soglia {soglia}€")
                             
                             if prezzo <= soglia:
                                 send_email(
                                     f"🔔 ALERT SORARE: {nome} ({tipo})", 
-                                    f"La carta {tipo} di {nome} è disponibile a {prezzo} {currency}! (La tua soglia: {soglia}€)"
+                                    f"La carta {tipo} di {nome} è scesa a {prezzo}€! (La tua soglia: {soglia}€)"
                                 )
                     else:
-                        print(f"LOG -> {nome} ({tipo}): Nessuna carta sul mercato in questo momento.")
-        except urllib.error.HTTPError as e:
-            error_body = e.read().decode('utf-8')
-            print(f"Errore API Sorare per {slug} ({tipo}): Codice {e.code} - Dettaglio: {error_body}")
+                        print(f"LOG -> {nome} ({tipo}): Nessuna carta sul mercato.")
         except Exception as e:
-            print(f"Errore imprevisto per {slug}: {e}")
+            print(f"Errore durante il controllo di {slug}: {e}")
 
 if __name__ == '__main__':
     check_sorare()
