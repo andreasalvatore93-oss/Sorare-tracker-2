@@ -2,14 +2,21 @@ import json
 import urllib.request
 import os
 import time
+import sys
 import smtplib
 from email.message import EmailMessage
 
+# Caricamento sicuro dei segreti
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
 EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
+
+# Controllo immediato errori
+if not COOKIES or not CSRF_TOKEN:
+    print("ERRORE CRITICO: SORARE_COOKIE o SORARE_CSRF non trovati negli environment variables!")
+    sys.exit(1)
 
 def send_email(subject, body):
     if not EMAIL_USER or not EMAIL_PASS: return
@@ -33,7 +40,6 @@ def check_player(player_data, state):
         "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
     
-    # Aggiunto User-Agent per evitare il blocco
     headers = {
         'Content-Type': 'application/json', 
         'Cookie': COOKIES, 
@@ -44,11 +50,12 @@ def check_player(player_data, state):
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
+            raw_data = response.read().decode()
+            data = json.loads(raw_data)
         
         player_info = data.get('data', {}).get('anyPlayer')
         if not player_info:
-            print(f"ERRORE API per {p_id}: Nessun dato dal server.")
+            print(f"ERRORE API per {p_id}: Nessun dato dal server. Risposta: {raw_data[:100]}")
             return
             
         card = player_info.get('lowestPriceLimitedCard')
@@ -58,16 +65,13 @@ def check_player(player_data, state):
             
         offer = card.get('liveSingleSaleOffer')
         if not offer:
-            print(f"DEBUG {p_id}: Carta trovata ma senza 'liveSingleSaleOffer'.")
             return
             
         price_cents = offer.get('receiverSide', {}).get('amounts', {}).get('eurCents')
         if price_cents is None:
-            print(f"DEBUG {p_id}: Prezzo (eurCents) nullo.")
             return
 
         price = price_cents / 100
-        
         old_price = state.get(p_id, 0)
         if old_price != price:
             print(f"Variazione {p_id}: {old_price} -> {price}")
@@ -80,7 +84,6 @@ def check_player(player_data, state):
         print(f"ERRORE CRITICO per {p_id}: {e}")
 
 # Esecuzione
-# Assicurati di leggere players_registry.json
 with open('players_registry.json', 'r') as f:
     players = json.load(f)
 
