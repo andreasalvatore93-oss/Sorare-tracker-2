@@ -25,21 +25,14 @@ def send_email(subject, body):
 def check_player(player_data, state):
     slug = player_data['slug']
     p_id = player_data['id']
-    is_classic = player_data['isClassic']
     
     url = 'https://api.sorare.com/graphql'
     
-    # Payload per la ricerca di mercato (MarketSearch)
+    # Query di Layout: Stabile, non richiede ID variabili
     payload = {
-        "operationName": "MarketSearchQuery",
-        "variables": {
-            "filters": {
-                "playerSlugs": [slug],
-                "rarities": ["limited"],
-                "isClassic": is_classic
-            }
-        },
-        "extensions": {"operationId": "React/5e6b12a84976451e0646c06a86c63b65e949646b9772390f727c621390fe40d"}
+        "operationName": "AnyPlayerLayoutQuery",
+        "variables": {"onlyPrimary": False, "slug": slug},
+        "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
     
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN}
@@ -47,21 +40,15 @@ def check_player(player_data, state):
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
-            raw_response = response.read().decode()
-            data = json.loads(raw_response)
+            data = json.loads(response.read().decode())
         
-        # Verifica se la risposta contiene dati validi
-        if 'data' not in data:
-            print(f"Errore: API ha risposto ma manca 'data'. Risposta: {raw_response}")
-            return
-
-        nodes = data['data']['marketSearch']['nodes']
-        if not nodes:
-            print(f"{p_id}: Nessuna carta trovata con isClassic={is_classic}")
+        # Prendi la carta Limited più economica
+        card = data['data']['anyPlayer']['lowestPriceLimitedCard']
+        if not card:
+            print(f"{p_id}: Nessuna carta trovata")
             return
             
-        # Prende il prezzo della carta più economica (prima della lista)
-        price = nodes[0]['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
+        price = card['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
         
         old_price = state.get(p_id, 0)
         if old_price != price:
@@ -72,7 +59,7 @@ def check_player(player_data, state):
             print(f"{p_id}: Nessuna variazione ({price})")
             
     except Exception as e:
-        print(f"Errore critico per {p_id}: {str(e)}")
+        print(f"Errore per {p_id}: {e}")
 
 # Esecuzione
 with open('players.json', 'r') as f:
