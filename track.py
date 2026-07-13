@@ -11,6 +11,9 @@ EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
 EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
+# L'ID attuale (da aggiornare solo se il log dice "Operation not found")
+OPERATION_ID = "React/7d4e3a89e63b65e949646b9772390f727c621390fe40d"
+
 def send_email(subject, body):
     if not EMAIL_USER or not EMAIL_PASS: return
     msg = EmailMessage()
@@ -29,7 +32,6 @@ def check_player(player_data, state):
     
     url = 'https://api.sorare.com/graphql'
     
-    # Payload per MarketSearchQuery (con filtro isClassic)
     payload = {
         "operationName": "MarketSearchQuery",
         "variables": {
@@ -39,9 +41,7 @@ def check_player(player_data, state):
                 "isClassic": is_classic
             }
         },
-        # SE IL BOT DA ERRORE "Operation not found", 
-        # COPIA L'ID DAL TUO BROWSER (F12 -> Rete -> graphql -> Payload) E INCOLLALO QUI:
-        "extensions": {"operationId": "React/7d4e3a89e63b65e949646b9772390f727c621390fe40d"}
+        "extensions": {"operationId": OPERATION_ID}
     }
     
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN}
@@ -52,25 +52,25 @@ def check_player(player_data, state):
             raw_response = response.read().decode()
             data = json.loads(raw_response)
         
-        # Verifica errore API
-        if 'data' not in data:
-            print(f"Errore API per {p_id}: {raw_response}")
+        # Gestione errori
+        if 'errors' in data:
+            print(f"Errore API per {p_id}: {data['errors'][0]['message']}")
             return
 
-        # MarketSearchQuery ritorna una lista (nodes)
         nodes = data['data']['marketSearch']['nodes']
         if not nodes:
-            print(f"{p_id}: Nessuna carta trovata con isClassic={is_classic}")
+            print(f"{p_id}: Nessuna carta trovata.")
             return
             
-        # Prende la prima carta (la più economica ordinata di default)
+        # Prezzo
         price = nodes[0]['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
         
+        # Stato
         old_price = state.get(p_id, 0)
         if old_price != price:
             tipo = "Classic" if is_classic else "In-Season"
             print(f"Variazione {p_id} ({tipo}): {old_price} -> {price}")
-            send_email(f"Notifica Sorare {tipo}", f"Prezzo {p_id} ({tipo}) cambiato: da {old_price} a {price}")
+            send_email(f"Sorare: {p_id} ({tipo})", f"Prezzo cambiato: da {old_price} a {price}")
             state[p_id] = price
         else:
             print(f"{p_id}: Nessuna variazione ({price})")
