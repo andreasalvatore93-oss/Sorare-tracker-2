@@ -38,14 +38,15 @@ def check_sorare():
         soglia = target["soglia"]
         in_season_bool = "true" if tipo == "in_season" else "false"
         
-        # Query ottimizzata: rimosso il blocco "... on Card" per evitare il blocco 422
+        # Query corretta: usiamo amount e currency accettati dal tipo TokenOffer
         query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
             ... on Player {{
               lowestPriceAnyCard(rarities: [LIMITED], inSeason: {in_season_bool}) {{
                 liveSingleSaleOffer {{
-                  price
+                  amount
+                  currency
                 }}
               }}
             }}
@@ -68,19 +69,21 @@ def check_sorare():
                     card_data = player.get('lowestPriceAnyCard')
                     
                     if card_data and card_data.get('liveSingleSaleOffer'):
-                        price_raw = card_data['liveSingleSaleOffer'].get('price')
+                        offer = card_data['liveSingleSaleOffer']
+                        amount_raw = offer.get('amount')
+                        currency = offer.get('currency', 'EUR')
                         
-                        if price_raw is not None:
-                            prezzo = float(price_raw)
-                            print(f"LOG -> {nome} ({tipo}): Prezzo attuale {prezzo}€ | Soglia {soglia}€")
+                        if amount_raw is not None:
+                            prezzo = float(amount_raw)
+                            print(f"LOG -> {nome} ({tipo}): Offerta live: {prezzo} {currency} | Soglia impostata: {soglia}€")
                             
                             if prezzo <= soglia:
                                 send_email(
                                     f"🔔 ALERT SORARE: {nome} ({tipo})", 
-                                    f"La carta {tipo} di {nome} è scesa a {prezzo}€! (La tua soglia: {soglia}€)"
+                                    f"La carta {tipo} di {nome} è disponibile a {prezzo} {currency}! (La tua soglia: {soglia}€)"
                                 )
                     else:
-                        print(f"LOG -> {nome} ({tipo}): Nessuna carta attualmente sul mercato (Direct Offer).")
+                        print(f"LOG -> {nome} ({tipo}): Nessuna carta sul mercato in questo momento.")
         except urllib.error.HTTPError as e:
             error_body = e.read().decode('utf-8')
             print(f"Errore API Sorare per {slug} ({tipo}): Codice {e.code} - Dettaglio: {error_body}")
