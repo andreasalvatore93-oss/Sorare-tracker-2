@@ -2,7 +2,6 @@ import json
 import urllib.request
 import os
 
-# Carica il registro
 with open('players_registry.json', 'r') as f:
     registry = json.load(f)
 
@@ -16,8 +15,8 @@ HEADERS = {
 }
 
 def get_real_slug(name):
-    # Cerca il giocatore per nome e restituisce lo slug ufficiale
     url = 'https://api.sorare.com/graphql'
+    # Utilizziamo una struttura standard che il server accetta per la ricerca
     payload = {
         "operationName": "SearchPlayers",
         "variables": {"query": name},
@@ -30,7 +29,6 @@ def get_real_slug(name):
         return nodes[0]['slug'] if nodes else None
 
 def is_slug_valid(slug):
-    # Verifica se lo slug funziona davvero con la query di track.py
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
@@ -47,18 +45,17 @@ def is_slug_valid(slug):
 
 updated = False
 for p in registry:
-    # Se lo slug non è valido, cerchiamo quello giusto
     if not is_slug_valid(p['slug']):
         print(f"Slug errato per {p['id']}: {p['slug']}. Cerco quello corretto...")
         correct_slug = get_real_slug(p['id'])
         if correct_slug and correct_slug != p['slug']:
-            print(f"Trovato nuovo slug: {correct_slug}")
+            print(f"Aggiornato: {p['slug']} -> {correct_slug}")
             p['slug'] = correct_slug
             updated = True
 
 if updated:
     with open('players_registry.json', 'w') as f:
         json.dump(registry, f, indent=4)
-    print("Registro aggiornato automaticamente.")
+    print("Registro aggiornato.")
 else:
-    print("Tutti gli slug sono già validi.")
+    print("Nessuna modifica necessaria.")
