@@ -50,28 +50,35 @@ def check_player(player_data, state):
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
-            raw_data = response.read().decode()
-            data = json.loads(raw_data)
+            data = json.loads(response.read().decode())
         
         player_info = data.get('data', {}).get('anyPlayer')
         if not player_info:
-            print(f"ERRORE API per {p_id}: Nessun dato dal server. Risposta: {raw_data[:100]}")
-            return
-            
-        card = player_info.get('lowestPriceLimitedCard')
-        if not card:
-            print(f"{p_id}: Nessuna carta Limited 'Buy Now' disponibile.")
-            return
-            
-        offer = card.get('liveSingleSaleOffer')
-        if not offer:
-            return
-            
-        price_cents = offer.get('receiverSide', {}).get('amounts', {}).get('eurCents')
-        if price_cents is None:
+            print(f"ERRORE API per {p_id}: Nessun dato dal server.")
             return
 
-        price = price_cents / 100
+        # LOGICA AGGIORNATA: cerchiamo il prezzo minore tra In-Season e Classic
+        prices = []
+        
+        # 1. In-Season
+        in_season = player_info.get('lowestPriceLimitedCard')
+        if in_season and in_season.get('liveSingleSaleOffer'):
+            cents = in_season.get('liveSingleSaleOffer').get('receiverSide', {}).get('amounts', {}).get('eurCents')
+            if cents: prices.append(cents)
+            
+        # 2. Classic
+        classic = player_info.get('lowestPriceClassicLimitedCard')
+        if classic and classic.get('liveSingleSaleOffer'):
+            cents = classic.get('liveSingleSaleOffer').get('receiverSide', {}).get('amounts', {}).get('eurCents')
+            if cents: prices.append(cents)
+        
+        if not prices:
+            print(f"{p_id}: Nessuna carta Limited (In-Season o Classic) disponibile.")
+            return
+            
+        price = min(prices) / 100
+        
+        # Confronto con lo stato
         old_price = state.get(p_id, 0)
         if old_price != price:
             print(f"Variazione {p_id}: {old_price} -> {price}")
