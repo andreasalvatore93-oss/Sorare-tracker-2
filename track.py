@@ -38,30 +38,30 @@ def check_sorare():
         soglia = target["soglia"]
         in_season_bool = "true" if tipo == "in_season" else "false"
         
-        # Query corretta: ora entriamo dentro la carta e prendiamo il prezzo dell'offerta attiva
+        # Query ottimizzata: rimosso il blocco "... on Card" per evitare il blocco 422
         query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
             ... on Player {{
               lowestPriceAnyCard(rarities: [LIMITED], inSeason: {in_season_bool}) {{
-                ... on Card {{
-                  liveSingleSaleOffer {{
-                    price
-                  }}
+                liveSingleSaleOffer {{
+                  price
                 }}
               }}
             }}
           }}
         }}
         """
-        req = urllib.request.Request('https://api.sorare.com/graphql', data=json.dumps({'query': query}).encode('utf-8'), headers={'Content-Type': 'application/json'})
+        req = urllib.request.Request(
+            'https://api.sorare.com/graphql', 
+            data=json.dumps({'query': query}).encode('utf-8'), 
+            headers={'Content-Type': 'application/json'}
+        )
         
         try:
             with urllib.request.urlopen(req) as response:
                 res = json.loads(response.read().decode())
-                
-                # Questa riga ci mostrerà nei log la struttura precisa del prezzo
-                print(f"DIAGNOSTICA -> Risposta per {slug} ({tipo}): {res}")
+                print(f"LOG -> Risposta ricevuta per {slug} ({tipo}): {res}")
                 
                 if 'data' in res and res['data']['players'] and res['data']['players'][0]:
                     player = res['data']['players'][0]
@@ -72,17 +72,20 @@ def check_sorare():
                         
                         if price_raw is not None:
                             prezzo = float(price_raw)
-                            print(f"LOG -> {nome} ({tipo}): Prezzo di mercato rilevato: {prezzo} | Soglia impostata: {soglia}€")
+                            print(f"LOG -> {nome} ({tipo}): Prezzo attuale {prezzo}€ | Soglia {soglia}€")
                             
                             if prezzo <= soglia:
                                 send_email(
                                     f"🔔 ALERT SORARE: {nome} ({tipo})", 
-                                    f"La carta {tipo} di {nome} è scesa a {prezzo}€! (Soglia: {soglia}€)"
+                                    f"La carta {tipo} di {nome} è scesa a {prezzo}€! (La tua soglia: {soglia}€)"
                                 )
                     else:
-                        print(f"LOG -> {nome} ({tipo}): Nessuna carta attualmente sul mercato alle tue condizioni.")
+                        print(f"LOG -> {nome} ({tipo}): Nessuna carta attualmente sul mercato (Direct Offer).")
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode('utf-8')
+            print(f"Errore API Sorare per {slug} ({tipo}): Codice {e.code} - Dettaglio: {error_body}")
         except Exception as e:
-            print(f"Errore durante il controllo di {slug}: {e}")
+            print(f"Errore imprevisto per {slug}: {e}")
 
 if __name__ == '__main__':
     check_sorare()
