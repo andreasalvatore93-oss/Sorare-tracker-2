@@ -28,24 +28,23 @@ def send_email(subject, body):
 def check_sorare():
     log("--- INIZIO CONTROLLO CON SPORT: FOOTBALL ---")
     
-    # Query aggiornata con il parametro sport: FOOTBALL
-    query = """
-    query {
-      players(slugs: ["kylian-mbappe"], sport: FOOTBALL) {
-        ... on Player {
-          lowestPriceAnyCard(rarity: LIMITED, inSeason: true) {
-            liveSingleSaleOffer { 
-              receiverSide { 
-                amounts { 
-                  eurCents 
-                } 
-              } 
-            }
-          }
-        }
-      }
-    }
-    """
+   query = f"""
+        query {{
+          players(slugs: ["{slug}"]) {{
+            ... on Player {{
+              lowestPriceAnyCard(rarity: Limited, inSeason: {in_season_bool}) {{
+                liveSingleSaleOffer {{
+                  receiverSide {{
+                    amounts {{
+                      eurCents
+                    }}
+                  }}
+                }}
+              }}
+            }}
+          }}
+        }}
+        """
     
     try:
         req = urllib.request.Request('https://api.sorare.com/graphql', 
