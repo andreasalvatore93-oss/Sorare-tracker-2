@@ -25,7 +25,7 @@ def send_email(subject, body):
         server.quit()
         log("Email inviata con successo.")
     except Exception as e:
-        log(f"Errore invio mail: {e}")
+        log(f"Errore email: {e}")
 
 def check_sorare():
     log("--- SCRIPT AVVIATO ---")
@@ -42,12 +42,12 @@ def check_sorare():
         
         log(f"--- CONTROLLO: {nome} ({tipo}) ---")
         
-        # Query con rarity: Limited (con L maiuscola) e senza sport
+        # CORREZIONE: rarity: LIMITED (tutto maiuscolo)
         query = f"""
         query {{
           players(slugs: ["{slug}"]) {{
             ... on Player {{
-              lowestPriceAnyCard(rarity: Limited, inSeason: {in_season_bool}) {{
+              lowestPriceAnyCard(rarity: LIMITED, inSeason: {in_season_bool}) {{
                 liveSingleSaleOffer {{
                   receiverSide {{
                     amounts {{
@@ -68,7 +68,6 @@ def check_sorare():
             with urllib.request.urlopen(req) as response:
                 res = json.loads(response.read().decode())
                 
-                # Debug se il giocatore non viene trovato
                 if not res.get('data', {}).get('players'):
                     log(f"DEBUG - Nessun dato per {slug}. Risposta: {res}")
                     continue
