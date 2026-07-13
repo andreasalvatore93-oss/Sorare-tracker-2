@@ -2,6 +2,7 @@ import json
 import urllib.request
 import os
 import smtplib
+import time  # <--- Importante per il "respiro"
 from email.message import EmailMessage
 
 # Configurazione
@@ -27,7 +28,6 @@ def check_player(player_data, state):
     p_id = player_data['id']
     
     url = 'https://api.sorare.com/graphql'
-    # Query stabile
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
         "variables": {"onlyPrimary": False, "slug": slug},
@@ -40,15 +40,25 @@ def check_player(player_data, state):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        # Estrai la carta più economica
-        card = data['data']['anyPlayer']['lowestPriceLimitedCard']
+        # Controllo sicurezza: esiste la chiave 'data'?
+        if 'data' not in data:
+            print(f"Errore: Nessuna risposta valida per {p_id}")
+            return
+
+        # Estrai la carta
+        card = data['data']['anyPlayer'].get('lowestPriceLimitedCard')
         if not card:
-            print(f"{p_id}: Nessuna carta trovata")
+            print(f"{p_id}: Nessuna carta Limited disponibile al momento.")
             return
             
-        price = card['liveSingleSaleOffer']['receiverSide']['amounts']['eurCents'] / 100
+        # Controllo sicurezza: esiste il prezzo?
+        offer = card.get('liveSingleSaleOffer')
+        if not offer:
+            print(f"{p_id}: Nessuna offerta di vendita trovata.")
+            return
+
+        price = offer['receiverSide']['amounts']['eurCents'] / 100
         
-        # Confronta con l'ultimo prezzo salvato
         old_price = state.get(p_id, 0)
         if old_price != price:
             print(f"Variazione {p_id}: {old_price} -> {price}")
@@ -58,7 +68,7 @@ def check_player(player_data, state):
             print(f"{p_id}: Nessuna variazione ({price}€)")
             
     except Exception as e:
-        print(f"Errore per {p_id}: {e}")
+        print(f"Errore imprevisto per {p_id}: {e}")
 
 # Esecuzione
 with open('players.json', 'r') as f:
@@ -72,6 +82,7 @@ except:
 
 for p in players:
     check_player(p, state)
+    time.sleep(2)  # <--- Il bot aspetta 2 secondi prima del prossimo giocatore
 
 with open('state.json', 'w') as f:
     json.dump(state, f)
