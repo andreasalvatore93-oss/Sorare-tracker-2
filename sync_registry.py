@@ -2,7 +2,6 @@ import json
 import urllib.request
 import os
 
-# Carica il registro
 with open('players_registry.json', 'r') as f:
     registry = json.load(f)
 
@@ -12,14 +11,13 @@ CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 def get_correct_slug(player_id):
     url = 'https://api.sorare.com/graphql'
     
-    # Struttura richiesta che simula un browser
+    # Struttura richiesta ottimizzata
     payload = {
         "operationName": "SearchPlayers",
         "variables": {"query": player_id},
-        "query": "query SearchPlayers($query: String!) { searchPlayers(query: $query) { nodes { slug displayName } } }"
+        "extensions": {"operationId": "8b3f17d2a5d2b78125435905581977755f1a5857211848529367980313554449"}
     }
     
-    # Headers con User-Agent per evitare blocco 422
     headers = {
         'Content-Type': 'application/json',
         'Cookie': COOKIES,
@@ -27,8 +25,8 @@ def get_correct_slug(player_id):
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
     
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
     try:
-        req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             players = data.get('data', {}).get('searchPlayers', {}).get('nodes', [])
@@ -37,7 +35,6 @@ def get_correct_slug(player_id):
         print(f"Errore su {player_id}: {e}")
         return None
 
-# Esegui aggiornamento
 updated = False
 for p in registry:
     new_slug = get_correct_slug(p['id'])
