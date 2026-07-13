@@ -29,11 +29,10 @@ def check_player(player_data, state):
     p_id = player_data['id']
     
     url = 'https://api.sorare.com/graphql'
-    # Questa query è più ampia e dovrebbe includere tutti i dati di mercato
     payload = {
-        "operationName": "MarketplaceSearchQuery", 
-        "variables": {"slugs": [slug], "rarities": ["limited"]},
-        "extensions": {"operationId": "React/8651c890918738321287968531764014e854f4ba174c338"} 
+        "operationName": "AnyPlayerLayoutQuery",
+        "variables": {"onlyPrimary": False, "slug": slug},
+        "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
     
     headers = {
@@ -48,19 +47,23 @@ def check_player(player_data, state):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
         
-        # Estrattore dati Marketplace (logica diversa da AnyPlayer)
-        results = data.get('data', {}).get('cards', {}).get('nodes', [])
-        
-        # Filtriamo le offerte attive (senza distinzione Classic/In-Season, prendiamo il minimo assoluto)
+        player_info = data.get('data', {}).get('anyPlayer', {})
         prices = []
-        for card in results:
-            offer = card.get('liveSingleSaleOffer')
-            if offer:
-                cents = offer.get('receiverSide', {}).get('amounts', {}).get('eurCents')
-                if cents: prices.append(cents)
+        
+        # 1. In-Season
+        is_card = player_info.get('lowestPriceLimitedCard')
+        if is_card and is_card.get('liveSingleSaleOffer'):
+            cents = is_card.get('liveSingleSaleOffer', {}).get('receiverSide', {}).get('amounts', {}).get('eurCents')
+            if cents: prices.append(cents)
+            
+        # 2. Classic
+        cl_card = player_info.get('lowestPriceClassicLimitedCard')
+        if cl_card and cl_card.get('liveSingleSaleOffer'):
+            cents = cl_card.get('liveSingleSaleOffer', {}).get('receiverSide', {}).get('amounts', {}).get('eurCents')
+            if cents: prices.append(cents)
         
         if not prices:
-            print(f"{p_id}: Nessuna offerta attiva trovata.")
+            print(f"{p_id}: Nessuna carta Limited disponibile.")
             return
             
         price = min(prices) / 100
@@ -68,7 +71,7 @@ def check_player(player_data, state):
         old_price = state.get(p_id, 0)
         if old_price != price:
             print(f"Variazione {p_id}: {old_price}€ -> {price}€")
-            send_email(f"Notifica Sorare: {p_id}", f"Prezzo minimo {p_id} aggiornato: {price}€")
+            send_email(f"Notifica Sorare: {p_id}", f"Il prezzo minimo per {p_id} è ora {price}€")
             state[p_id] = price
         else:
             print(f"{p_id}: {price}€ (nessuna variazione)")
