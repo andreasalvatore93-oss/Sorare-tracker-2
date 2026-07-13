@@ -2,7 +2,7 @@ name: Sorare Price Check
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"  # Impostato a 5 minuti
   workflow_dispatch: {}
 
 permissions:
@@ -25,6 +25,7 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }} # <--- AGGIUNTO QUI
         run: python track.py
 
       - name: Save state
