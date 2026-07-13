@@ -16,17 +16,21 @@ HEADERS = {
 
 def get_real_slug(name):
     url = 'https://api.sorare.com/graphql'
-    # Utilizziamo una struttura standard che il server accetta per la ricerca
+    # Struttura semplificata che tenta di bypassare il 422
     payload = {
         "operationName": "SearchPlayers",
         "variables": {"query": name},
         "query": "query SearchPlayers($query: String!) { searchPlayers(query: $query) { nodes { slug } } }"
     }
     req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=HEADERS)
-    with urllib.request.urlopen(req) as response:
-        data = json.loads(response.read().decode())
-        nodes = data.get('data', {}).get('searchPlayers', {}).get('nodes', [])
-        return nodes[0]['slug'] if nodes else None
+    try:
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode())
+            nodes = data.get('data', {}).get('searchPlayers', {}).get('nodes', [])
+            return nodes[0]['slug'] if nodes else None
+    except Exception as e:
+        print(f"Skipping {name} (Errore ricerca API: {e})")
+        return None
 
 def is_slug_valid(slug):
     url = 'https://api.sorare.com/graphql'
@@ -46,7 +50,7 @@ def is_slug_valid(slug):
 updated = False
 for p in registry:
     if not is_slug_valid(p['slug']):
-        print(f"Slug errato per {p['id']}: {p['slug']}. Cerco quello corretto...")
+        print(f"Slug errato per {p['id']}: {p['slug']}. Tentativo ricerca...")
         correct_slug = get_real_slug(p['id'])
         if correct_slug and correct_slug != p['slug']:
             print(f"Aggiornato: {p['slug']} -> {correct_slug}")
