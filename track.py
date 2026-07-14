@@ -61,23 +61,20 @@ def get_prices_by_season(data):
     def find_price_data(obj):
         if not isinstance(obj, dict): return
         
-        # DEBUG: se vediamo un oggetto che sembra contenere un prezzo, loggiamolo
         if 'eurCents' in obj or 'wei' in obj:
-            # log(f"DEBUG TROVATO: {obj}") # Decommenta questa riga se vuoi vedere tutto
-            val_eur = obj.get('eurCents')
-            val_wei = obj.get('wei')
-            
             price = None
-            if val_eur is not None: price = {'price': float(val_eur) / 100, 'currency': 'EUR'}
-            elif val_wei is not None: price = {'price': float(val_wei) / 1e18, 'currency': 'ETH'}
+            if obj.get('eurCents') is not None: price = {'price': float(obj['eurCents']) / 100, 'currency': 'EUR'}
+            elif obj.get('wei') is not None: price = {'price': float(obj['wei']) / 1e18, 'currency': 'ETH'}
             
             if price:
-                # Cerca l'anno (più flessibile)
-                year = 2026
-                # Cerchiamo 'season' ovunque nell'oggetto padre
+                # Debug avanzato: Cerchiamo anno
+                year = 0
                 season = obj.get('season')
                 if isinstance(season, dict):
-                    year = int(season.get('year', 2026))
+                    year = int(season.get('year', 0))
+                
+                # LOG DI DEBUG PER CAPIRE COME CLASSIFICA
+                # log(f"DEBUG PREZZO: {price['price']}€ | Anno trovato: {year}") 
                 
                 cat = 'current' if year >= 2025 else 'classic'
                 if not prices[cat] or price['price'] < prices[cat]['price']:
@@ -109,24 +106,23 @@ async def check_player(session, player_data, eth_rate):
                 data = await response.json()
                 season_prices = get_prices_by_season(data)
                 
-                # --- LOG DI DEBUG FONDAMENTALE ---
-                log(f"DEBUG {slug}: Prezzi estratti -> {season_prices}")
+                log(f"DEBUG {slug}: Risultato finale -> {season_prices}")
                 
-                if not season_prices['current'] and not season_prices['classic']:
-                    return
-
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
+                    
                     db_id = p_id if s_type == 'current' else f"{p_id}_{s_type}"
                     new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
                     old_data = get_player_data(db_id)
+                    
                     if old_data:
                         old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05 and drop_percent < 0.50:
                             log(f"ALERT! {slug} ({s_type}) sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
+                    
                     update_player_data(db_id, new_data['price'], new_data['currency'])
         except Exception as e:
             log(f"ERRORE CRITICO {slug}: {str(e)}")
