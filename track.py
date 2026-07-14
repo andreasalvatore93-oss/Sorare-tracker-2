@@ -25,6 +25,21 @@ def send_email(subject, body):
             smtp.send_message(msg)
     except: pass
 
+def load_and_clean_players():
+    """Carica e pulisce il registro all'avvio"""
+    try:
+        with open('players_registry.json', 'r') as f:
+            players = json.load(f)
+        # Rimuove duplicati basandosi sull'id
+        unique = {p['id']: p for p in players if p.get('id') and p.get('slug')}
+        cleaned = list(unique.values())
+        with open('players_registry.json', 'w') as f:
+            json.dump(cleaned, f, indent=2)
+        return cleaned
+    except Exception as e:
+        print(f"Errore caricamento registro: {e}")
+        return []
+
 def get_price_from_json_recursive(data):
     prices = []
     def extract_prices(obj):
@@ -42,7 +57,6 @@ def check_player(player_data, state):
     p_id = player_data['id']
     slug = player_data['slug']
     url = 'https://api.sorare.com/graphql'
-    
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
         "variables": {"onlyPrimary": False, "slug": slug},
@@ -67,7 +81,8 @@ def check_player(player_data, state):
     except Exception as e:
         print(f"Errore {p_id}: {e}")
 
-with open('players_registry.json', 'r') as f: players = json.load(f)
+# --- Esecuzione Principale ---
+players = load_and_clean_players()
 try:
     with open('state.json', 'r') as f: state = json.load(f)
 except: state = {}
