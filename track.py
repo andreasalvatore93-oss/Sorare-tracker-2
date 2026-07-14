@@ -71,22 +71,12 @@ def get_prices_by_season(data):
             currency = 'ETH'
             
         if price_val is not None:
-            # Logica migliorata: cerchiamo attivamente l'anno
-            year = 2026 # Default
-            season_obj = obj.get('season')
-            if isinstance(season_obj, dict):
-                year = int(season_obj.get('year', 2026))
-            elif 'seasonYear' in obj:
-                year = int(obj['seasonYear'])
-            elif 'year' in obj: # Spesso le carte classic hanno solo 'year'
-                year = int(obj['year'])
-            
-            # Se la carta è pre-2026, è classic
-            cat = 'current' if year >= 2026 else 'classic'
+            # DEBUG: Logghiamo tutto quello che troviamo
+            year = obj.get('seasonYear') or (obj.get('season', {}).get('year') if isinstance(obj.get('season'), dict) else 2026)
+            cat = 'current' if int(year) >= 2026 else 'classic'
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
-            # Debug visivo: se vedi 'CLASSIC' qui, il parser funziona
-            log(f"SCAN: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency}")
+            log(f"FOUND: {cat.upper()} (Anno {year}) - Prezzo: {price_val} {currency}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
@@ -103,19 +93,13 @@ def get_prices_by_season(data):
 async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
-    
     url = 'https://api.sorare.com/graphql'
     
+    # Rimuoviamo il filtro seasonEligibility per vedere se tornano le classic
     payload = {
         "operationName": "LazyPriceGraphQuery",
-        "variables": {
-            "playerSlug": slug, 
-            "rarity": "limited", 
-            "seasonEligibility": "CLASSIC"
-        },
-        "extensions": {
-            "operationId": "React/3a17d0b9e886a8c514ba3352073a63a87b7d270b4397b2e10eeb0276d54ceb6b"
-        }
+        "variables": {"playerSlug": slug, "rarity": "limited"},
+        "extensions": {"operationId": "React/3a17d0b9e886a8c514ba3352073a63a87b7d270b4397b2e10eeb0276d54ceb6b"}
     }
     
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
@@ -125,44 +109,33 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
+                # SALVATAGGIO DEBUG
+                with open('sorare_debug.json', 'w') as f:
+                    json.dump(data, f, indent=4)
+                
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati: {season_prices}")
                 
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
-                    
                     db_id = f"{p_id}_{s_type}"
                     new_price_eur = new_data['price_in_eur']
                     old_data = get_player_data(db_id)
-                    
                     if old_data:
                         old_price_eur = old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
-                    
                     update_player_data(db_id, new_price_eur, 'EUR')
         except Exception as e:
             log(f"ERRORE CRITICO {slug}: {str(e)}")
 
 async def main():
     init_db()
-    if not os.path.exists('players_registry.json'): 
-        log("File registry non trovato!")
-        return
-        
-    with open('players_registry.json', 'r') as f: 
-        players = json.load(f)
-    
-    try:
-        with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
-            eth_rate = float(json.loads(r.read().decode())['ethereum']['eur'])
-    except: 
-        eth_rate = 3000.0
-    
+    with open('players_registry.json', 'r') as f: players = json.load(f)
     async with aiohttp.ClientSession() as session:
-        tasks = [check_player(session, p, eth_rate) for p in players]
+        tasks = [check_player(session, p, 3000.0) for p in players]
         await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
