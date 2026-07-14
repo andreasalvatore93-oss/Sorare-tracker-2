@@ -16,8 +16,18 @@ NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # flush=True forza la scrittura immediata dell'output
     print(f"[{timestamp}] {message}", flush=True)
+
+def get_eth_to_eur():
+    """Recupera il tasso di cambio ETH -> EUR in tempo reale"""
+    try:
+        url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            return float(data['ethereum']['eur'])
+    except Exception as e:
+        log(f"Errore recupero tasso ETH (uso fallback 3000): {e}")
+        return 3000.0 # Fallback di sicurezza
 
 def send_email(subject, body):
     if not EMAIL_USER or not EMAIL_PASS: 
@@ -35,19 +45,16 @@ def send_email(subject, body):
         log(f"Errore invio email: {e}")
 
 def load_and_clean_players():
-    """Carica e pulisce il registro all'avvio"""
     try:
         with open('players_registry.json', 'r') as f:
             players = json.load(f)
         unique = {p['id']: p for p in players if p.get('id') and p.get('slug')}
-        cleaned = list(unique.values())
-        return cleaned
+        return list(unique.values())
     except Exception as e:
         log(f"Errore caricamento registro: {e}")
         return []
 
 def get_price_from_json_recursive(obj):
-    """Restituisce {'price': valore, 'currency': 'EUR' o 'ETH'}"""
     if isinstance(obj, dict):
         if obj.get('eurCents') is not None and isinstance(obj['eurCents'], (int, float)):
             return {'price': obj['eurCents'] / 100, 'currency': 'EUR'}
@@ -62,7 +69,7 @@ def get_price_from_json_recursive(obj):
             if res: return res
     return None
 
-def check_player(player_data, state):
+def check_player(player_data, state, eth_rate):
     p_id = player_data['id']
     url = 'https://api.sorare.com/graphql'
     payload = {
@@ -79,22 +86,22 @@ def check_player(player_data, state):
             new_data = get_price_from_json_recursive(data)
             
             if new_data:
-                old_data = state.get(p_id)
-                if isinstance(old_data, (int, float)):
-                    old_data = {'price': float(old_data), 'currency': 'EUR'}
+                # Normalizziamo tutto in EUR per il confronto
+                new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
                 
-                if old_data and isinstance(old_data, dict) and old_data.get('currency') == new_data['currency']:
-                    old_price = old_data.get('price', 0)
-                    new_price = new_data['price']
-                    if old_price > 0:
-                        drop_percent = (old_price - new_price) / old_price
-                        if new_price < old_price and drop_percent >= 0.05:
-                            log(f"ALERT! {p_id} sceso: {old_price} {old_data['currency']} -> {new_price} {new_data['currency']}")
-                            send_email(f"ALERT Sorare: {p_id}", f"Il prezzo è sceso del {drop_percent:.1%}.\nNuovo: {new_price} {new_data['currency']}\nPrecedente: {old_price} {old_data['currency']}")
+                old_data = state.get(p_id)
+                if old_data:
+                    old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
+                    
+                    if old_price_eur > 0:
+                        drop_percent = (old_price_eur - new_price_eur) / old_price_eur
+                        if new_price_eur < old_price_eur and drop_percent >= 0.05:
+                            log(f"ALERT! {p_id} sceso: {old_data['price']} {old_data['currency']} ({old_price_eur:.2f}€) -> {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)")
+                            send_email(f"ALERT Sorare: {p_id}", f"Prezzo sceso del {drop_percent:.1%}.\nPrecedente: {old_data['price']} {old_data['currency']} (~{old_price_eur:.2f}€)\nNuovo: {new_data['price']} {new_data['currency']} (~{new_price_eur:.2f}€)")
                         else:
-                            log(f"{p_id}: {new_price} {new_data['currency']} (nessuna variazione)")
+                            log(f"{p_id}: {new_data['price']} {new_data['currency']} (nessuna variazione significativa)")
                 else:
-                    log(f"{p_id}: {new_data['price']} {new_data['currency']} (inizializzazione o cambio valuta)")
+                    log(f"{p_id}: {new_data['price']} {new_data['currency']} (inizializzazione)")
                 
                 state[p_id] = new_data
             else:
@@ -103,6 +110,8 @@ def check_player(player_data, state):
         log(f"Errore {p_id}: {e}")
 
 # --- Esecuzione Principale ---
+eth_rate = get_eth_to_eur()
+log(f"Tasso ETH/EUR recuperato: {eth_rate}")
 players = load_and_clean_players()
 try:
     with open('state.json', 'r') as f: 
@@ -111,8 +120,7 @@ except:
     state = {}
 
 for p in players:
-    check_player(p, state)
-    # Jitter: pausa casuale tra 1.5 e 3.5 secondi
+    check_player(p, state, eth_rate)
     time.sleep(random.uniform(1.5, 3.5)) 
 
 with open('state.json', 'w') as f: 
