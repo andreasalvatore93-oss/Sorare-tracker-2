@@ -55,24 +55,40 @@ def get_prices_by_season(data):
     def find_price_data(obj, path="root"):
         if not isinstance(obj, dict): return
         
-        # DEBUG: Stampiamo ogni volta che troviamo un campo prezzo
-        if 'eurCents' in obj or 'wei' in obj:
-            log(f"DEBUG: Prezzo trovato in path: {path}")
+        # Estraiamo i valori in modo sicuro
+        eur_cents = obj.get('eurCents')
+        wei = obj.get('wei')
+        
+        # Se abbiamo dati di prezzo validi
+        if eur_cents is not None or wei is not None:
+            price_val = None
+            currency = None
             
-            price_val = float(obj.get('eurCents'))/100 if obj.get('eurCents') is not None else float(obj.get('wei'))/1e18
-            currency = 'EUR' if obj.get('eurCents') is not None else 'ETH'
+            # Conversione sicura
+            if eur_cents is not None:
+                try:
+                    price_val = float(eur_cents) / 100
+                    currency = 'EUR'
+                except (ValueError, TypeError): pass
+            elif wei is not None:
+                try:
+                    price_val = float(wei) / 1e18
+                    currency = 'ETH'
+                except (ValueError, TypeError): pass
             
-            # Tentiamo di estrarre la stagione
-            season = obj.get('season')
-            year = 2026 # Default
-            if isinstance(season, dict):
-                year = int(season.get('year', 2026))
-            
-            cat = 'current' if year >= 2026 else 'classic'
-            
-            if not prices[cat] or price_val < prices[cat]['price']:
-                prices[cat] = {'price': price_val, 'currency': currency}
-                log(f"DEBUG: Salvato prezzo {cat}: {price_val} {currency}")
+            if price_val is not None:
+                # Estraiamo la stagione
+                season = obj.get('season')
+                year = 2026 # Default se non trovata
+                if isinstance(season, dict):
+                    year = int(season.get('year', 2026))
+                
+                cat = 'current' if year >= 2026 else 'classic'
+                
+                # Salviamo solo se è il prezzo più basso trovato finora
+                if not prices[cat] or price_val < prices[cat]['price']:
+                    prices[cat] = {'price': price_val, 'currency': currency}
+                    log(f"DEBUG: Trovato prezzo {cat}: {price_val} {currency} (Stagione: {year})")
 
         for k, v in obj.items():
             new_path = f"{path}.{k}"
@@ -101,7 +117,6 @@ async def check_player(session, player_data, eth_rate):
                 data = await response.json()
                 season_prices = get_prices_by_season(data)
                 
-                # Se arriviamo qui, i log di DEBUG nel terminale di GitHub ci diranno dove fallisce
                 log(f"Analisi {slug} completata. Risultati: {season_prices}")
                 
                 for s_type in ['current', 'classic']:
