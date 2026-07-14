@@ -1,4 +1,4 @@
-import json
+track_content = r"""import json
 import os
 import asyncio
 import aiohttp
@@ -76,7 +76,8 @@ def get_prices_by_season(data):
             season = obj.get('season')
             if isinstance(season, dict):
                 year = int(season.get('year', 2026))
-                cat = 'current' if year >= 2025 else 'classic'
+                # AGGIORNAMENTO: Soglia 2026 per definire la categoria
+                cat = 'current' if year >= 2026 else 'classic'
             
             if not prices[cat] or price_val < prices[cat]['price']:
                 prices[cat] = {'price': price_val, 'currency': currency}
@@ -145,4 +146,7 @@ async def main():
         await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main())"""
+
+with open('track.py', 'w') as f:
+    f.write(track_content)
