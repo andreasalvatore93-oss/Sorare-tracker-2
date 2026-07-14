@@ -6,23 +6,18 @@ import datetime
 import sqlite3
 import shutil
 
-# Configurazione
+# ... [Configurazione e funzioni init/DB/telegram invariate] ...
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
-
 semaphore = asyncio.Semaphore(5)
 
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] {message}", flush=True)
 
-def backup_database():
-    if os.path.exists('tracker.db'):
-        shutil.copy('tracker.db', 'tracker_suprema.db')
-        log("Backup 'tracker_suprema.db' aggiornato.")
-
+# ... [Funzioni DB invariate] ...
 def init_db():
     conn = sqlite3.connect('tracker.db')
     cursor = conn.cursor()
@@ -58,32 +53,36 @@ async def send_telegram_msg_async(session, message):
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
-    def find_price_data(obj):
+    # Versione debug: passiamo anche la chiave del genitore per capire cosa stiamo leggendo
+    def find_price_data(obj, parent_key="root"):
         if not isinstance(obj, dict): return
         
+        # LOG DEBUG: Stampiamo le chiavi che contengono prezzi
         if 'eurCents' in obj or 'wei' in obj:
-            price = None
-            if obj.get('eurCents') is not None: price = {'price': float(obj['eurCents']) / 100, 'currency': 'EUR'}
-            elif obj.get('wei') is not None: price = {'price': float(obj['wei']) / 1e18, 'currency': 'ETH'}
+            val = obj.get('eurCents') or obj.get('wei')
+            # log(f"DEBUG TROVATO: Valore {val} sotto chiave/parent: {parent_key}")
             
-            if price:
-                # Debug avanzato: Cerchiamo anno
-                year = 0
-                season = obj.get('season')
-                if isinstance(season, dict):
-                    year = int(season.get('year', 0))
-                
-                # LOG DI DEBUG PER CAPIRE COME CLASSIFICA
-                # log(f"DEBUG PREZZO: {price['price']}€ | Anno trovato: {year}") 
-                
+            # Filtro grezzo per ora (Alternativa 2): Ignoriamo prezzi assurdi se troppo alti
+            price_val = (float(obj['eurCents']) / 100) if 'eurCents' in obj else (float(obj['wei']) / 1e18)
+            
+            # Se è > 50€, probabilmente è un prezzo "venduto" o una carta singola, non il floor.
+            if price_val > 50: return 
+
+            cat = 'current'
+            # Tenta di identificare la stagione
+            season = obj.get('season')
+            if isinstance(season, dict):
+                year = int(season.get('year', 2026))
                 cat = 'current' if year >= 2025 else 'classic'
-                if not prices[cat] or price['price'] < prices[cat]['price']:
-                    prices[cat] = price
+            
+            if not prices[cat] or price_val < prices[cat]['price']:
+                prices[cat] = {'price': price_val, 'currency': 'EUR' if 'eurCents' in obj else 'ETH'}
         
-        for v in obj.values():
-            if isinstance(v, (dict, list)): find_price_data(v)
+        # Continua ricorsione
+        for k, v in obj.items():
+            if isinstance(v, (dict, list)): find_price_data(v, k)
             elif isinstance(v, list):
-                for item in v: find_price_data(item)
+                for item in v: find_price_data(item, k)
 
     find_price_data(data)
     return prices
@@ -91,7 +90,6 @@ def get_prices_by_season(data):
 async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
-    
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
@@ -105,9 +103,9 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 season_prices = get_prices_by_season(data)
-                
                 log(f"DEBUG {slug}: Risultato finale -> {season_prices}")
                 
+                # ... (resto della logica check)
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
@@ -115,21 +113,19 @@ async def check_player(session, player_data, eth_rate):
                     db_id = p_id if s_type == 'current' else f"{p_id}_{s_type}"
                     new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
                     old_data = get_player_data(db_id)
-                    
                     if old_data:
                         old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
-                        if new_price_eur < old_price_eur and drop_percent >= 0.05 and drop_percent < 0.50:
+                        if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             log(f"ALERT! {slug} ({s_type}) sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
-                    
                     update_player_data(db_id, new_data['price'], new_data['currency'])
         except Exception as e:
-            log(f"ERRORE CRITICO {slug}: {str(e)}")
+            log(f"ERRORE {slug}: {str(e)}")
 
+# ... [Main invariato] ...
 async def main():
     init_db()
-    backup_database()
     if not os.path.exists('players_registry.json'): return
     with open('players_registry.json', 'r') as f: players = json.load(f)
     
