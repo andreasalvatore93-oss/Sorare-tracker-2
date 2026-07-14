@@ -1,6 +1,6 @@
 import json
 import urllib.request
-import urllib.parse # Aggiunto per formattare il messaggio Telegram
+import urllib.parse
 import os
 import time
 import smtplib
@@ -14,7 +14,6 @@ CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
 EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
-# Nuove variabili per Telegram
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
 
@@ -33,17 +32,31 @@ def get_eth_to_eur():
         log(f"Errore recupero tasso ETH (uso fallback 3000): {e}")
         return 3000.0 
 
+def send_email(subject, body):
+    if not EMAIL_USER or not EMAIL_PASS: 
+        return
+    msg = EmailMessage()
+    msg.set_content(body)
+    msg['Subject'] = subject
+    msg['From'] = EMAIL_USER
+    msg['To'] = NOTIFY_EMAIL
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_USER, EMAIL_PASS)
+            smtp.send_message(msg)
+    except Exception as e:
+        log(f"Errore invio email: {e}")
+
+# Funzione invio Telegram aggiornata con HTML
 def send_telegram_msg(player_name, message):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
     
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    
-    # Usiamo 'HTML' invece di 'Markdown'
     params = {
         'chat_id': TELEGRAM_CHAT_ID,
         'text': message,
-        'parse_mode': 'HTML'
+        'parse_mode': 'HTML' # Modalità HTML
     }
     query_string = urllib.parse.urlencode(params)
     full_url = f"{url}?{query_string}"
@@ -51,12 +64,6 @@ def send_telegram_msg(player_name, message):
     try:
         with urllib.request.urlopen(full_url, timeout=5) as response:
             pass 
-    except Exception as e:
-        log(f"Errore invio Telegram: {e}")
-    
-    try:
-        with urllib.request.urlopen(full_url, timeout=5) as response:
-            pass # Messaggio inviato
     except Exception as e:
         log(f"Errore invio Telegram: {e}")
 
@@ -113,12 +120,12 @@ def check_player(player_data, state, eth_rate):
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             log(f"ALERT! {p_id} sceso: {old_data['price']} {old_data['currency']} ({old_price_eur:.2f}€) -> {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)")
                             
-                            # Preparazione messaggio Telegram
-link = f"https://sorare.com/cards/players/{player_data['slug']}"
-msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)\n\n<a href='{link}'>Clicca qui per le offerte</a>"
+                            # Preparazione messaggio con tag HTML
+                            link = f"https://sorare.com/cards/players/{player_data['slug']}"
+                            msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)\n\n<a href='{link}'>Clicca qui per le offerte</a>"
                             
                             send_email(f"ALERT Sorare: {p_id}", f"Prezzo sceso del {drop_percent:.1%}.\nPrecedente: {old_data['price']} {old_data['currency']} (~{old_price_eur:.2f}€)\nNuovo: {new_data['price']} {new_data['currency']} (~{new_price_eur:.2f}€)")
-                            send_telegram_msg(p_id, msg_text) # Invio notifica
+                            send_telegram_msg(p_id, msg_text) 
                         else:
                             log(f"{p_id}: {new_data['price']} {new_data['currency']} (nessuna variazione significativa)")
                 else:
