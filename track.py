@@ -53,7 +53,7 @@ async def send_telegram_msg_async(session, message):
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
-    # Funzione per trovare ricorsivamente tutti i blocchi TokenPrice
+    # Trova tutti i blocchi TokenPrice (sia Current che Classic)
     token_prices = []
     def find_token_prices(obj):
         if isinstance(obj, dict):
@@ -71,9 +71,10 @@ def get_prices_by_season(data):
         amounts = tp.get('amounts', {})
         card = tp.get('card', {})
         
-        # Estrattore prezzo
         price_val = None
         currency = None
+        
+        # Estrazione Prezzo (priorità EUR, poi USD)
         if amounts.get('eurCents'):
             price_val = float(amounts['eurCents']) / 100
             currency = 'EUR'
@@ -82,13 +83,14 @@ def get_prices_by_season(data):
             currency = 'USD'
             
         if price_val is not None:
-            # Estrattore Anno (ora guarda nel posto giusto!)
+            # Determinazione Anno
             year_raw = card.get('seasonYear')
             year = int(year_raw) if year_raw else 2026
             
             cat = 'current' if year >= 2026 else 'classic'
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
+            # Log di debug per vedere se cattura tutto
             log(f"DETECTED: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
@@ -101,6 +103,7 @@ async def check_player(session, player_data):
     p_id = player_data.get('id')
     url = 'https://api.sorare.com/graphql'
     
+    # Payload base per ottenere sia Current che Classic
     payload = {
         "operationName": "LazyPriceGraphQuery",
         "variables": {"playerSlug": slug, "rarity": "limited"},
@@ -117,6 +120,7 @@ async def check_player(session, player_data):
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati: {season_prices}")
                 
+                # Controllo Prezzi e invio alert
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
