@@ -13,9 +13,9 @@ TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
 # CONFIGURAZIONE FILTRI
-MIN_PRICE_EUR = 2.0
-MIN_L5_SCORE = 45
-MIN_DISCOUNT = 0.05  # 5% di sconto richiesto
+MIN_PRICE_EUR = 0.1
+MIN_L5_SCORE = 0
+MIN_DISCOUNT = -1.0  # Accetta qualsiasi prezzo, anche se non è un vero sconto
 
 semaphore = asyncio.Semaphore(5)
 
