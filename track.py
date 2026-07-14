@@ -140,6 +140,10 @@ def check_player(player_data, state, eth_rate):
 # --- Esecuzione Principale ---
 eth_rate = get_eth_to_eur()
 log(f"Tasso ETH/EUR recuperato: {eth_rate}")
+
+# RIGA DI TEST (Rimuovila dopo aver ricevuto la notifica!)
+send_telegram_msg("TEST", "🔥 <b>Bot operativo!</b>\nIl sistema di notifiche Telegram è correttamente collegato.")
+
 players = load_and_clean_players()
 try:
     with open('state.json', 'r') as f: 
