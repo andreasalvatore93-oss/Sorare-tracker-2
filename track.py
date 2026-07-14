@@ -13,7 +13,8 @@ EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
 def send_email(subject, body):
-    if not EMAIL_USER or not EMAIL_PASS: return
+    if not EMAIL_USER or not EMAIL_PASS: 
+        return
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
@@ -23,10 +24,11 @@ def send_email(subject, body):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_USER, EMAIL_PASS)
             smtp.send_message(msg)
-    except: pass
+    except Exception as e:
+        print(f"Errore invio email: {e}")
 
 def load_and_clean_players():
-    """Carica e pulisce il registro all'avvio"""
+    """Carica e pulisce il registro all'avvio per evitare duplicati"""
     try:
         with open('players_registry.json', 'r') as f:
             players = json.load(f)
@@ -45,10 +47,13 @@ def get_price_from_json_recursive(data):
     def extract_prices(obj):
         if isinstance(obj, dict):
             for k, v in obj.items():
-                if k == 'eurCents' and isinstance(v, (int, float)): prices.append(v)
-                else: extract_prices(v)
+                if k == 'eurCents' and isinstance(v, (int, float)): 
+                    prices.append(v)
+                else: 
+                    extract_prices(v)
         elif isinstance(obj, list):
-            for item in obj: extract_prices(item)
+            for item in obj: 
+                extract_prices(item)
     extract_prices(data)
     valid = [p for p in prices if p > 0]
     return min(valid) / 100 if valid else None
@@ -70,12 +75,20 @@ def check_player(player_data, state):
             price = get_price_from_json_recursive(json.loads(response.read().decode()))
             if price:
                 old_price = state.get(p_id, 0)
-                if old_price != price:
-                    print(f"{p_id}: {old_price}€ -> {price}€")
-                    send_email(f"Notifica Sorare: {p_id}", f"Prezzo aggiornato: {price}€")
-                    state[p_id] = price
+                
+                # Logica soglia 5%
+                if old_price > 0:
+                    drop_percent = (old_price - price) / old_price
+                    if price < old_price and drop_percent >= 0.05:
+                        print(f"ALERT! {p_id} sceso del {drop_percent:.1%}: {old_price}€ -> {price}€")
+                        send_email(f"ALERT Prezzo Sorare: {p_id}", f"Il prezzo è sceso del {drop_percent:.1%}.\nNuovo prezzo: {price}€\nPrezzo precedente: {old_price}€")
+                    else:
+                        print(f"{p_id}: {price}€ (nessuna variazione significativa)")
                 else:
-                    print(f"{p_id}: {price}€ (nessuna variazione)")
+                    print(f"{p_id}: {price}€ (nuovo prezzo impostato)")
+                
+                # Aggiorniamo sempre lo stato col nuovo prezzo per il prossimo confronto
+                state[p_id] = price 
             else:
                 print(f"{p_id}: Nessun prezzo trovato")
     except Exception as e:
@@ -84,11 +97,14 @@ def check_player(player_data, state):
 # --- Esecuzione Principale ---
 players = load_and_clean_players()
 try:
-    with open('state.json', 'r') as f: state = json.load(f)
-except: state = {}
+    with open('state.json', 'r') as f: 
+        state = json.load(f)
+except: 
+    state = {}
 
 for p in players:
     check_player(p, state)
     time.sleep(1) 
 
-with open('state.json', 'w') as f: json.dump(state, f)
+with open('state.json', 'w') as f: 
+    json.dump(state, f, indent=2)
