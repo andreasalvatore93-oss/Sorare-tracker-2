@@ -3,10 +3,8 @@ import os
 import asyncio
 import aiohttp
 import datetime
-import smtplib
 import sqlite3
 import shutil
-from email.message import EmailMessage
 
 # Configurazione
 COOKIES = os.environ.get('SORARE_COOKIE')
@@ -14,28 +12,21 @@ CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
-semaphore = asyncio.Semaphore(10)
+semaphore = asyncio.Semaphore(5) # Ridotto per sicurezza
 
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] {message}", flush=True)
 
-# --- Backup e Database ---
 def backup_database():
     if os.path.exists('tracker.db'):
         shutil.copy('tracker.db', 'tracker_suprema.db')
-        log("Copia suprema creata/aggiornata.")
+        log("Backup 'tracker_suprema.db' aggiornato.")
 
 def init_db():
     conn = sqlite3.connect('tracker.db')
     cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS players (
-            id TEXT PRIMARY KEY,
-            price REAL,
-            currency TEXT
-        )
-    ''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS players (id TEXT PRIMARY KEY, price REAL, currency TEXT)''')
     conn.commit()
     conn.close()
 
@@ -50,8 +41,7 @@ def get_player_data(p_id):
 def update_player_data(p_id, price, currency):
     conn = sqlite3.connect('tracker.db')
     cursor = conn.cursor()
-    cursor.execute("INSERT OR REPLACE INTO players (id, price, currency) VALUES (?, ?, ?)", 
-                   (p_id, price, currency))
+    cursor.execute("INSERT OR REPLACE INTO players (id, price, currency) VALUES (?, ?, ?)", (p_id, price, currency))
     conn.commit()
     conn.close()
 
@@ -63,57 +53,47 @@ async def send_telegram_msg_async(session, message):
         async with session.post(url, json=payload) as response:
             pass
     except Exception as e:
-        log(f"Errore invio Telegram: {e}")
+        log(f"Errore Telegram: {e}")
 
-# --- Logica Estrazione Prezzi (Debuggata) ---
+# --- Estrattore potenziato ---
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
-    # Debug: Se non trova nulla, dobbiamo capire perché
-    found_any = False
-    
-    def search_node(node):
-        nonlocal found_any
-        if not isinstance(node, dict): return
+    # Cerca ricorsivamente i dati prezzo
+    def find_price_data(obj):
+        if not isinstance(obj, dict): return
         
-        # Cerchiamo eurCents o wei
-        price_obj = node.get('eurCents') or node.get('wei')
-        if not price_obj: return
+        # Cerchiamo se questo oggetto contiene un prezzo
+        if 'eurCents' in obj or 'wei' in obj:
+            price = None
+            if 'eurCents' in obj: price = {'price': obj['eurCents'] / 100, 'currency': 'EUR'}
+            elif 'wei' in obj: price = {'price': float(obj['wei']) / 1e18, 'currency': 'ETH'}
+            
+            if price:
+                # Cerca l'anno della stagione in questo oggetto o nei genitori (qui semplificato)
+                year = 2026 # Default se non trovato
+                if 'season' in obj and isinstance(obj['season'], dict):
+                    year = int(obj['season'].get('year', 2026))
+                
+                cat = 'current' if year >= 2025 else 'classic'
+                if not prices[cat] or price['price'] < prices[cat]['price']:
+                    prices[cat] = price
         
-        found_any = True
-        price = None
-        if 'eurCents' in node: price = {'price': node['eurCents'] / 100, 'currency': 'EUR'}
-        elif 'wei' in node: price = {'price': float(node['wei']) / 1e18, 'currency': 'ETH'}
-        
-        if not price: return
+        # Continua a cercare
+        for v in obj.values():
+            if isinstance(v, (dict, list)):
+                find_price_data(v)
+            elif isinstance(v, list):
+                for item in v: find_price_data(item)
 
-        # Cerchiamo stagione
-        year = node.get('season', {}).get('year') if isinstance(node.get('season'), dict) else None
-        
-        if year and int(year) >= 2025:
-            if not prices['current'] or price['price'] < prices['current']['price']: prices['current'] = price
-        else:
-            if not prices['classic'] or price['price'] < prices['classic']['price']: prices['classic'] = price
-
-    def find_all(obj):
-        if isinstance(obj, dict):
-            search_node(obj)
-            for v in obj.values(): find_all(v)
-        elif isinstance(obj, list):
-            for item in obj: find_all(item)
-
-    find_all(data)
-    
-    if not found_any:
-        log("DEBUG: Nessun dato prezzo trovato nel JSON! Risposta API:")
-        log(str(data)[:500]) # Stampa primi 500 caratteri
-        
+    find_price_data(data)
     return prices
 
-# --- Cuore del programma ---
 async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
+    log(f"Analisi: {slug}") # <--- NUOVO: vediamo se parte
+    
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
@@ -128,6 +108,11 @@ async def check_player(session, player_data, eth_rate):
                 data = await response.json()
                 season_prices = get_prices_by_season(data)
                 
+                # Debug se non trova nulla
+                if not season_prices['current'] and not season_prices['classic']:
+                    log(f"DEBUG: Nessun prezzo trovato per {slug}. Risposta parziale: {str(data)[:200]}")
+                    return
+
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
@@ -138,16 +123,12 @@ async def check_player(session, player_data, eth_rate):
                     
                     if old_data:
                         old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
-                        if old_price_eur > 0:
-                            drop_percent = (old_price_eur - new_price_eur) / old_price_eur
-                            if new_price_eur < old_price_eur and drop_percent >= 0.05:
-                                if drop_percent > 0.50:
-                                    log(f"ALERT SOSPETTO {s_type.upper()}: {slug} sceso troppo. Ignorato.")
-                                else:
-                                    log(f"ALERT {s_type.upper()}! {slug} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
-                                    link = f"https://sorare.com/sorare.com/football/players/{slug}"
-                                    msg_text = f"🔥 <b>Occasione {s_type.upper()}!</b>\n\nGiocatore: {slug}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
-                                    await send_telegram_msg_async(session, msg_text)
+                        drop_percent = (old_price_eur - new_price_eur) / old_price_eur
+                        if new_price_eur < old_price_eur and drop_percent >= 0.05:
+                            if drop_percent < 0.50:
+                                msg = f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€"
+                                await send_telegram_msg_async(session, msg)
+                    
                     update_player_data(db_id, new_data['price'], new_data['currency'])
         except Exception as e:
             log(f"Errore {slug}: {e}")
@@ -156,8 +137,14 @@ async def main():
     init_db()
     backup_database()
     
+    if not os.path.exists('players_registry.json'):
+        log("ERRORE: players_registry.json non trovato!")
+        return
+
     with open('players_registry.json', 'r') as f:
         players = json.load(f)
+    
+    log(f"Caricati {len(players)} giocatori.")
 
     import urllib.request
     try:
