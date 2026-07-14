@@ -53,7 +53,6 @@ async def send_telegram_msg_async(session, message):
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
-    # Trova tutti i blocchi TokenPrice (sia Current che Classic)
     token_prices = []
     def find_token_prices(obj):
         if isinstance(obj, dict):
@@ -70,11 +69,16 @@ def get_prices_by_season(data):
     for tp in token_prices:
         amounts = tp.get('amounts', {})
         card = tp.get('card', {})
+        deal = tp.get('deal', {})
         
+        # FILTRO CRITICO: Controlliamo se il "deal" è un'offerta attiva
+        # Le vendite concluse spesso non hanno il campo 'deal' o hanno type null
+        if not deal or deal.get('type') != 'SINGLE_SALE_OFFER':
+            continue
+
         price_val = None
         currency = None
         
-        # Estrazione Prezzo (priorità EUR, poi USD)
         if amounts.get('eurCents'):
             price_val = float(amounts['eurCents']) / 100
             currency = 'EUR'
@@ -83,15 +87,14 @@ def get_prices_by_season(data):
             currency = 'USD'
             
         if price_val is not None:
-            # Determinazione Anno
             year_raw = card.get('seasonYear')
             year = int(year_raw) if year_raw else 2026
             
             cat = 'current' if year >= 2026 else 'classic'
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
-            # Log di debug per vedere se cattura tutto
-            log(f"DETECTED: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency}")
+            # LOG DI DEBUG: Se vedi il prezzo sospetto, sapremo perché
+            log(f"VALIDATED: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency} | OfferID: {deal.get('id')}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
@@ -103,7 +106,6 @@ async def check_player(session, player_data):
     p_id = player_data.get('id')
     url = 'https://api.sorare.com/graphql'
     
-    # Payload base per ottenere sia Current che Classic
     payload = {
         "operationName": "LazyPriceGraphQuery",
         "variables": {"playerSlug": slug, "rarity": "limited"},
@@ -118,9 +120,13 @@ async def check_player(session, player_data):
                 data = await response.json()
                 
                 season_prices = get_prices_by_season(data)
+                
+                # Se il prezzo minimo è troppo basso, logghiamo un avviso
+                if season_prices['classic'] and season_prices['classic']['price_in_eur'] < 0.30:
+                     log(f"ATTENZIONE: Trovato prezzo molto basso per {slug}: {season_prices['classic']['price_in_eur']}€. Verifica se è un errore di lettura.")
+                
                 log(f"Analisi {slug} completata. Risultati: {season_prices}")
                 
-                # Controllo Prezzi e invio alert
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
