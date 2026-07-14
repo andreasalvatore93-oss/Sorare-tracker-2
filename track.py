@@ -53,7 +53,6 @@ async def send_telegram_msg_async(session, message):
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
-    # Cerchiamo in tutto il JSON, senza limiti
     def search(obj, path="root"):
         if not isinstance(obj, dict): return
         
@@ -83,7 +82,6 @@ def get_prices_by_season(data):
             cat = 'current' if year >= 2026 else 'classic'
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
-            # Debug intensivo per vedere COSA stiamo scartando o accettando
             log(f"SCANSIONE: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency} | Path: {path}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
@@ -103,7 +101,6 @@ async def check_player(session, player_data, eth_rate):
     p_id = player_data.get('id')
     
     url = 'https://api.sorare.com/graphql'
-    # RIPRISTINATO: ID operazione funzionante del profilo
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
         "variables": {"onlyPrimary": False, "slug": slug},
@@ -116,7 +113,6 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
-                # Debug: se la query è corretta ma non troviamo nulla, lo vedremo qui
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati: {season_prices}")
                 
