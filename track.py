@@ -45,22 +45,25 @@ def send_email(subject, body):
     except Exception as e:
         log(f"Errore invio email: {e}")
 
-# --- NUOVA FUNZIONE POST (Più robusta) ---
+# Funzione di invio testata (con .strip() per pulizia segreti)
 def send_telegram_msg(player_name, message):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+    token = TELEGRAM_TOKEN.strip() if TELEGRAM_TOKEN else ""
+    chat_id = TELEGRAM_CHAT_ID.strip() if TELEGRAM_CHAT_ID else ""
+    
+    if not token or not chat_id:
+        log("Errore: Token o ChatID mancanti")
         return
     
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    
+    # INVIO IN TESTO SEMPLICE (HTML disattivato per debug)
     payload = {
-        'chat_id': TELEGRAM_CHAT_ID,
-        'text': message,
-        'parse_mode': 'HTML'
+        'chat_id': chat_id,
+        'text': "Test di connessione bot: tutto ok." 
     }
     
-    # Codifica il payload in JSON
     data = json.dumps(payload).encode('utf-8')
     headers = {'Content-Type': 'application/json'}
-    
     req = urllib.request.Request(url, data=data, headers=headers, method='POST')
     
     try:
@@ -119,8 +122,8 @@ def check_player(player_data, state, eth_rate):
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             log(f"ALERT! {p_id} sceso!")
-                            link = f"https://sorare.com/cards/players/{player_data['slug']}"
-                            msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
+                            # Qui riattiveremo HTML dopo il test
+                            msg_text = f"Occasione Sorare! {p_id} è sceso."
                             send_telegram_msg(p_id, msg_text)
                         else:
                             log(f"{p_id}: Nessuna variazione.")
@@ -130,7 +133,7 @@ def check_player(player_data, state, eth_rate):
 
 # --- Esecuzione Principale ---
 eth_rate = get_eth_to_eur()
-send_telegram_msg("TEST", "🔥 <b>Bot operativo!</b>\nIl sistema di notifiche Telegram è correttamente collegato.")
+send_telegram_msg("TEST", "Bot operativo")
 
 players = load_and_clean_players()
 try:
