@@ -53,37 +53,41 @@ async def send_telegram_msg_async(session, message):
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
-    # Funzione ricorsiva per ispezionare il JSON
     def search(obj, path="root"):
         if not isinstance(obj, dict): return
         
-        # Cerchiamo oggetti che contengono prezzi
-        if 'eurCents' in obj or 'wei' in obj:
-            # Conversione sicura
-            eur_cents = obj.get('eurCents')
-            wei = obj.get('wei')
+        # Cerchiamo prezzi in EUR, USD o ETH
+        price_val = None
+        currency = None
+        
+        if obj.get('eurCents') is not None:
+            price_val = float(obj['eurCents']) / 100
+            currency = 'EUR'
+        elif obj.get('usdCents') is not None:
+            price_val = float(obj['usdCents']) / 100
+            currency = 'USD'
+        elif obj.get('wei') is not None:
+            price_val = float(obj['wei']) / 1e18
+            currency = 'ETH'
             
-            price_val = 0
-            currency = None
+        if price_val is not None:
+            # Estraiamo la stagione: check sia 'season' dict che 'seasonYear' diretto
+            year = 2026
+            season_obj = obj.get('season')
+            if isinstance(season_obj, dict):
+                year = int(season_obj.get('year', 2026))
+            elif 'seasonYear' in obj:
+                year = int(obj['seasonYear'])
             
-            if eur_cents is not None:
-                price_val = float(eur_cents) / 100
-                currency = 'EUR'
-            elif wei is not None:
-                price_val = float(wei) / 1e18
-                currency = 'ETH'
+            cat = 'current' if year >= 2026 else 'classic'
             
-            if currency:
-                # Estraiamo la stagione
-                season = obj.get('season', {})
-                year = int(season.get('year', 2026)) if isinstance(season, dict) else 2026
-                cat = 'current' if year >= 2026 else 'classic'
-                
-                # LOG DETECTIVE: Stampa tutto ciò che trova
-                log(f"TROVATO: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency} | Path: {path}")
-                
-                if price_val > 0 and (not prices[cat] or price_val < prices[cat]['price']):
-                    prices[cat] = {'price': price_val, 'currency': currency}
+            log(f"DETECTED: {cat.upper()} | Anno: {year} | Valore: {price_val} {currency} | Path: {path}")
+            
+            # Convertiamo tutto in EUR per il confronto interno (approssimazione 1 USD = 0.92 EUR)
+            val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
+            
+            if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
+                prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
         
         # Continua a cercare ricorsivamente
         for k, v in obj.items():
@@ -112,12 +116,6 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
-                # --- DEBUG: CONTROLLO SPECIFICO LIMITED ---
-                if 'data' in data and 'anyPlayer' in data['data']:
-                    player_obj = data['data']['anyPlayer']
-                    limited_field = player_obj.get('lowestPriceLimitedCard')
-                    log(f"DEBUG: Contenuto lowestPriceLimitedCard: {limited_field}")
-                
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati finali: {season_prices}")
                 
@@ -126,16 +124,20 @@ async def check_player(session, player_data, eth_rate):
                     if not new_data: continue
                     
                     db_id = p_id if s_type == 'current' else f"{p_id}_{s_type}"
-                    new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
+                    
+                    # Convertiamo in EUR per il DB
+                    new_price_eur = new_data['price_in_eur']
+                    
                     old_data = get_player_data(db_id)
                     
                     if old_data:
-                        old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
+                        # Vecchio prezzo è sempre in EUR (per compatibilità DB)
+                        old_price_eur = old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
                     
-                    update_player_data(db_id, new_data['price'], new_data['currency'])
+                    update_player_data(db_id, new_price_eur, 'EUR')
         except Exception as e:
             log(f"ERRORE CRITICO {slug}: {str(e)}")
 
@@ -148,6 +150,7 @@ async def main():
     with open('players_registry.json', 'r') as f: 
         players = json.load(f)
     
+    # Prezzi crypto per conversioni
     try:
         with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
             eth_rate = float(json.loads(r.read().decode())['ethereum']['eur'])
