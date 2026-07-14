@@ -33,35 +33,26 @@ def get_eth_to_eur():
         log(f"Errore recupero tasso ETH (uso fallback 3000): {e}")
         return 3000.0 
 
-def send_email(subject, body):
-    if not EMAIL_USER or not EMAIL_PASS: 
-        return
-    msg = EmailMessage()
-    msg.set_content(body)
-    msg['Subject'] = subject
-    msg['From'] = EMAIL_USER
-    msg['To'] = NOTIFY_EMAIL
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_USER, EMAIL_PASS)
-            smtp.send_message(msg)
-    except Exception as e:
-        log(f"Errore invio email: {e}")
-
-# --- NUOVA FUNZIONE TELEGRAM ---
 def send_telegram_msg(player_name, message):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
     
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    # Codifichiamo il messaggio per l'URL
+    
+    # Usiamo 'HTML' invece di 'Markdown'
     params = {
         'chat_id': TELEGRAM_CHAT_ID,
         'text': message,
-        'parse_mode': 'Markdown'
+        'parse_mode': 'HTML'
     }
     query_string = urllib.parse.urlencode(params)
     full_url = f"{url}?{query_string}"
+    
+    try:
+        with urllib.request.urlopen(full_url, timeout=5) as response:
+            pass 
+    except Exception as e:
+        log(f"Errore invio Telegram: {e}")
     
     try:
         with urllib.request.urlopen(full_url, timeout=5) as response:
@@ -123,8 +114,8 @@ def check_player(player_data, state, eth_rate):
                             log(f"ALERT! {p_id} sceso: {old_data['price']} {old_data['currency']} ({old_price_eur:.2f}€) -> {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)")
                             
                             # Preparazione messaggio Telegram
-                            link = f"https://sorare.com/cards/players/{player_data['slug']}"
-                            msg_text = f"🔥 *Occasione Sorare!*\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)\n\n[Clicca qui per le offerte]({link})"
+link = f"https://sorare.com/cards/players/{player_data['slug']}"
+msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)\n\n<a href='{link}'>Clicca qui per le offerte</a>"
                             
                             send_email(f"ALERT Sorare: {p_id}", f"Prezzo sceso del {drop_percent:.1%}.\nPrecedente: {old_data['price']} {old_data['currency']} (~{old_price_eur:.2f}€)\nNuovo: {new_data['price']} {new_data['currency']} (~{new_price_eur:.2f}€)")
                             send_telegram_msg(p_id, msg_text) # Invio notifica
