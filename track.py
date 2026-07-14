@@ -53,13 +53,14 @@ async def send_telegram_msg_async(session, message):
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
+    # Cerchiamo in tutto il JSON, senza limiti
     def search(obj, path="root"):
         if not isinstance(obj, dict): return
         
         price_val = None
         currency = None
         
-        # Estrattore prezzi (Supporta EUR, USD, ETH)
+        # Estrattore prezzi (EUR, USD, ETH)
         if obj.get('eurCents') is not None:
             price_val = float(obj['eurCents']) / 100
             currency = 'EUR'
@@ -71,7 +72,7 @@ def get_prices_by_season(data):
             currency = 'ETH'
             
         if price_val is not None:
-            # Estrattore Stagione (Supporta oggetto season o campo diretto seasonYear)
+            # Estraiamo la stagione
             year = 2026
             season_obj = obj.get('season')
             if isinstance(season_obj, dict):
@@ -80,12 +81,10 @@ def get_prices_by_season(data):
                 year = int(obj['seasonYear'])
             
             cat = 'current' if year >= 2026 else 'classic'
-            
-            # Conversione in EUR per normalizzazione nel DB
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
-            # Log di debug per capire se stiamo prendendo Classic
-            log(f"DETECTED: {cat.upper()} | Anno: {year} | Valore: {price_val} {currency} | Path: {path}")
+            # Debug intensivo per vedere COSA stiamo scartando o accettando
+            log(f"SCANSIONE: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency} | Path: {path}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
@@ -104,15 +103,12 @@ async def check_player(session, player_data, eth_rate):
     p_id = player_data.get('id')
     
     url = 'https://api.sorare.com/graphql'
-    # Cambiamo payload per puntare a una logica di ricerca più ampia (Marketplace)
+    # RIPRISTINATO: ID operazione funzionante del profilo
     payload = {
-        "operationName": "MarketplaceQuery",
-        "variables": {"slug": slug, "first": 20},
+        "operationName": "AnyPlayerLayoutQuery",
+        "variables": {"onlyPrimary": False, "slug": slug},
         "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
-    # NOTA: l'operationId sopra è quello del profilo (che è l'unico certo). 
-    # Se il server rifiuta la query, dobbiamo aggiornare l'operationId con quello del marketplace.
-    
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
     
     async with semaphore:
@@ -120,12 +116,9 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
-                # Debug per verificare se la nuova query risponde correttamente
-                if 'data' in data:
-                    log(f"Query Marketplace eseguita per {slug}")
-                
+                # Debug: se la query è corretta ma non troviamo nulla, lo vedremo qui
                 season_prices = get_prices_by_season(data)
-                log(f"Analisi {slug} completata. Risultati finali: {season_prices}")
+                log(f"Analisi {slug} completata. Risultati: {season_prices}")
                 
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
