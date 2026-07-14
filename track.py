@@ -120,7 +120,7 @@ async def check_player(session, player_data, eth_rate):
                             drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                             if new_price_eur < old_price_eur and drop_percent >= 0.05:
                                 log(f"ALERT! {p_id} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
-                                link = f"https://sorare.com/cards/players/{player_data['slug']}"
+                                link = f"https://sorare.com/football/cards/players/{slug}"
                                 msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
                                 send_email(f"ALERT Sorare: {p_id}", msg_text)
                                 await send_telegram_msg_async(session, p_id, msg_text)
