@@ -12,7 +12,7 @@ CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
-semaphore = asyncio.Semaphore(5) # Ridotto per sicurezza
+semaphore = asyncio.Semaphore(5)
 
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -55,23 +55,27 @@ async def send_telegram_msg_async(session, message):
     except Exception as e:
         log(f"Errore Telegram: {e}")
 
-# --- Estrattore potenziato ---
+# --- Estrattore potenziato (Fixed) ---
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
-    # Cerca ricorsivamente i dati prezzo
     def find_price_data(obj):
         if not isinstance(obj, dict): return
         
-        # Cerchiamo se questo oggetto contiene un prezzo
-        if 'eurCents' in obj or 'wei' in obj:
+        # Check di sicurezza: 'eurCents' o 'wei' non devono essere None
+        val_eur = obj.get('eurCents')
+        val_wei = obj.get('wei')
+        
+        if val_eur is not None or val_wei is not None:
             price = None
-            if 'eurCents' in obj: price = {'price': obj['eurCents'] / 100, 'currency': 'EUR'}
-            elif 'wei' in obj: price = {'price': float(obj['wei']) / 1e18, 'currency': 'ETH'}
+            if val_eur is not None: 
+                price = {'price': float(val_eur) / 100, 'currency': 'EUR'}
+            elif val_wei is not None: 
+                price = {'price': float(val_wei) / 1e18, 'currency': 'ETH'}
             
             if price:
-                # Cerca l'anno della stagione in questo oggetto o nei genitori (qui semplificato)
-                year = 2026 # Default se non trovato
+                # Cerca l'anno (defaults to 2026 se non trovato)
+                year = 2026
                 if 'season' in obj and isinstance(obj['season'], dict):
                     year = int(obj['season'].get('year', 2026))
                 
@@ -79,12 +83,10 @@ def get_prices_by_season(data):
                 if not prices[cat] or price['price'] < prices[cat]['price']:
                     prices[cat] = price
         
-        # Continua a cercare
+        # Continua a cercare ricorsivamente
         for v in obj.values():
             if isinstance(v, (dict, list)):
                 find_price_data(v)
-            elif isinstance(v, list):
-                for item in v: find_price_data(item)
 
     find_price_data(data)
     return prices
@@ -92,7 +94,6 @@ def get_prices_by_season(data):
 async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
-    log(f"Analisi: {slug}") # <--- NUOVO: vediamo se parte
     
     url = 'https://api.sorare.com/graphql'
     payload = {
@@ -108,11 +109,6 @@ async def check_player(session, player_data, eth_rate):
                 data = await response.json()
                 season_prices = get_prices_by_season(data)
                 
-                # Debug se non trova nulla
-                if not season_prices['current'] and not season_prices['classic']:
-                    log(f"DEBUG: Nessun prezzo trovato per {slug}. Risposta parziale: {str(data)[:200]}")
-                    return
-
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
@@ -126,6 +122,7 @@ async def check_player(session, player_data, eth_rate):
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             if drop_percent < 0.50:
+                                log(f"ALERT! {slug} ({s_type}) sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
                                 msg = f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€"
                                 await send_telegram_msg_async(session, msg)
                     
