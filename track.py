@@ -4,6 +4,7 @@ import asyncio
 import aiohttp
 import datetime
 import sqlite3
+import urllib.request
 
 # --- Configurazione ---
 COOKIES = os.environ.get('SORARE_COOKIE')
@@ -111,6 +112,11 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
+                # --- DEBUG: ELENCO CAMPI DISPONIBILI ---
+                if 'data' in data and 'anyPlayer' in data['data']:
+                    player_obj = data['data']['anyPlayer']
+                    log(f"DEBUG: Campi trovati in anyPlayer: {list(player_obj.keys())}")
+                
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati finali: {season_prices}")
                 
@@ -141,7 +147,6 @@ async def main():
     with open('players_registry.json', 'r') as f: 
         players = json.load(f)
     
-    import urllib.request
     try:
         with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
             eth_rate = float(json.loads(r.read().decode())['ethereum']['eur'])
