@@ -5,12 +5,99 @@ import aiohttp
 import datetime
 import sqlite3
 
-# [Configurazione invariata...]
+# --- Configurazione ---
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
+
+semaphore = asyncio.Semaphore(5)
+
+def log(message):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] {message}", flush=True)
+
+def init_db():
+    conn = sqlite3.connect('tracker.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS players (id TEXT PRIMARY KEY, price REAL, currency TEXT)''')
+    conn.commit()
+    conn.close()
+
+def get_player_data(p_id):
+    conn = sqlite3.connect('tracker.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT price, currency FROM players WHERE id=?", (p_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return {'price': row[0], 'currency': row[1]} if row else None
+
+def update_player_data(p_id, price, currency):
+    conn = sqlite3.connect('tracker.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO players (id, price, currency) VALUES (?, ?, ?)", (p_id, price, currency))
+    conn.commit()
+    conn.close()
+
+async def send_telegram_msg_async(session, message):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID: return
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML'}
+    try:
+        async with session.post(url, json=payload) as response:
+            pass
+    except Exception as e:
+        log(f"Errore Telegram: {e}")
+
+def get_prices_by_season(data):
+    prices = {'current': None, 'classic': None}
+    
+    # Funzione ricorsiva per ispezionare il JSON
+    def search(obj, path="root"):
+        if not isinstance(obj, dict): return
+        
+        # Cerchiamo oggetti che contengono prezzi
+        if 'eurCents' in obj or 'wei' in obj:
+            # Conversione sicura
+            eur_cents = obj.get('eurCents')
+            wei = obj.get('wei')
+            
+            price_val = 0
+            currency = None
+            
+            if eur_cents is not None:
+                price_val = float(eur_cents) / 100
+                currency = 'EUR'
+            elif wei is not None:
+                price_val = float(wei) / 1e18
+                currency = 'ETH'
+            
+            if currency:
+                # Estraiamo la stagione
+                season = obj.get('season', {})
+                year = int(season.get('year', 2026)) if isinstance(season, dict) else 2026
+                cat = 'current' if year >= 2026 else 'classic'
+                
+                # LOG DETECTIVE: Stampa tutto ciò che trova
+                log(f"TROVATO: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency} | Path: {path}")
+                
+                if price_val > 0 and (not prices[cat] or price_val < prices[cat]['price']):
+                    prices[cat] = {'price': price_val, 'currency': currency}
+        
+        # Continua a cercare ricorsivamente
+        for k, v in obj.items():
+            if isinstance(v, dict): search(v, f"{path}.{k}")
+            elif isinstance(v, list):
+                for i, item in enumerate(v):
+                    if isinstance(item, dict): search(item, f"{path}.{k}[{i}]")
+                    
+    search(data)
+    return prices
 
 async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
+    p_id = player_data.get('id')
+    
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
@@ -19,12 +106,51 @@ async def check_player(session, player_data, eth_rate):
     }
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
     
-    async with session.post(url, json=payload, headers=headers) as response:
-        data = await response.json()
+    async with semaphore:
+        try:
+            async with session.post(url, json=payload, headers=headers) as response:
+                data = await response.json()
+                
+                season_prices = get_prices_by_season(data)
+                log(f"Analisi {slug} completata. Risultati finali: {season_prices}")
+                
+                for s_type in ['current', 'classic']:
+                    new_data = season_prices.get(s_type)
+                    if not new_data: continue
+                    
+                    db_id = p_id if s_type == 'current' else f"{p_id}_{s_type}"
+                    new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
+                    old_data = get_player_data(db_id)
+                    
+                    if old_data:
+                        old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
+                        drop_percent = (old_price_eur - new_price_eur) / old_price_eur
+                        if new_price_eur < old_price_eur and drop_percent >= 0.05:
+                            await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
+                    
+                    update_player_data(db_id, new_data['price'], new_data['currency'])
+        except Exception as e:
+            log(f"ERRORE CRITICO {slug}: {str(e)}")
+
+async def main():
+    init_db()
+    if not os.path.exists('players_registry.json'): 
+        log("File registry non trovato!")
+        return
         
-        # --- DEBUG: SALVA IL JSON COMPLETO ---
-        with open(f"debug_{slug}.json", "w") as f:
-            json.dump(data, f, indent=4)
-        print(f"DEBUG: File debug_{slug}.json creato.", flush=True)
-        
-        # ... resto del codice invariato ...
+    with open('players_registry.json', 'r') as f: 
+        players = json.load(f)
+    
+    import urllib.request
+    try:
+        with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
+            eth_rate = float(json.loads(r.read().decode())['ethereum']['eur'])
+    except: 
+        eth_rate = 3000.0
+    
+    async with aiohttp.ClientSession() as session:
+        tasks = [check_player(session, p, eth_rate) for p in players]
+        await asyncio.gather(*tasks)
+
+if __name__ == "__main__":
+    asyncio.run(main())
