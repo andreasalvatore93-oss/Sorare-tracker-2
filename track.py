@@ -56,10 +56,10 @@ def get_prices_by_season(data):
     def search(obj, path="root"):
         if not isinstance(obj, dict): return
         
-        # Cerchiamo prezzi in EUR, USD o ETH
         price_val = None
         currency = None
         
+        # Estrattore prezzi (Supporta EUR, USD, ETH)
         if obj.get('eurCents') is not None:
             price_val = float(obj['eurCents']) / 100
             currency = 'EUR'
@@ -71,7 +71,7 @@ def get_prices_by_season(data):
             currency = 'ETH'
             
         if price_val is not None:
-            # Estraiamo la stagione: check sia 'season' dict che 'seasonYear' diretto
+            # Estrattore Stagione (Supporta oggetto season o campo diretto seasonYear)
             year = 2026
             season_obj = obj.get('season')
             if isinstance(season_obj, dict):
@@ -81,15 +81,15 @@ def get_prices_by_season(data):
             
             cat = 'current' if year >= 2026 else 'classic'
             
-            log(f"DETECTED: {cat.upper()} | Anno: {year} | Valore: {price_val} {currency} | Path: {path}")
-            
-            # Convertiamo tutto in EUR per il confronto interno (approssimazione 1 USD = 0.92 EUR)
+            # Conversione in EUR per normalizzazione nel DB
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
+            
+            # Log di debug per capire se stiamo prendendo Classic
+            log(f"DETECTED: {cat.upper()} | Anno: {year} | Valore: {price_val} {currency} | Path: {path}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
         
-        # Continua a cercare ricorsivamente
         for k, v in obj.items():
             if isinstance(v, dict): search(v, f"{path}.{k}")
             elif isinstance(v, list):
@@ -104,17 +104,25 @@ async def check_player(session, player_data, eth_rate):
     p_id = player_data.get('id')
     
     url = 'https://api.sorare.com/graphql'
+    # Cambiamo payload per puntare a una logica di ricerca più ampia (Marketplace)
     payload = {
-        "operationName": "AnyPlayerLayoutQuery",
-        "variables": {"onlyPrimary": False, "slug": slug},
+        "operationName": "MarketplaceQuery",
+        "variables": {"slug": slug, "first": 20},
         "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
+    # NOTA: l'operationId sopra è quello del profilo (che è l'unico certo). 
+    # Se il server rifiuta la query, dobbiamo aggiornare l'operationId con quello del marketplace.
+    
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
     
     async with semaphore:
         try:
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
+                
+                # Debug per verificare se la nuova query risponde correttamente
+                if 'data' in data:
+                    log(f"Query Marketplace eseguita per {slug}")
                 
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati finali: {season_prices}")
@@ -124,14 +132,10 @@ async def check_player(session, player_data, eth_rate):
                     if not new_data: continue
                     
                     db_id = p_id if s_type == 'current' else f"{p_id}_{s_type}"
-                    
-                    # Convertiamo in EUR per il DB
                     new_price_eur = new_data['price_in_eur']
-                    
                     old_data = get_player_data(db_id)
                     
                     if old_data:
-                        # Vecchio prezzo è sempre in EUR (per compatibilità DB)
                         old_price_eur = old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
@@ -150,7 +154,6 @@ async def main():
     with open('players_registry.json', 'r') as f: 
         players = json.load(f)
     
-    # Prezzi crypto per conversioni
     try:
         with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
             eth_rate = float(json.loads(r.read().decode())['ethereum']['eur'])
