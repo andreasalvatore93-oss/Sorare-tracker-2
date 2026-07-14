@@ -21,16 +21,19 @@ def log(message):
     print(f"[{timestamp}] {message}", flush=True)
 
 def get_eth_to_eur():
+    """Recupera il tasso di cambio ETH -> EUR in tempo reale"""
     try:
         url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur"
         with urllib.request.urlopen(url, timeout=5) as response:
             data = json.loads(response.read().decode())
             return float(data['ethereum']['eur'])
-    except:
-        return 3000.0
+    except Exception as e:
+        log(f"Errore recupero tasso ETH (uso fallback 3000): {e}")
+        return 3000.0 
 
 def send_email(subject, body):
-    if not EMAIL_USER or not EMAIL_PASS: return
+    if not EMAIL_USER or not EMAIL_PASS: 
+        return
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
@@ -53,14 +56,13 @@ def send_telegram_msg(player_name, message):
         'text': message,
         'parse_mode': 'HTML'
     }
-    
     data = json.dumps(payload).encode('utf-8')
     headers = {'Content-Type': 'application/json'}
     req = urllib.request.Request(url, data=data, headers=headers, method='POST')
     
     try:
         with urllib.request.urlopen(req, timeout=5) as response:
-            log(f"Telegram: Messaggio inviato con successo per {player_name}")
+            pass 
     except Exception as e:
         log(f"Errore invio Telegram: {e}")
 
@@ -68,13 +70,15 @@ def load_and_clean_players():
     try:
         with open('players_registry.json', 'r') as f:
             players = json.load(f)
-        return [p for p in players if p.get('id') and p.get('slug')]
-    except:
+        unique = {p['id']: p for p in players if p.get('id') and p.get('slug')}
+        return list(unique.values())
+    except Exception as e:
+        log(f"Errore caricamento registro: {e}")
         return []
 
 def get_price_from_json_recursive(obj):
     if isinstance(obj, dict):
-        if obj.get('eurCents') is not None:
+        if obj.get('eurCents') is not None and isinstance(obj['eurCents'], (int, float)):
             return {'price': obj['eurCents'] / 100, 'currency': 'EUR'}
         if obj.get('wei') is not None:
             return {'price': float(obj['wei']) / 1e18, 'currency': 'ETH'}
@@ -109,30 +113,42 @@ def check_player(player_data, state, eth_rate):
                 
                 if old_data:
                     old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
+                    
                     if old_price_eur > 0:
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
-                            log(f"ALERT! {p_id} sceso!")
+                            log(f"ALERT! {p_id} sceso: {old_data['price']} {old_data['currency']} ({old_price_eur:.2f}€) -> {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)")
+                            
                             link = f"https://sorare.com/cards/players/{player_data['slug']}"
-                            msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
-                            send_telegram_msg(p_id, msg_text)
-                            send_email(f"ALERT Sorare: {p_id}", f"Calo del {drop_percent:.1%}")
+                            msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)\n\n<a href='{link}'>Clicca qui per le offerte</a>"
+                            
+                            send_email(f"ALERT Sorare: {p_id}", f"Prezzo sceso del {drop_percent:.1%}.\nPrecedente: {old_data['price']} {old_data['currency']} (~{old_price_eur:.2f}€)\nNuovo: {new_data['price']} {new_data['currency']} (~{new_price_eur:.2f}€)")
+                            send_telegram_msg(p_id, msg_text) 
+                        else:
+                            log(f"{p_id}: {new_data['price']} {new_data['currency']} (nessuna variazione significativa)")
+                else:
+                    log(f"{p_id}: {new_data['price']} {new_data['currency']} (inizializzazione)")
+                
                 state[p_id] = new_data
+            else:
+                log(f"{p_id}: Nessun prezzo trovato")
     except Exception as e:
         log(f"Errore {p_id}: {e}")
 
 # --- Esecuzione Principale ---
 eth_rate = get_eth_to_eur()
-# Test iniziale per confermare la connessione
-send_telegram_msg("Test", "<b>Bot operativo!</b>\nConnessione Telegram stabilita con successo.")
+log(f"Tasso ETH/EUR recuperato: {eth_rate}")
 
 players = load_and_clean_players()
 try:
-    with open('state.json', 'r') as f: state = json.load(f)
-except: state = {}
+    with open('state.json', 'r') as f: 
+        state = json.load(f)
+except: 
+    state = {}
 
 for p in players:
     check_player(p, state, eth_rate)
     time.sleep(random.uniform(1.5, 3.5)) 
 
-with open('state.json', 'w') as f: json.dump(state, f, indent=2)
+with open('state.json', 'w') as f: 
+    json.dump(state, f, indent=2)
