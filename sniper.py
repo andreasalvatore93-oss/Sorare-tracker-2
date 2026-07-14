@@ -178,10 +178,12 @@ async def main():
     log(f"Tasso ETH/EUR: {eth_rate}")
 
     url = 'https://api.sorare.com/graphql'
+    
+    # Query corretta utilizzando "activeSingleSaleOffers"
     query = """
     query LatestLimitedOffers {
       football {
-        openedSingleSaleOffers(first: 20, cardScarcities: [limited]) {
+        activeSingleSaleOffers(first: 20, cardScarcities: [limited]) {
           nodes {
             id
             price
@@ -207,7 +209,6 @@ async def main():
             async with session.post(url, json=payload, headers=headers) as response:
                 res_json = await response.json()
                 
-                # LOG DI DEBUG - Intercettiamo eventuali errori GraphQL
                 if "errors" in res_json:
                     log(f"⚠️ Errore GraphQL rilevato: {json.dumps(res_json['errors'])}")
                 
@@ -221,12 +222,12 @@ async def main():
                     log(f"⚠️ Errore: la chiave 'football' è assente o nulla. Risposta grezza: {json.dumps(res_json)}")
                     return
                     
-                opened_offers = football.get('openedSingleSaleOffers')
-                if opened_offers is None:
-                    log(f"⚠️ Errore: la chiave 'openedSingleSaleOffers' è assente o nulla. Risposta grezza: {json.dumps(res_json)}")
+                active_offers = football.get('activeSingleSaleOffers')
+                if active_offers is None:
+                    log(f"⚠️ Errore: la chiave 'activeSingleSaleOffers' è assente o nulla. Risposta grezza: {json.dumps(res_json)}")
                     return
                     
-                offers = opened_offers.get('nodes', [])
+                offers = active_offers.get('nodes', [])
                 
                 if not offers:
                     log("Nessuna nuova offerta sul mercato.")
