@@ -18,6 +18,14 @@ def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] {message}", flush=True)
 
+def get_eth_rate():
+    try:
+        with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
+            data = json.loads(r.read().decode())
+            return float(data['ethereum']['eur'])
+    except:
+        return 3000.0
+
 def init_db():
     conn = sqlite3.connect('tracker.db')
     cursor = conn.cursor()
@@ -50,7 +58,7 @@ async def send_telegram_msg_async(session, message):
     except Exception as e:
         log(f"Errore Telegram: {e}")
 
-def get_prices_by_season(data):
+def get_prices_by_season(data, eth_rate):
     prices = {'current': None, 'classic': None}
     
     token_prices = []
@@ -71,37 +79,33 @@ def get_prices_by_season(data):
         card = tp.get('card', {})
         deal = tp.get('deal', {})
         
-        # FILTRO CRITICO: Controlliamo se il "deal" è un'offerta attiva
-        # Le vendite concluse spesso non hanno il campo 'deal' o hanno type null
-        if not deal or deal.get('type') != 'SINGLE_SALE_OFFER':
+        # FILTRO ATTIVO: Se esiste un 'buyer', è una vendita conclusa -> Scartiamo
+        if deal.get('buyer') is not None:
             continue
-
-        price_val = None
-        currency = None
-        
-        if amounts.get('eurCents'):
-            price_val = float(amounts['eurCents']) / 100
-            currency = 'EUR'
-        elif amounts.get('usdCents'):
-            price_val = float(amounts['usdCents']) / 100
-            currency = 'USD'
             
-        if price_val is not None:
+        # Calcolo prezzo
+        price_val_eur = 0
+        if amounts.get('wei'):
+            price_val_eur = (float(amounts['wei']) / 1e18) * eth_rate
+        elif amounts.get('eurCents'):
+            price_val_eur = float(amounts['eurCents']) / 100
+        else:
+            continue
+            
+        if price_val_eur > 0:
             year_raw = card.get('seasonYear')
             year = int(year_raw) if year_raw else 2026
-            
             cat = 'current' if year >= 2026 else 'classic'
-            val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
-            # LOG DI DEBUG: Se vedi il prezzo sospetto, sapremo perché
-            log(f"VALIDATED: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency} | OfferID: {deal.get('id')}")
+            # Debug per vedere cosa stiamo leggendo ora
+            log(f"FILTERED: {cat.upper()} | Anno: {year} | Prezzo: {price_val_eur:.2f} EUR")
             
-            if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
-                prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
+            if not prices[cat] or price_val_eur < prices[cat]['price_in_eur']:
+                prices[cat] = {'price': price_val_eur, 'currency': 'EUR', 'price_in_eur': price_val_eur}
                 
     return prices
 
-async def check_player(session, player_data):
+async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
     url = 'https://api.sorare.com/graphql'
@@ -119,13 +123,7 @@ async def check_player(session, player_data):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
-                season_prices = get_prices_by_season(data)
-                
-                # Se il prezzo minimo è troppo basso, logghiamo un avviso
-                if season_prices['classic'] and season_prices['classic']['price_in_eur'] < 0.30:
-                     log(f"ATTENZIONE: Trovato prezzo molto basso per {slug}: {season_prices['classic']['price_in_eur']}€. Verifica se è un errore di lettura.")
-                
-                log(f"Analisi {slug} completata. Risultati: {season_prices}")
+                season_prices = get_prices_by_season(data, eth_rate)
                 
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
@@ -147,6 +145,7 @@ async def check_player(session, player_data):
 
 async def main():
     init_db()
+    eth_rate = get_eth_rate()
     if not os.path.exists('players_registry.json'): 
         log("File registry non trovato!")
         return
@@ -155,7 +154,7 @@ async def main():
         players = json.load(f)
     
     async with aiohttp.ClientSession() as session:
-        tasks = [check_player(session, p) for p in players]
+        tasks = [check_player(session, p, eth_rate) for p in players]
         await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
