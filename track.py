@@ -4,7 +4,6 @@ import asyncio
 import aiohttp
 import datetime
 import smtplib
-import random
 import sqlite3
 from email.message import EmailMessage
 
@@ -53,7 +52,7 @@ def update_player_data(p_id, price, currency):
     conn.commit()
     conn.close()
 
-# --- Funzioni di utilità (Sincrone) ---
+# --- Funzioni di utilità ---
 def send_email(subject, body):
     if not EMAIL_USER or not EMAIL_PASS: return
     msg = EmailMessage()
@@ -68,7 +67,7 @@ def send_email(subject, body):
     except Exception as e:
         log(f"Errore invio email: {e}")
 
-async def send_telegram_msg_async(session, player_name, message):
+async def send_telegram_msg_async(session, message):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID: return
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML'}
@@ -93,13 +92,16 @@ def get_price_from_json_recursive(obj):
             if res: return res
     return None
 
-# --- Cuore del programma (Asincrono) ---
+# --- Cuore del programma ---
 async def check_player(session, player_data, eth_rate):
-    p_id = player_data['id']
+    # CORREZIONE: Estraggo slug e p_id all'inizio
+    slug = player_data.get('slug')
+    p_id = player_data.get('id')
+    
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
-        "variables": {"onlyPrimary": False, "slug": player_data['slug']},
+        "variables": {"onlyPrimary": False, "slug": slug},
         "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
@@ -119,21 +121,21 @@ async def check_player(session, player_data, eth_rate):
                         if old_price_eur > 0:
                             drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                             if new_price_eur < old_price_eur and drop_percent >= 0.05:
-                                log(f"ALERT! {p_id} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
+                                log(f"ALERT! {slug} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
                                 link = f"https://sorare.com/football/cards/players/{slug}"
-                                msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
-                                send_email(f"ALERT Sorare: {p_id}", msg_text)
-                                await send_telegram_msg_async(session, p_id, msg_text)
+                                msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {slug}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
+                                send_email(f"ALERT Sorare: {slug}", msg_text)
+                                await send_telegram_msg_async(session, msg_text)
                             else:
-                                log(f"{p_id}: nessuna variazione")
+                                log(f"{slug}: nessuna variazione")
                     else:
-                        log(f"{p_id}: inizializzazione")
+                        log(f"{slug}: inizializzazione")
                     
                     update_player_data(p_id, new_data['price'], new_data['currency'])
                 else:
-                    log(f"{p_id}: Nessun prezzo trovato")
+                    log(f"{slug}: Nessun prezzo trovato")
         except Exception as e:
-            log(f"Errore {p_id}: {e}")
+            log(f"Errore {slug}: {e}")
 
 async def main():
     init_db()
