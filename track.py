@@ -71,7 +71,9 @@ def get_prices_by_season(data):
             currency = 'ETH'
             
         if price_val is not None:
+            # Rilevamento Stagione
             year = 2026
+            # Controlla sia l'oggetto season che seasonYear
             season_obj = obj.get('season')
             if isinstance(season_obj, dict):
                 year = int(season_obj.get('year', 2026))
@@ -83,6 +85,7 @@ def get_prices_by_season(data):
             
             log(f"DETECTED: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency} | Path: {path}")
             
+            # Salviamo il prezzo più basso trovato
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
         
@@ -100,13 +103,20 @@ async def check_player(session, player_data, eth_rate):
     p_id = player_data.get('id')
     
     url = 'https://api.sorare.com/graphql'
-    # TENTATIVO: Query Marketplace. L'operationId è un placeholder generico.
-    # Se fallisce, dobbiamo metterne uno reale catturato dal browser.
+    
+    # --- NUOVA QUERY: LazyPriceGraphQuery (Specifico per le Classic) ---
     payload = {
-        "operationName": "MarketplaceQuery",
-        "variables": {"slug": slug, "first": 20},
-        "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
+        "operationName": "LazyPriceGraphQuery",
+        "variables": {
+            "playersSlug": slug, 
+            "rarity": "LIMITED", 
+            "seasonEligibility": "CLASSIC"
+        },
+        "extensions": {
+            "operationId": "React/3a17d0b9e886a8c514ba3352073a63a87b7d270b4397b2e10eeb0276d54ceb6b"
+        }
     }
+    
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
     
     async with semaphore:
@@ -114,10 +124,7 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
-                # Debug: se la query restituisce errori o dati vuoti
-                if 'errors' in data:
-                    log(f"ERRORE API: {data['errors']}")
-                
+                # Debug
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati: {season_prices}")
                 
@@ -125,7 +132,7 @@ async def check_player(session, player_data, eth_rate):
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
                     
-                    db_id = p_id if s_type == 'current' else f"{p_id}_{s_type}"
+                    db_id = f"{p_id}_{s_type}" # ID unico per separare le stagioni
                     new_price_eur = new_data['price_in_eur']
                     old_data = get_player_data(db_id)
                     
