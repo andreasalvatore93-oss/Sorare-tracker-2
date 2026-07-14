@@ -94,7 +94,6 @@ def get_price_from_json_recursive(obj):
 
 # --- Cuore del programma ---
 async def check_player(session, player_data, eth_rate):
-    # CORREZIONE: Estraggo slug e p_id all'inizio
     slug = player_data.get('slug')
     p_id = player_data.get('id')
     
@@ -124,7 +123,7 @@ async def check_player(session, player_data, eth_rate):
                                 log(f"ALERT! {slug} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
                                 link = f"https://sorare.com/football/players/{slug}"
                                 msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {slug}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
-                                send_email(f"ALERT Sorare: {slug}", msg_text)
+                                # La riga dell'email è stata rimossa qui
                                 await send_telegram_msg_async(session, msg_text)
                             else:
                                 log(f"{slug}: nessuna variazione")
