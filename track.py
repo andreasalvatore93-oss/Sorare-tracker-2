@@ -1,5 +1,6 @@
 import json
 import urllib.request
+import urllib.parse # Aggiunto per formattare il messaggio Telegram
 import os
 import time
 import smtplib
@@ -13,6 +14,9 @@ CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
 EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
+# Nuove variabili per Telegram
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
 
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -27,7 +31,7 @@ def get_eth_to_eur():
             return float(data['ethereum']['eur'])
     except Exception as e:
         log(f"Errore recupero tasso ETH (uso fallback 3000): {e}")
-        return 3000.0 # Fallback di sicurezza
+        return 3000.0 
 
 def send_email(subject, body):
     if not EMAIL_USER or not EMAIL_PASS: 
@@ -43,6 +47,27 @@ def send_email(subject, body):
             smtp.send_message(msg)
     except Exception as e:
         log(f"Errore invio email: {e}")
+
+# --- NUOVA FUNZIONE TELEGRAM ---
+def send_telegram_msg(player_name, message):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    # Codifichiamo il messaggio per l'URL
+    params = {
+        'chat_id': TELEGRAM_CHAT_ID,
+        'text': message,
+        'parse_mode': 'Markdown'
+    }
+    query_string = urllib.parse.urlencode(params)
+    full_url = f"{url}?{query_string}"
+    
+    try:
+        with urllib.request.urlopen(full_url, timeout=5) as response:
+            pass # Messaggio inviato
+    except Exception as e:
+        log(f"Errore invio Telegram: {e}")
 
 def load_and_clean_players():
     try:
@@ -86,7 +111,6 @@ def check_player(player_data, state, eth_rate):
             new_data = get_price_from_json_recursive(data)
             
             if new_data:
-                # Normalizziamo tutto in EUR per il confronto
                 new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
                 
                 old_data = state.get(p_id)
@@ -97,7 +121,13 @@ def check_player(player_data, state, eth_rate):
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             log(f"ALERT! {p_id} sceso: {old_data['price']} {old_data['currency']} ({old_price_eur:.2f}€) -> {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)")
+                            
+                            # Preparazione messaggio Telegram
+                            link = f"https://sorare.com/cards/players/{player_data['slug']}"
+                            msg_text = f"🔥 *Occasione Sorare!*\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)\n\n[Clicca qui per le offerte]({link})"
+                            
                             send_email(f"ALERT Sorare: {p_id}", f"Prezzo sceso del {drop_percent:.1%}.\nPrecedente: {old_data['price']} {old_data['currency']} (~{old_price_eur:.2f}€)\nNuovo: {new_data['price']} {new_data['currency']} (~{new_price_eur:.2f}€)")
+                            send_telegram_msg(p_id, msg_text) # Invio notifica
                         else:
                             log(f"{p_id}: {new_data['price']} {new_data['currency']} (nessuna variazione significativa)")
                 else:
