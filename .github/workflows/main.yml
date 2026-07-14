@@ -21,16 +21,6 @@ jobs:
       - name: Install dependencies
         run: pip install aiohttp
 
-      # --- VERIFICA SEGRETI ---
-      - name: Verify Secrets
-        env:
-          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
-        run: |
-          echo "Verifica configurazione segreti..."
-          echo "Cookie configurato: $(if [ -n "$SORARE_COOKIE" ]; then echo 'SI (lunghezza ${#SORARE_COOKIE})'; else echo 'NO'; fi)"
-          echo "CSRF configurato: $(if [ -n "$SORARE_CSRF" ]; then echo 'SI (lunghezza ${#SORARE_CSRF})'; else echo 'NO'; fi)"
-
       - name: Run tracker
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
