@@ -55,38 +55,28 @@ async def send_telegram_msg_async(session, message):
     except Exception as e:
         log(f"Errore Telegram: {e}")
 
-# --- Estrattore potenziato (Fixed) ---
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
     def find_price_data(obj):
         if not isinstance(obj, dict): return
-        
-        # Check di sicurezza: 'eurCents' o 'wei' non devono essere None
         val_eur = obj.get('eurCents')
         val_wei = obj.get('wei')
-        
         if val_eur is not None or val_wei is not None:
             price = None
-            if val_eur is not None: 
-                price = {'price': float(val_eur) / 100, 'currency': 'EUR'}
-            elif val_wei is not None: 
-                price = {'price': float(val_wei) / 1e18, 'currency': 'ETH'}
-            
+            if val_eur is not None: price = {'price': float(val_eur) / 100, 'currency': 'EUR'}
+            elif val_wei is not None: price = {'price': float(val_wei) / 1e18, 'currency': 'ETH'}
             if price:
-                # Cerca l'anno (defaults to 2026 se non trovato)
                 year = 2026
                 if 'season' in obj and isinstance(obj['season'], dict):
                     year = int(obj['season'].get('year', 2026))
-                
                 cat = 'current' if year >= 2025 else 'classic'
                 if not prices[cat] or price['price'] < prices[cat]['price']:
                     prices[cat] = price
-        
-        # Continua a cercare ricorsivamente
         for v in obj.values():
-            if isinstance(v, (dict, list)):
-                find_price_data(v)
+            if isinstance(v, (dict, list)): find_price_data(v)
+            elif isinstance(v, list):
+                for item in v: find_price_data(item)
 
     find_price_data(data)
     return prices
@@ -94,6 +84,7 @@ def get_prices_by_season(data):
 async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
+    log(f"--- AVVIO ANALISI: {slug} ---") # Log molto visibile
     
     url = 'https://api.sorare.com/graphql'
     payload = {
@@ -106,29 +97,30 @@ async def check_player(session, player_data, eth_rate):
     async with semaphore:
         try:
             async with session.post(url, json=payload, headers=headers) as response:
+                status = response.status
                 data = await response.json()
+                log(f"Ricevuta risposta per {slug}: Status {status}")
                 season_prices = get_prices_by_season(data)
                 
+                if not season_prices['current'] and not season_prices['classic']:
+                    log(f"ATTENZIONE: Nessun prezzo trovato per {slug}!")
+                    return
+
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
-                    
                     db_id = p_id if s_type == 'current' else f"{p_id}_{s_type}"
                     new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
                     old_data = get_player_data(db_id)
-                    
                     if old_data:
                         old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
-                        if new_price_eur < old_price_eur and drop_percent >= 0.05:
-                            if drop_percent < 0.50:
-                                log(f"ALERT! {slug} ({s_type}) sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
-                                msg = f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€"
-                                await send_telegram_msg_async(session, msg)
-                    
+                        if new_price_eur < old_price_eur and drop_percent >= 0.05 and drop_percent < 0.50:
+                            log(f"ALERT! {slug} ({s_type}) sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
+                            await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
                     update_player_data(db_id, new_data['price'], new_data['currency'])
         except Exception as e:
-            log(f"Errore {slug}: {e}")
+            log(f"ERRORE CRITICO in check_player per {slug}: {str(e)}")
 
 async def main():
     init_db()
@@ -141,7 +133,7 @@ async def main():
     with open('players_registry.json', 'r') as f:
         players = json.load(f)
     
-    log(f"Caricati {len(players)} giocatori.")
+    log(f"Caricati {len(players)} giocatori: {players[0].get('slug')}")
 
     import urllib.request
     try:
@@ -150,10 +142,13 @@ async def main():
     except: eth_rate = 3000.0
     
     log(f"Tasso ETH/EUR: {eth_rate}")
+    log("Inizio avvio task...")
 
     async with aiohttp.ClientSession() as session:
         tasks = [check_player(session, p, eth_rate) for p in players]
+        log(f"Task creati: {len(tasks)}. Avvio gather...")
         await asyncio.gather(*tasks)
+    log("Tutti i task completati.")
 
 if __name__ == "__main__":
     asyncio.run(main())
