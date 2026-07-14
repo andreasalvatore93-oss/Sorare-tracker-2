@@ -119,14 +119,18 @@ async def check_player(session, player_data, eth_rate):
                         old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
                         if old_price_eur > 0:
                             drop_percent = (old_price_eur - new_price_eur) / old_price_eur
+                            
+                            # Filtro anti-falso positivo (ignora cali > 50%)
                             if new_price_eur < old_price_eur and drop_percent >= 0.05:
-                                log(f"ALERT! {slug} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
-                                link = f"https://sorare.com/football/players/{slug}"
-                                msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {slug}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
-                                # La riga dell'email è stata rimossa qui
-                                await send_telegram_msg_async(session, msg_text)
+                                if drop_percent > 0.50:
+                                    log(f"ALERT SOSPETTO IGNORATO: {slug} sceso troppo ({drop_percent:.1%}). Dati errati.")
+                                else:
+                                    log(f"ALERT! {slug} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
+                                    link = f"https://sorare.com/football/players/{slug}"
+                                    msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {slug}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
+                                    await send_telegram_msg_async(session, msg_text)
                             else:
-                                log(f"{slug}: nessuna variazione")
+                                log(f"{slug}: nessuna variazione significativa")
                     else:
                         log(f"{slug}: inizializzazione")
                     
