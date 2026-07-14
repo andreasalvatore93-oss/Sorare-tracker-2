@@ -1,11 +1,16 @@
 import json, asyncio, aiohttp, sqlite3, datetime, os
 
-def log(msg): print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
+# Configurazione dai tuoi ENV
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
 
-# Inizializza DB
-conn = sqlite3.connect('tracker.db')
-conn.execute("CREATE TABLE IF NOT EXISTS tracker (id TEXT PRIMARY KEY, price REAL)")
-conn.close()
+def log(msg): print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
+
+async def send_telegram(message):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
+    async with aiohttp.ClientSession() as session:
+        await session.post(url, json=payload)
 
 async def check_player(session, player):
     url = 'https://api.sorare.com/graphql'
@@ -19,28 +24,26 @@ async def check_player(session, player):
     async with session.post(url, json=payload, headers=headers) as response:
         data = await response.json()
         
-        # Estrazione dati (ricorsiva per sicurezza)
+        # Estrazione e confronto
         prices = {'current': float('inf'), 'classic': float('inf')}
         
-        def extract(obj):
+        def find_tokens(obj):
             if isinstance(obj, dict):
                 if obj.get('__typename') == 'TokenPrice':
-                    deal = obj.get('deal', {})
-                    # Filtro: Ignoriamo tutto ciò che ha un compratore
-                    if deal.get('buyer') is None:
+                    if obj.get('deal', {}).get('buyer') is None: # Solo offerte attive
                         amount = obj.get('amounts', {}).get('wei')
                         if amount:
                             price = float(amount) / 1e18
                             year = int(obj.get('card', {}).get('seasonYear', 2026))
                             cat = 'current' if year >= 2026 else 'classic'
                             if price < prices[cat]: prices[cat] = price
-                for v in obj.values(): extract(v)
+                for v in obj.values(): find_tokens(v)
             elif isinstance(obj, list):
-                for i in obj: extract(i)
+                for i in obj: find_tokens(i)
         
-        extract(data)
+        find_tokens(data)
         
-        # Confronto e Notifica
+        # Connessione DB
         conn = sqlite3.connect('tracker.db')
         for cat, price in prices.items():
             if price == float('inf'): continue
@@ -51,7 +54,9 @@ async def check_player(session, player):
             if row:
                 old_price = row[0]
                 if price < (old_price * 0.95):
-                    log(f"🔥 {cat.upper()} CALO 5%! {player['slug']} a {price:.4f} (Precedente: {old_price:.4f})")
+                    msg = f"🔥 <b>{cat.upper()} CALO 5%!</b>\n{player['slug']} a {price:.4f} ETH (Precedente: {old_price:.4f})"
+                    log(msg)
+                    await send_telegram(msg)
             
             conn.execute("INSERT OR REPLACE INTO tracker (id, price) VALUES (?, ?)", (db_id, price))
         conn.commit()
