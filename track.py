@@ -1,21 +1,11 @@
 import json, asyncio, aiohttp, sqlite3, datetime, os
 
-def log(message): print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}")
+def log(msg): print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
 
-def check_db(db_id):
-    conn = sqlite3.connect('tracker.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT price FROM tracker WHERE id=?", (db_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return row[0] if row else None
-
-def update_db(db_id, price):
-    conn = sqlite3.connect('tracker.db')
-    cursor = conn.cursor()
-    cursor.execute("INSERT OR REPLACE INTO tracker (id, price) VALUES (?, ?)", (db_id, price))
-    conn.commit()
-    conn.close()
+# Inizializza DB
+conn = sqlite3.connect('tracker.db')
+conn.execute("CREATE TABLE IF NOT EXISTS tracker (id TEXT PRIMARY KEY, price REAL)")
+conn.close()
 
 async def check_player(session, player):
     url = 'https://api.sorare.com/graphql'
@@ -29,40 +19,45 @@ async def check_player(session, player):
     async with session.post(url, json=payload, headers=headers) as response:
         data = await response.json()
         
-        # Estrazione offerta
-        token_prices = []
-        def find_tokens(obj):
+        # Estrazione dati (ricorsiva per sicurezza)
+        prices = {'current': float('inf'), 'classic': float('inf')}
+        
+        def extract(obj):
             if isinstance(obj, dict):
-                if obj.get('__typename') == 'TokenPrice': token_prices.append(obj)
-                for v in obj.values(): find_tokens(v)
+                if obj.get('__typename') == 'TokenPrice':
+                    deal = obj.get('deal', {})
+                    # Filtro: Ignoriamo tutto ciò che ha un compratore
+                    if deal.get('buyer') is None:
+                        amount = obj.get('amounts', {}).get('wei')
+                        if amount:
+                            price = float(amount) / 1e18
+                            year = int(obj.get('card', {}).get('seasonYear', 2026))
+                            cat = 'current' if year >= 2026 else 'classic'
+                            if price < prices[cat]: prices[cat] = price
+                for v in obj.values(): extract(v)
             elif isinstance(obj, list):
-                for item in obj: find_tokens(item)
+                for i in obj: extract(i)
         
-        find_tokens(data)
+        extract(data)
         
-        for tp in token_prices:
-            deal = tp.get('deal', {})
-            # FILTRO: Solo offerte senza acquirente
-            if deal.get('buyer') is not None: continue
+        # Confronto e Notifica
+        conn = sqlite3.connect('tracker.db')
+        for cat, price in prices.items():
+            if price == float('inf'): continue
             
-            # Calcolo Prezzo
-            amounts = tp.get('amounts', {})
-            price = float(amounts.get('wei', 0)) / 1e18
-            if price == 0: continue
+            db_id = f"{player['id']}_{cat}"
+            row = conn.execute("SELECT price FROM tracker WHERE id=?", (db_id,)).fetchone()
             
-            # Categoria
-            year = int(tp.get('card', {}).get('seasonYear', 2026))
-            cat = 'current' if year >= 2026 else 'classic'
+            if row:
+                old_price = row[0]
+                if price < (old_price * 0.95):
+                    log(f"🔥 {cat.upper()} CALO 5%! {player['slug']} a {price:.4f} (Precedente: {old_price:.4f})")
             
-            # Controllo 5%
-            old_price = check_db(f"{player['id']}_{cat}")
-            if old_price and price < (old_price * 0.95):
-                log(f"🔥 OCCASIONE {cat.upper()}! {player['slug']} a {price:.4f} ETH (Precedente: {old_price:.4f})")
-            
-            update_db(f"{player['id']}_{cat}", price)
+            conn.execute("INSERT OR REPLACE INTO tracker (id, price) VALUES (?, ?)", (db_id, price))
+        conn.commit()
+        conn.close()
 
 async def main():
-    if not os.path.exists('players_registry.json'): return
     with open('players_registry.json', 'r') as f: players = json.load(f)
     async with aiohttp.ClientSession() as session:
         await asyncio.gather(*[check_player(session, p) for p in players])
