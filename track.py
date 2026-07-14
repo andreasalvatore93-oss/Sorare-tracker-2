@@ -1,10 +1,9 @@
-track_content = r"""import json
+import json
 import os
 import asyncio
 import aiohttp
 import datetime
 import sqlite3
-import shutil
 
 # Configurazione
 COOKIES = os.environ.get('SORARE_COOKIE')
@@ -56,31 +55,31 @@ def get_prices_by_season(data):
     def find_price_data(obj, path="root"):
         if not isinstance(obj, dict): return
         
-        # FILTRO AGGRESSIVO: ignoriamo tutto ciò che non è floor price o listing
-        # e scartiamo a priori le SuperRare
-        if any(bad in path for bad in ['SuperRare', 'LastSale', 'SingleSaleOffer']):
+        # Filtro per escludere dati non di mercato
+        if any(bad in path for bad in ['LastSale', 'SingleSaleOffer']):
             return
         
-        # Cerchiamo solo se il nodo sembra essere rilevante per il mercato
-        is_market_data = 'floorPrice' in path.lower() or 'listings' in path.lower() or 'market' in path.lower()
-        
+        # Cerchiamo dati di mercato (modificato per essere più permissivo se necessario)
         eur_cents = obj.get('eurCents')
         wei = obj.get('wei')
         
-        if (eur_cents is not None or wei is not None) and is_market_data:
-            price_val = float(eur_cents)/100 if eur_cents is not None else float(wei)/1e18
-            currency = 'EUR' if eur_cents is not None else 'ETH'
-            
-            # Categoria
-            cat = 'current'
-            season = obj.get('season')
-            if isinstance(season, dict):
-                year = int(season.get('year', 2026))
-                # AGGIORNAMENTO: Soglia 2026 per definire la categoria
+        if (eur_cents is not None or wei is not None):
+            # Controllo che sia un prezzo di listing/floor valido
+            is_market_data = 'floorPrice' in path.lower() or 'listings' in path.lower() or 'market' in path.lower() or 'card' in path.lower()
+            if is_market_data:
+                price_val = float(eur_cents)/100 if eur_cents is not None else float(wei)/1e18
+                currency = 'EUR' if eur_cents is not None else 'ETH'
+                
+                # Categoria con logica 2026
+                season = obj.get('season')
+                year = 2026 # Default se non troviamo l'anno
+                if isinstance(season, dict):
+                    year = int(season.get('year', 2026))
+                
                 cat = 'current' if year >= 2026 else 'classic'
-            
-            if not prices[cat] or price_val < prices[cat]['price']:
-                prices[cat] = {'price': price_val, 'currency': currency}
+                
+                if not prices[cat] or price_val < prices[cat]['price']:
+                    prices[cat] = {'price': price_val, 'currency': currency}
         
         for k, v in obj.items():
             new_path = f"{path}.{k}"
@@ -90,6 +89,9 @@ def get_prices_by_season(data):
                     find_price_data(item, f"{new_path}[{i}]")
 
     find_price_data(data)
+    # Debug: logga se non trova nulla
+    if not prices['current'] and not prices['classic']:
+        log(f"DEBUG: Nessun prezzo trovato nel JSON per il giocatore.")
     return prices
 
 async def check_player(session, player_data, eth_rate):
@@ -108,6 +110,12 @@ async def check_player(session, player_data, eth_rate):
         try:
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
+                
+                # Se l'API restituisce errori GraphQL (es. cookie scaduto)
+                if 'errors' in data:
+                    log(f"ERRORE API {slug}: {data['errors']}")
+                    return
+
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug}: {season_prices}")
                 
@@ -132,21 +140,23 @@ async def check_player(session, player_data, eth_rate):
 
 async def main():
     init_db()
-    if not os.path.exists('players_registry.json'): return
-    with open('players_registry.json', 'r') as f: players = json.load(f)
+    if not os.path.exists('players_registry.json'): 
+        log("File registry non trovato!")
+        return
+        
+    with open('players_registry.json', 'r') as f: 
+        players = json.load(f)
     
     import urllib.request
     try:
         with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
             eth_rate = float(json.loads(r.read().decode())['ethereum']['eur'])
-    except: eth_rate = 3000.0
+    except: 
+        eth_rate = 3000.0
     
     async with aiohttp.ClientSession() as session:
         tasks = [check_player(session, p, eth_rate) for p in players]
         await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
-    asyncio.run(main())"""
-
-with open('track.py', 'w') as f:
-    f.write(track_content)
+    asyncio.run(main())
