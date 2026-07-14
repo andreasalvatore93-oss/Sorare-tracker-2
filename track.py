@@ -5,8 +5,11 @@ import aiohttp
 import datetime
 import sqlite3
 import urllib.request
+import sys
 
 # --- Configurazione ---
+print("DEBUG: Script avviato", flush=True) # Debug immediato
+
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
@@ -23,15 +26,19 @@ def get_eth_rate():
         with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
             data = json.loads(r.read().decode())
             return float(data['ethereum']['eur'])
-    except:
+    except Exception as e:
+        log(f"Errore recupero tasso ETH: {e}")
         return 3000.0
 
 def init_db():
-    conn = sqlite3.connect('tracker.db')
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS players (id TEXT PRIMARY KEY, price REAL, currency TEXT)''')
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect('tracker.db')
+        cursor = conn.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS players (id TEXT PRIMARY KEY, price REAL, currency TEXT)''')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        log(f"Errore DB: {e}")
 
 def get_player_data(p_id):
     conn = sqlite3.connect('tracker.db')
@@ -79,11 +86,11 @@ def get_prices_by_season(data, eth_rate):
         card = tp.get('card', {})
         deal = tp.get('deal', {})
         
-        # FILTRO ATTIVO: Se esiste un 'buyer', è una vendita conclusa -> Scartiamo
+        # FILTRO CRITICO: Se c'è un buyer, è una vendita chiusa! Scartiamo.
         if deal.get('buyer') is not None:
             continue
             
-        # Calcolo prezzo
+        # Calcolo prezzo (Priorità WEI)
         price_val_eur = 0
         if amounts.get('wei'):
             price_val_eur = (float(amounts['wei']) / 1e18) * eth_rate
@@ -97,8 +104,8 @@ def get_prices_by_season(data, eth_rate):
             year = int(year_raw) if year_raw else 2026
             cat = 'current' if year >= 2026 else 'classic'
             
-            # Debug per vedere cosa stiamo leggendo ora
-            log(f"FILTERED: {cat.upper()} | Anno: {year} | Prezzo: {price_val_eur:.2f} EUR")
+            # Log di debug per verificare che stiamo filtrando
+            log(f"VALIDATED: {cat.upper()} | Anno: {year} | Prezzo: {price_val_eur:.2f} EUR")
             
             if not prices[cat] or price_val_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val_eur, 'currency': 'EUR', 'price_in_eur': price_val_eur}
@@ -121,8 +128,11 @@ async def check_player(session, player_data, eth_rate):
     async with semaphore:
         try:
             async with session.post(url, json=payload, headers=headers) as response:
+                if response.status != 200:
+                    log(f"Errore HTTP {response.status} per {slug}")
+                    return
+
                 data = await response.json()
-                
                 season_prices = get_prices_by_season(data, eth_rate)
                 
                 for s_type in ['current', 'classic']:
@@ -136,6 +146,7 @@ async def check_player(session, player_data, eth_rate):
                     if old_data:
                         old_price_eur = old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
+                        # Invio avviso solo se calo >= 5% e prezzo > 0
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
                     
@@ -144,18 +155,27 @@ async def check_player(session, player_data, eth_rate):
             log(f"ERRORE CRITICO {slug}: {str(e)}")
 
 async def main():
+    log("Inizio esecuzione principale...")
     init_db()
     eth_rate = get_eth_rate()
-    if not os.path.exists('players_registry.json'): 
-        log("File registry non trovato!")
+    
+    registry_path = 'players_registry.json'
+    if not os.path.exists(registry_path): 
+        log(f"ERRORE: File {registry_path} non trovato nella directory {os.getcwd()}")
         return
         
-    with open('players_registry.json', 'r') as f: 
-        players = json.load(f)
+    with open(registry_path, 'r') as f: 
+        try:
+            players = json.load(f)
+        except json.JSONDecodeError:
+            log("ERRORE: Formato JSON non valido in players_registry.json")
+            return
     
+    log(f"Trovati {len(players)} giocatori da analizzare.")
     async with aiohttp.ClientSession() as session:
         tasks = [check_player(session, p, eth_rate) for p in players]
         await asyncio.gather(*tasks)
+    log("Esecuzione terminata.")
 
 if __name__ == "__main__":
     asyncio.run(main())
