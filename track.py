@@ -1,18 +1,21 @@
 import json, asyncio, aiohttp, sqlite3, datetime, os
 
-def log(msg): print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
+print(f"[{datetime.datetime.now()}] DEBUG: SCRIPT AVVIATO", flush=True)
 
 async def check_player(session, player):
+    print(f"DEBUG: Analizzando {player.get('slug', 'SCONOSCIUTO')}", flush=True)
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "LazyPriceGraphQuery",
-        "variables": {"playerSlug": player['slug'], "rarity": "limited"},
+        "variables": {"playerSlug": player.get('slug'), "rarity": "limited"},
         "extensions": {"operationId": "React/3a17d0b9e886a8c514ba3352073a63a87b7d270b4397b2e10eeb0276d54ceb6b"}
     }
-    headers = {'Cookie': os.environ.get('SORARE_COOKIE'), 'x-csrf-token': os.environ.get('SORARE_CSRF')}
+    headers = {'Cookie': os.environ.get('SORARE_COOKIE', ''), 'x-csrf-token': os.environ.get('SORARE_CSRF', '')}
     
     async with session.post(url, json=payload, headers=headers) as response:
+        print(f"DEBUG: HTTP {response.status} per {player.get('slug')}", flush=True)
         data = await response.json()
+        
         prices = {'current': float('inf'), 'classic': float('inf')}
         
         def extract(obj):
@@ -37,13 +40,18 @@ async def check_player(session, player):
             db_id = f"{player['id']}_{cat}"
             row = conn.execute("SELECT price FROM tracker WHERE id=?", (db_id,)).fetchone()
             if row and price < (row[0] * 0.95):
-                log(f"🔥 OCCASIONE {cat.upper()}! {player['slug']} a {price:.4f}")
+                print(f"🔥 OCCASIONE {cat.upper()}! {player.get('slug')} a {price:.4f}", flush=True)
             conn.execute("INSERT OR REPLACE INTO tracker (id, price) VALUES (?, ?)", (db_id, price))
         conn.commit(); conn.close()
 
 async def main():
+    if not os.path.exists('players_registry.json'):
+        print("ERRORE: players_registry.json non trovato!", flush=True)
+        return
     with open('players_registry.json', 'r') as f: players = json.load(f)
+    print(f"DEBUG: Trovati {len(players)} giocatori.", flush=True)
     async with aiohttp.ClientSession() as session:
         await asyncio.gather(*[check_player(session, p) for p in players])
 
-if __name__ == "__main__": asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
