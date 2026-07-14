@@ -112,10 +112,11 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
-                # --- DEBUG: ELENCO CAMPI DISPONIBILI ---
+                # --- DEBUG: CONTROLLO SPECIFICO LIMITED ---
                 if 'data' in data and 'anyPlayer' in data['data']:
                     player_obj = data['data']['anyPlayer']
-                    log(f"DEBUG: Campi trovati in anyPlayer: {list(player_obj.keys())}")
+                    limited_field = player_obj.get('lowestPriceLimitedCard')
+                    log(f"DEBUG: Contenuto lowestPriceLimitedCard: {limited_field}")
                 
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati finali: {season_prices}")
