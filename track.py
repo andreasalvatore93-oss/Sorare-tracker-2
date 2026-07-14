@@ -53,51 +53,47 @@ async def send_telegram_msg_async(session, message):
 def get_prices_by_season(data):
     prices = {'current': None, 'classic': None}
     
-    def search(obj, path="root"):
-        if not isinstance(obj, dict): return
+    # Funzione per trovare ricorsivamente tutti i blocchi TokenPrice
+    token_prices = []
+    def find_token_prices(obj):
+        if isinstance(obj, dict):
+            if obj.get('__typename') == 'TokenPrice':
+                token_prices.append(obj)
+            for v in obj.values():
+                find_token_prices(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                find_token_prices(item)
+    
+    find_token_prices(data)
+    
+    for tp in token_prices:
+        amounts = tp.get('amounts', {})
+        card = tp.get('card', {})
         
+        # Estrattore prezzo
         price_val = None
         currency = None
-        
-        # 1. Estrazione Prezzo
-        if obj.get('eurCents') is not None:
-            price_val = float(obj['eurCents']) / 100
+        if amounts.get('eurCents'):
+            price_val = float(amounts['eurCents']) / 100
             currency = 'EUR'
-        elif obj.get('usdCents') is not None:
-            price_val = float(obj['usdCents']) / 100
+        elif amounts.get('usdCents'):
+            price_val = float(amounts['usdCents']) / 100
             currency = 'USD'
             
         if price_val is not None:
-            # 2. Logica corretta per l'Anno
-            # Cerchiamo seasonYear direttamente nell'oggetto corrente
-            year_raw = obj.get('seasonYear')
-            
-            # Se non c'è, controlliamo se c'è un oggetto season annidato
-            if not year_raw and isinstance(obj.get('season'), dict):
-                year_raw = obj['season'].get('year')
-            
-            # Fallback a 2026 se non troviamo nulla
-            try:
-                year = int(year_raw) if year_raw else 2026
-            except:
-                year = 2026
+            # Estrattore Anno (ora guarda nel posto giusto!)
+            year_raw = card.get('seasonYear')
+            year = int(year_raw) if year_raw else 2026
             
             cat = 'current' if year >= 2026 else 'classic'
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
-            log(f"SCAN OK: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency}")
+            log(f"DETECTED: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
-        
-        # Recursion
-        for k, v in obj.items():
-            if isinstance(v, dict): search(v, f"{path}.{k}")
-            elif isinstance(v, list):
-                for i, item in enumerate(v):
-                    if isinstance(item, dict): search(item, f"{path}.{k}[{i}]")
-                    
-    search(data)
+                
     return prices
 
 async def check_player(session, player_data):
@@ -105,7 +101,6 @@ async def check_player(session, player_data):
     p_id = player_data.get('id')
     url = 'https://api.sorare.com/graphql'
     
-    # Payload aperto per vedere tutto
     payload = {
         "operationName": "LazyPriceGraphQuery",
         "variables": {"playerSlug": slug, "rarity": "limited"},
@@ -133,7 +128,6 @@ async def check_player(session, player_data):
                     if old_data:
                         old_price_eur = old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
-                        # Soglia 5% di calo
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
                     
