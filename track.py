@@ -16,7 +16,8 @@ NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{timestamp}] {message}")
+    # flush=True forza la scrittura immediata dell'output
+    print(f"[{timestamp}] {message}", flush=True)
 
 def send_email(subject, body):
     if not EMAIL_USER or not EMAIL_PASS: 
