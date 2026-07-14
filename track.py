@@ -60,19 +60,29 @@ def get_prices_by_season(data):
     
     def find_price_data(obj):
         if not isinstance(obj, dict): return
-        val_eur = obj.get('eurCents')
-        val_wei = obj.get('wei')
-        if val_eur is not None or val_wei is not None:
+        
+        # DEBUG: se vediamo un oggetto che sembra contenere un prezzo, loggiamolo
+        if 'eurCents' in obj or 'wei' in obj:
+            # log(f"DEBUG TROVATO: {obj}") # Decommenta questa riga se vuoi vedere tutto
+            val_eur = obj.get('eurCents')
+            val_wei = obj.get('wei')
+            
             price = None
             if val_eur is not None: price = {'price': float(val_eur) / 100, 'currency': 'EUR'}
             elif val_wei is not None: price = {'price': float(val_wei) / 1e18, 'currency': 'ETH'}
+            
             if price:
+                # Cerca l'anno (più flessibile)
                 year = 2026
-                if 'season' in obj and isinstance(obj['season'], dict):
-                    year = int(obj['season'].get('year', 2026))
+                # Cerchiamo 'season' ovunque nell'oggetto padre
+                season = obj.get('season')
+                if isinstance(season, dict):
+                    year = int(season.get('year', 2026))
+                
                 cat = 'current' if year >= 2025 else 'classic'
                 if not prices[cat] or price['price'] < prices[cat]['price']:
                     prices[cat] = price
+        
         for v in obj.values():
             if isinstance(v, (dict, list)): find_price_data(v)
             elif isinstance(v, list):
@@ -84,7 +94,6 @@ def get_prices_by_season(data):
 async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
-    log(f"--- AVVIO ANALISI: {slug} ---") # Log molto visibile
     
     url = 'https://api.sorare.com/graphql'
     payload = {
@@ -97,13 +106,13 @@ async def check_player(session, player_data, eth_rate):
     async with semaphore:
         try:
             async with session.post(url, json=payload, headers=headers) as response:
-                status = response.status
                 data = await response.json()
-                log(f"Ricevuta risposta per {slug}: Status {status}")
                 season_prices = get_prices_by_season(data)
                 
+                # --- LOG DI DEBUG FONDAMENTALE ---
+                log(f"DEBUG {slug}: Prezzi estratti -> {season_prices}")
+                
                 if not season_prices['current'] and not season_prices['classic']:
-                    log(f"ATTENZIONE: Nessun prezzo trovato per {slug}!")
                     return
 
                 for s_type in ['current', 'classic']:
@@ -120,35 +129,23 @@ async def check_player(session, player_data, eth_rate):
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
                     update_player_data(db_id, new_data['price'], new_data['currency'])
         except Exception as e:
-            log(f"ERRORE CRITICO in check_player per {slug}: {str(e)}")
+            log(f"ERRORE CRITICO {slug}: {str(e)}")
 
 async def main():
     init_db()
     backup_database()
+    if not os.path.exists('players_registry.json'): return
+    with open('players_registry.json', 'r') as f: players = json.load(f)
     
-    if not os.path.exists('players_registry.json'):
-        log("ERRORE: players_registry.json non trovato!")
-        return
-
-    with open('players_registry.json', 'r') as f:
-        players = json.load(f)
-    
-    log(f"Caricati {len(players)} giocatori: {players[0].get('slug')}")
-
     import urllib.request
     try:
         with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
             eth_rate = float(json.loads(r.read().decode())['ethereum']['eur'])
     except: eth_rate = 3000.0
     
-    log(f"Tasso ETH/EUR: {eth_rate}")
-    log("Inizio avvio task...")
-
     async with aiohttp.ClientSession() as session:
         tasks = [check_player(session, p, eth_rate) for p in players]
-        log(f"Task creati: {len(tasks)}. Avvio gather...")
         await asyncio.gather(*tasks)
-    log("Tutti i task completati.")
 
 if __name__ == "__main__":
     asyncio.run(main())
