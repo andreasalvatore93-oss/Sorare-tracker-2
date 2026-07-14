@@ -59,34 +59,38 @@ def get_prices_by_season(data):
         price_val = None
         currency = None
         
+        # 1. Estrazione Prezzo
         if obj.get('eurCents') is not None:
             price_val = float(obj['eurCents']) / 100
             currency = 'EUR'
         elif obj.get('usdCents') is not None:
             price_val = float(obj['usdCents']) / 100
             currency = 'USD'
-        elif obj.get('wei') is not None:
-            price_val = float(obj['wei']) / 1e18
-            currency = 'ETH'
             
         if price_val is not None:
-            # DEBUG: Stampiamo sempre l'oggetto per vedere cosa contiene
-            year = obj.get('seasonYear') or (obj.get('season', {}).get('year') if isinstance(obj.get('season'), dict) else 2026)
+            # 2. Logica corretta per l'Anno
+            # Cerchiamo seasonYear direttamente nell'oggetto corrente
+            year_raw = obj.get('seasonYear')
             
-            # Se year è un oggetto o None, forziamo il default
+            # Se non c'è, controlliamo se c'è un oggetto season annidato
+            if not year_raw and isinstance(obj.get('season'), dict):
+                year_raw = obj['season'].get('year')
+            
+            # Fallback a 2026 se non troviamo nulla
             try:
-                y = int(year)
+                year = int(year_raw) if year_raw else 2026
             except:
-                y = 2026
+                year = 2026
             
-            cat = 'current' if y >= 2026 else 'classic'
+            cat = 'current' if year >= 2026 else 'classic'
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
-            log(f"DETECTED: {cat.upper()} | Anno: {y} | Prezzo: {price_val} {currency} | Path: {path}")
+            log(f"SCAN OK: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
         
+        # Recursion
         for k, v in obj.items():
             if isinstance(v, dict): search(v, f"{path}.{k}")
             elif isinstance(v, list):
@@ -101,7 +105,7 @@ async def check_player(session, player_data):
     p_id = player_data.get('id')
     url = 'https://api.sorare.com/graphql'
     
-    # Rimosso seasonEligibility per scaricare TUTTO
+    # Payload aperto per vedere tutto
     payload = {
         "operationName": "LazyPriceGraphQuery",
         "variables": {"playerSlug": slug, "rarity": "limited"},
@@ -114,9 +118,6 @@ async def check_player(session, player_data):
         try:
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
-                
-                # DEBUG TOTALE: Stampa tutto il JSON nel log di GitHub
-                log(f"DEBUG JSON COMPLETO: {json.dumps(data, indent=2)}")
                 
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati: {season_prices}")
@@ -132,6 +133,7 @@ async def check_player(session, player_data):
                     if old_data:
                         old_price_eur = old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
+                        # Soglia 5% di calo
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
                     
