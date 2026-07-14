@@ -3,7 +3,6 @@ import urllib.request
 import os
 import time
 import smtplib
-import re
 from email.message import EmailMessage
 
 # Configurazione
@@ -48,15 +47,27 @@ def generate_slug_guesses(player_data):
     return [x for x in guesses if not (x in seen or seen.add(x))]
 
 def get_price_from_json(data):
-    """Cerca ricorsivamente qualsiasi prezzo eurCents nel JSON di risposta"""
-    s = str(data)
-    # Cerca il pattern eurCents in tutto il JSON
-    prices = re.findall(r"'eurCents': (\d+)", s)
-    if prices:
-        # Prende il prezzo minimo tra tutti quelli trovati (assicurandosi che sia > 0)
-        valid_prices = [int(p) for p in prices if int(p) > 0]
-        if valid_prices:
-            return min(valid_prices) / 100
+    """Esplora ricorsivamente il JSON per trovare il prezzo minimo assoluto"""
+    prices = []
+
+    def extract_prices(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if k == 'eurCents' and isinstance(v, (int, float)):
+                    prices.append(v)
+                else:
+                    extract_prices(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                extract_prices(item)
+
+    # Inizia la ricerca ricorsiva
+    extract_prices(data)
+    
+    # Filtra prezzi validi e trova il minimo
+    valid_prices = [p for p in prices if p > 0]
+    if valid_prices:
+        return min(valid_prices) / 100
     return None
 
 def check_player(player_data, state):
@@ -82,7 +93,7 @@ def check_player(player_data, state):
             with urllib.request.urlopen(req) as response:
                 data = json.loads(response.read().decode())
             
-            # Estrazione prezzo flessibile
+            # Estrazione prezzo flessibile ricorsiva
             price = get_price_from_json(data)
             
             if price:
