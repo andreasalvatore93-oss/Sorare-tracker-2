@@ -1,10 +1,10 @@
 import json
-import urllib.request
 import os
-import time
+import asyncio
+import aiohttp
+import datetime
 import smtplib
 import random
-import datetime
 from email.message import EmailMessage
 
 # Configurazione
@@ -16,24 +16,16 @@ NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
+# Limitiamo a 10 richieste simultanee per sicurezza
+semaphore = asyncio.Semaphore(10)
+
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] {message}", flush=True)
 
-def get_eth_to_eur():
-    """Recupera il tasso di cambio ETH -> EUR in tempo reale"""
-    try:
-        url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur"
-        with urllib.request.urlopen(url, timeout=5) as response:
-            data = json.loads(response.read().decode())
-            return float(data['ethereum']['eur'])
-    except Exception as e:
-        log(f"Errore recupero tasso ETH (uso fallback 3000): {e}")
-        return 3000.0 
-
+# --- Funzioni di utilità (Sincrone) ---
 def send_email(subject, body):
-    if not EMAIL_USER or not EMAIL_PASS: 
-        return
+    if not EMAIL_USER or not EMAIL_PASS: return
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
@@ -46,35 +38,15 @@ def send_email(subject, body):
     except Exception as e:
         log(f"Errore invio email: {e}")
 
-def send_telegram_msg(player_name, message):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        return
-    
+async def send_telegram_msg_async(session, player_name, message):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID: return
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {
-        'chat_id': TELEGRAM_CHAT_ID,
-        'text': message,
-        'parse_mode': 'HTML'
-    }
-    data = json.dumps(payload).encode('utf-8')
-    headers = {'Content-Type': 'application/json'}
-    req = urllib.request.Request(url, data=data, headers=headers, method='POST')
-    
+    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML'}
     try:
-        with urllib.request.urlopen(req, timeout=5) as response:
-            pass 
+        async with session.post(url, json=payload) as response:
+            pass
     except Exception as e:
         log(f"Errore invio Telegram: {e}")
-
-def load_and_clean_players():
-    try:
-        with open('players_registry.json', 'r') as f:
-            players = json.load(f)
-        unique = {p['id']: p for p in players if p.get('id') and p.get('slug')}
-        return list(unique.values())
-    except Exception as e:
-        log(f"Errore caricamento registro: {e}")
-        return []
 
 def get_price_from_json_recursive(obj):
     if isinstance(obj, dict):
@@ -91,7 +63,8 @@ def get_price_from_json_recursive(obj):
             if res: return res
     return None
 
-def check_player(player_data, state, eth_rate):
+# --- Cuore del programma (Asincrono) ---
+async def check_player(session, player_data, state, eth_rate):
     p_id = player_data['id']
     url = 'https://api.sorare.com/graphql'
     payload = {
@@ -101,54 +74,68 @@ def check_player(player_data, state, eth_rate):
     }
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
     
-    try:
-        req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
-        with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
-            new_data = get_price_from_json_recursive(data)
-            
-            if new_data:
-                new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
-                old_data = state.get(p_id)
+    async with semaphore: # Qui applichiamo il limite dei 10 postini
+        try:
+            async with session.post(url, json=payload, headers=headers) as response:
+                data = await response.json()
+                new_data = get_price_from_json_recursive(data)
                 
-                if old_data:
-                    old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
+                if new_data:
+                    new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
+                    old_data = state.get(p_id)
                     
-                    if old_price_eur > 0:
-                        drop_percent = (old_price_eur - new_price_eur) / old_price_eur
-                        if new_price_eur < old_price_eur and drop_percent >= 0.05:
-                            log(f"ALERT! {p_id} sceso: {old_data['price']} {old_data['currency']} ({old_price_eur:.2f}€) -> {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)")
-                            
-                            link = f"https://sorare.com/cards/players/{player_data['slug']}"
-                            msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_data['price']} {new_data['currency']} ({new_price_eur:.2f}€)\n\n<a href='{link}'>Clicca qui per le offerte</a>"
-                            
-                            send_email(f"ALERT Sorare: {p_id}", f"Prezzo sceso del {drop_percent:.1%}.\nPrecedente: {old_data['price']} {old_data['currency']} (~{old_price_eur:.2f}€)\nNuovo: {new_data['price']} {new_data['currency']} (~{new_price_eur:.2f}€)")
-                            send_telegram_msg(p_id, msg_text) 
-                        else:
-                            log(f"{p_id}: {new_data['price']} {new_data['currency']} (nessuna variazione significativa)")
+                    if old_data:
+                        old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
+                        if old_price_eur > 0:
+                            drop_percent = (old_price_eur - new_price_eur) / old_price_eur
+                            if new_price_eur < old_price_eur and drop_percent >= 0.05:
+                                log(f"ALERT! {p_id} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
+                                link = f"https://sorare.com/cards/players/{player_data['slug']}"
+                                msg_text = f"🔥 <b>Occasione!</b>\n{p_id}\nCalo: {drop_percent:.1%}\nNuovo: {new_price_eur:.2f}€"
+                                # Le notifiche restano sincrone per semplicità o chiamate async
+                                send_email(f"ALERT Sorare: {p_id}", msg_text)
+                                await send_telegram_msg_async(session, p_id, msg_text)
+                            else:
+                                log(f"{p_id}: nessuna variazione")
+                    else:
+                        log(f"{p_id}: inizializzazione")
+                    
+                    state[p_id] = new_data
                 else:
-                    log(f"{p_id}: {new_data['price']} {new_data['currency']} (inizializzazione)")
-                
-                state[p_id] = new_data
-            else:
-                log(f"{p_id}: Nessun prezzo trovato")
-    except Exception as e:
-        log(f"Errore {p_id}: {e}")
+                    log(f"{p_id}: Nessun prezzo trovato")
+        except Exception as e:
+            log(f"Errore {p_id}: {e}")
 
-# --- Esecuzione Principale ---
-eth_rate = get_eth_to_eur()
-log(f"Tasso ETH/EUR recuperato: {eth_rate}")
+async def main():
+    # Caricamento dati
+    with open('players_registry.json', 'r') as f:
+        players = json.load(f)
+    try:
+        with open('state.json', 'r') as f:
+            state = json.load(f)
+    except:
+        state = {}
 
-players = load_and_clean_players()
-try:
-    with open('state.json', 'r') as f: 
-        state = json.load(f)
-except: 
-    state = {}
+    # Tasso ETH (questo lo teniamo sincrono perché serve una volta sola)
+    # Nota: per brevità, qui usiamo una funzione sync esistente
+    import urllib.request
+    def get_eth_sync():
+        try:
+            with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
+                return float(json.loads(r.read().decode())['ethereum']['eur'])
+        except: return 3000.0
+    
+    eth_rate = get_eth_sync()
+    log(f"Tasso ETH/EUR: {eth_rate}")
 
-for p in players:
-    check_player(p, state, eth_rate)
-    time.sleep(random.uniform(1.5, 3.5)) 
+    # Lancio parallelo
+    async with aiohttp.ClientSession() as session:
+        tasks = [check_player(session, p, state, eth_rate) for p in players]
+        await asyncio.gather(*tasks)
 
-with open('state.json', 'w') as f: 
-    json.dump(state, f, indent=2)
+    # Salva stato finale
+    with open('state.json', 'w') as f:
+        json.dump(state, f, indent=2)
+
+if __name__ == "__main__":
+    asyncio.run(main())
