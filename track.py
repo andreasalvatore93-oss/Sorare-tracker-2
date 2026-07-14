@@ -91,7 +91,8 @@ async def check_player(session, player_data, state, eth_rate):
                             if new_price_eur < old_price_eur and drop_percent >= 0.05:
                                 log(f"ALERT! {p_id} sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
                                 link = f"https://sorare.com/cards/players/{player_data['slug']}"
-                                msg_text = f"🔥 <b>Occasione!</b>\n{p_id}\nCalo: {drop_percent:.1%}\nNuovo: {new_price_eur:.2f}€"
+                               link = f"https://sorare.com/cards/players/{player_data['slug']}"
+msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {p_id}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
                                 # Le notifiche restano sincrone per semplicità o chiamate async
                                 send_email(f"ALERT Sorare: {p_id}", msg_text)
                                 await send_telegram_msg_async(session, p_id, msg_text)
@@ -113,7 +114,6 @@ async def main():
     try:
         with open('state.json', 'r') as f:
             state = json.load(f)
-            log(f"DEBUG: Caricato stato per vinicius-junior: {state.get('vinicius-junior')}") # <--- AGGIUNGI QUESTA
     except:
         state = {}
 
