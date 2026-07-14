@@ -1,7 +1,7 @@
 name: Sorare Tracker
 on:
   schedule:
-    - cron: '0 * * * *' # Esegue ogni ora
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -14,14 +14,6 @@ jobs:
         with:
           python-version: '3.11'
       
-      # NUOVE ISTRUZIONI PER PLAYWRIGHT
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install playwright
-          playwright install chromium
-          playwright install-deps
-          
       - name: Run tracker
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
