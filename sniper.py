@@ -12,10 +12,10 @@ CSRF_TOKEN = os.environ.get('SORARE_CSRF', '').strip()
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
-# CONFIGURAZIONE FILTRI
+# CONFIGURAZIONE FILTRI (Temporaneamente aperti per il test)
 MIN_PRICE_EUR = 0.1
 MIN_L5_SCORE = 0
-MIN_DISCOUNT = -1.0  # Accetta qualsiasi prezzo, anche se non è un vero sconto
+MIN_DISCOUNT = -1.0  # Accetta qualsiasi prezzo, anche se più caro del floor
 
 semaphore = asyncio.Semaphore(5)
 
@@ -206,10 +206,31 @@ async def main():
         try:
             async with session.post(url, json=payload, headers=headers) as response:
                 res_json = await response.json()
-                offers = res_json.get('data', {}).get('football', {}).get('openedSingleSaleOffers', {}).get('nodes', [])
+                
+                # LOG DI DEBUG - Intercettiamo eventuali errori GraphQL
+                if "errors" in res_json:
+                    log(f"⚠️ Errore GraphQL rilevato: {json.dumps(res_json['errors'])}")
+                
+                data = res_json.get('data')
+                if data is None:
+                    log(f"⚠️ Errore: la chiave 'data' è assente o nulla. Risposta grezza: {json.dumps(res_json)}")
+                    return
+                    
+                football = data.get('football')
+                if football is None:
+                    log(f"⚠️ Errore: la chiave 'football' è assente o nulla. Risposta grezza: {json.dumps(res_json)}")
+                    return
+                    
+                opened_offers = football.get('openedSingleSaleOffers')
+                if opened_offers is None:
+                    log(f"⚠️ Errore: la chiave 'openedSingleSaleOffers' è assente o nulla. Risposta grezza: {json.dumps(res_json)}")
+                    return
+                    
+                offers = opened_offers.get('nodes', [])
                 
                 if not offers:
                     log("Nessuna nuova offerta sul mercato.")
+                    log(f"Debug - Risposta vuota da Sorare: {json.dumps(res_json)}")
                     return
 
                 tasks = [process_offer(session, offer, eth_rate) for offer in offers]
