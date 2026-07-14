@@ -59,7 +59,6 @@ def get_prices_by_season(data):
         price_val = None
         currency = None
         
-        # Estrattore prezzi
         if obj.get('eurCents') is not None:
             price_val = float(obj['eurCents']) / 100
             currency = 'EUR'
@@ -71,12 +70,19 @@ def get_prices_by_season(data):
             currency = 'ETH'
             
         if price_val is not None:
-            # DEBUG: Logghiamo tutto quello che troviamo
+            # DEBUG: Stampiamo sempre l'oggetto per vedere cosa contiene
             year = obj.get('seasonYear') or (obj.get('season', {}).get('year') if isinstance(obj.get('season'), dict) else 2026)
-            cat = 'current' if int(year) >= 2026 else 'classic'
+            
+            # Se year è un oggetto o None, forziamo il default
+            try:
+                y = int(year)
+            except:
+                y = 2026
+            
+            cat = 'current' if y >= 2026 else 'classic'
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
-            log(f"FOUND: {cat.upper()} (Anno {year}) - Prezzo: {price_val} {currency}")
+            log(f"DETECTED: {cat.upper()} | Anno: {y} | Prezzo: {price_val} {currency} | Path: {path}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
                 prices[cat] = {'price': price_val, 'currency': currency, 'price_in_eur': val_in_eur}
@@ -90,12 +96,12 @@ def get_prices_by_season(data):
     search(data)
     return prices
 
-async def check_player(session, player_data, eth_rate):
+async def check_player(session, player_data):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
     url = 'https://api.sorare.com/graphql'
     
-    # Rimuoviamo il filtro seasonEligibility per vedere se tornano le classic
+    # Rimosso seasonEligibility per scaricare TUTTO
     payload = {
         "operationName": "LazyPriceGraphQuery",
         "variables": {"playerSlug": slug, "rarity": "limited"},
@@ -109,9 +115,8 @@ async def check_player(session, player_data, eth_rate):
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
                 
-                # SALVATAGGIO DEBUG
-                with open('sorare_debug.json', 'w') as f:
-                    json.dump(data, f, indent=4)
+                # DEBUG TOTALE: Stampa tutto il JSON nel log di GitHub
+                log(f"DEBUG JSON COMPLETO: {json.dumps(data, indent=2)}")
                 
                 season_prices = get_prices_by_season(data)
                 log(f"Analisi {slug} completata. Risultati: {season_prices}")
@@ -119,23 +124,32 @@ async def check_player(session, player_data, eth_rate):
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
                     if not new_data: continue
+                    
                     db_id = f"{p_id}_{s_type}"
                     new_price_eur = new_data['price_in_eur']
                     old_data = get_player_data(db_id)
+                    
                     if old_data:
                         old_price_eur = old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
+                    
                     update_player_data(db_id, new_price_eur, 'EUR')
         except Exception as e:
             log(f"ERRORE CRITICO {slug}: {str(e)}")
 
 async def main():
     init_db()
-    with open('players_registry.json', 'r') as f: players = json.load(f)
+    if not os.path.exists('players_registry.json'): 
+        log("File registry non trovato!")
+        return
+        
+    with open('players_registry.json', 'r') as f: 
+        players = json.load(f)
+    
     async with aiohttp.ClientSession() as session:
-        tasks = [check_player(session, p, 3000.0) for p in players]
+        tasks = [check_player(session, p) for p in players]
         await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
