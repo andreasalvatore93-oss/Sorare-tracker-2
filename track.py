@@ -42,10 +42,20 @@ def load_and_clean_players():
         return []
 
 def get_price_from_json_recursive(obj):
-    """Cerca ricorsivamente il primo valore 'eurCents' valido"""
+    """Cerca eurCents, se non trovato cerca wei e converte in ETH"""
     if isinstance(obj, dict):
-        if 'eurCents' in obj and isinstance(obj['eurCents'], (int, float)) and obj['eurCents'] > 0:
+        # 1. Priorità: cerca EUR
+        if obj.get('eurCents') is not None and isinstance(obj['eurCents'], (int, float)):
             return obj['eurCents'] / 100
+        
+        # 2. Alternativa: se non c'è EUR, cerca WEI (ETH)
+        if obj.get('wei') is not None:
+            try:
+                # 1 ETH = 10^18 Wei
+                return float(obj['wei']) / 1e18
+            except:
+                pass
+                
         for v in obj.values():
             result = get_price_from_json_recursive(v)
             if result is not None:
@@ -72,25 +82,22 @@ def check_player(player_data, state):
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
-            
-            # --- DEBUG AGGIUNTO ---
-            if p_id == 'cucurella':
-                print(f"DEBUG COMPLETO per {p_id}: {json.dumps(data, indent=2)}")
-            # ----------------------
-            
             price = get_price_from_json_recursive(data)
             
             if price:
                 old_price = state.get(p_id, 0)
+                
+                # Logica soglia 5%
                 if old_price > 0:
                     drop_percent = (old_price - price) / old_price
                     if price < old_price and drop_percent >= 0.05:
-                        print(f"ALERT! {p_id} sceso del {drop_percent:.1%}: {old_price}€ -> {price}€")
-                        send_email(f"ALERT Prezzo Sorare: {p_id}", f"Il prezzo è sceso del {drop_percent:.1%}.\nNuovo prezzo: {price}€\nPrezzo precedente: {old_price}€")
+                        print(f"ALERT! {p_id} sceso del {drop_percent:.1%}: {old_price} -> {price}")
+                        send_email(f"ALERT Prezzo Sorare: {p_id}", f"Il prezzo è sceso del {drop_percent:.1%}.\nNuovo prezzo: {price}\nPrezzo precedente: {old_price}")
                     else:
-                        print(f"{p_id}: {price}€ (nessuna variazione significativa)")
+                        print(f"{p_id}: {price} (nessuna variazione significativa)")
                 else:
-                    print(f"{p_id}: {price}€ (nuovo prezzo impostato)")
+                    print(f"{p_id}: {price} (nuovo prezzo impostato)")
+                
                 state[p_id] = price 
             else:
                 print(f"{p_id}: Nessun prezzo trovato")
