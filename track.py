@@ -55,32 +55,25 @@ def get_prices_by_season(data):
     def find_price_data(obj, path="root"):
         if not isinstance(obj, dict): return
         
-        # Filtro per escludere dati non di mercato
-        if any(bad in path for bad in ['LastSale', 'SingleSaleOffer']):
-            return
-        
-        # Cerchiamo dati di mercato (modificato per essere più permissivo se necessario)
-        eur_cents = obj.get('eurCents')
-        wei = obj.get('wei')
-        
-        if (eur_cents is not None or wei is not None):
-            # Controllo che sia un prezzo di listing/floor valido
-            is_market_data = 'floorPrice' in path.lower() or 'listings' in path.lower() or 'market' in path.lower() or 'card' in path.lower()
-            if is_market_data:
-                price_val = float(eur_cents)/100 if eur_cents is not None else float(wei)/1e18
-                currency = 'EUR' if eur_cents is not None else 'ETH'
-                
-                # Categoria con logica 2026
-                season = obj.get('season')
-                year = 2026 # Default se non troviamo l'anno
-                if isinstance(season, dict):
-                    year = int(season.get('year', 2026))
-                
-                cat = 'current' if year >= 2026 else 'classic'
-                
-                if not prices[cat] or price_val < prices[cat]['price']:
-                    prices[cat] = {'price': price_val, 'currency': currency}
-        
+        # DEBUG: Stampiamo ogni volta che troviamo un campo prezzo
+        if 'eurCents' in obj or 'wei' in obj:
+            log(f"DEBUG: Prezzo trovato in path: {path}")
+            
+            price_val = float(obj.get('eurCents'))/100 if obj.get('eurCents') is not None else float(obj.get('wei'))/1e18
+            currency = 'EUR' if obj.get('eurCents') is not None else 'ETH'
+            
+            # Tentiamo di estrarre la stagione
+            season = obj.get('season')
+            year = 2026 # Default
+            if isinstance(season, dict):
+                year = int(season.get('year', 2026))
+            
+            cat = 'current' if year >= 2026 else 'classic'
+            
+            if not prices[cat] or price_val < prices[cat]['price']:
+                prices[cat] = {'price': price_val, 'currency': currency}
+                log(f"DEBUG: Salvato prezzo {cat}: {price_val} {currency}")
+
         for k, v in obj.items():
             new_path = f"{path}.{k}"
             if isinstance(v, (dict, list)): find_price_data(v, new_path)
@@ -89,15 +82,11 @@ def get_prices_by_season(data):
                     find_price_data(item, f"{new_path}[{i}]")
 
     find_price_data(data)
-    # Debug: logga se non trova nulla
-    if not prices['current'] and not prices['classic']:
-        log(f"DEBUG: Nessun prezzo trovato nel JSON per il giocatore.")
     return prices
 
 async def check_player(session, player_data, eth_rate):
     slug = player_data.get('slug')
     p_id = player_data.get('id')
-    
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
@@ -110,14 +99,10 @@ async def check_player(session, player_data, eth_rate):
         try:
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
-                
-                # Se l'API restituisce errori GraphQL (es. cookie scaduto)
-                if 'errors' in data:
-                    log(f"ERRORE API {slug}: {data['errors']}")
-                    return
-
                 season_prices = get_prices_by_season(data)
-                log(f"Analisi {slug}: {season_prices}")
+                
+                # Se arriviamo qui, i log di DEBUG nel terminale di GitHub ci diranno dove fallisce
+                log(f"Analisi {slug} completata. Risultati: {season_prices}")
                 
                 for s_type in ['current', 'classic']:
                     new_data = season_prices.get(s_type)
@@ -131,7 +116,6 @@ async def check_player(session, player_data, eth_rate):
                         old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
                         drop_percent = (old_price_eur - new_price_eur) / old_price_eur
                         if new_price_eur < old_price_eur and drop_percent >= 0.05:
-                            log(f"ALERT! {slug} ({s_type}) sceso: {old_price_eur:.2f}€ -> {new_price_eur:.2f}€")
                             await send_telegram_msg_async(session, f"🔥 <b>Occasione {s_type.upper()}!</b>\n{slug}\nCalo: {drop_percent:.1%}\nPrezzo: {new_price_eur:.2f}€")
                     
                     update_player_data(db_id, new_data['price'], new_data['currency'])
@@ -140,19 +124,14 @@ async def check_player(session, player_data, eth_rate):
 
 async def main():
     init_db()
-    if not os.path.exists('players_registry.json'): 
-        log("File registry non trovato!")
-        return
-        
-    with open('players_registry.json', 'r') as f: 
-        players = json.load(f)
+    if not os.path.exists('players_registry.json'): return
+    with open('players_registry.json', 'r') as f: players = json.load(f)
     
     import urllib.request
     try:
         with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
             eth_rate = float(json.loads(r.read().decode())['ethereum']['eur'])
-    except: 
-        eth_rate = 3000.0
+    except: eth_rate = 3000.0
     
     async with aiohttp.ClientSession() as session:
         tasks = [check_player(session, p, eth_rate) for p in players]
