@@ -7,8 +7,8 @@ import datetime
 
 # --- CONFIGURAZIONE ---
 DB_NAME = "tracker.db"
-# ID aggiornato da te
-OPERATION_ID = "React/31bbd1d92597e943052af8044e6e3919aea872718f8662d7a89f64847cde2332"
+# ID trovato tramite il tuo Marketplace Network Log
+OPERATION_ID = "React/31bbdc92597af945852af48044ebe9819aaa872f18f8862"
 
 def log(msg):
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
@@ -22,14 +22,14 @@ def init_db():
 async def check_player(session, player):
     url = 'https://api.sorare.com/graphql'
     
-    # Payload con il nuovo ID e i parametri corretti per la ricerca
+    # Payload basato sulla CardsQuery del Marketplace
     payload = {
         "operationName": "CardsQuery",
         "variables": {
             "first": 20, 
-            "rarity": ["limited"], 
+            "rarity": ["limited"], # Puoi aggiungere "rare", "super_rare" ecc.
             "sort": "price_asc", 
-            "text": player['slug'].replace('-', ' ')
+            "text": player['slug'].replace('-', ' ') # Nome giocatore
         },
         "extensions": {
             "operationId": OPERATION_ID
@@ -53,10 +53,9 @@ async def check_player(session, player):
                 log(f"Nessuna carta in vendita trovata per {player['slug']}")
                 return
 
-            # Dizionario per il minimo dell'anno
+            # Dizionario temporaneo per il minimo dell'anno corrente
             min_prices = {}
             for card in cards:
-                # Estrazione prezzo (assumiamo il campo sia 'price')
                 price = float(card.get('price', 0))
                 year = card.get('seasonYear')
                 
@@ -97,6 +96,7 @@ async def main():
         players = json.load(f)
         
     async with aiohttp.ClientSession() as session:
+        # Esecuzione in parallelo
         await asyncio.gather(*[check_player(session, p) for p in players])
 
 if __name__ == "__main__":
