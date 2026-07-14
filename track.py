@@ -71,16 +71,21 @@ def get_prices_by_season(data):
             currency = 'ETH'
             
         if price_val is not None:
-            year = 2026
+            # Logica migliorata: cerchiamo attivamente l'anno
+            year = 2026 # Default
             season_obj = obj.get('season')
             if isinstance(season_obj, dict):
                 year = int(season_obj.get('year', 2026))
             elif 'seasonYear' in obj:
                 year = int(obj['seasonYear'])
+            elif 'year' in obj: # Spesso le carte classic hanno solo 'year'
+                year = int(obj['year'])
             
+            # Se la carta è pre-2026, è classic
             cat = 'current' if year >= 2026 else 'classic'
             val_in_eur = price_val * (0.92 if currency == 'USD' else 1.0)
             
+            # Debug visivo: se vedi 'CLASSIC' qui, il parser funziona
             log(f"SCAN: {cat.upper()} | Anno: {year} | Prezzo: {price_val} {currency}")
             
             if not prices[cat] or val_in_eur < prices[cat]['price_in_eur']:
@@ -101,7 +106,6 @@ async def check_player(session, player_data, eth_rate):
     
     url = 'https://api.sorare.com/graphql'
     
-    # Payload corretto con playerSlug e limited in minuscolo
     payload = {
         "operationName": "LazyPriceGraphQuery",
         "variables": {
