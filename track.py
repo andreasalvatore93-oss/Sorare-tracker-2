@@ -130,7 +130,7 @@ async def check_player(session, player_data, eth_rate):
                                     msg_text = f"🔥 <b>Occasione Sorare!</b>\n\nGiocatore: {slug}\nCalo: {drop_percent:.1%}\nNuovo prezzo: {new_price_eur:.2f}€\n\n<a href='{link}'>Clicca qui per le offerte</a>"
                                     await send_telegram_msg_async(session, msg_text)
                             else:
-                                log(f"{slug}: nessuna variazione significativa")
+                                log(f"{slug}: nessuna variazione significativa (Riferimento: {old_price_eur:.2f}€ | Attuale: {new_price_eur:.2f}€)")
                     else:
                         log(f"{slug}: inizializzazione")
                     
