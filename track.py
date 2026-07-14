@@ -5,6 +5,7 @@ import aiohttp
 import datetime
 import smtplib
 import random
+import sqlite3
 from email.message import EmailMessage
 
 # Configurazione
@@ -16,12 +17,41 @@ NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
-# Limitiamo a 10 richieste simultanee per sicurezza
 semaphore = asyncio.Semaphore(10)
 
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] {message}", flush=True)
+
+# --- Funzioni Database ---
+def init_db():
+    conn = sqlite3.connect('tracker.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS players (
+            id TEXT PRIMARY KEY,
+            price REAL,
+            currency TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def get_player_data(p_id):
+    conn = sqlite3.connect('tracker.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT price, currency FROM players WHERE id=?", (p_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return {'price': row[0], 'currency': row[1]} if row else None
+
+def update_player_data(p_id, price, currency):
+    conn = sqlite3.connect('tracker.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO players (id, price, currency) VALUES (?, ?, ?)", 
+                   (p_id, price, currency))
+    conn.commit()
+    conn.close()
 
 # --- Funzioni di utilità (Sincrone) ---
 def send_email(subject, body):
@@ -64,7 +94,7 @@ def get_price_from_json_recursive(obj):
     return None
 
 # --- Cuore del programma (Asincrono) ---
-async def check_player(session, player_data, state, eth_rate):
+async def check_player(session, player_data, eth_rate):
     p_id = player_data['id']
     url = 'https://api.sorare.com/graphql'
     payload = {
@@ -74,7 +104,7 @@ async def check_player(session, player_data, state, eth_rate):
     }
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
     
-    async with semaphore: # Qui applichiamo il limite dei 10 postini
+    async with semaphore:
         try:
             async with session.post(url, json=payload, headers=headers) as response:
                 data = await response.json()
@@ -82,7 +112,7 @@ async def check_player(session, player_data, state, eth_rate):
                 
                 if new_data:
                     new_price_eur = new_data['price'] * eth_rate if new_data['currency'] == 'ETH' else new_data['price']
-                    old_data = state.get(p_id)
+                    old_data = get_player_data(p_id)
                     
                     if old_data:
                         old_price_eur = old_data['price'] * eth_rate if old_data['currency'] == 'ETH' else old_data['price']
@@ -99,23 +129,18 @@ async def check_player(session, player_data, state, eth_rate):
                     else:
                         log(f"{p_id}: inizializzazione")
                     
-                    state[p_id] = new_data
+                    update_player_data(p_id, new_data['price'], new_data['currency'])
                 else:
                     log(f"{p_id}: Nessun prezzo trovato")
         except Exception as e:
             log(f"Errore {p_id}: {e}")
 
 async def main():
-    # Caricamento dati
+    init_db()
+    
     with open('players_registry.json', 'r') as f:
         players = json.load(f)
-    try:
-        with open('state.json', 'r') as f:
-            state = json.load(f)
-    except:
-        state = {}
 
-    # Tasso ETH
     import urllib.request
     def get_eth_sync():
         try:
@@ -126,14 +151,9 @@ async def main():
     eth_rate = get_eth_sync()
     log(f"Tasso ETH/EUR: {eth_rate}")
 
-    # Lancio parallelo
     async with aiohttp.ClientSession() as session:
-        tasks = [check_player(session, p, state, eth_rate) for p in players]
+        tasks = [check_player(session, p, eth_rate) for p in players]
         await asyncio.gather(*tasks)
-
-    # Salva stato finale
-    with open('state.json', 'w') as f:
-        json.dump(state, f, indent=2)
 
 if __name__ == "__main__":
     asyncio.run(main())
