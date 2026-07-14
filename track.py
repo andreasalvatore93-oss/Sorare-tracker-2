@@ -32,7 +32,6 @@ def load_and_clean_players():
     try:
         with open('players_registry.json', 'r') as f:
             players = json.load(f)
-        # Rimuove duplicati basandosi sull'id
         unique = {p['id']: p for p in players if p.get('id') and p.get('slug')}
         cleaned = list(unique.values())
         with open('players_registry.json', 'w') as f:
@@ -73,17 +72,16 @@ def check_player(player_data, state):
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
+            
+            # --- DEBUG AGGIUNTO ---
+            if p_id == 'cucurella':
+                print(f"DEBUG COMPLETO per {p_id}: {json.dumps(data, indent=2)}")
+            # ----------------------
+            
             price = get_price_from_json_recursive(data)
             
-            # --- DEBUG LOGIC ---
-            if price is None:
-                print(f"DEBUG: Nessun prezzo trovato per {p_id}. Anteprima struttura JSON: {str(data)[:300]}")
-            # -------------------
-
             if price:
                 old_price = state.get(p_id, 0)
-                
-                # Logica soglia 5%
                 if old_price > 0:
                     drop_percent = (old_price - price) / old_price
                     if price < old_price and drop_percent >= 0.05:
@@ -93,7 +91,6 @@ def check_player(player_data, state):
                         print(f"{p_id}: {price}€ (nessuna variazione significativa)")
                 else:
                     print(f"{p_id}: {price}€ (nuovo prezzo impostato)")
-                
                 state[p_id] = price 
             else:
                 print(f"{p_id}: Nessun prezzo trovato")
