@@ -1,102 +1,71 @@
-import json
-import os
-import asyncio
-import aiohttp
-import datetime
-import sqlite3
-import urllib.request
-import sys
+import json, asyncio, aiohttp, sqlite3, datetime, os
 
-# --- Configurazione ---
-COOKIES = os.environ.get('SORARE_COOKIE')
-CSRF_TOKEN = os.environ.get('SORARE_CSRF')
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
+def log(message): print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}")
 
-semaphore = asyncio.Semaphore(5)
+def check_db(db_id):
+    conn = sqlite3.connect('tracker.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT price FROM tracker WHERE id=?", (db_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else None
 
-def log(message):
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{timestamp}] {message}", flush=True)
+def update_db(db_id, price):
+    conn = sqlite3.connect('tracker.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO tracker (id, price) VALUES (?, ?)", (db_id, price))
+    conn.commit()
+    conn.close()
 
-def get_eth_rate():
-    try:
-        with urllib.request.urlopen("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5) as r:
-            data = json.loads(r.read().decode())
-            return float(data['ethereum']['eur'])
-    except:
-        return 3000.0
-
-def get_prices_by_season(data, eth_rate):
-    prices = {'current': None, 'classic': None}
-    
-    token_prices = []
-    def find_token_prices(obj):
-        if isinstance(obj, dict):
-            if obj.get('__typename') == 'TokenPrice':
-                token_prices.append(obj)
-            for v in obj.values():
-                find_token_prices(v)
-        elif isinstance(obj, list):
-            for item in obj:
-                find_token_prices(item)
-    
-    find_token_prices(data)
-    
-    for tp in token_prices:
-        amounts = tp.get('amounts', {})
-        card = tp.get('card', {})
-        deal = tp.get('deal', {})
-        
-        # --- DEBUG AGGRESSIVO: Vediamo cosa c'è dentro ogni deal ---
-        log(f"DEBUG: Found TokenPrice | Buyer: {deal.get('buyer')} | Deal: {json.dumps(deal)[:100]}")
-        
-        price_val_eur = 0
-        if amounts.get('wei'):
-            price_val_eur = (float(amounts['wei']) / 1e18) * eth_rate
-        elif amounts.get('eurCents'):
-            price_val_eur = float(amounts['eurCents']) / 100
-            
-        if price_val_eur > 0:
-            year = int(card.get('seasonYear', 2026))
-            cat = 'current' if year >= 2026 else 'classic'
-            
-            # Senza filtri, registriamo il minimo che troviamo
-            if not prices[cat] or price_val_eur < prices[cat]['price_in_eur']:
-                prices[cat] = {'price': price_val_eur, 'currency': 'EUR', 'price_in_eur': price_val_eur}
-                
-    return prices
-
-async def check_player(session, player_data, eth_rate):
-    slug = player_data.get('slug')
+async def check_player(session, player):
     url = 'https://api.sorare.com/graphql'
-    
     payload = {
         "operationName": "LazyPriceGraphQuery",
-        "variables": {"playerSlug": slug, "rarity": "limited"},
+        "variables": {"playerSlug": player['slug'], "rarity": "limited"},
         "extensions": {"operationId": "React/3a17d0b9e886a8c514ba3352073a63a87b7d270b4397b2e10eeb0276d54ceb6b"}
     }
+    headers = {'Cookie': os.environ.get('SORARE_COOKIE'), 'x-csrf-token': os.environ.get('SORARE_CSRF')}
     
-    headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
-    
-    async with semaphore:
-        try:
-            async with session.post(url, json=payload, headers=headers) as response:
-                data = await response.json()
-                season_prices = get_prices_by_season(data, eth_rate)
-                log(f"Analisi completata. Risultati minimi trovati (senza filtri): {season_prices}")
-        except Exception as e:
-            log(f"ERRORE: {e}")
+    async with session.post(url, json=payload, headers=headers) as response:
+        data = await response.json()
+        
+        # Estrazione offerta
+        token_prices = []
+        def find_tokens(obj):
+            if isinstance(obj, dict):
+                if obj.get('__typename') == 'TokenPrice': token_prices.append(obj)
+                for v in obj.values(): find_tokens(v)
+            elif isinstance(obj, list):
+                for item in obj: find_tokens(item)
+        
+        find_tokens(data)
+        
+        for tp in token_prices:
+            deal = tp.get('deal', {})
+            # FILTRO: Solo offerte senza acquirente
+            if deal.get('buyer') is not None: continue
+            
+            # Calcolo Prezzo
+            amounts = tp.get('amounts', {})
+            price = float(amounts.get('wei', 0)) / 1e18
+            if price == 0: continue
+            
+            # Categoria
+            year = int(tp.get('card', {}).get('seasonYear', 2026))
+            cat = 'current' if year >= 2026 else 'classic'
+            
+            # Controllo 5%
+            old_price = check_db(f"{player['id']}_{cat}")
+            if old_price and price < (old_price * 0.95):
+                log(f"🔥 OCCASIONE {cat.upper()}! {player['slug']} a {price:.4f} ETH (Precedente: {old_price:.4f})")
+            
+            update_db(f"{player['id']}_{cat}", price)
 
 async def main():
-    log("Inizio esecuzione...")
-    eth_rate = get_eth_rate()
-    with open('players_registry.json', 'r') as f: 
-        players = json.load(f)
-    
+    if not os.path.exists('players_registry.json'): return
+    with open('players_registry.json', 'r') as f: players = json.load(f)
     async with aiohttp.ClientSession() as session:
-        tasks = [check_player(session, p, eth_rate) for p in players]
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*[check_player(session, p) for p in players])
 
 if __name__ == "__main__":
     asyncio.run(main())
