@@ -13,8 +13,7 @@ EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
 def send_email(subject, body):
-    if not EMAIL_USER or not EMAIL_PASS: 
-        return
+    if not EMAIL_USER or not EMAIL_PASS: return
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
@@ -28,52 +27,35 @@ def send_email(subject, body):
         print(f"Errore invio email: {e}")
 
 def load_and_clean_players():
-    """Carica e pulisce il registro all'avvio per evitare duplicati"""
     try:
         with open('players_registry.json', 'r') as f:
             players = json.load(f)
         unique = {p['id']: p for p in players if p.get('id') and p.get('slug')}
-        cleaned = list(unique.values())
-        with open('players_registry.json', 'w') as f:
-            json.dump(cleaned, f, indent=2)
-        return cleaned
-    except Exception as e:
-        print(f"Errore caricamento registro: {e}")
-        return []
+        return list(unique.values())
+    except: return []
 
 def get_price_from_json_recursive(obj):
-    """Cerca eurCents, se non trovato cerca wei e converte in ETH"""
+    """Restituisce {'price': valore, 'currency': 'EUR' o 'ETH'}"""
     if isinstance(obj, dict):
-        # 1. Priorità: cerca EUR
         if obj.get('eurCents') is not None and isinstance(obj['eurCents'], (int, float)):
-            return obj['eurCents'] / 100
-        
-        # 2. Alternativa: se non c'è EUR, cerca WEI (ETH)
+            return {'price': obj['eurCents'] / 100, 'currency': 'EUR'}
         if obj.get('wei') is not None:
-            try:
-                # 1 ETH = 10^18 Wei
-                return float(obj['wei']) / 1e18
-            except:
-                pass
-                
+            return {'price': float(obj['wei']) / 1e18, 'currency': 'ETH'}
         for v in obj.values():
-            result = get_price_from_json_recursive(v)
-            if result is not None:
-                return result
+            res = get_price_from_json_recursive(v)
+            if res: return res
     elif isinstance(obj, list):
         for item in obj:
-            result = get_price_from_json_recursive(item)
-            if result is not None:
-                return result
+            res = get_price_from_json_recursive(item)
+            if res: return res
     return None
 
 def check_player(player_data, state):
     p_id = player_data['id']
-    slug = player_data['slug']
     url = 'https://api.sorare.com/graphql'
     payload = {
         "operationName": "AnyPlayerLayoutQuery",
-        "variables": {"onlyPrimary": False, "slug": slug},
+        "variables": {"onlyPrimary": False, "slug": player_data['slug']},
         "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
     }
     headers = {'Content-Type': 'application/json', 'Cookie': COOKIES, 'x-csrf-token': CSRF_TOKEN, 'User-Agent': 'Mozilla/5.0'}
@@ -82,40 +64,38 @@ def check_player(player_data, state):
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
-            price = get_price_from_json_recursive(data)
+            new_data = get_price_from_json_recursive(data)
             
-            if price:
-                old_price = state.get(p_id, 0)
-                
-                # Logica soglia 5%
-                if old_price > 0:
-                    drop_percent = (old_price - price) / old_price
-                    if price < old_price and drop_percent >= 0.05:
-                        print(f"ALERT! {p_id} sceso del {drop_percent:.1%}: {old_price} -> {price}")
-                        send_email(f"ALERT Prezzo Sorare: {p_id}", f"Il prezzo è sceso del {drop_percent:.1%}.\nNuovo prezzo: {price}\nPrezzo precedente: {old_price}")
-                    else:
-                        print(f"{p_id}: {price} (nessuna variazione significativa)")
+            if new_data:
+                old_data = state.get(p_id)
+                # Confronta solo se la valuta è uguale
+                if old_data and old_data.get('currency') == new_data['currency']:
+                    old_price = old_data.get('price', 0)
+                    new_price = new_data['price']
+                    if old_price > 0:
+                        drop_percent = (old_price - new_price) / old_price
+                        if new_price < old_price and drop_percent >= 0.05:
+                            print(f"ALERT! {p_id} sceso: {old_price} {old_data['currency']} -> {new_price} {new_data['currency']}")
+                            send_email(f"ALERT Sorare: {p_id}", f"Il prezzo è sceso del {drop_percent:.1%}.\nNuovo: {new_price} {new_data['currency']}\nPrecedente: {old_price} {old_data['currency']}")
+                        else:
+                            print(f"{p_id}: {new_price} {new_data['currency']} (nessuna variazione)")
                 else:
-                    print(f"{p_id}: {price} (nuovo prezzo impostato)")
+                    print(f"{p_id}: {new_data['price']} {new_data['currency']} (nuova valuta o inizializzazione)")
                 
-                state[p_id] = price 
+                state[p_id] = new_data
             else:
                 print(f"{p_id}: Nessun prezzo trovato")
-                
     except Exception as e:
         print(f"Errore {p_id}: {e}")
 
 # --- Esecuzione Principale ---
 players = load_and_clean_players()
 try:
-    with open('state.json', 'r') as f: 
-        state = json.load(f)
-except: 
-    state = {}
+    with open('state.json', 'r') as f: state = json.load(f)
+except: state = {}
 
 for p in players:
     check_player(p, state)
     time.sleep(1) 
 
-with open('state.json', 'w') as f: 
-    json.dump(state, f, indent=2)
+with open('state.json', 'w') as f: json.dump(state, f, indent=2)
