@@ -113,6 +113,7 @@ async def main():
     try:
         with open('state.json', 'r') as f:
             state = json.load(f)
+            log(f"DEBUG: Caricato stato per vinicius-junior: {state.get('vinicius-junior')}") # <--- AGGIUNGI QUESTA
     except:
         state = {}
 
