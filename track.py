@@ -13,7 +13,8 @@ EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
 
 def send_email(subject, body):
-    if not EMAIL_USER or not EMAIL_PASS: return
+    if not EMAIL_USER or not EMAIL_PASS: 
+        return
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
@@ -27,20 +28,29 @@ def send_email(subject, body):
         print(f"Errore invio email: {e}")
 
 def load_and_clean_players():
+    """Carica e pulisce il registro all'avvio"""
     try:
         with open('players_registry.json', 'r') as f:
             players = json.load(f)
         unique = {p['id']: p for p in players if p.get('id') and p.get('slug')}
-        return list(unique.values())
-    except: return []
+        cleaned = list(unique.values())
+        with open('players_registry.json', 'w') as f:
+            json.dump(cleaned, f, indent=2)
+        return cleaned
+    except Exception as e:
+        print(f"Errore caricamento registro: {e}")
+        return []
 
 def get_price_from_json_recursive(obj):
     """Restituisce {'price': valore, 'currency': 'EUR' o 'ETH'}"""
     if isinstance(obj, dict):
+        # 1. Priorità: cerca EUR
         if obj.get('eurCents') is not None and isinstance(obj['eurCents'], (int, float)):
             return {'price': obj['eurCents'] / 100, 'currency': 'EUR'}
+        # 2. Alternativa: cerca WEI (ETH)
         if obj.get('wei') is not None:
             return {'price': float(obj['wei']) / 1e18, 'currency': 'ETH'}
+        # Ricorsione
         for v in obj.values():
             res = get_price_from_json_recursive(v)
             if res: return res
@@ -67,9 +77,13 @@ def check_player(player_data, state):
             new_data = get_price_from_json_recursive(data)
             
             if new_data:
+                # --- MIGRAZIONE DATI VECCHI ---
                 old_data = state.get(p_id)
-                # Confronta solo se la valuta è uguale
-                if old_data and old_data.get('currency') == new_data['currency']:
+                if isinstance(old_data, (int, float)):
+                    old_data = {'price': float(old_data), 'currency': 'EUR'}
+                
+                # --- LOGICA ALERT ---
+                if old_data and isinstance(old_data, dict) and old_data.get('currency') == new_data['currency']:
                     old_price = old_data.get('price', 0)
                     new_price = new_data['price']
                     if old_price > 0:
@@ -80,7 +94,7 @@ def check_player(player_data, state):
                         else:
                             print(f"{p_id}: {new_price} {new_data['currency']} (nessuna variazione)")
                 else:
-                    print(f"{p_id}: {new_data['price']} {new_data['currency']} (nuova valuta o inizializzazione)")
+                    print(f"{p_id}: {new_data['price']} {new_data['currency']} (inizializzazione o cambio valuta)")
                 
                 state[p_id] = new_data
             else:
@@ -91,11 +105,14 @@ def check_player(player_data, state):
 # --- Esecuzione Principale ---
 players = load_and_clean_players()
 try:
-    with open('state.json', 'r') as f: state = json.load(f)
-except: state = {}
+    with open('state.json', 'r') as f: 
+        state = json.load(f)
+except: 
+    state = {}
 
 for p in players:
     check_player(p, state)
     time.sleep(1) 
 
-with open('state.json', 'w') as f: json.dump(state, f, indent=2)
+with open('state.json', 'w') as f: 
+    json.dump(state, f, indent=2)
