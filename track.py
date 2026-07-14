@@ -42,21 +42,21 @@ def load_and_clean_players():
         print(f"Errore caricamento registro: {e}")
         return []
 
-def get_price_from_json_recursive(data):
-    prices = []
-    def extract_prices(obj):
-        if isinstance(obj, dict):
-            for k, v in obj.items():
-                if k == 'eurCents' and isinstance(v, (int, float)): 
-                    prices.append(v)
-                else: 
-                    extract_prices(v)
-        elif isinstance(obj, list):
-            for item in obj: 
-                extract_prices(item)
-    extract_prices(data)
-    valid = [p for p in prices if p > 0]
-    return min(valid) / 100 if valid else None
+def get_price_from_json_recursive(obj):
+    """Cerca ricorsivamente il primo valore 'eurCents' valido"""
+    if isinstance(obj, dict):
+        if 'eurCents' in obj and isinstance(obj['eurCents'], (int, float)) and obj['eurCents'] > 0:
+            return obj['eurCents'] / 100
+        for v in obj.values():
+            result = get_price_from_json_recursive(v)
+            if result is not None:
+                return result
+    elif isinstance(obj, list):
+        for item in obj:
+            result = get_price_from_json_recursive(item)
+            if result is not None:
+                return result
+    return None
 
 def check_player(player_data, state):
     p_id = player_data['id']
@@ -72,7 +72,14 @@ def check_player(player_data, state):
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
         with urllib.request.urlopen(req) as response:
-            price = get_price_from_json_recursive(json.loads(response.read().decode()))
+            data = json.loads(response.read().decode())
+            price = get_price_from_json_recursive(data)
+            
+            # --- DEBUG LOGIC ---
+            if price is None:
+                print(f"DEBUG: Nessun prezzo trovato per {p_id}. Anteprima struttura JSON: {str(data)[:300]}")
+            # -------------------
+
             if price:
                 old_price = state.get(p_id, 0)
                 
@@ -87,10 +94,10 @@ def check_player(player_data, state):
                 else:
                     print(f"{p_id}: {price}€ (nuovo prezzo impostato)")
                 
-                # Aggiorniamo sempre lo stato col nuovo prezzo per il prossimo confronto
                 state[p_id] = price 
             else:
                 print(f"{p_id}: Nessun prezzo trovato")
+                
     except Exception as e:
         print(f"Errore {p_id}: {e}")
 
