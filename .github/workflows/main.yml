@@ -18,6 +18,10 @@ jobs:
         with:
           python-version: '3.10'
 
+      # STEP AGGIUNTO: Qui scarichiamo lo strumento "aiohttp"
+      - name: Install dependencies
+        run: pip install aiohttp
+
       - name: Run tracker
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
