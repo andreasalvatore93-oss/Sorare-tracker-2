@@ -1,15 +1,13 @@
-name: Sorare Price Check
+name: Sorare Auction Check
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: sorare-tracker
+  group: sorare-auctions
   cancel-in-progress: true
 
 jobs:
@@ -25,22 +23,34 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Run tracker
+      - name: Run auction checker
         env:
-          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
+          AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
-        run: python track.py
+        run: python auctions.py
 
       - name: Save state
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add tracker.db
-          git diff --cached --quiet || git commit -m "update tracker db"
-          git push
+          git add auctions.db
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "update auctions db"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito (probabile esecuzione in parallelo), ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git pull --no-edit -X ours origin main
+          done
+          echo "Salvato correttamente."
