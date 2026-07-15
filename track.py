@@ -38,6 +38,14 @@ CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 
 WS_URL = "wss://ws.sorare.com/cable"
 
+# Status che significano "l'annuncio non e' piu' attivo" (venduto, ritirato, o nel mezzo
+# della pipeline di conclusione di una vendita gia' accettata): quando arrivano, la
+# togliamo dal nostro elenco di annunci attualmente aperti.
+REMOVE_STATUSES = {
+    'cancelled', 'ended', 'accepted',
+    'ready_for_scoring', 'pending_migration', 'settlable', 'settlement_published',
+}
+
 # tokenOfferWasUpdated: canale dedicato alle offerte/vendite sul mercato
 # (a differenza di anyCardWasUpdated, che riguarda la carta in generale:
 # livello, XP, cambi di proprietario, non necessariamente le vendite).
@@ -71,7 +79,18 @@ def log(message):
     print(f"[{ts}] {message}", flush=True)
 
 
-# --- Database: prezzo minimo storico per (giocatore, stagione) ---
+# --- Database ---
+# floors: il miglior (piu' basso) prezzo confermato per (giocatore, stagione), usato come
+#         riferimento per calcolare il calo% -- ora sempre allineato al minimo REALE tra
+#         gli annunci attualmente aperti che conosciamo (tabella open_offers), non piu' solo
+#         "l'ultimo prezzo visto".
+# open_offers: elenco degli annunci di vendita diretta che il bot ha visto aprire ('opened')
+#              e che, per quanto ne sappiamo, sono ancora attivi (non ancora venduti/ritirati).
+#              Serve a sapere qual e' davvero il prezzo piu' basso disponibile ORA per un
+#              giocatore, invece di confrontare solo con l'ultimo annuncio intercettato:
+#              cosi' se esistono gia' annunci piu' economici (aperti in precedenza e mai
+#              chiusi), l'alert punta a quelli e non a uno piu' caro che sembra un affare
+#              solo perche' e' il piu' recente che abbiamo notato.
 def init_db():
     conn = sqlite3.connect('tracker.db')
     cur = conn.cursor()
@@ -82,6 +101,16 @@ def init_db():
             floor_price_eur REAL NOT NULL,
             updated_at TEXT,
             PRIMARY KEY (player_slug, season_name)
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS open_offers (
+            offer_id TEXT PRIMARY KEY,
+            player_slug TEXT NOT NULL,
+            season_name TEXT NOT NULL,
+            card_slug TEXT,
+            price_eur REAL NOT NULL,
+            updated_at TEXT
         )
     ''')
     conn.commit()
@@ -110,6 +139,41 @@ def set_floor(player_slug, season_name, price):
     )
     conn.commit()
     conn.close()
+
+
+def upsert_open_offer(offer_id, player_slug, season_name, card_slug, price_eur):
+    conn = sqlite3.connect('tracker.db')
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT OR REPLACE INTO open_offers "
+        "(offer_id, player_slug, season_name, card_slug, price_eur, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (offer_id, player_slug, season_name, card_slug, price_eur, datetime.datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+
+def remove_open_offer(offer_id):
+    conn = sqlite3.connect('tracker.db')
+    cur = conn.cursor()
+    cur.execute("DELETE FROM open_offers WHERE offer_id=?", (offer_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_min_open_offer(player_slug, season_name):
+    """Restituisce (prezzo, card_slug) dell'annuncio piu' economico che risulta ancora
+    aperto per questo giocatore/stagione, secondo quanto sappiamo -- oppure None."""
+    conn = sqlite3.connect('tracker.db')
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT price_eur, card_slug FROM open_offers WHERE player_slug=? AND season_name=? "
+        "ORDER BY price_eur ASC LIMIT 1",
+        (player_slug, season_name)
+    )
+    row = cur.fetchone()
+    conn.close()
+    return row if row else None
 
 
 # --- Notifiche ---
@@ -178,14 +242,15 @@ def handle_offer_update(offer, eth_rate, stats):
         return
 
     # tokenOfferWasUpdated scatta per QUALSIASI aggiornamento dell'offerta (creazione,
-    # modifica prezzo, cancellazione, scadenza, vendita conclusa). Vogliamo intercettare
-    # il momento in cui una carta VIENE MESSA IN VENDITA a un prezzo basso (per poterla
-    # comprare noi), quindi il segnale giusto e' 'opened' (annuncio appena creato/attivo
-    # a quel prezzo) -- non 'accepted' (vendita gia' conclusa tra altri manager, carta
-    # non piu' disponibile) ne' 'cancelled' (annuncio ritirato, prezzo non piu' valido).
+    # modifica prezzo, cancellazione, scadenza, vendita conclusa/in fase di conclusione).
     offer_status = offer.get('status')
     stats.setdefault("status_counts", {})
     stats["status_counts"][offer_status] = stats["status_counts"].get(offer_status, 0) + 1
+
+    # L'annuncio non e' piu' attivo: lo togliamo dall'elenco di quelli aperti, se presente.
+    if offer_status in REMOVE_STATUSES:
+        remove_open_offer(offer_id)
+        return
 
     if offer_status != 'opened':
         return
@@ -213,6 +278,7 @@ def handle_offer_update(offer, eth_rate, stats):
         player_slug = player.get('slug')
         player_name = player.get('displayName', player_slug)
         season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
+        card_slug = card.get('slug')
         if not player_slug:
             continue
 
@@ -222,11 +288,21 @@ def handle_offer_update(offer, eth_rate, stats):
         season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
 
         stats["processed"] += 1
+
+        # Registriamo questo annuncio come "attualmente aperto" per questo giocatore.
+        upsert_open_offer(offer_id, player_slug, season_type, card_slug, price_eur)
+
+        # Il vero riferimento non e' "il prezzo di questo annuncio", ma il minimo tra TUTTI
+        # gli annunci che sappiamo essere ancora aperti per questo giocatore -- cosi', se
+        # esiste gia' un annuncio piu' economico (aperto prima e mai chiuso), l'alert punta
+        # a quello e non a questo, che potrebbe non essere davvero il miglior affare.
+        true_min_price, true_min_card_slug = get_min_open_offer(player_slug, season_type)
+
         floor_row = get_floor(player_slug, season_type)
 
         if floor_row is None:
-            set_floor(player_slug, season_type, price_eur)
-            log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {price_eur:.2f}EUR")
+            set_floor(player_slug, season_type, true_min_price)
+            log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {true_min_price:.2f}EUR")
             continue
 
         floor, floor_updated_at = floor_row
@@ -247,14 +323,14 @@ def handle_offer_update(offer, eth_rate, stats):
         if stale:
             log(f"{player_name} ({season_type}): riferimento salvato troppo vecchio "
                 f"(ultimo aggiornamento {floor_updated_at}), lo riallineo senza notificare "
-                f"({floor:.2f}EUR -> {price_eur:.2f}EUR)")
-            set_floor(player_slug, season_type, price_eur)
+                f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
+            set_floor(player_slug, season_type, true_min_price)
             continue
 
-        if price_eur >= floor:
+        if true_min_price >= floor:
             continue
 
-        drop_percent = (floor - price_eur) / floor if floor > 0 else 0
+        drop_percent = (floor - true_min_price) / floor if floor > 0 else 0
 
         if drop_percent > MAX_SUSPECT_DROP:
             log(f"ALERT SOSPETTO IGNORATO: {player_name} ({season_type}) sceso troppo "
@@ -262,16 +338,15 @@ def handle_offer_update(offer, eth_rate, stats):
             continue
 
         if drop_percent >= DROP_THRESHOLD:
-            log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {price_eur:.2f}EUR "
-                f"({drop_percent:.1%}) [status offerta: {offer_status}]")
+            log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {true_min_price:.2f}EUR "
+                f"({drop_percent:.1%}) [annuncio piu' economico attualmente noto]")
 
-            # L'evento e' 'opened': la carta e' stata appena messa in vendita a questo prezzo,
-            # quindi (salvo essere stati preceduti da qualcun altro) e' ancora acquistabile --
-            # linkiamo direttamente a lei.
-            card_slug = card.get('slug')
+            # Linkiamo sempre alla carta che risulta REALMENTE la piu' economica tra quelle
+            # aperte che conosciamo (true_min_card_slug), non necessariamente quella di
+            # questo specifico evento -- potrebbero essere due carte diverse.
             base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
-            if card_slug:
-                link = f"{base_link}?card={card_slug}"
+            if true_min_card_slug:
+                link = f"{base_link}?card={true_min_card_slug}"
             else:
                 sort_param = "s=Cards+On+Sale+Lowest+Price"
                 link = f"{base_link}?{sort_param}"
@@ -283,15 +358,15 @@ def handle_offer_update(offer, eth_rate, stats):
                 f"Stagione carta: {season_name}\n"
                 f"Calo: {drop_percent:.1%}\n"
                 f"Prezzo precedente: {floor:.2f}EUR\n"
-                f"Nuovo prezzo: {price_eur:.2f}EUR\n\n"
+                f"Nuovo prezzo: {true_min_price:.2f}EUR\n\n"
                 f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
             )
             send_telegram_msg(msg_text)
         else:
             log(f"{player_name} ({season_type}, {season_name}): piccola variazione, aggiorno il riferimento "
-                f"({floor:.2f}EUR -> {price_eur:.2f}EUR)")
+                f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
 
-        set_floor(player_slug, season_type, price_eur)
+        set_floor(player_slug, season_type, true_min_price)
 
 
 # --- WebSocket / ActionCable ---
