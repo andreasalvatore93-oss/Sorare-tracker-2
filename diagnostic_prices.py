@@ -33,101 +33,69 @@ def graphql_query(query, variables=None):
 
 
 CANDIDATES = [
-    ("A: anyPlayer.cards(onSale, sortBy PRICE_ASC)", """
-    query A($slug: String!) {
-      anyPlayer(slug: $slug) {
-        cards(rarity: limited, onSale: true, sortBy: PRICE_ASC, first: 5) {
-          nodes { slug }
-        }
-      }
-    }
-    """, {"slug": TEST_SLUG}),
-
-    ("B: anyPlayer.cards(onSale, orderBy PRICE_ASC)", """
-    query B($slug: String!) {
-      anyPlayer(slug: $slug) {
-        cards(rarity: limited, onSale: true, orderBy: PRICE_ASC, first: 5) {
-          nodes { slug }
-        }
-      }
-    }
-    """, {"slug": TEST_SLUG}),
-
-    ("C: anyPlayer.cards(onSale) no sort, with activeSingleSaleOffer", """
-    query C($slug: String!) {
-      anyPlayer(slug: $slug) {
-        cards(rarity: limited, onSale: true, first: 10) {
-          nodes {
-            slug
-            activeSingleSaleOffer { amounts { eurCents } }
-          }
-        }
-      }
-    }
-    """, {"slug": TEST_SLUG}),
-
-    ("D: anyPlayer.cards(onSale) with latestPublicOffer", """
-    query D($slug: String!) {
-      anyPlayer(slug: $slug) {
-        cards(rarity: limited, onSale: true, first: 10) {
-          nodes {
-            slug
-            latestPublicOffer { amounts { eurCents } }
-          }
-        }
-      }
-    }
-    """, {"slug": TEST_SLUG}),
-
-    ("E: anyPlayer.cards(onSale) with liveSingleSaleOffer", """
-    query E($slug: String!) {
-      anyPlayer(slug: $slug) {
-        cards(rarity: limited, onSale: true, first: 10) {
-          nodes {
-            slug
-            liveSingleSaleOffer { amounts { eurCents } }
-          }
-        }
-      }
-    }
-    """, {"slug": TEST_SLUG}),
-
-    ("F: tokens.liveSingleSaleOffers(playerSlug, sortBy)", """
-    query F($slug: String!) {
+    ("I: liveSingleSaleOffers con struttura offer completa (come subscription)", """
+    query I($slug: String!) {
       tokens {
-        liveSingleSaleOffers(playerSlug: $slug, last: 5) {
+        liveSingleSaleOffers(playerSlug: $slug, last: 10) {
           nodes {
             id
-            amounts { eurCents }
-            anyCard { slug }
+            status
+            receiverSide { amounts { eurCents wei } }
+            senderSide {
+              anyCards { slug rarityTyped sport }
+            }
           }
         }
       }
     }
     """, {"slug": TEST_SLUG}),
 
-    ("G: anyPlayer.cards no filters (see full field list via error)", """
-    query G($slug: String!) {
-      anyPlayer(slug: $slug) {
-        cards(rarity: limited, first: 3) {
-          nodes { slug price }
-        }
-      }
-    }
-    """, {"slug": TEST_SLUG}),
-
-    ("H: anyPlayer.cards with 'onSaleFrom' style price field guess", """
-    query H($slug: String!) {
-      anyPlayer(slug: $slug) {
-        cards(rarity: limited, onSale: true, first: 5) {
+    ("J: liveSingleSaleOffers con filtro rarity", """
+    query J($slug: String!) {
+      tokens {
+        liveSingleSaleOffers(playerSlug: $slug, rarity: limited, last: 10) {
           nodes {
-            slug
-            price
+            id
+            status
+            receiverSide { amounts { eurCents wei } }
+            senderSide {
+              anyCards { slug rarityTyped sport }
+            }
           }
         }
       }
     }
     """, {"slug": TEST_SLUG}),
+
+    ("K: liveSingleSaleOffers con sortBy PRICE_ASC", """
+    query K($slug: String!) {
+      tokens {
+        liveSingleSaleOffers(playerSlug: $slug, last: 10, sortBy: PRICE_ASC) {
+          nodes {
+            id
+            receiverSide { amounts { eurCents wei } }
+          }
+        }
+      }
+    }
+    """, {"slug": TEST_SLUG}),
+
+    ("L: liveSingleSaleOffers globale (senza playerSlug) per vedere la forma", """
+    query L {
+      tokens {
+        liveSingleSaleOffers(last: 3) {
+          nodes {
+            id
+            status
+            receiverSide { amounts { eurCents wei } }
+            senderSide {
+              anyCards { slug rarityTyped sport anyPlayer { slug displayName } }
+            }
+          }
+        }
+      }
+    }
+    """, None),
 ]
 
 
