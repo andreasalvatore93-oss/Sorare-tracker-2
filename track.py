@@ -224,11 +224,13 @@ def handle_offer_update(offer, eth_rate, stats):
             log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {price_eur:.2f}EUR "
                 f"({drop_percent:.1%})")
 
+            card_slug = card.get('slug')
             base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
-            sort_param = "s=Cards+On+Sale+Lowest+Price"  # cosi' la carta dell'offerta e' la prima della lista
-            if season_type == "in_season":
-                link = f"{base_link}?is=true&{sort_param}"
+            if card_slug:
+                link = f"{base_link}?card={card_slug}"
             else:
+                # ripiego, non dovrebbe mai servire dato che lo slug e' sempre presente
+                sort_param = "s=Cards+On+Sale+Lowest+Price"
                 link = f"{base_link}?{sort_param}"
 
             msg_text = (
