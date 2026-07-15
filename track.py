@@ -358,15 +358,21 @@ def handle_offer_update(offer, eth_rate, stats):
         # Riferimento troppo vecchio: nei "buchi" di ascolto tra un'esecuzione e l'altra
         # il mercato puo' essersi mosso senza che il bot lo vedesse. Meglio riallinearsi
         # in silenzio piuttosto che mostrare un calo% calcolato su un dato ormai stantio.
-        stale = False
-        if floor_updated_at:
+        # Se non abbiamo affatto un timestamp (righe create da versioni precedenti del
+        # bot, prima che questa colonna esistesse sempre), l'eta' e' sconosciuta: meglio
+        # trattarla come "troppo vecchia" (riallineo in silenzio) piuttosto che rischiare
+        # di confrontare il prezzo vero con un riferimento di eta' ignota e segnalarlo
+        # come falso "sospetto" -- e' proprio quello che stava succedendo.
+        if not floor_updated_at:
+            stale = True
+        else:
             try:
                 age_hours = (
                     datetime.datetime.now() - datetime.datetime.fromisoformat(floor_updated_at)
                 ).total_seconds() / 3600
                 stale = age_hours > MAX_FLOOR_AGE_HOURS
             except ValueError:
-                stale = False
+                stale = True
 
         if stale:
             log(f"{player_name} ({season_type}): riferimento salvato troppo vecchio "
