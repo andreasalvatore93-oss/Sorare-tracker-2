@@ -27,7 +27,7 @@ LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '200'))
 
 DROP_THRESHOLD = 0.13    # 13% = soglia minima per notificare
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
-MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '3.0'))  # sotto questa soglia, ignoriamo la carta
+MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa soglia, ignoriamo la carta
 
 # Se il riferimento (floor) salvato nel database e' piu' vecchio di cosi', non ci fidiamo piu':
 # nei "buchi" di ascolto tra un'esecuzione e l'altra il mercato puo' essersi mosso senza che il
@@ -258,12 +258,20 @@ def eur_price_from_amounts(amounts, eth_rate):
 # A differenza del semplice ascolto della subscription (che vede solo i CAMBIAMENTI di stato),
 # questa e' un'istantanea del mercato reale in questo momento: risolve il problema per cui un
 # annuncio piu' economico, aperto prima che il bot iniziasse ad ascoltare, restava invisibile.
-def get_live_min_offer(player_slug, season_type, eth_rate):
+def get_live_min_offer(player_slug, season_name, eth_rate):
     """Restituisce (prezzo_minimo, slug_carta_minima, secondo_prezzo_minimo, dati_incompleti)
     oppure None. dati_incompleti e' True se esistono annunci aperti e compatibili (stessa
-    rarita'/sport/stagione) di cui pero' Sorare non restituisce il prezzo (eurCents e wei
+    rarita'/sport/stagione ESATTA) di cui pero' Sorare non restituisce il prezzo (eurCents e wei
     entrambi nulli, capitato in pratica: vedi caso Arnau Tenas) -- in quel caso il vero
-    secondo prezzo potrebbe essere nascosto li' dentro e non ci si puo' fidare del margine."""
+    secondo prezzo potrebbe essere nascosto li' dentro e non ci si puo' fidare del margine.
+
+    IMPORTANTE: il confronto usa la stagione ESATTA (season_name, es. '2024-25'), non il
+    bucket grezzo 'in_season'/'classic'. Usare il bucket grezzo mescolava tra loro stampe
+    Classic di ANNI diversi (con valori di mercato anche molto diversi) come se fossero lo
+    stesso prodotto, producendo un "secondo prezzo" e un calo% falsati (caso Nico Williams:
+    secondo prezzo segnalato 6.80EUR mentre il vero secondo prezzo della stessa stagione
+    2024-25 era ~4.95EUR, praticamente uguale al minimo -- stesso bug gia' corretto nel
+    listener aste sul caso Roman Bürki, qui rimasto per errore)."""
     try:
         nodes = fetch_all_live_offers(player_slug)
         prices = []
@@ -279,8 +287,7 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
                 if c.get('sport') != 'FOOTBALL':
                     continue
                 node_season = (c.get('sportSeason') or {}).get('name', 'unknown')
-                node_season_type = 'in_season' if node_season == CURRENT_SEASON else 'classic'
-                if node_season_type != season_type:
+                if node_season != season_name:
                     continue
                 match = c
                 break
@@ -366,25 +373,42 @@ def handle_offer_update(offer, eth_rate, stats):
             continue
 
         if price_eur < MIN_PRICE_EUR:
-            continue  # carta troppo economica: margine di trading troppo basso, non ci interessa
+            continue  # scarto veloce sul prezzo dell'evento, solo per non fare la verifica live inutilmente:
+                      # il controllo vero (sul prezzo REALE verificato) e' piu' sotto, dopo get_live_min_offer
 
         season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
 
         stats["processed"] += 1
 
         # Verifica live: qual e' DAVVERO il prezzo minimo attualmente in vendita per questo
-        # giocatore/stagione? Se la query fallisce per qualsiasi motivo, ripieghiamo sul
-        # prezzo di questo singolo evento (comportamento precedente).
-        live_result = get_live_min_offer(player_slug, season_type, eth_rate)
+        # giocatore/stagione ESATTA (non il bucket generico in_season/classic -- vedi nota
+        # nella docstring di get_live_min_offer, caso Nico Williams)? Se la query fallisce
+        # per qualsiasi motivo, ripieghiamo sul prezzo di questo singolo evento (comportamento
+        # precedente).
+        live_result = get_live_min_offer(player_slug, season_name, eth_rate)
         if live_result is not None:
             true_min_price, true_min_card_slug, second_min_price, data_incomplete = live_result
         else:
             true_min_price, true_min_card_slug, second_min_price, data_incomplete = price_eur, card_slug, None, False
 
-        floor_row = get_floor(player_slug, season_type)
+        # Il controllo sopra (price_eur < MIN_PRICE_EUR) filtra solo il prezzo dell'EVENTO
+        # che ha innescato il controllo, non il vero prezzo minimo verificato live -- per
+        # questo motivo carte a 0.80EUR passavano comunque (caso Lovro Majer: l'evento
+        # scatenante era su un annuncio piu' caro, ma la verifica live trovava un prezzo
+        # piu' basso altrove, che finiva nell'alert bypassando il filtro). Controlliamo
+        # anche il prezzo REALMENTE segnalato, non solo quello dell'evento.
+        if true_min_price < MIN_PRICE_EUR:
+            continue
+
+        # Il riferimento (floor) e' ora tracciato per STAGIONE ESATTA (season_name, es.
+        # '2024-25'), non per il bucket generico 'in_season'/'classic': usare il bucket
+        # generico mescolava tra loro stampe Classic di anni diversi, con un floor comune
+        # che non aveva senso confrontare (caso Nico Williams: floor bassissimo ereditato
+        # da un'altra stagione classic, calo% inventato all'80%).
+        floor_row = get_floor(player_slug, season_name)
 
         if floor_row is None:
-            set_floor(player_slug, season_type, true_min_price)
+            set_floor(player_slug, season_name, true_min_price)
             log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {true_min_price:.2f}EUR")
             continue
 
@@ -410,10 +434,10 @@ def handle_offer_update(offer, eth_rate, stats):
                 stale = True
 
         if stale:
-            log(f"{player_name} ({season_type}): riferimento salvato troppo vecchio "
+            log(f"{player_name} ({season_type}, {season_name}): riferimento salvato troppo vecchio "
                 f"(ultimo aggiornamento {floor_updated_at}), lo riallineo senza notificare "
                 f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
-            set_floor(player_slug, season_type, true_min_price)
+            set_floor(player_slug, season_name, true_min_price)
             continue
 
         if true_min_price >= floor:
@@ -421,17 +445,11 @@ def handle_offer_update(offer, eth_rate, stats):
 
         drop_percent = (floor - true_min_price) / floor if floor > 0 else 0
 
-        # Un calo enorme (>50%) e' spesso un dato Sorare errato/vecchio, ma potrebbe anche
-        # essere un affare reale ed eccezionale: ora che il prezzo e' comunque verificato live
-        # (query GraphQL, non il solo evento WS) e passa gia' dai controlli qui sotto (dati
-        # illeggibili, margine minimo sul secondo prezzo), sopprimere del tutto la notifica
-        # rischierebbe di far perdere proprio le occasioni migliori. Notifichiamo comunque,
-        # ma segnaliamo chiaramente nel messaggio che va verificato a mano prima di comprare.
-        # NOTA: non logghiamo piu' qui "notifico comunque" per suspect_drop/data_incomplete,
-        # perche' i controlli sotto (margine minimo, soglia calo) possono ancora far saltare
-        # la notifica del tutto -- loggarlo qui prima di saperlo era fuorviante (si vedeva
-        # "notifico" seguito subito da "salto la notifica" per lo stesso giocatore). Il log
-        # va emesso solo quando l'alert parte davvero, piu' sotto.
+        # Un calo enorme (>50%) e' spesso un dato Sorare errato/vecchio piuttosto che un
+        # affare reale. Con la stagione ESATTA ora usata sia per il floor che per la verifica
+        # live (fix sopra), i cali inventati per mescolamento di stagioni diverse dovrebbero
+        # gia' essere spariti alla radice -- ma teniamo comunque questo controllo come rete
+        # di sicurezza residua.
         suspect_drop = drop_percent > MAX_SUSPECT_DROP
 
         # Il calo% rispetto allo storico puo' sembrare grande anche quando il prezzo minimo
@@ -442,22 +460,33 @@ def handle_offer_update(offer, eth_rate, stats):
         if second_min_price is not None and second_min_price > 0:
             margin_percent = (second_min_price - true_min_price) / second_min_price
             if margin_percent < MIN_MARGIN_OVER_SECOND:
-                log(f"{player_name} ({season_type}): prezzo minimo ({true_min_price:.2f}EUR) troppo vicino "
-                    f"al secondo annuncio attuale ({second_min_price:.2f}EUR, margine {margin_percent:.1%}), "
-                    f"non e' un affare distinto, salto la notifica")
-                set_floor(player_slug, season_type, true_min_price)
+                log(f"{player_name} ({season_type}, {season_name}): prezzo minimo ({true_min_price:.2f}EUR) "
+                    f"troppo vicino al secondo annuncio attuale ({second_min_price:.2f}EUR, "
+                    f"margine {margin_percent:.1%}), non e' un affare distinto, salto la notifica")
+                set_floor(player_slug, season_name, true_min_price)
                 continue
 
+        # Scelta esplicita dell'utente: meglio rischiare di perdere qualche affare vero che
+        # mandare notifiche su cui c'e' un dubbio ragionevole che siano fasulle. Quindi se il
+        # calo e' sospetto (>50%, possibile dato Sorare errato/vecchio) o i dati sono
+        # incompleti (prezzo illeggibile su alcuni annunci compatibili, il vero margine
+        # potrebbe essere diverso), NON notifichiamo piu' -- solo log interno, nessun
+        # messaggio Telegram. Il riferimento viene comunque aggiornato per continuare a
+        # tracciare correttamente il prezzo.
+        if drop_percent >= DROP_THRESHOLD and (suspect_drop or data_incomplete):
+            reasons_log = []
+            if suspect_drop:
+                reasons_log.append("calo molto ampio (>50%)")
+            if data_incomplete:
+                reasons_log.append("dati incompleti (prezzo illeggibile su alcuni annunci compatibili)")
+            log(f"SALTATO (dubbio ragionevole: {', '.join(reasons_log)}) {player_name} "
+                f"({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {true_min_price:.2f}EUR "
+                f"({drop_percent:.1%}) -- non notifico per evitare falsi allarmi")
+            set_floor(player_slug, season_name, true_min_price)
+            continue
+
         if drop_percent >= DROP_THRESHOLD:
-            verification_note = ""
-            if suspect_drop or data_incomplete:
-                reasons_log = []
-                if suspect_drop:
-                    reasons_log.append("calo molto ampio")
-                if data_incomplete:
-                    reasons_log.append("dati incompleti")
-                verification_note = f" [DA VERIFICARE: {', '.join(reasons_log)}]"
-            log(f"ALERT!{verification_note} {player_name} ({season_type}, {season_name}) sceso: "
+            log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: "
                 f"{floor:.2f}EUR -> {true_min_price:.2f}EUR ({drop_percent:.1%}) [prezzo minimo verificato live]")
 
             # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
@@ -469,26 +498,8 @@ def handle_offer_update(offer, eth_rate, stats):
                 sort_param = "s=Cards+On+Sale+Lowest+Price"
                 link = f"{base_link}?{sort_param}"
 
-            if suspect_drop or data_incomplete:
-                title = "⚠️ <b>Occasione da VERIFICARE</b>"
-                reasons = []
-                if suspect_drop:
-                    reasons.append(
-                        "calo molto ampio (potrebbe essere un dato Sorare errato/vecchio "
-                        "oppure un affare reale eccezionale)"
-                    )
-                if data_incomplete:
-                    reasons.append(
-                        "alcuni annunci compatibili hanno prezzo illeggibile da Sorare "
-                        "(il margine reale potrebbe essere diverso)"
-                    )
-                warning_line = "⚠️ " + "; ".join(reasons) + ". Controlla il prezzo sul sito prima di comprare.\n"
-            else:
-                title = "\U0001F525 <b>Occasione Sorare!</b>"
-                warning_line = ""
-
             msg_text = (
-                f"{title}\n\n"
+                f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
                 f"Giocatore: {player_name}\n"
                 f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
                 f"Stagione carta: {season_name}\n"
@@ -496,7 +507,6 @@ def handle_offer_update(offer, eth_rate, stats):
                 f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
                 + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
                    if second_min_price is not None else "")
-                + warning_line
                 + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
             )
             send_telegram_msg(msg_text)
@@ -504,7 +514,7 @@ def handle_offer_update(offer, eth_rate, stats):
             log(f"{player_name} ({season_type}, {season_name}): piccola variazione, aggiorno il riferimento "
                 f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
 
-        set_floor(player_slug, season_type, true_min_price)
+        set_floor(player_slug, season_name, true_min_price)
 
 
 # --- WebSocket / ActionCable ---
