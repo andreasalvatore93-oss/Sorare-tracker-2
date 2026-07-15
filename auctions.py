@@ -6,8 +6,8 @@ import requests
 
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
+TELEGRAM_TOKEN = os.environ.get('AUCTION_TELEGRAM_TOKEN', '').strip()
+TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 
 # Stessa stagione In Season usata dal bot principale (track.py) -- tenerle allineate.
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
