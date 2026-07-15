@@ -1,3 +1,4 @@
+
 import os
 import re
 import json
@@ -125,6 +126,47 @@ def init_db():
             notified_at TEXT
         )
     ''')
+    # Log strutturato di OGNI decisione (notifica o scarto) su un'asta valutata, gemello di
+    # quello aggiunto in track.py: serve a costruire nel tempo un tasso misurabile di falsi
+    # positivi/negativi invece di doversi fidare solo dei messaggi Telegram gia' mandati.
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS decisions_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts TEXT,
+            auction_id TEXT,
+            player_slug TEXT,
+            player_name TEXT,
+            season_type TEXT,
+            current_price REAL,
+            min_next_bid REAL,
+            median_reference REAL,
+            recommended_ceiling REAL,
+            direct_sale_price REAL,
+            margin_estimate REAL,
+            decision TEXT,
+            reasons TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+def log_decision(auction_id, player_slug, player_name, season_type, decision,
+                  current_price=None, min_next_bid=None, median_reference=None,
+                  recommended_ceiling=None, direct_sale_price=None, margin_estimate=None,
+                  reasons=None):
+    """Registra una riga per ogni decisione presa su un'asta (notificata o scartata, e perche').
+    Stessa idea del log_decision di track.py, tabella gemella in auctions.db."""
+    conn = sqlite3.connect('auctions.db')
+    conn.execute(
+        '''INSERT INTO decisions_log
+           (ts, auction_id, player_slug, player_name, season_type, current_price, min_next_bid,
+            median_reference, recommended_ceiling, direct_sale_price, margin_estimate, decision, reasons)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        (datetime.datetime.now().isoformat(), auction_id, player_slug, player_name, season_type,
+         current_price, min_next_bid, median_reference, recommended_ceiling, direct_sale_price,
+         margin_estimate, decision, ', '.join(reasons) if reasons else None)
+    )
     conn.commit()
     conn.close()
 
@@ -307,8 +349,14 @@ def format_time_remaining(seconds):
         return "n/d"
     if seconds <= 0:
         return "gia' scaduta"
-    minutes = int(seconds // 60)
+    total_minutes = int(seconds // 60)
     secs = int(seconds % 60)
+    hours = total_minutes // 60
+    minutes = total_minutes % 60
+    # Oltre un'ora, mostrare solo minuti diventa illeggibile (es. "1011 min 13s" invece di
+    # "16h 51min") -- sopra i 60 minuti passiamo a ore+minuti, sotto restiamo su minuti+secondi.
+    if hours >= 1:
+        return f"{hours}h {minutes}min"
     if minutes >= 1:
         return f"{minutes} min {secs}s"
     return f"{secs}s"
@@ -388,20 +436,24 @@ def process_auction(auction, eth_rate):
     if not player_slug:
         return
 
-    season_year = parse_season_year((target_card.get('sportSeason') or {}).get('name'))
+    season_name = (target_card.get('sportSeason') or {}).get('name', 'unknown')
+    season_type = 'in_season' if season_name in CURRENT_SEASON_LABELS else 'classic'
+
+    season_year = parse_season_year(season_name)
     recent_prices = get_recent_public_prices(player_slug, season_year, eth_rate)
     if not recent_prices:
         log(f"{player_name}: nessun prezzo precedente trovato, salto")
+        log_decision(auction_id, player_slug, player_name, season_type, "skip_no_recent_prices",
+                     current_price=current_price_eur, min_next_bid=min_next_bid_eur)
         return
 
     last_price = recent_prices[-1]
     if current_price_eur >= last_price:
         log(f"{player_name}: asta attuale ({current_price_eur:.2f}EUR) non sotto l'ultimo prezzo "
             f"({last_price:.2f}EUR), salto")
+        log_decision(auction_id, player_slug, player_name, season_type, "skip_not_below_last_price",
+                     current_price=current_price_eur, min_next_bid=min_next_bid_eur)
         return
-
-    season_name = (target_card.get('sportSeason') or {}).get('name', 'unknown')
-    season_type = 'in_season' if season_name in CURRENT_SEASON_LABELS else 'classic'
 
     # Verifica LIVE del prezzo minimo di vendita diretta -- confronto per bucket in_season/
     # classic (vedi nota nella docstring di get_live_min_direct_sale).
@@ -422,12 +474,20 @@ def process_auction(auction, eth_rate):
         if min_next_bid_eur > recommended_ceiling:
             log(f"{player_name}: offerta minima valida ({min_next_bid_eur:.2f}EUR) supera il tetto "
                 f"consigliato ({recommended_ceiling:.2f}EUR), ignorata")
+            log_decision(auction_id, player_slug, player_name, season_type, "skip_min_bid_exceeds_ceiling",
+                         current_price=current_price_eur, min_next_bid=min_next_bid_eur,
+                         median_reference=median_reference, recommended_ceiling=recommended_ceiling,
+                         direct_sale_price=direct_sale_price)
             return
         starting_bid = min_next_bid_eur
     else:
         if current_price_eur >= recommended_ceiling:
             log(f"{player_name}: asta a {current_price_eur:.2f}EUR gia' oltre il tetto consigliato "
                 f"({recommended_ceiling:.2f}EUR), ignorata")
+            log_decision(auction_id, player_slug, player_name, season_type, "skip_price_exceeds_ceiling",
+                         current_price=current_price_eur, min_next_bid=min_next_bid_eur,
+                         median_reference=median_reference, recommended_ceiling=recommended_ceiling,
+                         direct_sale_price=direct_sale_price)
             return
         starting_bid = current_price_eur
 
@@ -494,6 +554,10 @@ def process_auction(auction, eth_rate):
     msg_text = "\n".join(msg_lines)
     send_telegram_msg(msg_text)
     mark_notified(auction_id)
+    log_decision(auction_id, player_slug, player_name, season_type, "notify",
+                 current_price=current_price_eur, min_next_bid=min_next_bid_eur,
+                 median_reference=median_reference, recommended_ceiling=recommended_ceiling,
+                 direct_sale_price=direct_sale_price, margin_estimate=margin_estimate)
 
 
 def handle_auction_event(auction, eth_rate, stats):
