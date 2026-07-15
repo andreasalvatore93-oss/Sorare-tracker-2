@@ -220,9 +220,11 @@ def eur_price_from_amounts(amounts, eth_rate):
 # questa e' un'istantanea del mercato reale in questo momento: risolve il problema per cui un
 # annuncio piu' economico, aperto prima che il bot iniziasse ad ascoltare, restava invisibile.
 def get_live_min_offer(player_slug, season_type, eth_rate):
-    """Restituisce (prezzo_minimo, slug_carta_minima, secondo_prezzo_minimo) oppure None.
-    Il terzo valore (None se c'e' un solo annuncio) serve a capire se il prezzo minimo e'
-    davvero un'occasione o solo il primo di un gruppo di annunci quasi identici."""
+    """Restituisce (prezzo_minimo, slug_carta_minima, secondo_prezzo_minimo, dati_incompleti)
+    oppure None. dati_incompleti e' True se esistono annunci aperti e compatibili (stessa
+    rarita'/sport/stagione) di cui pero' Sorare non restituisce il prezzo (eurCents e wei
+    entrambi nulli, capitato in pratica: vedi caso Arnau Tenas) -- in quel caso il vero
+    secondo prezzo potrebbe essere nascosto li' dentro e non ci si puo' fidare del margine."""
     try:
         data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": LIVE_CHECK_LAST_N})
         if data.get('errors'):
@@ -230,6 +232,7 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
             return None
         nodes = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {}).get('nodes') or []
         prices = []
+        incomplete = False
         for node in nodes:
             if node.get('status') != 'opened':
                 continue
@@ -250,6 +253,9 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
                 continue
             price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
             if price is None:
+                # Annuncio aperto e compatibile, ma Sorare non ci ha detto il prezzo: non possiamo
+                # escluderlo dal conteggio, potrebbe essere il vero secondo (o primo) piu' economico.
+                incomplete = True
                 continue
             prices.append((price, match.get('slug')))
         if not prices:
@@ -257,7 +263,7 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
         prices.sort(key=lambda p: p[0])
         best_price, best_card_slug = prices[0]
         second_min_price = prices[1][0] if len(prices) > 1 else None
-        return best_price, best_card_slug, second_min_price
+        return best_price, best_card_slug, second_min_price, incomplete
     except Exception as e:
         log(f"[verifica live] eccezione per {player_slug}: {e}")
         return None
@@ -327,9 +333,9 @@ def handle_offer_update(offer, eth_rate, stats):
         # prezzo di questo singolo evento (comportamento precedente).
         live_result = get_live_min_offer(player_slug, season_type, eth_rate)
         if live_result is not None:
-            true_min_price, true_min_card_slug, second_min_price = live_result
+            true_min_price, true_min_card_slug, second_min_price, data_incomplete = live_result
         else:
-            true_min_price, true_min_card_slug, second_min_price = price_eur, card_slug, None
+            true_min_price, true_min_card_slug, second_min_price, data_incomplete = price_eur, card_slug, None, False
 
         floor_row = get_floor(player_slug, season_type)
 
@@ -368,6 +374,16 @@ def handle_offer_update(offer, eth_rate, stats):
         if drop_percent > MAX_SUSPECT_DROP:
             log(f"ALERT SOSPETTO IGNORATO: {player_name} ({season_type}) sceso troppo "
                 f"({drop_percent:.1%}). Dati probabilmente errati.")
+            continue
+
+        # A volte Sorare restituisce annunci aperti e compatibili ma senza prezzo leggibile
+        # (eurCents e wei entrambi nulli -- capitato in pratica, caso Arnau Tenas). In quel
+        # caso non possiamo fidarci del margine calcolato: il vero secondo prezzo potrebbe
+        # essere nascosto proprio li'. Meglio non notificare che rischiare un falso allarme.
+        if data_incomplete:
+            log(f"{player_name} ({season_type}): alcuni annunci compatibili hanno prezzo non "
+                f"leggibile da Sorare, non mi fido del margine calcolato, salto la notifica")
+            set_floor(player_slug, season_type, true_min_price)
             continue
 
         # Il calo% rispetto allo storico puo' sembrare grande anche quando il prezzo minimo
