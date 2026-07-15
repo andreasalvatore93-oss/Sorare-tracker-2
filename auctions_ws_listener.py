@@ -24,7 +24,18 @@ CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('AUCTION_TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 
+# ATTENZIONE: leghe diverse usano formati diversi per "stagione corrente" -- le leghe europee
+# usano "2025-26" (a cavallo di due anni), la MLS (e leghe a calendario solare) usano solo
+# l'anno, es. "2026". Confrontare solo con CURRENT_SEASON lasciava fuori la MLS: la sua carta
+# In Season vera veniva scambiata per "classic" e mescolata col resto (caso Roman Bürki: 2.95EUR
+# rilevato contro 12.35EUR reali -- il 12.35 era proprio la sua carta In Season "2026" scambiata
+# per classic). Le stampe Classic di anni diversi invece hanno prezzi tra loro simili (verificato
+# con dati reali: tutte tra 2.70 e 5.50EUR per Bürki) -- sono equivalenti per i manager, quindi
+# qui basta il bucket in_season/classic, purche' il riconoscimento di "in season" copra entrambi
+# i formati.
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
+CURRENT_SEASON_ALT = os.environ.get('CURRENT_SEASON_ALT', '2026')  # formato MLS/calendario solare
+CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
 BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.25'))  # 25% fisso sul riferimento (mediana)
 RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))
 
@@ -225,13 +236,15 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
-def get_live_min_direct_sale(player_slug, target_season_name, eth_rate):
-    """Prezzo minimo REALE attualmente in vendita diretta per la STESSA stampa/stagione
-    esatta della carta in asta (confronto per season_name esatto, es. '2026' o '2025-26'),
-    non per il bucket generico in_season/classic. Usare il bucket generico qui era un bug
-    confermato (caso Roman Bürki): raggruppava insieme stagioni 'classic' diverse e
-    completamente scorrelate in termini di prezzo, trovando una stampa molto piu' vecchia
-    ed economica e scambiandola per compatibile con quella in asta."""
+def get_live_min_direct_sale(player_slug, target_season_type, eth_rate):
+    """Prezzo minimo REALE attualmente in vendita diretta nella stessa categoria in_season/
+    classic della carta in asta. NOTA: confermato con dati reali (mercato di Roman Bürki) che
+    le stampe Classic di anni diversi hanno prezzi tra loro simili (tutte 2.70-5.50EUR
+    indipendentemente dall'anno) -- sono equivalenti per i manager, quindi il bucket generico
+    va bene. Il vero bug (2.95EUR rilevato contro 12.35EUR reali) non era il bucket generico in
+    se', ma il fatto che la carta In Season vera di Bürki (stagione MLS "2026") veniva
+    classificata come "classic" perche' il confronto guardava solo il formato europeo "2025-26"
+    -- risolto riconoscendo entrambi i formati in CURRENT_SEASON_LABELS."""
     try:
         nodes = fetch_all_live_offers(player_slug)
         prices = []
@@ -246,7 +259,8 @@ def get_live_min_direct_sale(player_slug, target_season_name, eth_rate):
                 if c.get('sport') != 'FOOTBALL':
                     continue
                 node_season = (c.get('sportSeason') or {}).get('name', 'unknown')
-                if node_season != target_season_name:
+                node_season_type = 'in_season' if node_season in CURRENT_SEASON_LABELS else 'classic'
+                if node_season_type != target_season_type:
                     continue
                 match = True
                 break
@@ -353,13 +367,11 @@ def process_auction(auction, eth_rate):
         return
 
     season_name = (target_card.get('sportSeason') or {}).get('name', 'unknown')
-    season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
+    season_type = 'in_season' if season_name in CURRENT_SEASON_LABELS else 'classic'
 
-    # Verifica LIVE del prezzo minimo di vendita diretta -- confronto per stagione ESATTA
-    # (season_name, es. '2026'), non per il bucket generico in_season/classic: usare il
-    # bucket qui era un bug confermato (caso Roman Bürki), perche' raggruppava insieme
-    # stampe 'classic' di stagioni diverse e scorrelate in termini di prezzo.
-    direct_sale_price = get_live_min_direct_sale(player_slug, season_name, eth_rate)
+    # Verifica LIVE del prezzo minimo di vendita diretta -- confronto per bucket in_season/
+    # classic (vedi nota nella docstring di get_live_min_direct_sale).
+    direct_sale_price = get_live_min_direct_sale(player_slug, season_type, eth_rate)
     if direct_sale_price is None:
         # Fallback alla cache locale di track.py, che pero' usa solo il bucket generico
         # in_season/classic (non la stagione esatta) -- meno preciso, usato solo se la
