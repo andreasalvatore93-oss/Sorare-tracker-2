@@ -40,6 +40,7 @@ WS_URL = "wss://ws.sorare.com/cable"
 SUBSCRIPTION_QUERY = """
 subscription OnTokenOfferUpdated {
   tokenOfferWasUpdated {
+    id
     status
     senderSide {
       amounts { eurCents wei }
@@ -202,6 +203,13 @@ def get_player_true_min_price(player_slug, season_type, eth_rate):
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
 def handle_offer_update(offer, eth_rate, stats):
     if not offer:
+        return
+
+    # Vogliamo solo le vendite pubbliche "compra subito" (SingleSaleOffer), non le proposte
+    # private mandate al proprietario di una carta specifica (DirectOffer) -- queste ultime
+    # non compaiono mai sul mercato pubblico, quindi non ci interessano.
+    offer_id = offer.get('id') or ''
+    if not offer_id.startswith('SingleSaleOffer:'):
         return
 
     sender_side = offer.get('senderSide') or {}
