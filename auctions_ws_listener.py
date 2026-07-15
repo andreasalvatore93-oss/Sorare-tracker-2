@@ -215,26 +215,6 @@ def fetch_all_live_offers(player_slug):
     return all_nodes
 
 
-def to_fullwidth(text):
-    """Telegram HTML non ha nessun tag per la dimensione del font: <b> cambia solo il peso,
-    non la grandezza. L'unico modo per far apparire un testo VISIBILMENTE piu' grande e'
-    usare i caratteri 'fullwidth' Unicode (nati per i font CJK), che occupano il doppio
-    dello spazio orizzontale e vengono renderizzati piu' grandi dalla maggior parte dei
-    font/app, restando comunque perfettamente leggibili (es. '4.87€' -> '4.87€' con
-    cifre a larghezza doppia). Usato solo per la riga "Offri fino a" che l'utente vuole
-    ben evidenziata rispetto al resto del messaggio."""
-    result = []
-    for ch in text:
-        code = ord(ch)
-        if 0x21 <= code <= 0x7E:
-            result.append(chr(code + 0xFEE0))
-        elif ch == ' ':
-            result.append('　')
-        else:
-            result.append(ch)
-    return ''.join(result)
-
-
 def eur_price_from_amounts(amounts, eth_rate):
     if not amounts:
         return None
@@ -431,16 +411,21 @@ def process_auction(auction, eth_rate):
             indicator = "\U0001F7E1"
 
     # "Offri fino a" e' il numero che conta davvero al volo, quindi va reso molto piu'
-    # evidente delle altre righe: fullwidth (per la dimensione, vedi to_fullwidth) dentro
-    # un blockquote (per l'evidenziazione a blocco che Telegram supporta nativamente).
-    bid_ceiling_big = to_fullwidth(f"OFFRI FINO A: {recommended_ceiling:.2f}€")
+    # evidente delle altre righe. Prima si usava una conversione in caratteri Unicode
+    # "fullwidth" per farlo sembrare piu' grande, ma su Telegram si spaziava male e le
+    # parole si univano in modo illeggibile (casi Seo Jin-Su e German Berterame: "OFFRIFINOA:
+    # 3. 09€"). Soluzione piu' semplice e affidabile: tutto maiuscolo, grassetto, e una
+    # cornice di separatori sopra e sotto che lo isola visivamente dal resto del messaggio.
+    separator = "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
     msg_lines = [
         f"{indicator} <b>Asta interessante — {player_name}</b>",
         "",
         f"\U0001F4B6 Prezzo attuale asta: <b>{current_price_eur:.2f}€</b>",
         f"\U0001F53C Minimo per essere in testa ora: <b>{starting_bid:.2f}€</b>",
         "",
-        f"<blockquote>\U0001F3AF <b>{bid_ceiling_big}</b></blockquote>",
+        separator,
+        f"\U0001F3AF <b>OFFRI FINO A: {recommended_ceiling:.2f}€</b>",
+        separator,
         "",
         f"\U0001F4CA Mediana di riferimento: {median_reference:.2f}€",
     ]
