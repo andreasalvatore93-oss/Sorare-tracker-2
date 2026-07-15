@@ -20,8 +20,6 @@ TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione.
-# Deve stare abbondantemente sotto l'intervallo del cronjob esterno (5 minuti = 300s)
-# per lasciare tempo a setup/commit e non sovrapporsi alla run successiva.
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '180'))
 
 DROP_THRESHOLD = 0.05    # 5% = soglia minima per notificare
@@ -29,20 +27,27 @@ MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
 
 WS_URL = "wss://ws.sorare.com/cable"
 
+# tokenOfferWasUpdated: canale dedicato alle offerte/vendite sul mercato
+# (a differenza di anyCardWasUpdated, che riguarda la carta in generale:
+# livello, XP, cambi di proprietario, non necessariamente le vendite).
+# Non ha filtri lato server per rarita'/sport: filtriamo noi in Python.
 SUBSCRIPTION_QUERY = """
-subscription OnLimitedCardUpdated($rarities: [Rarity!], $sport: Sport) {
-  anyCardWasUpdated(rarities: $rarities, sport: $sport) {
-    slug
-    rarityTyped
-    sport
-    anyPlayer { slug displayName }
-    sportSeason { name }
-    liveSingleSaleOffer {
-      id
-      endDate
-      receiverSide {
-        amounts { eurCents wei }
+subscription OnTokenOfferUpdated {
+  tokenOfferWasUpdated {
+    status
+    senderSide {
+      amounts { eurCents wei }
+      anyCards {
+        slug
+        rarityTyped
+        sport
+        anyPlayer { slug displayName }
+        sportSeason { name }
       }
+    }
+    receiverSide {
+      amounts { eurCents wei }
+      anyCards { slug }
     }
   }
 }
@@ -122,7 +127,7 @@ def send_telegram_msg(message):
         log(f"Errore invio Telegram: {e}")
 
 
-# --- Prezzo in EUR da un'offerta di vendita ---
+# --- Prezzo in EUR ---
 def get_eth_rate():
     try:
         r = requests.get(
@@ -134,10 +139,9 @@ def get_eth_rate():
         return 3000.0
 
 
-def eur_price_from_offer(offer, eth_rate):
-    if not offer:
+def eur_price_from_amounts(amounts, eth_rate):
+    if not amounts:
         return None
-    amounts = (offer.get('receiverSide') or {}).get('amounts') or {}
     if amounts.get('eurCents') is not None:
         return amounts['eurCents'] / 100
     if amounts.get('wei') is not None:
@@ -148,64 +152,74 @@ def eur_price_from_offer(offer, eth_rate):
     return None
 
 
-# --- Elaborazione di un aggiornamento carta ricevuto dalla subscription ---
-def handle_card_update(card, eth_rate):
-    if not card:
-        return
-    if card.get('rarityTyped') != 'limited':
-        return
-    if card.get('sport') != 'FOOTBALL':
+# --- Elaborazione di un'offerta ricevuta dalla subscription ---
+def handle_offer_update(offer, eth_rate, stats):
+    if not offer:
         return
 
-    offer = card.get('liveSingleSaleOffer')
-    price_eur = eur_price_from_offer(offer, eth_rate)
+    sender_side = offer.get('senderSide') or {}
+    receiver_side = offer.get('receiverSide') or {}
+
+    # Vogliamo solo offerte "vendita diretta a soldi":
+    # dal lato di chi vende ci sono le carte, dal lato ricevente NON ci sono carte
+    # (altrimenti e' uno scambio carta-per-carta, che non ci interessa qui).
+    if receiver_side.get('anyCards'):
+        return
+
+    price_eur = eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
     if price_eur is None:
-        return  # carta aggiornata ma non attualmente in vendita (o valuta non gestita)
-
-    player = card.get('anyPlayer') or {}
-    player_slug = player.get('slug')
-    player_name = player.get('displayName', player_slug)
-    season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
-
-    if not player_slug:
         return
 
-    floor = get_floor(player_slug, season_name)
+    for card in (sender_side.get('anyCards') or []):
+        if card.get('rarityTyped') != 'limited':
+            continue
+        if card.get('sport') != 'FOOTBALL':
+            continue
 
-    if floor is None:
+        player = card.get('anyPlayer') or {}
+        player_slug = player.get('slug')
+        player_name = player.get('displayName', player_slug)
+        season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
+        if not player_slug:
+            continue
+
+        stats["processed"] += 1
+        floor = get_floor(player_slug, season_name)
+
+        if floor is None:
+            set_floor(player_slug, season_name, price_eur)
+            log(f"{player_name} ({season_name}): inizializzazione a {price_eur:.2f}EUR")
+            continue
+
+        if price_eur >= floor:
+            continue
+
+        drop_percent = (floor - price_eur) / floor if floor > 0 else 0
+
+        if drop_percent > MAX_SUSPECT_DROP:
+            log(f"ALERT SOSPETTO IGNORATO: {player_name} ({season_name}) sceso troppo "
+                f"({drop_percent:.1%}). Dati probabilmente errati.")
+            continue
+
+        if drop_percent >= DROP_THRESHOLD:
+            log(f"ALERT! {player_name} ({season_name}) sceso: {floor:.2f}EUR -> {price_eur:.2f}EUR "
+                f"({drop_percent:.1%})")
+            link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+            msg_text = (
+                f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
+                f"Giocatore: {player_name}\n"
+                f"Stagione: {season_name}\n"
+                f"Calo: {drop_percent:.1%}\n"
+                f"Prezzo precedente: {floor:.2f}EUR\n"
+                f"Nuovo prezzo: {price_eur:.2f}EUR\n\n"
+                f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
+            )
+            send_telegram_msg(msg_text)
+        else:
+            log(f"{player_name} ({season_name}): piccola variazione, aggiorno il riferimento "
+                f"({floor:.2f}EUR -> {price_eur:.2f}EUR)")
+
         set_floor(player_slug, season_name, price_eur)
-        log(f"{player_name} ({season_name}): inizializzazione a {price_eur:.2f}€")
-        return
-
-    if price_eur >= floor:
-        return  # nessuna variazione rilevante
-
-    drop_percent = (floor - price_eur) / floor if floor > 0 else 0
-
-    if drop_percent > MAX_SUSPECT_DROP:
-        log(f"ALERT SOSPETTO IGNORATO: {player_name} ({season_name}) sceso troppo "
-            f"({drop_percent:.1%}). Dati probabilmente errati.")
-        return
-
-    if drop_percent >= DROP_THRESHOLD:
-        log(f"ALERT! {player_name} ({season_name}) sceso: {floor:.2f}€ -> {price_eur:.2f}€ "
-            f"({drop_percent:.1%})")
-        link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
-        msg_text = (
-            f"🔥 <b>Occasione Sorare!</b>\n\n"
-            f"Giocatore: {player_name}\n"
-            f"Stagione: {season_name}\n"
-            f"Calo: {drop_percent:.1%}\n"
-            f"Prezzo precedente: {floor:.2f}€\n"
-            f"Nuovo prezzo: {price_eur:.2f}€\n\n"
-            f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
-        )
-        send_telegram_msg(msg_text)
-    else:
-        log(f"{player_name} ({season_name}): piccola variazione, aggiorno il riferimento "
-            f"({floor:.2f}€ -> {price_eur:.2f}€)")
-
-    set_floor(player_slug, season_name, price_eur)
 
 
 # --- WebSocket / ActionCable ---
@@ -213,8 +227,8 @@ def run_listener(eth_rate):
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
         "query": SUBSCRIPTION_QUERY,
-        "variables": {"rarities": ["limited"], "sport": "FOOTBALL"},
-        "operationName": "OnLimitedCardUpdated",
+        "variables": {},
+        "operationName": "OnTokenOfferUpdated",
         "action": "execute",
     }
 
@@ -250,23 +264,21 @@ def run_listener(eth_rate):
         if not payload:
             return
 
-        # Errori GraphQL (es. argomento sbagliato) arrivano qui
         if payload.get('errors'):
             log(f"ERRORE GraphQL nella subscription: {payload['errors']}")
             return
 
         stats["received"] += 1
-        card = (payload.get('result', {}).get('data', {}) or {}).get('anyCardWasUpdated')
-        if card:
-            handle_card_update(card, eth_rate)
-            stats["processed"] += 1
+        offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
+        if offer:
+            handle_offer_update(offer, eth_rate, stats)
 
     def on_error(ws, error):
         log(f"Errore WebSocket: {error}")
 
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). "
-            f"Eventi ricevuti: {stats['received']}, elaborati come Limited/football in vendita: {stats['processed']}")
+            f"Eventi ricevuti: {stats['received']}, carte Limited/football elaborate: {stats['processed']}")
 
     ws = websocket.WebSocketApp(
         WS_URL,
