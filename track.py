@@ -406,14 +406,16 @@ def handle_offer_update(offer, eth_rate, stats):
                 f"notifico ma segnalato come da verificare (dato potenzialmente errato)")
 
         # A volte Sorare restituisce annunci aperti e compatibili ma senza prezzo leggibile
-        # (eurCents e wei entrambi nulli -- capitato in pratica, caso Arnau Tenas). In quel
-        # caso non possiamo fidarci del margine calcolato: il vero secondo prezzo potrebbe
-        # essere nascosto proprio li'. Meglio non notificare che rischiare un falso allarme.
+        # (eurCents e wei entrambi nulli -- capitato in pratica, caso Arnau Tenas), il che
+        # rende il margine calcolato incerto (il vero secondo prezzo potrebbe essere nascosto
+        # li'). Prima bloccavamo del tutto la notifica in questo caso, ma con
+        # LIVE_CHECK_LAST_N alzato a 300 (fix Jonas Urbig) questo capita ormai su quasi meta'
+        # degli eventi, silenziando troppo spesso occasioni vere. Stessa scelta gia' fatta per
+        # il calo sospetto: notifichiamo comunque, segnalando chiaramente che il dato e'
+        # incerto, invece di decidere per l'utente scartando in silenzio.
         if data_incomplete:
             log(f"{player_name} ({season_type}): alcuni annunci compatibili hanno prezzo non "
-                f"leggibile da Sorare, non mi fido del margine calcolato, salto la notifica")
-            set_floor(player_slug, season_type, true_min_price)
-            continue
+                f"leggibile da Sorare, margine incerto, notifico comunque segnalato come da verificare")
 
         # Il calo% rispetto allo storico puo' sembrare grande anche quando il prezzo minimo
         # e' praticamente identico al secondo annuncio piu' economico attuale (es. 2.34 contro
@@ -442,12 +444,20 @@ def handle_offer_update(offer, eth_rate, stats):
                 sort_param = "s=Cards+On+Sale+Lowest+Price"
                 link = f"{base_link}?{sort_param}"
 
-            if suspect_drop:
-                title = "⚠️ <b>Occasione ANOMALA — verifica prima di comprare</b>"
-                warning_line = (
-                    "⚠️ Calo molto ampio: potrebbe essere un dato Sorare errato/vecchio "
-                    "oppure un affare reale eccezionale. Controlla il prezzo sul sito prima di comprare.\n"
-                )
+            if suspect_drop or data_incomplete:
+                title = "⚠️ <b>Occasione da VERIFICARE</b>"
+                reasons = []
+                if suspect_drop:
+                    reasons.append(
+                        "calo molto ampio (potrebbe essere un dato Sorare errato/vecchio "
+                        "oppure un affare reale eccezionale)"
+                    )
+                if data_incomplete:
+                    reasons.append(
+                        "alcuni annunci compatibili hanno prezzo illeggibile da Sorare "
+                        "(il margine reale potrebbe essere diverso)"
+                    )
+                warning_line = "⚠️ " + "; ".join(reasons) + ". Controlla il prezzo sul sito prima di comprare.\n"
             else:
                 title = "\U0001F525 <b>Occasione Sorare!</b>"
                 warning_line = ""
