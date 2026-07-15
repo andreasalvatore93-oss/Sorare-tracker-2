@@ -450,7 +450,6 @@ def handle_offer_update(offer, eth_rate, stats):
                 f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
                 f"Stagione carta: {season_name}\n"
                 f"Calo: {drop_percent:.1%}\n"
-                f"Prezzo precedente: {floor:.2f}EUR\n"
                 f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
                 + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
                    if second_min_price is not None else "")
