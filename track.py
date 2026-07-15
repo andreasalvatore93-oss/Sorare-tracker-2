@@ -294,13 +294,27 @@ def handle_offer_update(offer, eth_rate, stats, current_season_name):
         if drop_percent >= DROP_THRESHOLD:
             log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {price_eur:.2f}EUR "
                 f"({drop_percent:.1%})")
-            is_param = "true" if season_type == "in_season" else "false"
-            link = (f"https://sorare.com/it/football/market/shop/manager-sales/"
-                    f"{player_slug}/limited?is={is_param}")
+
+            base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+            sort_param = "s=Cards+On+Sale+Lowest+Price"  # cosi' la carta dell'offerta e' la prima della lista
+
+            if current_season_name:
+                # Classificazione vera (in_season/classic) gia' attiva
+                category_line = f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic'}\n"
+                if season_type == "in_season":
+                    link = f"{base_link}?is=true&{sort_param}"
+                else:
+                    link = f"{base_link}?{sort_param}"
+            else:
+                # Stagione ancora in fase di apprendimento: non etichettiamo come Classic/In Season
+                # per non dare un'informazione sbagliata
+                category_line = ""
+                link = f"{base_link}?{sort_param}"
+
             msg_text = (
                 f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
                 f"Giocatore: {player_name}\n"
-                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic'}\n"
+                f"{category_line}"
                 f"Stagione carta: {season_name}\n"
                 f"Calo: {drop_percent:.1%}\n"
                 f"Prezzo precedente: {floor:.2f}EUR\n"
