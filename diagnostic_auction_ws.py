@@ -9,30 +9,26 @@ import websocket  # pip install websocket-client
 COOKIES = os.environ.get('SORARE_COOKIE')
 WS_URL = "wss://ws.sorare.com/cable"
 
-# Fase 1: quanto ascoltare la subscription GIA' NOTA (tokenOfferWasUpdated) SENZA filtrare
-# per prefisso SingleSaleOffer, per vedere se passano di la' anche eventi di tipo Auction.
-PHASE1_SECONDS = 60
+LISTEN_SECONDS = 90
 
-# Fase 2: quanto provare la subscription IPOTETICA tokenAuctionWasUpdated (simmetrica a
-# tokenOfferWasUpdated), per vedere se esiste davvero.
-PHASE2_SECONDS = 30
-
-PHASE1_QUERY = """
-subscription OnTokenOfferUpdatedBroad {
-  tokenOfferWasUpdated {
-    id
-    status
-  }
-}
-"""
-
-PHASE2_QUERY = """
-subscription OnTokenAuctionUpdated {
+# Proviamo ad arricchire la subscription gia' confermata funzionante (tokenAuctionWasUpdated)
+# con gli stessi campi che usiamo nella query REST liveAuctions (auctions.py), per capire se
+# possiamo ricevere direttamente slug/giocatore/rarita'/stagione della carta in asta senza
+# dover fare una query separata per ogni evento.
+QUERY = """
+subscription OnTokenAuctionUpdatedRich {
   tokenAuctionWasUpdated {
     id
     currentPrice
     minNextBid
     endDate
+    anyCards {
+      slug
+      rarityTyped
+      sport
+      anyPlayer { slug displayName }
+      sportSeason { name }
+    }
   }
 }
 """
@@ -43,18 +39,18 @@ def log(message):
     print(f"[{ts}] {message}", flush=True)
 
 
-def run_phase(query, operation_name, listen_seconds, on_event):
+def main():
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
-        "query": query,
+        "query": QUERY,
         "variables": {},
-        "operationName": operation_name,
+        "operationName": "OnTokenAuctionUpdatedRich",
         "action": "execute",
     }
     state = {"confirmed": False, "rejected": False, "errors": [], "count": 0}
 
     def on_open(ws):
-        log(f"[{operation_name}] Connesso, sottoscrizione in corso...")
+        log("Connesso, sottoscrizione in corso...")
         ws.send(json.dumps({"command": "subscribe", "identifier": identifier}))
         time.sleep(1)
         ws.send(json.dumps({
@@ -73,28 +69,28 @@ def run_phase(query, operation_name, listen_seconds, on_event):
             return
         if msg_type == 'confirm_subscription':
             state["confirmed"] = True
-            log(f"[{operation_name}] Sottoscrizione CONFERMATA, in ascolto...")
+            log("Sottoscrizione CONFERMATA, in ascolto...")
             return
         if msg_type == 'reject_subscription':
             state["rejected"] = True
-            log(f"[{operation_name}] Sottoscrizione RIFIUTATA: {message}")
+            log(f"Sottoscrizione RIFIUTATA: {message}")
             return
         payload = message.get('message')
         if not payload:
             return
         if payload.get('errors'):
             state["errors"].append(payload['errors'])
-            log(f"[{operation_name}] ERRORE GraphQL: {payload['errors']}")
+            log(f"ERRORE GraphQL: {payload['errors']}")
             return
         state["count"] += 1
         data = (payload.get('result', {}).get('data', {}) or {})
-        on_event(data)
+        log(f"Evento #{state['count']}: {json.dumps(data)}")
 
     def on_error(ws, error):
-        log(f"[{operation_name}] Errore WebSocket: {error}")
+        log(f"Errore WebSocket: {error}")
 
     def on_close(ws, close_status_code, close_message):
-        log(f"[{operation_name}] Connessione chiusa (codice {close_status_code}). "
+        log(f"Connessione chiusa (codice {close_status_code}). "
             f"Eventi ricevuti: {state['count']}, confermata={state['confirmed']}, "
             f"rifiutata={state['rejected']}, errori={len(state['errors'])}")
 
@@ -107,44 +103,12 @@ def run_phase(query, operation_name, listen_seconds, on_event):
         on_close=on_close,
     )
 
-    timer = threading.Timer(listen_seconds, ws.close)
+    timer = threading.Timer(LISTEN_SECONDS, ws.close)
     timer.daemon = True
     timer.start()
+    log(f"In ascolto per {LISTEN_SECONDS}s...")
     ws.run_forever(ping_interval=30, ping_timeout=10)
     timer.cancel()
-    return state
-
-
-def main():
-    log("=" * 70)
-    log(f"FASE 1: ascolto tokenOfferWasUpdated SENZA filtro prefisso per {PHASE1_SECONDS}s")
-    log("=" * 70)
-    prefix_counts = {}
-
-    def on_event_phase1(data):
-        offer = data.get('tokenOfferWasUpdated')
-        if not offer:
-            return
-        offer_id = offer.get('id') or ''
-        prefix = offer_id.split(':')[0] if ':' in offer_id else offer_id
-        prefix_counts[prefix] = prefix_counts.get(prefix, 0) + 1
-
-    run_phase(PHASE1_QUERY, "OnTokenOfferUpdatedBroad", PHASE1_SECONDS, on_event_phase1)
-    log(f"FASE 1 risultato -- distribuzione prefissi id osservati: {prefix_counts}")
-
-    log("=" * 70)
-    log(f"FASE 2: provo la subscription ipotetica tokenAuctionWasUpdated per {PHASE2_SECONDS}s")
-    log("=" * 70)
-    auction_events = {"count": 0}
-
-    def on_event_phase2(data):
-        auction_events["count"] += 1
-        log(f"[FASE 2] evento ricevuto: {json.dumps(data)[:500]}")
-
-    state2 = run_phase(PHASE2_QUERY, "OnTokenAuctionUpdated", PHASE2_SECONDS, on_event_phase2)
-    log(f"FASE 2 risultato -- confermata={state2['confirmed']}, rifiutata={state2['rejected']}, "
-        f"errori={state2['errors']}, eventi_ricevuti={auction_events['count']}")
-
     log("Diagnostica terminata.")
 
 
