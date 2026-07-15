@@ -120,12 +120,15 @@ def parse_season_year(season_name):
     return int(match.group()) if match else None
 
 
-# --- Ultima asta conclusa per un giocatore, stessa edizione della carta in asta ---
+# --- Ultimo prezzo pubblico concluso (Asta o Acquisto istantaneo) per un giocatore,
+#     stessa edizione della carta in asta. Le offerte private sono escluse esplicitamente
+#     con includePrivateSales: false; gli Scambi sono gia' esclusi dal campo tokenPrices
+#     per definizione (restituisce solo prezzi da Auction o SingleSaleOffer). ---
 def get_last_concluded_auction_price(player_slug, season_year, eth_rate):
     query = """
     query LastAuctionPrice($slug: String!, $rarity: Rarity!, $season: Int) {
       anyPlayer(slug: $slug) {
-        tokenPrices(rarity: $rarity, season: $season, last: 5) {
+        tokenPrices(rarity: $rarity, season: $season, last: 5, includePrivateSales: false) {
           nodes {
             __typename
             amounts { eurCents wei }
@@ -141,20 +144,22 @@ def get_last_concluded_auction_price(player_slug, season_year, eth_rate):
         data = graphql_query(query, variables)
         log(f"[diagnostica aste] tokenPrices per {player_slug} (season={season_year}): {json.dumps(data)[:500]}")
         if data.get('errors'):
-            return None
+            return None, None
         nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
         if not nodes:
-            return None
+            return None, None
         latest = nodes[-1]
+        typename = latest.get('__typename')
         amounts = latest.get('amounts') or {}
+        price = None
         if amounts.get('eurCents') is not None:
-            return amounts['eurCents'] / 100
-        if amounts.get('wei') is not None:
-            return wei_to_eur(amounts['wei'], eth_rate)
-        return None
+            price = amounts['eurCents'] / 100
+        elif amounts.get('wei') is not None:
+            price = wei_to_eur(amounts['wei'], eth_rate)
+        return price, typename
     except Exception as e:
         log(f"Errore nel recuperare l'ultima asta per {player_slug}: {e}")
-        return None
+        return None, None
 
 
 # --- Aste attualmente live (pezzo documentato ufficialmente da Sorare) ---
@@ -224,7 +229,7 @@ def process_auction(auction, eth_rate):
         return
 
     season_year = parse_season_year((target_card.get('sportSeason') or {}).get('name'))
-    last_auction_price = get_last_concluded_auction_price(player_slug, season_year, eth_rate)
+    last_auction_price, last_price_typename = get_last_concluded_auction_price(player_slug, season_year, eth_rate)
     if last_auction_price is None:
         log(f"{player_name}: nessun prezzo d'asta precedente trovato, salto")
         return
@@ -244,7 +249,7 @@ def process_auction(auction, eth_rate):
         return
 
     log(f"ASTA INTERESSANTE! {player_name}: attuale {current_price_eur:.2f}EUR, "
-        f"asta precedente {last_auction_price:.2f}EUR, "
+        f"ultimo prezzo pubblico ({last_price_typename}) {last_auction_price:.2f}EUR, "
         f"vendita diretta minima {direct_sale_price if direct_sale_price is not None else 'n/d'}, "
         f"offerta consigliata {recommended_bid:.2f}EUR")
 
@@ -255,11 +260,15 @@ def process_auction(auction, eth_rate):
     else:
         link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
         link_text = "Vai alla pagina del giocatore (apri tu la scheda Aste)"
+
+    label_map = {"Auction": "Ultima asta conclusa", "SingleSaleOffer": "Ultimo acquisto istantaneo"}
+    last_price_label = label_map.get(last_price_typename, "Ultimo prezzo di mercato")
+
     msg_text = (
         f"\U0001F528 <b>Asta interessante su Sorare!</b>\n\n"
         f"Giocatore: {player_name}\n"
         f"Prezzo attuale asta: {current_price_eur:.2f}EUR\n"
-        f"Ultima asta conclusa: {last_auction_price:.2f}EUR\n"
+        f"{last_price_label}: {last_auction_price:.2f}EUR\n"
         + (f"Vendita diretta minima: {direct_sale_price:.2f}EUR\n" if direct_sale_price is not None else "")
         + f"Offerta consigliata: fino a {recommended_bid:.2f}EUR\n\n"
         f"<a href='{link}'>{link_text}</a>"
