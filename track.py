@@ -172,17 +172,16 @@ def handle_offer_update(offer, eth_rate, stats):
         return
 
     # tokenOfferWasUpdated scatta per QUALSIASI aggiornamento dell'offerta (creazione,
-    # modifica prezzo, cancellazione, scadenza, vendita). Analisi dei log ha confermato che
-    # solo 'accepted' rappresenta una vendita davvero conclusa (e' lo stato finale della
-    # pipeline di liquidazione: opened -> ready_for_scoring -> pending_migration ->
-    # settlable -> accepted). Tutti gli altri status (opened, cancelled, ended, ecc.)
-    # riflettono solo la vita dell'annuncio, non un vero scambio di denaro -- includerli
-    # significava trattare come "vendita" anche un semplice cambio di prezzo di un annuncio.
+    # modifica prezzo, cancellazione, scadenza, vendita conclusa). Vogliamo intercettare
+    # il momento in cui una carta VIENE MESSA IN VENDITA a un prezzo basso (per poterla
+    # comprare noi), quindi il segnale giusto e' 'opened' (annuncio appena creato/attivo
+    # a quel prezzo) -- non 'accepted' (vendita gia' conclusa tra altri manager, carta
+    # non piu' disponibile) ne' 'cancelled' (annuncio ritirato, prezzo non piu' valido).
     offer_status = offer.get('status')
     stats.setdefault("status_counts", {})
     stats["status_counts"][offer_status] = stats["status_counts"].get(offer_status, 0) + 1
 
-    if offer_status != 'accepted':
+    if offer_status != 'opened':
         return
 
     sender_side = offer.get('senderSide') or {}
@@ -238,12 +237,14 @@ def handle_offer_update(offer, eth_rate, stats):
             log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {price_eur:.2f}EUR "
                 f"({drop_percent:.1%}) [status offerta: {offer_status}]")
 
+            # L'evento e' 'opened': la carta e' stata appena messa in vendita a questo prezzo,
+            # quindi (salvo essere stati preceduti da qualcun altro) e' ancora acquistabile --
+            # linkiamo direttamente a lei.
             card_slug = card.get('slug')
             base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
             if card_slug:
                 link = f"{base_link}?card={card_slug}"
             else:
-                # ripiego, non dovrebbe mai servire dato che lo slug e' sempre presente
                 sort_param = "s=Cards+On+Sale+Lowest+Price"
                 link = f"{base_link}?{sort_param}"
 
