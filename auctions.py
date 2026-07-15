@@ -15,7 +15,7 @@ TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 
 BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.25'))  # 25% fisso sul riferimento (mediana)
-NUM_AUCTIONS = int(os.environ.get('NUM_AUCTIONS', '10'))
+NUM_AUCTIONS = int(os.environ.get('NUM_AUCTIONS', '30'))
 RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))  # quanti prezzi pubblici recenti usare per la mediana
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
