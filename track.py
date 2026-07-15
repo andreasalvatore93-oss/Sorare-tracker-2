@@ -38,6 +38,12 @@ MAX_FLOOR_AGE_HOURS = float(os.environ.get('MAX_FLOOR_AGE_HOURS', '48'))
 # live (vedi get_live_min_offer). Abbastanza alto da coprire praticamente tutti i giocatori.
 LIVE_CHECK_LAST_N = int(os.environ.get('LIVE_CHECK_LAST_N', '100'))
 
+# Se il prezzo minimo attuale non e' almeno questa % piu' basso del SECONDO prezzo piu'
+# basso attualmente in vendita, non e' un vero affare: e' solo rumore statistico dentro un
+# gruppo di annunci quasi identici (es. 2.34EUR contro 2.35EUR) -- anche se rispetto al
+# vecchio riferimento storico sembra un grande calo%.
+MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
+
 # La stagione In Season attualmente in corso su Sorare (formato uguale a quello sulle carte, es. "2025-26").
 # Cambia una volta l'anno, di solito ad agosto: quando succede, aggiorna solo questa riga.
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
@@ -214,14 +220,16 @@ def eur_price_from_amounts(amounts, eth_rate):
 # questa e' un'istantanea del mercato reale in questo momento: risolve il problema per cui un
 # annuncio piu' economico, aperto prima che il bot iniziasse ad ascoltare, restava invisibile.
 def get_live_min_offer(player_slug, season_type, eth_rate):
+    """Restituisce (prezzo_minimo, slug_carta_minima, secondo_prezzo_minimo) oppure None.
+    Il terzo valore (None se c'e' un solo annuncio) serve a capire se il prezzo minimo e'
+    davvero un'occasione o solo il primo di un gruppo di annunci quasi identici."""
     try:
         data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": LIVE_CHECK_LAST_N})
         if data.get('errors'):
             log(f"[verifica live] errore per {player_slug}: {data['errors']}")
             return None
         nodes = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {}).get('nodes') or []
-        best_price = None
-        best_card_slug = None
+        prices = []
         for node in nodes:
             if node.get('status') != 'opened':
                 continue
@@ -243,12 +251,13 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
             price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
             if price is None:
                 continue
-            if best_price is None or price < best_price:
-                best_price = price
-                best_card_slug = match.get('slug')
-        if best_price is None:
+            prices.append((price, match.get('slug')))
+        if not prices:
             return None
-        return best_price, best_card_slug
+        prices.sort(key=lambda p: p[0])
+        best_price, best_card_slug = prices[0]
+        second_min_price = prices[1][0] if len(prices) > 1 else None
+        return best_price, best_card_slug, second_min_price
     except Exception as e:
         log(f"[verifica live] eccezione per {player_slug}: {e}")
         return None
@@ -318,9 +327,9 @@ def handle_offer_update(offer, eth_rate, stats):
         # prezzo di questo singolo evento (comportamento precedente).
         live_result = get_live_min_offer(player_slug, season_type, eth_rate)
         if live_result is not None:
-            true_min_price, true_min_card_slug = live_result
+            true_min_price, true_min_card_slug, second_min_price = live_result
         else:
-            true_min_price, true_min_card_slug = price_eur, card_slug
+            true_min_price, true_min_card_slug, second_min_price = price_eur, card_slug, None
 
         floor_row = get_floor(player_slug, season_type)
 
@@ -361,6 +370,20 @@ def handle_offer_update(offer, eth_rate, stats):
                 f"({drop_percent:.1%}). Dati probabilmente errati.")
             continue
 
+        # Il calo% rispetto allo storico puo' sembrare grande anche quando il prezzo minimo
+        # e' praticamente identico al secondo annuncio piu' economico attuale (es. 2.34 contro
+        # 2.35EUR): in quel caso non e' un vero affare, e' solo il primo di un gruppo di
+        # annunci quasi uguali. Richiediamo un margine minimo REALE sul secondo prezzo attuale.
+        margin_percent = None
+        if second_min_price is not None and second_min_price > 0:
+            margin_percent = (second_min_price - true_min_price) / second_min_price
+            if margin_percent < MIN_MARGIN_OVER_SECOND:
+                log(f"{player_name} ({season_type}): prezzo minimo ({true_min_price:.2f}EUR) troppo vicino "
+                    f"al secondo annuncio attuale ({second_min_price:.2f}EUR, margine {margin_percent:.1%}), "
+                    f"non e' un affare distinto, salto la notifica")
+                set_floor(player_slug, season_type, true_min_price)
+                continue
+
         if drop_percent >= DROP_THRESHOLD:
             log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {true_min_price:.2f}EUR "
                 f"({drop_percent:.1%}) [prezzo minimo verificato live]")
@@ -381,8 +404,10 @@ def handle_offer_update(offer, eth_rate, stats):
                 f"Stagione carta: {season_name}\n"
                 f"Calo: {drop_percent:.1%}\n"
                 f"Prezzo precedente: {floor:.2f}EUR\n"
-                f"Nuovo prezzo: {true_min_price:.2f}EUR\n\n"
-                f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
+                f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
+                + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
+                   if second_min_price is not None else "")
+                + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
             )
             send_telegram_msg(msg_text)
         else:
