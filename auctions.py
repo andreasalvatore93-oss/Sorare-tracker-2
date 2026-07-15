@@ -163,6 +163,8 @@ def get_last_concluded_auction_price(player_slug, season_year, eth_rate):
 
 
 # --- Aste attualmente live (pezzo documentato ufficialmente da Sorare) ---
+# minNextBid: l'offerta minima valida calcolata da Sorare stesso, rispetta gli scaglioni
+# del sistema (non un semplice +10%, quindi non lo ricalcoliamo noi: lo leggiamo diretto).
 def get_live_auctions(n):
     query = """
     query ListLiveAuctions($n: Int!) {
@@ -171,6 +173,7 @@ def get_live_auctions(n):
           nodes {
             id
             currentPrice
+            minNextBid
             endDate
             anyCards {
               slug
@@ -205,6 +208,13 @@ def process_auction(auction, eth_rate):
 
     if already_notified(auction_id):
         return
+
+    # Offerta minima valida secondo Sorare (rispetta gli scaglioni del loro sistema).
+    # Logghiamo sia il valore grezzo che quello convertito per poter verificare la
+    # conversione (assumiamo sia in wei come currentPrice, da confermare al primo test).
+    min_next_bid_raw = auction.get('minNextBid')
+    min_next_bid_eur = wei_to_eur(min_next_bid_raw, eth_rate)
+    log(f"[diagnostica aste] minNextBid grezzo: {min_next_bid_raw} -> {min_next_bid_eur}")
 
     cards = auction.get('anyCards') or []
     target_card = None
@@ -243,15 +253,26 @@ def process_auction(auction, eth_rate):
     reference = min(last_auction_price, direct_sale_price) if direct_sale_price is not None else last_auction_price
     recommended_bid = reference * (1 - BID_DISCOUNT)
 
-    if current_price_eur >= recommended_bid:
-        log(f"{player_name}: asta a {current_price_eur:.2f}EUR gia' oltre l'offerta consigliata "
-            f"({recommended_bid:.2f}EUR), ignorata")
-        return
+    # Se conosciamo l'offerta minima valida di Sorare, la usiamo come cifra da consigliare
+    # (e' l'unica che il sistema accetta davvero); se supera la soglia di sconto, l'affare
+    # non e' piu' conveniente e saltiamo. Altrimenti ripieghiamo sulla vecchia logica.
+    if min_next_bid_eur is not None:
+        if min_next_bid_eur > recommended_bid:
+            log(f"{player_name}: offerta minima valida ({min_next_bid_eur:.2f}EUR) supera la soglia "
+                f"consigliata ({recommended_bid:.2f}EUR), ignorata")
+            return
+        suggested_bid = min_next_bid_eur
+    else:
+        if current_price_eur >= recommended_bid:
+            log(f"{player_name}: asta a {current_price_eur:.2f}EUR gia' oltre l'offerta consigliata "
+                f"({recommended_bid:.2f}EUR), ignorata")
+            return
+        suggested_bid = recommended_bid
 
     log(f"ASTA INTERESSANTE! {player_name}: attuale {current_price_eur:.2f}EUR, "
         f"ultimo prezzo pubblico ({last_price_typename}) {last_auction_price:.2f}EUR, "
         f"vendita diretta minima {direct_sale_price if direct_sale_price is not None else 'n/d'}, "
-        f"offerta consigliata {recommended_bid:.2f}EUR")
+        f"offerta consigliata {suggested_bid:.2f}EUR")
 
     card_slug = target_card.get('slug')
     if card_slug:
@@ -270,7 +291,7 @@ def process_auction(auction, eth_rate):
         f"Prezzo attuale asta: {current_price_eur:.2f}EUR\n"
         f"{last_price_label}: {last_auction_price:.2f}EUR\n"
         + (f"Vendita diretta minima: {direct_sale_price:.2f}EUR\n" if direct_sale_price is not None else "")
-        + f"Offerta consigliata: fino a {recommended_bid:.2f}EUR\n\n"
+        + f"Offerta consigliata: {suggested_bid:.2f}EUR\n\n"
         f"<a href='{link}'>{link_text}</a>"
     )
     send_telegram_msg(msg_text)
