@@ -291,6 +291,15 @@ def handle_offer_update(offer, eth_rate, stats):
     stats.setdefault("status_counts", {})
     stats["status_counts"][offer_status] = stats["status_counts"].get(offer_status, 0) + 1
 
+    # Sorare a volte manda lo stesso evento due (o piu') volte sullo stesso WebSocket
+    # (verificato empiricamente). Se abbiamo gia' visto esattamente questo stesso
+    # (offer_id, status) in questa esecuzione, e' un doppione: lo ignoriamo.
+    stats.setdefault("seen_offer_status", set())
+    dedup_key = (offer_id, offer_status)
+    if dedup_key in stats["seen_offer_status"]:
+        return
+    stats["seen_offer_status"].add(dedup_key)
+
     if offer_status != 'opened':
         return
 
@@ -374,6 +383,12 @@ def handle_offer_update(offer, eth_rate, stats):
         if drop_percent > MAX_SUSPECT_DROP:
             log(f"ALERT SOSPETTO IGNORATO: {player_name} ({season_type}) sceso troppo "
                 f"({drop_percent:.1%}). Dati probabilmente errati.")
+            # Anche se non notifichiamo, il prezzo vero verificato live e' comunque
+            # affidabile (viene dalla query GraphQL, non dal solo evento WS): riallineiamo
+            # il floor a questo valore cosi' il riferimento si autocorregge da solo, invece
+            # di restare bloccato su un valore vecchio/contaminato che farebbe scattare
+            # questo stesso "sospetto" per sempre ad ogni evento successivo.
+            set_floor(player_slug, season_type, true_min_price)
             continue
 
         # A volte Sorare restituisce annunci aperti e compatibili ma senza prezzo leggibile
