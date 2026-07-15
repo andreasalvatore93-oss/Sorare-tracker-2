@@ -386,16 +386,16 @@ def handle_offer_update(offer, eth_rate, stats):
 
         drop_percent = (floor - true_min_price) / floor if floor > 0 else 0
 
-        if drop_percent > MAX_SUSPECT_DROP:
-            log(f"ALERT SOSPETTO IGNORATO: {player_name} ({season_type}) sceso troppo "
-                f"({drop_percent:.1%}). Dati probabilmente errati.")
-            # Anche se non notifichiamo, il prezzo vero verificato live e' comunque
-            # affidabile (viene dalla query GraphQL, non dal solo evento WS): riallineiamo
-            # il floor a questo valore cosi' il riferimento si autocorregge da solo, invece
-            # di restare bloccato su un valore vecchio/contaminato che farebbe scattare
-            # questo stesso "sospetto" per sempre ad ogni evento successivo.
-            set_floor(player_slug, season_type, true_min_price)
-            continue
+        # Un calo enorme (>50%) e' spesso un dato Sorare errato/vecchio, ma potrebbe anche
+        # essere un affare reale ed eccezionale: ora che il prezzo e' comunque verificato live
+        # (query GraphQL, non il solo evento WS) e passa gia' dai controlli qui sotto (dati
+        # illeggibili, margine minimo sul secondo prezzo), sopprimere del tutto la notifica
+        # rischierebbe di far perdere proprio le occasioni migliori. Notifichiamo comunque,
+        # ma segnaliamo chiaramente nel messaggio che va verificato a mano prima di comprare.
+        suspect_drop = drop_percent > MAX_SUSPECT_DROP
+        if suspect_drop:
+            log(f"{player_name} ({season_type}): calo molto ampio ({drop_percent:.1%}), "
+                f"notifico ma segnalato come da verificare (dato potenzialmente errato)")
 
         # A volte Sorare restituisce annunci aperti e compatibili ma senza prezzo leggibile
         # (eurCents e wei entrambi nulli -- capitato in pratica, caso Arnau Tenas). In quel
@@ -434,8 +434,18 @@ def handle_offer_update(offer, eth_rate, stats):
                 sort_param = "s=Cards+On+Sale+Lowest+Price"
                 link = f"{base_link}?{sort_param}"
 
+            if suspect_drop:
+                title = "⚠️ <b>Occasione ANOMALA — verifica prima di comprare</b>"
+                warning_line = (
+                    "⚠️ Calo molto ampio: potrebbe essere un dato Sorare errato/vecchio "
+                    "oppure un affare reale eccezionale. Controlla il prezzo sul sito prima di comprare.\n"
+                )
+            else:
+                title = "\U0001F525 <b>Occasione Sorare!</b>"
+                warning_line = ""
+
             msg_text = (
-                f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
+                f"{title}\n\n"
                 f"Giocatore: {player_name}\n"
                 f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
                 f"Stagione carta: {season_name}\n"
@@ -444,6 +454,7 @@ def handle_offer_update(offer, eth_rate, stats):
                 f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
                 + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
                    if second_min_price is not None else "")
+                + warning_line
                 + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
             )
             send_telegram_msg(msg_text)
