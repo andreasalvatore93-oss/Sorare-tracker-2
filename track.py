@@ -171,6 +171,14 @@ def handle_offer_update(offer, eth_rate, stats):
     if not offer_id.startswith('SingleSaleOffer:'):
         return
 
+    # DIAGNOSTICA: tokenOfferWasUpdated scatta per QUALSIASI aggiornamento dell'offerta
+    # (creazione, modifica prezzo, vendita, cancellazione), non solo per le vendite concluse.
+    # Al momento non filtriamo per 'status' -- logghiamo i valori osservati per capire quale
+    # rappresenta una vendita reale, prima di decidere come filtrare.
+    offer_status = offer.get('status')
+    stats.setdefault("status_counts", {})
+    stats["status_counts"][offer_status] = stats["status_counts"].get(offer_status, 0) + 1
+
     sender_side = offer.get('senderSide') or {}
     receiver_side = offer.get('receiverSide') or {}
 
@@ -200,6 +208,12 @@ def handle_offer_update(offer, eth_rate, stats):
         if price_eur < MIN_PRICE_EUR:
             continue  # carta troppo economica: margine di trading troppo basso, non ci interessa
 
+        # DIAGNOSTICA: logghiamo status + prezzo per ogni carta Limited/football che
+        # arriva fin qui, cosi' abbiamo un campione ampio di quali status corrispondono
+        # a quali situazioni (prezzo che cambia spesso vs una tantum, ecc.)
+        log(f"[diagnostica tracker] status={offer_status} player={player_name} "
+            f"season={season_name} prezzo={price_eur:.2f}EUR")
+
         season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
 
         stats["processed"] += 1
@@ -222,7 +236,7 @@ def handle_offer_update(offer, eth_rate, stats):
 
         if drop_percent >= DROP_THRESHOLD:
             log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {price_eur:.2f}EUR "
-                f"({drop_percent:.1%})")
+                f"({drop_percent:.1%}) [status offerta: {offer_status}]")
 
             card_slug = card.get('slug')
             base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
@@ -236,7 +250,7 @@ def handle_offer_update(offer, eth_rate, stats):
             msg_text = (
                 f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
                 f"Giocatore: {player_name}\n"
-                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic'}\n"
+                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
                 f"Stagione carta: {season_name}\n"
                 f"Calo: {drop_percent:.1%}\n"
                 f"Prezzo precedente: {floor:.2f}EUR\n"
@@ -261,7 +275,7 @@ def run_listener(eth_rate):
         "action": "execute",
     }
 
-    stats = {"received": 0, "processed": 0}
+    stats = {"received": 0, "processed": 0, "status_counts": {}}
 
     def on_open(ws):
         log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
@@ -308,6 +322,7 @@ def run_listener(eth_rate):
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). "
             f"Eventi ricevuti: {stats['received']}, carte Limited/football elaborate: {stats['processed']}")
+        log(f"[diagnostica tracker] distribuzione status offerte osservate: {stats['status_counts']}")
 
     ws = websocket.WebSocketApp(
         WS_URL,
