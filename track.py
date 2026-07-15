@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 import sqlite3
 import datetime
@@ -139,10 +140,13 @@ def get_eth_rate():
         return 3000.0
 
 
+# --- Stagione corrente ---
 def get_current_season_name():
-    """Nome della stagione In Season corrente (stesso formato di sportSeason.name, es. '2025-26')."""
+    """Nome della stagione In Season corrente, nello stesso formato di sportSeason.name (es. '2025-26').
+    Ricavato da so5.inSeasonName (es. 'Stagione 25/26'), estraendo solo le due cifre finali di ogni anno
+    cosi' da essere indipendente dalla lingua dell'account."""
     url = 'https://api.sorare.com/graphql'
-    query = {"query": "query { football { season { name } } }"}
+    query = {"query": "query { so5 { inSeasonName } }"}
     headers = {
         'Content-Type': 'application/json',
         'Cookie': COOKIES,
@@ -151,7 +155,13 @@ def get_current_season_name():
     }
     try:
         r = requests.post(url, json=query, headers=headers, timeout=10)
-        return r.json()['data']['football']['season']['name']
+        label = r.json()['data']['so5']['inSeasonName']  # es. "Stagione 25/26"
+        match = re.search(r'(\d{2})\D+(\d{2})', label)
+        if not match:
+            log(f"Formato stagione non riconosciuto: '{label}'")
+            return None
+        start, end = match.groups()
+        return f"20{start}-{end}"
     except Exception as e:
         log(f"Impossibile determinare la stagione corrente ({e}), uso la stagione esatta come riferimento")
         return None
