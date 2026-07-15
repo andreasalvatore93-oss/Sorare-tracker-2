@@ -135,17 +135,99 @@ def mark_notified(auction_id):
     conn.close()
 
 
-def get_current_min_direct_sale(player_slug):
+def get_current_min_direct_sale(player_slug, season_type='in_season'):
+    """Fallback SOLO se la verifica live (get_live_min_direct_sale) fallisce: legge la
+    cache locale di track.py. NOTA: prima di questo fix cercava sempre e solo
+    season_name='in_season', quindi per qualunque carta classificata 'classic' (es. leghe
+    come la MLS che etichettano la stagione come '2026' invece di '2025-26') tornava
+    sempre None, anche se track.py aveva gia' un riferimento salvato -- bug confermato
+    sui casi Jordan Knight e Cooper Flax (entrambi MLS)."""
     try:
         conn = sqlite3.connect('tracker.db')
         row = conn.execute(
-            "SELECT floor_price_eur FROM floors WHERE player_slug=? AND season_name='in_season'",
-            (player_slug,)
+            "SELECT floor_price_eur FROM floors WHERE player_slug=? AND season_name=?",
+            (player_slug, season_type)
         ).fetchone()
         conn.close()
         return row[0] if row else None
     except Exception as e:
         log(f"Impossibile leggere tracker.db ({e}), procedo senza riferimento di vendita diretta")
+        return None
+
+
+# --- Verifica LIVE del prezzo minimo di vendita diretta (stessa query e stessa logica
+#     gia' validata in track.py), da preferire sempre alla sola cache locale: quest'ultima
+#     puo' essere vuota (cold start) o nella categoria stagione sbagliata. Casi reali che
+#     hanno mostrato il problema: Jordan Knight e Cooper Flax, entrambi MLS, entrambi con
+#     annunci diretti piu' economici dell'asta segnalata ma invisibili alla cache. ---
+LIVE_OFFERS_QUERY = """
+query LiveOffersForPlayer($slug: String!, $n: Int!) {
+  tokens {
+    liveSingleSaleOffers(playerSlug: $slug, last: $n) {
+      nodes {
+        status
+        receiverSide { amounts { eurCents wei } }
+        senderSide {
+          anyCards {
+            rarityTyped
+            sport
+            sportSeason { name }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+LIVE_CHECK_LAST_N = int(os.environ.get('LIVE_CHECK_LAST_N', '100'))
+
+
+def eur_price_from_amounts(amounts, eth_rate):
+    if not amounts:
+        return None
+    if amounts.get('eurCents') is not None:
+        return amounts['eurCents'] / 100
+    if amounts.get('wei') is not None:
+        return wei_to_eur(amounts['wei'], eth_rate)
+    return None
+
+
+def get_live_min_direct_sale(player_slug, season_type, eth_rate):
+    try:
+        data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": LIVE_CHECK_LAST_N})
+        if data.get('errors'):
+            log(f"[verifica live vendita diretta] errore per {player_slug}: {data['errors']}")
+            return None
+        nodes = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {}).get('nodes') or []
+        prices = []
+        for node in nodes:
+            if node.get('status') != 'opened':
+                continue
+            cards = (node.get('senderSide') or {}).get('anyCards') or []
+            match = False
+            for c in cards:
+                if c.get('rarityTyped') != 'limited':
+                    continue
+                if c.get('sport') != 'FOOTBALL':
+                    continue
+                node_season = (c.get('sportSeason') or {}).get('name', 'unknown')
+                node_season_type = 'in_season' if node_season == CURRENT_SEASON else 'classic'
+                if node_season_type != season_type:
+                    continue
+                match = True
+                break
+            if not match:
+                continue
+            price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
+            if price is None:
+                continue
+            prices.append(price)
+        if not prices:
+            return None
+        return min(prices)
+    except Exception as e:
+        log(f"[verifica live vendita diretta] eccezione per {player_slug}: {e}")
         return None
 
 
@@ -237,7 +319,15 @@ def process_auction(auction, eth_rate):
             f"({last_price:.2f}EUR), salto")
         return
 
-    direct_sale_price = get_current_min_direct_sale(player_slug)
+    season_name = (target_card.get('sportSeason') or {}).get('name', 'unknown')
+    season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
+
+    # Verifica LIVE del prezzo minimo di vendita diretta -- non ci fidiamo piu' solo della
+    # cache locale di track.py, che puo' essere vuota o mancare proprio la categoria
+    # stagione giusta (bug confermato sui casi Jordan Knight/Cooper Flax, entrambi MLS).
+    direct_sale_price = get_live_min_direct_sale(player_slug, season_type, eth_rate)
+    if direct_sale_price is None:
+        direct_sale_price = get_current_min_direct_sale(player_slug, season_type)
 
     median_inputs = list(recent_prices)
     if direct_sale_price is not None:
