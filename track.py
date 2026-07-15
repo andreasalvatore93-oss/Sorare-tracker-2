@@ -400,22 +400,12 @@ def handle_offer_update(offer, eth_rate, stats):
         # illeggibili, margine minimo sul secondo prezzo), sopprimere del tutto la notifica
         # rischierebbe di far perdere proprio le occasioni migliori. Notifichiamo comunque,
         # ma segnaliamo chiaramente nel messaggio che va verificato a mano prima di comprare.
+        # NOTA: non logghiamo piu' qui "notifico comunque" per suspect_drop/data_incomplete,
+        # perche' i controlli sotto (margine minimo, soglia calo) possono ancora far saltare
+        # la notifica del tutto -- loggarlo qui prima di saperlo era fuorviante (si vedeva
+        # "notifico" seguito subito da "salto la notifica" per lo stesso giocatore). Il log
+        # va emesso solo quando l'alert parte davvero, piu' sotto.
         suspect_drop = drop_percent > MAX_SUSPECT_DROP
-        if suspect_drop:
-            log(f"{player_name} ({season_type}): calo molto ampio ({drop_percent:.1%}), "
-                f"notifico ma segnalato come da verificare (dato potenzialmente errato)")
-
-        # A volte Sorare restituisce annunci aperti e compatibili ma senza prezzo leggibile
-        # (eurCents e wei entrambi nulli -- capitato in pratica, caso Arnau Tenas), il che
-        # rende il margine calcolato incerto (il vero secondo prezzo potrebbe essere nascosto
-        # li'). Prima bloccavamo del tutto la notifica in questo caso, ma con
-        # LIVE_CHECK_LAST_N alzato a 300 (fix Jonas Urbig) questo capita ormai su quasi meta'
-        # degli eventi, silenziando troppo spesso occasioni vere. Stessa scelta gia' fatta per
-        # il calo sospetto: notifichiamo comunque, segnalando chiaramente che il dato e'
-        # incerto, invece di decidere per l'utente scartando in silenzio.
-        if data_incomplete:
-            log(f"{player_name} ({season_type}): alcuni annunci compatibili hanno prezzo non "
-                f"leggibile da Sorare, margine incerto, notifico comunque segnalato come da verificare")
 
         # Il calo% rispetto allo storico puo' sembrare grande anche quando il prezzo minimo
         # e' praticamente identico al secondo annuncio piu' economico attuale (es. 2.34 contro
@@ -432,8 +422,16 @@ def handle_offer_update(offer, eth_rate, stats):
                 continue
 
         if drop_percent >= DROP_THRESHOLD:
-            log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {true_min_price:.2f}EUR "
-                f"({drop_percent:.1%}) [prezzo minimo verificato live]")
+            verification_note = ""
+            if suspect_drop or data_incomplete:
+                reasons_log = []
+                if suspect_drop:
+                    reasons_log.append("calo molto ampio")
+                if data_incomplete:
+                    reasons_log.append("dati incompleti")
+                verification_note = f" [DA VERIFICARE: {', '.join(reasons_log)}]"
+            log(f"ALERT!{verification_note} {player_name} ({season_type}, {season_name}) sceso: "
+                f"{floor:.2f}EUR -> {true_min_price:.2f}EUR ({drop_percent:.1%}) [prezzo minimo verificato live]")
 
             # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
             # (verificata live), non necessariamente quella di questo specifico evento.
