@@ -9,7 +9,11 @@ on:
         default: "110"
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: sorare-auctions
+  cancel-in-progress: true
 
 jobs:
   listen:
@@ -33,3 +37,27 @@ jobs:
           AUCTION_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '110' }}
           PYTHONUNBUFFERED: "1"
         run: python auctions_ws_listener.py
+
+      - name: Save state
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add auctions.db
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "update auctions db (ws listener)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito (probabile esecuzione in parallelo), ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
