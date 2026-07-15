@@ -27,6 +27,10 @@ DROP_THRESHOLD = 0.05    # 5% = soglia minima per notificare
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
 MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa soglia, ignoriamo la carta
 
+# La stagione In Season attualmente in corso su Sorare (formato uguale a quello sulle carte, es. "2025-26").
+# Cambia una volta l'anno, di solito ad agosto: quando succede, aggiorna solo questa riga.
+CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
+
 WS_URL = "wss://ws.sorare.com/cable"
 
 # tokenOfferWasUpdated: canale dedicato alle offerte/vendite sul mercato
@@ -74,60 +78,8 @@ def init_db():
             PRIMARY KEY (player_slug, season_name)
         )
     ''')
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    ''')
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS season_votes (
-            season_name TEXT PRIMARY KEY,
-            count INTEGER NOT NULL DEFAULT 0
-        )
-    ''')
     conn.commit()
     conn.close()
-
-
-def get_setting(key):
-    conn = sqlite3.connect('tracker.db')
-    cur = conn.cursor()
-    cur.execute("SELECT value FROM settings WHERE key=?", (key,))
-    row = cur.fetchone()
-    conn.close()
-    return row[0] if row else None
-
-
-def set_setting(key, value):
-    conn = sqlite3.connect('tracker.db')
-    cur = conn.cursor()
-    cur.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value))
-    conn.commit()
-    conn.close()
-
-
-def record_season_vote(season_name):
-    """Accumula, esecuzione dopo esecuzione, quante volte si vede ogni stagione:
-    dopo qualche run il 'rumore' di un singolo giro sparisce e la stagione vera emerge chiaramente."""
-    conn = sqlite3.connect('tracker.db')
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO season_votes (season_name, count) VALUES (?, 1) "
-        "ON CONFLICT(season_name) DO UPDATE SET count = count + 1",
-        (season_name,)
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_most_voted_season():
-    conn = sqlite3.connect('tracker.db')
-    cur = conn.cursor()
-    cur.execute("SELECT season_name, count FROM season_votes ORDER BY count DESC LIMIT 1")
-    row = cur.fetchone()
-    conn.close()
-    return row if row else (None, 0)
 
 
 def get_floor(player_slug, season_name):
@@ -193,36 +145,6 @@ def get_eth_rate():
         return 3000.0
 
 
-def get_current_season_name_via_api():
-    """Tentativo diretto: chiede a Sorare la stagione in corso.
-    Usa l'endpoint 'federation', quello attualmente raccomandato da Sorare
-    (l'endpoint precedente usato altrove in questo script non ha piu' questo campo)."""
-    url = 'https://api.sorare.com/federation/graphql'
-    query = {"query": "query { so5 { inSeasonName } }"}
-    headers = {
-        'Content-Type': 'application/json',
-        'Cookie': COOKIES,
-        'x-csrf-token': CSRF_TOKEN,
-        'User-Agent': 'Mozilla/5.0',
-    }
-    try:
-        r = requests.post(url, json=query, headers=headers, timeout=10)
-        body = r.json()
-        if 'data' not in body or not body.get('data', {}).get('so5'):
-            log(f"Query stagione fallita (HTTP {r.status_code}): {str(body)[:300]}")
-            return None
-        label = body['data']['so5']['inSeasonName']  # es. "Stagione 25/26"
-        match = re.search(r'(\d{2})\D+(\d{2})', label)
-        if not match:
-            log(f"Formato stagione non riconosciuto: '{label}'")
-            return None
-        start, end = match.groups()
-        return f"20{start}-{end}"
-    except Exception as e:
-        log(f"Query stagione fallita: {e}")
-        return None
-
-
 def eur_price_from_amounts(amounts, eth_rate):
     if not amounts:
         return None
@@ -237,7 +159,7 @@ def eur_price_from_amounts(amounts, eth_rate):
 
 
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
-def handle_offer_update(offer, eth_rate, stats, current_season_name):
+def handle_offer_update(offer, eth_rate, stats):
     if not offer:
         return
 
@@ -267,15 +189,10 @@ def handle_offer_update(offer, eth_rate, stats, current_season_name):
         if not player_slug:
             continue
 
-        record_season_vote(season_name)
-
         if price_eur < MIN_PRICE_EUR:
             continue  # carta troppo economica: margine di trading troppo basso, non ci interessa
 
-        if current_season_name:
-            season_type = 'in_season' if season_name == current_season_name else 'classic'
-        else:
-            season_type = season_name  # fallback: una categoria per ogni stagione esatta
+        season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
 
         stats["processed"] += 1
         floor = get_floor(player_slug, season_type)
@@ -301,24 +218,15 @@ def handle_offer_update(offer, eth_rate, stats, current_season_name):
 
             base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
             sort_param = "s=Cards+On+Sale+Lowest+Price"  # cosi' la carta dell'offerta e' la prima della lista
-
-            if current_season_name:
-                # Classificazione vera (in_season/classic) gia' attiva
-                category_line = f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic'}\n"
-                if season_type == "in_season":
-                    link = f"{base_link}?is=true&{sort_param}"
-                else:
-                    link = f"{base_link}?{sort_param}"
+            if season_type == "in_season":
+                link = f"{base_link}?is=true&{sort_param}"
             else:
-                # Stagione ancora in fase di apprendimento: non etichettiamo come Classic/In Season
-                # per non dare un'informazione sbagliata
-                category_line = ""
                 link = f"{base_link}?{sort_param}"
 
             msg_text = (
                 f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
                 f"Giocatore: {player_name}\n"
-                f"{category_line}"
+                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic'}\n"
                 f"Stagione carta: {season_name}\n"
                 f"Calo: {drop_percent:.1%}\n"
                 f"Prezzo precedente: {floor:.2f}EUR\n"
@@ -334,7 +242,7 @@ def handle_offer_update(offer, eth_rate, stats, current_season_name):
 
 
 # --- WebSocket / ActionCable ---
-def run_listener(eth_rate, current_season_name):
+def run_listener(eth_rate):
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
         "query": SUBSCRIPTION_QUERY,
@@ -382,7 +290,7 @@ def run_listener(eth_rate, current_season_name):
         stats["received"] += 1
         offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
         if offer:
-            handle_offer_update(offer, eth_rate, stats, current_season_name)
+            handle_offer_update(offer, eth_rate, stats)
 
     def on_error(ws, error):
         log(f"Errore WebSocket: {error}")
@@ -412,29 +320,9 @@ def main():
     init_db()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
-
-    current_season_name = get_current_season_name_via_api()
-    if current_season_name:
-        log(f"Stagione In Season corrente (da query diretta): {current_season_name}")
-    else:
-        learned_season, votes = get_most_voted_season()
-        total_votes = None
-        if learned_season:
-            conn = sqlite3.connect('tracker.db')
-            total_votes = conn.execute("SELECT SUM(count) FROM season_votes").fetchone()[0]
-            conn.close()
-        if learned_season and votes >= 300:
-            current_season_name = learned_season
-            log(f"Stagione In Season corrente (dedotta da {total_votes} osservazioni accumulate "
-                f"nei run precedenti, '{learned_season}' vista {votes} volte): {current_season_name}")
-        else:
-            log(f"Stagione In Season non ancora determinabile con sicurezza "
-                f"({votes if learned_season else 0} osservazioni finora, ne servono almeno 300): "
-                f"per ora ogni annata Classic resta separata")
-
+    log(f"Stagione In Season corrente: {CURRENT_SEASON}")
     log(f"Ascolto per {LISTEN_SECONDS} secondi...")
-    run_listener(eth_rate, current_season_name)
-
+    run_listener(eth_rate)
     log("Esecuzione terminata.")
 
 
