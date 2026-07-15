@@ -160,10 +160,18 @@ def get_current_min_direct_sale(player_slug, season_type='in_season'):
 #     puo' essere vuota (cold start) o nella categoria stagione sbagliata. Casi reali che
 #     hanno mostrato il problema: Jordan Knight e Cooper Flax, entrambi MLS, entrambi con
 #     annunci diretti piu' economici dell'asta segnalata ma invisibili alla cache. ---
+# NOTA IMPORTANTE (scoperta in diagnostica): il server tronca SEMPRE le risposte a un
+# massimo di ~50 nodi per richiesta, indipendentemente dal valore chiesto in "last" (anche
+# chiedendo last:300 tornavano solo 50 nodi) -- ecco perche' alzare il numero non risolveva
+# davvero i casi Jonas Urbig/Justin Bijlow. Confermato pero' che la paginazione a cursore
+# FUNZIONA (pageInfo.hasPreviousPage + argomento "before"): scorrendo le pagine precedenti
+# si recuperano TUTTI gli annunci. Vedi fetch_all_live_offers().
 LIVE_OFFERS_QUERY = """
-query LiveOffersForPlayer($slug: String!, $n: Int!) {
+query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
   tokens {
-    liveSingleSaleOffers(playerSlug: $slug, last: $n) {
+    liveSingleSaleOffers(playerSlug: $slug, last: $n, before: $cursor) {
+      totalCount
+      pageInfo { hasPreviousPage startCursor }
       nodes {
         status
         receiverSide { amounts { eurCents wei } }
@@ -180,13 +188,31 @@ query LiveOffersForPlayer($slug: String!, $n: Int!) {
 }
 """
 
+PAGE_SIZE = 50  # il vero massimo per richiesta imposto dal server, confermato in diagnostica
+MAX_PAGES = 20  # tetto di sicurezza (fino a 1000 annunci totali)
 
-# NOTA: questo "last" e' GLOBALE per il giocatore (tutte le rarita'/stagioni insieme,
-# la query non accetta filtri rarity/season lato server), quindi per giocatori con molto
-# volume di scambio su altre edizioni gli annunci della stagione/rarita' che ci interessa
-# possono restare fuori dagli "ultimi N" (bug confermato sul caso Jonas Urbig in track.py).
-# Alzato da 100 a 300 come mitigazione -- non e' una garanzia assoluta.
-LIVE_CHECK_LAST_N = int(os.environ.get('LIVE_CHECK_LAST_N', '300'))
+
+def fetch_all_live_offers(player_slug):
+    """Scorre TUTTE le pagine di annunci live per un giocatore usando la paginazione a
+    cursore confermata funzionante (before/startCursor), invece di fidarsi di un singolo
+    "last: N" che il server tronca comunque a ~50 per richiesta."""
+    all_nodes = []
+    cursor = None
+    for _ in range(MAX_PAGES):
+        data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": PAGE_SIZE, "cursor": cursor})
+        if data.get('errors'):
+            log(f"[paginazione annunci live] errore per {player_slug}: {data['errors']}")
+            break
+        conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        page_info = conn.get('pageInfo') or {}
+        if not page_info.get('hasPreviousPage'):
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            break
+    return all_nodes
 
 
 def eur_price_from_amounts(amounts, eth_rate):
@@ -207,11 +233,7 @@ def get_live_min_direct_sale(player_slug, target_season_name, eth_rate):
     completamente scorrelate in termini di prezzo, trovando una stampa molto piu' vecchia
     ed economica e scambiandola per compatibile con quella in asta."""
     try:
-        data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": LIVE_CHECK_LAST_N})
-        if data.get('errors'):
-            log(f"[verifica live vendita diretta] errore per {player_slug}: {data['errors']}")
-            return None
-        nodes = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {}).get('nodes') or []
+        nodes = fetch_all_live_offers(player_slug)
         prices = []
         for node in nodes:
             if node.get('status') != 'opened':
