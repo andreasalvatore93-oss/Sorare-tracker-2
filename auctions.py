@@ -116,8 +116,9 @@ def get_last_concluded_auction_price(player_slug, eth_rate):
     query = """
     query LastAuctionPrice($slug: String!, $rarity: Rarity!) {
       anyPlayer(slug: $slug) {
-        tokenPrices(rarity: $rarity, last: 3) {
+        tokenPrices(rarity: $rarity, last: 5) {
           nodes {
+            __typename
             amounts { eurCents wei }
           }
         }
