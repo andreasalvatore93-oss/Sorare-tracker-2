@@ -25,6 +25,7 @@ LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '180'))
 
 DROP_THRESHOLD = 0.05    # 5% = soglia minima per notificare
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
+MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa soglia, ignoriamo la carta
 
 WS_URL = "wss://ws.sorare.com/cable"
 
@@ -267,6 +268,9 @@ def handle_offer_update(offer, eth_rate, stats, current_season_name):
             continue
 
         record_season_vote(season_name)
+
+        if price_eur < MIN_PRICE_EUR:
+            continue  # carta troppo economica: margine di trading troppo basso, non ci interessa
 
         if current_season_name:
             season_type = 'in_season' if season_name == current_season_name else 'classic'
