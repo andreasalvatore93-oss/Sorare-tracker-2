@@ -34,17 +34,13 @@ MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '3.0'))  # sotto questa so
 # bot se ne accorgesse, quindi un floor troppo vecchio produrrebbe un calo% inventato.
 MAX_FLOOR_AGE_HOURS = float(os.environ.get('MAX_FLOOR_AGE_HOURS', '48'))
 
-# Quanti annunci recenti interrogare per giocatore quando verifichiamo il prezzo minimo
-# live (vedi get_live_min_offer). Abbastanza alto da coprire praticamente tutti i giocatori.
-
-# NOTA: questo "last" e' GLOBALE per il giocatore (tutte le rarita'/stagioni insieme,
-# la query non accetta filtri rarity/season lato server -- confermato in diagnostica),
-# quindi per giocatori con molto volume di scambio su altre edizioni gli annunci della
-# stagione/rarita' che ci interessa possono restare fuori dagli "ultimi N" anche se sono
-# ancora aperti sul sito (bug confermato sul caso Jonas Urbig: 3 annunci reali piu'
-# economici del "nuovo prezzo" segnalato non sono stati visti). Alzato da 100 a 300 come
-# mitigazione -- non e' una garanzia assoluta per giocatori a volume altissimo.
-LIVE_CHECK_LAST_N = int(os.environ.get('LIVE_CHECK_LAST_N', '300'))
+# NOTA STORICA: qui c'era un limite fisso "ultimi N annunci" (LIVE_CHECK_LAST_N, alzato da
+# 100 a 300 dopo il caso Jonas Urbig), ma un diagnostico dedicato ha rivelato che il server
+# tronca comunque le risposte a un massimo di ~50 nodi per richiesta indipendentemente dal
+# valore chiesto -- quindi quel numero non stava davvero risolvendo nulla oltre 50 (confermato
+# sul caso Justin Bijlow). Sostituito con la paginazione vera (PAGE_SIZE/MAX_PAGES piu' sotto,
+# vedi fetch_all_live_offers), che scorre TUTTE le pagine invece di sperare in un numero grande
+# a sufficienza.
 
 # Se il prezzo minimo attuale non e' almeno questa % piu' basso del SECONDO prezzo piu'
 # basso attualmente in vendita, non e' un vero affare: e' solo rumore statistico dentro un
@@ -90,10 +86,19 @@ subscription OnTokenOfferUpdated {
 # (introspection disabilitata da Sorare) partendo dal campo tokens.liveAuctions gia' noto:
 # tokens.liveSingleSaleOffers esiste con la stessa forma. Non accetta filtri rarity/sortBy
 # lato server, quindi filtriamo e ordiniamo noi in Python.
+# NOTA IMPORTANTE (scoperta in diagnostica): il server tronca SEMPRE le risposte a un
+# massimo di ~50 nodi per richiesta, indipendentemente dal valore chiesto in "last" (anche
+# chiedendo last:300 tornavano solo 50 nodi) -- ecco perche' alzare LIVE_CHECK_LAST_N da
+# 100 a 300 non risolveva davvero i casi Jonas Urbig/Justin Bijlow. Confermato pero' che la
+# paginazione a cursore FUNZIONA (pageInfo.hasPreviousPage + argomento "before"): scorrendo
+# le pagine precedenti si recuperano TUTTI gli annunci (verificato: Bijlow aveva 55 annunci
+# totali, primi 50 + 5 mancanti recuperati con "before"). Vedi fetch_all_live_offers().
 LIVE_OFFERS_QUERY = """
-query LiveOffersForPlayer($slug: String!, $n: Int!) {
+query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
   tokens {
-    liveSingleSaleOffers(playerSlug: $slug, last: $n) {
+    liveSingleSaleOffers(playerSlug: $slug, last: $n, before: $cursor) {
+      totalCount
+      pageInfo { hasPreviousPage startCursor }
       nodes {
         status
         receiverSide { amounts { eurCents wei } }
@@ -110,6 +115,32 @@ query LiveOffersForPlayer($slug: String!, $n: Int!) {
   }
 }
 """
+
+PAGE_SIZE = 50  # il vero massimo per richiesta imposto dal server, confermato in diagnostica
+MAX_PAGES = 20  # tetto di sicurezza (fino a 1000 annunci totali) per evitare loop su volumi estremi
+
+
+def fetch_all_live_offers(player_slug):
+    """Scorre TUTTE le pagine di annunci live per un giocatore usando la paginazione a
+    cursore confermata funzionante (before/startCursor), invece di fidarsi di un singolo
+    "last: N" che il server tronca comunque a ~50 per richiesta."""
+    all_nodes = []
+    cursor = None
+    for _ in range(MAX_PAGES):
+        data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": PAGE_SIZE, "cursor": cursor})
+        if data.get('errors'):
+            log(f"[paginazione annunci live] errore per {player_slug}: {data['errors']}")
+            break
+        conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        page_info = conn.get('pageInfo') or {}
+        if not page_info.get('hasPreviousPage'):
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            break
+    return all_nodes
 
 
 def log(message):
@@ -234,11 +265,7 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
     entrambi nulli, capitato in pratica: vedi caso Arnau Tenas) -- in quel caso il vero
     secondo prezzo potrebbe essere nascosto li' dentro e non ci si puo' fidare del margine."""
     try:
-        data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": LIVE_CHECK_LAST_N})
-        if data.get('errors'):
-            log(f"[verifica live] errore per {player_slug}: {data['errors']}")
-            return None
-        nodes = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {}).get('nodes') or []
+        nodes = fetch_all_live_offers(player_slug)
         prices = []
         incomplete = False
         for node in nodes:
