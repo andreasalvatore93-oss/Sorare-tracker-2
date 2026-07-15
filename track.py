@@ -23,7 +23,7 @@ TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 # Per quanti secondi restare in ascolto ad ogni esecuzione.
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '180'))
 
-DROP_THRESHOLD = 0.12    # 12% = soglia minima per notificare
+DROP_THRESHOLD = 0.10    # 10% = soglia minima per notificare
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
 MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa soglia, ignoriamo la carta
 
