@@ -285,6 +285,40 @@ def parse_season_year(season_name):
     return int(match.group()) if match else None
 
 
+# --- Countdown scadenza asta: aggiunto dopo il caso Luca Bombino, dove l'alert linkava
+#     un'asta (da un'infornata di nuove carte con vita brevissima) gia' terminata al
+#     momento del click -- Sorare in quel caso non mostra un messaggio "asta scaduta", torna
+#     silenziosamente alla scheda generica della carta, che sembra un link rotto. Mostrare
+#     subito quanto tempo resta nel messaggio Telegram fa capire all'utente se ha ancora
+#     tempo per agire o se conviene lasciar perdere. ---
+def seconds_until_end(end_date_str):
+    if not end_date_str:
+        return None
+    try:
+        end_dt = datetime.datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+        now_dt = datetime.datetime.now(datetime.timezone.utc)
+        return (end_dt - now_dt).total_seconds()
+    except (ValueError, TypeError):
+        return None
+
+
+def format_time_remaining(seconds):
+    if seconds is None:
+        return "n/d"
+    if seconds <= 0:
+        return "gia' scaduta"
+    minutes = int(seconds // 60)
+    secs = int(seconds % 60)
+    if minutes >= 1:
+        return f"{minutes} min {secs}s"
+    return f"{secs}s"
+
+
+# Sotto questa soglia di secondi residui, il countdown viene evidenziato come urgente:
+# tempo tipico che serve a leggere la notifica, aprire il link e caricare la pagina.
+URGENT_TIME_THRESHOLD_SECONDS = 120
+
+
 def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_PRICES_COUNT):
     query = """
     query RecentPrices($slug: String!, $rarity: Rarity!, $season: Int, $lastN: Int!) {
@@ -428,12 +462,22 @@ def process_auction(auction, eth_rate):
     # parole si univano in modo illeggibile (casi Seo Jin-Su e German Berterame: "OFFRIFINOA:
     # 3. 09€"). Soluzione piu' semplice e affidabile: tutto maiuscolo, grassetto, e una
     # cornice di separatori sopra e sotto che lo isola visivamente dal resto del messaggio.
+    seconds_left = seconds_until_end(auction.get('endDate'))
+    time_remaining_label = format_time_remaining(seconds_left)
+    is_urgent = seconds_left is not None and seconds_left <= URGENT_TIME_THRESHOLD_SECONDS
+    if is_urgent:
+        time_line = (f"⚠️ Scade tra: <b>{time_remaining_label}</b> "
+                     f"-- affrettati, il link puo' scadere prima che tu clicchi!")
+    else:
+        time_line = f"⏱ Scade tra: <b>{time_remaining_label}</b>"
+
     separator = "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
     msg_lines = [
         f"{indicator} <b>Asta interessante — {player_name}</b>",
         "",
         f"\U0001F4B6 Prezzo attuale asta: <b>{current_price_eur:.2f}€</b>",
         f"\U0001F53C Minimo per essere in testa ora: <b>{starting_bid:.2f}€</b>",
+        time_line,
         "",
         separator,
         f"\U0001F3AF <b>OFFRI FINO A: {recommended_ceiling:.2f}€</b>",
