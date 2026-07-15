@@ -180,7 +180,13 @@ query LiveOffersForPlayer($slug: String!, $n: Int!) {
 }
 """
 
-LIVE_CHECK_LAST_N = int(os.environ.get('LIVE_CHECK_LAST_N', '100'))
+
+# NOTA: questo "last" e' GLOBALE per il giocatore (tutte le rarita'/stagioni insieme,
+# la query non accetta filtri rarity/season lato server), quindi per giocatori con molto
+# volume di scambio su altre edizioni gli annunci della stagione/rarita' che ci interessa
+# possono restare fuori dagli "ultimi N" (bug confermato sul caso Jonas Urbig in track.py).
+# Alzato da 100 a 300 come mitigazione -- non e' una garanzia assoluta.
+LIVE_CHECK_LAST_N = int(os.environ.get('LIVE_CHECK_LAST_N', '300'))
 
 
 def eur_price_from_amounts(amounts, eth_rate):
