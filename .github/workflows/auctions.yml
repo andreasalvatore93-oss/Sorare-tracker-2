@@ -27,8 +27,8 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
+          AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
         run: python auctions.py
 
