@@ -158,6 +158,47 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
+def get_player_true_min_price(player_slug, season_type, eth_rate):
+    """Quando vediamo un giocatore+categoria per la prima volta, non ci fidiamo ciecamente
+    del prezzo dell'evento che l'ha fatto scoprire: potrebbe non essere il piu' economico
+    se una carta piu' a buon mercato era gia' in vendita da prima. Verifichiamo interrogando
+    la pagina del giocatore (stessa query gia' usata con successo dal bot originale)."""
+    url = 'https://api.sorare.com/graphql'
+    payload = {
+        "operationName": "AnyPlayerLayoutQuery",
+        "variables": {"onlyPrimary": False, "slug": player_slug},
+        "extensions": {"operationId": "React/a809e5dae931764014e854f4ba174c338195ee3fe2cf12bc971687941c0fe40d"}
+    }
+    headers = {
+        'Content-Type': 'application/json',
+        'Cookie': COOKIES,
+        'x-csrf-token': CSRF_TOKEN,
+        'User-Agent': 'Mozilla/5.0',
+    }
+    try:
+        r = requests.post(url, json=payload, headers=headers, timeout=10)
+        data = r.json()
+        cards = (((data.get('data') or {}).get('anyPlayer') or {}).get('anyCards')) or []
+        prices = []
+        for c in cards:
+            if c.get('rarityTyped') != 'limited':
+                continue
+            this_season = (c.get('sportSeason') or {}).get('name')
+            this_type = 'in_season' if this_season == CURRENT_SEASON else 'classic'
+            if this_type != season_type:
+                continue
+            price = eur_price_from_amounts(
+                ((c.get('liveSingleSaleOffer') or {}).get('receiverSide') or {}).get('amounts'),
+                eth_rate
+            )
+            if price is not None:
+                prices.append(price)
+        return min(prices) if prices else None
+    except Exception as e:
+        log(f"Verifica prezzo minimo non riuscita per {player_slug} ({e}), uso il prezzo osservato")
+        return None
+
+
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
 def handle_offer_update(offer, eth_rate, stats):
     if not offer:
@@ -198,8 +239,16 @@ def handle_offer_update(offer, eth_rate, stats):
         floor = get_floor(player_slug, season_type)
 
         if floor is None:
-            set_floor(player_slug, season_type, price_eur)
-            log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {price_eur:.2f}EUR")
+            verified_min = get_player_true_min_price(player_slug, season_type, eth_rate)
+            if verified_min is not None and verified_min < price_eur:
+                initial_floor = verified_min
+                set_floor(player_slug, season_type, initial_floor)
+                log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {initial_floor:.2f}EUR "
+                    f"(verificato: era gia' in vendita piu' economica di quella che ha fatto scattare l'osservazione)")
+            else:
+                initial_floor = price_eur
+                set_floor(player_slug, season_type, initial_floor)
+                log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {initial_floor:.2f}EUR")
             continue
 
         if price_eur >= floor:
