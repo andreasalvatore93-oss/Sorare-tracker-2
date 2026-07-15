@@ -139,6 +139,24 @@ def get_eth_rate():
         return 3000.0
 
 
+def get_current_season_name():
+    """Nome della stagione In Season corrente (stesso formato di sportSeason.name, es. '2025-26')."""
+    url = 'https://api.sorare.com/graphql'
+    query = {"query": "query { football { season { name } } }"}
+    headers = {
+        'Content-Type': 'application/json',
+        'Cookie': COOKIES,
+        'x-csrf-token': CSRF_TOKEN,
+        'User-Agent': 'Mozilla/5.0',
+    }
+    try:
+        r = requests.post(url, json=query, headers=headers, timeout=10)
+        return r.json()['data']['football']['season']['name']
+    except Exception as e:
+        log(f"Impossibile determinare la stagione corrente ({e}), uso la stagione esatta come riferimento")
+        return None
+
+
 def eur_price_from_amounts(amounts, eth_rate):
     if not amounts:
         return None
@@ -153,7 +171,7 @@ def eur_price_from_amounts(amounts, eth_rate):
 
 
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
-def handle_offer_update(offer, eth_rate, stats):
+def handle_offer_update(offer, eth_rate, stats, current_season_name):
     if not offer:
         return
 
@@ -183,12 +201,17 @@ def handle_offer_update(offer, eth_rate, stats):
         if not player_slug:
             continue
 
+        if current_season_name:
+            season_type = 'in_season' if season_name == current_season_name else 'classic'
+        else:
+            season_type = season_name  # fallback: una categoria per ogni stagione esatta
+
         stats["processed"] += 1
-        floor = get_floor(player_slug, season_name)
+        floor = get_floor(player_slug, season_type)
 
         if floor is None:
-            set_floor(player_slug, season_name, price_eur)
-            log(f"{player_name} ({season_name}): inizializzazione a {price_eur:.2f}EUR")
+            set_floor(player_slug, season_type, price_eur)
+            log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {price_eur:.2f}EUR")
             continue
 
         if price_eur >= floor:
@@ -197,18 +220,19 @@ def handle_offer_update(offer, eth_rate, stats):
         drop_percent = (floor - price_eur) / floor if floor > 0 else 0
 
         if drop_percent > MAX_SUSPECT_DROP:
-            log(f"ALERT SOSPETTO IGNORATO: {player_name} ({season_name}) sceso troppo "
+            log(f"ALERT SOSPETTO IGNORATO: {player_name} ({season_type}) sceso troppo "
                 f"({drop_percent:.1%}). Dati probabilmente errati.")
             continue
 
         if drop_percent >= DROP_THRESHOLD:
-            log(f"ALERT! {player_name} ({season_name}) sceso: {floor:.2f}EUR -> {price_eur:.2f}EUR "
+            log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {price_eur:.2f}EUR "
                 f"({drop_percent:.1%})")
             link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
             msg_text = (
                 f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
                 f"Giocatore: {player_name}\n"
-                f"Stagione: {season_name}\n"
+                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic'}\n"
+                f"Stagione carta: {season_name}\n"
                 f"Calo: {drop_percent:.1%}\n"
                 f"Prezzo precedente: {floor:.2f}EUR\n"
                 f"Nuovo prezzo: {price_eur:.2f}EUR\n\n"
@@ -216,14 +240,14 @@ def handle_offer_update(offer, eth_rate, stats):
             )
             send_telegram_msg(msg_text)
         else:
-            log(f"{player_name} ({season_name}): piccola variazione, aggiorno il riferimento "
+            log(f"{player_name} ({season_type}, {season_name}): piccola variazione, aggiorno il riferimento "
                 f"({floor:.2f}EUR -> {price_eur:.2f}EUR)")
 
-        set_floor(player_slug, season_name, price_eur)
+        set_floor(player_slug, season_type, price_eur)
 
 
 # --- WebSocket / ActionCable ---
-def run_listener(eth_rate):
+def run_listener(eth_rate, current_season_name):
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
         "query": SUBSCRIPTION_QUERY,
@@ -271,7 +295,7 @@ def run_listener(eth_rate):
         stats["received"] += 1
         offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
         if offer:
-            handle_offer_update(offer, eth_rate, stats)
+            handle_offer_update(offer, eth_rate, stats, current_season_name)
 
     def on_error(ws, error):
         log(f"Errore WebSocket: {error}")
@@ -301,8 +325,10 @@ def main():
     init_db()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
+    current_season_name = get_current_season_name()
+    log(f"Stagione In Season corrente: {current_season_name or 'sconosciuta (fallback per-stagione)'}")
     log(f"Ascolto per {LISTEN_SECONDS} secondi...")
-    run_listener(eth_rate)
+    run_listener(eth_rate, current_season_name)
     log("Esecuzione terminata.")
 
 
