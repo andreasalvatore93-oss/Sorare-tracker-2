@@ -37,5 +37,20 @@ jobs:
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
           git add auctions.db
-          git diff --cached --quiet || git commit -m "update auctions db"
-          git push
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "update auctions db"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito (probabile esecuzione in parallelo), ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git pull --no-edit -X ours origin main
+          done
+          echo "Salvato correttamente."
