@@ -194,6 +194,8 @@ def get_player_true_min_price(player_slug, season_type, eth_rate):
             )
             if price is not None:
                 prices.append(price)
+        log(f"[diagnostica verifica] {player_slug}: la query ha restituito {len(cards)} carte totali; "
+            f"{len(prices)} corrispondono a Limited/{season_type} con prezzo attivo: {prices}")
         return min(prices) if prices else None
     except Exception as e:
         log(f"Verifica prezzo minimo non riuscita per {player_slug} ({e}), uso il prezzo osservato")
