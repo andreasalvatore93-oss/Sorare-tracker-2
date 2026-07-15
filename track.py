@@ -48,9 +48,20 @@ MAX_FLOOR_AGE_HOURS = float(os.environ.get('MAX_FLOOR_AGE_HOURS', '48'))
 # vecchio riferimento storico sembra un grande calo%.
 MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
 
-# La stagione In Season attualmente in corso su Sorare (formato uguale a quello sulle carte, es. "2025-26").
-# Cambia una volta l'anno, di solito ad agosto: quando succede, aggiorna solo questa riga.
+# La stagione In Season attualmente in corso su Sorare. ATTENZIONE: leghe diverse usano formati
+# diversi per lo stesso concetto di "stagione corrente" -- le leghe europee usano "2025-26" (a
+# cavallo di due anni), ma la MLS (e leghe simili a calendario solare) usano solo l'anno, es.
+# "2026". Confrontare solo con CURRENT_SEASON lasciava fuori la MLS: la sua carta In Season vera
+# veniva scambiata per "classic" e mescolata nel calcolo del prezzo minimo insieme alle carte
+# Classic vere (che invece hanno prezzi tra loro simili, indipendentemente dall'anno di stampa --
+# verificato su Roman Bürki: tutte le sue Classic 2023/2024/2025 sono in un range 2.70-5.50EUR,
+# mentre la sua vera carta In Season 2026 vale 12-18EUR. Il calo "sospetto" di prima era proprio
+# questo: la carta In Season da 12-18EUR scambiata per classic). CURRENT_SEASON_LABELS contiene
+# entrambi i formati; una carta e' "in season" se la sua stagione compare in questo insieme.
+# Cambia una volta l'anno, di solito ad agosto: quando succede, aggiorna questi due valori.
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
+CURRENT_SEASON_ALT = os.environ.get('CURRENT_SEASON_ALT', '2026')  # formato MLS/calendario solare
+CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
 
 WS_URL = "wss://ws.sorare.com/cable"
 
@@ -258,20 +269,21 @@ def eur_price_from_amounts(amounts, eth_rate):
 # A differenza del semplice ascolto della subscription (che vede solo i CAMBIAMENTI di stato),
 # questa e' un'istantanea del mercato reale in questo momento: risolve il problema per cui un
 # annuncio piu' economico, aperto prima che il bot iniziasse ad ascoltare, restava invisibile.
-def get_live_min_offer(player_slug, season_name, eth_rate):
+def get_live_min_offer(player_slug, season_type, eth_rate):
     """Restituisce (prezzo_minimo, slug_carta_minima, secondo_prezzo_minimo, dati_incompleti)
     oppure None. dati_incompleti e' True se esistono annunci aperti e compatibili (stessa
-    rarita'/sport/stagione ESATTA) di cui pero' Sorare non restituisce il prezzo (eurCents e wei
-    entrambi nulli, capitato in pratica: vedi caso Arnau Tenas) -- in quel caso il vero
-    secondo prezzo potrebbe essere nascosto li' dentro e non ci si puo' fidare del margine.
+    rarita'/sport/categoria in_season-o-classic) di cui pero' Sorare non restituisce il prezzo
+    (eurCents e wei entrambi nulli, capitato in pratica: vedi caso Arnau Tenas) -- in quel caso
+    il vero secondo prezzo potrebbe essere nascosto li' dentro e non ci si puo' fidare del margine.
 
-    IMPORTANTE: il confronto usa la stagione ESATTA (season_name, es. '2024-25'), non il
-    bucket grezzo 'in_season'/'classic'. Usare il bucket grezzo mescolava tra loro stampe
-    Classic di ANNI diversi (con valori di mercato anche molto diversi) come se fossero lo
-    stesso prodotto, producendo un "secondo prezzo" e un calo% falsati (caso Nico Williams:
-    secondo prezzo segnalato 6.80EUR mentre il vero secondo prezzo della stessa stagione
-    2024-25 era ~4.95EUR, praticamente uguale al minimo -- stesso bug gia' corretto nel
-    listener aste sul caso Roman Bürki, qui rimasto per errore)."""
+    NOTA: il confronto usa il bucket 'in_season'/'classic', NON la stagione esatta. Verificato
+    con dati reali (schermate del mercato di Roman Bürki) che le stampe Classic di ANNI diversi
+    hanno prezzi tra loro simili (es. tutte tra 2.70 e 5.50EUR indipendentemente dall'anno di
+    stampa) -- sono considerate equivalenti dai manager, cambia solo se una carta e' In Season o
+    Classic. Il vero bug (caso Bürki: 2.95EUR rilevato contro 12.35EUR reali) non era la
+    mescolanza tra annate Classic, ma il fatto che la sua carta In Season vera (stagione MLS
+    "2026") veniva scambiata per "classic" perche' il confronto guardava solo il formato europeo
+    "2025-26" -- vedi CURRENT_SEASON_LABELS."""
     try:
         nodes = fetch_all_live_offers(player_slug)
         prices = []
@@ -287,7 +299,8 @@ def get_live_min_offer(player_slug, season_name, eth_rate):
                 if c.get('sport') != 'FOOTBALL':
                     continue
                 node_season = (c.get('sportSeason') or {}).get('name', 'unknown')
-                if node_season != season_name:
+                node_season_type = 'in_season' if node_season in CURRENT_SEASON_LABELS else 'classic'
+                if node_season_type != season_type:
                     continue
                 match = c
                 break
@@ -376,16 +389,15 @@ def handle_offer_update(offer, eth_rate, stats):
             continue  # scarto veloce sul prezzo dell'evento, solo per non fare la verifica live inutilmente:
                       # il controllo vero (sul prezzo REALE verificato) e' piu' sotto, dopo get_live_min_offer
 
-        season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
+        season_type = 'in_season' if season_name in CURRENT_SEASON_LABELS else 'classic'
 
         stats["processed"] += 1
 
         # Verifica live: qual e' DAVVERO il prezzo minimo attualmente in vendita per questo
-        # giocatore/stagione ESATTA (non il bucket generico in_season/classic -- vedi nota
-        # nella docstring di get_live_min_offer, caso Nico Williams)? Se la query fallisce
-        # per qualsiasi motivo, ripieghiamo sul prezzo di questo singolo evento (comportamento
-        # precedente).
-        live_result = get_live_min_offer(player_slug, season_name, eth_rate)
+        # giocatore, nella stessa categoria in_season/classic (vedi nota nella docstring di
+        # get_live_min_offer)? Se la query fallisce per qualsiasi motivo, ripieghiamo sul
+        # prezzo di questo singolo evento (comportamento precedente).
+        live_result = get_live_min_offer(player_slug, season_type, eth_rate)
         if live_result is not None:
             true_min_price, true_min_card_slug, second_min_price, data_incomplete = live_result
         else:
@@ -400,15 +412,13 @@ def handle_offer_update(offer, eth_rate, stats):
         if true_min_price < MIN_PRICE_EUR:
             continue
 
-        # Il riferimento (floor) e' ora tracciato per STAGIONE ESATTA (season_name, es.
-        # '2024-25'), non per il bucket generico 'in_season'/'classic': usare il bucket
-        # generico mescolava tra loro stampe Classic di anni diversi, con un floor comune
-        # che non aveva senso confrontare (caso Nico Williams: floor bassissimo ereditato
-        # da un'altra stagione classic, calo% inventato all'80%).
-        floor_row = get_floor(player_slug, season_name)
+        # Il riferimento (floor) e' tracciato per bucket in_season/classic (non per stagione
+        # esatta): verificato con dati reali che le stampe Classic di anni diversi hanno prezzi
+        # tra loro simili -- per i manager sono equivalenti, cambia solo se e' In Season o no.
+        floor_row = get_floor(player_slug, season_type)
 
         if floor_row is None:
-            set_floor(player_slug, season_name, true_min_price)
+            set_floor(player_slug, season_type, true_min_price)
             log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {true_min_price:.2f}EUR")
             continue
 
@@ -437,7 +447,7 @@ def handle_offer_update(offer, eth_rate, stats):
             log(f"{player_name} ({season_type}, {season_name}): riferimento salvato troppo vecchio "
                 f"(ultimo aggiornamento {floor_updated_at}), lo riallineo senza notificare "
                 f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
-            set_floor(player_slug, season_name, true_min_price)
+            set_floor(player_slug, season_type, true_min_price)
             continue
 
         if true_min_price >= floor:
@@ -446,10 +456,9 @@ def handle_offer_update(offer, eth_rate, stats):
         drop_percent = (floor - true_min_price) / floor if floor > 0 else 0
 
         # Un calo enorme (>50%) e' spesso un dato Sorare errato/vecchio piuttosto che un
-        # affare reale. Con la stagione ESATTA ora usata sia per il floor che per la verifica
-        # live (fix sopra), i cali inventati per mescolamento di stagioni diverse dovrebbero
-        # gia' essere spariti alla radice -- ma teniamo comunque questo controllo come rete
-        # di sicurezza residua.
+        # affare reale. Con il riconoscimento corretto in_season/classic (comprensivo del
+        # formato MLS, vedi CURRENT_SEASON_LABELS) il caso Bürki dovrebbe gia' essere
+        # risolto alla radice -- ma teniamo comunque questo controllo come rete di sicurezza.
         suspect_drop = drop_percent > MAX_SUSPECT_DROP
 
         # Il calo% rispetto allo storico puo' sembrare grande anche quando il prezzo minimo
@@ -463,7 +472,7 @@ def handle_offer_update(offer, eth_rate, stats):
                 log(f"{player_name} ({season_type}, {season_name}): prezzo minimo ({true_min_price:.2f}EUR) "
                     f"troppo vicino al secondo annuncio attuale ({second_min_price:.2f}EUR, "
                     f"margine {margin_percent:.1%}), non e' un affare distinto, salto la notifica")
-                set_floor(player_slug, season_name, true_min_price)
+                set_floor(player_slug, season_type, true_min_price)
                 continue
 
         # Scelta esplicita dell'utente: meglio rischiare di perdere qualche affare vero che
@@ -482,7 +491,7 @@ def handle_offer_update(offer, eth_rate, stats):
             log(f"SALTATO (dubbio ragionevole: {', '.join(reasons_log)}) {player_name} "
                 f"({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {true_min_price:.2f}EUR "
                 f"({drop_percent:.1%}) -- non notifico per evitare falsi allarmi")
-            set_floor(player_slug, season_name, true_min_price)
+            set_floor(player_slug, season_type, true_min_price)
             continue
 
         if drop_percent >= DROP_THRESHOLD:
@@ -514,7 +523,7 @@ def handle_offer_update(offer, eth_rate, stats):
             log(f"{player_name} ({season_type}, {season_name}): piccola variazione, aggiorno il riferimento "
                 f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
 
-        set_floor(player_slug, season_name, true_min_price)
+        set_floor(player_slug, season_type, true_min_price)
 
 
 # --- WebSocket / ActionCable ---
