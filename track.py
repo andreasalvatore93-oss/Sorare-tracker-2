@@ -1,11 +1,11 @@
 import json
 import os
-import re
 import time
 import sqlite3
 import datetime
 import smtplib
 import threading
+from collections import Counter
 from email.message import EmailMessage
 
 import requests
@@ -73,6 +73,29 @@ def init_db():
             PRIMARY KEY (player_slug, season_name)
         )
     ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+def get_setting(key):
+    conn = sqlite3.connect('tracker.db')
+    cur = conn.cursor()
+    cur.execute("SELECT value FROM settings WHERE key=?", (key,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def set_setting(key, value):
+    conn = sqlite3.connect('tracker.db')
+    cur = conn.cursor()
+    cur.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value))
     conn.commit()
     conn.close()
 
@@ -140,33 +163,6 @@ def get_eth_rate():
         return 3000.0
 
 
-# --- Stagione corrente ---
-def get_current_season_name():
-    """Nome della stagione In Season corrente, nello stesso formato di sportSeason.name (es. '2025-26').
-    Ricavato da so5.inSeasonName (es. 'Stagione 25/26'), estraendo solo le due cifre finali di ogni anno
-    cosi' da essere indipendente dalla lingua dell'account."""
-    url = 'https://api.sorare.com/graphql'
-    query = {"query": "query { so5 { inSeasonName } }"}
-    headers = {
-        'Content-Type': 'application/json',
-        'Cookie': COOKIES,
-        'x-csrf-token': CSRF_TOKEN,
-        'User-Agent': 'Mozilla/5.0',
-    }
-    try:
-        r = requests.post(url, json=query, headers=headers, timeout=10)
-        label = r.json()['data']['so5']['inSeasonName']  # es. "Stagione 25/26"
-        match = re.search(r'(\d{2})\D+(\d{2})', label)
-        if not match:
-            log(f"Formato stagione non riconosciuto: '{label}'")
-            return None
-        start, end = match.groups()
-        return f"20{start}-{end}"
-    except Exception as e:
-        log(f"Impossibile determinare la stagione corrente ({e}), uso la stagione esatta come riferimento")
-        return None
-
-
 def eur_price_from_amounts(amounts, eth_rate):
     if not amounts:
         return None
@@ -181,7 +177,7 @@ def eur_price_from_amounts(amounts, eth_rate):
 
 
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
-def handle_offer_update(offer, eth_rate, stats, current_season_name):
+def handle_offer_update(offer, eth_rate, stats, current_season_name, season_counter):
     if not offer:
         return
 
@@ -210,6 +206,8 @@ def handle_offer_update(offer, eth_rate, stats, current_season_name):
         season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
         if not player_slug:
             continue
+
+        season_counter[season_name] += 1
 
         if current_season_name:
             season_type = 'in_season' if season_name == current_season_name else 'classic'
@@ -257,7 +255,7 @@ def handle_offer_update(offer, eth_rate, stats, current_season_name):
 
 
 # --- WebSocket / ActionCable ---
-def run_listener(eth_rate, current_season_name):
+def run_listener(eth_rate, current_season_name, season_counter):
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
         "query": SUBSCRIPTION_QUERY,
@@ -305,7 +303,7 @@ def run_listener(eth_rate, current_season_name):
         stats["received"] += 1
         offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
         if offer:
-            handle_offer_update(offer, eth_rate, stats, current_season_name)
+            handle_offer_update(offer, eth_rate, stats, current_season_name, season_counter)
 
     def on_error(ws, error):
         log(f"Errore WebSocket: {error}")
@@ -335,10 +333,25 @@ def main():
     init_db()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
-    current_season_name = get_current_season_name()
-    log(f"Stagione In Season corrente: {current_season_name or 'sconosciuta (fallback per-stagione)'}")
+
+    current_season_name = get_setting('current_season_name')
+    if current_season_name:
+        log(f"Stagione In Season corrente (appresa nei run precedenti): {current_season_name}")
+    else:
+        log("Stagione In Season ancora sconosciuta: la imparo in questo giro "
+            "(per ora ogni stagione Classic resta separata)")
+
     log(f"Ascolto per {LISTEN_SECONDS} secondi...")
-    run_listener(eth_rate, current_season_name)
+    season_counter = Counter()
+    run_listener(eth_rate, current_season_name, season_counter)
+
+    if season_counter:
+        learned_season = season_counter.most_common(1)[0][0]
+        if learned_season != current_season_name:
+            log(f"Stagione corrente aggiornata: {current_season_name} -> {learned_season} "
+                f"(vista {season_counter[learned_season]} volte su {sum(season_counter.values())} carte)")
+        set_setting('current_season_name', learned_season)
+
     log("Esecuzione terminata.")
 
 
