@@ -193,7 +193,13 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
-def get_live_min_direct_sale(player_slug, season_type, eth_rate):
+def get_live_min_direct_sale(player_slug, target_season_name, eth_rate):
+    """Prezzo minimo REALE attualmente in vendita diretta per la STESSA stampa/stagione
+    esatta della carta in asta (confronto per season_name esatto, es. '2026' o '2025-26'),
+    non per il bucket generico in_season/classic. Usare il bucket generico qui era un bug
+    confermato (caso Roman Bürki): raggruppava insieme stagioni 'classic' diverse e
+    completamente scorrelate in termini di prezzo, trovando una stampa molto piu' vecchia
+    ed economica e scambiandola per compatibile con quella in asta."""
     try:
         data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": LIVE_CHECK_LAST_N})
         if data.get('errors'):
@@ -212,8 +218,7 @@ def get_live_min_direct_sale(player_slug, season_type, eth_rate):
                 if c.get('sport') != 'FOOTBALL':
                     continue
                 node_season = (c.get('sportSeason') or {}).get('name', 'unknown')
-                node_season_type = 'in_season' if node_season == CURRENT_SEASON else 'classic'
-                if node_season_type != season_type:
+                if node_season != target_season_name:
                     continue
                 match = True
                 break
@@ -322,11 +327,15 @@ def process_auction(auction, eth_rate):
     season_name = (target_card.get('sportSeason') or {}).get('name', 'unknown')
     season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
 
-    # Verifica LIVE del prezzo minimo di vendita diretta -- non ci fidiamo piu' solo della
-    # cache locale di track.py, che puo' essere vuota o mancare proprio la categoria
-    # stagione giusta (bug confermato sui casi Jordan Knight/Cooper Flax, entrambi MLS).
-    direct_sale_price = get_live_min_direct_sale(player_slug, season_type, eth_rate)
+    # Verifica LIVE del prezzo minimo di vendita diretta -- confronto per stagione ESATTA
+    # (season_name, es. '2026'), non per il bucket generico in_season/classic: usare il
+    # bucket qui era un bug confermato (caso Roman Bürki), perche' raggruppava insieme
+    # stampe 'classic' di stagioni diverse e scorrelate in termini di prezzo.
+    direct_sale_price = get_live_min_direct_sale(player_slug, season_name, eth_rate)
     if direct_sale_price is None:
+        # Fallback alla cache locale di track.py, che pero' usa solo il bucket generico
+        # in_season/classic (non la stagione esatta) -- meno preciso, usato solo se la
+        # query live fallisce.
         direct_sale_price = get_current_min_direct_sale(player_slug, season_type)
 
     median_inputs = list(recent_prices)
