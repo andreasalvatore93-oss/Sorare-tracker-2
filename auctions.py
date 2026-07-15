@@ -13,7 +13,7 @@ TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 # Stessa stagione In Season usata dal bot principale (track.py) -- tenerle allineate.
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 
-BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.20'))  # 20% fisso sul riferimento piu' basso
+BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.25'))  # 25% fisso sul riferimento piu' basso
 NUM_AUCTIONS = int(os.environ.get('NUM_AUCTIONS', '10'))
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
