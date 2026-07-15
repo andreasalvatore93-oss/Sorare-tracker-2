@@ -190,9 +190,9 @@ def process_auction(auction, eth_rate):
             continue
         if c.get('sport') != 'FOOTBALL':
             continue
-        season_name = (c.get('sportSeason') or {}).get('name')
-        if season_name != CURRENT_SEASON:
-            continue  # le Classic non vanno in asta, ma per sicurezza scartiamo comunque
+        # Le carte Classic non vanno mai in asta su Sorare: una Limited in asta
+        # e' quindi sempre In Season, indipendentemente da come Sorare etichetta
+        # quella specifica stampa (non sempre nel formato "2025-26").
         target_card = c
         break
 
