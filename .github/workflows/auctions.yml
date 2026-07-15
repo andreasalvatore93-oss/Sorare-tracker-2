@@ -1,17 +1,18 @@
-name: Sorare Auction Check
+name: Auction WebSocket Listener
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      listen_seconds:
+        description: "Secondi di ascolto (deve stare sotto l'intervallo del cron)"
+        required: false
+        default: "110"
 
 permissions:
   contents: write
 
-concurrency:
-  group: sorare-auctions
-  cancel-in-progress: true
-
 jobs:
-  check:
+  listen:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -23,14 +24,15 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Run auction checker
+      - name: Run auction websocket listener
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
           AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
+          AUCTION_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '110' }}
           PYTHONUNBUFFERED: "1"
-        run: python auctions.py
+        run: python auctions_ws_listener.py
 
       - name: Save state
         run: |
@@ -41,7 +43,7 @@ jobs:
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "update auctions db"
+          git commit -m "update auctions db (ws listener)"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
