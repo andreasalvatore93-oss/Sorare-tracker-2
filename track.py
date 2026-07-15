@@ -21,11 +21,16 @@ TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione.
-LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '180'))
+LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '200'))
 
 DROP_THRESHOLD = 0.13    # 13% = soglia minima per notificare
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
 MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '3.0'))  # sotto questa soglia, ignoriamo la carta
+
+# Se il riferimento (floor) salvato nel database e' piu' vecchio di cosi', non ci fidiamo piu':
+# nei "buchi" di ascolto tra un'esecuzione e l'altra il mercato puo' essersi mosso senza che il
+# bot se ne accorgesse, quindi un floor troppo vecchio produrrebbe un calo% inventato.
+MAX_FLOOR_AGE_HOURS = float(os.environ.get('MAX_FLOOR_AGE_HOURS', '48'))
 
 # La stagione In Season attualmente in corso su Sorare (formato uguale a quello sulle carte, es. "2025-26").
 # Cambia una volta l'anno, di solito ad agosto: quando succede, aggiorna solo questa riga.
@@ -84,15 +89,16 @@ def init_db():
 
 
 def get_floor(player_slug, season_name):
+    """Restituisce (prezzo, data_ultimo_aggiornamento) oppure None se non c'e' ancora un riferimento."""
     conn = sqlite3.connect('tracker.db')
     cur = conn.cursor()
     cur.execute(
-        "SELECT floor_price_eur FROM floors WHERE player_slug=? AND season_name=?",
+        "SELECT floor_price_eur, updated_at FROM floors WHERE player_slug=? AND season_name=?",
         (player_slug, season_name)
     )
     row = cur.fetchone()
     conn.close()
-    return row[0] if row else None
+    return row if row else None
 
 
 def set_floor(player_slug, season_name, price):
@@ -216,11 +222,33 @@ def handle_offer_update(offer, eth_rate, stats):
         season_type = 'in_season' if season_name == CURRENT_SEASON else 'classic'
 
         stats["processed"] += 1
-        floor = get_floor(player_slug, season_type)
+        floor_row = get_floor(player_slug, season_type)
 
-        if floor is None:
+        if floor_row is None:
             set_floor(player_slug, season_type, price_eur)
             log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {price_eur:.2f}EUR")
+            continue
+
+        floor, floor_updated_at = floor_row
+
+        # Riferimento troppo vecchio: nei "buchi" di ascolto tra un'esecuzione e l'altra
+        # il mercato puo' essersi mosso senza che il bot lo vedesse. Meglio riallinearsi
+        # in silenzio piuttosto che mostrare un calo% calcolato su un dato ormai stantio.
+        stale = False
+        if floor_updated_at:
+            try:
+                age_hours = (
+                    datetime.datetime.now() - datetime.datetime.fromisoformat(floor_updated_at)
+                ).total_seconds() / 3600
+                stale = age_hours > MAX_FLOOR_AGE_HOURS
+            except ValueError:
+                stale = False
+
+        if stale:
+            log(f"{player_name} ({season_type}): riferimento salvato troppo vecchio "
+                f"(ultimo aggiornamento {floor_updated_at}), lo riallineo senza notificare "
+                f"({floor:.2f}EUR -> {price_eur:.2f}EUR)")
+            set_floor(player_slug, season_type, price_eur)
             continue
 
         if price_eur >= floor:
