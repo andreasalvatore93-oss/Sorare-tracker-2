@@ -73,6 +73,29 @@ CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
 RECHECK_DELAY_SECONDS = float(os.environ.get('RECHECK_DELAY_SECONDS', '3'))
 RECHECK_TOLERANCE = float(os.environ.get('RECHECK_TOLERANCE', '0.05'))  # 5% di scostamento massimo ammesso
 
+# --- Rete di sicurezza incrociata tra bucket (caso Aral Şimşir: campionato turco concluso,
+# Sorare aveva gia' spostato la carta in Classic nella propria UI ("Idoneita' alle
+# competizioni: Classico"), ma sportSeason.name diceva ancora "2025-26" quindi il nostro
+# bucket la trattava ancora come in_season -- le uniche 2 offerte trovate li' erano residui
+# vecchi, mentre tutto il mercato vero (20+ annunci) era ormai in Classic a un prezzo piu'
+# basso, rendendo il calo% calcolato sul floor "in season" puro rumore. Il problema e'
+# strutturale: un'etichetta di stagione statica non riflette il fatto che ogni lega chiude
+# la propria stagione in un mese diverso, non tutte ad agosto come CURRENT_SEASON presume.
+# Soglie tenute conservative apposta per non penalizzare giocatori con un mercato in season
+# genuinamente sottile (poco popolari ma reali): serve lo squilibrio di VOLUME insieme al
+# prezzo piu' basso, non basta uno dei due da solo.
+THIN_BUCKET_MAX_LISTINGS = int(os.environ.get('THIN_BUCKET_MAX_LISTINGS', '2'))
+SIBLING_MIN_LISTINGS = int(os.environ.get('SIBLING_MIN_LISTINGS', '5'))
+SIBLING_MIN_LISTINGS_MULTIPLIER = float(os.environ.get('SIBLING_MIN_LISTINGS_MULTIPLIER', '3'))
+# NON e' "il gemello deve essere molto piu' economico": se il prezzo rilevato nel bucket
+# sottile fosse molto piu' basso del mercato liquido gemello resterebbe un affare raro
+# genuino, da notificare comunque. Blocchiamo solo quando il prezzo rilevato NON e'
+# significativamente piu' basso di quello gemello (entro questa tolleranza) -- segno che
+# non sta succedendo nulla di speciale, e' solo rumore di un riferimento vecchio in un
+# bucket ormai senza scambi veri (verificato sui numeri reali di Aral Şimşir: 2.70EUR
+# rilevato contro 2.54EUR nel gemello, solo ~6% di differenza -- non un affare distinto).
+UNIQUE_DEAL_TOLERANCE = float(os.environ.get('UNIQUE_DEAL_TOLERANCE', '0.05'))
+
 WS_URL = "wss://ws.sorare.com/cable"
 
 # tokenOfferWasUpdated: canale dedicato alle offerte/vendite sul mercato
@@ -320,6 +343,46 @@ def eur_price_from_amounts(amounts, eth_rate):
 # A differenza del semplice ascolto della subscription (che vede solo i CAMBIAMENTI di stato),
 # questa e' un'istantanea del mercato reale in questo momento: risolve il problema per cui un
 # annuncio piu' economico, aperto prima che il bot iniziasse ad ascoltare, restava invisibile.
+def get_bucket_prices(player_slug, eth_rate):
+    """Scorre TUTTI gli annunci live di un giocatore UNA SOLA VOLTA e li divide subito nei due
+    bucket in_season/classic, invece di interrogare Sorare una volta per bucket. Restituisce
+    {'in_season': (lista_prezzi_ordinata, dati_incompleti), 'classic': (..., ...)} dove
+    lista_prezzi_ordinata e' una lista di (prezzo, slug_carta) crescente. Usata sia per il
+    prezzo minimo del bucket richiesto (get_live_min_offer) sia per il controllo incrociato
+    tra bucket (cross_bucket_looks_dead) -- nello stesso fetch, senza query aggiuntive."""
+    nodes = fetch_all_live_offers(player_slug)
+    raw = {'in_season': [], 'classic': []}
+    incomplete_flags = {'in_season': False, 'classic': False}
+    for node in nodes:
+        if node.get('status') != 'opened':
+            continue
+        cards = (node.get('senderSide') or {}).get('anyCards') or []
+        match = None
+        for c in cards:
+            if c.get('rarityTyped') != 'limited':
+                continue
+            if c.get('sport') != 'FOOTBALL':
+                continue
+            match = c
+            break
+        if not match:
+            continue
+        node_season = (match.get('sportSeason') or {}).get('name', 'unknown')
+        node_season_type = 'in_season' if node_season in CURRENT_SEASON_LABELS else 'classic'
+        price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
+        if price is None:
+            # Annuncio aperto e compatibile, ma Sorare non ci ha detto il prezzo: non possiamo
+            # escluderlo dal conteggio, potrebbe essere il vero secondo (o primo) piu' economico.
+            incomplete_flags[node_season_type] = True
+            continue
+        raw[node_season_type].append((price, match.get('slug')))
+    result = {}
+    for key in ('in_season', 'classic'):
+        raw[key].sort(key=lambda p: p[0])
+        result[key] = (raw[key], incomplete_flags[key])
+    return result
+
+
 def get_live_min_offer(player_slug, season_type, eth_rate):
     """Restituisce (prezzo_minimo, slug_carta_minima, secondo_prezzo_minimo, dati_incompleti)
     oppure None. dati_incompleti e' True se esistono annunci aperti e compatibili (stessa
@@ -336,43 +399,49 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
     "2026") veniva scambiata per "classic" perche' il confronto guardava solo il formato europeo
     "2025-26" -- vedi CURRENT_SEASON_LABELS."""
     try:
-        nodes = fetch_all_live_offers(player_slug)
-        prices = []
-        incomplete = False
-        for node in nodes:
-            if node.get('status') != 'opened':
-                continue
-            cards = (node.get('senderSide') or {}).get('anyCards') or []
-            match = None
-            for c in cards:
-                if c.get('rarityTyped') != 'limited':
-                    continue
-                if c.get('sport') != 'FOOTBALL':
-                    continue
-                node_season = (c.get('sportSeason') or {}).get('name', 'unknown')
-                node_season_type = 'in_season' if node_season in CURRENT_SEASON_LABELS else 'classic'
-                if node_season_type != season_type:
-                    continue
-                match = c
-                break
-            if not match:
-                continue
-            price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
-            if price is None:
-                # Annuncio aperto e compatibile, ma Sorare non ci ha detto il prezzo: non possiamo
-                # escluderlo dal conteggio, potrebbe essere il vero secondo (o primo) piu' economico.
-                incomplete = True
-                continue
-            prices.append((price, match.get('slug')))
+        buckets = get_bucket_prices(player_slug, eth_rate)
+        prices, incomplete = buckets.get(season_type, ([], False))
         if not prices:
             return None
-        prices.sort(key=lambda p: p[0])
         best_price, best_card_slug = prices[0]
         second_min_price = prices[1][0] if len(prices) > 1 else None
         return best_price, best_card_slug, second_min_price, incomplete
     except Exception as e:
         log(f"[verifica live] eccezione per {player_slug}: {e}")
         return None
+
+
+def cross_bucket_looks_dead(buckets, season_type, true_min_price):
+    """Rete di sicurezza per il caso "stagione finita ma l'etichetta non lo sa" (vedi Aral
+    Şimşir nel commento sulle costanti SIBLING_*). Se il bucket rilevato (season_type) ha
+    pochissimi annunci (<= THIN_BUCKET_MAX_LISTINGS) mentre il bucket gemello ne ha molti di
+    piu' (almeno SIBLING_MIN_LISTINGS, e almeno SIBLING_MIN_LISTINGS_MULTIPLIER volte tanti) a
+    un prezzo sensibilmente piu' basso (almeno SIBLING_CHEAPER_THRESHOLD), e' segno che il
+    bucket rilevato e' morto/residuale e il vero mercato si e' spostato altrove: in quel caso
+    il calo% calcolato sul bucket rilevato e' inaffidabile. Richiede ENTRAMBE le condizioni
+    (volume E prezzo) per non penalizzare giocatori con un mercato in season genuinamente
+    sottile ma reale."""
+    sibling_type = 'classic' if season_type == 'in_season' else 'in_season'
+    own_prices, _ = buckets.get(season_type, ([], False))
+    sibling_prices, _ = buckets.get(sibling_type, ([], False))
+    own_count = len(own_prices)
+    sibling_count = len(sibling_prices)
+    if own_count > THIN_BUCKET_MAX_LISTINGS:
+        return False
+    if sibling_count < SIBLING_MIN_LISTINGS:
+        return False
+    if sibling_count < own_count * SIBLING_MIN_LISTINGS_MULTIPLIER:
+        return False
+    if not sibling_prices or not true_min_price or true_min_price <= 0:
+        return False
+    sibling_min_price = sibling_prices[0][0]
+    if sibling_min_price <= 0:
+        return False
+    # Se il prezzo rilevato e' significativamente piu' basso del mercato gemello, resta un
+    # affare raro genuino -- non lo blocchiamo. Lo blocchiamo solo se e' sostanzialmente alla
+    # pari o piu' caro del gemello (entro UNIQUE_DEAL_TOLERANCE).
+    not_meaningfully_cheaper = true_min_price >= sibling_min_price * (1 - UNIQUE_DEAL_TOLERANCE)
+    return not_meaningfully_cheaper
 
 
 def double_check_suspect_drop(player_slug, season_type, first_price, eth_rate):
@@ -469,9 +538,17 @@ def handle_offer_update(offer, eth_rate, stats):
         # giocatore, nella stessa categoria in_season/classic (vedi nota nella docstring di
         # get_live_min_offer)? Se la query fallisce per qualsiasi motivo, ripieghiamo sul
         # prezzo di questo singolo evento (comportamento precedente).
-        live_result = get_live_min_offer(player_slug, season_type, eth_rate)
-        if live_result is not None:
-            true_min_price, true_min_card_slug, second_min_price, data_incomplete = live_result
+        try:
+            buckets = get_bucket_prices(player_slug, eth_rate)
+        except Exception as e:
+            log(f"[verifica live] eccezione per {player_slug}: {e}")
+            buckets = None
+
+        own_prices = buckets.get(season_type, ([], False))[0] if buckets else []
+        if own_prices:
+            true_min_price, true_min_card_slug = own_prices[0]
+            second_min_price = own_prices[1][0] if len(own_prices) > 1 else None
+            data_incomplete = buckets[season_type][1]
         else:
             true_min_price, true_min_card_slug, second_min_price, data_incomplete = price_eur, card_slug, None, False
 
@@ -551,6 +628,29 @@ def handle_offer_update(offer, eth_rate, stats):
                 log_decision(player_slug, player_name, season_type, season_name, "skip_margin_too_close",
                              floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
                              second_min_price=second_min_price, margin_percent=margin_percent)
+                set_floor(player_slug, season_type, true_min_price)
+                continue
+
+        # Rete di sicurezza: il bucket rilevato sembra morto/residuale (stagione di quella lega
+        # gia' finita nella pratica, anche se l'etichetta sportSeason.name non lo riflette
+        # ancora) mentre il mercato vero si e' spostato nel bucket gemello a un prezzo piu'
+        # basso? Vedi cross_bucket_looks_dead per i dettagli (caso Aral Şimşir). A differenza dei
+        # cali "dubbi" qui sotto, NON ha senso rifare un doppio controllo sullo stesso bucket:
+        # il prezzo li' e' stabile da giorni, il problema e' che quel bucket non e' piu' il
+        # mercato reale, non un dato instabile -- quindi si scarta subito, senza secondo tentativo.
+        if drop_percent >= DROP_THRESHOLD and buckets is not None:
+            if cross_bucket_looks_dead(buckets, season_type, true_min_price):
+                sibling_type = 'classic' if season_type == 'in_season' else 'in_season'
+                sibling_prices = buckets[sibling_type][0]
+                log(f"SALTATO (bucket {season_type} sembra morto/residuale: {len(buckets[season_type][0])} "
+                    f"annunci contro {len(sibling_prices)} nel bucket {sibling_type}, li' a partire da "
+                    f"{sibling_prices[0][0]:.2f}EUR) {player_name} ({season_type}, {season_name}) -- "
+                    f"non notifico, il riferimento e' probabilmente su un mercato non piu' reale")
+                log_decision(player_slug, player_name, season_type, season_name, "skip_cross_bucket_dead",
+                             floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
+                             second_min_price=second_min_price, margin_percent=margin_percent,
+                             reasons=[f"bucket gemello {sibling_type} ha {len(sibling_prices)} annunci da "
+                                      f"{sibling_prices[0][0]:.2f}EUR, molto piu' attivo ed economico"])
                 set_floor(player_slug, season_type, true_min_price)
                 continue
 
