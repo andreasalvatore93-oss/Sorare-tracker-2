@@ -235,7 +235,13 @@ def process_auction(auction, eth_rate):
         f"vendita diretta minima {direct_sale_price if direct_sale_price is not None else 'n/d'}, "
         f"offerta consigliata {recommended_bid:.2f}EUR")
 
-    link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+    card_slug = target_card.get('slug')
+    if card_slug:
+        link = f"https://sorare.com/it/football/market/shop/auctions?rarity=limited&card={card_slug}"
+        link_text = "Vai direttamente all'asta"
+    else:
+        link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+        link_text = "Vai alla pagina del giocatore (apri tu la scheda Aste)"
     msg_text = (
         f"\U0001F528 <b>Asta interessante su Sorare!</b>\n\n"
         f"Giocatore: {player_name}\n"
@@ -243,7 +249,7 @@ def process_auction(auction, eth_rate):
         f"Ultima asta conclusa: {last_auction_price:.2f}EUR\n"
         + (f"Vendita diretta minima: {direct_sale_price:.2f}EUR\n" if direct_sale_price is not None else "")
         + f"Offerta consigliata: fino a {recommended_bid:.2f}EUR\n\n"
-        f"<a href='{link}'>Vai alla pagina del giocatore (apri tu la scheda Aste)</a>"
+        f"<a href='{link}'>{link_text}</a>"
     )
     send_telegram_msg(msg_text)
     mark_notified(auction_id)
