@@ -118,7 +118,7 @@ def get_last_concluded_auction_price(player_slug, eth_rate):
       anyPlayer(slug: $slug) {
         tokenPrices(rarity: $rarity, last: 3) {
           nodes {
-            amount
+            amounts { eurCents wei }
           }
         }
       }
@@ -133,7 +133,12 @@ def get_last_concluded_auction_price(player_slug, eth_rate):
         if not nodes:
             return None
         latest = nodes[-1]
-        return wei_to_eur(latest.get('amount'), eth_rate)
+        amounts = latest.get('amounts') or {}
+        if amounts.get('eurCents') is not None:
+            return amounts['eurCents'] / 100
+        if amounts.get('wei') is not None:
+            return wei_to_eur(amounts['wei'], eth_rate)
+        return None
     except Exception as e:
         log(f"Errore nel recuperare l'ultima asta per {player_slug}: {e}")
         return None
