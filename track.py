@@ -63,6 +63,16 @@ CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 CURRENT_SEASON_ALT = os.environ.get('CURRENT_SEASON_ALT', '2026')  # formato MLS/calendario solare
 CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
 
+# --- Doppio controllo sugli alert "dubbi" (calo sospetto >50% o dati incompleti) ---
+# Prima questi casi venivano scartati subito e basta (nessuna notifica, solo log). Ora, prima
+# di scartarli definitivamente, ripetiamo UNA SOLA VOLTA la verifica live dopo una breve pausa:
+# un affare vero mostra lo stesso prezzo minimo anche a una seconda interrogazione indipendente,
+# mentre un dato Sorare sporco/vecchio tende a NON essere stabile (sparisce, cambia in modo
+# vistoso, o l'incompletezza persiste). Se le due interrogazioni concordano (entro RECHECK_TOLERANCE)
+# e la seconda non e' a sua volta incompleta, notifichiamo comunque -- altrimenti resta scartato.
+RECHECK_DELAY_SECONDS = float(os.environ.get('RECHECK_DELAY_SECONDS', '3'))
+RECHECK_TOLERANCE = float(os.environ.get('RECHECK_TOLERANCE', '0.05'))  # 5% di scostamento massimo ammesso
+
 WS_URL = "wss://ws.sorare.com/cable"
 
 # tokenOfferWasUpdated: canale dedicato alle offerte/vendite sul mercato
@@ -184,6 +194,47 @@ def init_db():
             PRIMARY KEY (player_slug, season_name)
         )
     ''')
+    # Log strutturato di OGNI decisione (notifica o scarto), non solo degli alert mandati.
+    # Obiettivo: poter calcolare a posteriori, guardando lo storico, quante notifiche erano
+    # affari veri e quanti "SALTATO" erano invece occasioni perse -- un tasso misurabile di
+    # falsi positivi/negativi, invece di doverselo ricordare a memoria dai messaggi Telegram.
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS decisions_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts TEXT,
+            player_slug TEXT,
+            player_name TEXT,
+            season_type TEXT,
+            season_name TEXT,
+            decision TEXT,
+            floor_price REAL,
+            true_min_price REAL,
+            drop_percent REAL,
+            second_min_price REAL,
+            margin_percent REAL,
+            reasons TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+def log_decision(player_slug, player_name, season_type, season_name, decision,
+                  floor_price=None, true_min_price=None, drop_percent=None,
+                  second_min_price=None, margin_percent=None, reasons=None):
+    """Registra una riga per ogni decisione presa (notificato o scartato, e perche').
+    Query utili in futuro, es.: `SELECT decision, COUNT(*) FROM decisions_log GROUP BY decision`
+    per vedere quanto viene notificato contro quanto viene scartato e con quale motivo."""
+    conn = sqlite3.connect('tracker.db')
+    conn.execute(
+        '''INSERT INTO decisions_log
+           (ts, player_slug, player_name, season_type, season_name, decision,
+            floor_price, true_min_price, drop_percent, second_min_price, margin_percent, reasons)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        (datetime.datetime.now().isoformat(), player_slug, player_name, season_type, season_name,
+         decision, floor_price, true_min_price, drop_percent, second_min_price, margin_percent,
+         ', '.join(reasons) if reasons else None)
+    )
     conn.commit()
     conn.close()
 
@@ -324,6 +375,27 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
         return None
 
 
+def double_check_suspect_drop(player_slug, season_type, first_price, eth_rate):
+    """Secondo livello di verifica per un calo segnalato come "dubbio" (sospetto >50% o dati
+    incompleti), PRIMA di scartarlo definitivamente. Ripete la stessa query live usata per il
+    primo controllo, dopo una breve pausa: se il prezzo minimo e' ancora li' (entro
+    RECHECK_TOLERANCE) e la seconda lettura non e' a sua volta incompleta, e' molto piu'
+    probabile che sia un affare reale e stabile piuttosto che un dato Sorare sporco/vecchio
+    (che tipicamente sparisce o cambia in modo vistoso alla richiesta successiva).
+    Ritorna True se confermato (va notificato), False se non confermato (resta scartato)."""
+    time.sleep(RECHECK_DELAY_SECONDS)
+    second_result = get_live_min_offer(player_slug, season_type, eth_rate)
+    if second_result is None:
+        return False
+    second_price, _second_slug, _second_second_min, second_incomplete = second_result
+    if second_incomplete:
+        return False
+    if not first_price or first_price <= 0:
+        return False
+    diff_percent = abs(second_price - first_price) / first_price
+    return diff_percent <= RECHECK_TOLERANCE
+
+
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
 def handle_offer_update(offer, eth_rate, stats):
     if not offer:
@@ -420,6 +492,8 @@ def handle_offer_update(offer, eth_rate, stats):
         if floor_row is None:
             set_floor(player_slug, season_type, true_min_price)
             log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {true_min_price:.2f}EUR")
+            log_decision(player_slug, player_name, season_type, season_name, "init",
+                         true_min_price=true_min_price)
             continue
 
         floor, floor_updated_at = floor_row
@@ -447,6 +521,8 @@ def handle_offer_update(offer, eth_rate, stats):
             log(f"{player_name} ({season_type}, {season_name}): riferimento salvato troppo vecchio "
                 f"(ultimo aggiornamento {floor_updated_at}), lo riallineo senza notificare "
                 f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
+            log_decision(player_slug, player_name, season_type, season_name, "stale_realign",
+                         floor_price=floor, true_min_price=true_min_price)
             set_floor(player_slug, season_type, true_min_price)
             continue
 
@@ -472,31 +548,50 @@ def handle_offer_update(offer, eth_rate, stats):
                 log(f"{player_name} ({season_type}, {season_name}): prezzo minimo ({true_min_price:.2f}EUR) "
                     f"troppo vicino al secondo annuncio attuale ({second_min_price:.2f}EUR, "
                     f"margine {margin_percent:.1%}), non e' un affare distinto, salto la notifica")
+                log_decision(player_slug, player_name, season_type, season_name, "skip_margin_too_close",
+                             floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
+                             second_min_price=second_min_price, margin_percent=margin_percent)
                 set_floor(player_slug, season_type, true_min_price)
                 continue
 
         # Scelta esplicita dell'utente: meglio rischiare di perdere qualche affare vero che
-        # mandare notifiche su cui c'e' un dubbio ragionevole che siano fasulle. Quindi se il
-        # calo e' sospetto (>50%, possibile dato Sorare errato/vecchio) o i dati sono
-        # incompleti (prezzo illeggibile su alcuni annunci compatibili, il vero margine
-        # potrebbe essere diverso), NON notifichiamo piu' -- solo log interno, nessun
-        # messaggio Telegram. Il riferimento viene comunque aggiornato per continuare a
-        # tracciare correttamente il prezzo.
-        if drop_percent >= DROP_THRESHOLD and (suspect_drop or data_incomplete):
-            reasons_log = []
+        # mandare notifiche su cui c'e' un dubbio ragionevole che siano fasulle. Percio' un calo
+        # sospetto (>50%, possibile dato Sorare errato/vecchio) o dati incompleti (prezzo
+        # illeggibile su alcuni annunci compatibili) non vengono notificati alla prima lettura.
+        # PRIMA di scartarli pero' proviamo un secondo livello di verifica (double_check_suspect_drop):
+        # se una seconda interrogazione indipendente, dopo una breve pausa, conferma lo stesso
+        # prezzo minimo (e non e' a sua volta incompleta), e' molto piu' probabile che sia un
+        # affare reale e stabile piuttosto che un dato sporco -- in quel caso notifichiamo
+        # comunque. Se non si conferma, resta scartato come prima. Il riferimento viene sempre
+        # aggiornato, notificato o no, per continuare a tracciare correttamente il prezzo.
+        is_dubbio = suspect_drop or data_incomplete
+        recheck_confirmed = False
+        reasons_log = []
+        if drop_percent >= DROP_THRESHOLD and is_dubbio:
             if suspect_drop:
                 reasons_log.append("calo molto ampio (>50%)")
             if data_incomplete:
                 reasons_log.append("dati incompleti (prezzo illeggibile su alcuni annunci compatibili)")
-            log(f"SALTATO (dubbio ragionevole: {', '.join(reasons_log)}) {player_name} "
-                f"({season_type}, {season_name}) sceso: {floor:.2f}EUR -> {true_min_price:.2f}EUR "
-                f"({drop_percent:.1%}) -- non notifico per evitare falsi allarmi")
-            set_floor(player_slug, season_type, true_min_price)
-            continue
+            log(f"DUBBIO ({', '.join(reasons_log)}) {player_name} ({season_type}, {season_name}) "
+                f"sceso: {floor:.2f}EUR -> {true_min_price:.2f}EUR ({drop_percent:.1%}) "
+                f"-- eseguo un secondo controllo prima di scartare")
+            recheck_confirmed = double_check_suspect_drop(player_slug, season_type, true_min_price, eth_rate)
+            if recheck_confirmed:
+                log(f"CONFERMATO al secondo controllo: {player_name} resta a {true_min_price:.2f}EUR, procedo con la notifica")
+            else:
+                log(f"SALTATO (dubbio non confermato al secondo controllo: {', '.join(reasons_log)}) "
+                    f"{player_name} ({season_type}, {season_name}) -- non notifico per evitare falsi allarmi")
 
-        if drop_percent >= DROP_THRESHOLD:
+        should_notify = drop_percent >= DROP_THRESHOLD and (not is_dubbio or recheck_confirmed)
+
+        if should_notify:
+            decision = "notify_after_recheck" if is_dubbio else "notify"
             log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: "
                 f"{floor:.2f}EUR -> {true_min_price:.2f}EUR ({drop_percent:.1%}) [prezzo minimo verificato live]")
+            log_decision(player_slug, player_name, season_type, season_name, decision,
+                         floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
+                         second_min_price=second_min_price, margin_percent=margin_percent,
+                         reasons=reasons_log or None)
 
             # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
             # (verificata live), non necessariamente quella di questo specifico evento.
@@ -516,12 +611,22 @@ def handle_offer_update(offer, eth_rate, stats):
                 f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
                 + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
                    if second_min_price is not None else "")
+                + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
+                   if is_dubbio else "")
                 + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
             )
             send_telegram_msg(msg_text)
+        elif drop_percent >= DROP_THRESHOLD:
+            log_decision(player_slug, player_name, season_type, season_name, "skip_dubbio_unconfirmed",
+                         floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
+                         second_min_price=second_min_price, margin_percent=margin_percent,
+                         reasons=reasons_log or None)
         else:
             log(f"{player_name} ({season_type}, {season_name}): piccola variazione, aggiorno il riferimento "
                 f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
+            log_decision(player_slug, player_name, season_type, season_name, "update_small_variation",
+                         floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
+                         second_min_price=second_min_price, margin_percent=margin_percent)
 
         set_floor(player_slug, season_type, true_min_price)
 
