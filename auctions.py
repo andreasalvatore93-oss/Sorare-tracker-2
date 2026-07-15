@@ -2,6 +2,7 @@ import os
 import re
 import json
 import sqlite3
+import statistics
 import datetime
 import requests
 
@@ -13,8 +14,9 @@ TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 # Stessa stagione In Season usata dal bot principale (track.py) -- tenerle allineate.
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 
-BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.25'))  # 25% fisso sul riferimento piu' basso
+BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.25'))  # 25% fisso sul riferimento (mediana)
 NUM_AUCTIONS = int(os.environ.get('NUM_AUCTIONS', '10'))
+RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))  # quanti prezzi pubblici recenti usare per la mediana
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
@@ -120,17 +122,19 @@ def parse_season_year(season_name):
     return int(match.group()) if match else None
 
 
-# --- Ultimo prezzo pubblico concluso (Asta o Acquisto istantaneo) per un giocatore,
-#     stessa edizione della carta in asta. Le offerte private sono escluse esplicitamente
-#     con includePrivateSales: false; gli Scambi sono gia' esclusi dal campo tokenPrices
-#     per definizione (restituisce solo prezzi da Auction o SingleSaleOffer). ---
-def get_last_concluded_auction_price(player_slug, season_year, eth_rate):
+# --- Ultimi N prezzi pubblici (Asta o Acquisto istantaneo) per un giocatore, stessa edizione della
+#     carta in asta, dal piu' vecchio al piu' recente. Le offerte private sono escluse esplicitamente
+#     con includePrivateSales: false; gli Scambi sono gia' esclusi dal campo tokenPrices per
+#     definizione. Nota: __typename e' sempre "TokenPrice" (verificato), quindi non possiamo
+#     distinguere lato server Asta da Acquisto istantaneo -- per carte appena droppate in asta
+#     (come questi English auction) di solito la stragrande maggioranza delle transazioni recenti
+#     sono comunque aste. ---
+def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_PRICES_COUNT):
     query = """
-    query LastAuctionPrice($slug: String!, $rarity: Rarity!, $season: Int) {
+    query RecentPrices($slug: String!, $rarity: Rarity!, $season: Int, $lastN: Int!) {
       anyPlayer(slug: $slug) {
-        tokenPrices(rarity: $rarity, season: $season, last: 5, includePrivateSales: false) {
+        tokenPrices(rarity: $rarity, season: $season, last: $lastN, includePrivateSales: false) {
           nodes {
-            __typename
             amounts { eurCents wei }
           }
         }
@@ -138,28 +142,27 @@ def get_last_concluded_auction_price(player_slug, season_year, eth_rate):
     }
     """
     try:
-        variables = {"slug": player_slug, "rarity": "limited"}
+        variables = {"slug": player_slug, "rarity": "limited", "lastN": last_n}
         if season_year is not None:
             variables["season"] = season_year
         data = graphql_query(query, variables)
-        log(f"[diagnostica aste] tokenPrices per {player_slug} (season={season_year}): {json.dumps(data)[:500]}")
+        log(f"[diagnostica aste] recentPrices per {player_slug} (season={season_year}): {json.dumps(data)[:500]}")
         if data.get('errors'):
-            return None, None
+            return []
         nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
-        if not nodes:
-            return None, None
-        latest = nodes[-1]
-        typename = latest.get('__typename')
-        amounts = latest.get('amounts') or {}
-        price = None
-        if amounts.get('eurCents') is not None:
-            price = amounts['eurCents'] / 100
-        elif amounts.get('wei') is not None:
-            price = wei_to_eur(amounts['wei'], eth_rate)
-        return price, typename
+        prices = []
+        for node in nodes:
+            amounts = node.get('amounts') or {}
+            if amounts.get('eurCents') is not None:
+                prices.append(amounts['eurCents'] / 100)
+            elif amounts.get('wei') is not None:
+                p = wei_to_eur(amounts['wei'], eth_rate)
+                if p is not None:
+                    prices.append(p)
+        return prices  # ordine: dal piu' vecchio al piu' recente
     except Exception as e:
-        log(f"Errore nel recuperare l'ultima asta per {player_slug}: {e}")
-        return None, None
+        log(f"Errore nel recuperare i prezzi recenti per {player_slug}: {e}")
+        return []
 
 
 # --- Aste attualmente live (pezzo documentato ufficialmente da Sorare) ---
@@ -209,9 +212,6 @@ def process_auction(auction, eth_rate):
     if already_notified(auction_id):
         return
 
-    # Offerta minima valida secondo Sorare (rispetta gli scaglioni del loro sistema).
-    # Logghiamo sia il valore grezzo che quello convertito per poter verificare la
-    # conversione (assumiamo sia in wei come currentPrice, da confermare al primo test).
     min_next_bid_raw = auction.get('minNextBid')
     min_next_bid_eur = wei_to_eur(min_next_bid_raw, eth_rate)
     log(f"[diagnostica aste] minNextBid grezzo: {min_next_bid_raw} -> {min_next_bid_eur}")
@@ -239,40 +239,49 @@ def process_auction(auction, eth_rate):
         return
 
     season_year = parse_season_year((target_card.get('sportSeason') or {}).get('name'))
-    last_auction_price, last_price_typename = get_last_concluded_auction_price(player_slug, season_year, eth_rate)
-    if last_auction_price is None:
-        log(f"{player_name}: nessun prezzo d'asta precedente trovato, salto")
+    recent_prices = get_recent_public_prices(player_slug, season_year, eth_rate)
+    if not recent_prices:
+        log(f"{player_name}: nessun prezzo precedente trovato, salto")
         return
 
-    if current_price_eur >= last_auction_price:
-        log(f"{player_name}: asta attuale ({current_price_eur:.2f}EUR) non sotto la precedente "
-            f"({last_auction_price:.2f}EUR), salto")
+    last_price = recent_prices[-1]
+    if current_price_eur >= last_price:
+        log(f"{player_name}: asta attuale ({current_price_eur:.2f}EUR) non sotto l'ultimo prezzo "
+            f"({last_price:.2f}EUR), salto")
         return
 
     direct_sale_price = get_current_min_direct_sale(player_slug)
-    reference = min(last_auction_price, direct_sale_price) if direct_sale_price is not None else last_auction_price
-    recommended_bid = reference * (1 - BID_DISCOUNT)
 
-    # Se conosciamo l'offerta minima valida di Sorare, la usiamo come cifra da consigliare
-    # (e' l'unica che il sistema accetta davvero); se supera la soglia di sconto, l'affare
-    # non e' piu' conveniente e saltiamo. Altrimenti ripieghiamo sulla vecchia logica.
+    # Mediana tra gli ultimi prezzi pubblici osservati e il prezzo minimo di vendita diretta (se noto).
+    # E' un riferimento piu' robusto del solo ultimo prezzo: non si fa influenzare da un singolo
+    # outlier (es. una vendita anomala) e riflette meglio "quanto vale davvero" la carta adesso.
+    median_inputs = list(recent_prices)
+    if direct_sale_price is not None:
+        median_inputs.append(direct_sale_price)
+    median_reference = statistics.median(median_inputs)
+    recommended_ceiling = median_reference * (1 - BID_DISCOUNT)
+
     if min_next_bid_eur is not None:
-        if min_next_bid_eur > recommended_bid:
-            log(f"{player_name}: offerta minima valida ({min_next_bid_eur:.2f}EUR) supera la soglia "
-                f"consigliata ({recommended_bid:.2f}EUR), ignorata")
+        if min_next_bid_eur > recommended_ceiling:
+            log(f"{player_name}: offerta minima valida ({min_next_bid_eur:.2f}EUR) supera il tetto "
+                f"consigliato ({recommended_ceiling:.2f}EUR), ignorata")
             return
-        suggested_bid = min_next_bid_eur
+        starting_bid = min_next_bid_eur
     else:
-        if current_price_eur >= recommended_bid:
-            log(f"{player_name}: asta a {current_price_eur:.2f}EUR gia' oltre l'offerta consigliata "
-                f"({recommended_bid:.2f}EUR), ignorata")
+        if current_price_eur >= recommended_ceiling:
+            log(f"{player_name}: asta a {current_price_eur:.2f}EUR gia' oltre il tetto consigliato "
+                f"({recommended_ceiling:.2f}EUR), ignorata")
             return
-        suggested_bid = recommended_bid
+        starting_bid = current_price_eur
+
+    margin_estimate = (direct_sale_price - recommended_ceiling) if direct_sale_price is not None else None
 
     log(f"ASTA INTERESSANTE! {player_name}: attuale {current_price_eur:.2f}EUR, "
-        f"ultimo prezzo pubblico ({last_price_typename}) {last_auction_price:.2f}EUR, "
+        f"minimo per essere in testa {starting_bid:.2f}EUR, "
+        f"mediana riferimento {median_reference:.2f}EUR, "
+        f"tetto consigliato {recommended_ceiling:.2f}EUR, "
         f"vendita diretta minima {direct_sale_price if direct_sale_price is not None else 'n/d'}, "
-        f"offerta consigliata {suggested_bid:.2f}EUR")
+        f"margine stimato {margin_estimate if margin_estimate is not None else 'n/d'}")
 
     card_slug = target_card.get('slug')
     if card_slug:
@@ -282,18 +291,31 @@ def process_auction(auction, eth_rate):
         link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
         link_text = "Vai alla pagina del giocatore (apri tu la scheda Aste)"
 
-    label_map = {"Auction": "Ultima asta conclusa", "SingleSaleOffer": "Ultimo acquisto istantaneo"}
-    last_price_label = label_map.get(last_price_typename, "Ultimo prezzo di mercato")
+    # Indicatore visivo rapido della bonta' dell'affare, in base al margine stimato in % sul tetto.
+    indicator = "\U0001F7E0"  # arancione, default / margine ignoto
+    if margin_estimate is not None and recommended_ceiling > 0:
+        margin_pct = margin_estimate / recommended_ceiling
+        if margin_pct >= 0.5:
+            indicator = "\U0001F7E2"  # verde, ottimo affare
+        elif margin_pct >= 0.2:
+            indicator = "\U0001F7E1"  # giallo, discreto
 
-    msg_text = (
-        f"\U0001F528 <b>Asta interessante su Sorare!</b>\n\n"
-        f"Giocatore: {player_name}\n"
-        f"Prezzo attuale asta: {current_price_eur:.2f}EUR\n"
-        f"{last_price_label}: {last_auction_price:.2f}EUR\n"
-        + (f"Vendita diretta minima: {direct_sale_price:.2f}EUR\n" if direct_sale_price is not None else "")
-        + f"Offerta consigliata: {suggested_bid:.2f}EUR\n\n"
-        f"<a href='{link}'>{link_text}</a>"
-    )
+    msg_lines = [
+        f"{indicator} <b>Asta interessante — {player_name}</b>",
+        "",
+        f"\U0001F4B6 Prezzo attuale asta: <b>{current_price_eur:.2f}€</b>",
+        f"\U0001F53C Minimo per essere in testa ora: <b>{starting_bid:.2f}€</b>",
+        f"\U0001F3AF Offri fino a: <b>{recommended_ceiling:.2f}€</b>",
+        "",
+        f"\U0001F4CA Mediana di riferimento: {median_reference:.2f}€",
+    ]
+    if direct_sale_price is not None:
+        msg_lines.append(f"\U0001F3F7 Vendita diretta minima: {direct_sale_price:.2f}€")
+    if margin_estimate is not None:
+        msg_lines.append(f"\U0001F4B0 Margine stimato: ~{margin_estimate:.2f}€")
+    msg_lines += ["", f"<a href='{link}'>{link_text}</a>"]
+
+    msg_text = "\n".join(msg_lines)
     send_telegram_msg(msg_text)
     mark_notified(auction_id)
 
