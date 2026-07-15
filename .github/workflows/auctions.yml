@@ -51,6 +51,7 @@ jobs:
             fi
             echo "Push fallito (probabile esecuzione in parallelo), ritento tra qualche secondo... (tentativo $attempt)"
             sleep $((RANDOM % 8 + 3))
-            git pull --no-edit -X ours origin main
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
           done
           echo "Salvato correttamente."
