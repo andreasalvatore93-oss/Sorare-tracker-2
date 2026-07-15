@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import sqlite3
 import datetime
@@ -12,7 +13,7 @@ TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 # Stessa stagione In Season usata dal bot principale (track.py) -- tenerle allineate.
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 
-BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.10'))  # 10% fisso sul riferimento piu' basso
+BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.20'))  # 20% fisso sul riferimento piu' basso
 NUM_AUCTIONS = int(os.environ.get('NUM_AUCTIONS', '10'))
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
@@ -111,12 +112,20 @@ def get_current_min_direct_sale(player_slug):
         return None
 
 
-# --- Ultima asta conclusa per un giocatore (pezzo NON ancora verificato: log dettagliato apposta) ---
-def get_last_concluded_auction_price(player_slug, eth_rate):
+def parse_season_year(season_name):
+    """Estrae il primo anno a 4 cifre da un'etichetta di stagione (es. '2026' o '2025-26' -> 2025/2026)."""
+    if not season_name:
+        return None
+    match = re.search(r'\d{4}', season_name)
+    return int(match.group()) if match else None
+
+
+# --- Ultima asta conclusa per un giocatore, stessa edizione della carta in asta ---
+def get_last_concluded_auction_price(player_slug, season_year, eth_rate):
     query = """
-    query LastAuctionPrice($slug: String!, $rarity: Rarity!) {
+    query LastAuctionPrice($slug: String!, $rarity: Rarity!, $season: Int) {
       anyPlayer(slug: $slug) {
-        tokenPrices(rarity: $rarity, last: 5) {
+        tokenPrices(rarity: $rarity, season: $season, last: 5) {
           nodes {
             __typename
             amounts { eurCents wei }
@@ -126,8 +135,11 @@ def get_last_concluded_auction_price(player_slug, eth_rate):
     }
     """
     try:
-        data = graphql_query(query, {"slug": player_slug, "rarity": "limited"})
-        log(f"[diagnostica aste] tokenPrices per {player_slug}: {json.dumps(data)[:500]}")
+        variables = {"slug": player_slug, "rarity": "limited"}
+        if season_year is not None:
+            variables["season"] = season_year
+        data = graphql_query(query, variables)
+        log(f"[diagnostica aste] tokenPrices per {player_slug} (season={season_year}): {json.dumps(data)[:500]}")
         if data.get('errors'):
             return None
         nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
@@ -211,7 +223,8 @@ def process_auction(auction, eth_rate):
     if not player_slug:
         return
 
-    last_auction_price = get_last_concluded_auction_price(player_slug, eth_rate)
+    season_year = parse_season_year((target_card.get('sportSeason') or {}).get('name'))
+    last_auction_price = get_last_concluded_auction_price(player_slug, season_year, eth_rate)
     if last_auction_price is None:
         log(f"{player_name}: nessun prezzo d'asta precedente trovato, salto")
         return
