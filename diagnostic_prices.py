@@ -10,7 +10,7 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 # Caso segnalato dall'utente: il bot ha visto solo 2.65EUR e 3.52EUR come primo/secondo
 # prezzo, ma sul sito esistono chiaramente anche annunci a 2.76EUR e 3.00EUR nel mezzo.
 # Vogliamo l'elenco COMPLETO e non filtrato per capire perche' vengono esclusi.
-TEST_SLUG = 'arnau-tenas'
+TEST_SLUG = 'arnau-tenas-urena'
 
 
 def log(message):
