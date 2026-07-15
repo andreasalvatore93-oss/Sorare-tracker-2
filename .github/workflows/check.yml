@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       listen_seconds:
-        description: "Secondi di ascolto (lascia vuoto per 180 = normale; usa 20-30 per test veloci)"
+        description: "Secondi di ascolto (lascia vuoto per 200 = normale; usa 20-30 per test veloci)"
         required: false
-        default: "180"
+        default: "200"
 
 permissions:
   contents: write
@@ -38,7 +38,7 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
-          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '180' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '200' }}
         run: python track.py
 
       - name: Save state
