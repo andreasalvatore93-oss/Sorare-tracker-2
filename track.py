@@ -36,7 +36,15 @@ MAX_FLOOR_AGE_HOURS = float(os.environ.get('MAX_FLOOR_AGE_HOURS', '48'))
 
 # Quanti annunci recenti interrogare per giocatore quando verifichiamo il prezzo minimo
 # live (vedi get_live_min_offer). Abbastanza alto da coprire praticamente tutti i giocatori.
-LIVE_CHECK_LAST_N = int(os.environ.get('LIVE_CHECK_LAST_N', '100'))
+
+# NOTA: questo "last" e' GLOBALE per il giocatore (tutte le rarita'/stagioni insieme,
+# la query non accetta filtri rarity/season lato server -- confermato in diagnostica),
+# quindi per giocatori con molto volume di scambio su altre edizioni gli annunci della
+# stagione/rarita' che ci interessa possono restare fuori dagli "ultimi N" anche se sono
+# ancora aperti sul sito (bug confermato sul caso Jonas Urbig: 3 annunci reali piu'
+# economici del "nuovo prezzo" segnalato non sono stati visti). Alzato da 100 a 300 come
+# mitigazione -- non e' una garanzia assoluta per giocatori a volume altissimo.
+LIVE_CHECK_LAST_N = int(os.environ.get('LIVE_CHECK_LAST_N', '300'))
 
 # Se il prezzo minimo attuale non e' almeno questa % piu' basso del SECONDO prezzo piu'
 # basso attualmente in vendita, non e' un vero affare: e' solo rumore statistico dentro un
