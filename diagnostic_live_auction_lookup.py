@@ -315,6 +315,42 @@ def main():
             "TokenAuction, il campo esiste comunque ma restituisce un tipo diverso.")
 
     log("=" * 70)
+    log("TENTATIVO 3g: l'errore precedente rivela che liveSingleSaleOffer e' di tipo CONCRETO "
+        "'TokenOffer' (non un'interfaccia/union) -- ecco perche' il fragment '... on TokenAuction' "
+        "non si puo' usare: non serve nessun fragment, basta leggere i campi direttamente su "
+        "TokenOffer. Proviamo id/currentPrice/minNextBid/endDate diretti, piu' __typename.")
+    query_direct = """
+    query GetLiveSingleSaleOfferDirect($slug: String!) {
+      anyCard(slug: $slug) {
+        slug
+        liveSingleSaleOffer {
+          __typename
+          id
+          currentPrice
+          minNextBid
+          endDate
+        }
+      }
+    }
+    """
+    status3g, data3g = graphql_query(query_direct, {"slug": TEST_CARD_SLUG})
+    log(f"HTTP status: {status3g}")
+    log(f"Risposta: {json.dumps(data3g, indent=2)}")
+    if not data3g.get('errors'):
+        card_data_g = (data3g.get('data') or {}).get('anyCard') or {}
+        offer_g = card_data_g.get('liveSingleSaleOffer')
+        if offer_g:
+            log(f">>> FUNZIONA DAVVERO! anyCard(slug: ...).liveSingleSaleOffer restituisce: {offer_g}")
+            log(">>> Questa e' la query da usare per la riverifica pre-notifica in auctions_ws_listener.py.")
+        else:
+            log(">>> Nessun errore ma liveSingleSaleOffer e' null -- possibile che TokenOffer non "
+                "corrisponda a un'asta EnglishAuction attiva, o servano campi diversi da questi.")
+    else:
+        log(">>> Ancora errore (vedi sopra) -- probabilmente uno dei nomi di campo "
+            "(currentPrice/minNextBid/endDate) non esiste su TokenOffer, il messaggio dovrebbe "
+            "suggerire il nome giusto.")
+
+    log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
     status2, data2 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 200})
     log(f"HTTP status: {status2}")
