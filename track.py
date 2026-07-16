@@ -442,7 +442,6 @@ _DECISION_LABELS = [
     ("skip_margin_too_close", "Margine insufficiente"),
     ("skip_cross_bucket_dead", "Bucket morto/residuale"),
     ("skip_dubbio_unconfirmed", "Dubbio non confermato"),
-    ("skip_recent_sale_too_close", "Scartato (vendita recente pari/piu' economica)"),
     ("notify", "Notificati (calo diretto)"),
     ("notify_after_recheck", "Notificati (dopo doppio controllo)"),
     ("notify_margin_opportunity", "Notificati (opportunita' di margine)"),
@@ -913,14 +912,15 @@ def handle_offer_update(offer, eth_rate, stats):
         return
     stats["seen_offer_status"].add(dedup_key)
 
-    # FIX 16/07 (caso Sengezer): prima di scartare tutto cio' che non e' 'opened', catturiamo
-    # 'accepted' (vendita realmente conclusa) nel nostro storico -- vedi record_accepted_sale
-    # e la nota su sale_history in init_db. Poi si esce comunque, non serve valutare un'offerta
-    # gia' conclusa per un possibile acquisto.
-    if offer_status == 'accepted':
-        record_accepted_sale(offer, eth_rate)
-        return
-
+    # FIX 16/07 (v2, richiesta esplicita dell'utente): rimossa la cattura indiscriminata di
+    # OGNI 'accepted' per OGNI giocatore (record_accepted_sale, vedi sale_history in init_db) --
+    # scriveva su sqlite ad ogni singola vendita conclusa nel mercato intero (6-9 per esecuzione
+    # nei log), un costo bloccante nel loop eventi WS per giocatori quasi sempre irrilevanti (non
+    # e' mai quello su cui stiamo per notificare). Lo storico vendite ora si guarda SOLO al
+    # momento di notificare, e solo per quel giocatore specifico, via tokenPrices
+    # (get_recent_sale_history) -- vedi find_cheaper_recent_sale in evaluate_player_offer.
+    # record_accepted_sale/get_own_recent_sales restano definite piu' sotto ma non sono piu'
+    # chiamate, nel caso servano in futuro per un uso mirato invece che globale.
     if offer_status != 'opened':
         return
 
@@ -1087,37 +1087,38 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5):
     return sales[:last_n] or None
 
 
-# FIX 16/07 (v2, richiesta esplicita dell'utente, caso Kotto/Sengezer): non piu' solo un
-# avviso -- l'utente e' stato chiaro: "se altre 3 persone prima di me, magari nel giro di una
-# settimana, l'hanno gia' comprato/scambiato a un prezzo piu' basso, io perche' dovrei comprarlo
-# a di piu', anche se sul momento sembra un affare". Controlliamo quindi le ultime
-# RECENT_SALE_CHECK_LAST_N transazioni concluse (non solo l'ultima -- esplicitamente anche la
-# penultima e la terzultima): se una qualsiasi di loro e' a un prezzo pari o inferiore al nostro,
-# blocchiamo la notifica del tutto. Il caso Şengezer (confermato dall'utente via screenshot) e'
-# l'esempio concreto: notificato 3.42EUR, ma le vendite piu' recenti (2.14/3.86/4.18EUR) includono
-# gia' un prezzo piu' basso -- non era un vero affare nonostante il calo rilevato sugli annunci
-# attivi.
-RECENT_SALE_CHECK_LAST_N = int(os.environ.get('RECENT_SALE_CHECK_LAST_N', '3'))
+# FIX 16/07 (v3, richiesta esplicita dell'utente, caso Kotto/Sengezer): il v2 bloccava la
+# notifica del tutto se una delle ultime 3 transazioni era pari o piu' economica. Ripensato su
+# richiesta dell'utente: invece manda comunque la notifica, ma segnalando chiaramente se nella
+# finestra di RECENT_SALE_WINDOW_DAYS giorni precedenti esiste gia' una transazione (vendita,
+# scambio, asta -- tokenPrices non distingue il tipo) pari o piu' economica -- l'utente decide
+# con tutte le informazioni, invece di non vedere affatto il caso.
+RECENT_SALE_WINDOW_DAYS = int(os.environ.get('RECENT_SALE_WINDOW_DAYS', '7'))
 
 
-def recent_sale_gate_blocks(true_min_price, recent_sales):
-    """Controlla le ultime RECENT_SALE_CHECK_LAST_N transazioni concluse (vendita/scambio/asta
-    -- tokenPrices non distingue il tipo, quindi puo' includere anche offerte dirette, scelta
-    accettata esplicitamente dall'utente). Ritorna (data, prezzo) della prima transazione che
-    blocca (pari o piu' economica del prezzo notificato), o None se nessuna blocca."""
+def find_cheaper_recent_sale(true_min_price, recent_sales):
+    """Cerca, tra le transazioni concluse degli ultimi RECENT_SALE_WINDOW_DAYS giorni, la piu'
+    recente pari o piu' economica del prezzo notificato. Ritorna (data, prezzo) o None."""
     if not recent_sales:
         return None
-    for date, price in recent_sales[:RECENT_SALE_CHECK_LAST_N]:
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=RECENT_SALE_WINDOW_DAYS)
+    for date_str, price in recent_sales:
+        try:
+            sale_dt = datetime.datetime.fromisoformat((date_str or '').replace('Z', '+00:00'))
+            sale_dt = sale_dt.replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            continue
+        if sale_dt < cutoff:
+            continue
         if price <= true_min_price:
-            return (date, price)
+            return (date_str, price)
     return None
 
 
-def build_sale_history_context(recent_sales):
-    """Restituisce (log_extra, msg_extra) puramente informativi da inserire nei due punti di
-    notifica, per i casi che PASSANO il gate (recent_sale_gate_blocks None) -- mostra solo il
-    contesto delle ultime vendite, senza nessuna logica di blocco qui (quella e' gia' stata
-    applicata prima di chiamare questa funzione)."""
+def build_sale_history_context(recent_sales, cheaper_recent):
+    """Restituisce (log_extra, msg_extra) da inserire nei due punti di notifica: sempre il
+    contesto delle ultime transazioni, piu' un avviso esplicito se find_cheaper_recent_sale ha
+    trovato una transazione recente pari o piu' economica (vedi commento sopra)."""
     if not recent_sales:
         return "", ""
     sale_prices = [p for _, p in recent_sales]
@@ -1126,6 +1127,14 @@ def build_sale_history_context(recent_sales):
                 + ", ".join(f"{p:.2f}EUR" for p in sale_prices))
     msg_extra = (f"Transazioni recenti (dalla piu' recente): "
                  + ", ".join(f"{p:.2f}EUR" for p in sale_prices) + "\n")
+    if cheaper_recent:
+        cheaper_date, cheaper_price = cheaper_recent
+        log_line += (f" -- ATTENZIONE: una transazione del {cheaper_date} si e' gia' conclusa a "
+                     f"{cheaper_price:.2f}EUR, pari o piu' economica: potrebbe non essere un vero "
+                     f"affare nonostante il calo rilevato")
+        msg_extra += (f"⚠️ Una transazione recente ({cheaper_date[:10]}) si e' gia' conclusa a "
+                      f"{cheaper_price:.2f}EUR, pari o piu' economica -- verifica prima di "
+                      f"comprare.\n")
     return log_line, msg_extra
 
 
@@ -1428,56 +1437,39 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                          second_min_price=second_min_price, margin_percent=margin_percent,
                          reasons=reasons_log or None)
 
-            # FIX 16/07 (richiesta esplicita dell'utente, caso Kotto): "se altre 3 persone
-            # prima di me hanno gia' comprato/scambiato a un prezzo piu' basso, non e' un vero
-            # affare, anche se sul momento sembra un calo". Controlliamo le ultime
-            # RECENT_SALE_CHECK_LAST_N transazioni CONCLUSE (vendita/scambio/asta -- tokenPrices
-            # non distingue il tipo, quindi puo' includere anche offerte dirette): se una di
-            # loro e' gia' successa a un prezzo pari o inferiore al nostro, blocchiamo la
-            # notifica del tutto (non solo un avviso) -- vedi recent_sale_gate_blocks.
+            # FIX 16/07 (v3, richiesta esplicita dell'utente): non blocchiamo piu' -- notifica
+            # comunque, con un avviso se nella finestra di RECENT_SALE_WINDOW_DAYS giorni esiste
+            # gia' una transazione pari o piu' economica (vedi find_cheaper_recent_sale).
             recent_sales = get_recent_sale_history(player_slug, eth_rate)
-            blocking_sale = recent_sale_gate_blocks(true_min_price, recent_sales)
-            if blocking_sale:
-                blocking_date, blocking_price = blocking_sale
-                log(f"SALTATO (storico vendite) {player_name} ({season_type}, {season_name}): "
-                    f"prezzo notificato {true_min_price:.2f}EUR non e' un vero affare -- una "
-                    f"transazione recente ({blocking_date}) si e' gia' conclusa a "
-                    f"{blocking_price:.2f}EUR, pari o piu' economica -- non notifico")
-                log_decision(player_slug, player_name, season_type, season_name,
-                             "skip_recent_sale_too_close", floor_price=floor,
-                             true_min_price=true_min_price, drop_percent=drop_percent,
-                             second_min_price=second_min_price, margin_percent=margin_percent,
-                             reasons=[f"transazione recente ({blocking_date}) a "
-                                      f"{blocking_price:.2f}EUR, pari o piu' economica"])
+            cheaper_recent = find_cheaper_recent_sale(true_min_price, recent_sales)
+            sale_history_log, sale_history_msg = build_sale_history_context(recent_sales, cheaper_recent)
+            if sale_history_log:
+                log(f"{player_name}: {sale_history_log}")
+
+            # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
+            # (verificata live), non necessariamente quella di questo specifico evento.
+            base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+            if true_min_card_slug:
+                link = f"{base_link}?card={true_min_card_slug}"
             else:
-                sale_history_log, sale_history_msg = build_sale_history_context(recent_sales)
-                if sale_history_log:
-                    log(f"{player_name}: {sale_history_log}")
+                sort_param = "s=Cards+On+Sale+Lowest+Price"
+                link = f"{base_link}?{sort_param}"
 
-                # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
-                # (verificata live), non necessariamente quella di questo specifico evento.
-                base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
-                if true_min_card_slug:
-                    link = f"{base_link}?card={true_min_card_slug}"
-                else:
-                    sort_param = "s=Cards+On+Sale+Lowest+Price"
-                    link = f"{base_link}?{sort_param}"
-
-                msg_text = (
-                    f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
-                    f"Giocatore: {player_name}\n"
-                    f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
-                    f"Stagione carta: {season_name}\n"
-                    f"Calo: {drop_percent:.1%}\n"
-                    f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
-                    + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
-                       if second_min_price is not None else "")
-                    + sale_history_msg
-                    + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
-                       if is_dubbio else "")
-                    + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
-                )
-                send_telegram_msg(msg_text)
+            msg_text = (
+                f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
+                f"Giocatore: {player_name}\n"
+                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
+                f"Stagione carta: {season_name}\n"
+                f"Calo: {drop_percent:.1%}\n"
+                f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
+                + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
+                   if second_min_price is not None else "")
+                + sale_history_msg
+                + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
+                   if is_dubbio else "")
+                + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
+            )
+            send_telegram_msg(msg_text)
         elif drop_percent >= DROP_THRESHOLD:
             log_decision(player_slug, player_name, season_type, season_name, "skip_dubbio_unconfirmed",
                          floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
@@ -1521,26 +1513,11 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                         and abs(true_min_price - last_margin_alert_price) < 0.01
                     )
                     if not already_alerted:
-                        # FIX 16/07 (richiesta esplicita dell'utente, caso Kotto/Sengezer): stesso
-                        # gate duro applicato qui -- vedi recent_sale_gate_blocks e il commento
-                        # esteso sopra la sua definizione.
+                        # FIX 16/07 (v3, richiesta esplicita dell'utente): non blocchiamo piu' --
+                        # notifica comunque, con avviso se c'e' una transazione recente pari o
+                        # piu' economica (vedi find_cheaper_recent_sale).
                         recent_sales = get_recent_sale_history(player_slug, eth_rate)
-                        blocking_sale = recent_sale_gate_blocks(true_min_price, recent_sales)
-                        if blocking_sale:
-                            blocking_date, blocking_price = blocking_sale
-                            log(f"SALTATO (storico vendite) {player_name} ({season_type}, "
-                                f"{season_name}): margine verso il secondo prezzo non e' un vero "
-                                f"affare -- una transazione recente ({blocking_date}) si e' gia' "
-                                f"conclusa a {blocking_price:.2f}EUR, pari o piu' economica del "
-                                f"nostro {true_min_price:.2f}EUR -- non notifico")
-                            log_decision(player_slug, player_name, season_type, season_name,
-                                         "skip_recent_sale_too_close", floor_price=floor,
-                                         true_min_price=true_min_price, drop_percent=drop_percent,
-                                         second_min_price=second_min_price, margin_percent=margin_percent,
-                                         reasons=[f"transazione recente ({blocking_date}) a "
-                                                  f"{blocking_price:.2f}EUR, pari o piu' economica"])
-                            set_floor(player_slug, season_type, true_min_price)
-                            return
+                        cheaper_recent = find_cheaper_recent_sale(true_min_price, recent_sales)
 
                         log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
                             f"({season_type}, {season_name}): minimo {true_min_price:.2f}EUR, "
@@ -1551,7 +1528,8 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                                      true_min_price=true_min_price, drop_percent=drop_percent,
                                      second_min_price=second_min_price, margin_percent=margin_percent)
 
-                        sale_history_log, sale_history_msg = build_sale_history_context(recent_sales)
+                        sale_history_log, sale_history_msg = build_sale_history_context(
+                            recent_sales, cheaper_recent)
                         if sale_history_log:
                             log(f"{player_name}: {sale_history_log}")
 
