@@ -59,6 +59,18 @@ AUCTION_RECHECK_DELAY_SECONDS = float(os.environ.get('AUCTION_RECHECK_DELAY_SECO
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
 
+# FIX 16/07 (caso Albert Rusnak 528/1000): il WS push manda ogni evento UNA volta sola a
+# chi e' connesso in quel preciso istante -- Sorare non fa replay per chi si riconnette
+# dopo. Ogni esecuzione ascolta solo LISTEN_SECONDS su un ciclo di ~2 minuti (vedi sopra):
+# un rilancio che arriva nel buco tra due esecuzioni e' perso per sempre, anche se
+# l'asta resta valida secondo i nostri criteri (caso reale: offerta a 12EUR su un'asta con
+# tetto ben piu' alto, mai vista dal bot). Per questo, prima di aprire il WS, si fa UNA
+# scansione di sicurezza delle aste live piu' recenti sul mercato (query gia' validata dal
+# vecchio auctions.py) e si valuta ciascuna con la stessa identica process_auction --
+# stesso file auctions.db, stessa tabella notified_auctions, stesso commit di fine run:
+# nessun rischio di duplicati o conflitti con un bot separato, e' lo stesso processo.
+NUM_SAFETY_POLL_AUCTIONS = int(os.environ.get('NUM_SAFETY_POLL_AUCTIONS', '50'))
+
 # Per quanti secondi restare in ascolto ad ogni esecuzione. Il cron su cronhub per le aste
 # e' attualmente ogni 2 minuti (120s): teniamo un margine per l'avvio di GitHub Actions e
 # l'handshake WebSocket, cosi' due esecuzioni consecutive si "toccano" quasi senza buchi,
@@ -469,6 +481,62 @@ def get_auction_live_state(auction_id):
         return None, True
 
 
+LIVE_AUCTIONS_QUERY = """
+query ListLiveAuctions($n: Int!) {
+  tokens {
+    liveAuctions(last: $n) {
+      nodes {
+        id
+        currentPrice
+        minNextBid
+        endDate
+        anyCards {
+          slug
+          rarityTyped
+          sport
+          anyPlayer { slug displayName }
+          sportSeason { name }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def get_live_auctions(n):
+    """Le N aste live piu' recenti su tutto il mercato (query identica a quella gia'
+    validata dal vecchio auctions.py). NOTA: n=50 e' gia' al limite di troncamento noto
+    lato server per query di lista simili (vedi fetch_all_live_offers) -- non paginata per
+    ora; se in futuro servisse superare 50 andra' verificato se questa connection supporta
+    pageInfo/before come le altre (da fare quando si puo' controllare live)."""
+    try:
+        data = graphql_query(LIVE_AUCTIONS_QUERY, {"n": n})
+        if data.get('errors'):
+            log(f"[scansione sicurezza] errore nella query liveAuctions: {data['errors']}")
+            return []
+        nodes = (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {}).get('nodes') or []
+        return nodes
+    except Exception as e:
+        log(f"[scansione sicurezza] eccezione nel recuperare le aste live: {e}")
+        return []
+
+
+def run_safety_poll(eth_rate, stats):
+    """Scansione una tantum a inizio esecuzione, prima di aprire il WS -- recupera le aste
+    che il WS potrebbe aver perso nel buco tra la fine dell'esecuzione precedente e
+    l'inizio di questa (vedi nota su NUM_SAFETY_POLL_AUCTIONS piu' in alto)."""
+    log(f"Scansione di sicurezza: controllo le {NUM_SAFETY_POLL_AUCTIONS} aste live piu' recenti...")
+    auctions = get_live_auctions(NUM_SAFETY_POLL_AUCTIONS)
+    log(f"Scansione di sicurezza: {len(auctions)} aste trovate, valutazione in corso...")
+    for auction in auctions:
+        try:
+            handle_auction_event(auction, eth_rate, stats)
+        except Exception as e:
+            log(f"Errore nel processare un'asta durante la scansione di sicurezza: {e}")
+    log("Scansione di sicurezza completata.")
+
+
 # --- Logica di valutazione di un'asta, identica a quella gia' validata in auctions.py:
 #     l'evento WS (con anyCards incluso) ha la STESSA forma di un nodo liveAuctions, quindi
 #     questa funzione e' riutilizzabile cosi' com'e'. ---
@@ -725,9 +793,13 @@ def main():
     init_db()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
-    log(f"Ascolto aste in tempo reale per {LISTEN_SECONDS} secondi...")
 
     stats = {"processed": 0, "seen_events": set()}
+
+    # Scansione di sicurezza PRIMA di aprire il WS -- vedi nota su NUM_SAFETY_POLL_AUCTIONS.
+    run_safety_poll(eth_rate, stats)
+
+    log(f"Ascolto aste in tempo reale per {LISTEN_SECONDS} secondi...")
 
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
