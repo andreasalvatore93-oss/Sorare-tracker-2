@@ -1855,12 +1855,13 @@ def main():
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
 
-    # FIX 16/07: il primo diagnostico (campo storico vendite) e' stato rimosso da qui ora che
-    # ha trovato quello che cercava (vedi get_recent_sale_history). Temporaneamente attivo invece
-    # discover_token_price_type_field (caso Sengezer): cerchiamo un campo tipo/kind su TokenPrice
-    # per distinguere Acquisto istantaneo/Asta da Scambia/Offerta diretta -- da rimuovere non
-    # appena troviamo la risposta nei log, stesso trattamento riservato al diagnostico precedente.
-    discover_token_price_type_field()
+    # FIX 16/07: entrambi i diagnostici temporanei (campo storico vendite, poi campo tipo
+    # transazione) sono stati rimossi da qui -- il secondo (discover_token_price_type_field) ha
+    # confermato lo stesso esito negativo su due esecuzioni distinte (11 nomi di campo, nessuno
+    # esiste su TokenPrice): vicolo cieco confermato, non ha senso ripeterlo ancora. Da qui in
+    # poi lo storico vendite si basa su tokenPrices (retroattivo, tipo misto, vedi
+    # get_recent_sale_history) per il gate duro, e su sale_history (nostro, solo accepted
+    # verificati, vedi record_accepted_sale) che intanto continua ad accumularsi in background.
 
     # FIX 16/07: riverifica prima di ascoltare nuovi eventi -- vedi nota su
     # MARKET_VISIBILITY_DELAY_SECONDS in process_pending_rechecks.
