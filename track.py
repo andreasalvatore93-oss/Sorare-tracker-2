@@ -75,7 +75,7 @@ MARGIN_TIERS = [
     (5, 4.35),
     (10, 8.80),  # FIX 16/07 (v3, casi Gabriel Pec / Marc Guehi): 13.0% -> 12.0%, richiesta esplicita
     (15, 13.65),
-    (20, 18.20),
+    (20, 18.40),  # FIX 16/07 (v5, caso Rodrigo): 9.0% -> 8.0%, richiesta esplicita
     (25, 23.25),
     (30, 27.80),
     (35, 32.85),
@@ -600,6 +600,33 @@ def double_check_suspect_drop(player_slug, season_type, first_price, eth_rate):
     return diff_percent <= RECHECK_TOLERANCE
 
 
+def log_raw_offers_diagnostic(player_slug, eth_rate):
+    """FIX 16/07 (caso Nico O'Reilly): quando scatta un ALERT, salviamo anche il dump grezzo di
+    TUTTI gli annunci live per quel giocatore (status, prezzo, slug, rarita', sport, stagione),
+    cosi' se in futuro il prezzo minimo notificato risultasse sbagliato (come successo con la
+    carta da 4.70EUR di NFT Sportsclub, esclusa senza che nei log restasse traccia del motivo --
+    ne' un'eccezione ne' un flag "dati incompleti") avremo l'evidenza per capire quale filtro
+    l'ha esclusa, invece di doverlo dedurre ore dopo da uno screenshot. Chiamata solo sugli
+    ALERT (evento raro), quindi il costo di un'interrogazione extra e' trascurabile."""
+    try:
+        nodes = fetch_all_live_offers(player_slug)
+    except Exception as e:
+        log(f"[diagnostica alert] impossibile scaricare il dump grezzo per {player_slug}: {e}")
+        return
+    log(f"[diagnostica alert] {player_slug}: {len(nodes)} annunci live grezzi trovati")
+    for node in nodes:
+        status = node.get('status')
+        price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
+        cards = (node.get('senderSide') or {}).get('anyCards') or []
+        if not cards:
+            log(f"[diagnostica alert]   status={status} prezzo={price} (nessuna carta compatibile sul lato venditore)")
+            continue
+        for c in cards:
+            log(f"[diagnostica alert]   status={status} prezzo={price} slug={c.get('slug')} "
+                f"rarita'={c.get('rarityTyped')} sport={c.get('sport')} "
+                f"stagione={(c.get('sportSeason') or {}).get('name')}")
+
+
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
 def handle_offer_update(offer, eth_rate, stats):
     if not offer:
@@ -870,6 +897,15 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             decision = "notify_after_recheck" if is_dubbio else "notify"
             log(f"ALERT! {player_name} ({season_type}, {season_name}) sceso: "
                 f"{floor:.2f}EUR -> {true_min_price:.2f}EUR ({drop_percent:.1%}) [prezzo minimo verificato live]")
+            # FIX 16/07 (caso Nico O'Reilly): il prezzo minimo notificato (4.74EUR) si e'
+            # rivelato sbagliato -- esisteva una carta classic attiva da giorni a 4.70EUR che
+            # get_bucket_prices non ha incluso, senza pero' ne' un'eccezione ne' un flag "dati
+            # incompleti" nei log, quindi la causa esatta (status diverso da "opened"? rarita'/
+            # sport non combacianti? altro?) non era ricostruibile a posteriori. Su ogni ALERT
+            # (evento raro, costo trascurabile) salviamo ora il dump grezzo di TUTTI gli annunci
+            # live per quel giocatore, cosi' se ricapita abbiamo l'evidenza invece di doverla
+            # dedurre da uno screenshot fatto ore dopo.
+            log_raw_offers_diagnostic(player_slug, eth_rate)
             log_decision(player_slug, player_name, season_type, season_name, decision,
                          floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
                          second_min_price=second_min_price, margin_percent=margin_percent,
