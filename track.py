@@ -385,6 +385,21 @@ def init_db():
             PRIMARY KEY (player_slug, season_type)
         )
     ''')
+    # FIX 16/07 (v19, caso Andres Cubas): il bot notificava solo sui CALI rispetto al floor
+    # storico, mai su un margine ampio e persistente verso il secondo prezzo che pero' non
+    # rappresenta un calo "nuovo" (es. il floor era gia' li' da un run precedente). Tabella
+    # separata (non tocchiamo lo schema di floors, che usa INSERT OR REPLACE e cancellerebbe
+    # una colonna aggiunta li' ad ogni aggiornamento) per ricordare l'ULTIMO prezzo minimo per
+    # cui abbiamo gia' segnalato questa opportunita' di margine, cosi' da non ripeterla ad ogni
+    # evento successivo se il prezzo non e' cambiato (evitare doppioni, vedi evaluate_player_offer).
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS margin_alerts (
+            player_slug TEXT NOT NULL,
+            season_type TEXT NOT NULL,
+            last_margin_alert_price REAL,
+            PRIMARY KEY (player_slug, season_type)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -428,6 +443,30 @@ def set_floor(player_slug, season_name, price):
     cur.execute(
         "INSERT OR REPLACE INTO floors (player_slug, season_name, floor_price_eur, updated_at) VALUES (?, ?, ?, ?)",
         (player_slug, season_name, price, datetime.datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_last_margin_alert_price(player_slug, season_type):
+    """Restituisce l'ultimo prezzo minimo per cui abbiamo gia' segnalato un'opportunita' di
+    margine ampio per questo giocatore/bucket, o None se non l'abbiamo mai fatto."""
+    conn = sqlite3.connect('tracker.db')
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT last_margin_alert_price FROM margin_alerts WHERE player_slug=? AND season_type=?",
+        (player_slug, season_type)
+    )
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def set_last_margin_alert_price(player_slug, season_type, price):
+    conn = sqlite3.connect('tracker.db')
+    conn.execute(
+        "INSERT OR REPLACE INTO margin_alerts (player_slug, season_type, last_margin_alert_price) VALUES (?, ?, ?)",
+        (player_slug, season_type, price)
     )
     conn.commit()
     conn.close()
@@ -1133,6 +1172,49 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             log_decision(player_slug, player_name, season_type, season_name, "update_small_variation",
                          floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
                          second_min_price=second_min_price, margin_percent=margin_percent)
+
+            # FIX 16/07 (v19, caso Andres Cubas): niente calo nuovo rispetto allo storico, ma se
+            # il margine verso il secondo prezzo e' GIA' abbastanza ampio da essere considerato
+            # un "affare distinto" secondo le nostre stesse soglie (MARGIN_TIERS -- la stessa
+            # soglia che altrove impedisce di scartare un calo come "troppo vicino"), vale la
+            # pena segnalarlo comunque: non e' un calo, ma e' comunque un divario reale che vale
+            # la pena sapere, anche se il floor era gia' li' da un run precedente (magari il
+            # divario si e' allargato dopo, perche' altri annunci economici sono spariti). Per
+            # evitare di ripetere la stessa segnalazione ad ogni evento successivo se il prezzo
+            # non cambia, la mandiamo solo se true_min_price e' diverso dall'ultima volta che
+            # abbiamo gia' segnalato questo stesso margine per questo giocatore/bucket.
+            if second_min_price is not None and second_min_price > 0:
+                required_margin = required_margin_fraction(second_min_price)
+                if margin_percent >= required_margin:
+                    last_margin_alert_price = get_last_margin_alert_price(player_slug, season_type)
+                    already_alerted = (
+                        last_margin_alert_price is not None
+                        and abs(true_min_price - last_margin_alert_price) < 0.01
+                    )
+                    if not already_alerted:
+                        log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
+                            f"({season_type}, {season_name}): minimo {true_min_price:.2f}EUR, "
+                            f"secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%}, "
+                            f"richiesto {required_margin:.1%})")
+                        log_decision(player_slug, player_name, season_type, season_name,
+                                     "notify_margin_opportunity", floor_price=floor,
+                                     true_min_price=true_min_price, drop_percent=drop_percent,
+                                     second_min_price=second_min_price, margin_percent=margin_percent)
+                        base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+                        link = f"{base_link}?card={true_min_card_slug}" if true_min_card_slug else base_link
+                        msg_text = (
+                            f"\U0001F4D0 <b>Opportunita' di margine (nessun calo recente)</b>\n\n"
+                            f"Giocatore: {player_name}\n"
+                            f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
+                            f"Stagione carta: {season_name}\n"
+                            f"Prezzo minimo: {true_min_price:.2f}EUR\n"
+                            f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n\n"
+                            f"Non e' un calo rispetto allo storico, ma il divario verso il secondo "
+                            f"prezzo e' gia' ampio -- puo' valere la pena controllare.\n\n"
+                            f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
+                        )
+                        send_telegram_msg(msg_text)
+                        set_last_margin_alert_price(player_slug, season_type, true_min_price)
 
         set_floor(player_slug, season_type, true_min_price)
 
