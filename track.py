@@ -783,6 +783,28 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # second_min_price/margin_percent vengono calcolati piu' sotto con
         # find_meaningful_second_price (v7), non piu' come semplice own_prices[1].
 
+        # FIX 16/07 (v8, caso Fredrik Andre Bjorkan): l'evento che ha scatenato QUESTA
+        # valutazione puo' essere esso stesso un annuncio nuovo di zecca, ma se la verifica
+        # live parte troppo presto (entro la finestra di invisibilita' ~2 minuti di Sorare,
+        # vedi MARKET_VISIBILITY_DELAY_SECONDS) quell'annuncio non compare ancora nella query
+        # -- quindi price_eur (il prezzo dell'evento) puo' risultare PIU' BASSO del minimo
+        # trovato dalla query stessa. Confermato: la notifica su Fredrik Andre Bjorkan ha usato
+        # 2.62EUR come minimo, ma l'annuncio che aveva scatenato l'evento (Buffett, 2.50EUR,
+        # in vendita da meno di un'ora) non era ancora visibile alla query -- se l'utente avesse
+        # comprato la carta segnalata a 2.62EUR, ne esisteva gia' una migliore a 2.50EUR.
+        # Continuiamo comunque a valutare/notificare normalmente col minimo trovato dalla query
+        # (non ha senso ritardare un affare gia' buono), ma accodiamo ANCHE il prezzo grezzo
+        # dell'evento per una riverifica successiva: quando l'annuncio diventa visibile, il
+        # floor si riallinea al vero minimo (e se il calo residuo e' abbastanza ampio, arriva
+        # comunque una notifica separata).
+        if price_eur < true_min_price:
+            log(f"{player_name} ({season_type}, {season_name}): l'annuncio che ha scatenato "
+                f"l'evento ({price_eur:.2f}EUR) e' piu' economico del minimo trovato dalla "
+                f"verifica live ({true_min_price:.2f}EUR) -- probabilmente ancora nella "
+                f"finestra di invisibilita' di Sorare, accodo per riverifica")
+            queue_pending_recheck(player_slug, player_name, season_type, season_name,
+                                   price_eur, card_slug)
+
         # Il controllo sopra (price_eur < MIN_PRICE_EUR) filtra solo il prezzo dell'EVENTO
         # che ha innescato il controllo, non il vero prezzo minimo verificato live -- per
         # questo motivo carte a 0.80EUR passavano comunque (caso Lovro Majer: l'evento
