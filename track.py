@@ -511,7 +511,15 @@ def get_bucket_prices(player_slug, eth_rate):
             continue
         node_season = (match.get('sportSeason') or {}).get('name', 'unknown')
         node_season_type = 'in_season' if node_season in CURRENT_SEASON_LABELS else 'classic'
-        price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
+        node_amounts = (node.get('receiverSide') or {}).get('amounts') or {}
+        # DIAGNOSTICA TEMPORANEA (16/07, caso Kim Dae-Won -- rimuovere dopo verifica): stessa
+        # ipotesi di handle_offer_update, ma qui sul lato verifica live (fetch_all_live_offers),
+        # dove il caso Kim Dae-Won e' stato osservato la prima volta.
+        if (node_amounts.get('eurCents') is None) != (node_amounts.get('wei') is None):
+            log(f"[diagnostica eth-only] annuncio live con amounts asimmetrici: slug="
+                f"{match.get('slug')} eurCents={node_amounts.get('eurCents')} "
+                f"wei={node_amounts.get('wei')}")
+        price = eur_price_from_amounts(node_amounts, eth_rate)
         if price is None:
             # Annuncio aperto e compatibile, ma Sorare non ci ha detto il prezzo: non possiamo
             # escluderlo dal conteggio, potrebbe essere il vero secondo (o primo) piu' economico.
@@ -677,9 +685,20 @@ def handle_offer_update(offer, eth_rate, stats):
     if receiver_side.get('anyCards'):
         return
 
-    price_eur = eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
+    raw_amounts = receiver_side.get('amounts') or {}
+    price_eur = eur_price_from_amounts(raw_amounts, eth_rate)
     if price_eur is None:
         return
+
+    # DIAGNOSTICA TEMPORANEA (16/07, caso Kim Dae-Won -- rimuovere dopo verifica): ipotesi da
+    # confermare sui dati reali -- un annuncio "solo ETH" (non acquistabile in cash/carta)
+    # potrebbe mandare wei senza eurCents, ma eur_price_from_amounts converte comunque il wei
+    # in un prezzo EUR, trattandolo come se fosse acquistabile normalmente. Logghiamo solo i
+    # casi asimmetrici (uno dei due campi assente) per isolare l'anomalia senza spammare i log.
+    if (raw_amounts.get('eurCents') is None) != (raw_amounts.get('wei') is None):
+        log(f"[diagnostica eth-only] evento con amounts asimmetrici: eurCents="
+            f"{raw_amounts.get('eurCents')} wei={raw_amounts.get('wei')} "
+            f"prezzo_calcolato={price_eur:.2f}EUR status={offer_status}")
 
     for card in (sender_side.get('anyCards') or []):
         if card.get('rarityTyped') != 'limited':
