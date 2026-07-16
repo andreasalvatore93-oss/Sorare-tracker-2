@@ -1,5 +1,4 @@
 name: Sorare Price Check
-
 on:
   workflow_dispatch:
     inputs:
@@ -7,10 +6,8 @@ on:
         description: "Secondi di ascolto (lascia vuoto per 200 = normale; usa 20-30 per test veloci)"
         required: false
         default: "200"
-
 permissions:
   contents: write
-
 # FIX 16/07: cancel-in-progress era true -- se un'esecuzione ne cancellava un'altra a meta'
 # strada, tutto lo stato locale non ancora salvato (compresa la nuova coda pending_recheck,
 # vedi track.py) andava perso silenziosamente, senza nessuna possibilita' di recuperarlo in
@@ -19,20 +16,29 @@ permissions:
 concurrency:
   group: sorare-tracker
   cancel-in-progress: false
-
 jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # FIX 16/07 (v2, caso righe "resuscitate" nella coda pending_recheck): senza "ref: main"
+      # il checkout usa lo SHA di main congelato al momento in cui il trigger e' stato CREATO
+      # (quando cron-job.org ha chiamato l'API), non quello di quando la run inizia DAVVERO a
+      # eseguire -- e sappiamo che le run restano in coda anche minuti prima di partire (vedi
+      # cancel-in-progress: false sopra). Una run rimasta in coda finiva quindi per lavorare su
+      # un tracker.db vecchio, e quando pushava andava in conflitto con run nel frattempo gia'
+      # concluse -- conflitto risolto piu' sotto con "-X ours", che teneva proprio la versione
+      # vecchia scartando in silenzio il lavoro dell'altra run (caso Mika Godts/Matt Turner/
+      # Warren Zaire-Emery/Joshua Kimmich/Maghnes Akliouche del 16/07, verificato nei log delle
+      # run #218/#219). "ref: main" forza invece a risolvere il branch al momento vero del
+      # checkout, sempre allo stato piu' fresco disponibile in quel momento.
       - uses: actions/checkout@v4
-
+        with:
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - run: pip install -r requirements.txt
-
       - name: Run tracker
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
@@ -45,7 +51,6 @@ jobs:
           PYTHONUNBUFFERED: "1"
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '200' }}
         run: python track.py
-
       - name: Save state
         run: |
           git config user.name "sorare-tracker-bot"
