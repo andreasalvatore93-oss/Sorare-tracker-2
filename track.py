@@ -1218,11 +1218,86 @@ def run_listener(eth_rate):
     timer.cancel()
 
 
+# DIAGNOSTICA TEMPORANEA (16/07, caso Harvey Elliott -- rimuovere dopo verifica): il bucketing
+# in_season/classic si basa sul NOME della stagione stampata sulla carta (sportSeason.name)
+# confrontato con un elenco statico (CURRENT_SEASON_LABELS) -- ma il caso Elliott dimostra che
+# questo e' strutturalmente sbagliato: una sua carta "2025" (Aston Villa) e' ancora IDONEA alle
+# competizioni In Season fino al 10 agosto secondo Sorare stesso ("Idoneita' alle competizioni:
+# Di stagione fino al 10 ago" mostrato nella UI), ma "2025" non e' nell'elenco statico quindi il
+# bot la tratta erroneamente come classic -- mescolandola con carte davvero classic (es. la sua
+# "24/25" Liverpool, quella "Idoneita': Classico" confermata). Proviamo per tentativi (come gia'
+# fatto altre volte, introspection completa disabilitata) a scoprire se esiste un campo GraphQL
+# che esponga direttamente questa idoneita' reale, invece di dedurla dal nome stagione -- se lo
+# troviamo, possiamo finalmente sistemare il bucketing alla radice (collegato al caso Nico
+# O'Reilly e alla transizione di stagione di agosto, ormai imminente).
+ELIGIBILITY_DISCOVERY_PLAYER_SLUG = os.environ.get('ELIGIBILITY_DISCOVERY_PLAYER_SLUG', 'harvey-elliott')
+
+
+def discover_eligibility_field():
+    """Tenta diversi nomi di campo/tipo candidati per scoprire se l'API espone direttamente
+    l'idoneita' alle competizioni di una carta (invece di doverla dedurre dal nome stagione).
+    Logga solo esito (successo/errore) di ogni tentativo, non tocca la logica del bot."""
+    log("[diagnostica idoneita'] inizio tentativi per scoprire il campo di idoneita' competizioni...")
+
+    introspection_attempts = [
+        ('__type(name: "Card")', '{ __type(name: "Card") { name fields { name } } }'),
+        ('__type(name: "FootballCard")', '{ __type(name: "FootballCard") { name fields { name } } }'),
+        ('__type(name: "TokenCard")', '{ __type(name: "TokenCard") { name fields { name } } }'),
+        ('__type(name: "AnyCardInterface")', '{ __type(name: "AnyCardInterface") { name fields { name } } }'),
+    ]
+    for label, query in introspection_attempts:
+        try:
+            data = graphql_query(query)
+            if data.get('errors'):
+                log(f"[diagnostica idoneita'] {label}: errore -- {data['errors']}")
+            elif (data.get('data') or {}).get('__type') is None:
+                log(f"[diagnostica idoneita'] {label}: tipo non trovato (None)")
+            else:
+                log(f"[diagnostica idoneita'] {label}: SUCCESSO -- {data['data']['__type']}")
+        except Exception as e:
+            log(f"[diagnostica idoneita'] {label}: eccezione -- {e}")
+
+    field_name_candidates = [
+        'inSeasonEligible', 'eligibleForCompetitions', 'competitionEligibility',
+        'seasonEligibility', 'competitionEligibilities', 'isInSeason',
+    ]
+    for field_name in field_name_candidates:
+        query = f"""
+        query DiscoverEligibility($slug: String!, $n: Int!) {{
+          tokens {{
+            liveSingleSaleOffers(playerSlug: $slug, last: $n) {{
+              nodes {{
+                senderSide {{
+                  anyCards {{
+                    slug
+                    sportSeason {{ name }}
+                    {field_name}
+                  }}
+                }}
+              }}
+            }}
+          }}
+        }}
+        """
+        try:
+            data = graphql_query(query, {"slug": ELIGIBILITY_DISCOVERY_PLAYER_SLUG, "n": 5})
+            if data.get('errors'):
+                log(f"[diagnostica idoneita'] campo '{field_name}': errore -- {data['errors']}")
+            else:
+                log(f"[diagnostica idoneita'] campo '{field_name}': SUCCESSO -- {data['data']}")
+        except Exception as e:
+            log(f"[diagnostica idoneita'] campo '{field_name}': eccezione -- {e}")
+
+    log("[diagnostica idoneita'] tentativi completati.")
+
+
 def main():
     init_db()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
+
+    discover_eligibility_field()
 
     # FIX 16/07: riverifica prima di ascoltare nuovi eventi -- vedi nota su
     # MARKET_VISIBILITY_DELAY_SECONDS in process_pending_rechecks.
