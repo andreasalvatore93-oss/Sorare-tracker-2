@@ -22,7 +22,8 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 # un'asta recente), incollalo qui sotto in TEST_AUCTION_ID, poi esegui questo script con le
 # stesse variabili d'ambiente SORARE_COOKIE/SORARE_CSRF usate dal bot vero. Copiami tutto
 # l'output.
-TEST_AUCTION_ID = "EnglishAuction:d48b4ebe-b701-4598-9a87-45111d3188e9" 
+TEST_AUCTION_ID = "EnglishAuction:647cd6ff-6b86-4ffc-a72c-f91baa26cbed"  # Heung-min Son, 16/07 05:27:48
+TEST_CARD_SLUG = "heung-min-son-2026-limited-811"  # stessa riga di log, stessa asta
 
 
 def log(message):
@@ -113,6 +114,27 @@ def main():
                 "per la riverifica pre-notifica.")
         else:
             log(">>> Non ha funzionato nemmeno in base64 (vedi errori sopra). Passo al tentativo 2.")
+
+    log("=" * 70)
+    log("TENTATIVO 3: query per carta (anyCard/card/footballCard(slug: ...)) -- proviamo piu' "
+        "nomi di campo, dato che anyPlayer(slug:...) e' gia' confermato funzionante altrove")
+    for root_field in ("anyCard", "card", "footballCard", "token"):
+        query = f"""
+        query GetCardAuction($slug: String!) {{
+          {root_field}(slug: $slug) {{
+            slug
+            activeAuction {{ id currentPrice minNextBid endDate }}
+          }}
+        }}
+        """
+        status3, data3 = graphql_query(query, {"slug": TEST_CARD_SLUG})
+        log(f"--- campo radice provato: {root_field} (HTTP {status3}) ---")
+        log(f"Risposta: {json.dumps(data3, indent=2)}")
+        if not data3.get('errors') and (data3.get('data') or {}).get(root_field):
+            log(f">>> FUNZIONA! Il campo radice giusto e': {root_field}(slug: ...)")
+            break
+    else:
+        log(">>> Nessuno dei campi radice provati ha funzionato per la carta. Passo al tentativo 2.")
 
     log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
