@@ -11,6 +11,19 @@ on:
 permissions:
   contents: write
 
+# FIX 16/07: la scansione di sicurezza aggiunta oggi ha allungato ogni esecuzione da
+# ~110-120s a ~200s. Con un cron esterno (cron-job.org) che rilancia ogni 4 minuti c'e'
+# margine sulla carta, ma l'avvio della macchina GitHub Actions (checkout, setup python,
+# pip install) non e' incluso in quel conteggio -- caso reale: due esecuzioni si sono
+# accavallate, il push della prima e' andato in conflitto e la riga "notificata" e' andata
+# persa localmente (il messaggio Telegram pero' era gia' partito, non annullabile) ->
+# stessa asta notificata due volte. concurrency in coda (non cancel-in-progress) garantisce
+# che GitHub non faccia MAI partire una nuova esecuzione finche' la precedente non ha
+# finito di salvare, a prescindere dai tempi del cron.
+concurrency:
+  group: auctions-ws-listener
+  cancel-in-progress: false
+
 jobs:
   listen:
     runs-on: ubuntu-latest
