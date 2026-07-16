@@ -46,7 +46,45 @@ MAX_FLOOR_AGE_HOURS = float(os.environ.get('MAX_FLOOR_AGE_HOURS', '48'))
 # basso attualmente in vendita, non e' un vero affare: e' solo rumore statistico dentro un
 # gruppo di annunci quasi identici (es. 2.34EUR contro 2.35EUR) -- anche se rispetto al
 # vecchio riferimento storico sembra un grande calo%.
-MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
+MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))  # fallback di sicurezza, vedi required_margin_fraction
+
+# FIX 16/07: margine minimo richiesto non piu' fisso all'8% ma a scaglioni in base al prezzo
+# di riferimento (second_min_price) -- numeri forniti direttamente dall'utente come "prezzo
+# soglia -> prezzo massimo della carta nuova" per fascia, qui tradotti in percentuale
+# (scaglione, prezzo_massimo_carta_nuova). Es. sotto i 3EUR il prezzo minimo verificato deve
+# stare a 2.50EUR o meno (margine 16.7%); sotto i 5EUR a 4.30EUR o meno (14.0%); e cosi' via.
+# Oltre i 60EUR si passa a uno sconto assoluto fisso di 5EUR (FLAT_MARGIN_EUR_ABOVE_60) invece
+# che a una percentuale, altrimenti servirebbe uno sconto enorme in euro per carte costose.
+MARGIN_TIERS = [
+    (3, 2.50),
+    (5, 4.30),
+    (10, 8.60),
+    (15, 13.50),
+    (20, 18.00),
+    (25, 23.00),
+    (30, 27.50),
+    (35, 32.50),
+    (40, 36.00),
+    (45, 42.00),
+    (50, 47.00),
+    (55, 52.20),
+    (60, 56.00),
+]
+FLAT_MARGIN_EUR_ABOVE_60 = 5.0
+
+
+def required_margin_fraction(reference_price):
+    """Frazione minima di sconto richiesta tra il prezzo minimo vero e il secondo prezzo
+    attuale, a scaglioni in base al prezzo di riferimento (vedi MARGIN_TIERS). Sotto ogni
+    soglia si applica la percentuale di quello scaglione; da 60EUR in su si passa a uno
+    sconto assoluto fisso di 5EUR (converte in percentuale via FLAT_MARGIN_EUR_ABOVE_60 /
+    reference_price, quindi via via piu' basso in % man mano che il prezzo sale)."""
+    if reference_price <= 0:
+        return MIN_MARGIN_OVER_SECOND
+    for upper_bound, max_price in MARGIN_TIERS:
+        if reference_price < upper_bound:
+            return (upper_bound - max_price) / upper_bound
+    return FLAT_MARGIN_EUR_ABOVE_60 / reference_price
 
 # FIX 16/07 (caso Antonio Sivera): Sorare tiene un annuncio appena creato invisibile sul
 # mercato pubblico per ~2 minuti (finestra per permettere al venditore di ritirarlo se ha
@@ -714,10 +752,12 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         margin_percent = None
         if second_min_price is not None and second_min_price > 0:
             margin_percent = (second_min_price - true_min_price) / second_min_price
-            if margin_percent < MIN_MARGIN_OVER_SECOND:
+            required_margin = required_margin_fraction(second_min_price)
+            if margin_percent < required_margin:
                 log(f"{player_name} ({season_type}, {season_name}): prezzo minimo ({true_min_price:.2f}EUR) "
                     f"troppo vicino al secondo annuncio attuale ({second_min_price:.2f}EUR, "
-                    f"margine {margin_percent:.1%}), non e' un affare distinto, salto la notifica")
+                    f"margine {margin_percent:.1%}, richiesto {required_margin:.1%} per questa fascia di prezzo), "
+                    f"non e' un affare distinto, salto la notifica")
                 log_decision(player_slug, player_name, season_type, season_name, "skip_margin_too_close",
                              floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
                              second_min_price=second_min_price, margin_percent=margin_percent)
