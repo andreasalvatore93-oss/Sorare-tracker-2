@@ -1,4 +1,3 @@
-
 import os
 import re
 import json
@@ -39,6 +38,10 @@ CURRENT_SEASON_ALT = os.environ.get('CURRENT_SEASON_ALT', '2026')  # formato MLS
 CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
 BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.25'))  # 25% fisso sul riferimento (mediana)
 RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))
+
+# Quante aste live (per lo stesso giocatore) controllare nella riverifica pre-notifica -- vedi
+# verify_auction_still_live piu' sotto.
+LIVE_AUCTION_RECHECK_COUNT = int(os.environ.get('LIVE_AUCTION_RECHECK_COUNT', '20'))
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
@@ -402,6 +405,67 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
         return []
 
 
+# --- Riverifica live pre-notifica: query tokens.liveAuctions, la STESSA gia' usata e
+# confermata funzionante dal vecchio bot a polling (auctions.py), qui filtrata per giocatore.
+# NOTA: il filtro playerSlug non e' ancora stato verificato dal vivo in questa sessione --
+# e' un tentativo per analogia (tokens.liveSingleSaleOffers accetta playerSlug ed e' un campo
+# gemello sotto lo stesso tipo tokens, vedi nota storica su come liveSingleSaleOffers e' stato
+# scoperto). Se il parametro non fosse supportato, la query torna un errore GraphQL e la
+# riverifica fallisce in modo sicuro (non notifichiamo su dati non confermati) -- controllare i
+# log per "[riverifica live asta] errore" per capire se va aggiustata.
+LIVE_AUCTIONS_FOR_PLAYER_QUERY = """
+query LiveAuctionsForPlayer($slug: String!, $n: Int!) {
+  tokens {
+    liveAuctions(playerSlug: $slug, last: $n) {
+      nodes {
+        id
+        currentPrice
+        minNextBid
+        endDate
+      }
+    }
+  }
+}
+"""
+
+
+def get_live_auctions_for_player(player_slug, n):
+    try:
+        data = graphql_query(LIVE_AUCTIONS_FOR_PLAYER_QUERY, {"slug": player_slug, "n": n})
+        if data.get('errors'):
+            log(f"[riverifica live asta] errore nella query liveAuctions per {player_slug}: {data['errors']}")
+            return None  # query fallita: distinto da "nessuna asta live trovata"
+        nodes = (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {}).get('nodes') or []
+        return nodes
+    except Exception as e:
+        log(f"[riverifica live asta] eccezione per {player_slug}: {e}")
+        return None
+
+
+def verify_auction_still_live(auction_id, player_slug, eth_rate):
+    """Rilegge lo stato REALE dell'asta subito prima di notificare, invece di fidarsi
+    ciecamente dei valori dell'evento WebSocket che ha innescato il controllo -- evento che
+    puo' essere rimasto in coda o essere stato rielaborato con ritardo (caso Marco Reus:
+    evento con currentPrice=2.17EUR e ~11h rimanenti, notificato quando l'asta era GIA' a
+    10.24EUR con solo ~4h rimanenti -- un'offerta reale da 10.24EUR era arrivata 2 ore prima
+    dell'alert, rendendo il tetto consigliato di 8.03EUR gia' superato e la notifica inutile).
+    Ritorna (prezzo_attuale, offerta_minima_valida, data_scadenza) se l'asta e' ancora tra le
+    live per questo giocatore, altrimenti None -- in quel caso meglio non notificare che
+    notificare su dati vecchi."""
+    nodes = get_live_auctions_for_player(player_slug, LIVE_AUCTION_RECHECK_COUNT)
+    if nodes is None:
+        return None
+    for node in nodes:
+        if node.get('id') != auction_id:
+            continue
+        current_price_eur = wei_to_eur(node.get('currentPrice'), eth_rate)
+        if current_price_eur is None:
+            return None
+        min_next_bid_eur = wei_to_eur(node.get('minNextBid'), eth_rate)
+        return current_price_eur, min_next_bid_eur, node.get('endDate')
+    return None
+
+
 # --- Logica di valutazione di un'asta, identica a quella gia' validata in auctions.py:
 #     l'evento WS (con anyCards incluso) ha la STESSA forma di un nodo liveAuctions, quindi
 #     questa funzione e' riutilizzabile cosi' com'e'. ---
@@ -469,6 +533,28 @@ def process_auction(auction, eth_rate):
         median_inputs.append(direct_sale_price)
     median_reference = statistics.median(median_inputs)
     recommended_ceiling = median_reference * (1 - BID_DISCOUNT)
+
+    # Riverifica live subito prima di decidere se notificare: l'evento che ha innescato
+    # questo controllo potrebbe essere vecchio (vedi verify_auction_still_live/caso Marco
+    # Reus). Sovrascriviamo prezzo/offerta minima/scadenza dell'evento con quelli letti ORA,
+    # cosi' la decisione finale e il messaggio si basano sui numeri reali del momento, non su
+    # quelli di quando l'evento e' stato emesso.
+    fresh = verify_auction_still_live(auction_id, player_slug, eth_rate)
+    if fresh is None:
+        log(f"{player_name}: impossibile riverificare l'asta tra le live in questo momento "
+            f"(evento forse vecchio o asta gia' conclusa/cambiata), non notifico per sicurezza")
+        log_decision(auction_id, player_slug, player_name, season_type, "skip_could_not_reverify_live",
+                     current_price=current_price_eur, min_next_bid=min_next_bid_eur,
+                     median_reference=median_reference, recommended_ceiling=recommended_ceiling,
+                     direct_sale_price=direct_sale_price)
+        return
+    fresh_current_price_eur, fresh_min_next_bid_eur, fresh_end_date = fresh
+    if abs(fresh_current_price_eur - current_price_eur) > 0.01:
+        log(f"{player_name}: prezzo aggiornato alla riverifica live ({current_price_eur:.2f}EUR "
+            f"dell'evento -> {fresh_current_price_eur:.2f}EUR reale)")
+    current_price_eur = fresh_current_price_eur
+    min_next_bid_eur = fresh_min_next_bid_eur
+    auction = dict(auction, endDate=fresh_end_date)
 
     if min_next_bid_eur is not None:
         if min_next_bid_eur > recommended_ceiling:
