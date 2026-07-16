@@ -1098,6 +1098,25 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # restano l'unico meccanismo per decidere se un calo con un secondo prezzo vicino e'
         # comunque abbastanza ampio da essere un affare distinto.
         second_min_price = own_prices[1][0] if len(own_prices) > 1 else None
+        # FIX 16/07 (caso Luis Diaz, richiesta esplicita): una carta IN SEASON e' idonea a
+        # tutto cio' per cui lo e' una carta CLASSIC (es. Classic Global Cup, All Star) PIU'
+        # le competizioni della stagione corrente (vedi season_type_for_card/inSeasonEligible
+        # -- confermato sulla carta Bayern di Luis Diaz: "Di stagione fino al 17 ago" +
+        # entrambi i badge Classic Global Cup/All Star). E' quindi un sostituto valido, non
+        # un'alternativa "diversa": se il bucket in valutazione e' 'classic' e un annuncio
+        # in season e' vicino o piu' economico del secondo prezzo classic, il vero divario e'
+        # quello verso la carta in season, non verso il secondo prezzo classic (che puo' essere
+        # molto piu' alto, es. caso reale 17.40 vs 22.90 classic, ma solo 17.42 in season --
+        # un divario di 2 centesimi, non il 24% mostrato). Il gap sparira' comunque del tutto
+        # appena quella carta in season smettera' di esserlo. L'inverso non vale (una classic
+        # non sostituisce una in season, le manca l'idoneita' alla stagione corrente), quindi
+        # non tocchiamo il caso season_type == 'in_season'.
+        if season_type == 'classic':
+            in_season_prices, _ = buckets.get('in_season', ([], False))
+            if in_season_prices:
+                in_season_min = in_season_prices[0][0]
+                if second_min_price is None or in_season_min < second_min_price:
+                    second_min_price = in_season_min
         margin_percent = None
         if second_min_price is not None and second_min_price > 0:
             margin_percent = (second_min_price - true_min_price) / second_min_price
@@ -1464,6 +1483,36 @@ def discover_sales_history_field():
                 log(f"[diagnostica storico vendite] tokenPrices({arg_name}=...): SUCCESSO -- {data['data']}")
         except Exception as e:
             log(f"[diagnostica storico vendite] tokenPrices({arg_name}=...): eccezione -- {e}")
+
+    # FIX 16/07 (proseguimento, log reale): il tentativo sopra ha rivelato la vera firma del
+    # campo -- l'errore dice "missing required arguments: playerSlug, rarity" (non slug/
+    # tokenSlug/cardSlug/tokenId come provato sopra) -- quindi tokenPrices riguarda TUTTE le
+    # vendite di un giocatore per una data rarita', non un singolo token. rarity e'
+    # probabilmente un enum GraphQL (non la stringa minuscola 'limited' restituita altrove da
+    # rarityTyped) -- proviamo piu' varianti plausibili e lasciamo che l'errore di GraphQL
+    # confermi quale, stesso approccio usato sopra.
+    rarity_candidates = ['LIMITED', 'Limited', 'limited']
+    for rarity_value in rarity_candidates:
+        query = f"""
+        query DiscoverTokenPrices2($p: String!) {{
+          tokens {{
+            tokenPrices(playerSlug: $p, rarity: {rarity_value}) {{
+              __typename
+            }}
+          }}
+        }}
+        """
+        try:
+            data = graphql_query(query, {"p": SALES_HISTORY_DISCOVERY_PLAYER_SLUG})
+            if data.get('errors'):
+                log(f"[diagnostica storico vendite] tokenPrices(playerSlug, rarity={rarity_value}): "
+                    f"errore -- {data['errors']}")
+            else:
+                log(f"[diagnostica storico vendite] tokenPrices(playerSlug, rarity={rarity_value}): "
+                    f"SUCCESSO -- {data['data']}")
+        except Exception as e:
+            log(f"[diagnostica storico vendite] tokenPrices(playerSlug, rarity={rarity_value}): "
+                f"eccezione -- {e}")
 
     log("[diagnostica storico vendite] tentativi completati.")
 
