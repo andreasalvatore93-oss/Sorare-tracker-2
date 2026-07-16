@@ -175,6 +175,22 @@ CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 CURRENT_SEASON_ALT = os.environ.get('CURRENT_SEASON_ALT', '2026')  # formato MLS/calendario solare
 CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
 
+# FIX 16/07 (v18, caso Harvey Elliott): il confronto sopra (nome stagione contro un elenco
+# statico) e' strutturalmente impreciso -- scoperto per tentativi che l'API espone un campo
+# diretto, inSeasonEligible, che riflette l'idoneita' REALE alle competizioni di Sorare (la
+# stessa mostrata nella UI come "Idoneita' alle competizioni"). Confermato sul caso Elliott:
+# una sua carta con stagione stampata "2025" (formato che CURRENT_SEASON_LABELS non riconosce)
+# risultava "Idoneita': Di stagione fino al 10 ago" nella UI -- quindi ancora in season -- ma il
+# vecchio confronto testuale l'avrebbe trattata come classic, mescolandola erroneamente con una
+# sua carta "24/25" davvero classic. Usiamo ora inSeasonEligible quando disponibile; se per
+# qualche motivo il campo risultasse assente (None), ripieghiamo sul vecchio confronto testuale
+# come rete di sicurezza, invece di assumere silenziosamente un valore che potrebbe essere sbagliato.
+def season_type_for_card(card, season_name):
+    in_season_eligible = card.get('inSeasonEligible')
+    if in_season_eligible is not None:
+        return 'in_season' if in_season_eligible else 'classic'
+    return 'in_season' if season_name in CURRENT_SEASON_LABELS else 'classic'
+
 # --- Doppio controllo sugli alert "dubbi" (calo sospetto >50% o dati incompleti) ---
 # Prima questi casi venivano scartati subito e basta (nessuna notifica, solo log). Ora, prima
 # di scartarli definitivamente, ripetiamo UNA SOLA VOLTA la verifica live dopo una breve pausa:
@@ -227,6 +243,7 @@ subscription OnTokenOfferUpdated {
         sport
         anyPlayer { slug displayName }
         sportSeason { name }
+        inSeasonEligible
       }
     }
     receiverSide {
@@ -264,6 +281,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
             rarityTyped
             sport
             sportSeason { name }
+            inSeasonEligible
           }
         }
       }
@@ -561,7 +579,7 @@ def get_bucket_prices(player_slug, eth_rate):
         if not match:
             continue
         node_season = (match.get('sportSeason') or {}).get('name', 'unknown')
-        node_season_type = 'in_season' if node_season in CURRENT_SEASON_LABELS else 'classic'
+        node_season_type = season_type_for_card(match, node_season)
         price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
         if price is None:
             # Annuncio aperto e compatibile, ma Sorare non ci ha detto il prezzo: non possiamo
@@ -682,7 +700,8 @@ def log_raw_offers_diagnostic(player_slug, eth_rate):
         for c in cards:
             log(f"[diagnostica alert]   status={status} prezzo={price} slug={c.get('slug')} "
                 f"rarita'={c.get('rarityTyped')} sport={c.get('sport')} "
-                f"stagione={(c.get('sportSeason') or {}).get('name')}")
+                f"stagione={(c.get('sportSeason') or {}).get('name')} "
+                f"inSeasonEligible={c.get('inSeasonEligible')}")
 
 
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
@@ -758,7 +777,7 @@ def handle_offer_update(offer, eth_rate, stats):
             continue  # scarto veloce sul prezzo dell'evento, solo per non fare la verifica live inutilmente:
                       # il controllo vero (sul prezzo REALE verificato) e' piu' sotto, dopo get_live_min_offer
 
-        season_type = 'in_season' if season_name in CURRENT_SEASON_LABELS else 'classic'
+        season_type = season_type_for_card(card, season_name)
 
         stats["processed"] += 1
 
@@ -1218,77 +1237,12 @@ def run_listener(eth_rate):
     timer.cancel()
 
 
-# DIAGNOSTICA TEMPORANEA (16/07, caso Harvey Elliott -- rimuovere dopo verifica): il bucketing
-# in_season/classic si basa sul NOME della stagione stampata sulla carta (sportSeason.name)
-# confrontato con un elenco statico (CURRENT_SEASON_LABELS) -- ma il caso Elliott dimostra che
-# questo e' strutturalmente sbagliato: una sua carta "2025" (Aston Villa) e' ancora IDONEA alle
-# competizioni In Season fino al 10 agosto secondo Sorare stesso ("Idoneita' alle competizioni:
-# Di stagione fino al 10 ago" mostrato nella UI), ma "2025" non e' nell'elenco statico quindi il
-# bot la tratta erroneamente come classic -- mescolandola con carte davvero classic (es. la sua
-# "24/25" Liverpool, quella "Idoneita': Classico" confermata). Proviamo per tentativi (come gia'
-# fatto altre volte, introspection completa disabilitata) a scoprire se esiste un campo GraphQL
-# che esponga direttamente questa idoneita' reale, invece di dedurla dal nome stagione -- se lo
-# troviamo, possiamo finalmente sistemare il bucketing alla radice (collegato al caso Nico
-# O'Reilly e alla transizione di stagione di agosto, ormai imminente).
-ELIGIBILITY_DISCOVERY_PLAYER_SLUG = os.environ.get('ELIGIBILITY_DISCOVERY_PLAYER_SLUG', 'harvey-elliott')
-
-
-def discover_eligibility_field():
-    """Tenta diversi nomi di campo/tipo candidati per scoprire se l'API espone direttamente
-    l'idoneita' alle competizioni di una carta (invece di doverla dedurre dal nome stagione).
-    Logga solo esito (successo/errore) di ogni tentativo, non tocca la logica del bot."""
-    log("[diagnostica idoneita'] inizio tentativi per scoprire il campo di idoneita' competizioni...")
-
-    introspection_attempts = [
-        ('__type(name: "Card")', '{ __type(name: "Card") { name fields { name } } }'),
-        ('__type(name: "FootballCard")', '{ __type(name: "FootballCard") { name fields { name } } }'),
-        ('__type(name: "TokenCard")', '{ __type(name: "TokenCard") { name fields { name } } }'),
-        ('__type(name: "AnyCardInterface")', '{ __type(name: "AnyCardInterface") { name fields { name } } }'),
-    ]
-    for label, query in introspection_attempts:
-        try:
-            data = graphql_query(query)
-            if data.get('errors'):
-                log(f"[diagnostica idoneita'] {label}: errore -- {data['errors']}")
-            elif (data.get('data') or {}).get('__type') is None:
-                log(f"[diagnostica idoneita'] {label}: tipo non trovato (None)")
-            else:
-                log(f"[diagnostica idoneita'] {label}: SUCCESSO -- {data['data']['__type']}")
-        except Exception as e:
-            log(f"[diagnostica idoneita'] {label}: eccezione -- {e}")
-
-    field_name_candidates = [
-        'inSeasonEligible', 'eligibleForCompetitions', 'competitionEligibility',
-        'seasonEligibility', 'competitionEligibilities', 'isInSeason',
-    ]
-    for field_name in field_name_candidates:
-        query = f"""
-        query DiscoverEligibility($slug: String!, $n: Int!) {{
-          tokens {{
-            liveSingleSaleOffers(playerSlug: $slug, last: $n) {{
-              nodes {{
-                senderSide {{
-                  anyCards {{
-                    slug
-                    sportSeason {{ name }}
-                    {field_name}
-                  }}
-                }}
-              }}
-            }}
-          }}
-        }}
-        """
-        try:
-            data = graphql_query(query, {"slug": ELIGIBILITY_DISCOVERY_PLAYER_SLUG, "n": 5})
-            if data.get('errors'):
-                log(f"[diagnostica idoneita'] campo '{field_name}': errore -- {data['errors']}")
-            else:
-                log(f"[diagnostica idoneita'] campo '{field_name}': SUCCESSO -- {data['data']}")
-        except Exception as e:
-            log(f"[diagnostica idoneita'] campo '{field_name}': eccezione -- {e}")
-
-    log("[diagnostica idoneita'] tentativi completati.")
+# NOTA STORICA: qui c'era discover_eligibility_field(), un diagnostico temporaneo (caso Harvey
+# Elliott) che ha provato per tentativi diversi nomi di campo/tipo GraphQL per scoprire come
+# accedere all'idoneita' reale alle competizioni di una carta. Trovato: il campo si chiama
+# inSeasonEligible (esiste su AnyCardInterface, confermato via log reale: unico tentativo senza
+# errore tra vari candidati). Rimosso il diagnostico ora che sappiamo il nome giusto -- vedi
+# season_type_for_card() sopra (vicino a CURRENT_SEASON_LABELS) per come viene usato.
 
 
 def main():
@@ -1296,8 +1250,6 @@ def main():
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
-
-    discover_eligibility_field()
 
     # FIX 16/07: riverifica prima di ascoltare nuovi eventi -- vedi nota su
     # MARKET_VISIBILITY_DELAY_SECONDS in process_pending_rechecks.
