@@ -21,7 +21,7 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 # un'asta recente), incollalo qui sotto in TEST_AUCTION_ID, poi esegui questo script con le
 # stesse variabili d'ambiente SORARE_COOKIE/SORARE_CSRF usate dal bot vero. Copiami tutto
 # l'output.
-TEST_AUCTION_ID = "EnglishAuction:METTI_QUI_UN_ID_REALE"
+TEST_AUCTION_ID = "EnglishAuction:e43fb964-8cb5-4185-9104-ce2e409c41b2
 
 
 def log(message):
