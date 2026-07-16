@@ -404,12 +404,34 @@ def init_db():
     conn.close()
 
 
+# FIX 16/07 (v22, richiesta esplicita): contatore in memoria per un riepilogo a fine
+# esecuzione (vedi log_decision_summary sotto). Volutamente NON include il ramo silenzioso
+# "nessuna variazione" (true_min_price >= floor) -- quel ramo resta senza log_decision per
+# esplicita richiesta dell'utente (troppo rumoroso, capita quasi ad ogni evento), quindi non
+# comparira' nel riepilogo. Copre solo le categorie gia' tracciate in decisions_log.
+_decision_counts = {}
+
+# Etichette leggibili in italiano per il riepilogo, nell'ordine in cui vogliamo mostrarle.
+_DECISION_LABELS = [
+    ("init", "Inizializzati"),
+    ("stale_realign", "Riferimento riallineato (stantio)"),
+    ("skip_margin_too_close", "Margine insufficiente"),
+    ("skip_cross_bucket_dead", "Bucket morto/residuale"),
+    ("skip_dubbio_unconfirmed", "Dubbio non confermato"),
+    ("notify", "Notificati (calo diretto)"),
+    ("notify_after_recheck", "Notificati (dopo doppio controllo)"),
+    ("notify_margin_opportunity", "Notificati (opportunita' di margine)"),
+    ("update_small_variation", "Piccola variazione"),
+]
+
+
 def log_decision(player_slug, player_name, season_type, season_name, decision,
                   floor_price=None, true_min_price=None, drop_percent=None,
                   second_min_price=None, margin_percent=None, reasons=None):
     """Registra una riga per ogni decisione presa (notificato o scartato, e perche').
     Query utili in futuro, es.: `SELECT decision, COUNT(*) FROM decisions_log GROUP BY decision`
     per vedere quanto viene notificato contro quanto viene scartato e con quale motivo."""
+    _decision_counts[decision] = _decision_counts.get(decision, 0) + 1
     conn = sqlite3.connect('tracker.db')
     conn.execute(
         '''INSERT INTO decisions_log
@@ -422,6 +444,26 @@ def log_decision(player_slug, player_name, season_type, season_name, decision,
     )
     conn.commit()
     conn.close()
+
+
+def log_decision_summary():
+    """Riepilogo a fine esecuzione di quante volte e' scattata ogni categoria di decisione,
+    per farsi un'idea rapida senza scorrere tutto il log. Il ramo silenzioso "nessuna
+    variazione" resta escluso di proposito (vedi nota su _decision_counts)."""
+    if not _decision_counts:
+        log("[riepilogo] nessuna decisione registrata in questa esecuzione.")
+        return
+    parti = []
+    for code, label in _DECISION_LABELS:
+        count = _decision_counts.get(code, 0)
+        if count:
+            parti.append(f"{label} {count}")
+    # Eventuali categorie non previste in _DECISION_LABELS (nel caso ne aggiungessimo di
+    # nuove in futuro senza aggiornare questa lista) -- le mostriamo comunque col nome grezzo.
+    for code, count in _decision_counts.items():
+        if code not in dict(_DECISION_LABELS):
+            parti.append(f"{code} {count}")
+    log(f"[riepilogo] {', '.join(parti)}")
 
 
 def get_floor(player_slug, season_name):
@@ -1350,6 +1392,7 @@ def main():
 
     log(f"Ascolto per {LISTEN_SECONDS} secondi...")
     run_listener(eth_rate)
+    log_decision_summary()
     log("Esecuzione terminata.")
 
 
