@@ -703,8 +703,55 @@ def handle_offer_update(offer, eth_rate, stats):
 
         stats["processed"] += 1
 
+        # FIX 16/07 (v11, richiesta esplicita): notifica "veloce" immediata, PRIMA della verifica
+        # live completa -- vedi docstring di send_instant_alert per il motivo (l'evento WS arriva
+        # prima che l'annuncio sia visibile pubblicamente su Sorare, quindi da' un vantaggio di
+        # tempo reale). La valutazione completa (sotto) segue comunque, invariata.
+        send_instant_alert(player_slug, player_name, season_type, season_name, price_eur, card_slug)
+
         evaluate_player_offer(player_slug, player_name, season_type, season_name, price_eur,
                                card_slug, eth_rate, stats)
+
+
+def send_instant_alert(player_slug, player_name, season_type, season_name, price_eur, card_slug):
+    """FIX 16/07 (v11, richiesta esplicita): notifica IMMEDIATA, non verificata, basata solo sul
+    confronto col floor storico gia' salvato in database -- nessuna query live, quindi zero
+    attesa. L'evento WebSocket arriva PRIMA che l'annuncio sia visibile pubblicamente sul mercato
+    Sorare (~2 minuti di anticipo, vedi MARKET_VISIBILITY_DELAY_SECONDS), quindi questa notifica
+    puo' dare un vantaggio di velocita' reale su altri manager. In cambio pero' salta TUTTE le
+    protezioni della valutazione completa (margine sul secondo prezzo attuale, calo sospetto,
+    dati incompleti, bucket morto/residuale): e' un segnale grezzo e non verificato, va sempre
+    controllato a mano prima di comprare. evaluate_player_offer (la valutazione completa) segue
+    comunque subito dopo con l'alert "ufficiale" se conferma tutto -- questa non la sostituisce,
+    la anticipa."""
+    floor_row = get_floor(player_slug, season_type)
+    if floor_row is None:
+        return
+    floor, _floor_updated_at = floor_row
+    if floor <= 0 or price_eur >= floor:
+        return
+    drop_percent = (floor - price_eur) / floor
+    if drop_percent < DROP_THRESHOLD:
+        return
+    log(f"VELOCE (non verificato) {player_name} ({season_type}, {season_name}) sceso: "
+        f"{floor:.2f}EUR -> {price_eur:.2f}EUR ({drop_percent:.1%}) -- notifica immediata, "
+        f"prima della verifica live completa")
+    log_decision(player_slug, player_name, season_type, season_name, "instant_alert_unverified",
+                 floor_price=floor, true_min_price=price_eur, drop_percent=drop_percent)
+    base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+    link = f"{base_link}?card={card_slug}" if card_slug else base_link
+    msg_text = (
+        f"⚡ <b>Occasione VELOCE (non verificata)!</b>\n\n"
+        f"Giocatore: {player_name}\n"
+        f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
+        f"Stagione carta: {season_name}\n"
+        f"Calo: {drop_percent:.1%}\n"
+        f"Prezzo: {price_eur:.2f}EUR\n\n"
+        f"⚠️ Non ancora verificato (nessun controllo su margine/dati sospetti) -- "
+        f"controlla a mano prima di comprare, arriva anche l'alert ufficiale a breve.\n\n"
+        f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
+    )
+    send_telegram_msg(msg_text)
 
 
 # FIX 16/07 (caso Antonio Sivera): logica di valutazione estratta dal loop di
