@@ -36,26 +36,6 @@ jobs:
 
       - name: Save state
         run: |
-          git config user.name
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - run: pip install -r requirements.txt
-
-      - name: Run auction websocket listener
-        env:
-          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
-          AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
-          AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
-          AUCTION_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '110' }}
-          PYTHONUNBUFFERED: "1"
-        run: python auctions_ws_listener.py
-
-      - name: Save state
-        run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
           git add auctions.db
