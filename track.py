@@ -29,6 +29,19 @@ DROP_THRESHOLD = 0.13    # 13% = soglia minima per notificare
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
 MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa soglia, ignoriamo la carta
 
+# FIX 16/07 (v4): il controllo sul margine rispetto al secondo prezzo attuale (vedi piu' sotto,
+# required_margin_fraction) ha senso solo per cali "borderline", appena sopra DROP_THRESHOLD,
+# dove il calo% storico potrebbe essere solo rumore statistico dentro un gruppo di annunci
+# quasi identici. Ma con questo controllo applicato SEMPRE, praticamente nessuna notifica
+# usciva piu' (verificato: ~30 minuti di log, mercato attivo, centinaia di carte processate,
+# zero ALERT) perche' anche cali chiari e ampi (es. 15-20%) venivano scartati solo perche'
+# esisteva un secondo annuncio quasi altrettanto economico -- due carte scese entrambe tanto
+# restano comunque un affare vero, non e' necessario essere "l'unica" piu' economica. Sopra
+# questa soglia il calo e' considerato abbastanza inequivocabile da non richiedere piu' il
+# margine sul secondo prezzo (resta pero' comunque soggetto al controllo "calo sospetto" oltre
+# MAX_SUSPECT_DROP e al controllo dati incompleti).
+CLEAR_DROP_THRESHOLD = float(os.environ.get('CLEAR_DROP_THRESHOLD', '0.25'))  # 25%
+
 # Se il riferimento (floor) salvato nel database e' piu' vecchio di cosi', non ci fidiamo piu':
 # nei "buchi" di ascolto tra un'esecuzione e l'altra il mercato puo' essersi mosso senza che il
 # bot se ne accorgesse, quindi un floor troppo vecchio produrrebbe un calo% inventato.
@@ -773,11 +786,14 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # e' praticamente identico al secondo annuncio piu' economico attuale (es. 2.34 contro
         # 2.35EUR): in quel caso non e' un vero affare, e' solo il primo di un gruppo di
         # annunci quasi uguali. Richiediamo un margine minimo REALE sul secondo prezzo attuale.
+        # FIX 16/07 (v4): questo controllo pero' ha senso solo per cali "borderline" (sotto
+        # CLEAR_DROP_THRESHOLD) -- vedi nota sulla costante in cima al file per il motivo:
+        # applicato sempre, azzerava quasi tutte le notifiche anche su cali ampi e chiari.
         margin_percent = None
         if second_min_price is not None and second_min_price > 0:
             margin_percent = (second_min_price - true_min_price) / second_min_price
             required_margin = required_margin_fraction(second_min_price)
-            if margin_percent < required_margin:
+            if margin_percent < required_margin and drop_percent < CLEAR_DROP_THRESHOLD:
                 log(f"{player_name} ({season_type}, {season_name}): prezzo minimo ({true_min_price:.2f}EUR) "
                     f"troppo vicino al secondo annuncio attuale ({second_min_price:.2f}EUR, "
                     f"margine {margin_percent:.1%}, richiesto {required_margin:.1%} per questa fascia di prezzo), "
