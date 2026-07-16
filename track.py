@@ -677,13 +677,35 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             log(f"[verifica live] eccezione per {player_slug}: {e}")
             buckets = None
 
-        own_prices = buckets.get(season_type, ([], False))[0] if buckets else []
+        # FIX 16/07 (caso Frank Feller): se la verifica live fallisce per un errore di rete
+        # transitorio (es. ConnectionResetError, capita spesso -- confermato nei log: 4 volte
+        # in 3m27s di ascolto), NON dobbiamo fidarci del prezzo grezzo dell'evento come se
+        # fosse il prezzo minimo verificato -- e' esattamente cio' che la verifica live serve
+        # ad evitare. Prima di questo fix, un'eccezione qui faceva silenziosamente ripiegare su
+        # price_eur come "true_min_price", bypassando tutte le protezioni sotto (margine minimo,
+        # calo sospetto, ecc.): confermato che la carta RealDoha da 3.42EUR su Frank Feller era
+        # gia' in vendita da giorni, ma la notifica ha usato 4.20EUR (il prezzo grezzo
+        # dell'evento) come se fosse il minimo. Ora, se il fetch fallisce, accodiamo il caso per
+        # una riverifica alla prossima occasione (stessa coda pending_recheck usata per il caso
+        # "margine troppo vicino"), invece di notificare alla cieca o perdere il caso del tutto.
+        if buckets is None:
+            if allow_requeue:
+                log(f"{player_name} ({season_type}, {season_name}): verifica live fallita "
+                    f"(errore di rete), accodo per riverifica invece di fidarmi del prezzo "
+                    f"grezzo dell'evento ({price_eur:.2f}EUR)")
+                queue_pending_recheck(player_slug, player_name, season_type, season_name,
+                                       price_eur, card_slug)
+            else:
+                log(f"{player_name} ({season_type}, {season_name}): verifica live fallita di "
+                    f"nuovo in riverifica, scarto senza notificare")
+            return
+
+        own_prices, data_incomplete = buckets.get(season_type, ([], False))
         if own_prices:
             true_min_price, true_min_card_slug = own_prices[0]
             second_min_price = own_prices[1][0] if len(own_prices) > 1 else None
-            data_incomplete = buckets[season_type][1]
         else:
-            true_min_price, true_min_card_slug, second_min_price, data_incomplete = price_eur, card_slug, None, False
+            true_min_price, true_min_card_slug, second_min_price = price_eur, card_slug, None
 
         # Il controllo sopra (price_eur < MIN_PRICE_EUR) filtra solo il prezzo dell'EVENTO
         # che ha innescato il controllo, non il vero prezzo minimo verificato live -- per
