@@ -178,6 +178,66 @@ def main():
         log(">>> Nessuno dei sotto-campi provati ha funzionato. Passo al tentativo 2.")
 
     log("=" * 70)
+    log("TENTATIVO 3c: uno degli errori sopra ha suggerito un campo REALE che esiste davvero: "
+        "'livePrimaryOffer' (Did you mean 'livePrimaryOffer'? sul tentativo liveOffer). "
+        "Proviamo prima solo il __typename (per scoprire il tipo concreto senza indovinare "
+        "i sotto-campi), poi i campi utili con fragment su piu' tipi plausibili.")
+    query_typename = """
+    query GetLivePrimaryOfferType($slug: String!) {
+      anyCard(slug: $slug) {
+        slug
+        livePrimaryOffer {
+          __typename
+        }
+      }
+    }
+    """
+    status3c, data3c = graphql_query(query_typename, {"slug": TEST_CARD_SLUG})
+    log(f"HTTP status: {status3c}")
+    log(f"Risposta: {json.dumps(data3c, indent=2)}")
+    card_data = (data3c.get('data') or {}).get('anyCard')
+    if card_data and card_data.get('livePrimaryOffer'):
+        log(f">>> livePrimaryOffer esiste ed e' di tipo: {card_data['livePrimaryOffer'].get('__typename')}")
+    elif card_data and 'livePrimaryOffer' in card_data:
+        log(">>> Il campo livePrimaryOffer esiste ma e' null per questa carta "
+            "(forse non ha aste/offerte live in questo momento, o la carta e' cambiata nel frattempo).")
+    else:
+        log(">>> livePrimaryOffer non ha funzionato come campo (vedi errori sopra).")
+
+    log("--- ora proviamo a leggere i campi utili su livePrimaryOffer, con fragment su piu' tipi ---")
+    query_fields = """
+    query GetLivePrimaryOfferFields($slug: String!) {
+      anyCard(slug: $slug) {
+        slug
+        livePrimaryOffer {
+          __typename
+          ... on TokenAuction {
+            id
+            currentPrice
+            minNextBid
+            endDate
+          }
+          ... on SingleSaleOffer {
+            id
+            price
+            endDate
+          }
+        }
+      }
+    }
+    """
+    status3d, data3d = graphql_query(query_fields, {"slug": TEST_CARD_SLUG})
+    log(f"HTTP status: {status3d}")
+    log(f"Risposta: {json.dumps(data3d, indent=2)}")
+    if not data3d.get('errors'):
+        log(">>> FUNZIONA! anyCard(slug: ...).livePrimaryOffer con fragment su TokenAuction/SingleSaleOffer "
+            "e' la query giusta da usare per la riverifica pre-notifica.")
+    else:
+        log(">>> Errori sui nomi di tipo/campo usati nei fragment (vedi sopra) -- i nomi giusti dei tipi "
+            "(TokenAuction/SingleSaleOffer) potrebbero essere diversi, il messaggio d'errore dovrebbe "
+            "suggerire quello corretto se sbagliamo per un pelo.")
+
+    log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
     status2, data2 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 200})
     log(f"HTTP status: {status2}")
