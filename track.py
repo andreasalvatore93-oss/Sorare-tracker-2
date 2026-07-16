@@ -29,18 +29,17 @@ DROP_THRESHOLD = 0.13    # 13% = soglia minima per notificare
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
 MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa soglia, ignoriamo la carta
 
-# FIX 16/07 (v4): il controllo sul margine rispetto al secondo prezzo attuale (vedi piu' sotto,
-# required_margin_fraction) ha senso solo per cali "borderline", appena sopra DROP_THRESHOLD,
-# dove il calo% storico potrebbe essere solo rumore statistico dentro un gruppo di annunci
-# quasi identici. Ma con questo controllo applicato SEMPRE, praticamente nessuna notifica
-# usciva piu' (verificato: ~30 minuti di log, mercato attivo, centinaia di carte processate,
-# zero ALERT) perche' anche cali chiari e ampi (es. 15-20%) venivano scartati solo perche'
-# esisteva un secondo annuncio quasi altrettanto economico -- due carte scese entrambe tanto
-# restano comunque un affare vero, non e' necessario essere "l'unica" piu' economica. Sopra
-# questa soglia il calo e' considerato abbastanza inequivocabile da non richiedere piu' il
-# margine sul secondo prezzo (resta pero' comunque soggetto al controllo "calo sospetto" oltre
-# MAX_SUSPECT_DROP e al controllo dati incompleti).
-CLEAR_DROP_THRESHOLD = float(os.environ.get('CLEAR_DROP_THRESHOLD', '0.25'))  # 25%
+# NOTA STORICA: qui c'era CLEAR_DROP_THRESHOLD (v4), che bypassava del tutto il controllo sul
+# margine per i cali >=25%, per evitare che cali chiari e ampi venissero scartati solo perche'
+# esisteva un secondo annuncio quasi altrettanto economico. Ma il caso Arijanet Muric ha
+# mostrato il problema: un calo dell'58.6% con margine reale dello 0.5% (2.07EUR contro
+# 2.08EUR, praticamente identici) e' passato senza alcun controllo, perche' il floor storico
+# era probabilmente solo vecchio/sballato, non perche' quella carta specifica fosse
+# un'occasione. Sostituito in v7 da find_meaningful_second_price qui sotto: invece di
+# bypassare il controllo margine oltre una certa soglia di calo, scavalchiamo solo gli
+# annunci troppo vicini al minimo (un "cluster" di prezzi quasi identici, es. 2.07/2.08/2.14
+# come nel caso Muric) e confrontiamo con il primo prezzo che rappresenta un vero salto --
+# funziona correttamente sia per cali piccoli che grandi, senza il bypass grezzo di prima.
 
 # Se il riferimento (floor) salvato nel database e' piu' vecchio di cosi', non ci fidiamo piu':
 # nei "buchi" di ascolto tra un'esecuzione e l'altra il mercato puo' essersi mosso senza che il
@@ -72,7 +71,7 @@ MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
 # esplicita dell'utente (il flat da 5EUR oltre i 60EUR NON tocco, non e' una percentuale).
 MARGIN_TIERS = [
     (3, 2.53),
-    (5, 4.35),
+    (5, 4.40),  # FIX 16/07 (v6, caso Kounde): 13.0% -> 12.0%, richiesta esplicita
     (10, 8.80),  # FIX 16/07 (v3, casi Gabriel Pec / Marc Guehi): 13.0% -> 12.0%, richiesta esplicita
     (15, 13.65),
     (20, 18.40),  # FIX 16/07 (v5, caso Rodrigo): 9.0% -> 8.0%, richiesta esplicita
@@ -100,6 +99,42 @@ def required_margin_fraction(reference_price):
         if reference_price < upper_bound:
             return (upper_bound - max_price) / upper_bound
     return FLAT_MARGIN_EUR_ABOVE_60 / reference_price
+
+
+def find_meaningful_second_price(sorted_prices, true_min_price):
+    """FIX 16/07 (v7, caso Arijanet Muric): invece di confrontare il minimo vero SOLO col
+    prezzo letteralmente successivo nella lista (troppo severo: basta un secondo annuncio a
+    pochi centesimi per bloccare affari veri, vedi casi Gabriel Pec/Marc Guehi/Kounde/Rodrigo
+    -- ma anche troppo permissivo se poi si bypassa il controllo del tutto sui cali grandi,
+    vedi nota storica su CLEAR_DROP_THRESHOLD sopra), scavalchiamo gli annunci troppo vicini al
+    minimo (un "cluster" di prezzi quasi identici, es. 2.07/2.08/2.14EUR: nessuno di questi da
+    solo e' un ostacolo) e confrontiamo col primo prezzo, piu' su nella lista, che rappresenta
+    un vero salto -- cioe' il primo prezzo la cui distanza dal minimo supera gia' la soglia
+    richiesta per la sua fascia (required_margin_fraction). sorted_prices e' la lista completa
+    ordinata crescente [(prezzo, slug), ...] del bucket, minimo incluso in posizione 0.
+
+    Ritorna (prezzo_riferimento, margine_ottenuto, soglia_richiesta, soglia_superata). Se la
+    lista ha un solo prezzo, ritorna (None, None, None, True) -- nessun secondo prezzo con cui
+    confrontare, quindi nessun ostacolo (l'unica carta in vendita e' automaticamente "distinta").
+    Se nessun prezzo supera mai la soglia richiesta, ritorna comunque l'ULTIMO (piu' alto)
+    prezzo con soglia_superata=False, cosi' il chiamante puo' loggare margine e riferimento
+    reali anche quando scarta."""
+    if len(sorted_prices) <= 1:
+        return None, None, None, True
+    last_price = None
+    for price, _slug in sorted_prices[1:]:
+        if price <= 0:
+            continue
+        last_price = price
+        required_margin = required_margin_fraction(price)
+        margin = (price - true_min_price) / price
+        if margin >= required_margin:
+            return price, margin, required_margin, True
+    if last_price is None:
+        return None, None, None, True
+    required_margin = required_margin_fraction(last_price)
+    margin = (last_price - true_min_price) / last_price
+    return last_price, margin, required_margin, False
 
 # FIX 16/07 (caso Antonio Sivera): Sorare tiene un annuncio appena creato invisibile sul
 # mercato pubblico per ~2 minuti (finestra per permettere al venditore di ritirarlo se ha
@@ -743,9 +778,10 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         own_prices, data_incomplete = buckets.get(season_type, ([], False))
         if own_prices:
             true_min_price, true_min_card_slug = own_prices[0]
-            second_min_price = own_prices[1][0] if len(own_prices) > 1 else None
         else:
-            true_min_price, true_min_card_slug, second_min_price = price_eur, card_slug, None
+            true_min_price, true_min_card_slug = price_eur, card_slug
+        # second_min_price/margin_percent vengono calcolati piu' sotto con
+        # find_meaningful_second_price (v7), non piu' come semplice own_prices[1].
 
         # Il controllo sopra (price_eur < MIN_PRICE_EUR) filtra solo il prezzo dell'EVENTO
         # che ha innescato il controllo, non il vero prezzo minimo verificato live -- per
@@ -812,33 +848,34 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # Il calo% rispetto allo storico puo' sembrare grande anche quando il prezzo minimo
         # e' praticamente identico al secondo annuncio piu' economico attuale (es. 2.34 contro
         # 2.35EUR): in quel caso non e' un vero affare, e' solo il primo di un gruppo di
-        # annunci quasi uguali. Richiediamo un margine minimo REALE sul secondo prezzo attuale.
-        # FIX 16/07 (v4): questo controllo pero' ha senso solo per cali "borderline" (sotto
-        # CLEAR_DROP_THRESHOLD) -- vedi nota sulla costante in cima al file per il motivo:
-        # applicato sempre, azzerava quasi tutte le notifiche anche su cali ampi e chiari.
-        margin_percent = None
-        if second_min_price is not None and second_min_price > 0:
-            margin_percent = (second_min_price - true_min_price) / second_min_price
-            required_margin = required_margin_fraction(second_min_price)
-            if margin_percent < required_margin and drop_percent < CLEAR_DROP_THRESHOLD:
-                log(f"{player_name} ({season_type}, {season_name}): prezzo minimo ({true_min_price:.2f}EUR) "
-                    f"troppo vicino al secondo annuncio attuale ({second_min_price:.2f}EUR, "
-                    f"margine {margin_percent:.1%}, richiesto {required_margin:.1%} per questa fascia di prezzo), "
-                    f"non e' un affare distinto, salto la notifica")
-                log_decision(player_slug, player_name, season_type, season_name, "skip_margin_too_close",
-                             floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
-                             second_min_price=second_min_price, margin_percent=margin_percent)
-                set_floor(player_slug, season_type, true_min_price)
-                # FIX 16/07 (caso Antonio Sivera): l'annuncio davvero piu' economico potrebbe
-                # essere stato creato da meno di ~2 minuti e non ancora visibile pubblicamente
-                # su Sorare (vedi nota su MARKET_VISIBILITY_DELAY_SECONDS) -- accodiamo per una
-                # riverifica successiva invece di scartare in modo definitivo. Non riaccodare
-                # se questa valutazione e' gia' lei stessa una riverifica (allow_requeue=False),
-                # altrimenti un caso persistente resterebbe in coda all'infinito.
-                if allow_requeue:
-                    queue_pending_recheck(player_slug, player_name, season_type, season_name,
-                                           true_min_price, true_min_card_slug)
-                return
+        # annunci quasi uguali (un "cluster"). FIX 16/07 (v7, caso Arijanet Muric): invece di
+        # confrontare SOLO col prezzo letteralmente successivo (own_prices[1], troppo severo --
+        # o di bypassare il controllo del tutto sui cali grandi come in v4, troppo permissivo,
+        # vedi nota storica su CLEAR_DROP_THRESHOLD in cima al file), scavalchiamo gli annunci
+        # troppo vicini al minimo e confrontiamo col primo prezzo che rappresenta un vero
+        # salto (find_meaningful_second_price). Funziona uniformemente sia per cali piccoli
+        # che grandi.
+        second_min_price, margin_percent, required_margin, margin_cleared = \
+            find_meaningful_second_price(own_prices, true_min_price) if own_prices else (None, None, None, True)
+        if second_min_price is not None and not margin_cleared:
+            log(f"{player_name} ({season_type}, {season_name}): prezzo minimo ({true_min_price:.2f}EUR) "
+                f"troppo vicino a tutti gli annunci successivi (il piu' lontano trovato e' "
+                f"{second_min_price:.2f}EUR, margine {margin_percent:.1%}, richiesto {required_margin:.1%} "
+                f"per questa fascia di prezzo), non e' un affare distinto, salto la notifica")
+            log_decision(player_slug, player_name, season_type, season_name, "skip_margin_too_close",
+                         floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
+                         second_min_price=second_min_price, margin_percent=margin_percent)
+            set_floor(player_slug, season_type, true_min_price)
+            # FIX 16/07 (caso Antonio Sivera): l'annuncio davvero piu' economico potrebbe
+            # essere stato creato da meno di ~2 minuti e non ancora visibile pubblicamente
+            # su Sorare (vedi nota su MARKET_VISIBILITY_DELAY_SECONDS) -- accodiamo per una
+            # riverifica successiva invece di scartare in modo definitivo. Non riaccodare
+            # se questa valutazione e' gia' lei stessa una riverifica (allow_requeue=False),
+            # altrimenti un caso persistente resterebbe in coda all'infinito.
+            if allow_requeue:
+                queue_pending_recheck(player_slug, player_name, season_type, season_name,
+                                       true_min_price, true_min_card_slug)
+            return
 
         # Rete di sicurezza: il bucket rilevato sembra morto/residuale (stagione di quella lega
         # gia' finita nella pratica, anche se l'etichetta sportSeason.name non lo riflette
