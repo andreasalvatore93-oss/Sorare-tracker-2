@@ -422,6 +422,7 @@ _DECISION_LABELS = [
     ("notify_after_recheck", "Notificati (dopo doppio controllo)"),
     ("notify_margin_opportunity", "Notificati (opportunita' di margine)"),
     ("update_small_variation", "Piccola variazione"),
+    ("instant_alert_unverified", "Notifiche veloci (non verificate)"),
 ]
 
 
@@ -1422,6 +1423,35 @@ def discover_sales_history_field():
                 log(f"[diagnostica storico vendite] campo '{field_name}': SUCCESSO -- {data['data']}")
         except Exception as e:
             log(f"[diagnostica storico vendite] campo '{field_name}': eccezione -- {e}")
+
+    # FIX 16/07: GraphQL stesso ha suggerito "tokenPrices" come alternativa quando abbiamo
+    # provato 'tokenSales' (messaggio "Did you mean tokenPrices?") -- ma il nome suggerisce che
+    # riguardi un singolo TOKEN (carta specifica), non un giocatore intero come gli altri
+    # tentativi sopra, quindi probabilmente ha argomenti diversi (slug della carta, non
+    # playerSlug). Proviamo piu' nomi di argomento plausibili, usando __typename al posto di
+    # un campo specifico nella selezione -- e' sempre valido su qualsiasi tipo, quindi ci dice
+    # se l'argomento e' quello giusto senza dover indovinare anche la forma del risultato.
+    token_slug_for_test = 'samuel-junior-kotto-2025-limited-338'  # carta vista nei log reali (caso Kotto)
+    arg_name_candidates = ['slug', 'tokenSlug', 'cardSlug', 'tokenId']
+    for arg_name in arg_name_candidates:
+        query = f"""
+        query DiscoverTokenPrices($v: String!) {{
+          tokens {{
+            tokenPrices({arg_name}: $v) {{
+              __typename
+            }}
+          }}
+        }}
+        """
+        try:
+            data = graphql_query(query, {"v": token_slug_for_test})
+            if data.get('errors'):
+                log(f"[diagnostica storico vendite] tokenPrices({arg_name}=...): errore -- {data['errors']}")
+            else:
+                log(f"[diagnostica storico vendite] tokenPrices({arg_name}=...): SUCCESSO -- {data['data']}")
+        except Exception as e:
+            log(f"[diagnostica storico vendite] tokenPrices({arg_name}=...): eccezione -- {e}")
+
     log("[diagnostica storico vendite] tentativi completati.")
 
 
