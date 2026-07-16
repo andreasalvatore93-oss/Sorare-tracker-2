@@ -72,7 +72,7 @@ MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
 MARGIN_TIERS = [
     (3, 2.53),
     (5, 4.40),  # FIX 16/07 (v6, caso Kounde): 13.0% -> 12.0%, richiesta esplicita
-    (10, 8.80),  # FIX 16/07 (v3, casi Gabriel Pec / Marc Guehi): 13.0% -> 12.0%, richiesta esplicita
+    (10, 9.00),  # FIX 16/07 (v12, caso Manu Duah): 12.0% -> 10.0%, richiesta esplicita
     (15, 13.65),
     (20, 18.40),  # FIX 16/07 (v5, caso Rodrigo): 9.0% -> 8.0%, richiesta esplicita
     (25, 23.25),
