@@ -400,6 +400,30 @@ def init_db():
             PRIMARY KEY (player_slug, season_type)
         )
     ''')
+    # FIX 16/07 (caso Sengezer): tokenPrices (vedi get_recent_sale_history) restituisce
+    # transazioni vere ma senza modo di distinguere Acquisto istantaneo/Asta da Scambia/Offerta
+    # diretta (11 nomi di campo candidati provati, nessuno esiste su TokenPrice) -- ne' di
+    # filtrare per bucket in_season/classic esatto. Costruiamo quindi il nostro storico,
+    # catturando in tempo reale gli eventi status='accepted' dalla stessa subscription WS gia'
+    # in ascolto per gli annunci 'opened' (vedi record_accepted_sale in handle_offer_update):
+    # ogni riga qui e' garantita una vendita di mercato pubblico vera (stessi filtri gia'
+    # validati altrove: solo SingleSaleOffer, niente scambi carta-per-carta). Parte da zero da
+    # questo deploy in poi, non recupera lo storico precedente.
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS sale_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_slug TEXT NOT NULL,
+            season_type TEXT NOT NULL,
+            season_name TEXT,
+            price_eur REAL NOT NULL,
+            card_slug TEXT,
+            occurred_at TEXT NOT NULL
+        )
+    ''')
+    cur.execute('''
+        CREATE INDEX IF NOT EXISTS idx_sale_history_lookup
+        ON sale_history (player_slug, season_type, occurred_at)
+    ''')
     conn.commit()
     conn.close()
 
@@ -418,6 +442,7 @@ _DECISION_LABELS = [
     ("skip_margin_too_close", "Margine insufficiente"),
     ("skip_cross_bucket_dead", "Bucket morto/residuale"),
     ("skip_dubbio_unconfirmed", "Dubbio non confermato"),
+    ("skip_recent_sale_too_close", "Scartato (vendita recente pari/piu' economica)"),
     ("notify", "Notificati (calo diretto)"),
     ("notify_after_recheck", "Notificati (dopo doppio controllo)"),
     ("notify_margin_opportunity", "Notificati (opportunita' di margine)"),
@@ -799,6 +824,64 @@ def log_raw_offers_diagnostic(player_slug, eth_rate):
                 f"inSeasonEligible={c.get('inSeasonEligible')}")
 
 
+# FIX 16/07 (caso Sengezer, richiesta esplicita): vedi nota su sale_history in init_db per il
+# perche'. Riusa ESATTAMENTE gli stessi filtri gia' validati per gli annunci 'opened' piu' sotto
+# (niente scambi carta-per-carta, solo limited/FOOTBALL) cosi' ogni riga salvata e' garantita
+# una vendita di mercato pubblico vera, non una trattativa privata o un valore di scambio
+# stimato -- a differenza di tokenPrices, di cui non sappiamo distinguere il tipo.
+def record_accepted_sale(offer, eth_rate):
+    sender_side = offer.get('senderSide') or {}
+    receiver_side = offer.get('receiverSide') or {}
+    if receiver_side.get('anyCards'):
+        return  # scambio carta-per-carta, non una vendita in denaro
+    price_eur = eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
+    if price_eur is None:
+        return
+    for card in (sender_side.get('anyCards') or []):
+        if card.get('rarityTyped') != 'limited':
+            continue
+        if card.get('sport') != 'FOOTBALL':
+            continue
+        player = card.get('anyPlayer') or {}
+        player_slug = player.get('slug')
+        if not player_slug:
+            continue
+        season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
+        season_type = season_type_for_card(card, season_name)
+        card_slug = card.get('slug')
+        conn = sqlite3.connect('tracker.db')
+        conn.execute(
+            "INSERT INTO sale_history (player_slug, season_type, season_name, price_eur, "
+            "card_slug, occurred_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (player_slug, season_type, season_name, price_eur, card_slug,
+             datetime.datetime.now().isoformat())
+        )
+        conn.commit()
+        conn.close()
+        log(f"[storico vendite reali] registrata vendita conclusa: "
+            f"{player.get('displayName', player_slug)} ({season_type}, {season_name}) "
+            f"a {price_eur:.2f}EUR")
+
+
+def get_own_recent_sales(player_slug, season_type, last_n=5):
+    """Ultime vendite REALMENTE concluse (accepted, no scambi/offerte private) per questo
+    giocatore E bucket in_season/classic esatto -- a differenza di get_recent_sale_history
+    (tokenPrices), qui ogni riga e' garantita un acquisto istantaneo/asta vero sul mercato
+    pubblico, e il bucket e' quello giusto (tokenPrices non lo permetteva). Il rovescio: i dati
+    esistono solo da quando sale_history e' stata attivata, quindi puo' essere vuoto o scarso
+    per giocatori poco scambiati o appena dopo il deploy."""
+    conn = sqlite3.connect('tracker.db')
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT occurred_at, price_eur FROM sale_history WHERE player_slug=? AND season_type=? "
+        "ORDER BY occurred_at DESC LIMIT ?",
+        (player_slug, season_type, last_n)
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return [(r[0], r[1]) for r in rows] or None
+
+
 # --- Elaborazione di un'offerta ricevuta dalla subscription ---
 def handle_offer_update(offer, eth_rate, stats):
     if not offer:
@@ -829,6 +912,14 @@ def handle_offer_update(offer, eth_rate, stats):
     if dedup_key in stats["seen_offer_status"]:
         return
     stats["seen_offer_status"].add(dedup_key)
+
+    # FIX 16/07 (caso Sengezer): prima di scartare tutto cio' che non e' 'opened', catturiamo
+    # 'accepted' (vendita realmente conclusa) nel nostro storico -- vedi record_accepted_sale
+    # e la nota su sale_history in init_db. Poi si esce comunque, non serve valutare un'offerta
+    # gia' conclusa per un possibile acquisto.
+    if offer_status == 'accepted':
+        record_accepted_sale(offer, eth_rate)
+        return
 
     if offer_status != 'opened':
         return
@@ -954,16 +1045,21 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
 # le ultime vendite reali concluse (data, prezzo EUR), piu' recenti prima, o None se la query
 # fallisce.
 #
-# SOLO INFORMATIVO per ora, non un filtro: tokenPrices non espone stagione/idoneita' per singola
-# vendita (provato: season/sportSeason/rarity/playerSlug/cardSlug tutti assenti su TokenPrice),
-# quindi non possiamo garantire che le vendite restituite siano della stessa categoria
-# in_season/classic della carta valutata -- potrebbero mescolare stampe diverse con prezzi molto
-# diversi (vedi caso Luis Diaz). C'e' anche un ritardo strutturale: una vendita compare qui solo
-# dopo che qualcuno ha DAVVERO comprato, quindi in un calo genuino e recentissimo (es. infortunio,
-# caso Muric) lo storico puo' restare ancorato al prezzo vecchio piu' alto per un po'. Per questo,
-# invece di bloccare notifiche sulla base di questo dato, lo logghiamo e lo aggiungiamo ai
-# messaggi come contesto extra: l'utente decide caso per caso mentre osserviamo se il mix
-# in_season/classic e' un problema reale in pratica.
+# FIX 16/07 (v2, richiesta esplicita dell'utente -- ora e' un filtro, vedi
+# recent_sale_gate_blocks): tokenPrices non espone stagione/idoneita' per singola vendita
+# (provato: season/sportSeason/rarity/playerSlug/cardSlug tutti assenti su TokenPrice), quindi
+# non possiamo garantire che le vendite restituite siano della stessa categoria in_season/classic
+# della carta valutata -- potrebbero mescolare stampe diverse con prezzi molto diversi (vedi caso
+# Luis Diaz). Non distingue nemmeno il TIPO di transazione (11 nomi di campo provati per un
+# tipo/kind, nessuno esiste su TokenPrice -- caso Sengezer): puo' includere vendita/scambio/asta/
+# offerta diretta senza modo di escludere quest'ultima. L'utente ha comunque scelto esplicitamente
+# di considerare valide anche vendita/scambio/asta come segnale ("se altre 3 persone prima di me
+# l'hanno gia' avuto a un prezzo piu' basso, non e' un affare, anche se sembra un calo") -- quindi
+# usiamo questi dati cosi' come sono. C'e' un ritardo strutturale da tenere a mente: una vendita
+# compare qui solo dopo che qualcuno ha DAVVERO comprato/scambiato, quindi in un calo genuino e
+# recentissimo (es. infortunio, caso Muric) lo storico puo' restare ancorato al prezzo vecchio
+# piu' alto per un po' -- ma questo giocherebbe contro il blocco (falso negativo, non falso
+# positivo: al peggio non blocchiamo un caso che forse avremmo dovuto), non a favore.
 def get_recent_sale_history(player_slug, eth_rate, last_n=5):
     query = """
     query RecentSaleHistory($p: String!) {
@@ -991,56 +1087,45 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5):
     return sales[:last_n] or None
 
 
-# FIX 16/07 (caso Muhammed Şengezer, confermato dall'utente su log reale): il primo giro
-# informativo mostrava solo il RANGE delle ultime vendite (min-max), che su Sengezer sembrava
-# rassicurante (2.14-4.18EUR contro un notificato di 3.42EUR, "dentro il range"). Ma il range
-# nasconde l'ordine temporale: quelle 5 vendite, dalla piu' recente alla piu' vecchia, erano
-# 2.14 / 3.86 / 4.18 / 4.18 / 4.10EUR -- cioe' un trend in discesa, e la vendita PIU' RECENTE
-# (non una vecchia isolata) era gia' a 2.14EUR, sotto il nostro "affare" da 3.42EUR. Il mercato
-# vero si era gia' spostato piu' in basso di quanto notificato. Il range da solo non lo faceva
-# notare; serve confrontare col dato piu' fresco (recent_sales[0], dato che get_recent_sale_history
-# ordina dal piu' recente), non con media/min/max di tutte e 5.
-#
-# ATTENZIONE (screenshot reale della pagina "Cronologia delle vendite" di Sorare, stesso
-# giocatore): le 5 transazioni restituite da tokenPrices corrispondono ESATTAMENTE alle prime
-# 5 righe della cronologia UI (2.14/3.86/4.18/4.18/4.10EUR) -- ma la colonna "Tipo" li' mostra
-# "Offerta diretta" e "Scambia" per TUTTE, nessuna "Acquisto istantaneo" ne' "Asta". Sono
-# esattamente le due categorie che il bot esclude gia' altrove dal monitoraggio del mercato
-# vero (vedi filtro scambi carta-per-carta in get_bucket_prices, e il commento su DirectOffer
-# in handle_offer_update) proprio perche' non sono prezzi di mercato aperto: uno scambio ha un
-# valore stimato da Sorare sulle carte scambiate (non soldi veri concordati), un'offerta diretta
-# e' una trattativa privata al proprietario (puo' essere accettata per motivi che non c'entrano
-# col valore di mercato). tokenPrices non espone (per ora) un campo che distingua il tipo di
-# transazione -- quindi il confronto sotto (RECENT_SALE_GAP_WARNING) potrebbe basarsi su un dato
-# non rappresentativo del vero mercato aperto. Resta un AVVISO utile (i dati non sono inventati,
-# sono transazioni vere), ma da leggere con cautela finche' non troviamo un campo tipo/kind per
-# filtrare solo Acquisto istantaneo/Asta (vedi discover_token_price_type_field sotto).
-RECENT_SALE_GAP_WARNING = float(os.environ.get('RECENT_SALE_GAP_WARNING', '0.10'))  # 10%
+# FIX 16/07 (v2, richiesta esplicita dell'utente, caso Kotto/Sengezer): non piu' solo un
+# avviso -- l'utente e' stato chiaro: "se altre 3 persone prima di me, magari nel giro di una
+# settimana, l'hanno gia' comprato/scambiato a un prezzo piu' basso, io perche' dovrei comprarlo
+# a di piu', anche se sul momento sembra un affare". Controlliamo quindi le ultime
+# RECENT_SALE_CHECK_LAST_N transazioni concluse (non solo l'ultima -- esplicitamente anche la
+# penultima e la terzultima): se una qualsiasi di loro e' a un prezzo pari o inferiore al nostro,
+# blocchiamo la notifica del tutto. Il caso Şengezer (confermato dall'utente via screenshot) e'
+# l'esempio concreto: notificato 3.42EUR, ma le vendite piu' recenti (2.14/3.86/4.18EUR) includono
+# gia' un prezzo piu' basso -- non era un vero affare nonostante il calo rilevato sugli annunci
+# attivi.
+RECENT_SALE_CHECK_LAST_N = int(os.environ.get('RECENT_SALE_CHECK_LAST_N', '3'))
 
 
-def build_sale_history_context(player_name, true_min_price, recent_sales):
-    """Restituisce (log_extra, msg_extra) da inserire nei due punti di notifica. log_extra e'
-    sempre non vuoto se recent_sales esiste; msg_extra include il range e, se il prezzo
-    notificato e' significativamente piu' alto dell'ULTIMA vendita reale (la piu' recente),
-    un avviso esplicito -- vedi commento sopra (caso Sengezer)."""
+def recent_sale_gate_blocks(true_min_price, recent_sales):
+    """Controlla le ultime RECENT_SALE_CHECK_LAST_N transazioni concluse (vendita/scambio/asta
+    -- tokenPrices non distingue il tipo, quindi puo' includere anche offerte dirette, scelta
+    accettata esplicitamente dall'utente). Ritorna (data, prezzo) della prima transazione che
+    blocca (pari o piu' economica del prezzo notificato), o None se nessuna blocca."""
+    if not recent_sales:
+        return None
+    for date, price in recent_sales[:RECENT_SALE_CHECK_LAST_N]:
+        if price <= true_min_price:
+            return (date, price)
+    return None
+
+
+def build_sale_history_context(recent_sales):
+    """Restituisce (log_extra, msg_extra) puramente informativi da inserire nei due punti di
+    notifica, per i casi che PASSANO il gate (recent_sale_gate_blocks None) -- mostra solo il
+    contesto delle ultime vendite, senza nessuna logica di blocco qui (quella e' gia' stata
+    applicata prima di chiamare questa funzione)."""
     if not recent_sales:
         return "", ""
     sale_prices = [p for _, p in recent_sales]
-    most_recent_date, most_recent_price = recent_sales[0]
-    log_line = (f"[storico vendite] {player_name}: ultime {len(recent_sales)} vendite reali "
-                f"concluse, dalla piu' recente (tutte le stampe 'limited', non filtrate per "
-                f"categoria): " + ", ".join(f"{p:.2f}EUR" for p in sale_prices))
-    msg_extra = (f"Vendite recenti (dalla piu' recente, tutte le stampe): "
+    log_line = (f"ultime {len(recent_sales)} transazioni concluse, dalla piu' recente "
+                f"(vendita/scambio/asta/offerta, tutte le stampe 'limited'): "
+                + ", ".join(f"{p:.2f}EUR" for p in sale_prices))
+    msg_extra = (f"Transazioni recenti (dalla piu' recente): "
                  + ", ".join(f"{p:.2f}EUR" for p in sale_prices) + "\n")
-    if most_recent_price > 0 and true_min_price > most_recent_price * (1 + RECENT_SALE_GAP_WARNING):
-        gap_percent = (true_min_price - most_recent_price) / most_recent_price
-        log_line += (f" -- ATTENZIONE: l'ultima vendita reale ({most_recent_date}) e' stata a "
-                     f"{most_recent_price:.2f}EUR, {gap_percent:.0%} piu' economica del prezzo "
-                     f"notificato: il mercato vero potrebbe essere gia' piu' basso")
-        msg_extra += (f"⚠️ L'ultima transazione conclusa e' stata a {most_recent_price:.2f}EUR "
-                      f"({most_recent_date[:10]}, ma potrebbe essere uno scambio/offerta diretta, "
-                      f"non un acquisto istantaneo -- vedi nota sopra), piu' economica del "
-                      f"prezzo notificato: controlla a mano prima di scartare l'occasione.\n")
     return log_line, msg_extra
 
 
@@ -1343,40 +1428,56 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                          second_min_price=second_min_price, margin_percent=margin_percent,
                          reasons=reasons_log or None)
 
-            # FIX 16/07 (casi Suzuki/Kotto/Sengezer, solo informativo -- vedi
-            # get_recent_sale_history/build_sale_history_context): aggiungiamo le ultime
-            # transazioni concluse come contesto, con avviso esplicito se l'ultima e' piu'
-            # economica del prezzo notificato.
+            # FIX 16/07 (richiesta esplicita dell'utente, caso Kotto): "se altre 3 persone
+            # prima di me hanno gia' comprato/scambiato a un prezzo piu' basso, non e' un vero
+            # affare, anche se sul momento sembra un calo". Controlliamo le ultime
+            # RECENT_SALE_CHECK_LAST_N transazioni CONCLUSE (vendita/scambio/asta -- tokenPrices
+            # non distingue il tipo, quindi puo' includere anche offerte dirette): se una di
+            # loro e' gia' successa a un prezzo pari o inferiore al nostro, blocchiamo la
+            # notifica del tutto (non solo un avviso) -- vedi recent_sale_gate_blocks.
             recent_sales = get_recent_sale_history(player_slug, eth_rate)
-            sale_history_log, sale_history_msg = build_sale_history_context(
-                player_name, true_min_price, recent_sales)
-            if sale_history_log:
-                log(sale_history_log)
-
-            # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
-            # (verificata live), non necessariamente quella di questo specifico evento.
-            base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
-            if true_min_card_slug:
-                link = f"{base_link}?card={true_min_card_slug}"
+            blocking_sale = recent_sale_gate_blocks(true_min_price, recent_sales)
+            if blocking_sale:
+                blocking_date, blocking_price = blocking_sale
+                log(f"SALTATO (storico vendite) {player_name} ({season_type}, {season_name}): "
+                    f"prezzo notificato {true_min_price:.2f}EUR non e' un vero affare -- una "
+                    f"transazione recente ({blocking_date}) si e' gia' conclusa a "
+                    f"{blocking_price:.2f}EUR, pari o piu' economica -- non notifico")
+                log_decision(player_slug, player_name, season_type, season_name,
+                             "skip_recent_sale_too_close", floor_price=floor,
+                             true_min_price=true_min_price, drop_percent=drop_percent,
+                             second_min_price=second_min_price, margin_percent=margin_percent,
+                             reasons=[f"transazione recente ({blocking_date}) a "
+                                      f"{blocking_price:.2f}EUR, pari o piu' economica"])
             else:
-                sort_param = "s=Cards+On+Sale+Lowest+Price"
-                link = f"{base_link}?{sort_param}"
+                sale_history_log, sale_history_msg = build_sale_history_context(recent_sales)
+                if sale_history_log:
+                    log(f"{player_name}: {sale_history_log}")
 
-            msg_text = (
-                f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
-                f"Giocatore: {player_name}\n"
-                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
-                f"Stagione carta: {season_name}\n"
-                f"Calo: {drop_percent:.1%}\n"
-                f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
-                + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
-                   if second_min_price is not None else "")
-                + sale_history_msg
-                + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
-                   if is_dubbio else "")
-                + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
-            )
-            send_telegram_msg(msg_text)
+                # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
+                # (verificata live), non necessariamente quella di questo specifico evento.
+                base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+                if true_min_card_slug:
+                    link = f"{base_link}?card={true_min_card_slug}"
+                else:
+                    sort_param = "s=Cards+On+Sale+Lowest+Price"
+                    link = f"{base_link}?{sort_param}"
+
+                msg_text = (
+                    f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
+                    f"Giocatore: {player_name}\n"
+                    f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
+                    f"Stagione carta: {season_name}\n"
+                    f"Calo: {drop_percent:.1%}\n"
+                    f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
+                    + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
+                       if second_min_price is not None else "")
+                    + sale_history_msg
+                    + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
+                       if is_dubbio else "")
+                    + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
+                )
+                send_telegram_msg(msg_text)
         elif drop_percent >= DROP_THRESHOLD:
             log_decision(player_slug, player_name, season_type, season_name, "skip_dubbio_unconfirmed",
                          floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
@@ -1420,6 +1521,27 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                         and abs(true_min_price - last_margin_alert_price) < 0.01
                     )
                     if not already_alerted:
+                        # FIX 16/07 (richiesta esplicita dell'utente, caso Kotto/Sengezer): stesso
+                        # gate duro applicato qui -- vedi recent_sale_gate_blocks e il commento
+                        # esteso sopra la sua definizione.
+                        recent_sales = get_recent_sale_history(player_slug, eth_rate)
+                        blocking_sale = recent_sale_gate_blocks(true_min_price, recent_sales)
+                        if blocking_sale:
+                            blocking_date, blocking_price = blocking_sale
+                            log(f"SALTATO (storico vendite) {player_name} ({season_type}, "
+                                f"{season_name}): margine verso il secondo prezzo non e' un vero "
+                                f"affare -- una transazione recente ({blocking_date}) si e' gia' "
+                                f"conclusa a {blocking_price:.2f}EUR, pari o piu' economica del "
+                                f"nostro {true_min_price:.2f}EUR -- non notifico")
+                            log_decision(player_slug, player_name, season_type, season_name,
+                                         "skip_recent_sale_too_close", floor_price=floor,
+                                         true_min_price=true_min_price, drop_percent=drop_percent,
+                                         second_min_price=second_min_price, margin_percent=margin_percent,
+                                         reasons=[f"transazione recente ({blocking_date}) a "
+                                                  f"{blocking_price:.2f}EUR, pari o piu' economica"])
+                            set_floor(player_slug, season_type, true_min_price)
+                            return
+
                         log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
                             f"({season_type}, {season_name}): minimo {true_min_price:.2f}EUR, "
                             f"secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%}, "
@@ -1429,15 +1551,9 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                                      true_min_price=true_min_price, drop_percent=drop_percent,
                                      second_min_price=second_min_price, margin_percent=margin_percent)
 
-                        # FIX 16/07 (casi Suzuki/Kotto/Sengezer, solo informativo -- vedi
-                        # get_recent_sale_history/build_sale_history_context): stesso contesto
-                        # aggiunto anche qui, con lo stesso avviso su ultima transazione piu'
-                        # economica.
-                        recent_sales = get_recent_sale_history(player_slug, eth_rate)
-                        sale_history_log, sale_history_msg = build_sale_history_context(
-                            player_name, true_min_price, recent_sales)
+                        sale_history_log, sale_history_msg = build_sale_history_context(recent_sales)
                         if sale_history_log:
-                            log(sale_history_log)
+                            log(f"{player_name}: {sale_history_log}")
 
                         base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
                         link = f"{base_link}?card={true_min_card_slug}" if true_min_card_slug else base_link
