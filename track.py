@@ -48,6 +48,19 @@ MAX_FLOOR_AGE_HOURS = float(os.environ.get('MAX_FLOOR_AGE_HOURS', '48'))
 # vecchio riferimento storico sembra un grande calo%.
 MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
 
+# FIX 16/07 (caso Antonio Sivera): Sorare tiene un annuncio appena creato invisibile sul
+# mercato pubblico per ~2 minuti (finestra per permettere al venditore di ritirarlo se ha
+# sbagliato prezzo -- confermato dalla documentazione Sorare). Un annuncio piu' economico
+# creato poco prima della nostra verifica live puo' quindi non comparire ancora nella query,
+# facendo scartare per errore un caso come "margine troppo vicino al secondo annuncio" quando
+# in realta' il vero piu' economico era ancora nella finestra di invisibilita'. Non ha senso
+# aspettare BLOCCATI 2+ minuti dentro la gestione di un singolo evento (bloccherebbe l'intero
+# ascolto): invece, i casi scartati per margine troppo vicino vengono messi in una coda
+# (tabella pending_recheck) e riverificati piu' avanti, all'inizio di una esecuzione
+# successiva, quando la finestra di invisibilita' e' sicuramente passata.
+MARKET_VISIBILITY_DELAY_SECONDS = float(os.environ.get('MARKET_VISIBILITY_DELAY_SECONDS', '150'))  # 2.5 min, margine di sicurezza sopra i ~2 min di Sorare
+PENDING_RECHECK_MAX_AGE_SECONDS = float(os.environ.get('PENDING_RECHECK_MAX_AGE_SECONDS', '1800'))  # oltre 30 min il caso non e' piu' rilevante, si scarta senza riverificare
+
 # La stagione In Season attualmente in corso su Sorare. ATTENZIONE: leghe diverse usano formati
 # diversi per lo stesso concetto di "stagione corrente" -- le leghe europee usano "2025-26" (a
 # cavallo di due anni), ma la MLS (e leghe simili a calendario solare) usano solo l'anno, es.
@@ -238,6 +251,23 @@ def init_db():
             reasons TEXT
         )
     ''')
+    # Coda dei casi scartati per "margine troppo vicino" da riverificare piu' avanti, dopo
+    # che la finestra di invisibilita' di ~2 minuti di Sorare per i nuovi annunci e' passata
+    # (vedi nota su MARKET_VISIBILITY_DELAY_SECONDS). Un solo caso in coda per player_slug+
+    # season_type alla volta: se lo stesso caso si ripresenta prima di essere processato,
+    # aggiorniamo la riga esistente invece di accumularne altre.
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS pending_recheck (
+            player_slug TEXT NOT NULL,
+            season_type TEXT NOT NULL,
+            player_name TEXT,
+            season_name TEXT,
+            price_eur REAL,
+            card_slug TEXT,
+            queued_at TEXT,
+            PRIMARY KEY (player_slug, season_type)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -284,6 +314,58 @@ def set_floor(player_slug, season_name, price):
     )
     conn.commit()
     conn.close()
+
+
+def queue_pending_recheck(player_slug, player_name, season_type, season_name, price_eur, card_slug):
+    """Accoda un caso scartato per margine troppo vicino, da riverificare piu' avanti (vedi
+    nota su MARKET_VISIBILITY_DELAY_SECONDS). INSERT OR REPLACE: se lo stesso player_slug+
+    season_type e' gia' in coda, aggiorna semplicemente l'orario e i dati piu' recenti invece
+    di accumulare righe duplicate."""
+    conn = sqlite3.connect('tracker.db')
+    conn.execute(
+        "INSERT OR REPLACE INTO pending_recheck "
+        "(player_slug, season_type, player_name, season_name, price_eur, card_slug, queued_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (player_slug, season_type, player_name, season_name, price_eur, card_slug,
+         datetime.datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+
+def pop_due_pending_rechecks():
+    """Estrae (e rimuove subito dalla coda) tutti i casi la cui finestra di invisibilita' e'
+    sicuramente passata (piu' vecchi di MARKET_VISIBILITY_DELAY_SECONDS). I casi troppo
+    vecchi (oltre PENDING_RECHECK_MAX_AGE_SECONDS) vengono scartati senza essere riverificati:
+    non sono piu' rilevanti a quel punto. Rimuove subito dalla tabella per evitare di
+    riprocessare due volte lo stesso caso se l'esecuzione successiva parte prima che questa
+    abbia finito."""
+    conn = sqlite3.connect('tracker.db')
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT * FROM pending_recheck").fetchall()
+    due, expired = [], []
+    now = datetime.datetime.now()
+    to_delete = []
+    for row in rows:
+        try:
+            queued_at = datetime.datetime.fromisoformat(row["queued_at"])
+            age_seconds = (now - queued_at).total_seconds()
+        except (TypeError, ValueError):
+            age_seconds = None
+        if age_seconds is None or age_seconds >= MARKET_VISIBILITY_DELAY_SECONDS:
+            to_delete.append((row["player_slug"], row["season_type"]))
+            if age_seconds is not None and age_seconds > PENDING_RECHECK_MAX_AGE_SECONDS:
+                expired.append(row)
+            else:
+                due.append(row)
+    for player_slug, season_type in to_delete:
+        conn.execute(
+            "DELETE FROM pending_recheck WHERE player_slug=? AND season_type=?",
+            (player_slug, season_type)
+        )
+    conn.commit()
+    conn.close()
+    return due, expired
 
 
 # --- Notifiche ---
@@ -534,6 +616,17 @@ def handle_offer_update(offer, eth_rate, stats):
 
         stats["processed"] += 1
 
+        evaluate_player_offer(player_slug, player_name, season_type, season_name, price_eur,
+                               card_slug, eth_rate, stats)
+
+
+# FIX 16/07 (caso Antonio Sivera): logica di valutazione estratta dal loop di
+# handle_offer_update in una funzione a se' stante, cosi' puo' essere richiamata anche dalla
+# coda dei casi da riverificare (process_pending_rechecks) e non solo da un evento WS live.
+# allow_requeue=False quando chiamata dalla riverifica stessa, per evitare di riaccodare
+# all'infinito uno stesso caso che continua a risultare "margine troppo vicino".
+def evaluate_player_offer(player_slug, player_name, season_type, season_name, price_eur,
+                           card_slug, eth_rate, stats, allow_requeue=True):
         # Verifica live: qual e' DAVVERO il prezzo minimo attualmente in vendita per questo
         # giocatore, nella stessa categoria in_season/classic (vedi nota nella docstring di
         # get_live_min_offer)? Se la query fallisce per qualsiasi motivo, ripieghiamo sul
@@ -559,7 +652,7 @@ def handle_offer_update(offer, eth_rate, stats):
         # piu' basso altrove, che finiva nell'alert bypassando il filtro). Controlliamo
         # anche il prezzo REALMENTE segnalato, non solo quello dell'evento.
         if true_min_price < MIN_PRICE_EUR:
-            continue
+            return
 
         # Il riferimento (floor) e' tracciato per bucket in_season/classic (non per stagione
         # esatta): verificato con dati reali che le stampe Classic di anni diversi hanno prezzi
@@ -571,7 +664,7 @@ def handle_offer_update(offer, eth_rate, stats):
             log(f"{player_name} ({season_type}, {season_name}): inizializzazione a {true_min_price:.2f}EUR")
             log_decision(player_slug, player_name, season_type, season_name, "init",
                          true_min_price=true_min_price)
-            continue
+            return
 
         floor, floor_updated_at = floor_row
 
@@ -601,10 +694,10 @@ def handle_offer_update(offer, eth_rate, stats):
             log_decision(player_slug, player_name, season_type, season_name, "stale_realign",
                          floor_price=floor, true_min_price=true_min_price)
             set_floor(player_slug, season_type, true_min_price)
-            continue
+            return
 
         if true_min_price >= floor:
-            continue
+            return
 
         drop_percent = (floor - true_min_price) / floor if floor > 0 else 0
 
@@ -629,7 +722,16 @@ def handle_offer_update(offer, eth_rate, stats):
                              floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
                              second_min_price=second_min_price, margin_percent=margin_percent)
                 set_floor(player_slug, season_type, true_min_price)
-                continue
+                # FIX 16/07 (caso Antonio Sivera): l'annuncio davvero piu' economico potrebbe
+                # essere stato creato da meno di ~2 minuti e non ancora visibile pubblicamente
+                # su Sorare (vedi nota su MARKET_VISIBILITY_DELAY_SECONDS) -- accodiamo per una
+                # riverifica successiva invece di scartare in modo definitivo. Non riaccodare
+                # se questa valutazione e' gia' lei stessa una riverifica (allow_requeue=False),
+                # altrimenti un caso persistente resterebbe in coda all'infinito.
+                if allow_requeue:
+                    queue_pending_recheck(player_slug, player_name, season_type, season_name,
+                                           true_min_price, true_min_card_slug)
+                return
 
         # Rete di sicurezza: il bucket rilevato sembra morto/residuale (stagione di quella lega
         # gia' finita nella pratica, anche se l'etichetta sportSeason.name non lo riflette
@@ -652,7 +754,7 @@ def handle_offer_update(offer, eth_rate, stats):
                              reasons=[f"bucket gemello {sibling_type} ha {len(sibling_prices)} annunci da "
                                       f"{sibling_prices[0][0]:.2f}EUR, molto piu' attivo ed economico"])
                 set_floor(player_slug, season_type, true_min_price)
-                continue
+                return
 
         # Scelta esplicita dell'utente: meglio rischiare di perdere qualche affare vero che
         # mandare notifiche su cui c'e' un dubbio ragionevole che siano fasulle. Percio' un calo
@@ -729,6 +831,30 @@ def handle_offer_update(offer, eth_rate, stats):
                          second_min_price=second_min_price, margin_percent=margin_percent)
 
         set_floor(player_slug, season_type, true_min_price)
+
+
+def process_pending_rechecks(eth_rate):
+    """Riverifica, a inizio esecuzione, i casi scartati per "margine troppo vicino" nelle
+    esecuzioni precedenti e la cui finestra di invisibilita' Sorare (~2 minuti) e' ormai
+    sicuramente passata (vedi nota su MARKET_VISIBILITY_DELAY_SECONDS). Riusa esattamente la
+    stessa logica di valutazione di un evento live (evaluate_player_offer): se nel frattempo
+    e' comparso un annuncio davvero piu' economico, il margine sul nuovo "secondo prezzo"
+    (che prima era il vecchio minimo) sara' quasi certamente sufficiente per notificare."""
+    stats = {"processed": 0}
+    due, expired = pop_due_pending_rechecks()
+    for row in expired:
+        log(f"[coda riverifica] {row['player_name']} ({row['season_type']}, {row['season_name']}): "
+            f"caso troppo vecchio (accodato il {row['queued_at']}), scartato senza riverificare")
+    if not due:
+        return
+    log(f"[coda riverifica] {len(due)} casi da riverificare (finestra di invisibilita' annunci passata)...")
+    for row in due:
+        log(f"[coda riverifica] {row['player_name']} ({row['season_type']}, {row['season_name']}): "
+            f"riverifico (accodato il {row['queued_at']} a {row['price_eur']}EUR)")
+        evaluate_player_offer(row['player_slug'], row['player_name'], row['season_type'],
+                               row['season_name'], row['price_eur'], row['card_slug'],
+                               eth_rate, stats, allow_requeue=False)
+    log("[coda riverifica] completata.")
 
 
 # --- WebSocket / ActionCable ---
@@ -812,6 +938,11 @@ def main():
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
+
+    # FIX 16/07: riverifica prima di ascoltare nuovi eventi -- vedi nota su
+    # MARKET_VISIBILITY_DELAY_SECONDS in process_pending_rechecks.
+    process_pending_rechecks(eth_rate)
+
     log(f"Ascolto per {LISTEN_SECONDS} secondi...")
     run_listener(eth_rate)
     log("Esecuzione terminata.")
