@@ -60,7 +60,7 @@ MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
 MARGIN_TIERS = [
     (3, 2.53),
     (5, 4.35),
-    (10, 8.70),
+    (10, 8.80),  # FIX 16/07 (v3, casi Gabriel Pec / Marc Guehi): 13.0% -> 12.0%, richiesta esplicita
     (15, 13.65),
     (20, 18.20),
     (25, 23.25),
