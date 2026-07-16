@@ -26,6 +26,19 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '200'))
 
 DROP_THRESHOLD = 0.08    # FIX 16/07 (v10, richiesta esplicita): 13% -> 8%, in prova
+
+# FIX 16/07 (v14, casi Zeki Celik / Ricardo Velho): la notifica veloce (send_instant_alert) non
+# fa nessun controllo margine sul secondo prezzo attuale (lo salta apposta per restare veloce,
+# senza query live) -- quindi puo' segnalare come "occasione" un prezzo che e' si' il minimo del
+# momento, ma dentro un cluster fitto di annunci quasi identici (Celik: 2.58EUR contro
+# 2.74/2.76/2.80EUR ecc., margine reale ~5.8% contro il 15.7% che la verifica completa
+# richiederebbe per quella fascia; Velho: margine ~2.7% contro il 10% richiesto) -- non e' un
+# affare distinto, solo rumore statistico. Senza dati sul secondo prezzo (che richiederebbe una
+# query live, esattamente cio' che la notifica veloce evita), soglia piu' alta come proxy
+# grezzo: un calo cosi' ampio raramente e' solo rumore di cluster. Richiesta esplicita: 12%,
+# da provare.
+INSTANT_ALERT_DROP_THRESHOLD = 0.12
+
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
 MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa soglia, ignoriamo la carta
 
@@ -769,7 +782,7 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
         return
 
     drop_percent = (floor - price_eur) / floor
-    if drop_percent < DROP_THRESHOLD:
+    if drop_percent < INSTANT_ALERT_DROP_THRESHOLD:
         return
     log(f"VELOCE (non verificato) {player_name} ({season_type}, {season_name}) sceso: "
         f"{floor:.2f}EUR -> {price_eur:.2f}EUR ({drop_percent:.1%}) -- notifica immediata, "
