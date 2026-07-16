@@ -1380,11 +1380,58 @@ def run_listener(eth_rate):
 # season_type_for_card() sopra (vicino a CURRENT_SEASON_LABELS) per come viene usato.
 
 
+# DIAGNOSTICA TEMPORANEA (16/07, casi Yuma Suzuki e Samuel Kotto -- rimuovere dopo verifica):
+# il bot notifica affari basandosi solo sugli annunci ATTIVI (ask price), mai sulle vendite
+# REALMENTE concluse -- confermato sia su Suzuki che su Kotto che il prezzo "verificato" come
+# affare era in realta' piu' caro di quanto la gente paghi davvero di recente (Kotto: 5.00EUR
+# notificato contro 0.94-1.60EUR di vendite reali nelle ultime settimane). Proviamo per
+# tentativi (introspection disabilitata, stesso approccio usato per inSeasonEligible) a
+# scoprire il campo/query per lo storico vendite (quello dietro la scheda "Cronologia delle
+# vendite" nella UI), cosi' in futuro possiamo confrontare il prezzo notificato con le vendite
+# reali recenti invece di fidarci solo degli annunci in vendita.
+SALES_HISTORY_DISCOVERY_PLAYER_SLUG = os.environ.get('SALES_HISTORY_DISCOVERY_PLAYER_SLUG', 'samuel-junior-kotto')
+
+
+def discover_sales_history_field():
+    """Tenta diversi nomi di campo candidati sotto tokens{} per scoprire come accedere allo
+    storico delle vendite concluse (non solo agli annunci live). Logga solo esito, non tocca
+    la logica del bot."""
+    log("[diagnostica storico vendite] inizio tentativi...")
+    field_candidates = [
+        'closedSingleSaleOffers', 'singleSaleOffersHistory', 'cardSales', 'salesHistory',
+        'tokenSales', 'closedOffers', 'pastSingleSaleOffers', 'completedSingleSaleOffers',
+        'soldSingleSaleOffers',
+    ]
+    for field_name in field_candidates:
+        query = f"""
+        query DiscoverSalesHistory($slug: String!, $n: Int!) {{
+          tokens {{
+            {field_name}(playerSlug: $slug, last: $n) {{
+              nodes {{
+                status
+              }}
+            }}
+          }}
+        }}
+        """
+        try:
+            data = graphql_query(query, {"slug": SALES_HISTORY_DISCOVERY_PLAYER_SLUG, "n": 5})
+            if data.get('errors'):
+                log(f"[diagnostica storico vendite] campo '{field_name}': errore -- {data['errors']}")
+            else:
+                log(f"[diagnostica storico vendite] campo '{field_name}': SUCCESSO -- {data['data']}")
+        except Exception as e:
+            log(f"[diagnostica storico vendite] campo '{field_name}': eccezione -- {e}")
+    log("[diagnostica storico vendite] tentativi completati.")
+
+
 def main():
     init_db()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
+
+    discover_sales_history_field()
 
     # FIX 16/07: riverifica prima di ascoltare nuovi eventi -- vedi nota su
     # MARKET_VISIBILITY_DELAY_SECONDS in process_pending_rechecks.
