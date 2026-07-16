@@ -277,6 +277,44 @@ def main():
         log(">>> Nessuno dei candidati 'secondary' ha funzionato. Passo al tentativo 2.")
 
     log("=" * 70)
+    log("TENTATIVO 3f: il tentativo 'liveResaleOffer' ha suggerito un altro campo REALE: "
+        "'liveSingleSaleOffer' (singolare, sulla carta -- diverso dal campo 'liveSingleSaleOffers' "
+        "plurale gia' noto su tokens, filtrato per playerSlug). Ipotesi: su Sorare 'SingleSaleOffer' "
+        "potrebbe significare 'offerta per questa singola carta' in senso lato (comprando sia "
+        "vendita a prezzo fisso SIA asta), non necessariamente solo 'buy now'. Proviamo a "
+        "leggerlo con fragment su TokenAuction.")
+    query_single_sale = """
+    query GetLiveSingleSaleOffer($slug: String!) {
+      anyCard(slug: $slug) {
+        slug
+        liveSingleSaleOffer {
+          __typename
+          ... on TokenAuction {
+            id
+            currentPrice
+            minNextBid
+            endDate
+          }
+        }
+      }
+    }
+    """
+    status3f, data3f = graphql_query(query_single_sale, {"slug": TEST_CARD_SLUG})
+    log(f"HTTP status: {status3f}")
+    log(f"Risposta: {json.dumps(data3f, indent=2)}")
+    if not data3f.get('errors'):
+        card_data_f = (data3f.get('data') or {}).get('anyCard') or {}
+        offer = card_data_f.get('liveSingleSaleOffer')
+        if offer:
+            log(f">>> FUNZIONA! anyCard(slug: ...).liveSingleSaleOffer esiste ed e' di tipo "
+                f"{offer.get('__typename')}. Dati: {offer}")
+        else:
+            log(">>> Il campo liveSingleSaleOffer esiste ma e' null per questa carta in questo momento.")
+    else:
+        log(">>> Errore su liveSingleSaleOffer (vedi sopra) -- se l'errore riguarda solo il fragment "
+            "TokenAuction, il campo esiste comunque ma restituisce un tipo diverso.")
+
+    log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
     status2, data2 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 200})
     log(f"HTTP status: {status2}")
