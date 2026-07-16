@@ -633,6 +633,11 @@ def get_bucket_prices(player_slug, eth_rate):
     tra bucket (cross_bucket_looks_dead) -- nello stesso fetch, senza query aggiuntive."""
     nodes = fetch_all_live_offers(player_slug)
     raw = {'in_season': [], 'classic': []}
+    # NOTA (v23): questo flag ora non viene piu' impostato a True da nessuna parte (vedi FIX
+    # v23 piu' sotto, caso Scherpen) -- resta qui per non toccare la forma del valore restituito
+    # (usata da evaluate_player_offer per "dubbio") e per poterlo eventualmente reintrodurre in
+    # forma piu' mirata in futuro, se emergesse un vero caso di dato illeggibile diverso dagli
+    # annunci "Fai un'offerta" senza prezzo fisso.
     incomplete_flags = {'in_season': False, 'classic': False}
     for node in nodes:
         if node.get('status') != 'opened':
@@ -664,23 +669,17 @@ def get_bucket_prices(player_slug, eth_rate):
         node_season_type = season_type_for_card(match, node_season)
         price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
         if price is None:
-            # Annuncio aperto e compatibile, ma Sorare non ci ha detto il prezzo: non possiamo
-            # escluderlo dal conteggio, potrebbe essere il vero secondo (o primo) piu' economico.
-            # DIAGNOSTICA TEMPORANEA (16/07, caso Kjell Scherpen -- rimuovere dopo verifica): il
-            # fix sugli scambi carta-per-carta non ha coperto tutti i casi di "dati incompleti"
-            # -- serve sapere ESATTAMENTE quale annuncio causa il flag, non solo che esiste,
-            # altrimenti restiamo a indovinare (come col caso ETH-only). Logghiamo i dettagli
-            # grezzi solo la prima volta che capita per questo giocatore in questa esecuzione,
-            # per non spammare se capitasse su tanti nodi dello stesso player.
-            if not incomplete_flags[node_season_type]:
-                raw_amounts = (node.get('receiverSide') or {}).get('amounts') or {}
-                receiver_cards = (node.get('receiverSide') or {}).get('anyCards') or []
-                log(f"[diagnostica dati incompleti] {player_slug} / carta {match.get('slug')}: "
-                    f"status={node.get('status')} eurCents={raw_amounts.get('eurCents')} "
-                    f"wei={raw_amounts.get('wei')} receiverSide.anyCards={bool(receiver_cards)} "
-                    f"rarita'={match.get('rarityTyped')} sport={match.get('sport')} "
-                    f"stagione={node_season} inSeasonEligible={match.get('inSeasonEligible')}")
-            incomplete_flags[node_season_type] = True
+            # FIX 16/07 (v23, caso Kjell Scherpen -- diagnosticato su un log reale): il fix sugli
+            # scambi carta-per-carta non copriva tutti i casi di "dati incompleti". Il diagnostico
+            # temporaneo ha mostrato che questi annunci (status='opened', non uno scambio, ma
+            # eurCents E wei ENTRAMBI assenti) capitano su QUASI OGNI giocatore, non sono affatto
+            # rari -- la spiegazione piu' probabile e' che siano annunci "Fai un'offerta" (nessun
+            # prezzo fisso "Compra Subito" impostato dal venditore), non un dato sporco o
+            # illeggibile: semplicemente non esiste un numero da darci, perche' il venditore non
+            # ha fissato un prezzo. Non nascondono un vero minimo piu' economico non ancora letto
+            # -- vanno esclusi dal conteggio come gli scambi, non trattati come motivo di dubbio
+            # su tutto il bucket (prima questo faceva scattare "dati incompleti" quasi sempre,
+            # bloccando affari reali gia' confermati a mano, es. Scherpen a 7.00EUR).
             continue
         raw[node_season_type].append((price, match.get('slug')))
     result = {}
