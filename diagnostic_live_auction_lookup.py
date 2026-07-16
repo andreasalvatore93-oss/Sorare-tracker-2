@@ -384,6 +384,36 @@ def main():
             "o affidarsi al tentativo 2 (fallback sulla lista globale).")
 
     log("=" * 70)
+    log("TENTATIVO 4: liveSingleSaleOffer e' risultato null anche nel test dei campi -- "
+        "conferma che e' il campo per le vendite a prezzo fisso (buy now), non per le aste, "
+        "quindi non e' la strada giusta per il nostro caso (asta English in corso). "
+        "Cambiamo approccio: proviamo se tokens.liveAuctions (gia' confermato funzionante, "
+        "usato dal tentativo 2) accetta un argomento DIVERSO da 'playerSlug' per filtrare "
+        "su una carta/asta specifica.")
+    arg_candidates = ["slug", "slugs", "cardSlug", "cardSlugs", "tokenSlug", "tokenSlugs",
+                       "cardSlugIn", "slugIn", "ids", "auctionIds"]
+    found_arg = None
+    for arg_name in arg_candidates:
+        query = f"""
+        query ProbeLiveAuctionsArg($v: String!) {{
+          tokens {{
+            liveAuctions(last: 5, {arg_name}: $v) {{
+              nodes {{ id }}
+            }}
+          }}
+        }}
+        """
+        status4, data4 = graphql_query(query, {"v": TEST_CARD_SLUG})
+        log(f"--- argomento provato: liveAuctions({arg_name}: ...) (HTTP {status4}) ---")
+        log(f"Risposta: {json.dumps(data4, indent=2)}")
+        if not data4.get('errors'):
+            log(f">>> FUNZIONA! liveAuctions accetta l'argomento '{arg_name}'.")
+            found_arg = arg_name
+            break
+    if not found_arg:
+        log(">>> Nessuno degli argomenti provati e' accettato da liveAuctions. Passo al tentativo 2.")
+
+    log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
     status2, data2 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 200})
     log(f"HTTP status: {status2}")
