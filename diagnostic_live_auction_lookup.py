@@ -116,6 +116,35 @@ def main():
             log(">>> Non ha funzionato nemmeno in base64 (vedi errori sopra). Passo al tentativo 2.")
 
     log("=" * 70)
+    log("TENTATIVO 1c: l'errore del tentativo 1 diceva \"Invalid ID starting with `EnglishAuction:`\" "
+        "-- cioe' il PREFISSO del tipo non e' riconosciuto da node(), non l'id in se'. Sappiamo gia' "
+        "(scoperto piu' avanti in questo script) che il vero tipo GraphQL per un'asta si chiama "
+        "'TokenAuction', non 'EnglishAuction' -- 'EnglishAuction' potrebbe essere solo il nome del "
+        "canale/evento WebSocket. Proviamo a ricostruire l'id sostituendo il prefisso, tenendo lo "
+        "stesso UUID.")
+    auction_uuid = TEST_AUCTION_ID.split(":", 1)[1] if ":" in TEST_AUCTION_ID else TEST_AUCTION_ID
+    reconstructed_id = f"TokenAuction:{auction_uuid}"
+    log(f"Id ricostruito: {reconstructed_id}")
+    status1c, data1c = graphql_query(NODE_QUERY, {"id": reconstructed_id})
+    log(f"HTTP status: {status1c}")
+    log(f"Risposta completa: {json.dumps(data1c, indent=2)}")
+    if not data1c.get('errors') and (data1c.get('data') or {}).get('node'):
+        log(">>> FUNZIONA DAVVERO! Usa node(id: \"TokenAuction:<uuid>\") (prefisso sostituito, "
+            "stesso uuid dell'evento WebSocket) per la riverifica pre-notifica.")
+    else:
+        log(">>> Non ha funzionato nemmeno con il prefisso 'TokenAuction:' (vedi errori sopra). "
+            "Proviamo anche in base64.")
+        encoded_reconstructed = base64.b64encode(reconstructed_id.encode()).decode()
+        status1c2, data1c2 = graphql_query(NODE_QUERY, {"id": encoded_reconstructed})
+        log(f"Id ricostruito in base64: {encoded_reconstructed}")
+        log(f"HTTP status: {status1c2}")
+        log(f"Risposta completa: {json.dumps(data1c2, indent=2)}")
+        if not data1c2.get('errors') and (data1c2.get('data') or {}).get('node'):
+            log(">>> FUNZIONA! Usa node(id: base64(\"TokenAuction:<uuid>\")) per la riverifica pre-notifica.")
+        else:
+            log(">>> Non ha funzionato nemmeno cosi'. Continuiamo con gli altri tentativi.")
+
+    log("=" * 70)
     log("TENTATIVO 3: query per carta (anyCard/card/footballCard(slug: ...)) -- proviamo piu' "
         "nomi di campo, dato che anyPlayer(slug:...) e' gia' confermato funzionante altrove")
 
