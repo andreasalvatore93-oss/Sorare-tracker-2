@@ -118,23 +118,64 @@ def main():
     log("=" * 70)
     log("TENTATIVO 3: query per carta (anyCard/card/footballCard(slug: ...)) -- proviamo piu' "
         "nomi di campo, dato che anyPlayer(slug:...) e' gia' confermato funzionante altrove")
-    for root_field in ("anyCard", "card", "footballCard", "token"):
+
+    # Aggiornamento: anyCard(slug: ...) ESISTE davvero (l'errore precedente era solo sul nome
+    # del sotto-campo "activeAuction", inventato da noi -- il messaggio d'errore ha anche
+    # rivelato il nome esatto del tipo: AnyCardInterface). Prima di continuare a indovinare
+    # sotto-campi a caso, chiediamo direttamente a GraphQL l'elenco dei campi di quel tipo:
+    # l'introspezione SUL SINGOLO TIPO (__type) a volte funziona anche quando quella globlale
+    # (__schema) e' disabilitata.
+    log("--- prima: introspezione mirata su AnyCardInterface (__type) ---")
+    introspect_query = """
+    query IntrospectAnyCard($name: String!) {
+      __type(name: $name) {
+        name
+        fields {
+          name
+          type { name kind ofType { name kind } }
+        }
+      }
+    }
+    """
+    status_i, data_i = graphql_query(introspect_query, {"name": "AnyCardInterface"})
+    log(f"HTTP status: {status_i}")
+    log(f"Risposta: {json.dumps(data_i, indent=2)}")
+    field_names_from_introspection = []
+    type_info = (data_i.get('data') or {}).get('__type')
+    if type_info:
+        field_names_from_introspection = [f['name'] for f in (type_info.get('fields') or [])]
+        log(f">>> Introspezione riuscita! Campi disponibili su AnyCardInterface: {field_names_from_introspection}")
+    else:
+        log(">>> Introspezione bloccata anche sul singolo tipo. Proviamo una lista di nomi plausibili.")
+
+    # Candidati per il sotto-campo giusto: quelli suggeriti dall'introspezione (se ha
+    # funzionato) hanno priorita', altrimenti proviamo una lista di nomi plausibili a mano.
+    candidate_fields = [f for f in field_names_from_introspection
+                        if 'auction' in f.lower() or 'sale' in f.lower() or 'offer' in f.lower()]
+    if not candidate_fields:
+        candidate_fields = ["auction", "currentAuction", "liveAuction", "englishAuction",
+                            "activeEnglishAuction", "currentOffer", "liveOffer"]
+    log(f"Sotto-campi candidati da provare su anyCard: {candidate_fields}")
+
+    found_field = None
+    for field_name in candidate_fields:
         query = f"""
         query GetCardAuction($slug: String!) {{
-          {root_field}(slug: $slug) {{
+          anyCard(slug: $slug) {{
             slug
-            activeAuction {{ id currentPrice minNextBid endDate }}
+            {field_name} {{ id currentPrice minNextBid endDate }}
           }}
         }}
         """
         status3, data3 = graphql_query(query, {"slug": TEST_CARD_SLUG})
-        log(f"--- campo radice provato: {root_field} (HTTP {status3}) ---")
+        log(f"--- sotto-campo provato: anyCard.{field_name} (HTTP {status3}) ---")
         log(f"Risposta: {json.dumps(data3, indent=2)}")
-        if not data3.get('errors') and (data3.get('data') or {}).get(root_field):
-            log(f">>> FUNZIONA! Il campo radice giusto e': {root_field}(slug: ...)")
+        if not data3.get('errors'):
+            log(f">>> FUNZIONA! Il campo giusto e': anyCard(slug: ...).{field_name}")
+            found_field = field_name
             break
-    else:
-        log(">>> Nessuno dei campi radice provati ha funzionato per la carta. Passo al tentativo 2.")
+    if not found_field:
+        log(">>> Nessuno dei sotto-campi provati ha funzionato. Passo al tentativo 2.")
 
     log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
