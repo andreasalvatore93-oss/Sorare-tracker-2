@@ -35,7 +35,15 @@ TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 # i formati.
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 CURRENT_SEASON_ALT = os.environ.get('CURRENT_SEASON_ALT', '2026')  # formato MLS/calendario solare
-CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
+# FIX 16/07 (caso Sebastian Berhalter, giocatore MLS): dagli screenshot reali mandati
+# dall'utente, le carte Limited attualmente scambiate/in asta per Berhalter (MLS) sono
+# etichettate sportSeason.name="2026-27", non "2026" come atteso dal vecchio fix Burki.
+# Sorare sembra aver unificato l'etichetta di stagione corrente su "2026-27" anche per le
+# leghe a calendario solare (probabile cambio stagione, siamo a meta' luglio). Aggiunta come
+# terza label riconosciuta accanto alle due precedenti, senza rimuovere quelle vecchie (nel
+# dubbio meglio riconoscerne di piu' che di meno per il bucket in_season).
+CURRENT_SEASON_EU_NEW = os.environ.get('CURRENT_SEASON_EU_NEW', '2026-27')
+CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT, CURRENT_SEASON_EU_NEW}
 BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.20'))  # 20% fisso sul riferimento (mediana) -- abbassato da 25% il 16/07 per far passare piu' aste ai primi filtri
 RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))
 
@@ -501,7 +509,17 @@ def process_auction(auction, eth_rate):
         return
 
     season_name = (target_card.get('sportSeason') or {}).get('name', 'unknown')
-    season_type = 'in_season' if season_name in CURRENT_SEASON_LABELS else 'classic'
+    # FIX 16/07 (caso Sebastian Berhalter): le aste inglesi di Sorare sono SEMPRE e SOLO
+    # per carte in_season -- non esistono aste per carte classic. Prima qui si derivava
+    # season_type confrontando season_name con CURRENT_SEASON_LABELS, ma quell'etichetta
+    # va aggiornata ad ogni cambio stagione (es. "2025-26" -> "2026-27") e nel frattempo
+    # classificava erroneamente come "classic" carte che erano gia' in_season a tutti gli
+    # effetti (caso reale: Berhalter, auction id 212, season_type finito a 'classic' ->
+    # direct_sale_price preso dal mercato classic (6.70EUR) invece che in_season (23.80EUR
+    # reali), tetto consigliato crollato e rilancio da 16.91EUR scartato per errore). Per
+    # le aste il bucket e' sempre in_season, punto: niente piu' classificazione da
+    # season_name.
+    season_type = 'in_season'
 
     season_year = parse_season_year(season_name)
     recent_prices = get_recent_public_prices(player_slug, season_year, eth_rate)
