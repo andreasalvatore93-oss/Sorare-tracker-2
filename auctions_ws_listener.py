@@ -481,10 +481,6 @@ def process_auction(auction, eth_rate):
     if already_notified(auction_id):
         return
 
-    # Stampa sempre l'id, per ogni asta valutata -- cosi' e' facile prenderne uno reale dai
-    # log per test/diagnostica, senza dover aprire auctions.db (es. diagnostic_live_auction_lookup.py).
-    log(f"[asta] valutazione evento id={auction_id}")
-
     min_next_bid_raw = auction.get('minNextBid')
     min_next_bid_eur = wei_to_eur(min_next_bid_raw, eth_rate)
 
@@ -500,6 +496,11 @@ def process_auction(auction, eth_rate):
 
     if not target_card:
         return
+
+    # Stampa sempre id asta E slug carta, per ogni asta valutata -- cosi' e' facile prenderne
+    # una reale dai log per test/diagnostica, senza dover aprire auctions.db (es.
+    # diagnostic_live_auction_lookup.py).
+    log(f"[asta] valutazione evento id={auction_id} card_slug={target_card.get('slug')}")
 
     player = target_card.get('anyPlayer') or {}
     player_slug = player.get('slug')
