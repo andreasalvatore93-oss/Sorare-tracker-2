@@ -11,9 +11,14 @@ on:
 permissions:
   contents: write
 
+# FIX 16/07: cancel-in-progress era true -- se un'esecuzione ne cancellava un'altra a meta'
+# strada, tutto lo stato locale non ancora salvato (compresa la nuova coda pending_recheck,
+# vedi track.py) andava perso silenziosamente, senza nessuna possibilita' di recuperarlo in
+# futuro. In coda (false) invece nessuna esecuzione viene mai interrotta a meta': si mette
+# solo in attesa che la precedente finisca di salvare, un po' di ritardo ma zero perdita dati.
 concurrency:
   group: sorare-tracker
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   check:
