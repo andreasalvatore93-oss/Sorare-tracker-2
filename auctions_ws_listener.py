@@ -46,6 +46,12 @@ CURRENT_SEASON_EU_NEW = os.environ.get('CURRENT_SEASON_EU_NEW', '2026-27')
 CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT, CURRENT_SEASON_EU_NEW}
 BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.20'))  # 20% fisso sul riferimento (mediana) -- abbassato da 25% il 16/07 per far passare piu' aste ai primi filtri
 RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))
+# FIX 16/07 (caso Walker Zimmerman): niente piu' notifiche con margine stimato ~0 --
+# richiesto un margine minimo di 1EUR rispetto alla vendita diretta minima per notificare.
+# Se il margine non e' calcolabile (nessun direct_sale_price trovato, live ne' in cache),
+# per sicurezza NON si notifica: senza un riferimento di vendita diretta non possiamo
+# confermare che valga davvero la pena rilanciare invece di comprare subito.
+MIN_MARGIN_EUR = float(os.environ.get('MIN_MARGIN_EUR', '1.5'))
 
 # Ritardo prima della riverifica live pre-notifica: nei log di produzione del 16/07 la
 # riverifica risultava "asta non piu' aperta" per QUASI OGNI asta valutata (7/7 in un run,
@@ -701,6 +707,16 @@ def process_auction(auction, eth_rate):
         starting_bid = current_price_eur
 
     margin_estimate = (direct_sale_price - recommended_ceiling) if direct_sale_price is not None else None
+
+    if margin_estimate is None or margin_estimate < MIN_MARGIN_EUR:
+        log(f"{player_name}: margine stimato "
+            f"{margin_estimate if margin_estimate is not None else 'n/d'} sotto la soglia minima "
+            f"({MIN_MARGIN_EUR:.2f}EUR), non notifico")
+        log_decision(auction_id, player_slug, player_name, season_type, "skip_margin_too_low",
+                     current_price=current_price_eur, min_next_bid=min_next_bid_eur,
+                     median_reference=median_reference, recommended_ceiling=recommended_ceiling,
+                     direct_sale_price=direct_sale_price, margin_estimate=margin_estimate)
+        return
 
     log(f"ASTA INTERESSANTE! {player_name}: attuale {current_price_eur:.2f}EUR, "
         f"minimo per essere in testa {starting_bid:.2f}EUR, "
