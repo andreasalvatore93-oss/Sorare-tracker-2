@@ -36,7 +36,7 @@ TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 CURRENT_SEASON = os.environ.get('CURRENT_SEASON', '2025-26')
 CURRENT_SEASON_ALT = os.environ.get('CURRENT_SEASON_ALT', '2026')  # formato MLS/calendario solare
 CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
-BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.25'))  # 25% fisso sul riferimento (mediana)
+BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.20'))  # 20% fisso sul riferimento (mediana) -- abbassato da 25% il 16/07 per far passare piu' aste ai primi filtri
 RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
