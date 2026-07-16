@@ -666,6 +666,20 @@ def get_bucket_prices(player_slug, eth_rate):
         if price is None:
             # Annuncio aperto e compatibile, ma Sorare non ci ha detto il prezzo: non possiamo
             # escluderlo dal conteggio, potrebbe essere il vero secondo (o primo) piu' economico.
+            # DIAGNOSTICA TEMPORANEA (16/07, caso Kjell Scherpen -- rimuovere dopo verifica): il
+            # fix sugli scambi carta-per-carta non ha coperto tutti i casi di "dati incompleti"
+            # -- serve sapere ESATTAMENTE quale annuncio causa il flag, non solo che esiste,
+            # altrimenti restiamo a indovinare (come col caso ETH-only). Logghiamo i dettagli
+            # grezzi solo la prima volta che capita per questo giocatore in questa esecuzione,
+            # per non spammare se capitasse su tanti nodi dello stesso player.
+            if not incomplete_flags[node_season_type]:
+                raw_amounts = (node.get('receiverSide') or {}).get('amounts') or {}
+                receiver_cards = (node.get('receiverSide') or {}).get('anyCards') or []
+                log(f"[diagnostica dati incompleti] {player_slug} / carta {match.get('slug')}: "
+                    f"status={node.get('status')} eurCents={raw_amounts.get('eurCents')} "
+                    f"wei={raw_amounts.get('wei')} receiverSide.anyCards={bool(receiver_cards)} "
+                    f"rarita'={match.get('rarityTyped')} sport={match.get('sport')} "
+                    f"stagione={node_season} inSeasonEligible={match.get('inSeasonEligible')}")
             incomplete_flags[node_season_type] = True
             continue
         raw[node_season_type].append((price, match.get('slug')))
