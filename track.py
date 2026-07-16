@@ -1514,6 +1514,39 @@ def discover_sales_history_field():
             log(f"[diagnostica storico vendite] tokenPrices(playerSlug, rarity={rarity_value}): "
                 f"eccezione -- {e}")
 
+    # FIX 16/07 (proseguimento, log reale): tokenPrices(playerSlug: ..., rarity: limited) ha
+    # risposto SUCCESSO -- confermato, il campo esiste, l'enum rarity vuole la stringa
+    # minuscola 'limited' (non LIMITED/Limited), e restituisce una LISTA di oggetti
+    # 'TokenPrice' (5 nodi su Kotto, senza pagination esplicita richiesta -- da capire poi se
+    # c'e' un default o se sono TUTTI quelli disponibili). Introspection disabilitata, quindi
+    # non possiamo elencare i campi di TokenPrice -- proviamo per tentativi anche qui, un nome
+    # alla volta insieme a __typename, stesso approccio usato sopra per scoprire l'argomento
+    # giusto. Candidati plausibili per un prezzo/data di vendita.
+    token_price_field_candidates = [
+        'price', 'amount', 'amounts', 'priceEur', 'eurCents', 'wei', 'eur', 'usd',
+        'date', 'soldAt', 'createdAt', 'updatedAt', 'timestamp', 'playerSlug', 'rarity',
+        'cardSlug', 'tokenSlug', 'slug', 'season', 'sportSeason',
+    ]
+    for field_name in token_price_field_candidates:
+        query = f"""
+        query DiscoverTokenPriceFields($p: String!) {{
+          tokens {{
+            tokenPrices(playerSlug: $p, rarity: limited) {{
+              __typename
+              {field_name}
+            }}
+          }}
+        }}
+        """
+        try:
+            data = graphql_query(query, {"p": SALES_HISTORY_DISCOVERY_PLAYER_SLUG})
+            if data.get('errors'):
+                log(f"[diagnostica storico vendite] TokenPrice.{field_name}: errore -- {data['errors']}")
+            else:
+                log(f"[diagnostica storico vendite] TokenPrice.{field_name}: SUCCESSO -- {data['data']}")
+        except Exception as e:
+            log(f"[diagnostica storico vendite] TokenPrice.{field_name}: eccezione -- {e}")
+
     log("[diagnostica storico vendite] tentativi completati.")
 
 
