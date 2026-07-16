@@ -149,6 +149,17 @@ def required_margin_fraction(reference_price):
 MARKET_VISIBILITY_DELAY_SECONDS = float(os.environ.get('MARKET_VISIBILITY_DELAY_SECONDS', '150'))  # 2.5 min, margine di sicurezza sopra i ~2 min di Sorare
 PENDING_RECHECK_MAX_AGE_SECONDS = float(os.environ.get('PENDING_RECHECK_MAX_AGE_SECONDS', '1800'))  # oltre 30 min il caso non e' piu' rilevante, si scarta senza riverificare
 
+# FIX 16/07 (v16, "bug del centesimo"): il controllo sopra (price_eur < true_min_price) confonde
+# la vera finestra di invisibilita' con semplice rumore di arrotondamento nella conversione
+# wei->EUR -- log reali mostrano casi ripetuti con scarti di 1-5 centesimi (~0.2-0.4% relativo,
+# es. Sergi Dominguez 3.43 contro 3.44, Filip Jorgensen 3.76 contro 3.77, Gianluca Prestianni
+# 2.29 contro 2.30) che non si risolvono MAI da un run all'altro (non e' un annuncio che diventa
+# visibile, e' semplicemente rumore che si ripete identico), a differenza di scarti piu' ampi
+# (es. Kevin Radulovic 2.13 contro 2.29, ~7%; Luis Suarez 11.00 contro 12.30, ~10.6%) che sono
+# quasi certamente annunci genuinamente ancora invisibili. Sotto questa soglia relativa si
+# considera rumore e si ignora (si procede con true_min_price come prima, senza log ne' coda).
+INVISIBILITY_GAP_TOLERANCE = float(os.environ.get('INVISIBILITY_GAP_TOLERANCE', '0.01'))  # 1%
+
 # La stagione In Season attualmente in corso su Sorare. ATTENZIONE: leghe diverse usano formati
 # diversi per lo stesso concetto di "stagione corrente" -- le leghe europee usano "2025-26" (a
 # cavallo di due anni), ma la MLS (e leghe simili a calendario solare) usano solo l'anno, es.
@@ -879,13 +890,17 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # dell'evento per una riverifica successiva: quando l'annuncio diventa visibile, il
         # floor si riallinea al vero minimo (e se il calo residuo e' abbastanza ampio, arriva
         # comunque una notifica separata).
-        if price_eur < true_min_price:
+        if (price_eur < true_min_price and true_min_price > 0
+                and (true_min_price - price_eur) / true_min_price > INVISIBILITY_GAP_TOLERANCE):
             log(f"{player_name} ({season_type}, {season_name}): l'annuncio che ha scatenato "
                 f"l'evento ({price_eur:.2f}EUR) e' piu' economico del minimo trovato dalla "
                 f"verifica live ({true_min_price:.2f}EUR) -- probabilmente ancora nella "
-                f"finestra di invisibilita' di Sorare, accodo per riverifica")
-            queue_pending_recheck(player_slug, player_name, season_type, season_name,
-                                   price_eur, card_slug)
+                f"finestra di invisibilita' di Sorare"
+                + (", accodo per riverifica" if allow_requeue else ", ma questa e' gia' una "
+                   "riverifica: non riaccodo di nuovo, evito un ciclo senza fine"))
+            if allow_requeue:
+                queue_pending_recheck(player_slug, player_name, season_type, season_name,
+                                       price_eur, card_slug)
 
         # Il controllo sopra (price_eur < MIN_PRICE_EUR) filtra solo il prezzo dell'EVENTO
         # che ha innescato il controllo, non il vero prezzo minimo verificato live -- per
