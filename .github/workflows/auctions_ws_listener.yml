@@ -11,10 +11,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: sorare-auctions
-  cancel-in-progress: true
-
 jobs:
   listen:
     runs-on: ubuntu-latest
