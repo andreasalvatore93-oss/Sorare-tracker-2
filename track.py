@@ -1115,10 +1115,44 @@ def find_cheaper_recent_sale(true_min_price, recent_sales):
     return None
 
 
+# FIX 17/07 (richiesta esplicita dell'utente, caso Issahaku Fatawu): "il giocatore ha appena 3
+# vendite in 21 giorni" -- con cosi' poche transazioni reali, il secondo prezzo che genera il
+# margine e' meno affidabile (basta un singolo annuncio isolato a determinarlo): non e' che il
+# prezzo sia sopravvalutato come nel caso Sengezer, e' che il mercato e' troppo sottile per
+# fidarsi del segnale. Soglia tarata esplicitamente sull'esempio dell'utente: MIN_SALES=4 in
+# WINDOW_DAYS=21 fa scattare l'avviso proprio sul caso "3 vendite in 21 giorni". Solo
+# informativo, non blocca mai la notifica -- stesso principio di find_cheaper_recent_sale.
+THIN_MARKET_MIN_SALES = int(os.environ.get('THIN_MARKET_MIN_SALES', '4'))
+THIN_MARKET_WINDOW_DAYS = int(os.environ.get('THIN_MARKET_WINDOW_DAYS', '21'))
+
+
+def count_recent_sales_in_window(recent_sales, window_days):
+    """Conta quante transazioni (tra quelle restituite da get_recent_sale_history, al massimo
+    le ultime 5) cadono negli ultimi window_days giorni. Nota: se ce ne fossero piu' di 5 nella
+    finestra, il conteggio resta comunque tappato a 5 (limite di get_recent_sale_history) -- non
+    e' un problema per rilevare un mercato SOTTILE (dove per definizione ce ne sono poche), solo
+    per distinguere un mercato "abbastanza liquido" da uno "molto liquido", distinzione che qui
+    non ci interessa."""
+    if not recent_sales:
+        return 0
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=window_days)
+    count = 0
+    for date_str, _ in recent_sales:
+        try:
+            sale_dt = datetime.datetime.fromisoformat((date_str or '').replace('Z', '+00:00'))
+            sale_dt = sale_dt.replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            continue
+        if sale_dt >= cutoff:
+            count += 1
+    return count
+
+
 def build_sale_history_context(recent_sales, cheaper_recent):
     """Restituisce (log_extra, msg_extra) da inserire nei due punti di notifica: sempre il
     contesto delle ultime transazioni, piu' un avviso esplicito se find_cheaper_recent_sale ha
-    trovato una transazione recente pari o piu' economica (vedi commento sopra)."""
+    trovato una transazione recente pari o piu' economica, piu' un avviso separato se il mercato
+    risulta sottile (vedi commenti sopra)."""
     if not recent_sales:
         return "", ""
     sale_prices = [p for _, p in recent_sales]
@@ -1135,6 +1169,12 @@ def build_sale_history_context(recent_sales, cheaper_recent):
         msg_extra += (f"⚠️ Una transazione recente ({cheaper_date[:10]}) si e' gia' conclusa a "
                       f"{cheaper_price:.2f}EUR, pari o piu' economica -- verifica prima di "
                       f"comprare.\n")
+    recent_count = count_recent_sales_in_window(recent_sales, THIN_MARKET_WINDOW_DAYS)
+    if recent_count < THIN_MARKET_MIN_SALES:
+        log_line += (f" -- MERCATO SOTTILE: solo {recent_count} transazioni negli ultimi "
+                     f"{THIN_MARKET_WINDOW_DAYS} giorni, il secondo prezzo e' meno affidabile")
+        msg_extra += (f"📊 Mercato sottile: solo {recent_count} transazioni reali negli ultimi "
+                      f"{THIN_MARKET_WINDOW_DAYS} giorni -- il margine si basa su pochi dati.\n")
     return log_line, msg_extra
 
 
