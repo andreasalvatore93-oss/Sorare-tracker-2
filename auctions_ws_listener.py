@@ -633,6 +633,16 @@ def process_auction(auction, eth_rate):
     if direct_sale_price is not None and direct_sale_price < recommended_ceiling:
         recommended_ceiling = direct_sale_price
 
+    # FIX 16/07 (caso Jeppe Tverskov): la mediana usa fino a RECENT_PRICES_COUNT vendite
+    # recenti insieme, quindi puo' restare piu' alta della vendita PIU' recente in assoluto
+    # se quella e' scesa rispetto alle precedenti (caso reale: ultima vendita 8.70EUR 37
+    # minuti fa, ma mediana 11.40EUR presa insieme a due vendite piu' vecchie e piu' care ->
+    # tetto consigliato 9.12EUR, SOPRA l'ultima vendita vera). Non ha senso consigliare di
+    # offrire piu' di quanto sia costata l'ultima carta equivalente venduta: last_price fa
+    # da tetto massimo esplicito esattamente come direct_sale_price.
+    if last_price < recommended_ceiling:
+        recommended_ceiling = last_price
+
     # Riverifica live subito prima di decidere se notificare: l'evento che ha innescato
     # questo controllo potrebbe essere vecchio (caso Marco Reus: evento con currentPrice=
     # 2.17EUR e ~11h rimanenti, notificato quando l'asta era GIA' a 10.24EUR con solo ~4h
