@@ -246,7 +246,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
       pageInfo { hasPreviousPage startCursor }
       nodes {
         status
-        receiverSide { amounts { eurCents wei } }
+        receiverSide { amounts { eurCents wei } anyCards { slug } }
         senderSide {
           anyCards {
             slug
@@ -525,6 +525,18 @@ def get_bucket_prices(player_slug, eth_rate):
     incomplete_flags = {'in_season': False, 'classic': False}
     for node in nodes:
         if node.get('status') != 'opened':
+            continue
+        # FIX 16/07 (v15, caso Nicolo Barella): gli annunci di scambio carta-per-carta
+        # (receiverSide.anyCards non vuoto) non hanno mai un prezzo in denaro -- prima
+        # venivano contati come "annuncio compatibile ma prezzo illeggibile", marcando il
+        # bucket come "dati incompleti" per SEMPRE se quel giocatore ha anche un solo scambio
+        # attivo (comune sui giocatori popolari). Un dato "incompleto" strutturale, non
+        # transitorio, non si conferma mai al secondo controllo (double_check_suspect_drop) --
+        # cosi' un calo reale (Barella: 30.00EUR -> 10.50EUR, 65%, confermato dal mercato vero)
+        # veniva scartato per sempre. Stesso filtro gia' usato per gli eventi WS
+        # (handle_offer_update): uno scambio non e' una vendita in denaro, va escluso del tutto,
+        # non trattato come "dato mancante".
+        if (node.get('receiverSide') or {}).get('anyCards'):
             continue
         cards = (node.get('senderSide') or {}).get('anyCards') or []
         match = None
