@@ -25,7 +25,7 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 # Per quanti secondi restare in ascolto ad ogni esecuzione.
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '200'))
 
-DROP_THRESHOLD = 0.13    # 13% = soglia minima per notificare
+DROP_THRESHOLD = 0.08    # FIX 16/07 (v10, richiesta esplicita): 13% -> 8%, in prova
 MAX_SUSPECT_DROP = 0.50  # oltre il 50% consideriamo il dato sospetto/errato
 MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa soglia, ignoriamo la carta
 
