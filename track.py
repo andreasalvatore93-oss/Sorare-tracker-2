@@ -1547,6 +1547,35 @@ def discover_sales_history_field():
         except Exception as e:
             log(f"[diagnostica storico vendite] TokenPrice.{field_name}: eccezione -- {e}")
 
+    # FIX 16/07 (proseguimento, log reale): 'date' e' SUCCESSO diretto (confermato: 5 date
+    # reali su Kotto, la piu' recente 2026-07-12 -- coerente con vendite recenti, non annunci
+    # live). 'amounts' ha dato un errore DIVERSO dagli altri ("must have selections... returns
+    # MonetaryAmount"): non "non esiste", ma "esiste, e' un oggetto, servono le sotto-selezioni"
+    # -- esattamente lo stesso tipo MonetaryAmount gia' usato altrove nel bot per gli annunci
+    # live (eurCents/wei, vedi eur_price_from_amounts). Proviamo direttamente la combinazione
+    # completa: se funziona, abbiamo finalmente data+prezzo di vendite reali passate, non solo
+    # annunci live -- esattamente cio' che serviva per i casi Suzuki/Kotto.
+    query = """
+    query DiscoverTokenPriceShape($p: String!) {
+      tokens {
+        tokenPrices(playerSlug: $p, rarity: limited) {
+          date
+          amounts { eurCents wei }
+        }
+      }
+    }
+    """
+    try:
+        data = graphql_query(query, {"p": SALES_HISTORY_DISCOVERY_PLAYER_SLUG})
+        if data.get('errors'):
+            log(f"[diagnostica storico vendite] TokenPrice{{date, amounts{{eurCents wei}}}}: "
+                f"errore -- {data['errors']}")
+        else:
+            log(f"[diagnostica storico vendite] TokenPrice{{date, amounts{{eurCents wei}}}}: "
+                f"SUCCESSO -- {data['data']}")
+    except Exception as e:
+        log(f"[diagnostica storico vendite] TokenPrice{{date, amounts{{eurCents wei}}}}: eccezione -- {e}")
+
     log("[diagnostica storico vendite] tentativi completati.")
 
 
