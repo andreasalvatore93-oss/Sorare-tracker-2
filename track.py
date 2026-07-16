@@ -46,6 +46,21 @@ MIN_PRICE_EUR = float(os.environ.get('MIN_PRICE_EUR', '2.0'))  # sotto questa so
 # bot se ne accorgesse, quindi un floor troppo vecchio produrrebbe un calo% inventato.
 MAX_FLOOR_AGE_HOURS = float(os.environ.get('MAX_FLOOR_AGE_HOURS', '48'))
 
+# FIX 16/07 (v13, casi Matt Miazga e Kristian Thorstvedt vs Ugurcan Cakir): la notifica veloce
+# (send_instant_alert) confronta SOLO col floor salvato, senza nessuna verifica live -- se quel
+# floor non viene aggiornato da tempo (nessun evento WS per quel giocatore/bucket da un pezzo),
+# puo' restare bloccato su un valore ormai lontanissimo dal vero mercato: caso Miazga, floor
+# fermo a ~4.21EUR mentre il mercato reale era gia' crollato a 0.32EUR (2.74EUR spacciato per un
+# calo del 34.9% quando era 8 volte piu' caro del vero minimo); stesso pattern su Thorstvedt
+# (calo dichiarato 42.9%, vero minimo di mercato 0.66EUR). D'altra parte una soglia troppo larga
+# (es. le 48h di MAX_FLOOR_AGE_HOURS usate nella verifica completa) non basta a fare da "via di
+# mezzo": il caso Ugurcan Cakir (6.07EUR, catturato PRIMA che comparisse nel mercato pubblico,
+# floor probabilmente aggiornato solo poche ore prima) e' un'occasione vera che va lasciata
+# passare. Soglia dedicata e piu' stretta solo per l'alert veloce: sopra questa eta' il floor
+# non e' abbastanza fresco per fidarsi senza verifica live, si salta l'alert veloce e si aspetta
+# comunque l'alert ufficiale (verificato) come sempre.
+INSTANT_ALERT_MAX_FLOOR_AGE_HOURS = float(os.environ.get('INSTANT_ALERT_MAX_FLOOR_AGE_HOURS', '6'))
+
 # NOTA STORICA: qui c'era un limite fisso "ultimi N annunci" (LIVE_CHECK_LAST_N, alzato da
 # 100 a 300 dopo il caso Jonas Urbig), ma un diagnostico dedicato ha rivelato che il server
 # tronca comunque le risposte a un massimo di ~50 nodi per richiesta indipendentemente dal
@@ -746,9 +761,24 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
     floor_row = get_floor(player_slug, season_type)
     if floor_row is None:
         return
-    floor, _floor_updated_at = floor_row
+    floor, floor_updated_at = floor_row
     if floor <= 0 or price_eur >= floor:
         return
+
+    # FIX 16/07 (v13, casi Miazga/Thorstvedt vs Cakir): vedi nota su INSTANT_ALERT_MAX_FLOOR_AGE_HOURS
+    # -- un floor non aggiornato di recente non e' abbastanza affidabile per un alert non
+    # verificato, meglio saltarlo e aspettare l'alert ufficiale (che fa comunque una verifica live).
+    if not floor_updated_at:
+        return
+    try:
+        floor_age_hours = (
+            datetime.datetime.now() - datetime.datetime.fromisoformat(floor_updated_at)
+        ).total_seconds() / 3600
+    except ValueError:
+        return
+    if floor_age_hours > INSTANT_ALERT_MAX_FLOOR_AGE_HOURS:
+        return
+
     drop_percent = (floor - price_eur) / floor
     if drop_percent < DROP_THRESHOLD:
         return
