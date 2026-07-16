@@ -39,6 +39,15 @@ CURRENT_SEASON_LABELS = {CURRENT_SEASON, CURRENT_SEASON_ALT}
 BID_DISCOUNT = float(os.environ.get('BID_DISCOUNT', '0.20'))  # 20% fisso sul riferimento (mediana) -- abbassato da 25% il 16/07 per far passare piu' aste ai primi filtri
 RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))
 
+# Ritardo prima della riverifica live pre-notifica: nei log di produzione del 16/07 la
+# riverifica risultava "asta non piu' aperta" per QUASI OGNI asta valutata (7/7 in un run,
+# 4/4 nell'altro) -- troppo improbabile che fossero tutte gia' davvero concluse a ~1 secondo
+# dall'evento WebSocket che le segnalava come appena aggiornate. Sospetto piu' probabile:
+# race condition di lettura-dopo-scrittura sul backend di Sorare (l'asta appena creata/
+# aggiornata non e' ancora "consistente" su tutti i sistemi quando la rileggiamo cosi'
+# in fretta). Un breve ritardo prima della query da' tempo al backend di allinearsi.
+AUCTION_RECHECK_DELAY_SECONDS = float(os.environ.get('AUCTION_RECHECK_DELAY_SECONDS', '3'))
+
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
 
@@ -531,6 +540,7 @@ def process_auction(auction, eth_rate):
     # rimanenti). RISOLTO IL 16/07 con la query tokens.auction(id: ...) (vedi
     # get_auction_live_state) trovata catturando le richieste GraphQL della pagina web di
     # Sorare: legge lo stato REALE di QUESTA specifica asta, niente piu' stopgap.
+    time.sleep(AUCTION_RECHECK_DELAY_SECONDS)
     fresh, query_failed = get_auction_live_state(auction_id)
     if query_failed:
         log(f"{player_name}: riverifica live fallita per errore di rete/query, "
@@ -549,8 +559,11 @@ def process_auction(auction, eth_rate):
                      direct_sale_price=direct_sale_price)
         return
     if fresh.get('cancelled') or not fresh.get('open'):
+        debug_price = wei_to_eur(fresh.get('currentPrice'), eth_rate)
         log(f"{player_name}: asta non piu' aperta alla riverifica live (open={fresh.get('open')}, "
-            f"cancelled={fresh.get('cancelled')}), non notifico")
+            f"cancelled={fresh.get('cancelled')}), non notifico -- dati grezzi ricevuti: "
+            f"currentPrice={debug_price if debug_price is not None else fresh.get('currentPrice')}EUR, "
+            f"endDate={fresh.get('endDate')}, bidsCount={fresh.get('bidsCount')}")
         log_decision(auction_id, player_slug, player_name, season_type, "skip_auction_no_longer_open",
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
