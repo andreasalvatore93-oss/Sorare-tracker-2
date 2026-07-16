@@ -29,7 +29,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # FIX 16/07 (stesso bug trovato in check.yml): senza "ref: main" il checkout puo'
+      # prendere un riferimento diverso/stantio da quello che cron-job.org passa nella
+      # chiamata API a workflow_dispatch (che richiede un "ref" nel body della richiesta) --
+      # forzando esplicitamente main siamo sicuri di lavorare sempre sull'ultima versione
+      # del codice e del database, indipendentemente da cosa passa il chiamante esterno.
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-python@v5
         with:
