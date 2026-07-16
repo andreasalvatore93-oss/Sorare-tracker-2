@@ -238,6 +238,45 @@ def main():
             "suggerire quello corretto se sbagliamo per un pelo.")
 
     log("=" * 70)
+    log("TENTATIVO 3e: due indizi importanti dal tentativo precedente: (1) l'errore "
+        "\"Fragment on TokenAuction can't be spread inside TokenPrimaryOffer\" CONFERMA che "
+        "il tipo 'TokenAuction' esiste davvero nello schema (altrimenti avrebbe detto "
+        "'No such type', come ha fatto per SingleSaleOffer); (2) livePrimaryOffer e' risultato "
+        "null pur con l'asta aperta da 10 ore -- quindi 'primary offer' e' quasi certamente il "
+        "mercato primario (pacchetti/distribuzione iniziale Sorare), non l'asta di rivendita. "
+        "Cerchiamo quindi il campo 'gemello' per il mercato secondario (rivendita/aste).")
+    secondary_candidates = ["liveSecondaryOffer", "secondaryOffer", "currentSecondaryOffer",
+                             "activeSecondaryOffer", "liveResaleOffer", "resaleOffer",
+                             "liveAuctionOffer", "secondaryMarketOffer", "liveMarketOffer"]
+    found_secondary_field = None
+    for field_name in secondary_candidates:
+        query = f"""
+        query GetSecondaryOffer($slug: String!) {{
+          anyCard(slug: $slug) {{
+            slug
+            {field_name} {{
+              __typename
+              ... on TokenAuction {{
+                id
+                currentPrice
+                minNextBid
+                endDate
+              }}
+            }}
+          }}
+        }}
+        """
+        status3e, data3e = graphql_query(query, {"slug": TEST_CARD_SLUG})
+        log(f"--- sotto-campo provato: anyCard.{field_name} (HTTP {status3e}) ---")
+        log(f"Risposta: {json.dumps(data3e, indent=2)}")
+        if not data3e.get('errors'):
+            log(f">>> FUNZIONA! Il campo giusto e': anyCard(slug: ...).{field_name}")
+            found_secondary_field = field_name
+            break
+    if not found_secondary_field:
+        log(">>> Nessuno dei candidati 'secondary' ha funzionato. Passo al tentativo 2.")
+
+    log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
     status2, data2 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 200})
     log(f"HTTP status: {status2}")
