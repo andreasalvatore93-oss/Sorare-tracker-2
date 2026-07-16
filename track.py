@@ -945,6 +945,52 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
     return True
 
 
+# FIX 16/07 (casi Yuma Suzuki/Samuel Kotto): il bot notificava affari basandosi solo sugli
+# annunci ATTIVI (ask price), mai sulle vendite REALMENTE concluse -- confermato che il prezzo
+# "verificato" come affare era in realta' piu' caro di quanto la gente paghi davvero di recente
+# (Kotto: 5.00EUR notificato contro 1.26-1.60EUR di vendite reali nelle ultime settimane, dato
+# via discover_sales_history_field: il campo giusto e' tokenPrices(playerSlug, rarity: limited)
+# { date amounts { eurCents wei } }, non introspection-abile, trovato per tentativi). Restituisce
+# le ultime vendite reali concluse (data, prezzo EUR), piu' recenti prima, o None se la query
+# fallisce.
+#
+# SOLO INFORMATIVO per ora, non un filtro: tokenPrices non espone stagione/idoneita' per singola
+# vendita (provato: season/sportSeason/rarity/playerSlug/cardSlug tutti assenti su TokenPrice),
+# quindi non possiamo garantire che le vendite restituite siano della stessa categoria
+# in_season/classic della carta valutata -- potrebbero mescolare stampe diverse con prezzi molto
+# diversi (vedi caso Luis Diaz). C'e' anche un ritardo strutturale: una vendita compare qui solo
+# dopo che qualcuno ha DAVVERO comprato, quindi in un calo genuino e recentissimo (es. infortunio,
+# caso Muric) lo storico puo' restare ancorato al prezzo vecchio piu' alto per un po'. Per questo,
+# invece di bloccare notifiche sulla base di questo dato, lo logghiamo e lo aggiungiamo ai
+# messaggi come contesto extra: l'utente decide caso per caso mentre osserviamo se il mix
+# in_season/classic e' un problema reale in pratica.
+def get_recent_sale_history(player_slug, eth_rate, last_n=5):
+    query = """
+    query RecentSaleHistory($p: String!) {
+      tokens {
+        tokenPrices(playerSlug: $p, rarity: limited) {
+          date
+          amounts { eurCents wei }
+        }
+      }
+    }
+    """
+    try:
+        data = graphql_query(query, {"p": player_slug})
+        if data.get('errors'):
+            return None
+        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
+    except Exception:
+        return None
+    sales = []
+    for n in nodes:
+        price = eur_price_from_amounts(n.get('amounts'), eth_rate)
+        if price is not None:
+            sales.append((n.get('date') or '', price))
+    sales.sort(key=lambda s: s[0], reverse=True)
+    return sales[:last_n] or None
+
+
 # FIX 16/07 (caso Antonio Sivera): logica di valutazione estratta dal loop di
 # handle_offer_update in una funzione a se' stante, cosi' puo' essere richiamata anche dalla
 # coda dei casi da riverificare (process_pending_rechecks) e non solo da un evento WS live.
@@ -1212,6 +1258,15 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                          second_min_price=second_min_price, margin_percent=margin_percent,
                          reasons=reasons_log or None)
 
+            # FIX 16/07 (casi Suzuki/Kotto, solo informativo -- vedi get_recent_sale_history):
+            # aggiungiamo le ultime vendite reali concluse come contesto, non come filtro.
+            recent_sales = get_recent_sale_history(player_slug, eth_rate)
+            if recent_sales:
+                sale_prices = [p for _, p in recent_sales]
+                log(f"[storico vendite] {player_name}: ultime {len(recent_sales)} vendite reali "
+                    f"concluse (tutte le stampe 'limited', non filtrate per categoria): "
+                    + ", ".join(f"{p:.2f}EUR" for p in sale_prices))
+
             # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
             # (verificata live), non necessariamente quella di questo specifico evento.
             base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
@@ -1230,6 +1285,9 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                 f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
                 + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
                    if second_min_price is not None else "")
+                + (f"Vendite recenti (tutte le stampe, non filtrate per categoria): "
+                   f"{min(sale_prices):.2f}-{max(sale_prices):.2f}EUR\n"
+                   if recent_sales else "")
                 + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
                    if is_dubbio else "")
                 + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
@@ -1286,6 +1344,16 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                                      "notify_margin_opportunity", floor_price=floor,
                                      true_min_price=true_min_price, drop_percent=drop_percent,
                                      second_min_price=second_min_price, margin_percent=margin_percent)
+
+                        # FIX 16/07 (casi Suzuki/Kotto, solo informativo -- vedi
+                        # get_recent_sale_history): stesso contesto aggiunto anche qui.
+                        recent_sales = get_recent_sale_history(player_slug, eth_rate)
+                        if recent_sales:
+                            sale_prices = [p for _, p in recent_sales]
+                            log(f"[storico vendite] {player_name}: ultime {len(recent_sales)} vendite "
+                                f"reali concluse (tutte le stampe 'limited', non filtrate per categoria): "
+                                + ", ".join(f"{p:.2f}EUR" for p in sale_prices))
+
                         base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
                         link = f"{base_link}?card={true_min_card_slug}" if true_min_card_slug else base_link
                         msg_text = (
@@ -1294,8 +1362,11 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                             f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
                             f"Stagione carta: {season_name}\n"
                             f"Prezzo minimo: {true_min_price:.2f}EUR\n"
-                            f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n\n"
-                            f"Non e' un calo rispetto allo storico, ma il divario verso il secondo "
+                            f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
+                            + (f"Vendite recenti (tutte le stampe, non filtrate per categoria): "
+                               f"{min(sale_prices):.2f}-{max(sale_prices):.2f}EUR\n"
+                               if recent_sales else "")
+                            + f"\nNon e' un calo rispetto allo storico, ma il divario verso il secondo "
                             f"prezzo e' gia' ampio -- puo' valere la pena controllare.\n\n"
                             f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
                         )
@@ -1585,7 +1656,9 @@ def main():
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
 
-    discover_sales_history_field()
+    # FIX 16/07: diagnostico rimosso da qui ora che ha trovato quello che cercava (vedi
+    # get_recent_sale_history) -- non ha piu' senso rifare a ogni esecuzione tutti i tentativi
+    # falliti solo per ottenere di nuovo lo stesso risultato gia' noto.
 
     # FIX 16/07: riverifica prima di ascoltare nuovi eventi -- vedi nota su
     # MARKET_VISIBILITY_DELAY_SECONDS in process_pending_rechecks.
