@@ -654,7 +654,20 @@ def get_bucket_prices(player_slug, eth_rate):
     {'in_season': (lista_prezzi_ordinata, dati_incompleti), 'classic': (..., ...)} dove
     lista_prezzi_ordinata e' una lista di (prezzo, slug_carta) crescente. Usata sia per il
     prezzo minimo del bucket richiesto (get_live_min_offer) sia per il controllo incrociato
-    tra bucket (cross_bucket_looks_dead) -- nello stesso fetch, senza query aggiuntive."""
+    tra bucket (cross_bucket_looks_dead) -- nello stesso fetch, senza query aggiuntive.
+
+    LIMITE NOTO (17/07, caso Joao Cancelo): le carte "Early Access" (badge speciale su
+    stampe Limited appena estratte, slug identico alle Limited normali -- verificato sul
+    caso Joel Mvuka, "joel-mvuka-2025-limited-511") NON compaiono MAI tra i nodi restituiti
+    da fetch_all_live_offers/liveSingleSaleOffers, anche quando l'annuncio e' live da ore
+    (non e' quindi la solita finestra di invisibilita' dei 2 minuti). Non e' un filtro
+    lato nostro (rarityTyped/sport/slug sono standard, dovrebbero passare) -- sembra che
+    Sorare le gestisca con un circuito di vendita/rivelazione separato non ancora scoperto.
+    Effetto pratico: un annuncio Early Access piu' economico del "secondo prezzo" calcolato
+    puo' restare invisibile, gonfiando il margine e facendo scattare un alert che dal vivo
+    e' meno margine di quanto sembri (caso Cancelo: secondo prezzo vero 2.97EUR, non
+    3.33EUR). Accettato come limite noto per ora (fenomeno di nicchia, poche carte
+    Early Access sul mercato in un dato momento) -- da rivedere se capitano altri casi."""
     nodes = fetch_all_live_offers(player_slug)
     raw = {'in_season': [], 'classic': []}
     # NOTA (v23): questo flag ora non viene piu' impostato a True da nessuna parte (vedi FIX
