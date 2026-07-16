@@ -824,10 +824,12 @@ def handle_offer_update(offer, eth_rate, stats):
         # live completa -- vedi docstring di send_instant_alert per il motivo (l'evento WS arriva
         # prima che l'annuncio sia visibile pubblicamente su Sorare, quindi da' un vantaggio di
         # tempo reale). La valutazione completa (sotto) segue comunque, invariata.
-        send_instant_alert(player_slug, player_name, season_type, season_name, price_eur, card_slug)
+        instant_alert_sent = send_instant_alert(player_slug, player_name, season_type, season_name,
+                                                 price_eur, card_slug)
 
         evaluate_player_offer(player_slug, player_name, season_type, season_name, price_eur,
-                               card_slug, eth_rate, stats)
+                               card_slug, eth_rate, stats,
+                               instant_alert_just_sent=instant_alert_sent)
 
 
 def send_instant_alert(player_slug, player_name, season_type, season_name, price_eur, card_slug):
@@ -843,28 +845,28 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
     la anticipa."""
     floor_row = get_floor(player_slug, season_type)
     if floor_row is None:
-        return
+        return False
     floor, floor_updated_at = floor_row
     if floor <= 0 or price_eur >= floor:
-        return
+        return False
 
     # FIX 16/07 (v13, casi Miazga/Thorstvedt vs Cakir): vedi nota su INSTANT_ALERT_MAX_FLOOR_AGE_HOURS
     # -- un floor non aggiornato di recente non e' abbastanza affidabile per un alert non
     # verificato, meglio saltarlo e aspettare l'alert ufficiale (che fa comunque una verifica live).
     if not floor_updated_at:
-        return
+        return False
     try:
         floor_age_hours = (
             datetime.datetime.now() - datetime.datetime.fromisoformat(floor_updated_at)
         ).total_seconds() / 3600
     except ValueError:
-        return
+        return False
     if floor_age_hours > INSTANT_ALERT_MAX_FLOOR_AGE_HOURS:
-        return
+        return False
 
     drop_percent = (floor - price_eur) / floor
     if drop_percent < INSTANT_ALERT_DROP_THRESHOLD:
-        return
+        return False
     log(f"VELOCE (non verificato) {player_name} ({season_type}, {season_name}) sceso: "
         f"{floor:.2f}EUR -> {price_eur:.2f}EUR ({drop_percent:.1%}) -- notifica immediata, "
         f"prima della verifica live completa")
@@ -884,6 +886,7 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
         f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
     )
     send_telegram_msg(msg_text)
+    return True
 
 
 # FIX 16/07 (caso Antonio Sivera): logica di valutazione estratta dal loop di
@@ -892,7 +895,8 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
 # allow_requeue=False quando chiamata dalla riverifica stessa, per evitare di riaccodare
 # all'infinito uno stesso caso che continua a risultare "margine troppo vicino".
 def evaluate_player_offer(player_slug, player_name, season_type, season_name, price_eur,
-                           card_slug, eth_rate, stats, allow_requeue=True):
+                           card_slug, eth_rate, stats, allow_requeue=True,
+                           instant_alert_just_sent=False):
         # Verifica live: qual e' DAVVERO il prezzo minimo attualmente in vendita per questo
         # giocatore, nella stessa categoria in_season/classic (vedi nota nella docstring di
         # get_live_min_offer)? Se la query fallisce per qualsiasi motivo, ripieghiamo sul
@@ -1183,7 +1187,14 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             # evitare di ripetere la stessa segnalazione ad ogni evento successivo se il prezzo
             # non cambia, la mandiamo solo se true_min_price e' diverso dall'ultima volta che
             # abbiamo gia' segnalato questo stesso margine per questo giocatore/bucket.
-            if second_min_price is not None and second_min_price > 0:
+            # FIX 16/07 (v20, caso Fredrik Andre Bjorkan, richiesta esplicita): se la notifica
+            # veloce e' appena partita per questo stesso evento, saltiamo questa -- altrimenti
+            # arrivano due messaggi a pochi secondi di distanza per la stessa situazione (uno
+            # "veloce" non verificato, uno "margine" verificato ma su un prezzo leggermente
+            # diverso a causa della finestra di invisibilita'), percepiti come doppione anche se
+            # tecnicamente informazioni distinte. L'utente ha gia' ricevuto un segnale su questa
+            # carta, non serve un secondo messaggio nello stesso ciclo.
+            if second_min_price is not None and second_min_price > 0 and not instant_alert_just_sent:
                 required_margin = required_margin_fraction(second_min_price)
                 if margin_percent >= required_margin:
                     last_margin_alert_price = get_last_margin_alert_price(player_slug, season_type)
