@@ -1273,8 +1273,20 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # dell'evento per una riverifica successiva: quando l'annuncio diventa visibile, il
         # floor si riallinea al vero minimo (e se il calo residuo e' abbastanza ampio, arriva
         # comunque una notifica separata).
+        # FIX 17/07 (caso Manu Duah, confermato dall'utente via screenshot): l'annuncio che ha
+        # scatenato l'evento (NYGh05t97, 6.99EUR) era davvero ancora invisibile alla query -- ma
+        # lo scarto verso il minimo trovato (MathiasM13, 7.00EUR, slug DIVERSO) era solo 0.14%,
+        # sotto INVISIBILITY_GAP_TOLERANCE, quindi scartato come "bug del centesimo" invece che
+        # riaccodato per riverifica. Il problema: la tolleranza sul solo scarto% non distingue
+        # "stessa carta riletta con arrotondamento leggermente diverso" (il vero bug del
+        # centesimo, dove lo slug e' identico) da "carta diversa genuinamente ancora invisibile"
+        # (dove lo slug e' per forza diverso) -- ed e' proprio quest'ultimo il caso Duah. Usiamo
+        # ora anche lo slug: se e' diverso da quello del minimo trovato, qualunque scarto (anche
+        # di un centesimo) e' un segnale vero di invisibilita', non rumore, e va sempre riaccodato.
+        is_same_card = true_min_card_slug == card_slug
+        gap_relative = (true_min_price - price_eur) / true_min_price if true_min_price > 0 else 0
         if (price_eur < true_min_price and true_min_price > 0
-                and (true_min_price - price_eur) / true_min_price > INVISIBILITY_GAP_TOLERANCE):
+                and (not is_same_card or gap_relative > INVISIBILITY_GAP_TOLERANCE)):
             log(f"{player_name} ({season_type}, {season_name}): l'annuncio che ha scatenato "
                 f"l'evento ({price_eur:.2f}EUR) e' piu' economico del minimo trovato dalla "
                 f"verifica live ({true_min_price:.2f}EUR) -- probabilmente ancora nella "
@@ -1553,6 +1565,20 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                         and abs(true_min_price - last_margin_alert_price) < 0.01
                     )
                     if not already_alerted:
+                        # FIX 17/07 (caso Jeong Seung-Won, confermato dall'utente via screenshot):
+                        # esiste lo stesso bug mai risolto del caso Nico O'Reilly -- un annuncio
+                        # attivo da GIORNI (qui: 2g23o, non la finestra di invisibilita' di ~2
+                        # minuti) escluso dalla verifica live senza eccezione ne' flag "dati
+                        # incompleti" (4.70EUR di opra michael mancante, notificato 4.78EUR come
+                        # se fosse il minimo). Il percorso ALERT salva gia' il dump grezzo di
+                        # tutti gli annunci su ogni notifica (log_raw_offers_diagnostic) proprio
+                        # per poter diagnosticare casi cosi' -- questo percorso "opportunita' di
+                        # margine" non lo faceva, quindi per Jeong Seung-Won non abbiamo
+                        # l'evidenza. Aggiunta qui, cosi' alla prossima occorrenza avremo i dati
+                        # per capire la causa (status diverso da opened? rarita'/sport non
+                        # combacianti? altro?).
+                        log_raw_offers_diagnostic(player_slug, eth_rate)
+
                         # FIX 16/07 (v3, richiesta esplicita dell'utente): non blocchiamo piu' --
                         # notifica comunque, con avviso se c'e' una transazione recente pari o
                         # piu' economica (vedi find_cheaper_recent_sale).
