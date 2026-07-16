@@ -99,7 +99,7 @@ MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
 # esplicita dell'utente (il flat da 5EUR oltre i 60EUR NON tocco, non e' una percentuale).
 MARGIN_TIERS = [
     (3, 2.53),
-    (5, 4.40),  # FIX 16/07 (v6, caso Kounde): 13.0% -> 12.0%, richiesta esplicita
+    (5, 4.45),  # FIX 16/07 (v21, caso Amad Diallo): 12.0% -> 11.0%, richiesta esplicita
     (10, 9.05),  # FIX 16/07 (v17, caso Mike Penders): 10.0% -> 9.5%, richiesta esplicita
     (15, 13.65),
     (20, 18.40),  # FIX 16/07 (v5, caso Rodrigo): 9.0% -> 8.0%, richiesta esplicita
