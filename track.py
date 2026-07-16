@@ -55,20 +55,22 @@ MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
 # stare a 2.50EUR o meno (margine 16.7%); sotto i 5EUR a 4.30EUR o meno (14.0%); e cosi' via.
 # Oltre i 60EUR si passa a uno sconto assoluto fisso di 5EUR (FLAT_MARGIN_EUR_ABOVE_60) invece
 # che a una percentuale, altrimenti servirebbe uno sconto enorme in euro per carte costose.
+# FIX 16/07 (v2): ogni soglia percentuale abbassata di 1 punto percentuale su richiesta
+# esplicita dell'utente (il flat da 5EUR oltre i 60EUR NON tocco, non e' una percentuale).
 MARGIN_TIERS = [
-    (3, 2.50),
-    (5, 4.30),
-    (10, 8.60),
-    (15, 13.50),
-    (20, 18.00),
-    (25, 23.00),
-    (30, 27.50),
-    (35, 32.50),
-    (40, 36.00),
-    (45, 42.00),
-    (50, 47.00),
-    (55, 52.20),
-    (60, 56.00),
+    (3, 2.53),
+    (5, 4.35),
+    (10, 8.70),
+    (15, 13.65),
+    (20, 18.20),
+    (25, 23.25),
+    (30, 27.80),
+    (35, 32.85),
+    (40, 36.40),
+    (45, 42.45),
+    (50, 47.50),
+    (55, 52.75),
+    (60, 56.60),
 ]
 FLAT_MARGIN_EUR_ABOVE_60 = 5.0
 
