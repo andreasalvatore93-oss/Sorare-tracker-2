@@ -528,11 +528,18 @@ def process_auction(auction, eth_rate):
         # query live fallisce.
         direct_sale_price = get_current_min_direct_sale(player_slug, season_type)
 
-    median_inputs = list(recent_prices)
-    if direct_sale_price is not None:
-        median_inputs.append(direct_sale_price)
-    median_reference = statistics.median(median_inputs)
+    # FIX 16/07: prima direct_sale_price veniva infilato dentro la mediana insieme ai
+    # prezzi di vendite recenti -- con pochi valori recenti alti, la mediana lo diluiva e
+    # il tetto consigliato finale poteva finire SOPRA il prezzo di vendita diretta (casi
+    # reali: Griezmann tetto 26.89EUR vs diretta 13.0EUR, margine -13.89; Brais Mendez
+    # tetto 5.30EUR vs diretta 4.0EUR, margine -1.30). Non ha senso raccomandare di
+    # rilanciare in asta oltre il prezzo a cui si puo' comprare SUBITO una carta
+    # equivalente in vendita diretta. Ora la mediana riflette solo le vendite recenti, e
+    # direct_sale_price fa da tetto massimo esplicito.
+    median_reference = statistics.median(recent_prices)
     recommended_ceiling = median_reference * (1 - BID_DISCOUNT)
+    if direct_sale_price is not None and direct_sale_price < recommended_ceiling:
+        recommended_ceiling = direct_sale_price
 
     # Riverifica live subito prima di decidere se notificare: l'evento che ha innescato
     # questo controllo potrebbe essere vecchio (caso Marco Reus: evento con currentPrice=
