@@ -351,6 +351,39 @@ def main():
             "suggerire il nome giusto.")
 
     log("=" * 70)
+    log("TENTATIVO 3h: 'currentPrice' non esiste su TokenOffer (senza suggerimento questa volta). "
+        "Proviamo i nomi dei campi UNO ALLA VOLTA per scoprire quali esistono davvero su TokenOffer "
+        "(id, prezzo in varie forme, scadenza, stato) -- ogni riga di risposta sotto ci dice se quel "
+        "campo esiste o no, ed eventuali suggerimenti 'Did you mean'.")
+    single_field_candidates = ["id", "price", "amount", "buyNowPrice", "minPrice",
+                                "expiresAt", "closesAt", "endDate", "status", "convertedPrice",
+                                "eurPrice", "referencePrice", "receiverSide", "senderSide"]
+    working_fields = []
+    for field_name in single_field_candidates:
+        query = f"""
+        query ProbeTokenOfferField($slug: String!) {{
+          anyCard(slug: $slug) {{
+            liveSingleSaleOffer {{
+              {field_name}
+            }}
+          }}
+        }}
+        """
+        status3h, data3h = graphql_query(query, {"slug": TEST_CARD_SLUG})
+        ok = not data3h.get('errors')
+        log(f"--- campo provato: TokenOffer.{field_name} -> {'OK' if ok else 'ERRORE'} (HTTP {status3h}) ---")
+        log(f"Risposta: {json.dumps(data3h, indent=2)}")
+        if ok:
+            working_fields.append(field_name)
+    if working_fields:
+        log(f">>> Campi che ESISTONO su TokenOffer: {working_fields}")
+        log(">>> Ora possiamo fare una query finale con tutti questi campi insieme su "
+            "anyCard(slug:...).liveSingleSaleOffer per la riverifica pre-notifica.")
+    else:
+        log(">>> Nessun campo tra i candidati esiste su TokenOffer. Serve continuare a indovinare "
+            "o affidarsi al tentativo 2 (fallback sulla lista globale).")
+
+    log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
     status2, data2 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 200})
     log(f"HTTP status: {status2}")
