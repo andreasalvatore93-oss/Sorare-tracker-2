@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 import datetime
 import requests
 
@@ -21,7 +22,7 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 # un'asta recente), incollalo qui sotto in TEST_AUCTION_ID, poi esegui questo script con le
 # stesse variabili d'ambiente SORARE_COOKIE/SORARE_CSRF usate dal bot vero. Copiami tutto
 # l'output.
-TEST_AUCTION_ID = "EnglishAuction:e43fb964-8cb5-4185-9104-ce2e409c41b2"
+TEST_AUCTION_ID = "EnglishAuction:d48b4ebe-b701-4598-9a87-45111d3188e9" 
 
 
 def log(message):
@@ -83,14 +84,35 @@ def main():
     log(f"Diagnostica riverifica asta singola -- test id: {TEST_AUCTION_ID}")
     log("=" * 70)
 
-    log("TENTATIVO 1: query node(id: ...) -- lookup diretto per id globale")
+    log("TENTATIVO 1: query node(id: ...) -- id in chiaro")
     status, data = graphql_query(NODE_QUERY, {"id": TEST_AUCTION_ID})
     log(f"HTTP status: {status}")
     log(f"Risposta completa: {json.dumps(data, indent=2)}")
-    if not data.get('errors') and (data.get('data') or {}).get('node'):
-        log(">>> FUNZIONA! Usa questa query (node(id:...)) per la riverifica pre-notifica.")
+    node_ok = not data.get('errors') and (data.get('data') or {}).get('node')
+    if node_ok:
+        log(">>> FUNZIONA! Usa questa query (node(id:...), id in chiaro) per la riverifica pre-notifica.")
     else:
-        log(">>> Non ha funzionato (vedi errori/risposta sopra). Passo al tentativo 2.")
+        log(">>> Non ha funzionato con l'id in chiaro. Passo al tentativo 1b (id codificato in base64).")
+
+    if not node_ok:
+        log("=" * 70)
+        log("TENTATIVO 1b: query node(id: ...) -- id codificato in base64")
+        # Molti schemi GraphQL in stile Relay vogliono il "Global ID" codificato in base64
+        # (es. base64("TokenAuction:1234")), non la stringa in chiaro "EnglishAuction:1234"
+        # che l'evento WebSocket ci restituisce -- il tentativo 1 ha confermato che il campo
+        # node ESISTE (l'errore parla del formato dell'id, non di un campo inesistente),
+        # quindi vale la pena provare questa codifica prima di arrendersi.
+        encoded_id = base64.b64encode(TEST_AUCTION_ID.encode()).decode()
+        log(f"Id in chiaro: {TEST_AUCTION_ID}")
+        log(f"Id codificato in base64: {encoded_id}")
+        status1b, data1b = graphql_query(NODE_QUERY, {"id": encoded_id})
+        log(f"HTTP status: {status1b}")
+        log(f"Risposta completa: {json.dumps(data1b, indent=2)}")
+        if not data1b.get('errors') and (data1b.get('data') or {}).get('node'):
+            log(">>> FUNZIONA! Usa node(id:...) con l'id codificato in base64 (TypeName:internalId) "
+                "per la riverifica pre-notifica.")
+        else:
+            log(">>> Non ha funzionato nemmeno in base64 (vedi errori sopra). Passo al tentativo 2.")
 
     log("=" * 70)
     log("TENTATIVO 2: dump delle ultime 200 aste live globali (nessun filtro)")
