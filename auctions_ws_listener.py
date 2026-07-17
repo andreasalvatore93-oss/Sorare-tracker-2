@@ -956,6 +956,54 @@ def discover_auctions_end_date_sort():
     log("[diagnostica ordinamento aste] tentativi completati.")
 
 
+# FIX 17/07 (seguito a discover_auctions_end_date_sort, che ha escluso un ordinamento
+# server-side per data di scadenza): se non si puo' ordinare per endDate, l'unica via per
+# raggiungere le aste ferme-vicine-alla-scadenza e' allargare il campione oltre le 50 aste
+# attuali e ordinare client-side. liveAuctions(last: N) tronca comunque a ~50 nodi per
+# richiesta (stesso comportamento gia' confermato su liveSingleSaleOffers, vedi
+# fetch_all_live_offers) -- questo diagnostico verifica se la STESSA identica paginazione a
+# cursore (pageInfo.hasPreviousPage + argomento "before") funziona anche su liveAuctions,
+# che e' una connection diversa (globale, non filtrata per player) e quindi non e' detto
+# supporti gli stessi argomenti solo perche' liveSingleSaleOffers li supporta.
+def discover_auctions_pagination():
+    query = """
+    query D($n: Int!, $cursor: String) {
+      tokens {
+        liveAuctions(last: $n, before: $cursor) {
+          totalCount
+          pageInfo { hasPreviousPage startCursor }
+          nodes { id endDate }
+        }
+      }
+    }
+    """
+    try:
+        data = graphql_query(query, {"n": 5, "cursor": None})
+        if data.get('errors'):
+            log(f"[diagnostica paginazione aste] before/pageInfo: errore -- {data['errors']}")
+            log("[diagnostica paginazione aste] tentativi completati.")
+            return
+        conn = (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {})
+        log(f"[diagnostica paginazione aste] before/pageInfo: SUCCESSO -- totalCount={conn.get('totalCount')} "
+            f"pageInfo={conn.get('pageInfo')} nodes={conn.get('nodes')}")
+        page_info = conn.get('pageInfo') or {}
+        cursor = page_info.get('startCursor')
+        if page_info.get('hasPreviousPage') and cursor:
+            data2 = graphql_query(query, {"n": 5, "cursor": cursor})
+            if data2.get('errors'):
+                log(f"[diagnostica paginazione aste] seconda pagina (before={cursor}): errore -- {data2['errors']}")
+            else:
+                conn2 = (((data2.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {})
+                log(f"[diagnostica paginazione aste] seconda pagina: SUCCESSO -- pageInfo={conn2.get('pageInfo')} "
+                    f"nodes={conn2.get('nodes')}")
+        else:
+            log("[diagnostica paginazione aste] hasPreviousPage=False o startCursor assente, "
+                "niente seconda pagina da testare con questo campione piccolo (n=5).")
+    except Exception as e:
+        log(f"[diagnostica paginazione aste] eccezione -- {e}")
+    log("[diagnostica paginazione aste] tentativi completati.")
+
+
 def get_live_auctions(n):
     """Le N aste live piu' recenti su tutto il mercato (query identica a quella gia'
     validata dal vecchio auctions.py). NOTA: n=50 e' gia' al limite di troncamento noto
@@ -1399,6 +1447,11 @@ def main():
     # valorizza AUCTION_DIAGNOSTIC_END_DATE_SORT a qualunque valore per farlo scattare.
     if os.environ.get('AUCTION_DIAGNOSTIC_END_DATE_SORT', '').strip():
         discover_auctions_end_date_sort()
+
+    # Diagnostico una tantum (vedi discover_auctions_pagination): lascia vuoto normalmente,
+    # valorizza AUCTION_DIAGNOSTIC_PAGINATION a qualunque valore per farlo scattare.
+    if os.environ.get('AUCTION_DIAGNOSTIC_PAGINATION', '').strip():
+        discover_auctions_pagination()
 
     stats = {"processed": 0, "seen_events": set()}
 

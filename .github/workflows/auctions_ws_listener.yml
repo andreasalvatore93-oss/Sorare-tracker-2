@@ -11,6 +11,10 @@ on:
         description: "Lascia vuoto normalmente. Valorizza (es. 'si') per far scattare il diagnostico su come ordinare le aste per data di scadenza"
         required: false
         default: ""
+      diagnostic_pagination:
+        description: "Lascia vuoto normalmente. Valorizza (es. 'si') per far scattare il diagnostico su paginazione a cursore (before) su liveAuctions"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -69,6 +73,7 @@ jobs:
           AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
           AUCTION_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '160' }}
           AUCTION_DIAGNOSTIC_END_DATE_SORT: ${{ github.event.inputs.diagnostic_end_date_sort || '' }}
+          AUCTION_DIAGNOSTIC_PAGINATION: ${{ github.event.inputs.diagnostic_pagination || '' }}
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail
