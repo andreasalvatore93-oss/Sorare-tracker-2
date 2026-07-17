@@ -295,3 +295,52 @@ CRLF sopra) invece di assumere. File toccati oggi: `track.py`, `zenlock_model_tr
 5. Item aperti da prima di oggi, mai ripresi: "ammorbidire anche zenlock" (le soglie di ceiling,
    non solo di sconto, non ancora riviste per over-strictness); pulsanti Telegram deep-link
    "compra ora"/"fai offerta".
+6. **NUOVO 17-18/07, da mettere in coda e FIXARE (richiesta esplicita dell'utente)**: durante il
+   run zenlock delle 22:16:24 UTC un manager ha messo in vendita/aggiornato tante carte a buon
+   prezzo in pochi minuti -- 4 ALERT reali ravvicinati (22:17:08-22:18:07 UTC: Heorhii Sudakov,
+   Jakub Kiwior, Rodrigo Zalazar, Zeno Debast). Subito dopo (22:19:38-22:19:49 UTC, confermato nel
+   log) e' scattata una raffica di `rate_limited_ban_detected` (429) su `fetch_all_live_offers`
+   per ~13 giocatori DIVERSI in ~10 secondi. L'utente riporta che nello stesso momento, mentre
+   cercava di comprare a mano le carte appena segnalate, gli e' "andato in crash" (probabilmente
+   il sito/app Sorare stesso, non lo script -- lo script ha comunque completato il run
+   regolarmente, "esecuzione terminata" alle 22:20:34). Ipotesi di lavoro (da confermare con
+   l'utente prima di implementare, MAI presa per buona senza verifica): track.py/zenlock
+   autenticano le query GraphQL con lo stesso SORARE_COOKIE/CSRF dell'account reale dell'utente --
+   se il rate limit di Sorare e' scoped per ACCOUNT (non solo per IP), una raffica di query dei
+   nostri bot durante un'ondata di nuovi annunci potrebbe consumare la stessa "quota" della
+   sessione umana concorrente, causando il malfunzionamento del sito PROPRIO mentre l'utente sta
+   provando a comprare le carte appena segnalate -- il momento peggiore possibile. Direzione di
+   fix da valutare insieme all'utente: throttling/spacing esplicito delle query quando arrivano
+   molti eventi ravvicinati (es. piccolo delay tra valutazioni successive, o un tetto al numero
+   di player valutati per finestra breve), per non esaurire la quota condivisa proprio quando
+   servono le mani libere per comprare. Non ancora implementato: chiedere conferma sulla causa
+   esatta del crash (sito Sorare? notifica Telegram? altro?) prima di scrivere codice.
+   **Aggiornamento stesso giorno**: l'utente ha chiarito che probabilmente era LUI a fare offerte/
+   controllare carte a mano nello stesso momento -- quindi non e' (solo) colpa del bot che
+   martella l'API da solo, ma la combinazione bot+azioni manuali sulla STESSA quota account che
+   ha sforato il rate limit condiviso. Cambia la direzione del fix: invece di (o oltre a) rendere
+   il bot piu' "educato" dopo un ban gia' rilevato, ha piu' senso ridurre il VOLUME complessivo di
+   query che il bot spara in una raffica di eventi ravvicinati (es. tanti annunci nuovi in pochi
+   secondi -> tante fetch_all_live_offers/get_bucket_prices in parallelo), cosi' che sommato
+   all'uso manuale dell'utente resti piu' margine prima di sforare. Idea concreta da proporre:
+   un piccolo delay fisso tra la valutazione di un evento e il successivo (es. 1-2s) quando la
+   coda di eventi ricevuti e' molto piena, o un tetto al numero di player diversi valutati per
+   finestra breve -- ancora da confermare col utente prima di implementare.
+   **CONFERMATO dall'utente**: il crash era proprio un 429 con schermata nera sul sito/app
+   Sorare mentre cercava di comprare, risoltosi da solo dopo ~20-30 secondi -- combacia
+   ESATTAMENTE con la finestra di ban vista nel log (Retry-After 22s->11s, stessa manciata di
+   secondi). Causa confermata: quota rate-limit condivisa tra bot e sessione umana sullo stesso
+   account.
+   **IMPLEMENTATO 18/07** (richiesta esplicita "insieme, proponi tu tetto di partenza") in
+   `zenlock_model_tracker.py`: `ZENLOCK_BURST_MAX_EVALUATIONS=5` valutazioni per
+   `ZENLOCK_BURST_WINDOW_SECONDS=15` (finestra scorrevole, `_zenlock_should_throttle()`, deque
+   `_recent_evaluation_times`) + `ZENLOCK_THROTTLE_DELAY_SECONDS=1.0` di pausa dopo ogni
+   valutazione completa. Oltre il tetto, l'evento viene saltato (stat `skipped_burst_throttle`,
+   loggato) SENZA fare query aggiuntive -- l'annuncio non e' perso per sempre, viene ricontrollato
+   al prossimo evento/esecuzione se resta live. Soglie deliberatamente conservative (~20
+   valutazioni/minuto, contro le 4 MATCH reali osservate in un minuto nel caso che ha causato il
+   problema): da stringere se il 429 si ripresenta, da allentare se si rivela troppo prudente.
+   Testato con mock (tetto rispettato, finestra che si libera col tempo, throttle che salta
+   davvero la chiamata a evaluate_zenlock_offer). NON ancora applicato a track.py/
+   auctions_ws_listener.py -- valutare se serve dopo aver visto qualche run reale in piu'.
+   Push ancora da fare da parte dell'utente.

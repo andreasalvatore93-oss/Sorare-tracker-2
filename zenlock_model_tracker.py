@@ -39,6 +39,7 @@ loop eventi sono un percorso completamente separato: workflow GitHub Actions ded
 (zenlock_model_tracker.yml), nessuna scrittura su tracker.db, nessun impatto sul tracker
 principale nemmeno in caso di bug qui dentro.
 """
+import collections
 import datetime
 import json
 import os
@@ -198,6 +199,45 @@ ZENLOCK_LIVE_VS_REAL_SALE_TOLERANCE = float(
 ZENLOCK_REAL_SALE_MAX_AGE_DAYS = float(os.environ.get('ZENLOCK_REAL_SALE_MAX_AGE_DAYS', '5'))
 
 ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
+
+# FIX 18/07 (richiesta esplicita dell'utente, caso reale confermato): un manager ha messo in
+# vendita/aggiornato tante carte in pochi minuti (4 MATCH reali 22:17-22:18 UTC), e ~2 minuti
+# dopo sono scattati una dozzina di 429 "rate_limited_ban_detected" su altrettanti giocatori
+# diversi in ~10 secondi (vedi graphql_query/GRAPHQL_RETRY_AFTER_BAN_THRESHOLD_SECONDS in
+# track.py). L'utente ha confermato che nello stesso momento, mentre cercava di comprare a mano
+# le carte appena segnalate, il sito/app Sorare gli ha dato un 429 con schermata nera per
+# 20-30 secondi -- combacia esattamente con la finestra di ban vista nel log. Causa: le query
+# GraphQL del bot usano lo stesso SORARE_COOKIE/CSRF della sessione reale dell'utente, quindi
+# bot e azioni manuali condividono la STESSA quota rate-limit account -- una raffica di
+# valutazioni consecutive (ogni valutazione fa diverse chiamate: get_bucket_prices/
+# fetch_all_live_offers, eventuale recheck) sommata all'uso manuale concorrente la fa sforare.
+# Due mitigazioni insieme, come richiesto: un piccolo delay fisso dopo ogni valutazione completa
+# (spalma le query nel tempo) + un tetto al numero di valutazioni consecutive per finestra breve
+# (oltre il tetto, si salta la valutazione invece di accodare altre query -- l'annuncio non e'
+# perso per sempre, verra' ricontrollato al prossimo evento/esecuzione se resta live). Punto di
+# partenza deliberatamente conservativo (non abbiamo ancora un secondo caso reale su cui
+# ricalibrare): 5 valutazioni ogni 15 secondi e' gia' un throughput di ~20/minuto, ben sopra i 4
+# MATCH reali osservati in un minuto intero nel caso che ha causato il problema, quindi non
+# dovrebbe far perdere occasioni vere in condizioni normali -- da stringere ulteriormente se il
+# 429 si ripresenta, o allentare se si rivela troppo conservativo sui prossimi run reali.
+ZENLOCK_BURST_MAX_EVALUATIONS = int(os.environ.get('ZENLOCK_BURST_MAX_EVALUATIONS', '5'))
+ZENLOCK_BURST_WINDOW_SECONDS = float(os.environ.get('ZENLOCK_BURST_WINDOW_SECONDS', '15'))
+ZENLOCK_THROTTLE_DELAY_SECONDS = float(os.environ.get('ZENLOCK_THROTTLE_DELAY_SECONDS', '1.0'))
+
+_recent_evaluation_times = collections.deque()
+
+
+def _zenlock_should_throttle():
+    """True se abbiamo gia' raggiunto il tetto di valutazioni per la finestra breve corrente --
+    in tal caso l'evento va saltato (nessuna query aggiuntiva) invece di essere valutato, per
+    lasciare margine alla quota rate-limit condivisa con la sessione reale dell'utente."""
+    now = time.time()
+    while _recent_evaluation_times and now - _recent_evaluation_times[0] > ZENLOCK_BURST_WINDOW_SECONDS:
+        _recent_evaluation_times.popleft()
+    if len(_recent_evaluation_times) >= ZENLOCK_BURST_MAX_EVALUATIONS:
+        return True
+    _recent_evaluation_times.append(now)
+    return False
 
 # NOTA STORICA (17/07, v5, caso Jhegson Sebastian Mendez -- indagine chiusa): il debug
 # comparabili grezzi mostrava solo 2 annunci (1.99EUR, 24.01EUR) quando sul mercato reale ce
@@ -597,8 +637,19 @@ def handle_zenlock_offer_update(offer, eth_rate, stats):
         season_type = track.season_type_for_card(card, season_name)
 
         stats['processed'] = stats.get('processed', 0) + 1
+
+        if _zenlock_should_throttle():
+            stats['skipped_burst_throttle'] = stats.get('skipped_burst_throttle', 0) + 1
+            track.log(f"[modello zenlock] throttle raffica: gia' {ZENLOCK_BURST_MAX_EVALUATIONS} "
+                      f"valutazioni negli ultimi {ZENLOCK_BURST_WINDOW_SECONDS:.0f}s, salto "
+                      f"{player_name} per non rischiare di sforare la quota rate-limit condivisa "
+                      f"con l'account -- verra' ricontrollato al prossimo evento/esecuzione se "
+                      f"l'annuncio resta live")
+            continue
+
         evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, price_eur,
                                 card_slug, eth_rate, stats, is_eth_only=is_eth_only)
+        time.sleep(ZENLOCK_THROTTLE_DELAY_SECONDS)
 
 
 def run_zenlock_listener(eth_rate):
@@ -664,7 +715,9 @@ def run_zenlock_listener(eth_rate):
                   f"sconto sospetto non confermato alla riverifica: "
                   f"{stats.get('skipped_suspect_not_confirmed', 0)}, riferimento troppo alto/non "
                   f"rappresentativo: {stats.get('skipped_reference_too_high', 0)}, riferimento "
-                  f"stagnante vs vendita reale: {stats.get('skipped_reference_stale_vs_real_sale', 0)}")
+                  f"stagnante vs vendita reale: {stats.get('skipped_reference_stale_vs_real_sale', 0)}, "
+                  f"saltate per throttle raffica (protezione rate-limit condiviso): "
+                  f"{stats.get('skipped_burst_throttle', 0)}")
         # FIX 17/07 (v23): da "solo misurazione" a fallback vero -- vedi ZENLOCK_DISCOUNT_HISTORICAL_MARGIN.
         track.log(f"[modello zenlock] [diagnostica vendite recenti/fallback storico] su "
                   f"{stats.get('skipped_no_comparable', 0)} casi senza comparabile live, "
