@@ -1,0 +1,39 @@
+name: Snipe Pattern Analysis - Satonio
+on:
+  workflow_dispatch:
+    inputs:
+      user_slug:
+        description: "Manager Sorare da analizzare (slug)"
+        required: false
+        default: "satonio"
+      window_days:
+        description: "Quanti giorni indietro analizzare (satonio ha un turnover molto piu' alto di zenlock, parti basso)"
+        required: false
+        default: "3"
+      max_pages:
+        description: "Quante pagine da 20 carte scansionare (satonio ha 350k+ carte, non e' scansionabile per intero come zenlock)"
+        required: false
+        default: "50"
+permissions:
+  contents: read
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Run snipe pattern analysis (satonio)
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          PYTHONUNBUFFERED: "1"
+          SNIPE_USER_SLUG: ${{ github.event.inputs.user_slug || 'satonio' }}
+          SNIPE_WINDOW_DAYS: ${{ github.event.inputs.window_days || '3' }}
+          SNIPE_MAX_PAGES: ${{ github.event.inputs.max_pages || '50' }}
+        run: python snipe_pattern_analysis.py
