@@ -1628,6 +1628,82 @@ def diagnostic_manager_trades_report(eth_rate):
     log(f"[snipe analysis] analisi trades completata.")
 
 
+# FIX 17/07 (richiesta esplicita dell'utente, step 1 di "progettare un tracker sul suo
+# modello", scelto tra piu' opzioni: prima le soglie derivate dai dati, poi eventualmente un
+# osservatore live -- vedi backlog item 8 gia' esistente per quest'ultimo): unisce la
+# pipeline COMPLETA di fetch_user_trades (niente piu' carte invisibili perche' gia' rivendute)
+# con il calcolo di discount_vs_median gia' scritto in fetch_player_recent_direct_buys (mediana
+# delle altre vendite SINGLE_SALE_OFFER dello stesso giocatore, escluso lui stesso). Prima
+# c'erano due pipeline separate con scopi diversi (una trovava I candidati partendo dalle carte
+# possedute, l'altra calcolava il margine); ora la lista di snipe e' gia' completa da
+# fetch_user_trades, quindi basta arricchirla per-giocatore (un giocatore alla volta, dedup)
+# per ottenere: prezzo, sconto% vs mercato, bucket in_season/classic, fascia di prezzo -- i
+# quattro assi su cui si basera' la tabella di soglie "modello ZenLock" (per ora solo
+# raccolta/log dei dati, la tabella vera e propria si scrive quando i numeri sono abbastanza
+# solidi da calibrarla).
+def diagnostic_snipe_margin_model_report(eth_rate):
+    """Come diagnostic_manager_trades_report ma focalizzato SOLO sugli snipe puri
+    (SINGLE_SALE_OFFER) e arricchito col contesto di margine (sconto% vs mediana altre vendite
+    dello stesso giocatore) e col bucket in_season/classic -- i dati grezzi per progettare un
+    tracker calibrato sul comportamento di SNIPE_USER_SLUG invece che sul nostro."""
+    log(f"[snipe analysis] avvio modello soglie snipe per {SNIPE_USER_SLUG}, finestra "
+        f"{SNIPE_WINDOW_DAYS} giorni...")
+    trades = fetch_user_trades(SNIPE_USER_SLUG, SNIPE_WINDOW_DAYS, eth_rate, max_pages=SNIPE_MAX_PAGES)
+    buys = [t for t in trades if t['role'] == 'buy' and t['type'] == 'SINGLE_SALE_OFFER']
+    log(f"[snipe analysis] {len(buys)} snipe trovati, arricchimento margine per giocatore "
+        f"unico (query per-giocatore, come nella pipeline precedente)...")
+
+    unique_players = sorted(set(b['player_slug'] for b in buys if b['player_slug']))
+    context_by_card = {}
+    for p_slug in unique_players:
+        for ctx in fetch_player_recent_direct_buys(p_slug, SNIPE_USER_SLUG, SNIPE_WINDOW_DAYS, eth_rate):
+            context_by_card[ctx['card_slug']] = ctx
+        time.sleep(0.3)
+
+    enriched = []
+    for b in buys:
+        ctx = context_by_card.get(b['card_slug'])
+        enriched.append({
+            **b,
+            "market_median": ctx.get('market_median') if ctx else None,
+            "discount_vs_median": ctx.get('discount_vs_median') if ctx else None,
+            "sample_size": ctx.get('sample_size') if ctx else None,
+        })
+
+    log(f"[snipe analysis] --- MODELLO SOGLIE: snipe con contesto di mercato ---")
+    for e in sorted(enriched, key=lambda x: x['date'], reverse=True):
+        prezzo = f"{e['price']:.2f}EUR" if e['price'] is not None else "N/D"
+        contesto = ""
+        if e.get('discount_vs_median') is not None:
+            contesto = (f" [mediana {e['market_median']:.2f}EUR, sconto {e['discount_vs_median']:.1%}, "
+                        f"campione {e['sample_size']}]")
+        elif not context_by_card:
+            contesto = ""
+        else:
+            contesto = " [nessun confronto disponibile]"
+        log(f"[snipe analysis]   {e['date']} -- {e['player_name']} [{e.get('season_type', '?')}] "
+            f"{prezzo}{contesto}")
+
+    # Tabella soglie per fascia di prezzo: sconto MEDIO osservato, separatamente per
+    # in_season/classic dove il campione lo permette -- questa e' la base della futura
+    # "MARGIN_TIERS di ZenLock".
+    price_tiers = [(3, '<3'), (5, '3-5'), (10, '5-10'), (15, '10-15'), (20, '15-20'),
+                   (30, '20-30'), (60, '30-60'), (float('inf'), '60+')]
+    log(f"[snipe analysis] --- TABELLA SOGLIE (sconto% medio vs mediana, per fascia/stagione) ---")
+    for season_key in ('in_season', 'classic'):
+        lo = 0
+        for hi, label in price_tiers:
+            bucket = [e for e in enriched
+                      if e.get('season_type') == season_key and e['price'] is not None
+                      and lo <= e['price'] < hi and e.get('discount_vs_median') is not None]
+            if bucket:
+                discounts = [e['discount_vs_median'] for e in bucket]
+                log(f"[snipe analysis]   {season_key} {label}EUR: n={len(bucket)}, "
+                    f"sconto medio {sum(discounts) / len(discounts):.1%}")
+            lo = hi
+    log(f"[snipe analysis] modello soglie completato.")
+
+
 # FIX 16/07 (v3, richiesta esplicita dell'utente, caso Kotto/Sengezer): il v2 bloccava la
 # notifica del tutto se una delle ultime 3 transazioni era pari o piu' economica. Ripensato su
 # richiesta dell'utente: invece manda comunque la notifica, ma segnalando chiaramente se nella
