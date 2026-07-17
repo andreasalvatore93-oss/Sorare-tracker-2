@@ -1462,7 +1462,13 @@ def main():
             f"Aste processate in questa esecuzione: {stats['processed']}")
         skip_keys = [k for k in stats if k.startswith('skip_')]
         breakdown = ', '.join(f"{k}={stats[k]}" for k in sorted(skip_keys)) or "nessuno scarto"
-        log(f"[diagnostica aste] notifiche inviate: {stats.get('notify', 0)}, scarti: {breakdown}")
+        # FIX 17/07: notify_historical (fallback storico, vedi AUCTION_HISTORICAL_FALLBACK_
+        # MARGIN_MULTIPLIER) e' un contatore separato da 'notify' per poterli distinguere nei
+        # log -- ma il totale "notifiche inviate" deve sommarli entrambi, altrimenti una
+        # notifica storica sparirebbe dal riepilogo pur essendo stata mandata davvero.
+        total_notify = stats.get('notify', 0) + stats.get('notify_historical', 0)
+        log(f"[diagnostica aste] notifiche inviate: {total_notify} "
+            f"(di cui su riferimento storico: {stats.get('notify_historical', 0)}), scarti: {breakdown}")
         log(f"[diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: "
             f"{get_currency_branch_stats()}")
         log(f"[diagnostica filtro stagione] con season ok: "
