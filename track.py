@@ -236,7 +236,7 @@ subscription OnTokenOfferUpdated {
     id
     status
     senderSide {
-      amounts { eurCents wei usdCents gbpCents }
+      amounts { eurCents wei usdCents gbpCents lamport }
       anyCards {
         slug
         rarityTyped
@@ -247,7 +247,7 @@ subscription OnTokenOfferUpdated {
       }
     }
     receiverSide {
-      amounts { eurCents wei usdCents gbpCents }
+      amounts { eurCents wei usdCents gbpCents lamport }
       anyCards { slug }
     }
   }
@@ -274,7 +274,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
       pageInfo { hasPreviousPage startCursor }
       nodes {
         status
-        receiverSide { amounts { eurCents wei usdCents gbpCents } anyCards { slug } }
+        receiverSide { amounts { eurCents wei usdCents gbpCents lamport } anyCards { slug } }
         senderSide {
           anyCards {
             slug
@@ -754,13 +754,36 @@ def get_gbp_eur_rate():
     return rate
 
 
+# FIX 17/07 (RISOLTO il caso 'none' nel counter valute -- diagnostica confermata su petar-musa
+# nodo 2: {'lamport': '27000000', 'referenceCurrency': 'LAMPORT'}, esattamente l'ipotesi Solana
+# suggerita dall'utente. Non era un problema di annunci senza prezzo fisso (gia' escluso
+# dall'utente) ne' un bug nostro di lettura come il caso USD/GBP di Mendez -- e' semplicemente
+# una QUINTA valuta di pagamento supportata da Sorare che non stavamo mai chiedendo. Stesso
+# pattern gia' collaudato di get_usd_eur_rate/get_gbp_eur_rate, ma l'API cambio-fiat
+# (frankfurter.app) non tratta crypto: uso coingecko come per get_eth_rate. 1 SOL = 1e9 lamport
+# (9 decimali, non 18 come wei/ETH).
+def get_sol_eur_rate():
+    if 'sol' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['sol']
+    try:
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur",
+            timeout=5
+        )
+        rate = float(r.json()['solana']['eur'])
+    except Exception:
+        rate = 150.0  # fallback approssimativo, rivedere se il prezzo SOL si muove molto
+    _FIAT_RATE_CACHE['sol'] = rate
+    return rate
+
+
 # FIX 17/07 (richiesta esplicita dell'utente, dopo la scoperta del bug valute): contatore
 # leggero per capire QUANTO materiale reale stavamo perdendo prima del fix usdCents/gbpCents --
 # finora solo aneddotico (caso Mendez: 2 annunci su 4-5). Un dict globale incrementato dentro
 # eur_price_from_amounts copre automaticamente OGNI punto di chiamata (listener live, bucket
 # prices, storico vendite, analisi trade) senza dover passare 'stats' attraverso ogni funzione
 # che lo chiama -- costo trascurabile (un incremento di dict per chiamata, nessuna I/O).
-_CURRENCY_BRANCH_STATS = {'eurCents': 0, 'wei': 0, 'usdCents': 0, 'gbpCents': 0, 'none': 0}
+_CURRENCY_BRANCH_STATS = {'eurCents': 0, 'wei': 0, 'usdCents': 0, 'gbpCents': 0, 'lamport': 0, 'none': 0}
 
 
 def get_currency_branch_stats():
@@ -770,21 +793,6 @@ def get_currency_branch_stats():
 def reset_currency_branch_stats():
     for k in _CURRENCY_BRANCH_STATS:
         _CURRENCY_BRANCH_STATS[k] = 0
-    global _NONE_AMOUNTS_DUMP_COUNT
-    _NONE_AMOUNTS_DUMP_COUNT = 0
-
-
-# FIX 17/07 (v14, richiesta esplicita dell'utente dopo il caso "none" nel counter valute --
-# l'utente usa Sorare da anni e conferma che un annuncio manager "opened", non uno scambio,
-# DEVE sempre avere un prezzo fisso: comprare-subito-con-possibilita'-di-offerta, oppure venduto
-# direttamente da Sorare. Il commento precedente (v23, "probabilmente Fai un'offerta senza
-# prezzo fisso") era una SUPPOSIZIONE mai verificata su un dato grezzo reale -- l'utente la mette
-# in dubbio con ragione, sospetta invece un problema di valuta non gestita (es. un'altra valuta
-# fiat oltre a EUR/USD/GBP). Invece di continuare a indovinare, logghiamo il nodo grezzo COMPLETO
-# dei primi pochi casi "none" incontrati per run (tetto basso per non fare spam nei log), cosi'
-# la prossima volta abbiamo il dato vero invece di un'ipotesi.
-_NONE_AMOUNTS_DUMP_LIMIT = 3
-_NONE_AMOUNTS_DUMP_COUNT = 0
 
 
 def eur_price_from_amounts(amounts, eth_rate):
@@ -817,6 +825,14 @@ def eur_price_from_amounts(amounts, eth_rate):
             _CURRENCY_BRANCH_STATS['none'] += 1
             return None
         _CURRENCY_BRANCH_STATS['gbpCents'] += 1
+        return price
+    if amounts.get('lamport') is not None:
+        try:
+            price = float(amounts['lamport']) / 1e9 * get_sol_eur_rate()
+        except (TypeError, ValueError):
+            _CURRENCY_BRANCH_STATS['none'] += 1
+            return None
+        _CURRENCY_BRANCH_STATS['lamport'] += 1
         return price
     _CURRENCY_BRANCH_STATS['none'] += 1
     return None
@@ -935,16 +951,15 @@ def get_bucket_prices(player_slug, eth_rate, use_cache=True):
             # su tutto il bucket (prima questo faceva scattare "dati incompleti" quasi sempre,
             # bloccando affari reali gia' confermati a mano, es. Scherpen a 7.00EUR).
             #
-            # FIX 17/07 (v14): l'ipotesi sopra non e' mai stata confermata su un dato grezzo, e
-            # l'utente (esperto, anni di uso reale di Sorare) la mette in dubbio -- un annuncio
-            # manager aperto DEVE sempre avere un prezzo fisso. Dump del nodo grezzo completo dei
-            # primi _NONE_AMOUNTS_DUMP_LIMIT casi per run, per vedere il dato vero invece di
-            # continuare a indovinare (es. potrebbe essere una valuta fiat non gestita).
-            global _NONE_AMOUNTS_DUMP_COUNT
-            if _NONE_AMOUNTS_DUMP_COUNT < _NONE_AMOUNTS_DUMP_LIMIT:
-                _NONE_AMOUNTS_DUMP_COUNT += 1
-                log(f"[diagnostica valuta 'none'] nodo grezzo completo (caso {_NONE_AMOUNTS_DUMP_COUNT}/"
-                    f"{_NONE_AMOUNTS_DUMP_LIMIT} per player_slug={player_slug}): {node}")
+            # FIX 17/07 (v14->RISOLTO): l'ipotesi sopra non era mai stata confermata su un dato
+            # grezzo, e l'utente (esperto, anni di uso reale di Sorare) la mise in dubbio -- un
+            # annuncio manager aperto DEVE sempre avere un prezzo fisso. Il dump del nodo grezzo
+            # completo (rimosso qui, non piu' necessario) ha confermato la causa reale: una QUINTA
+            # valuta di pagamento mai richiesta, Solana (amounts.lamport, referenceCurrency=
+            # 'LAMPORT', caso petar-musa). Fix vero: lamport aggiunto a tutte le query live +
+            # conversione SOL->EUR in eur_price_from_amounts. I casi ancora None qui sono quindi
+            # genuinamente senza prezzo leggibile (scambi non filtrati altrove, dati incompleti
+            # residui), non piu' un mistero.
             continue
         raw[node_season_type].append((price, match.get('slug')))
     result = {}
@@ -1348,7 +1363,7 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True):
       tokens {
         tokenPrices(playerSlug: $p, rarity: limited) {
           date
-          amounts { eurCents wei usdCents gbpCents }
+          amounts { eurCents wei usdCents gbpCents lamport }
         }
       }
     }
@@ -1517,7 +1532,7 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
       tokens {
         tokenPrices(playerSlug: $p, rarity: limited) {
           date
-          amounts { eurCents wei usdCents gbpCents }
+          amounts { eurCents wei usdCents gbpCents lamport }
           card { slug serialNumber }
           deal {
             ... on TokenOffer {
@@ -1706,12 +1721,12 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
               transactionDate
               sender { ... on User { slug nickname } }
               senderSide {
-                amounts { eurCents wei usdCents gbpCents }
+                amounts { eurCents wei usdCents gbpCents lamport }
                 anyCards { slug anyPlayer { slug displayName } sportSeason { name } inSeasonEligible }
               }
               receiver { ... on User { slug nickname } }
               receiverSide {
-                amounts { eurCents wei usdCents gbpCents }
+                amounts { eurCents wei usdCents gbpCents lamport }
                 anyCards { slug anyPlayer { slug displayName } sportSeason { name } inSeasonEligible }
               }
             }

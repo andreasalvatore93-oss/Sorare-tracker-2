@@ -225,10 +225,28 @@ def get_gbp_eur_rate():
     return rate
 
 
+# FIX 17/07 (stesso fix gemello di track.py -- caso "none" RISOLTO su petar-musa: una QUINTA
+# valuta mai richiesta, Solana, campo amounts.lamport, 1 SOL = 1e9 lamport). Stesso pattern di
+# get_usd_eur_rate/get_gbp_eur_rate ma coingecko invece di frankfurter (crypto, non fiat).
+def get_sol_eur_rate():
+    if 'sol' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['sol']
+    try:
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur",
+            timeout=5
+        )
+        rate = float(r.json()['solana']['eur'])
+    except Exception:
+        rate = 150.0
+    _FIAT_RATE_CACHE['sol'] = rate
+    return rate
+
+
 # Stesso contatore diagnostico gia' aggiunto oggi a track.py -- quanto pesano davvero le
-# valute USD/GBP nei riferimenti di vendita diretta che le aste usano per calcolare il tetto
-# consigliato/margine stimato.
-_CURRENCY_BRANCH_STATS = {'eurCents': 0, 'wei': 0, 'usdCents': 0, 'gbpCents': 0, 'none': 0}
+# valute USD/GBP/Solana nei riferimenti di vendita diretta che le aste usano per calcolare il
+# tetto consigliato/margine stimato.
+_CURRENCY_BRANCH_STATS = {'eurCents': 0, 'wei': 0, 'usdCents': 0, 'gbpCents': 0, 'lamport': 0, 'none': 0}
 
 
 def get_currency_branch_stats():
@@ -362,7 +380,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
       pageInfo { hasPreviousPage startCursor }
       nodes {
         status
-        receiverSide { amounts { eurCents wei usdCents gbpCents } }
+        receiverSide { amounts { eurCents wei usdCents gbpCents lamport } }
         senderSide {
           anyCards {
             rarityTyped
@@ -432,6 +450,14 @@ def eur_price_from_amounts(amounts, eth_rate):
             _CURRENCY_BRANCH_STATS['none'] += 1
             return None
         _CURRENCY_BRANCH_STATS['gbpCents'] += 1
+        return price
+    if amounts.get('lamport') is not None:
+        try:
+            price = float(amounts['lamport']) / 1e9 * get_sol_eur_rate()
+        except (TypeError, ValueError):
+            _CURRENCY_BRANCH_STATS['none'] += 1
+            return None
+        _CURRENCY_BRANCH_STATS['lamport'] += 1
         return price
     _CURRENCY_BRANCH_STATS['none'] += 1
     return None
@@ -553,7 +579,7 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
       anyPlayer(slug: $slug) {
         tokenPrices(rarity: $rarity, season: $season, last: $lastN, includePrivateSales: false) {
           nodes {
-            amounts { eurCents wei usdCents gbpCents }
+            amounts { eurCents wei usdCents gbpCents lamport }
           }
         }
       }
@@ -903,7 +929,19 @@ def process_auction(auction, eth_rate, stats):
             return
         starting_bid = current_price_eur
 
-    margin_estimate = (direct_sale_price - recommended_ceiling) if direct_sale_price is not None else None
+    # FIX 17/07 (richiesta esplicita dell'utente, "impossibile zero notifiche" -- log reali
+    # mostravano margine stimato ESATTAMENTE 0.0 su piu' aste, es. Ros/Hrvoje Babec): il margine
+    # veniva calcolato come direct_sale_price - recommended_ceiling, ma recommended_ceiling e'
+    # gia' forzato a non superare MAI direct_sale_price (e' uno dei tre tetti presi col minimo,
+    # vedi sopra) -- quindi ogni volta che il vincolo piu' stretto era proprio direct_sale_price
+    # (caso comune quando il mercato diretto e' piu' economico di mediana/ultima vendita), il
+    # margine risultava matematicamente SEMPRE zero, indipendentemente da quanto l'asta fosse
+    # davvero conveniente al prezzo che si pagherebbe ORA. Non era una soglia da tarare, era un
+    # bug tautologico che scartava affari veri. Il margine vero e' quanto si risparmia rispetto
+    # alla vendita diretta AL PREZZO CHE SI PAGHEREBBE DAVVERO per essere in testa ora
+    # (starting_bid, gia' garantito <= recommended_ceiling <= direct_sale_price dai controlli
+    # sopra), non rispetto al tetto di sicurezza.
+    margin_estimate = (direct_sale_price - starting_bid) if direct_sale_price is not None else None
 
     if margin_estimate is None or margin_estimate < MIN_MARGIN_EUR:
         log(f"{player_name}: margine stimato "

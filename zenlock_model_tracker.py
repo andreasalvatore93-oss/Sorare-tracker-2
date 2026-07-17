@@ -199,16 +199,12 @@ ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 # (attivo solo se ZENLOCK_DIAGNOSTIC_PLAYER_SLUG e' valorizzato) per il prossimo caso dubbio.
 ZENLOCK_DIAGNOSTIC_PLAYER_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_PLAYER_SLUG', '').strip()
 
-# FIX 17/07 (caso "none" nel counter valute, es. petar-musa): hook diagnostico separato per
-# testare nomi di campo extra nel tipo amounts (candidati Solana in primis, su suggerimento
-# dell'utente). Stesso pattern di ZENLOCK_DIAGNOSTIC_PLAYER_SLUG sopra: attivo solo se
-# valorizzato, nessun impatto sul run normale. Vedi discover_amount_currency_fields in track.py.
-ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG', '').strip()
-
-# FIX 17/07 (v4, stesso caso "none", proseguimento indagine dopo referenceCurrency=GBP senza
-# gbpCents corrispondente): hook per il dump esteso receiverSide+senderSide.amounts, vedi
-# discover_offer_node_shape in track.py.
-ZENLOCK_DIAGNOSTIC_NODE_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_NODE_SLUG', '').strip()
+# NOTA STORICA (17/07, caso "none" nel counter valute RISOLTO): qui c'erano due hook diagnostici
+# temporanei (ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG, ZENLOCK_DIAGNOSTIC_NODE_SLUG) usati per scoprire
+# che il "none" era una QUINTA valuta mai richiesta: Solana, campo amounts.lamport
+# (referenceCurrency='LAMPORT', confermato su petar-musa: 27000000 lamport = 0.027 SOL). Fix
+# vero applicato in track.py (lamport aggiunto a tutte le query live + eur_price_from_amounts
+# converte lamport->SOL->EUR via get_sol_eur_rate). Hook diagnostici rimossi, non piu' necessari.
 
 
 # FIX 17/07 (v3, caso Nayef Aguerd -- verificato a mano dall'utente): la carta era infortunata da
@@ -574,12 +570,6 @@ if __name__ == "__main__":
 
     if ZENLOCK_DIAGNOSTIC_PLAYER_SLUG:
         track.diagnostic_dump_missing_offer(ZENLOCK_DIAGNOSTIC_PLAYER_SLUG)
-
-    if ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG:
-        track.discover_amount_currency_fields(ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG)
-
-    if ZENLOCK_DIAGNOSTIC_NODE_SLUG:
-        track.discover_offer_node_shape(ZENLOCK_DIAGNOSTIC_NODE_SLUG)
 
     track.log(f"[modello zenlock] Tasso ETH/EUR: {eth_rate}")
     track.log(f"[modello zenlock] Ascolto per {ZENLOCK_LISTEN_SECONDS} secondi "
