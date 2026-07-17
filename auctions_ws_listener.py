@@ -300,6 +300,23 @@ def init_db():
             reasons TEXT
         )
     ''')
+    # FIX 17/07 (richiesta esplicita dell'utente, "log molto pesante... scartare le aste gia'
+    # analizzate"): la scansione di sicurezza rivaluta da zero le stesse ~50 aste live ad OGNI
+    # esecuzione (ogni ~4 minuti via cron esterno), anche quelle il cui prezzo/offerta minima
+    # non sono cambiati di una virgola dall'esecuzione precedente -- rifare mediana/tetto/
+    # riverifica live (con tanto di sleep) su un'asta identica produce lo stesso identico
+    # risultato di 4 minuti fa, quindi e' lavoro (e log) genuinamente inutile. Salviamo
+    # l'ultimo prezzo/offerta minima visti per ogni asta: se al prossimo giro sono identici,
+    # saltiamo subito senza rifare l'analisi. Se invece qualcosa e' cambiato (nuova offerta,
+    # asta salita) la rivalutiamo normalmente -- e' informazione nuova, non piu' inutile.
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS evaluated_auctions (
+            auction_id TEXT PRIMARY KEY,
+            current_price REAL,
+            min_next_bid REAL,
+            evaluated_at TEXT
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -339,6 +356,37 @@ def mark_notified(auction_id):
     )
     conn.commit()
     conn.close()
+
+
+def get_last_eval_snapshot(auction_id):
+    """Ultimo (current_price, min_next_bid) con cui questa asta e' stata valutata per intero,
+    o None se non l'abbiamo mai vista. Vedi nota su evaluated_auctions in init_db."""
+    conn = sqlite3.connect('auctions.db')
+    row = conn.execute(
+        "SELECT current_price, min_next_bid FROM evaluated_auctions WHERE auction_id=?",
+        (auction_id,)
+    ).fetchone()
+    conn.close()
+    return row
+
+
+def save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur):
+    conn = sqlite3.connect('auctions.db')
+    conn.execute(
+        "INSERT OR REPLACE INTO evaluated_auctions (auction_id, current_price, min_next_bid, evaluated_at) "
+        "VALUES (?, ?, ?, ?)",
+        (auction_id, current_price_eur, min_next_bid_eur, datetime.datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+
+def _floats_equal(a, b, tol=0.005):
+    if a is None and b is None:
+        return True
+    if a is None or b is None:
+        return False
+    return abs(a - b) < tol
 
 
 def get_current_min_direct_sale(player_slug, season_type='in_season'):
@@ -760,6 +808,22 @@ def process_auction(auction, eth_rate, stats):
 
     min_next_bid_raw = auction.get('minNextBid')
     min_next_bid_eur = wei_to_eur(min_next_bid_raw, eth_rate)
+
+    # FIX 17/07 (richiesta esplicita dell'utente, "log molto pesante, scarta le aste gia'
+    # analizzate... se e' inutile e' inutile, non serve un controllo in due run diverse"): se
+    # questa identica asta e' gia' stata valutata per intero con lo STESSO prezzo attuale e la
+    # STESSA offerta minima, rifare tutta l'analisi (storico vendite, tetto, riverifica live con
+    # sleep) produrrebbe esattamente lo stesso risultato di prima -- lavoro e log inutili.
+    # Saltiamo silenziosamente (solo un contatore, niente riga di log per asta) e continuiamo
+    # solo se qualcosa e' davvero cambiato (nuova offerta, asta salita) da quando l'ha vista
+    # l'esecuzione precedente.
+    last_snapshot = get_last_eval_snapshot(auction_id)
+    if last_snapshot is not None:
+        last_price, last_min_bid = last_snapshot
+        if _floats_equal(last_price, current_price_eur) and _floats_equal(last_min_bid, min_next_bid_eur):
+            bump(stats, 'skip_unchanged_since_last_eval')
+            return
+    save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur)
 
     cards = auction.get('anyCards') or []
     target_card = None
