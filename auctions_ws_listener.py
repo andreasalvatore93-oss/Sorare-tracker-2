@@ -63,28 +63,69 @@ MIN_MARGIN_EUR = float(os.environ.get('MIN_MARGIN_EUR', '1.5'))  # usato solo co
 # required_margin_fraction, tracker classico), qui riadattato alle aste: la percentuale
 # minima di margine richiesta scende progressivamente al salire del prezzo di riferimento
 # (vendita diretta), invece di un euro fisso identico per tutte le fasce.
+# FIX 17/07 (v3, richiesta esplicita dell'utente, "alza scaglione anche li minimo setta 1
+# euro" -- dopo il caso YAGO): lo scaglione 3-5EUR (12%) lasciava passare margini troppo
+# risicati nello stesso run (Yazan Al Arab 0.48EUR richiesti 0.46, Kim Ryun-Seong 0.45
+# richiesti 0.44, Choi Jun 0.92 -- tutti appena sopra la vecchia soglia percentuale). Per
+# questa fascia il margine minimo richiesto diventa un euro FISSO invece che percentuale --
+# stesso concetto del floor assoluto gia' usato oltre i 60EUR, solo qui esplicito e piu' alto
+# in proporzione perche' su carte cosi' economiche il rischio di rumore statistico e' piu'
+# alto. Ogni scaglione ora e' una funzione (prezzo di riferimento -> margine richiesto)
+# invece di una singola percentuale, per poter mescolare scaglioni percentuali e fissi nella
+# stessa tabella senza rami speciali nel codice.
 AUCTION_MARGIN_TIERS = [
-    (3, 0.15),
-    (5, 0.12),
-    (10, 0.10),
-    (20, 0.08),
-    (40, 0.06),
-    (60, 0.05),
+    (3, lambda p: p * 0.15),
+    (5, lambda p: 1.0),
+    # FIX 17/07 (v2, caso reale YAGO, richiesta esplicita dell'utente): vendita diretta 7.24EUR,
+    # margine stimato 0.80EUR passava la soglia (0.10 -> 0.72EUR richiesti) ma l'utente lo
+    # giudica troppo risicato per notificare -- serviva almeno 1.20EUR. 0.10 -> 0.17 (7.24*0.17
+    # = 1.23EUR, sopra la soglia voluta dall'utente per questo caso preciso).
+    (10, lambda p: p * 0.17),
+    (20, lambda p: p * 0.08),
+    (40, lambda p: p * 0.06),
+    (60, lambda p: p * 0.05),
 ]
 
 
+# FIX 17/07 (v4, richiesta esplicita dell'utente, "sistema salto ai bordi"): calibrare ogni
+# scaglione singolarmente su un caso reale (Choi Jun/Yazan/Kim Ryun-Seong -> floor 1.0EUR
+# fisso, YAGO -> 17% invece di 10%) aveva un effetto collaterale non voluto: appena sopra un
+# confine tra scaglioni il margine richiesto poteva SCENDERE invece di salire (es. 4.99EUR ->
+# 1.00EUR richiesti, ma 5.00EUR -> solo 0.85EUR; 9.99EUR -> 1.70EUR, ma 10.00EUR -> solo
+# 0.80EUR) -- una carta leggermente PIU' cara diventava piu' facile da notificare di una
+# leggermente piu' economica, il contrario del buon senso. Calcoliamo per ogni scaglione un
+# "floor d'ingresso" pari al massimo valore mai richiesto dagli scaglioni precedenti al loro
+# stesso bordo superiore, e lo applichiamo come minimo garantito -- il margine richiesto ora
+# non scende mai attraversando un confine, resta piatto finche' la percentuale del nuovo
+# scaglione non lo supera naturalmente, poi riprende a crescere.
+def _compute_tier_entry_floors():
+    floors = []
+    running_floor = 0.0
+    for upper_bound, compute in AUCTION_MARGIN_TIERS:
+        floors.append(running_floor)
+        value_at_top = compute(upper_bound)
+        running_floor = max(running_floor, value_at_top)
+    return floors, running_floor
+
+
+_AUCTION_MARGIN_ENTRY_FLOORS, _AUCTION_MARGIN_FINAL_FLOOR = _compute_tier_entry_floors()
+
+
 def required_margin_eur(reference_price):
-    """Margine minimo in EUR richiesto per notificare, a scaglioni percentuali in base al
-    prezzo di riferimento (direct_sale_price) -- stesso spirito di required_margin_fraction in
-    track.py. Sotto ogni soglia si applica la percentuale di quello scaglione convertita in
-    EUR; oltre l'ultima soglia (60EUR) o se il riferimento non e' disponibile, si torna al
-    vecchio margine assoluto fisso MIN_MARGIN_EUR."""
+    """Margine minimo in EUR richiesto per notificare, a scaglioni in base al prezzo di
+    riferimento (direct_sale_price) -- stesso spirito di required_margin_fraction in
+    track.py. Sotto ogni soglia si applica la funzione di quello scaglione (percentuale o
+    euro fisso, vedi AUCTION_MARGIN_TIERS), mai sotto il floor d'ingresso di quello scaglione
+    (garantisce che il margine richiesto sia sempre non-decrescente al salire del prezzo,
+    niente piu' salti in giu' ai bordi). Oltre l'ultima soglia (60EUR) o se il riferimento non
+    e' disponibile, si torna al vecchio margine assoluto fisso MIN_MARGIN_EUR (mai comunque
+    sotto il floor finale accumulato)."""
     if reference_price is None or reference_price <= 0:
         return MIN_MARGIN_EUR
-    for upper_bound, fraction in AUCTION_MARGIN_TIERS:
+    for i, (upper_bound, compute) in enumerate(AUCTION_MARGIN_TIERS):
         if reference_price < upper_bound:
-            return reference_price * fraction
-    return MIN_MARGIN_EUR
+            return max(compute(reference_price), _AUCTION_MARGIN_ENTRY_FLOORS[i])
+    return max(MIN_MARGIN_EUR, _AUCTION_MARGIN_FINAL_FLOOR)
 
 
 # FIX 17/07 (stessa richiesta, secondo punto): last_price era un tetto RIGIDO su
