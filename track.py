@@ -1,4 +1,3 @@
-[2026-07-17 09:41:50] Tasso ETH/EUR: 1601.93
 import json
 import os
 import re
