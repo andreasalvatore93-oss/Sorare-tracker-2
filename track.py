@@ -1965,6 +1965,62 @@ def diagnostic_dump_missing_offer(player_slug):
         f"4.59EUR (talwiwi, mamadou-sangare-2025-limited-...): se non c'e' per niente, l'offerta "
         f"e' esclusa dalla query stessa, non da un nostro filtro lato client.")
 
+    # FIX 17/07 (proseguimento, log reale): 'blockchain' non esiste su TokenOffer, ma l'errore
+    # GraphQL ha suggerito 'blockchainId' -- confermato anche che nel dump del passo 2 mancano
+    # non solo l'offerta di talwiwi (4.59EUR) ma anche altre due (6.37EUR Quikila, 6.44EUR
+    # satonio, viste nello screenshot dell'utente ma assenti dai 33 nodi restituiti): non e' un
+    # caso isolato. Passo 3: richiediamo blockchainId su OGNI nodo restituito (paginazione
+    # dedicata, non tocca fetch_all_live_offers) per vedere se i nodi che VEDIAMO condividono
+    # tutti lo stesso valore -- se si', e' una forte conferma che la query esclude
+    # sistematicamente un'altra blockchain (probabilmente Solana).
+    log(f"[diagnostica offerta mancante] passo 3: provo 'blockchainId' su ogni nodo restituito...")
+    query_with_blockchain_id = """
+    query LiveOffersWithBlockchainId($slug: String!, $n: Int!, $cursor: String) {
+      tokens {
+        liveSingleSaleOffers(playerSlug: $slug, last: $n, before: $cursor) {
+          totalCount
+          pageInfo { hasPreviousPage startCursor }
+          nodes {
+            status
+            blockchainId
+            receiverSide { amounts { eurCents wei } }
+            senderSide { anyCards { slug } }
+          }
+        }
+      }
+    }
+    """
+    try:
+        all_nodes_bc = []
+        cursor = None
+        for _ in range(MAX_PAGES):
+            data = graphql_query(query_with_blockchain_id, {"slug": player_slug, "n": PAGE_SIZE, "cursor": cursor})
+            if data.get('errors'):
+                log(f"[diagnostica offerta mancante] passo 3: errore -- {data['errors']}")
+                break
+            conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
+            nodes_bc = conn.get('nodes') or []
+            all_nodes_bc.extend(nodes_bc)
+            page_info = conn.get('pageInfo') or {}
+            if not page_info.get('hasPreviousPage'):
+                break
+            cursor = page_info.get('startCursor')
+            if not cursor:
+                break
+        blockchain_values = set()
+        for node in all_nodes_bc:
+            bc_id = node.get('blockchainId')
+            blockchain_values.add(bc_id)
+            amounts = (node.get('receiverSide') or {}).get('amounts')
+            cards = (node.get('senderSide') or {}).get('anyCards') or []
+            slugs = ", ".join(c.get('slug', '') for c in cards) or "(nessuna carta)"
+            log(f"[diagnostica offerta mancante]   blockchainId={bc_id} status={node.get('status')} "
+                f"amounts={amounts} slug={slugs}")
+        log(f"[diagnostica offerta mancante] passo 3 completato -- valori blockchainId distinti "
+            f"trovati tra i {len(all_nodes_bc)} nodi: {blockchain_values}")
+    except Exception as e:
+        log(f"[diagnostica offerta mancante] passo 3: eccezione -- {e}")
+
 
 def discover_sales_history_field():
     """Tenta diversi nomi di campo candidati sotto tokens{} per scoprire come accedere allo
