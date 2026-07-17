@@ -473,6 +473,27 @@ def format_time_remaining(seconds):
 URGENT_TIME_THRESHOLD_SECONDS = 120
 
 
+# FIX 17/07 (TEST, richiesta esplicita dell'utente dopo l'indagine "troppe poche notifiche"):
+# su un run reale, 24/30 (80%) delle aste football/limited valutate venivano scartate per
+# "nessun prezzo precedente trovato" -- troppo per essere scarsita' di dati normale. Sospetto:
+# il filtro "season" qui sotto (derivato con un regex dal nome stagione della carta, MAI
+# validato contro lo schema reale -- introspection disabilitata da Sorare) non corrisponde al
+# valore che il server si aspetta davvero, azzerando il risultato per la maggior parte dei
+# giocatori. La query equivalente gia' provata in track.py (get_recent_sale_history,
+# tokens.tokenPrices) NON filtra mai per stagione ed e' quella che ha funzionato per tutta la
+# sessione. Contatore per misurare quanto aiuta davvero il fallback.
+_SEASON_FILTER_STATS = {'with_season_ok': 0, 'fallback_no_season_ok': 0, 'both_empty': 0}
+
+
+def get_season_filter_stats():
+    return dict(_SEASON_FILTER_STATS)
+
+
+def reset_season_filter_stats():
+    for k in _SEASON_FILTER_STATS:
+        _SEASON_FILTER_STATS[k] = 0
+
+
 def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_PRICES_COUNT):
     query = """
     query RecentPrices($slug: String!, $rarity: Rarity!, $season: Int, $lastN: Int!) {
@@ -485,10 +506,11 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
       }
     }
     """
-    try:
+
+    def _run(season_arg):
         variables = {"slug": player_slug, "rarity": "limited", "lastN": last_n}
-        if season_year is not None:
-            variables["season"] = season_year
+        if season_arg is not None:
+            variables["season"] = season_arg
         data = graphql_query(query, variables)
         if data.get('errors'):
             return []
@@ -502,6 +524,25 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
             if p is not None:
                 prices.append(p)
         return prices
+
+    try:
+        prices = _run(season_year)
+        if prices:
+            _SEASON_FILTER_STATS['with_season_ok'] += 1
+            return prices
+        if season_year is None:
+            _SEASON_FILTER_STATS['both_empty'] += 1
+            return prices
+        # RISCHIO NOTO: senza filtro stagione possiamo mescolare vendite classic/in_season dello
+        # stesso giocatore (stesso limite gia' documentato per tokens.tokenPrices in track.py) --
+        # ma le aste sono sempre in_season, quindi un riferimento "sporco" e' comunque meglio di
+        # uno zero strutturale che ci fa saltare l'asta a prescindere.
+        fallback_prices = _run(None)
+        if fallback_prices:
+            _SEASON_FILTER_STATS['fallback_no_season_ok'] += 1
+            return fallback_prices
+        _SEASON_FILTER_STATS['both_empty'] += 1
+        return []
     except Exception as e:
         log(f"Errore nel recuperare i prezzi recenti per {player_slug}: {e}")
         return []
@@ -913,6 +954,7 @@ def handle_auction_event(auction, eth_rate, stats):
 def main():
     init_db()
     reset_currency_branch_stats()
+    reset_season_filter_stats()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
 
@@ -981,6 +1023,10 @@ def main():
         log(f"[diagnostica aste] notifiche inviate: {stats.get('notify', 0)}, scarti: {breakdown}")
         log(f"[diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: "
             f"{get_currency_branch_stats()}")
+        log(f"[diagnostica filtro stagione] con season ok: "
+            f"{get_season_filter_stats()['with_season_ok']}, fallback senza season riuscito: "
+            f"{get_season_filter_stats()['fallback_no_season_ok']}, entrambi vuoti: "
+            f"{get_season_filter_stats()['both_empty']}")
 
     ws = websocket.WebSocketApp(
         WS_URL,
