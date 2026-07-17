@@ -236,7 +236,7 @@ subscription OnTokenOfferUpdated {
     id
     status
     senderSide {
-      amounts { eurCents wei }
+      amounts { eurCents wei usdCents gbpCents }
       anyCards {
         slug
         rarityTyped
@@ -247,7 +247,7 @@ subscription OnTokenOfferUpdated {
       }
     }
     receiverSide {
-      amounts { eurCents wei }
+      amounts { eurCents wei usdCents gbpCents }
       anyCards { slug }
     }
   }
@@ -274,7 +274,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
       pageInfo { hasPreviousPage startCursor }
       nodes {
         status
-        receiverSide { amounts { eurCents wei } anyCards { slug } }
+        receiverSide { amounts { eurCents wei usdCents gbpCents } anyCards { slug } }
         senderSide {
           anyCards {
             slug
@@ -634,6 +634,49 @@ def get_eth_rate():
         return 3000.0
 
 
+# FIX 17/07 (bug valuta USD/GBP, caso Jhegson Sebastian Mendez -- richiesta esplicita
+# dell'utente "insisti, chissa' quanti falsi allarmi"): scoperto via DevTools (payload reale di
+# CardsQuery, la query usata dalla pagina mercato) che eur_price_from_amounts leggeva SOLO
+# eurCents e wei, ignorando silenziosamente usdCents/gbpCents -- un venditore che prezza in
+# dollari o sterline invece che euro diventava per noi "prezzo assente" (None), sparendo del
+# tutto dai comparabili/margini anche se l'annuncio era vivo e vero (verificato: due annunci di
+# Mendez, 0.59EUR e 1.92EUR, erano ENTRAMBI in realta' USD-only -- usdCents 67 e 220, eurCents
+# null -- e per questo invisibili sia al tracker principale che al modello ZenLock). Non e' un
+# limite dei dati Sorare come si pensava all'inizio (fenomeno "annunci fantasma" gia' documentato
+# altrove) -- e' un bug nostro di lettura, fixabile. Aggiunti usdCents/gbpCents a TUTTE le query
+# che leggono MonetaryAmount (vedi "amounts { eurCents wei usdCents gbpCents }"); qui
+# aggiungiamo la conversione, con lo stesso pattern gia' collaudato di get_eth_rate (fetch con
+# timeout breve, fallback fisso se l'API cade -- i cambi fiat si muovono pochissimo giorno per
+# giorno, un fallback statico e' un rischio molto piu' basso che per l'ETH). Cache in-memory
+# semplice (un dict globale) perche' il tasso non cambia nell'arco di una singola esecuzione e
+# non ha senso richiederlo piu' volte.
+_FIAT_RATE_CACHE = {}
+
+
+def get_usd_eur_rate():
+    if 'usd' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['usd']
+    try:
+        r = requests.get("https://api.frankfurter.app/latest?from=USD&to=EUR", timeout=5)
+        rate = float(r.json()['rates']['EUR'])
+    except Exception:
+        rate = 0.92  # fallback approssimativo (cambio USD/EUR storicamente stabile intorno a li')
+    _FIAT_RATE_CACHE['usd'] = rate
+    return rate
+
+
+def get_gbp_eur_rate():
+    if 'gbp' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['gbp']
+    try:
+        r = requests.get("https://api.frankfurter.app/latest?from=GBP&to=EUR", timeout=5)
+        rate = float(r.json()['rates']['EUR'])
+    except Exception:
+        rate = 1.17  # fallback approssimativo (cambio GBP/EUR storicamente stabile intorno a li')
+    _FIAT_RATE_CACHE['gbp'] = rate
+    return rate
+
+
 def eur_price_from_amounts(amounts, eth_rate):
     if not amounts:
         return None
@@ -642,6 +685,16 @@ def eur_price_from_amounts(amounts, eth_rate):
     if amounts.get('wei') is not None:
         try:
             return float(amounts['wei']) / 1e18 * eth_rate
+        except (TypeError, ValueError):
+            return None
+    if amounts.get('usdCents') is not None:
+        try:
+            return amounts['usdCents'] / 100 * get_usd_eur_rate()
+        except (TypeError, ValueError):
+            return None
+    if amounts.get('gbpCents') is not None:
+        try:
+            return amounts['gbpCents'] / 100 * get_gbp_eur_rate()
         except (TypeError, ValueError):
             return None
     return None
@@ -1075,7 +1128,7 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
 # "verificato" come affare era in realta' piu' caro di quanto la gente paghi davvero di recente
 # (Kotto: 5.00EUR notificato contro 1.26-1.60EUR di vendite reali nelle ultime settimane, dato
 # via discover_sales_history_field: il campo giusto e' tokenPrices(playerSlug, rarity: limited)
-# { date amounts { eurCents wei } }, non introspection-abile, trovato per tentativi). Restituisce
+# { date amounts { eurCents wei usdCents gbpCents } }, non introspection-abile, trovato per tentativi). Restituisce
 # le ultime vendite reali concluse (data, prezzo EUR), piu' recenti prima, o None se la query
 # fallisce.
 #
@@ -1100,7 +1153,7 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5):
       tokens {
         tokenPrices(playerSlug: $p, rarity: limited) {
           date
-          amounts { eurCents wei }
+          amounts { eurCents wei usdCents gbpCents }
         }
       }
     }
@@ -1267,7 +1320,7 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
       tokens {
         tokenPrices(playerSlug: $p, rarity: limited) {
           date
-          amounts { eurCents wei }
+          amounts { eurCents wei usdCents gbpCents }
           card { slug serialNumber }
           deal {
             ... on TokenOffer {
@@ -1456,12 +1509,12 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
               transactionDate
               sender { ... on User { slug nickname } }
               senderSide {
-                amounts { eurCents wei }
+                amounts { eurCents wei usdCents gbpCents }
                 anyCards { slug anyPlayer { slug displayName } sportSeason { name } inSeasonEligible }
               }
               receiver { ... on User { slug nickname } }
               receiverSide {
-                amounts { eurCents wei }
+                amounts { eurCents wei usdCents gbpCents }
                 anyCards { slug anyPlayer { slug displayName } sportSeason { name } inSeasonEligible }
               }
             }
@@ -2758,7 +2811,7 @@ def discover_sales_history_field():
       tokens {
         tokenPrices(playerSlug: $p, rarity: limited) {
           date
-          amounts { eurCents wei }
+          amounts { eurCents wei usdCents gbpCents }
         }
       }
     }
