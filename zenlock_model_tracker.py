@@ -141,6 +141,18 @@ ZENLOCK_MIN_REFERENCE_EUR = float(os.environ.get('ZENLOCK_MIN_REFERENCE_EUR', '1
 # (UNIQUE_DEAL_TOLERANCE) -- vedi classic_looks_cheap_everywhere piu' sotto.
 ZENLOCK_SIBLING_TOLERANCE = float(os.environ.get('ZENLOCK_SIBLING_TOLERANCE', '0.05'))
 
+# FIX 17/07 (v10, richiesta esplicita dell'utente, caso Pedrinho -- sconto 91% su un solo
+# comparabile, ben oltre qualunque snipe reale osservato finora, max storico 72.5% Koulierakis):
+# stesso principio del tracker principale (MAX_SUSPECT_DROP + double_check_suspect_drop), mai
+# avuto qui finora. Sopra questa soglia, prima di notificare rileggiamo il bucket una seconda
+# volta dopo una breve pausa -- se il riferimento resta stabile (entro tolleranza) confermiamo,
+# altrimenti scartiamo. NON risolve il caso in cui il comparabile sia "vero" ma non davvero
+# equivalente (es. numero di serie basso/da collezione, dato che non lo vediamo) -- per quello
+# resta necessaria la verifica a mano via link "APRI SU SORARE", come sempre.
+ZENLOCK_SUSPECT_DISCOUNT_THRESHOLD = float(os.environ.get('ZENLOCK_SUSPECT_DISCOUNT_THRESHOLD', '0.60'))
+ZENLOCK_RECHECK_DELAY_SECONDS = float(os.environ.get('ZENLOCK_RECHECK_DELAY_SECONDS', '3'))
+ZENLOCK_RECHECK_TOLERANCE = float(os.environ.get('ZENLOCK_RECHECK_TOLERANCE', '0.05'))
+
 ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 
 # NOTA STORICA (17/07, v5, caso Jhegson Sebastian Mendez -- indagine chiusa): il debug
@@ -274,6 +286,25 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
         stats['skipped_cheap_sibling'] = stats.get('skipped_cheap_sibling', 0) + 1
         return  # classic "scontata" ma l'in_season gemello e' economico uguale/di piu' (Perišić)
 
+    if discount >= ZENLOCK_SUSPECT_DISCOUNT_THRESHOLD:
+        # FIX 17/07 (v10, caso Pedrinho): sconto estremo, oltre ogni snipe reale osservato --
+        # rileggiamo il bucket una seconda volta dopo una breve pausa prima di fidarcene.
+        time.sleep(ZENLOCK_RECHECK_DELAY_SECONDS)
+        recheck_buckets = track.get_bucket_prices(player_slug, eth_rate)
+        recheck_result = compute_live_discount(recheck_buckets, season_type, price_eur, card_slug)
+        if recheck_result is None:
+            stats['skipped_suspect_not_confirmed'] = stats.get('skipped_suspect_not_confirmed', 0) + 1
+            track.log(f"[modello zenlock] sconto sospetto NON confermato alla riverifica per "
+                      f"{player_name} (comparabile sparito), non notifico")
+            return
+        recheck_reference = recheck_result[2]
+        if reference_price <= 0 or abs(recheck_reference - reference_price) / reference_price > ZENLOCK_RECHECK_TOLERANCE:
+            stats['skipped_suspect_not_confirmed'] = stats.get('skipped_suspect_not_confirmed', 0) + 1
+            track.log(f"[modello zenlock] sconto sospetto NON confermato alla riverifica per "
+                      f"{player_name} (riferimento {reference_price:.2f}EUR -> "
+                      f"{recheck_reference:.2f}EUR, fuori tolleranza), non notifico")
+            return
+
     stats['fired'] = stats.get('fired', 0) + 1
     fascia = "normale" if price_eur <= normal_ceiling else "eccezione (carta di valore)"
     # Stesso pattern di link gia' usato e testato dal tracker principale (vedi send_instant_alert
@@ -402,7 +433,9 @@ def run_zenlock_listener(eth_rate):
                   f"{stats.get('skipped_no_comparable', 0)}, scartate per riferimento troppo basso: "
                   f"{stats.get('skipped_reference_too_low', 0)}, scartate per differenza assoluta "
                   f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}, scartate per gemello "
-                  f"in_season altrettanto economico: {stats.get('skipped_cheap_sibling', 0)}")
+                  f"in_season altrettanto economico: {stats.get('skipped_cheap_sibling', 0)}, "
+                  f"sconto sospetto non confermato alla riverifica: "
+                  f"{stats.get('skipped_suspect_not_confirmed', 0)}")
         track.log(f"[modello zenlock] [diagnostica vendite recenti] su "
                   f"{stats.get('skipped_no_comparable', 0)} casi senza comparabile live, "
                   f"{stats.get('no_comparable_but_recent_sale_available', 0)} avevano comunque "
