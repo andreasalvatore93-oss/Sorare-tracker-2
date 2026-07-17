@@ -76,6 +76,27 @@ ZENLOCK_MIN_PRICE_EUR = float(os.environ.get('ZENLOCK_MIN_PRICE_EUR', '0.30'))
 # con THIN_BUCKET_MAX_LISTINGS, qui applicato al nostro calcolo di mediana).
 ZENLOCK_MIN_COMPARABLES = int(os.environ.get('ZENLOCK_MIN_COMPARABLES', '2'))
 
+# FIX 17/07 (v2, primo test reale -- richiesta esplicita dell'utente, "tutte notifiche inutili"):
+# il primo test (30s) ha sparato 5 notifiche su 25 carte valutate -- estrapolato sui 200s normali
+# sarebbero 30+, molto piu' della frequenza reale di ZenLock (~6 snipe/giorno su TUTTO il
+# mercato). Il problema: su carte quasi gratis (giocatori di squadra, poco richiesti) un salto di
+# pochi centesimi produce uno sconto% enorme (es. Balerdi 0.97EUR vs mediana 1.50EUR = 35%, ma
+# solo 0.53EUR di differenza) senza essere un vero mispricing -- e' solo rumore normale su un
+# segmento senza domanda di rivendita reale, non un'occasione.
+#
+# Due filtri aggiuntivi, IN AND col resto (tutti richiesti insieme):
+# - ZENLOCK_MIN_DISCOUNT_EUR: differenza assoluta minima (mediana - prezzo) in euro. Il piu'
+#   piccolo scarto assoluto osservato tra gli snipe REALI di ZenLock con confronto di mercato
+#   era 0.39EUR (Bjorn Utvik) -- teniamo un filo sotto per non essere troppo severi.
+# - ZENLOCK_MIN_MEDIAN_EUR: la mediana di riferimento stessa deve valere almeno questa cifra --
+#   esclude i giocatori "quasi gratis" dove qualsiasi calcolo percentuale e' rumore per
+#   costruzione, indipendentemente dallo sconto. NOTA: questo esclude anche 2 dei 10 snipe reali
+#   comparabili di ZenLock (Owusu mediana 0.99EUR, Utvik mediana 0.88EUR) -- compromesso
+#   consapevole, prima iterazione: meglio perdere qualche caso genuino su carte da centesimi che
+#   restare sommersi di notifiche senza edge reale. Da ritarare coi prossimi test.
+ZENLOCK_MIN_DISCOUNT_EUR = float(os.environ.get('ZENLOCK_MIN_DISCOUNT_EUR', '0.50'))
+ZENLOCK_MIN_MEDIAN_EUR = float(os.environ.get('ZENLOCK_MIN_MEDIAN_EUR', '1.50'))
+
 ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 
 
@@ -116,6 +137,12 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     discount, n_comparables, median = result
     if discount < required_discount:
         return
+    if median < ZENLOCK_MIN_MEDIAN_EUR:
+        stats['skipped_median_too_low'] = stats.get('skipped_median_too_low', 0) + 1
+        return  # giocatore "quasi gratis", sconto% e' rumore per costruzione qui
+    if (median - price_eur) < ZENLOCK_MIN_DISCOUNT_EUR:
+        stats['skipped_diff_too_small'] = stats.get('skipped_diff_too_small', 0) + 1
+        return  # sconto% alto ma differenza assoluta trascurabile, non un vero mispricing
 
     stats['fired'] = stats.get('fired', 0) + 1
     fascia = "normale" if price_eur <= normal_ceiling else "eccezione (carta di valore)"
@@ -231,7 +258,9 @@ def run_zenlock_listener(eth_rate):
         track.log(f"[modello zenlock] connessione chiusa (codice {close_status_code}). "
                   f"Eventi: {stats['received']}, carte valutate: {stats['processed']}, "
                   f"notifiche inviate: {stats['fired']}, scartate per mancanza comparabili: "
-                  f"{stats['skipped_no_comparable']}")
+                  f"{stats.get('skipped_no_comparable', 0)}, scartate per mediana troppo bassa: "
+                  f"{stats.get('skipped_median_too_low', 0)}, scartate per differenza assoluta "
+                  f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}")
 
     ws = websocket.WebSocketApp(
         track.WS_URL,
