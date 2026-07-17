@@ -139,6 +139,54 @@ def wei_to_eur(wei_value, eth_rate):
         return None
 
 
+# FIX 17/07 (richiesta esplicita dell'utente, dopo la scoperta dello stesso bug in track.py):
+# gli annunci di vendita diretta usati qui come riferimento (get_live_min_direct_sale,
+# get_recent_public_prices) possono essere denominati in USD/GBP oltre che EUR/ETH, esattamente
+# come nel tracker principale -- MonetaryAmount espone eurCents/wei/usdCents/gbpCents e prima
+# leggevamo solo i primi due, perdendo silenziosamente ~1/5 degli annunci reali (stessa scala
+# osservata su track.py). Stesso fix, stessa fonte cambio (frankfurter.app, nessuna API key).
+_FIAT_RATE_CACHE = {}
+
+
+def get_usd_eur_rate():
+    if 'usd' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['usd']
+    try:
+        r = requests.get("https://api.frankfurter.app/latest?from=USD&to=EUR", timeout=5)
+        rate = float(r.json()['rates']['EUR'])
+    except Exception:
+        rate = 0.92
+    _FIAT_RATE_CACHE['usd'] = rate
+    return rate
+
+
+def get_gbp_eur_rate():
+    if 'gbp' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['gbp']
+    try:
+        r = requests.get("https://api.frankfurter.app/latest?from=GBP&to=EUR", timeout=5)
+        rate = float(r.json()['rates']['EUR'])
+    except Exception:
+        rate = 1.17
+    _FIAT_RATE_CACHE['gbp'] = rate
+    return rate
+
+
+# Stesso contatore diagnostico gia' aggiunto oggi a track.py -- quanto pesano davvero le
+# valute USD/GBP nei riferimenti di vendita diretta che le aste usano per calcolare il tetto
+# consigliato/margine stimato.
+_CURRENCY_BRANCH_STATS = {'eurCents': 0, 'wei': 0, 'usdCents': 0, 'gbpCents': 0, 'none': 0}
+
+
+def get_currency_branch_stats():
+    return dict(_CURRENCY_BRANCH_STATS)
+
+
+def reset_currency_branch_stats():
+    for k in _CURRENCY_BRANCH_STATS:
+        _CURRENCY_BRANCH_STATS[k] = 0
+
+
 def send_telegram_msg(message):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
@@ -261,7 +309,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
       pageInfo { hasPreviousPage startCursor }
       nodes {
         status
-        receiverSide { amounts { eurCents wei } }
+        receiverSide { amounts { eurCents wei usdCents gbpCents } }
         senderSide {
           anyCards {
             rarityTyped
@@ -304,11 +352,35 @@ def fetch_all_live_offers(player_slug):
 
 def eur_price_from_amounts(amounts, eth_rate):
     if not amounts:
+        _CURRENCY_BRANCH_STATS['none'] += 1
         return None
     if amounts.get('eurCents') is not None:
+        _CURRENCY_BRANCH_STATS['eurCents'] += 1
         return amounts['eurCents'] / 100
     if amounts.get('wei') is not None:
-        return wei_to_eur(amounts['wei'], eth_rate)
+        price = wei_to_eur(amounts['wei'], eth_rate)
+        if price is None:
+            _CURRENCY_BRANCH_STATS['none'] += 1
+            return None
+        _CURRENCY_BRANCH_STATS['wei'] += 1
+        return price
+    if amounts.get('usdCents') is not None:
+        try:
+            price = amounts['usdCents'] / 100 * get_usd_eur_rate()
+        except (TypeError, ValueError):
+            _CURRENCY_BRANCH_STATS['none'] += 1
+            return None
+        _CURRENCY_BRANCH_STATS['usdCents'] += 1
+        return price
+    if amounts.get('gbpCents') is not None:
+        try:
+            price = amounts['gbpCents'] / 100 * get_gbp_eur_rate()
+        except (TypeError, ValueError):
+            _CURRENCY_BRANCH_STATS['none'] += 1
+            return None
+        _CURRENCY_BRANCH_STATS['gbpCents'] += 1
+        return price
+    _CURRENCY_BRANCH_STATS['none'] += 1
     return None
 
 
@@ -407,7 +479,7 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
       anyPlayer(slug: $slug) {
         tokenPrices(rarity: $rarity, season: $season, last: $lastN, includePrivateSales: false) {
           nodes {
-            amounts { eurCents wei }
+            amounts { eurCents wei usdCents gbpCents }
           }
         }
       }
@@ -423,13 +495,12 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
         nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
         prices = []
         for node in nodes:
-            amounts = node.get('amounts') or {}
-            if amounts.get('eurCents') is not None:
-                prices.append(amounts['eurCents'] / 100)
-            elif amounts.get('wei') is not None:
-                p = wei_to_eur(amounts['wei'], eth_rate)
-                if p is not None:
-                    prices.append(p)
+            # FIX 17/07: prima leggeva solo eurCents/wei a mano qui -- ora passa da
+            # eur_price_from_amounts, stessa funzione usata ovunque nel file, cosi' beneficia
+            # automaticamente anche del fix usdCents/gbpCents (e del contatore diagnostico).
+            p = eur_price_from_amounts(node.get('amounts'), eth_rate)
+            if p is not None:
+                prices.append(p)
         return prices
     except Exception as e:
         log(f"Errore nel recuperare i prezzi recenti per {player_slug}: {e}")
@@ -817,6 +888,7 @@ def handle_auction_event(auction, eth_rate, stats):
 
 def main():
     init_db()
+    reset_currency_branch_stats()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
 
@@ -880,6 +952,8 @@ def main():
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). "
             f"Aste processate in questa esecuzione: {stats['processed']}")
+        log(f"[diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: "
+            f"{get_currency_branch_stats()}")
 
     ws = websocket.WebSocketApp(
         WS_URL,
