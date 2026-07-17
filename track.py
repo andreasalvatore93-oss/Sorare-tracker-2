@@ -770,6 +770,21 @@ def get_currency_branch_stats():
 def reset_currency_branch_stats():
     for k in _CURRENCY_BRANCH_STATS:
         _CURRENCY_BRANCH_STATS[k] = 0
+    global _NONE_AMOUNTS_DUMP_COUNT
+    _NONE_AMOUNTS_DUMP_COUNT = 0
+
+
+# FIX 17/07 (v14, richiesta esplicita dell'utente dopo il caso "none" nel counter valute --
+# l'utente usa Sorare da anni e conferma che un annuncio manager "opened", non uno scambio,
+# DEVE sempre avere un prezzo fisso: comprare-subito-con-possibilita'-di-offerta, oppure venduto
+# direttamente da Sorare. Il commento precedente (v23, "probabilmente Fai un'offerta senza
+# prezzo fisso") era una SUPPOSIZIONE mai verificata su un dato grezzo reale -- l'utente la mette
+# in dubbio con ragione, sospetta invece un problema di valuta non gestita (es. un'altra valuta
+# fiat oltre a EUR/USD/GBP). Invece di continuare a indovinare, logghiamo il nodo grezzo COMPLETO
+# dei primi pochi casi "none" incontrati per run (tetto basso per non fare spam nei log), cosi'
+# la prossima volta abbiamo il dato vero invece di un'ipotesi.
+_NONE_AMOUNTS_DUMP_LIMIT = 3
+_NONE_AMOUNTS_DUMP_COUNT = 0
 
 
 def eur_price_from_amounts(amounts, eth_rate):
@@ -880,6 +895,17 @@ def get_bucket_prices(player_slug, eth_rate):
             # -- vanno esclusi dal conteggio come gli scambi, non trattati come motivo di dubbio
             # su tutto il bucket (prima questo faceva scattare "dati incompleti" quasi sempre,
             # bloccando affari reali gia' confermati a mano, es. Scherpen a 7.00EUR).
+            #
+            # FIX 17/07 (v14): l'ipotesi sopra non e' mai stata confermata su un dato grezzo, e
+            # l'utente (esperto, anni di uso reale di Sorare) la mette in dubbio -- un annuncio
+            # manager aperto DEVE sempre avere un prezzo fisso. Dump del nodo grezzo completo dei
+            # primi _NONE_AMOUNTS_DUMP_LIMIT casi per run, per vedere il dato vero invece di
+            # continuare a indovinare (es. potrebbe essere una valuta fiat non gestita).
+            global _NONE_AMOUNTS_DUMP_COUNT
+            if _NONE_AMOUNTS_DUMP_COUNT < _NONE_AMOUNTS_DUMP_LIMIT:
+                _NONE_AMOUNTS_DUMP_COUNT += 1
+                log(f"[diagnostica valuta 'none'] nodo grezzo completo (caso {_NONE_AMOUNTS_DUMP_COUNT}/"
+                    f"{_NONE_AMOUNTS_DUMP_LIMIT} per player_slug={player_slug}): {node}")
             continue
         raw[node_season_type].append((price, match.get('slug')))
     result = {}
