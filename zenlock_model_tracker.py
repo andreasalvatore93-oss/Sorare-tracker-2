@@ -102,16 +102,20 @@ ZENLOCK_MIN_REFERENCE_EUR = float(os.environ.get('ZENLOCK_MIN_REFERENCE_EUR', '1
 
 ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 
-# FIX 17/07 (v5, caso Jhegson Sebastian Mendez -- diagnostica temporanea, rimuovere dopo
-# verifica): il debug comparabili grezzi ha mostrato solo 2 annunci (1.99EUR, 24.01EUR) quando
-# sul mercato reale ce n'erano 4 (mancavano 0.59EUR e 1.92EUR, ENTRAMBI vecchi di giorni, quindi
-# non e' la finestra di invisibilita' dei 2 minuti, e confermato dall'utente che non sono Early
-# Access). Se compute_live_discount continua a perdere annunci reali il modello sovrastima lo
-# sconto sistematicamente (falsi positivi). Riusiamo diagnostic_dump_missing_offer, gia' scritta
-# in track.py per lo stesso identico tipo di caso (annuncio noto che non compare) -- se
-# ZENLOCK_DIAGNOSTIC_PLAYER_SLUG e' valorizzato, la lanciamo prima di avviare l'ascolto, cosi'
-# vediamo il dump COMPLETO non filtrato e capiamo se il problema e' lato query/server (annuncio
-# assente anche li') o in un nostro filtro lato client (status/rarita'/sport/bucket).
+# NOTA STORICA (17/07, v5, caso Jhegson Sebastian Mendez -- indagine chiusa): il debug
+# comparabili grezzi mostrava solo 2 annunci (1.99EUR, 24.01EUR) quando sul mercato reale ce
+# n'erano 4 (mancavano 0.59EUR e 1.92EUR, ENTRAMBI vecchi di giorni -- non la finestra di
+# invisibilita' dei 2 minuti -- e confermato dall'utente che non erano Early Access). Il dump
+# grezzo COMPLETO (diagnostic_dump_missing_offer, gia' in track.py) ha chiarito la causa: i due
+# annunci mancanti NON compaiono nemmeno li' (9 nodi totali restituiti dalla query, nessuno dei
+# due) -- quindi non e' un filtro nostro lato client, e' la query liveSingleSaleOffers di Sorare
+# stessa che non li restituisce. Stesso fenomeno di "annunci fantasma" gia' documentato altrove
+# in track.py (Cancelo, Sangare, O'Reilly, Jeong Seung-Won) e mai risolto nonostante indagini
+# approfondite -- limite strutturale dei dati Sorare, non fixabile lato nostro. Implicazione:
+# lo sconto% calcolato va sempre trattato come limite SUPERIORE (il vero minimo di mercato puo'
+# essere piu' basso e invisibile a noi), da qui l'importanza del link "APRI SU SORARE" in ogni
+# notifica per la verifica visiva finale prima di comprare. L'hook diagnostico resta disponibile
+# (attivo solo se ZENLOCK_DIAGNOSTIC_PLAYER_SLUG e' valorizzato) per il prossimo caso dubbio.
 ZENLOCK_DIAGNOSTIC_PLAYER_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_PLAYER_SLUG', '').strip()
 
 

@@ -10,11 +10,11 @@ on:
       listen_seconds:
         description: "Secondi di ascolto (lascia vuoto per 200 = normale; usa 20-30 per test veloci)"
         required: false
-        default: "5"
+        default: "200"
       diagnostic_player_slug:
-        description: "Lascia vuoto normalmente. Slug giocatore per dump grezzo COMPLETO (non filtrato) degli annunci live, per casi tipo Jhegson Mendez (annuncio noto mancante dai comparabili)"
+        description: "Lascia vuoto normalmente. Slug giocatore per dump grezzo COMPLETO (non filtrato) degli annunci live, per casi dubbi (annuncio noto mancante dai comparabili)"
         required: false
-        default: "jhegson-sebastian-mendez-carabali"
+        default: ""
 permissions:
   contents: read
 concurrency:
