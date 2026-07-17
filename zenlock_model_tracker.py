@@ -362,6 +362,38 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
         return
 
     discount, n_comparables, reference_price, others_raw = result
+
+    # FIX 17/07 (v24, caso Dominik Szoboszlai -- richiesta esplicita dell'utente, stessa logica
+    # gia' collaudata in track.py/evaluate_player_offer per i casi Luis Diaz/Franko Kolic): una
+    # carta IN SEASON e' idonea a tutto cio' per cui lo e' una carta CLASSIC (Classic Global Cup,
+    # All Star) PIU' le competizioni della stagione corrente -- e' quindi un sostituto valido per
+    # un manager, non un'alternativa "diversa". Se il bucket in valutazione e' 'classic' e il
+    # minimo in_season e' vicino o piu' economico del riferimento classic trovato sopra, il vero
+    # confronto e' quello (verificato sul caso reale: classic 15.15EUR notificata con riferimento
+    # classic 19.00EUR/14 comparabili, ma esisteva un in_season a soli 16.95EUR -- il vero
+    # margine era 10.6%, non il 20.3% mostrato). L'inverso NON vale (una classic non sostituisce
+    # una in_season, le manca l'idoneita' alla stagione corrente): applicato SOLO in questa
+    # direzione, esattamente come in track.py -- richiesta esplicita dell'utente di conferma.
+    reference_is_in_season_substitute = False
+    if season_type == 'classic':
+        in_season_prices, _ = buckets.get('in_season', ([], False))
+        if in_season_prices:
+            in_season_min = in_season_prices[0][0]
+            if in_season_min <= price_eur:
+                stats['skipped_in_season_substitute_cheaper'] = stats.get(
+                    'skipped_in_season_substitute_cheaper', 0) + 1
+                track.log(f"[modello zenlock] sostituto in season ancora piu' economico "
+                          f"({in_season_min:.2f}EUR contro {price_eur:.2f}EUR classic) per "
+                          f"{player_name}, non e' un affare distinto, non notifico")
+                return
+            if in_season_min < reference_price:
+                track.log(f"[modello zenlock] riferimento classic ({reference_price:.2f}EUR) "
+                          f"sostituito dal minimo in_season piu' economico ({in_season_min:.2f}EUR) "
+                          f"per {player_name}, vedi caso Szoboszlai")
+                reference_price = in_season_min
+                discount = (reference_price - price_eur) / reference_price
+                reference_is_in_season_substitute = True
+
     if n_comparables == 1:
         # FIX 17/07 (v9): un solo comparabile e' rumore potenziale (vedi nota sopra su
         # ZENLOCK_MIN_COMPARABLES) -- alziamo la soglia richiesta invece di scartare a priori.
