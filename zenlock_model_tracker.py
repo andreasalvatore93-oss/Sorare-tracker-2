@@ -227,6 +227,20 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     result = compute_live_discount(buckets, season_type, price_eur, card_slug)
     if result is None:
         stats['skipped_no_comparable'] = stats.get('skipped_no_comparable', 0) + 1
+        # FIX 17/07 (v8, TEST diagnostico richiesto dall'utente -- "vorrei scendere dall'86% di
+        # casi ciechi"): SOLO misurazione, non cambia la decisione (niente notifica qui). Verifica
+        # se una fonte alternativa (vendite REALI recenti, tokenPrices) avrebbe dato un
+        # riferimento anche quando il bucket live e' troppo scarno -- se i numeri mostrano che
+        # aiuta abbastanza, diventera' un vero fallback in una prossima iterazione. Rischio noto
+        # gia' documentato su get_recent_sale_history: tokenPrices non distingue classic/in_season
+        # per singola vendita, quindi va usato con piu' cautela di un confronto live.
+        recent_sales = track.get_recent_sale_history(player_slug, eth_rate)
+        if recent_sales:
+            stats['no_comparable_but_recent_sale_available'] = stats.get(
+                'no_comparable_but_recent_sale_available', 0) + 1
+            track.log(f"[modello zenlock] DEBUG fallback vendite recenti disponibile per "
+                      f"{player_slug} (nessun comparabile live, prezzo evento {price_eur:.2f}EUR): "
+                      f"{recent_sales}")
         return  # nessun confronto affidabile: per policy esplicita NON notifichiamo "al buio"
 
     discount, n_comparables, reference_price, others_raw = result
@@ -371,6 +385,10 @@ def run_zenlock_listener(eth_rate):
                   f"{stats.get('skipped_reference_too_low', 0)}, scartate per differenza assoluta "
                   f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}, scartate per gemello "
                   f"in_season altrettanto economico: {stats.get('skipped_cheap_sibling', 0)}")
+        track.log(f"[modello zenlock] [diagnostica vendite recenti] su "
+                  f"{stats.get('skipped_no_comparable', 0)} casi senza comparabile live, "
+                  f"{stats.get('no_comparable_but_recent_sale_available', 0)} avevano comunque "
+                  f"vendite recenti disponibili (tokenPrices) come possibile riferimento futuro")
         track.log(f"[modello zenlock] [diagnostica valute] branch usati in "
                   f"eur_price_from_amounts questa esecuzione: {track.get_currency_branch_stats()}")
 
