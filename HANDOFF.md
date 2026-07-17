@@ -340,16 +340,23 @@ CRLF sopra) invece di assumere. File toccati oggi: `track.py`, `zenlock_model_tr
    ESATTAMENTE con la finestra di ban vista nel log (Retry-After 22s->11s, stessa manciata di
    secondi). Causa confermata: quota rate-limit condivisa tra bot e sessione umana sullo stesso
    account.
-   **IMPLEMENTATO 18/07** (richiesta esplicita "insieme, proponi tu tetto di partenza") in
+   **IMPLEMENTATO 18/07 v1** (richiesta esplicita "insieme, proponi tu tetto di partenza") in
    `zenlock_model_tracker.py`: `ZENLOCK_BURST_MAX_EVALUATIONS=5` valutazioni per
-   `ZENLOCK_BURST_WINDOW_SECONDS=15` (finestra scorrevole, `_zenlock_should_throttle()`, deque
-   `_recent_evaluation_times`) + `ZENLOCK_THROTTLE_DELAY_SECONDS=1.0` di pausa dopo ogni
-   valutazione completa. Oltre il tetto, l'evento viene saltato (stat `skipped_burst_throttle`,
-   loggato) SENZA fare query aggiuntive -- l'annuncio non e' perso per sempre, viene ricontrollato
-   al prossimo evento/esecuzione se resta live. Soglie deliberatamente conservative (~20
-   valutazioni/minuto, contro le 4 MATCH reali osservate in un minuto nel caso che ha causato il
-   problema): da stringere se il 429 si ripresenta, da allentare se si rivela troppo prudente.
-   Testato con mock (tetto rispettato, finestra che si libera col tempo, throttle che salta
-   davvero la chiamata a evaluate_zenlock_offer). NON ancora applicato a track.py/
-   auctions_ws_listener.py -- valutare se serve dopo aver visto qualche run reale in piu'.
-   Push ancora da fare da parte dell'utente.
+   `ZENLOCK_BURST_WINDOW_SECONDS=15` + `ZENLOCK_THROTTLE_DELAY_SECONDS=1.0` di pausa dopo ogni
+   valutazione. **ERRORE DI CALIBRAZIONE SCOPERTO SUBITO DOPO, STESSO GIORNO**: il tetto era
+   confrontato con la frequenza dei MATCH (4/minuto, le notifiche vere, rarissime) invece che con
+   la frequenza REALE di "carte valutate" (70-105/minuto nei run normali di oggi, MAI un problema
+   di rate-limit prima d'ora). Primo run reale con la v1 attiva (22:35-22:39 UTC): **265 carte su
+   329 scartate dal throttle (80.5%), zero notifiche** -- una perdita di copertura enorme,
+   scoperta dall'utente controllando il log ("80? stiamo scherzando??????????", giustamente).
+   **v2 CORRETTIVA, stesso giorno**: tetto alzato a `ZENLOCK_BURST_MAX_EVALUATIONS=60` (240/min,
+   ben sopra il traffico normale ma ancora un freno per un caso davvero patologico),
+   `ZENLOCK_THROTTLE_DELAY_SECONDS=0` (rimosso, costava 30-44s di budget di ascolto per run senza
+   giustificazione: il vero incidente originale era quasi certamente causato soprattutto dall'uso
+   manuale concorrente dell'utente sulla stessa quota account, non dal volume normale del bot).
+   Testato questa volta con un OROLOGIO SIMULATO realistico (non eventi tutti nello stesso
+   istante, errore fatto anche nel primo giro di test): 438 eventi/250s (il run piu' carico
+   osservato oggi) -> 0% throttle; raffica locale di 20 eventi in 3s -> 0% throttle; caso
+   patologico 200 eventi in 1s -> il freno scatta ancora. Push ancora da fare da parte
+   dell'utente -- monitorare il prossimo run reale per confermare che il volume normale non
+   venga piu' toccato.
