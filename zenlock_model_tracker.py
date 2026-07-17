@@ -9,12 +9,15 @@ nostro modello (MARGIN_TIERS in track.py):
   diagnostic_manager_trades_report): classic quasi sempre <=4EUR (57% sotto i 3EUR), in_season
   quasi sempre <=8EUR, con rare eccezioni su carte "big name" (Messi 65.71EUR, Kvaratskhelia
   21.96EUR) trattate come fascia a parte con soglia di sconto piu' severa.
-- sconto vs un riferimento di mercato LIVE (mediana degli altri annunci aperti dello stesso
-  giocatore/bucket in questo momento, via track.get_bucket_prices -- stessa fonte dati gia'
-  usata e testata dal tracker principale per il proprio "secondo prezzo", quindi a costo zero
-  in termini di rischio). NON usiamo lo storico vendite (fetch_player_recent_direct_buys) qui:
-  e' pensato per un report offline, troppo pesante/lento per essere richiamato ad ogni singolo
-  evento WS in tempo reale.
+- sconto vs un riferimento di mercato LIVE. AGGIORNATO 17/07 (v3, caso Nayef Aguerd): non piu'
+  una mediana su tutto il bucket (vulnerabile ad annunci vecchi/stagnanti mai aggiornati, vedi
+  FIX piu' sotto vicino a compute_live_discount) ma il prezzo del PROSSIMO annuncio live piu'
+  economico tra gli altri dello stesso giocatore/bucket, via track.get_bucket_prices -- stessa
+  fonte dati e stesso principio gia' usati e testati dal tracker principale per il proprio
+  "secondo prezzo" (required_margin_fraction/MARGIN_TIERS), quindi a costo zero in termini di
+  rischio. NON usiamo lo storico vendite (fetch_player_recent_direct_buys) qui: e' pensato per
+  un report offline, troppo pesante/lento per essere richiamato ad ogni singolo evento WS in
+  tempo reale.
 
   IMPORTANTE (onesto sui limiti del modello): nel run di margin_model su 14gg, l'86% degli
   snipe REALI di ZenLock non aveva NESSUN comparabile di mercato disponibile -- prende carte
@@ -85,37 +88,49 @@ ZENLOCK_MIN_COMPARABLES = int(os.environ.get('ZENLOCK_MIN_COMPARABLES', '2'))
 # segmento senza domanda di rivendita reale, non un'occasione.
 #
 # Due filtri aggiuntivi, IN AND col resto (tutti richiesti insieme):
-# - ZENLOCK_MIN_DISCOUNT_EUR: differenza assoluta minima (mediana - prezzo) in euro. Il piu'
+# - ZENLOCK_MIN_DISCOUNT_EUR: differenza assoluta minima (riferimento - prezzo) in euro. Il piu'
 #   piccolo scarto assoluto osservato tra gli snipe REALI di ZenLock con confronto di mercato
 #   era 0.39EUR (Bjorn Utvik) -- teniamo un filo sotto per non essere troppo severi.
-# - ZENLOCK_MIN_MEDIAN_EUR: la mediana di riferimento stessa deve valere almeno questa cifra --
+# - ZENLOCK_MIN_REFERENCE_EUR: il prezzo di riferimento stesso deve valere almeno questa cifra --
 #   esclude i giocatori "quasi gratis" dove qualsiasi calcolo percentuale e' rumore per
 #   costruzione, indipendentemente dallo sconto. NOTA: questo esclude anche 2 dei 10 snipe reali
 #   comparabili di ZenLock (Owusu mediana 0.99EUR, Utvik mediana 0.88EUR) -- compromesso
 #   consapevole, prima iterazione: meglio perdere qualche caso genuino su carte da centesimi che
 #   restare sommersi di notifiche senza edge reale. Da ritarare coi prossimi test.
 ZENLOCK_MIN_DISCOUNT_EUR = float(os.environ.get('ZENLOCK_MIN_DISCOUNT_EUR', '0.50'))
-ZENLOCK_MIN_MEDIAN_EUR = float(os.environ.get('ZENLOCK_MIN_MEDIAN_EUR', '1.50'))
+ZENLOCK_MIN_REFERENCE_EUR = float(os.environ.get('ZENLOCK_MIN_REFERENCE_EUR', '1.50'))
 
 ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 
 
+# FIX 17/07 (v3, caso Nayef Aguerd -- verificato a mano dall'utente): la carta era infortunata da
+# mesi (Groin Injury, ritorno sconosciuto) -- TUTTO il mercato era gia' sceso in un cluster
+# stretto 1.44-3.36EUR, ma la mediana calcolata su 15 comparabili risultava 7.87EUR, gonfiata da
+# annunci vecchi/stagnanti mai aggiornati dal venditore dopo l'infortunio (nessuno li ha ne'
+# ritirati ne' scontati, restano li' a un prezzo ormai falso). Stesso identico trabocchetto gia'
+# risolto nel tracker principale (vedi commento su required_margin_fraction/MARGIN_TIERS e caso
+# Muric, "PERICOLOSO in un caso reale e frequente: un giocatore si infortuna... DUE manager lo
+# rimettono in vendita al nuovo prezzo basso"): la mediana su TUTTO il bucket e' vulnerabile
+# esattamente a questo skew. La soluzione gia' testata li' e' non usare una statistica sull'intero
+# bucket, ma confrontare solo col prezzo del PROSSIMO annuncio piu' economico disponibile ORA
+# (own_prices[1] li', others[0] qui) -- se il mercato si e' davvero gia' adeguato (caso Aguerd),
+# quel prezzo e' anch'esso basso e il confronto scarta correttamente il falso positivo; se invece
+# e' un vero mispricing, il prossimo annuncio piu' economico resta comunque ben piu' caro.
 def compute_live_discount(player_slug, season_type, price_eur, exclude_card_slug, eth_rate):
-    """Mediana degli ALTRI annunci live aperti dello stesso giocatore/bucket (esclude
-    l'annuncio che ha scatenato l'evento), e sconto di price_eur rispetto a quella mediana.
-    Ritorna (sconto_frazione, n_comparabili, mediana) oppure None se il campione e' troppo
-    scarno per fidarsene (vedi ZENLOCK_MIN_COMPARABLES)."""
+    """Prezzo del prossimo annuncio live piu' economico tra gli ALTRI annunci aperti dello stesso
+    giocatore/bucket (esclude l'annuncio che ha scatenato l'evento), e sconto di price_eur
+    rispetto a quel prezzo. Ritorna (sconto_frazione, n_comparabili, prezzo_riferimento) oppure
+    None se il campione e' troppo scarno per fidarsene (vedi ZENLOCK_MIN_COMPARABLES)."""
     buckets = track.get_bucket_prices(player_slug, eth_rate)
     prices, _incomplete = buckets.get(season_type, ([], False))
     others = sorted(p for p, slug in prices if slug != exclude_card_slug)
     if len(others) < ZENLOCK_MIN_COMPARABLES:
         return None
-    n = len(others)
-    median = others[n // 2] if n % 2 == 1 else (others[n // 2 - 1] + others[n // 2]) / 2
-    if median <= 0:
+    reference_price = others[0]
+    if reference_price <= 0:
         return None
-    discount = (median - price_eur) / median
-    return discount, len(others), median
+    discount = (reference_price - price_eur) / reference_price
+    return discount, len(others), reference_price
 
 
 def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, price_eur,
@@ -134,13 +149,13 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
         stats['skipped_no_comparable'] = stats.get('skipped_no_comparable', 0) + 1
         return  # nessun confronto affidabile: per policy esplicita NON notifichiamo "al buio"
 
-    discount, n_comparables, median = result
+    discount, n_comparables, reference_price = result
     if discount < required_discount:
         return
-    if median < ZENLOCK_MIN_MEDIAN_EUR:
-        stats['skipped_median_too_low'] = stats.get('skipped_median_too_low', 0) + 1
+    if reference_price < ZENLOCK_MIN_REFERENCE_EUR:
+        stats['skipped_reference_too_low'] = stats.get('skipped_reference_too_low', 0) + 1
         return  # giocatore "quasi gratis", sconto% e' rumore per costruzione qui
-    if (median - price_eur) < ZENLOCK_MIN_DISCOUNT_EUR:
+    if (reference_price - price_eur) < ZENLOCK_MIN_DISCOUNT_EUR:
         stats['skipped_diff_too_small'] = stats.get('skipped_diff_too_small', 0) + 1
         return  # sconto% alto ma differenza assoluta trascurabile, non un vero mispricing
 
@@ -153,11 +168,11 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     link = f"{base_link}?card={card_slug}" if card_slug else base_link
     msg = (f"🎯 <b>Modello ZenLock</b> -- {player_name} [{season_type}]\n\n"
            f"Prezzo: {price_eur:.2f}EUR (fascia {fascia})\n"
-           f"Mediana live altri annunci: {median:.2f}EUR ({n_comparables} comparabili)\n"
+           f"Prossimo annuncio piu' economico: {reference_price:.2f}EUR ({n_comparables} comparabili)\n"
            f"Sconto: {discount:.1%} (soglia richiesta {required_discount:.0%})\n\n"
            f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈")
     track.log(f"[modello zenlock] MATCH -- {player_name} [{season_type}] {price_eur:.2f}EUR, "
-              f"sconto {discount:.1%} su mediana {median:.2f}EUR (n={n_comparables})")
+              f"sconto {discount:.1%} su prossimo annuncio {reference_price:.2f}EUR (n={n_comparables})")
     track.send_telegram_msg(msg)
 
 
@@ -258,8 +273,8 @@ def run_zenlock_listener(eth_rate):
         track.log(f"[modello zenlock] connessione chiusa (codice {close_status_code}). "
                   f"Eventi: {stats['received']}, carte valutate: {stats['processed']}, "
                   f"notifiche inviate: {stats['fired']}, scartate per mancanza comparabili: "
-                  f"{stats.get('skipped_no_comparable', 0)}, scartate per mediana troppo bassa: "
-                  f"{stats.get('skipped_median_too_low', 0)}, scartate per differenza assoluta "
+                  f"{stats.get('skipped_no_comparable', 0)}, scartate per riferimento troppo basso: "
+                  f"{stats.get('skipped_reference_too_low', 0)}, scartate per differenza assoluta "
                   f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}")
 
     ws = websocket.WebSocketApp(
