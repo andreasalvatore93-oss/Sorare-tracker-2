@@ -352,6 +352,18 @@ def log(message):
 # piu' sotto.
 GRAPHQL_RETRY_MAX_WAIT_SECONDS = 8.0
 
+# FIX 17/07 (v4, log post-v3: il ping/pong e' scaduto ANCORA, stavolta per 9 carte consecutive
+# in una singola run, ciascuna bloccata ~25s dai 3 retry falliti -- blocco cumulativo di ~224s
+# senza mai una pausa abbastanza lunga da lasciar respirare il ping/pong, a prescindere da quanto
+# si alzi ping_timeout). Il log mostra anche che i Retry-After ricevuti in quella run
+# decrescevano in modo lineare e coerente col tempo reale trascorso (360s, poi 335s 25s dopo,
+# poi 310s 25s dopo, ecc.) -- comportamento tipico di un ban a tempo fisso con scadenza assoluta,
+# non di un rate limit che "si rinnova" ad ogni richiesta. Contro un ban di questo tipo, ritentare
+# con backoff breve (8s) e' inutile: ogni retry fallira' comunque fino alla scadenza, e nel
+# frattempo continua a bloccare il thread della WS. Sopra questa soglia rinunciamo subito al
+# primo 429, senza fare gli altri 2 retry.
+GRAPHQL_RETRY_AFTER_BAN_THRESHOLD_SECONDS = 15.0
+
 
 def graphql_query(query, variables=None, max_retries=3):
     headers = {
@@ -365,11 +377,11 @@ def graphql_query(query, variables=None, max_retries=3):
         r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             retry_after = r.headers.get('Retry-After')
+            raw_retry_after_seconds = None
             try:
-                wait_seconds = float(retry_after) if retry_after else (2 ** attempt) * 2
+                raw_retry_after_seconds = float(retry_after) if retry_after else None
             except ValueError:
-                wait_seconds = (2 ** attempt) * 2
-            wait_seconds = min(wait_seconds, GRAPHQL_RETRY_MAX_WAIT_SECONDS)
+                raw_retry_after_seconds = None
             if attempt == 0:
                 # FIX 17/07: log del corpo/header della risposta 429 solo al primo tentativo
                 # (evita spam nei retry successivi) -- utile per capire se e' un rate limit vero
@@ -379,6 +391,17 @@ def graphql_query(query, variables=None, max_retries=3):
                 body_snippet = (r.text or '')[:200].replace('\n', ' ')
                 log(f"[rate limit] dettaglio risposta 429 -- headers rilevanti: "
                     f"Retry-After={retry_after!r}, corpo: {body_snippet!r}")
+            if (raw_retry_after_seconds is not None
+                    and raw_retry_after_seconds > GRAPHQL_RETRY_AFTER_BAN_THRESHOLD_SECONDS):
+                # FIX v4: Retry-After troppo lungo per essere un rate limit transitorio, probabile
+                # ban a tempo fisso -- rinuncio subito invece di sprecare ~24s in retry inutili
+                # che bloccherebbero il ping/pong della WS senza alcuna possibilita' di successo.
+                log(f"[rate limit] Retry-After={raw_retry_after_seconds:.0f}s troppo lungo "
+                    f"(soglia {GRAPHQL_RETRY_AFTER_BAN_THRESHOLD_SECONDS:.0f}s), probabile ban a "
+                    f"tempo fisso -- rinuncio subito senza ritentare")
+                return {"errors": [{"message": "rate_limited_ban_detected"}]}
+            wait_seconds = raw_retry_after_seconds if raw_retry_after_seconds is not None else (2 ** attempt) * 2
+            wait_seconds = min(wait_seconds, GRAPHQL_RETRY_MAX_WAIT_SECONDS)
             log(f"[rate limit] HTTP 429 da Sorare (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s prima di ritentare...")
             time.sleep(wait_seconds)

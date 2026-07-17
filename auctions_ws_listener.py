@@ -127,6 +127,12 @@ def log(message):
 # un rate limit reale piu' lungo.
 GRAPHQL_RETRY_MAX_WAIT_SECONDS = 8.0
 
+# FIX 17/07 (v4, gemello del fix in track.py -- log ZenLock mostra ping/pong scaduto ANCORA per
+# blocco cumulativo su piu' carte consecutive, e Retry-After che decresce linearmente col tempo
+# reale trascorso, tipico di un ban a tempo fisso e non di un rate limit che si rinnova). Contro
+# un ban del genere i retry brevi sono inutili e bloccano solo il thread della WS piu' a lungo.
+GRAPHQL_RETRY_AFTER_BAN_THRESHOLD_SECONDS = 15.0
+
 
 def graphql_query(query, variables=None, max_retries=3):
     headers = {
@@ -140,15 +146,23 @@ def graphql_query(query, variables=None, max_retries=3):
         r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             retry_after = r.headers.get('Retry-After')
+            raw_retry_after_seconds = None
             try:
-                wait_seconds = float(retry_after) if retry_after else (2 ** attempt) * 2
+                raw_retry_after_seconds = float(retry_after) if retry_after else None
             except ValueError:
-                wait_seconds = (2 ** attempt) * 2
-            wait_seconds = min(wait_seconds, GRAPHQL_RETRY_MAX_WAIT_SECONDS)
+                raw_retry_after_seconds = None
             if attempt == 0:
                 body_snippet = (r.text or '')[:200].replace('\n', ' ')
                 log(f"[rate limit] dettaglio risposta 429 -- headers rilevanti: "
                     f"Retry-After={retry_after!r}, corpo: {body_snippet!r}")
+            if (raw_retry_after_seconds is not None
+                    and raw_retry_after_seconds > GRAPHQL_RETRY_AFTER_BAN_THRESHOLD_SECONDS):
+                log(f"[rate limit] Retry-After={raw_retry_after_seconds:.0f}s troppo lungo "
+                    f"(soglia {GRAPHQL_RETRY_AFTER_BAN_THRESHOLD_SECONDS:.0f}s), probabile ban a "
+                    f"tempo fisso -- rinuncio subito senza ritentare")
+                return {"errors": [{"message": "rate_limited_ban_detected"}]}
+            wait_seconds = raw_retry_after_seconds if raw_retry_after_seconds is not None else (2 ** attempt) * 2
+            wait_seconds = min(wait_seconds, GRAPHQL_RETRY_MAX_WAIT_SECONDS)
             log(f"[rate limit] HTTP 429 da Sorare (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s prima di ritentare...")
             time.sleep(wait_seconds)
