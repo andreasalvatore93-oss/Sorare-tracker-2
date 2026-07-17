@@ -96,7 +96,21 @@ ZENLOCK_MIN_PRICE_EUR = float(os.environ.get('ZENLOCK_MIN_PRICE_EUR', '0.30'))
 # Sotto questo numero di ALTRI annunci live comparabili nello stesso bucket, il riferimento di
 # mercato non e' abbastanza affidabile da fidarsene (stesso principio del tracker principale
 # con THIN_BUCKET_MAX_LISTINGS, qui applicato al nostro calcolo di mediana).
-ZENLOCK_MIN_COMPARABLES = int(os.environ.get('ZENLOCK_MIN_COMPARABLES', '2'))
+# FIX 17/07 (v9, richiesta esplicita dell'utente, "quali affari ci stiamo perdendo"): 2 -> 1.
+# Con soglia 2, un caso come Lee Myung-Joo (85 snipe/14gg: sconto reale 39.7%, ma un SOLO
+# comparabile) veniva scartato come "nessun confronto affidabile" anche se il comparabile
+# c'era, solo unico. Non abbassiamo la soglia di sconto insieme -- vedi
+# ZENLOCK_DISCOUNT_SINGLE_COMPARABLE piu' sotto, che alza la soglia richiesta apposta quando
+# n_comparabili==1, per non aprire al rumore puro di un singolo prezzo (visto oggi su Ayumu
+# Yokoyama: 0.30EUR-1.36EUR sullo stesso giocatore in pochi giorni, un solo comparabile a caso
+# sarebbe stato inaffidabile).
+ZENLOCK_MIN_COMPARABLES = int(os.environ.get('ZENLOCK_MIN_COMPARABLES', '1'))
+
+# Soglia di sconto piu' severa quando il riferimento si basa su UN SOLO comparabile (invece dei
+# normali ZENLOCK_DISCOUNT_NORMAL/HIGH_VALUE) -- un singolo prezzo puo' essere rumore, quindi
+# chiediamo un margine molto piu' ampio prima di fidarcene. 35% e' sopra il 25% normale ma
+# ancora sotto il 39.7% del caso Lee Myung-Joo (l'avrebbe fatto passare), scelto cosi' apposta.
+ZENLOCK_DISCOUNT_SINGLE_COMPARABLE = float(os.environ.get('ZENLOCK_DISCOUNT_SINGLE_COMPARABLE', '0.35'))
 
 # FIX 17/07 (v2, primo test reale -- richiesta esplicita dell'utente, "tutte notifiche inutili"):
 # il primo test (30s) ha sparato 5 notifiche su 25 carte valutate -- estrapolato sui 200s normali
@@ -244,6 +258,10 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
         return  # nessun confronto affidabile: per policy esplicita NON notifichiamo "al buio"
 
     discount, n_comparables, reference_price, others_raw = result
+    if n_comparables == 1:
+        # FIX 17/07 (v9): un solo comparabile e' rumore potenziale (vedi nota sopra su
+        # ZENLOCK_MIN_COMPARABLES) -- alziamo la soglia richiesta invece di scartare a priori.
+        required_discount = max(required_discount, ZENLOCK_DISCOUNT_SINGLE_COMPARABLE)
     if discount < required_discount:
         return
     if reference_price < ZENLOCK_MIN_REFERENCE_EUR:
