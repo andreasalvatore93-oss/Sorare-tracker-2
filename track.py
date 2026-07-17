@@ -2904,9 +2904,16 @@ def discover_amount_currency_fields(player_slug):
     """Prova candidati di campo extra nel tipo amounts (oltre a eurCents/wei/usdCents/gbpCents
     gia' noti), uno alla volta, su un annuncio live reale del giocatore indicato. Logga solo
     esito (successo/errore), non tocca la logica del bot."""
+    # FIX 17/07 (v2): il primo giro di tentativi ha fallito su tutti i candidati indovinati, MA
+    # GraphQL restituisce un suggerimento "Did you mean X?" quando il nome sbagliato e' vicino a
+    # un campo vero dello schema -- e per 'lamports' ha suggerito 'lamport' (singolare, prova
+    # concreta che esiste un campo legato a Solana/lamport su MonetaryAmount), e per
+    # 'referenceEurCents' ha suggerito 'referenceCurrency'. Questi due non sono piu' ipotesi,
+    # sono nomi di campo REALI restituiti dallo schema stesso: priorita' massima.
     candidates = [
-        'solLamports', 'lamports', 'solCents', 'sol',
-        'referenceEurCents', 'audCents', 'chfCents', 'cadCents',
+        'lamport', 'referenceCurrency',
+        'solLamports', 'solCents', 'sol',
+        'audCents', 'chfCents', 'cadCents',
     ]
     log(f"[diagnostica valuta extra] inizio tentativi campo amounts per {player_slug}...")
     for field_name in candidates:
