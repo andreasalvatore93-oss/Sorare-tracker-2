@@ -313,3 +313,21 @@
 [2026-07-17 21:48:43] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 27, 'wei': 3, 'usdCents': 1, 'gbpCents': 0, 'lamport': 0, 'none': 0}
 [2026-07-17 21:48:43] [diagnostica filtro stagione] con season ok: 4, fallback senza season riuscito: 0, entrambi vuoti: 0
 [2026-07-17 21:48:43] Ascolto aste terminato.
+
+===== RUN 2026-07-17 21:51:56 UTC =====
+[2026-07-17 21:51:56] Tasso ETH/EUR: 1609.41
+[2026-07-17 21:51:56] [diagnostica ordinamento aste] orderBy: END_DATE_ASC: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'orderBy'", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'orderBy'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'orderBy'}}]
+[2026-07-17 21:51:56] [diagnostica ordinamento aste] sort: END_DATE_ASC: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'sort' (Did you mean `sport`?)", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'sort'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'sort'}}]
+[2026-07-17 21:51:57] [diagnostica ordinamento aste] sortBy: END_DATE_ASC: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'sortBy' (Did you mean `sport`?)", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'sortBy'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'sortBy'}}]
+[2026-07-17 21:51:57] [diagnostica ordinamento aste] orderBy: endDate_ASC: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'orderBy'", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'orderBy'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'orderBy'}}]
+[2026-07-17 21:51:57] [diagnostica ordinamento aste] endingSoon: true: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'endingSoon'", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'endingSoon'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'endingSoon'}}]
+[2026-07-17 21:51:57] [diagnostica ordinamento aste] first: N (senza last, per vedere se cambia l'ordine di default): SUCCESSO -- {'tokens': {'liveAuctions': {'nodes': [{'id': 'EnglishAuction:37e8dddc-826e-42b2-9d42-1d18fde50498', 'endDate': '2026-07-20T20:01:42Z'}, {'id': 'EnglishAuction:dbc5b3ed-c36f-4ed5-a4b6-afe6da7dd8f9', 'endDate': '2026-07-19T20:01:42Z'}, {'id': 'EnglishAuction:7270ac82-02b6-4d56-876a-9a95f30d53b2', 'endDate': '2026-07-18T00:10:31Z'}, {'id': 'EnglishAuction:bbc0b05b-5838-49cc-a167-798aeb841fcd', 'endDate': '2026-07-18T00:32:46Z'}, {'id': 'EnglishAuction:f660a1ad-7154-4f59-aadf-40fb8933ddc7', 'endDate': '2026-07-17T23:37:09Z'}]}}}
+[2026-07-17 21:51:57] [diagnostica ordinamento aste] tentativi completati.
+[2026-07-17 21:51:57] Scansione di sicurezza: controllo le 50 aste live piu' recenti...
+[2026-07-17 21:51:57] Scansione di sicurezza: 50 aste trovate, valutazione in corso...
+[2026-07-17 21:51:57] Scansione di sicurezza completata.
+[2026-07-17 21:51:57] Ascolto aste in tempo reale per 160 secondi...
+[2026-07-17 21:51:58] Connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-17 21:51:59] Sottoscrizione confermata, in ascolto...
+[2026-07-17 21:52:02] [asta] valutazione evento id=EnglishAuction:7b3a16c3-51c2-4091-9659-b9d0584880bc card_slug=chang-woo-rim-2026-limited-151
+[2026-07-17 21:52:02] Rim Chang-Woo: asta attuale (2.09EUR) non sotto l'ultimo prezzo (0.81EUR), salto
