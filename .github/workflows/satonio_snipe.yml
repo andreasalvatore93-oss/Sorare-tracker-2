@@ -1,4 +1,4 @@
-name: Satonio Snipe Pattern Analysis
+name: Snipe Pattern Analysis
 on:
   workflow_dispatch:
     inputs:
@@ -33,7 +33,7 @@ jobs:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
-          SATONIO_SNIPE_USER_SLUG: ${{ github.event.inputs.user_slug || 'zenlock' }}
-          SATONIO_SNIPE_WINDOW_DAYS: ${{ github.event.inputs.window_days || '7' }}
-          SATONIO_SNIPE_MAX_PAGES: ${{ github.event.inputs.max_pages || '10' }}
-        run: python satonio_snipe_analysis.py
+          SNIPE_USER_SLUG: ${{ github.event.inputs.user_slug || 'zenlock' }}
+          SNIPE_WINDOW_DAYS: ${{ github.event.inputs.window_days || '7' }}
+          SNIPE_MAX_PAGES: ${{ github.event.inputs.max_pages || '10' }}
+        run: python snipe_pattern_analysis.py
