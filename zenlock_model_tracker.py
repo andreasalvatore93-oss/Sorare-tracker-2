@@ -205,6 +205,11 @@ ZENLOCK_DIAGNOSTIC_PLAYER_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_PLAYER_SLUG'
 # valorizzato, nessun impatto sul run normale. Vedi discover_amount_currency_fields in track.py.
 ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG', '').strip()
 
+# FIX 17/07 (v4, stesso caso "none", proseguimento indagine dopo referenceCurrency=GBP senza
+# gbpCents corrispondente): hook per il dump esteso receiverSide+senderSide.amounts, vedi
+# discover_offer_node_shape in track.py.
+ZENLOCK_DIAGNOSTIC_NODE_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_NODE_SLUG', '').strip()
+
 
 # FIX 17/07 (v3, caso Nayef Aguerd -- verificato a mano dall'utente): la carta era infortunata da
 # mesi (Groin Injury, ritorno sconosciuto) -- TUTTO il mercato era gia' sceso in un cluster
@@ -572,6 +577,9 @@ if __name__ == "__main__":
 
     if ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG:
         track.discover_amount_currency_fields(ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG)
+
+    if ZENLOCK_DIAGNOSTIC_NODE_SLUG:
+        track.discover_offer_node_shape(ZENLOCK_DIAGNOSTIC_NODE_SLUG)
 
     track.log(f"[modello zenlock] Tasso ETH/EUR: {eth_rate}")
     track.log(f"[modello zenlock] Ascolto per {ZENLOCK_LISTEN_SECONDS} secondi "

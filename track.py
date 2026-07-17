@@ -2947,6 +2947,49 @@ def discover_amount_currency_fields(player_slug):
     log("[diagnostica valuta extra] tentativi completati.")
 
 
+# FIX 17/07 (v4, caso petar-musa -- proseguo indagine): esauriti i candidati di campo numerico
+# gemello a referenceCurrency (nessun "did you mean" utile rimasto su MonetaryAmount), provo
+# un'ipotesi diversa: finora leggiamo il prezzo SOLO da receiverSide.amounts, mai controllato se
+# anche senderSide abbia un campo amounts proprio (magari il prezzo per questo tipo di annuncio
+# vive li' invece che su receiverSide). Dump isolato, non tocca la query di produzione.
+def discover_offer_node_shape(player_slug):
+    """Dump grezzo con receiverSide E senderSide.amounts (oltre a __typename del nodo) per capire
+    se il prezzo di annunci con receiverSide.amounts tutto null si trovi altrove nel nodo."""
+    query = """
+    query DiscoverOfferNodeShape($slug: String!) {
+      tokens {
+        liveSingleSaleOffers(playerSlug: $slug, last: 5) {
+          nodes {
+            __typename
+            status
+            receiverSide {
+              amounts { eurCents wei usdCents gbpCents lamport referenceCurrency }
+              anyCards { slug }
+            }
+            senderSide {
+              amounts { eurCents wei usdCents gbpCents lamport referenceCurrency }
+              anyCards { slug }
+            }
+          }
+        }
+      }
+    }
+    """
+    log(f"[diagnostica forma nodo] dump esteso (receiverSide + senderSide.amounts) per {player_slug}...")
+    try:
+        data = graphql_query(query, {"slug": player_slug})
+        if data.get('errors'):
+            log(f"[diagnostica forma nodo] errore -- {data['errors']}")
+        else:
+            nodes = data.get('data', {}).get('tokens', {}).get('liveSingleSaleOffers', {}).get('nodes', [])
+            log(f"[diagnostica forma nodo] {len(nodes)} nodi restituiti:")
+            for i, node in enumerate(nodes):
+                log(f"[diagnostica forma nodo]   nodo {i}: {node}")
+    except Exception as e:
+        log(f"[diagnostica forma nodo] eccezione -- {e}")
+    log("[diagnostica forma nodo] completato.")
+
+
 def discover_sales_history_field():
     """Tenta diversi nomi di campo candidati sotto tokens{} per scoprire come accedere allo
     storico delle vendite concluse (non solo agli annunci live). Logga solo esito, non tocca

@@ -27,6 +27,10 @@ on:
         description: "Lascia vuoto normalmente. Slug giocatore per testare campi valuta extra (es. Solana) sul caso 'none' nel counter valute"
         required: false
         default: ""
+      diagnostic_node_slug:
+        description: "Lascia vuoto normalmente. Slug giocatore per dump esteso receiverSide+senderSide.amounts (indagine caso 'none')"
+        required: false
+        default: ""
 permissions:
   contents: read
 concurrency:
@@ -54,4 +58,5 @@ jobs:
           ZENLOCK_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '215' }}
           ZENLOCK_DIAGNOSTIC_PLAYER_SLUG: ${{ github.event.inputs.diagnostic_player_slug || '' }}
           ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG: ${{ github.event.inputs.diagnostic_currency_slug || '' }}
+          ZENLOCK_DIAGNOSTIC_NODE_SLUG: ${{ github.event.inputs.diagnostic_node_slug || '' }}
         run: python zenlock_model_tracker.py
