@@ -294,6 +294,18 @@ def run_zenlock_listener(eth_rate):
 
 
 if __name__ == "__main__":
+    # DIAGNOSTICA TEMPORANEA (17/07, caso "module 'track' has no attribute 'get_eth_rate'" --
+    # rimuovere dopo verifica): in locale track.py ha get_eth_rate definita (riga 626), quindi
+    # o su GitHub gira una track.py diversa/vecchia, o "import track" sta risolvendo un modulo
+    # diverso (es. un pacchetto omonimo installato da requirements.txt che si mette avanti nella
+    # ricerca). Stampiamo path del modulo importato e le sue funzioni disponibili per capire
+    # quale dei due casi e' -- stesso approccio "per tentativi" gia' usato altrove nel progetto
+    # (es. discover_token_price_type_field) invece di indovinare alla cieca.
+    print(f"[debug track import] file: {getattr(track, '__file__', '???')}")
+    print(f"[debug track import] ha get_eth_rate: {hasattr(track, 'get_eth_rate')}")
+    print(f"[debug track import] funzioni definite (prime 40): "
+          f"{sorted(n for n in dir(track) if not n.startswith('_'))[:40]}")
+
     eth_rate = track.get_eth_rate()
     track.log(f"[modello zenlock] Tasso ETH/EUR: {eth_rate}")
     track.log(f"[modello zenlock] Ascolto per {ZENLOCK_LISTEN_SECONDS} secondi "
