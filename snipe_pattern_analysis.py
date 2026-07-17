@@ -18,14 +18,25 @@ prende TUTTE le transazioni -- acquisti e vendite -- in un colpo solo, e in piu'
 il ciclo compra-poi-rivendi. diagnostic_snipe_pattern_report resta in track.py (non
 rimosso, nel dubbio) ma non e' piu' la funzione chiamata di default.
 
+Aggiornato ancora il 17/07 (stesso giorno, "progettare un tracker sul suo modello"): aggiunta
+SNIPE_REPORT_MODE per scegliere tra i due report senza servire un altro script/workflow --
+"trades" (default, acquisti+vendite complete) o "margin_model" (solo snipe puri, arricchiti
+con sconto% vs mediana di mercato e bucket in_season/classic, prima base per calibrare soglie
+sul suo comportamento).
+
 Parametri configurabili via variabili d'ambiente (passate dal workflow):
 - SNIPE_USER_SLUG: manager Sorare da analizzare (default "zenlock")
 - SNIPE_WINDOW_DAYS: quanti giorni indietro (default "7")
 - SNIPE_MAX_PAGES: quante pagine di transazioni scansionare (default "10")
+- SNIPE_REPORT_MODE: "trades" o "margin_model" (default "trades")
 """
 import track
 
 if __name__ == "__main__":
     eth_rate = track.get_eth_rate()
     track.log(f"Tasso ETH/EUR: {eth_rate}")
-    track.diagnostic_manager_trades_report(eth_rate)
+    mode = track.os.environ.get('SNIPE_REPORT_MODE', 'trades')
+    if mode == 'margin_model':
+        track.diagnostic_snipe_margin_model_report(eth_rate)
+    else:
+        track.diagnostic_manager_trades_report(eth_rate)
