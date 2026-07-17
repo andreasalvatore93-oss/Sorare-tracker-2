@@ -73,8 +73,14 @@ MIN_MARGIN_EUR = float(os.environ.get('MIN_MARGIN_EUR', '1.5'))  # usato solo co
 # alto. Ogni scaglione ora e' una funzione (prezzo di riferimento -> margine richiesto)
 # invece di una singola percentuale, per poter mescolare scaglioni percentuali e fissi nella
 # stessa tabella senza rami speciali nel codice.
+# FIX 17/07 (v4, caso reale MUGOSA, richiesta esplicita dell'utente "margine di 0.48 e'
+# troppo basso per notificare"): vendita diretta 2.89EUR, margine stimato 0.48EUR passava
+# la vecchia soglia (0.15 -> 0.43EUR richiesti) per un pelo. Primo tentativo con percentuale
+# al 20% (0.58EUR richiesti) giudicato ancora insufficiente dall'utente ("aumenta a 0.80 per
+# casi mugosa") -- stesso concetto dello scaglione 3-5EUR: margine minimo FISSO invece che
+# percentuale, per non lasciare troppo margine di rumore statistico sulle carte piu' economiche.
 AUCTION_MARGIN_TIERS = [
-    (3, lambda p: p * 0.15),
+    (3, lambda p: 0.80),
     (5, lambda p: 1.0),
     # FIX 17/07 (v2, caso reale YAGO, richiesta esplicita dell'utente): vendita diretta 7.24EUR,
     # margine stimato 0.80EUR passava la soglia (0.10 -> 0.72EUR richiesti) ma l'utente lo
