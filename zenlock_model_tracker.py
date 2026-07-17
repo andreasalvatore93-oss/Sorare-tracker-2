@@ -263,8 +263,24 @@ def classic_looks_cheap_everywhere(buckets, season_type, price_eur):
     return price_eur >= sibling_min * (1 - ZENLOCK_SIBLING_TOLERANCE)
 
 
+# FIX 17/07 (v13, caso Ander Astralaga -- richiesta esplicita dell'utente dopo aver verificato
+# l'affare a mano): l'annuncio era un vero mispricing (30.2% di sconto confermato), ma pagabile
+# SOLO in ETH (nessun campo eurCents nell'offerta, solo wei) -- inutile per l'utente, che non
+# tiene ETH. Non filtriamo l'offerta (l'utente ha chiesto di tenerla visibile per ora, valutera'
+# se toglierla del tutto una volta visto quanto e' frequente il caso -- da qui il contatore
+# stats['fired_eth_only'] loggato a fine run), ma la segnaliamo chiaramente nel messaggio cosi'
+# non si perde tempo a controllare un'offerta che non puo' comunque prendere.
+def is_eth_only_offer(amounts):
+    """Stessa priorita' di track.eur_price_from_amounts (eurCents prima di wei): se manca
+    eurCents ma c'e' wei, il venditore ha fissato il prezzo SOLO in ETH -- pagamento richiesto
+    dal wallet cripto, non dal saldo fiat."""
+    if not amounts:
+        return False
+    return amounts.get('eurCents') is None and amounts.get('wei') is not None
+
+
 def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, price_eur,
-                            card_slug, eth_rate, stats):
+                            card_slug, eth_rate, stats, is_eth_only=False):
     ceilings = ZENLOCK_PRICE_CEILINGS.get(season_type)
     if not ceilings:
         return
@@ -365,7 +381,12 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
             return
 
     stats['fired'] = stats.get('fired', 0) + 1
+    if is_eth_only:
+        # FIX v13 (Astralaga): contatore separato, non tocca 'fired' -- serve solo a misurare
+        # quanto e' frequente il caso "solo ETH" prima di decidere se filtrarlo del tutto.
+        stats['fired_eth_only'] = stats.get('fired_eth_only', 0) + 1
     fascia = "normale" if price_eur <= normal_ceiling else "eccezione (carta di valore)"
+    eth_only_tag = "\n⚠️ <b>Pagabile SOLO in ETH</b> (nessuna opzione fiat su questo annuncio)\n" if is_eth_only else ""
     # Stesso pattern di link gia' usato e testato dal tracker principale (vedi send_instant_alert
     # in track.py) -- porta direttamente alla scheda della carta sul market Sorare, per la
     # verifica rapida prima di comprare.
@@ -374,7 +395,8 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     msg = (f"🎯 <b>Modello ZenLock</b> -- {player_name} [{season_type}]\n\n"
            f"Prezzo: {price_eur:.2f}EUR (fascia {fascia})\n"
            f"Prossimo annuncio piu' economico: {reference_price:.2f}EUR ({n_comparables} comparabili)\n"
-           f"Sconto: {discount:.1%} (soglia richiesta {required_discount:.0%})\n\n"
+           f"Sconto: {discount:.1%} (soglia richiesta {required_discount:.0%})\n"
+           f"{eth_only_tag}\n"
            f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈")
     track.log(f"[modello zenlock] MATCH -- {player_name} [{season_type}] {price_eur:.2f}EUR, "
               f"sconto {discount:.1%} su prossimo annuncio {reference_price:.2f}EUR (n={n_comparables})")
@@ -411,9 +433,11 @@ def handle_zenlock_offer_update(offer, eth_rate, stats):
     if receiver_side.get('anyCards'):
         return  # scambio carta-per-carta, non ci interessa
 
-    price_eur = track.eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
+    amounts = receiver_side.get('amounts')
+    price_eur = track.eur_price_from_amounts(amounts, eth_rate)
     if price_eur is None or price_eur < ZENLOCK_MIN_PRICE_EUR:
         return
+    is_eth_only = is_eth_only_offer(amounts)
 
     for card in (sender_side.get('anyCards') or []):
         if card.get('rarityTyped') != 'limited':
@@ -432,7 +456,7 @@ def handle_zenlock_offer_update(offer, eth_rate, stats):
 
         stats['processed'] = stats.get('processed', 0) + 1
         evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, price_eur,
-                                card_slug, eth_rate, stats)
+                                card_slug, eth_rate, stats, is_eth_only=is_eth_only)
 
 
 def run_zenlock_listener(eth_rate):
@@ -488,7 +512,8 @@ def run_zenlock_listener(eth_rate):
     def on_close(ws, close_status_code, close_message):
         track.log(f"[modello zenlock] connessione chiusa (codice {close_status_code}). "
                   f"Eventi: {stats['received']}, carte valutate: {stats['processed']}, "
-                  f"notifiche inviate: {stats['fired']}, scartate per mancanza comparabili: "
+                  f"notifiche inviate: {stats['fired']} (di cui solo ETH: "
+                  f"{stats.get('fired_eth_only', 0)}), scartate per mancanza comparabili: "
                   f"{stats.get('skipped_no_comparable', 0)}, scartate per riferimento troppo basso: "
                   f"{stats.get('skipped_reference_too_low', 0)}, scartate per differenza assoluta "
                   f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}, scartate per gemello "
