@@ -3005,6 +3005,47 @@ def discover_offer_node_shape(player_slug):
     log("[diagnostica forma nodo] completato.")
 
 
+# FIX 17/07 (richiesta esplicita dell'utente: "e allora evitiamo che li mescoli, sai gia' come
+# fare"): get_recent_sale_history (tokenPrices) non distingue in_season/classic per singola
+# vendita -- limite documentato li' sopra, confermato con 11 nomi di campo provati direttamente
+# su TokenPrice. MA la query SnipePlayerBuys (vedi piu' sotto, backlog Satonio) usa gia' con
+# successo un sotto-campo "card { slug serialNumber }" sotto tokenPrices -- se quel "card" e' lo
+# stesso tipo Card usato ovunque nel resto del codice (LIVE_OFFERS_QUERY, SUBSCRIPTION_QUERY),
+# dovrebbe accettare anche inSeasonEligible/sportSeason, gli stessi campi gia' usati da
+# season_type_for_card() per classificare i comparabili live. Se confermato, possiamo finalmente
+# filtrare lo storico vendite per stagione invece di scartarlo o mescolarlo alla cieca. Solo
+# diagnostica isolata, non tocca get_recent_sale_history.
+def discover_sale_card_season_fields(player_slug):
+    """Prova a leggere inSeasonEligible/sportSeason/rarityTyped/sport dentro tokenPrices.card,
+    per capire se lo storico vendite puo' essere filtrato per stagione come i comparabili live."""
+    query = """
+    query DiscoverSaleCardSeasonFields($p: String!) {
+      tokens {
+        tokenPrices(playerSlug: $p, rarity: limited, last: 5) {
+          date
+          card {
+            slug
+            rarityTyped
+            sport
+            sportSeason { name }
+            inSeasonEligible
+          }
+        }
+      }
+    }
+    """
+    log(f"[diagnostica stagione storico] provo card{{inSeasonEligible sportSeason rarityTyped sport}} su tokenPrices per {player_slug}...")
+    try:
+        data = graphql_query(query, {"p": player_slug})
+        if data.get('errors'):
+            log(f"[diagnostica stagione storico] errore -- {data['errors']}")
+        else:
+            log(f"[diagnostica stagione storico] SUCCESSO -- {data['data']}")
+    except Exception as e:
+        log(f"[diagnostica stagione storico] eccezione -- {e}")
+    log("[diagnostica stagione storico] completato.")
+
+
 def discover_sales_history_field():
     """Tenta diversi nomi di campo candidati sotto tokens{} per scoprire come accedere allo
     storico delle vendite concluse (non solo agli annunci live). Logga solo esito, non tocca

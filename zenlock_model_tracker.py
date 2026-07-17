@@ -206,6 +206,13 @@ ZENLOCK_DIAGNOSTIC_PLAYER_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_PLAYER_SLUG'
 # vero applicato in track.py (lamport aggiunto a tutte le query live + eur_price_from_amounts
 # converte lamport->SOL->EUR via get_sol_eur_rate). Hook diagnostici rimossi, non piu' necessari.
 
+# FIX 17/07 (richiesta esplicita dell'utente, "evitiamo che li mescoli, sai gia' come fare"):
+# hook diagnostico per verificare se tokenPrices.card accetta inSeasonEligible/sportSeason,
+# necessari per filtrare lo storico vendite per stagione (vedi discover_sale_card_season_fields
+# in track.py). Se confermato, prossimo passo e' rendere get_recent_sale_history/il fallback
+# di evaluate_zenlock_offer season-aware invece che solo di misurazione.
+ZENLOCK_DIAGNOSTIC_SALE_SEASON_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_SALE_SEASON_SLUG', '').strip()
+
 
 # FIX 17/07 (v3, caso Nayef Aguerd -- verificato a mano dall'utente): la carta era infortunata da
 # mesi (Groin Injury, ritorno sconosciuto) -- TUTTO il mercato era gia' sceso in un cluster
@@ -570,6 +577,9 @@ if __name__ == "__main__":
 
     if ZENLOCK_DIAGNOSTIC_PLAYER_SLUG:
         track.diagnostic_dump_missing_offer(ZENLOCK_DIAGNOSTIC_PLAYER_SLUG)
+
+    if ZENLOCK_DIAGNOSTIC_SALE_SEASON_SLUG:
+        track.discover_sale_card_season_fields(ZENLOCK_DIAGNOSTIC_SALE_SEASON_SLUG)
 
     track.log(f"[modello zenlock] Tasso ETH/EUR: {eth_rate}")
     track.log(f"[modello zenlock] Ascolto per {ZENLOCK_LISTEN_SECONDS} secondi "
