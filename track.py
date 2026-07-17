@@ -826,7 +826,42 @@ def eur_price_from_amounts(amounts, eth_rate):
 # A differenza del semplice ascolto della subscription (che vede solo i CAMBIAMENTI di stato),
 # questa e' un'istantanea del mercato reale in questo momento: risolve il problema per cui un
 # annuncio piu' economico, aperto prima che il bot iniziasse ad ascoltare, restava invisibile.
-def get_bucket_prices(player_slug, eth_rate):
+# FIX 17/07 (v15, richiesta esplicita dell'utente dopo il test "sloggato": il ban 429 e' scattato
+# IDENTICO anche con l'utente disconnesso dal browser -- esclude definitivamente l'ipotesi
+# "sessione condivisa" (vedi note piu' sopra). Resta l'altra ipotesi, quella piu' semplice: e' il
+# volume di query del bot stesso. Guardando i log grezzi si vede chiaramente MOLTI giocatori
+# richiesti piu' volte a pochi secondi di distanza l'uno dall'altro (es. lo stesso giocatore ha
+# piu' carte/annunci diversi che generano eventi ravvicinati, ognuno rifà da zero
+# fetch_all_live_offers per lo stesso giocatore). Cache in memoria con TTL breve: il mercato non
+# cambia cosi' in fretta da rendere un dato di pochi secondi fa inutile, e taglia una fetta
+# consistente del volume di richieste senza perdere segnale reale. use_cache=False per i punti
+# che hanno DAVVERO bisogno di un dato fresco (es. la riverifica dello sconto sospetto in
+# zenlock_model_tracker.py, che perderebbe senso se leggesse lo stesso dato cache-ato).
+_BUCKET_PRICES_CACHE = {}
+_RECENT_SALE_HISTORY_CACHE = {}
+CACHE_TTL_SECONDS = 30.0
+# Sentinel per "nessuna voce in cache", distinto da None -- get_recent_sale_history puo'
+# legittimamente restituire None (nessuna vendita trovata, caso comune), e usare None anche come
+# segnale di cache-miss avrebbe fatto ripetere la query ad ogni chiamata in quel caso, vanificando
+# la cache proprio dove serve di piu' (i tanti casi "nessun comparabile" visti nei log).
+_CACHE_MISS = object()
+
+
+def _cache_get(cache_dict, key):
+    entry = cache_dict.get(key, _CACHE_MISS)
+    if entry is _CACHE_MISS:
+        return _CACHE_MISS
+    ts, value = entry
+    if time.time() - ts > CACHE_TTL_SECONDS:
+        return _CACHE_MISS
+    return value
+
+
+def _cache_set(cache_dict, key, value):
+    cache_dict[key] = (time.time(), value)
+
+
+def get_bucket_prices(player_slug, eth_rate, use_cache=True):
     """Scorre TUTTI gli annunci live di un giocatore UNA SOLA VOLTA e li divide subito nei due
     bucket in_season/classic, invece di interrogare Sorare una volta per bucket. Restituisce
     {'in_season': (lista_prezzi_ordinata, dati_incompleti), 'classic': (..., ...)} dove
@@ -846,6 +881,10 @@ def get_bucket_prices(player_slug, eth_rate):
     e' meno margine di quanto sembri (caso Cancelo: secondo prezzo vero 2.97EUR, non
     3.33EUR). Accettato come limite noto per ora (fenomeno di nicchia, poche carte
     Early Access sul mercato in un dato momento) -- da rivedere se capitano altri casi."""
+    if use_cache:
+        cached = _cache_get(_BUCKET_PRICES_CACHE, player_slug)
+        if cached is not _CACHE_MISS:
+            return cached
     nodes = fetch_all_live_offers(player_slug)
     raw = {'in_season': [], 'classic': []}
     # NOTA (v23): questo flag ora non viene piu' impostato a True da nessuna parte (vedi FIX
@@ -912,6 +951,7 @@ def get_bucket_prices(player_slug, eth_rate):
     for key in ('in_season', 'classic'):
         raw[key].sort(key=lambda p: p[0])
         result[key] = (raw[key], incomplete_flags[key])
+    _cache_set(_BUCKET_PRICES_CACHE, player_slug, result)
     return result
 
 
@@ -1293,7 +1333,16 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
 # recentissimo (es. infortunio, caso Muric) lo storico puo' restare ancorato al prezzo vecchio
 # piu' alto per un po' -- ma questo giocherebbe contro il blocco (falso negativo, non falso
 # positivo: al peggio non blocchiamo un caso che forse avremmo dovuto), non a favore.
-def get_recent_sale_history(player_slug, eth_rate, last_n=5):
+def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True):
+    # FIX 17/07 (v15): stessa cache TTL breve di get_bucket_prices, stesso motivo (volume di
+    # query del bot come causa piu' probabile dei ban 429, vedi commento li' sopra). Chiave
+    # separata per last_n perche' last_n=1 (riverifica stagnante) e last_n=5 (default) sono
+    # tagli diversi dello stesso storico.
+    cache_key = (player_slug, last_n)
+    if use_cache:
+        cached = _cache_get(_RECENT_SALE_HISTORY_CACHE, cache_key)
+        if cached is not _CACHE_MISS:
+            return cached
     query = """
     query RecentSaleHistory($p: String!) {
       tokens {
@@ -1317,7 +1366,9 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5):
         if price is not None:
             sales.append((n.get('date') or '', price))
     sales.sort(key=lambda s: s[0], reverse=True)
-    return sales[:last_n] or None
+    result = sales[:last_n] or None
+    _cache_set(_RECENT_SALE_HISTORY_CACHE, cache_key, result)
+    return result
 
 
 # FIX 17/07 (backlog item "Satonio pattern-mining", richiesta esplicita dell'utente): indagine

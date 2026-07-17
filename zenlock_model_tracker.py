@@ -364,8 +364,12 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     if discount >= ZENLOCK_SUSPECT_DISCOUNT_THRESHOLD:
         # FIX 17/07 (v10, caso Pedrinho): sconto estremo, oltre ogni snipe reale osservato --
         # rileggiamo il bucket una seconda volta dopo una breve pausa prima di fidarcene.
+        # FIX 17/07 (v15): use_cache=False qui e' d'obbligo -- la cache introdotta in track.py
+        # ha TTL 30s, piu' lunga della pausa di pochi secondi di questo recheck. Con la cache
+        # attiva leggeremmo lo STESSO dato di prima, la riverifica "confermerebbe" sempre senza
+        # aver controllato nulla di nuovo, vanificando il fix v10 (caso Pedrinho).
         time.sleep(ZENLOCK_RECHECK_DELAY_SECONDS)
-        recheck_buckets = track.get_bucket_prices(player_slug, eth_rate)
+        recheck_buckets = track.get_bucket_prices(player_slug, eth_rate, use_cache=False)
         recheck_result = compute_live_discount(recheck_buckets, season_type, price_eur, card_slug)
         if recheck_result is None:
             stats['skipped_suspect_not_confirmed'] = stats.get('skipped_suspect_not_confirmed', 0) + 1
