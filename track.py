@@ -1191,7 +1191,15 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
     """Interroga tokens.tokenPrices(playerSlug, rarity: limited) col sotto-campo deal{type buyer
     seller} scoperto oggi, filtra alle transazioni dove deal.buyer.slug == buyer_slug e
     deal.type == 'SINGLE_SALE_OFFER' (acquisto diretto a prezzo fisso, vedi nota sopra), negli
-    ultimi window_days giorni. Ritorna una lista di dict con giocatore/carta/prezzo/data/venditore."""
+    ultimi window_days giorni. Ritorna una lista di dict con giocatore/carta/prezzo/data/venditore
+    PIU' il contesto di margine: FIX 17/07 (richiesta esplicita dell'utente, "estendere il
+    contesto"): per ogni acquisto trovato calcola anche "market_median" (mediana di TUTTE le
+    altre transazioni SINGLE_SALE_OFFER dello stesso giocatore nella stessa risposta gia'
+    scaricata, quindi senza chiamate API aggiuntive -- non e' il "secondo prezzo live" esatto
+    che usa il bot principale, e' un'approssimazione retroattiva basata sullo storico vendite
+    concluse) e "discount_vs_median" (di quanto, in percentuale, il prezzo pagato era sotto
+    quella mediana) -- serve a capire se il prezzo pagato era un vero affare o nella norma per
+    quel giocatore, non solo il prezzo assoluto."""
     query = """
     query SatonioPlayerBuys($p: String!) {
       tokens {
@@ -1220,6 +1228,17 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
         log(f"[satonio snipe] eccezione tokenPrices per {player_slug}: {e}")
         return []
     cutoff = datetime.datetime.now() - datetime.timedelta(days=window_days)
+
+    # Prima passata: tutte le vendite SINGLE_SALE_OFFER (qualunque acquirente) di questo
+    # giocatore nella risposta -- e' il campione di riferimento per il "prezzo tipico".
+    all_single_sale_prices = []
+    for n in nodes:
+        if ((n.get('deal') or {}).get('type')) != 'SINGLE_SALE_OFFER':
+            continue
+        price = eur_price_from_amounts(n.get('amounts'), eth_rate)
+        if price is not None:
+            all_single_sale_prices.append((n.get('date') or '', price))
+
     results = []
     for n in nodes:
         deal = n.get('deal') or {}
@@ -1232,12 +1251,32 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
             continue
         if dt < cutoff:
             continue
+        date_str = n.get('date') or ''
+        price = eur_price_from_amounts(n.get('amounts'), eth_rate)
+
+        others = [p for d, p in all_single_sale_prices
+                  if not (d == date_str and price is not None and abs(p - price) < 0.001)]
+        market_median = None
+        discount_vs_median = None
+        if others:
+            others_sorted = sorted(others)
+            mid = len(others_sorted) // 2
+            if len(others_sorted) % 2 == 1:
+                market_median = others_sorted[mid]
+            else:
+                market_median = (others_sorted[mid - 1] + others_sorted[mid]) / 2
+            if price is not None and market_median and market_median > 0:
+                discount_vs_median = (market_median - price) / market_median
+
         results.append({
             "player_slug": player_slug,
             "card_slug": (n.get('card') or {}).get('slug'),
-            "date": n.get('date') or '',
-            "price": eur_price_from_amounts(n.get('amounts'), eth_rate),
+            "date": date_str,
+            "price": price,
             "seller": (deal.get('seller') or {}).get('nickname'),
+            "market_median": market_median,
+            "discount_vs_median": discount_vs_median,
+            "sample_size": len(others),
         })
     return results
 
@@ -1277,11 +1316,22 @@ def diagnostic_snipe_pattern_report(eth_rate):
         f"{SATONIO_SNIPE_USER_SLUG} negli ultimi {SATONIO_SNIPE_WINDOW_DAYS} giorni ===")
     for b in all_buys:
         prezzo = f"{b['price']:.2f}EUR" if b['price'] is not None else "prezzo N/D"
-        log(f"[satonio snipe]   {b['date']} -- {b['player_slug']} ({b['card_slug']}): {prezzo} da {b['seller']}")
+        contesto = ""
+        if b.get('discount_vs_median') is not None:
+            contesto = (f" [mediana altre vendite: {b['market_median']:.2f}EUR, "
+                        f"sconto {b['discount_vs_median']:.1%}, campione {b['sample_size']}]")
+        elif b.get('market_median') is None:
+            contesto = " [nessuna altra vendita SINGLE_SALE_OFFER trovata per confronto]"
+        log(f"[satonio snipe]   {b['date']} -- {b['player_slug']} ({b['card_slug']}): {prezzo} "
+            f"da {b['seller']}{contesto}")
     prices = [b['price'] for b in all_buys if b['price'] is not None]
     if prices:
         log(f"[satonio snipe] prezzo medio: {sum(prices)/len(prices):.2f}EUR, "
             f"min {min(prices):.2f}EUR, max {max(prices):.2f}EUR")
+    discounts = [b['discount_vs_median'] for b in all_buys if b.get('discount_vs_median') is not None]
+    if discounts:
+        log(f"[satonio snipe] sconto medio vs mediana altre vendite: {sum(discounts)/len(discounts):.1%} "
+            f"(su {len(discounts)}/{len(all_buys)} acquisti con campione di confronto disponibile)")
     log(f"[satonio snipe] analisi completata.")
 
 
