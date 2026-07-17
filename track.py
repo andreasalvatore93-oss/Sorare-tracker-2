@@ -1904,6 +1904,68 @@ def run_listener(eth_rate):
 SALES_HISTORY_DISCOVERY_PLAYER_SLUG = os.environ.get('SALES_HISTORY_DISCOVERY_PLAYER_SLUG', 'samuel-junior-kotto')
 
 
+# FIX 17/07 (richiesta esplicita, caso Mamadou Sangare/talwiwi): l'utente ha trovato via DevTools
+# del browser (query anyCard.liveSingleSaleOffer.deal.blockchain) un'offerta live REALE (4.59EUR,
+# in vendita da mesi, pagabile in cash secondo le preferenze del venditore) su una carta con
+# blockchain "SOLANA" -- che NON compare MAI tra i nodi restituiti da fetch_all_live_offers/
+# tokens.liveSingleSaleOffers. Stesso pattern mai risolto di Nico O'Reilly e Jeong Seung-Won
+# (annuncio attivo da giorni/mesi, escluso senza eccezione ne' flag "dati incompleti"). Ipotesi
+# da verificare: tokens.liveSingleSaleOffers e' un campo "storico" (da prima che Sorare
+# supportasse Solana) e non include le carte su quella blockchain, indipendentemente da come si
+# pagano (blockchain della carta e valuta di pagamento sono cose distinte). Diagnostico
+# temporaneo in due passi: 1) prova ad aggiungere un campo blockchain/chain sui nodi restituiti,
+# per scoprire se e' interrogabile li'; 2) dump COMPLETO non filtrato di tutti i nodi per
+# mamadou-sangare, per vedere se l'offerta di talwiwi compare del tutto nella risposta grezza --
+# se non compare per niente, il problema e' nella query/lato server, non in un nostro filtro.
+DIAGNOSTIC_MISSING_OFFER_PLAYER_SLUG = os.environ.get('DIAGNOSTIC_MISSING_OFFER_PLAYER_SLUG', 'mamadou-sangare')
+
+
+def diagnostic_dump_missing_offer(player_slug):
+    log(f"[diagnostica offerta mancante] passo 1: provo campi blockchain/chain su liveSingleSaleOffers...")
+    for field_name in ('blockchain', 'chain', 'network'):
+        query = f"""
+        query DiscoverBlockchainField($slug: String!, $n: Int!) {{
+          tokens {{
+            liveSingleSaleOffers(playerSlug: $slug, last: $n) {{
+              nodes {{
+                status
+                {field_name}
+              }}
+            }}
+          }}
+        }}
+        """
+        try:
+            data = graphql_query(query, {"slug": player_slug, "n": 5})
+            if data.get('errors'):
+                log(f"[diagnostica offerta mancante] campo '{field_name}': errore -- {data['errors']}")
+            else:
+                log(f"[diagnostica offerta mancante] campo '{field_name}': SUCCESSO -- {data['data']}")
+        except Exception as e:
+            log(f"[diagnostica offerta mancante] campo '{field_name}': eccezione -- {e}")
+
+    log(f"[diagnostica offerta mancante] passo 2: dump completo NON filtrato per {player_slug}...")
+    nodes = fetch_all_live_offers(player_slug)
+    log(f"[diagnostica offerta mancante] {player_slug}: {len(nodes)} nodi grezzi totali restituiti "
+        f"(nessun filtro status/rarita'/sport applicato)")
+    for node in nodes:
+        status = node.get('status')
+        amounts = (node.get('receiverSide') or {}).get('amounts')
+        cards = (node.get('senderSide') or {}).get('anyCards') or []
+        if not cards:
+            log(f"[diagnostica offerta mancante]   status={status} amounts={amounts} "
+                f"(nessuna carta sul lato venditore)")
+            continue
+        for c in cards:
+            log(f"[diagnostica offerta mancante]   status={status} amounts={amounts} "
+                f"slug={c.get('slug')} rarita'={c.get('rarityTyped')} sport={c.get('sport')} "
+                f"stagione={(c.get('sportSeason') or {}).get('name')} "
+                f"inSeasonEligible={c.get('inSeasonEligible')}")
+    log(f"[diagnostica offerta mancante] dump completato -- cerca qui sopra un prezzo vicino a "
+        f"4.59EUR (talwiwi, mamadou-sangare-2025-limited-...): se non c'e' per niente, l'offerta "
+        f"e' esclusa dalla query stessa, non da un nostro filtro lato client.")
+
+
 def discover_sales_history_field():
     """Tenta diversi nomi di campo candidati sotto tokens{} per scoprire come accedere allo
     storico delle vendite concluse (non solo agli annunci live). Logga solo esito, non tocca
@@ -2063,6 +2125,11 @@ def main():
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
+
+    # FIX 17/07: diagnostico temporaneo per il caso Mamadou Sangare/talwiwi (ipotesi Solana
+    # escluso da tokens.liveSingleSaleOffers) -- vedi diagnostic_dump_missing_offer. RIMUOVERE
+    # questa riga dopo aver raccolto il log di una esecuzione, non serve lasciarla attiva.
+    diagnostic_dump_missing_offer(DIAGNOSTIC_MISSING_OFFER_PLAYER_SLUG)
 
     # FIX 16/07: entrambi i diagnostici temporanei (campo storico vendite, poi campo tipo
     # transazione) sono stati rimossi da qui -- il secondo (discover_token_price_type_field) ha
