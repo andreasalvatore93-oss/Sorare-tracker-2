@@ -85,14 +85,25 @@ ZENLOCK_PRICE_CEILINGS = {
 # 25% ne tagliava fuori 10; al 15% ne passano di piu' senza scendere fino ad accettare sconti
 # quasi nulli). Da rialzare se il volume/qualita' non convince nei prossimi giri.
 ZENLOCK_DISCOUNT_NORMAL = float(os.environ.get('ZENLOCK_DISCOUNT_NORMAL', '0.15'))
-# FIX 17/07 (v6, richiesta esplicita dell'utente, caso Emiliano Martínez): 40% -> 20%. Sull'unico
-# snipe eccezione con confronto di mercato verificabile (85 snipe/14gg), ZenLock ha comprato con
-# solo il 9.7% di sconto reale -- ben sotto il 40% che il modello richiedeva, quindi quel caso
-# oggi non l'avremmo notificato. Un solo dato, quindi non lo usiamo come soglia diretta: 20% e'
-# circa il doppio del 9.7% osservato, un margine di sicurezza nel dubbio (non sappiamo ancora se
-# 9.7% e' tipico o un'eccezione lui stesso). Da ritarare se emergono altri casi eccezione con
-# confronto di mercato.
-ZENLOCK_DISCOUNT_HIGH_VALUE = float(os.environ.get('ZENLOCK_DISCOUNT_HIGH_VALUE', '0.20'))
+# NOTA STORICA: qui c'era ZENLOCK_DISCOUNT_HIGH_VALUE, una soglia FISSA (40% -> 20% dal FIX
+# 17/07 v6, caso Emiliano Martínez: sull'unico snipe eccezione con confronto di mercato
+# verificabile, ZenLock aveva comprato con solo il 9.7% di sconto reale -- il 20% era gia' solo
+# "circa il doppio" di quell'unico dato osservato, un margine di sicurezza scelto a naso, non
+# calibrato su altri casi).
+# FIX 18/07 (richiesta esplicita dell'utente, dopo aver notato l'incoerenza a mano: comparabile
+# 23EUR/prezzo 20EUR, sconto reale 13.0%, sotto il 20% fisso -> non notificato da zenlock ma
+# SAREBBE stato notificato da track.py, che a quella fascia di prezzo chiede solo ~8% -- "allinea
+# quel margine anche per zenlock, ammorbidiscilo"): la soglia fissa per la fascia "eccezione"
+# (prezzo sopra il ceiling normale) e' sostituita dalla STESSA curva a scaglioni gia' usata da
+# track.py per il proprio margine (track.required_margin_fraction(reference_price),
+# MARGIN_TIERS) -- le due soglie ora coincidono esattamente a parita' di prezzo di riferimento,
+# invece di un 20% fisso su tutta la fascia 4-30EUR/8-90EUR che non aveva alcun fondamento nei
+# dati (era anzi il DOPPIO dell'unico caso reale osservato, 9.7%). La curva di track.py resta
+# comunque piu' permissiva verso l'alto (~9.5% a 10EUR, ~5.5% intorno a 90EUR) che verso il basso,
+# stesso comportamento che aveva gia' senso per il modello principale. Vedi
+# evaluate_zenlock_offer (fascia "eccezione") per l'uso. Da rivedere se il volume di notifiche in
+# questa fascia dovesse esplodere nei prossimi run reali -- finora zero dati raccolti col nuovo
+# meccanismo.
 
 # Sotto il piu' economico snipe osservato (0.33-0.48EUR): filtro solo rumore vero (annunci a
 # pochi centesimi), NON il MIN_PRICE_EUR=2.0 del tracker principale (troppo alto per questo
@@ -358,7 +369,10 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     if price_eur > exception_ceiling:
         return  # fuori dal range osservato per questo bucket, ZenLock non compra qui
 
-    required_discount = ZENLOCK_DISCOUNT_NORMAL if price_eur <= normal_ceiling else ZENLOCK_DISCOUNT_HIGH_VALUE
+    # FIX 18/07: is_high_value determina solo QUALE formula usare per required_discount -- il
+    # valore vero e proprio si calcola piu' sotto una volta noto il prezzo di riferimento (live o
+    # storico), vedi commento sopra ZENLOCK_DISCOUNT_HIGH_VALUE (rimossa) per il motivo.
+    is_high_value = price_eur > normal_ceiling
 
     # Un'unica lettura di ENTRAMBI i bucket (in_season + classic) -- serve sia al calcolo dello
     # sconto nel proprio bucket sia al check incrociato con l'in_season sotto (caso Perišić),
@@ -382,7 +396,9 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
         if historical_reference <= 0:
             return
         historical_discount = (historical_reference - price_eur) / historical_reference
-        historical_required_discount = required_discount + ZENLOCK_DISCOUNT_HISTORICAL_MARGIN
+        historical_base_required = (track.required_margin_fraction(historical_reference)
+                                     if is_high_value else ZENLOCK_DISCOUNT_NORMAL)
+        historical_required_discount = historical_base_required + ZENLOCK_DISCOUNT_HISTORICAL_MARGIN
         if historical_discount < historical_required_discount:
             stats['skipped_historical_discount_too_low'] = stats.get(
                 'skipped_historical_discount_too_low', 0) + 1
@@ -406,6 +422,11 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
         return
 
     discount, n_comparables, reference_price, others_raw = result
+    # FIX 18/07: ora che conosciamo il vero prezzo di riferimento live, calcoliamo la soglia
+    # richiesta -- fascia normale invariata (flat), fascia "eccezione" allineata alla stessa
+    # curva a scaglioni di track.py (vedi commento sopra ZENLOCK_DISCOUNT_HIGH_VALUE, rimossa).
+    required_discount = (track.required_margin_fraction(reference_price) if is_high_value
+                          else ZENLOCK_DISCOUNT_NORMAL)
 
     # FIX 17/07 (v24, caso Dominik Szoboszlai -- richiesta esplicita dell'utente, stessa logica
     # gia' collaudata in track.py/evaluate_player_offer per i casi Luis Diaz/Franko Kolic): una

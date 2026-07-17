@@ -292,9 +292,18 @@ CRLF sopra) invece di assumere. File toccati oggi: `track.py`, `zenlock_model_tr
    incluso il nuovo fallback in_season) e delle aste con il nuovo fallback storico — l'utente ha
    accennato a voler lasciar girare i tracker e tornare con i log, pattern consolidato in questa
    sessione: io li leggo direttamente dal repo appena disponibili, niente copia-incolla.
-5. Item aperti da prima di oggi, mai ripresi: "ammorbidire anche zenlock" (le soglie di ceiling,
-   non solo di sconto, non ancora riviste per over-strictness); pulsanti Telegram deep-link
-   "compra ora"/"fai offerta".
+5. **RISOLTO 18/07** (era "ammorbidire anche zenlock"): la soglia fissa `ZENLOCK_DISCOUNT_HIGH_VALUE`
+   (20%, fascia "eccezione" 4-30EUR classic / 8-90EUR in_season) e' stata RIMOSSA e sostituita
+   dalla stessa curva a scaglioni di track.py (`track.required_margin_fraction(reference_price)`),
+   richiesta esplicita dell'utente dopo aver notato a mano l'incoerenza (comparabile 23EUR/prezzo
+   20EUR, sconto 13.0%: prima non notificato da zenlock -- soglia fissa 20% -- ma SAREBBE stato
+   notificato da track, che li' chiede solo ~7%). Ora le due soglie coincidono esattamente a
+   parita' di prezzo di riferimento in questa fascia. Fascia "normale" (<=4EUR classic/<=8EUR
+   in_season, tuttora flat 15% `ZENLOCK_DISCOUNT_NORMAL`) e tutto il resto (ceiling eccezione,
+   single-comparable 35%, fallback storico, sostituto in_season, MIN_REFERENCE/MIN_DISCOUNT_EUR)
+   INVARIATI. Testato con mock: caso discusso (20/23EUR) ora notifica, fascia normale 15%/14%
+   invariata (nessuna regressione), fascia alta a 90EUR ora richiede ~5.3% invece di 20%. Item
+   aperto residuo: pulsanti Telegram deep-link "compra ora"/"fai offerta".
 6. **NUOVO 17-18/07, da mettere in coda e FIXARE (richiesta esplicita dell'utente)**: durante il
    run zenlock delle 22:16:24 UTC un manager ha messo in vendita/aggiornato tante carte a buon
    prezzo in pochi minuti -- 4 ALERT reali ravvicinati (22:17:08-22:18:07 UTC: Heorhii Sudakov,
