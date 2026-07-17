@@ -11,9 +11,13 @@ on:
         required: false
         default: "3"
       max_pages:
-        description: "Quante pagine da 20 carte scansionare (satonio ha 350k+ carte, non e' scansionabile per intero come zenlock)"
+        description: "Quante pagine scansionare (di carte in modalita' trades/margin_model+searchCards, o di transazioni in modalita' trades -- satonio ha volumi molto piu' alti di zenlock)"
         required: false
         default: "50"
+      report_mode:
+        description: "trades (acquisti+vendite complete) o margin_model (solo snipe puri, con sconto% vs mercato e bucket in_season/classic)"
+        required: false
+        default: "trades"
 permissions:
   contents: read
 jobs:
@@ -36,4 +40,5 @@ jobs:
           SNIPE_USER_SLUG: ${{ github.event.inputs.user_slug || 'satonio' }}
           SNIPE_WINDOW_DAYS: ${{ github.event.inputs.window_days || '3' }}
           SNIPE_MAX_PAGES: ${{ github.event.inputs.max_pages || '50' }}
+          SNIPE_REPORT_MODE: ${{ github.event.inputs.report_mode || 'trades' }}
         run: python snipe_pattern_analysis.py
