@@ -118,6 +118,13 @@ def log(message):
 # Retry-After lungo (osservato 15s) fatto rispettare alla lettera dentro il thread del listener
 # WebSocket ha fatto scadere il ping/pong (ping_timeout 10s) e chiuso la connessione. Tetto
 # massimo all'attesa: meglio rinunciare prima e lasciar fallire la singola query.
+#
+# FIX 17/07 (v3, gemello del fix in track.py -- il ping/pong e' scaduto di nuovo con lo stesso
+# identico sintomo nonostante il cap a 8s): il cap limita solo il singolo tentativo, ma con fino
+# a 3 retry consecutivi nella stessa chiamata sincrona il blocco cumulativo puo' arrivare a 24s+,
+# ben oltre il ping_timeout di 10s. Il fix vero e' dare piu' margine al ping stesso (vedi
+# run_forever piu' sotto), non stringere ulteriormente un backoff che comunque non risolverebbe
+# un rate limit reale piu' lungo.
 GRAPHQL_RETRY_MAX_WAIT_SECONDS = 8.0
 
 
@@ -138,6 +145,10 @@ def graphql_query(query, variables=None, max_retries=3):
             except ValueError:
                 wait_seconds = (2 ** attempt) * 2
             wait_seconds = min(wait_seconds, GRAPHQL_RETRY_MAX_WAIT_SECONDS)
+            if attempt == 0:
+                body_snippet = (r.text or '')[:200].replace('\n', ' ')
+                log(f"[rate limit] dettaglio risposta 429 -- headers rilevanti: "
+                    f"Retry-After={retry_after!r}, corpo: {body_snippet!r}")
             log(f"[rate limit] HTTP 429 da Sorare (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s prima di ritentare...")
             time.sleep(wait_seconds)
@@ -1068,7 +1079,10 @@ def main():
     timer = threading.Timer(LISTEN_SECONDS, ws.close)
     timer.daemon = True
     timer.start()
-    ws.run_forever(ping_interval=30, ping_timeout=10)
+    # ping_timeout alzato 10 -> 45 (FIX v3, vedi commento gemello sopra su
+    # GRAPHQL_RETRY_MAX_WAIT_SECONDS): il cap per singolo tentativo non basta contro il blocco
+    # cumulativo di piu' retry 429 di fila. ping_interval alzato in proporzione.
+    ws.run_forever(ping_interval=60, ping_timeout=45)
     timer.cancel()
     log("Ascolto aste terminato.")
 

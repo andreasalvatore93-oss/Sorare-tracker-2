@@ -340,6 +340,16 @@ def log(message):
 # un tetto massimo all'attesa: meglio rinunciare prima e lasciar fallire questa query (il
 # chiamante la tratta comunque come "nessun dato", niente di nuovo) che uccidere l'intero
 # ascolto per una singola query lenta.
+#
+# FIX 17/07 (v3, il ping/pong e' scaduto di nuovo IDENTICO col cap a 8s attivo): il cap limita
+# l'attesa per singolo tentativo, ma graphql_query puo' ritentare fino a max_retries volte in
+# sequenza nella STESSA chiamata sincrona -- nel caso reale osservato, 3 tentativi da 429
+# consecutivi hanno bloccato il thread per >60s totali (3 query diverse, ciascuna con 3 retry da
+# 8s = fino a 24s a query). Il ping_timeout di 10s non ha mai avuto margine sufficiente per
+# sopravvivere a un blocco cumulativo del genere, a prescindere dal cap sul singolo tentativo.
+# Invece di stringere ulteriormente il backoff (inutile contro un rate limit vero, che dura piu'
+# a lungo di qualunque attesa ragionevole), alziamo il timeout del ping stesso: vedi run_forever
+# piu' sotto.
 GRAPHQL_RETRY_MAX_WAIT_SECONDS = 8.0
 
 
@@ -360,6 +370,15 @@ def graphql_query(query, variables=None, max_retries=3):
             except ValueError:
                 wait_seconds = (2 ** attempt) * 2
             wait_seconds = min(wait_seconds, GRAPHQL_RETRY_MAX_WAIT_SECONDS)
+            if attempt == 0:
+                # FIX 17/07: log del corpo/header della risposta 429 solo al primo tentativo
+                # (evita spam nei retry successivi) -- utile per capire se e' un rate limit vero
+                # ("too many requests") o un blocco/challenge mascherato da 429 (es. sessione
+                # scaduta), visto che l'utente riporta di navigare Sorare senza problemi dal
+                # proprio browser nello stesso momento in cui lo script prende 429 su ogni run.
+                body_snippet = (r.text or '')[:200].replace('\n', ' ')
+                log(f"[rate limit] dettaglio risposta 429 -- headers rilevanti: "
+                    f"Retry-After={retry_after!r}, corpo: {body_snippet!r}")
             log(f"[rate limit] HTTP 429 da Sorare (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s prima di ritentare...")
             time.sleep(wait_seconds)
@@ -2704,7 +2723,10 @@ def run_listener(eth_rate):
     timer.daemon = True
     timer.start()
 
-    ws.run_forever(ping_interval=30, ping_timeout=10)
+    # ping_timeout alzato 10 -> 45 (FIX v3 sopra, GRAPHQL_RETRY_MAX_WAIT_SECONDS): deve
+    # sopravvivere al blocco cumulativo di piu' retry 429 in sequenza (fino a ~24s) senza far
+    # scadere il ping. ping_interval alzato in proporzione (deve restare > ping_timeout).
+    ws.run_forever(ping_interval=60, ping_timeout=45)
     timer.cancel()
 
 

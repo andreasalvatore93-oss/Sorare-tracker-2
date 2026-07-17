@@ -516,7 +516,12 @@ def run_zenlock_listener(eth_rate):
     timer = threading.Timer(ZENLOCK_LISTEN_SECONDS, ws.close)
     timer.daemon = True
     timer.start()
-    ws.run_forever(ping_interval=30, ping_timeout=10)
+    # ping_timeout alzato 10 -> 45 (FIX v3, stesso giorno, vedi commento gemello in track.py su
+    # GRAPHQL_RETRY_MAX_WAIT_SECONDS): il cap di 8s per singolo tentativo non basta se ci sono
+    # piu' retry 429 di fila nella stessa chiamata sincrona (blocco cumulativo fino a ~24s),
+    # ben oltre il vecchio ping_timeout di 10s -- causa reale del ping/pong scaduto di nuovo sul
+    # caso Egil Selvik anche dopo il primo fix. ping_interval alzato in proporzione.
+    ws.run_forever(ping_interval=60, ping_timeout=45)
     timer.cancel()
 
 
