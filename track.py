@@ -1404,6 +1404,194 @@ def diagnostic_snipe_pattern_report(eth_rate):
     log(f"[snipe analysis] analisi completata.")
 
 
+# BREAKTHROUGH 17/07 (richiesta esplicita dell'utente: "e se provo a cercare nelle query di una
+# vendita di zenlock?"): scoperta su DevTools navigando la pagina pubblica "Transazioni" del
+# profilo di un manager (sorare.com/it/football/my-club/<slug>/transactions, pubblica per
+# QUALSIASI manager, non solo se stessi -- a differenza di UserAccountEntriesQuery che e'
+# scoped a currentUser e quindi inutilizzabile per analizzare altri). Il campo root
+# user(slug).trades restituisce DIRETTAMENTE tutta la cronologia di transazioni del manager --
+# sia ACQUISTI che VENDITE, di ogni giocatore -- in un'unica query paginata (Relay-style,
+# pageInfo{endCursor, hasNextPage}). Risolve il problema strutturale della pipeline precedente
+# (fetch_user_recent_cards + filter_recent_direct_buy_candidates + fetch_player_recent_direct_buys):
+# quella vedeva solo le carte ANCORA possedute, quindi perdeva quasi tutti gli acquisti gia'
+# rivenduti (confermato empiricamente su Satonio: allargare la finestra da 3 a 10 giorni ha
+# aggiunto solo 1 acquisto su 10 totali). trades non ha questo limite: mostra la transazione a
+# prescindere da chi possiede la carta oggi.
+#
+# Ogni nodo e' un TokenOffer con struttura sender/senderSide e receiver/receiverSide (side =
+# {amounts, anyCards}). Il lato con anyCards non vuoto e' chi CEDE la carta (il venditore), il
+# lato con amounts valorizzato e senza carte e' chi PAGA (il compratore). Verificato su due casi
+# reali (dati incollati dall'utente il 17/07):
+#   - SingleBuyOffer, sender=zenlock, senderSide.amounts=4.34EUR, senderSide.anyCards=[],
+#     receiver=Leeds United Community, receiverSide.anyCards=[Julian Hall] -> zenlock compra.
+#   - SingleSaleOffer, sender=art34, senderSide.anyCards=[Emiliano Martinez], receiver=null,
+#     receiverSide.amounts=12.00EUR -> art34 vende, zenlock (query scoped a lui) e' l'acquirente
+#     implicito: per un annuncio pubblico SingleSaleOffer il campo receiver resta null anche a
+#     transazione conclusa, il compratore si deduce dal fatto che la transazione compare nella
+#     LISTA DI ZENLOCK.
+# Da qui la logica di ruolo in fetch_user_trades: se lo slug cercato compare esplicitamente come
+# sender o receiver, il ruolo si legge dal suo lato (ha carte = vende, ha importo senza carte =
+# compra); se non compare in nessuno dei due (receiver nullo, caso SingleSaleOffer pubblico), lo
+# slug cercato e' per costruzione la controparte implicita, con ruolo opposto al sender.
+def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
+    """Interroga direttamente user(slug).trades: TUTTE le transazioni (acquisti E vendite) di un
+    manager, senza passare dalle carte attualmente possedute -- vedi nota sopra per come e'
+    stata scoperta e perche' sostituisce/completa la pipeline precedente. Pagina finche' non
+    esce dalla finestra window_days (i nodi sono ordinati dal piu' recente) o finisce
+    max_pages. Ritorna una lista di dict: type, date, role ("buy"/"sell"), price, counterparty,
+    player_slug, player_name, card_slug."""
+    query = """
+    query SnipeUserTrades($slug: String!, $after: String) {
+      user(slug: $slug) {
+        slug
+        trades(sport: FOOTBALL, after: $after) {
+          nodes {
+            id
+            type
+            transactionDate
+            sender { slug nickname }
+            senderSide {
+              amounts { eurCents wei }
+              anyCards { slug anyPlayer { slug displayName } }
+            }
+            receiver { slug nickname }
+            receiverSide {
+              amounts { eurCents wei }
+              anyCards { slug anyPlayer { slug displayName } }
+            }
+          }
+          pageInfo { endCursor hasNextPage }
+        }
+      }
+    }
+    """
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=window_days)
+    results = []
+    after = None
+    for page in range(max_pages):
+        try:
+            data = graphql_query(query, {"slug": user_slug, "after": after})
+        except Exception as e:
+            log(f"[snipe analysis] eccezione trades pagina {page + 1} per {user_slug}: {e}")
+            break
+        if not data or data.get('errors'):
+            log(f"[snipe analysis] errore GraphQL trades pagina {page + 1} per {user_slug}: "
+                f"{data.get('errors') if data else 'nessuna risposta'}")
+            break
+        trades = ((data.get('data') or {}).get('user') or {}).get('trades') or {}
+        nodes = trades.get('nodes') or []
+        if not nodes:
+            break
+        stop = False
+        for n in nodes:
+            try:
+                dt = datetime.datetime.fromisoformat(
+                    (n.get('transactionDate') or '').replace('Z', '+00:00')).replace(tzinfo=None)
+            except (ValueError, AttributeError):
+                continue
+            if dt < cutoff:
+                stop = True
+                continue
+
+            sender = n.get('sender') or {}
+            receiver = n.get('receiver') or {}
+            sender_side = n.get('senderSide') or {}
+            receiver_side = n.get('receiverSide') or {}
+            sender_cards = sender_side.get('anyCards') or []
+            receiver_cards = receiver_side.get('anyCards') or []
+
+            if sender.get('slug') == user_slug:
+                is_selling = bool(sender_cards)
+                counterparty = receiver.get('nickname') or receiver.get('slug') or '?'
+                cards = sender_cards if is_selling else receiver_cards
+                pay_amounts = receiver_side.get('amounts') if is_selling else sender_side.get('amounts')
+            elif receiver.get('slug') == user_slug:
+                is_selling = bool(receiver_cards)
+                counterparty = sender.get('nickname') or sender.get('slug') or '?'
+                cards = receiver_cards if is_selling else sender_cards
+                pay_amounts = sender_side.get('amounts') if is_selling else receiver_side.get('amounts')
+            else:
+                # receiver nullo (annuncio pubblico SingleSaleOffer): user_slug e' la
+                # controparte implicita, ruolo opposto a quello del sender.
+                sender_is_seller = bool(sender_cards)
+                is_selling = not sender_is_seller
+                counterparty = sender.get('nickname') or sender.get('slug') or '?'
+                cards = receiver_cards if is_selling else sender_cards
+                pay_amounts = sender_side.get('amounts') if is_selling else receiver_side.get('amounts')
+
+            price = eur_price_from_amounts(pay_amounts, eth_rate)
+            for c in cards:
+                player = c.get('anyPlayer') or {}
+                results.append({
+                    "type": n.get('type'),
+                    "date": n.get('transactionDate'),
+                    "role": "sell" if is_selling else "buy",
+                    "price": price,
+                    "counterparty": counterparty,
+                    "player_slug": player.get('slug'),
+                    "player_name": player.get('displayName'),
+                    "card_slug": c.get('slug'),
+                })
+
+        if stop or not (trades.get('pageInfo') or {}).get('hasNextPage'):
+            break
+        after = (trades.get('pageInfo') or {}).get('endCursor')
+        time.sleep(0.2)
+
+    return results
+
+
+def diagnostic_manager_trades_report(eth_rate):
+    """Come diagnostic_snipe_pattern_report ma basato su fetch_user_trades: mostra ACQUISTI e
+    VENDITE di SNIPE_USER_SLUG nella finestra SNIPE_WINDOW_DAYS in un'unica query paginata,
+    incluse le carte gia' rivendute (invisibili al vecchio approccio basato sulle carte
+    possedute). Per ogni vendita, cerca nella stessa lista un acquisto precedente della STESSA
+    carta per ricostruire il ciclo compra-poi-rivendi (task esplicito dell'utente: "non ci
+    sarebbe modo di vedere le vendite che ha fatto? e poi controllare come erano state
+    acquistate quelle carte"). Solo raccolta/log, nessuna azione automatica."""
+    log(f"[snipe analysis] avvio analisi trades per {SNIPE_USER_SLUG}, finestra "
+        f"{SNIPE_WINDOW_DAYS} giorni (max {SNIPE_MAX_PAGES} pagine)...")
+    trades = fetch_user_trades(SNIPE_USER_SLUG, SNIPE_WINDOW_DAYS, eth_rate, max_pages=SNIPE_MAX_PAGES)
+    buys = [t for t in trades if t['role'] == 'buy' and t['type'] == 'SINGLE_SALE_OFFER']
+    sells = [t for t in trades if t['role'] == 'sell']
+    other_buys = [t for t in trades if t['role'] == 'buy' and t['type'] != 'SINGLE_SALE_OFFER']
+    log(f"[snipe analysis] === {len(trades)} transazioni totali: {len(buys)} snipe (acquisto "
+        f"diretto), {len(other_buys)} acquisti negoziati/altro, {len(sells)} vendite ===")
+
+    buys_by_card = {}
+    for b in buys + other_buys:
+        buys_by_card.setdefault(b['card_slug'], []).append(b)
+
+    log(f"[snipe analysis] --- SNIPE (SINGLE_SALE_OFFER, acquisto diretto) ---")
+    for b in sorted(buys, key=lambda x: x['date'], reverse=True):
+        prezzo = f"{b['price']:.2f}EUR" if b['price'] is not None else "prezzo N/D"
+        log(f"[snipe analysis]   {b['date']} -- {b['player_name']} ({b['card_slug']}): {prezzo} "
+            f"da {b['counterparty']}")
+    prices = [b['price'] for b in buys if b['price'] is not None]
+    if prices:
+        log(f"[snipe analysis] prezzo medio snipe: {sum(prices) / len(prices):.2f}EUR, "
+            f"min {min(prices):.2f}EUR, max {max(prices):.2f}EUR")
+
+    log(f"[snipe analysis] --- VENDITE (con acquisto precedente della stessa carta, se trovato) ---")
+    for s in sorted(sells, key=lambda x: x['date'], reverse=True):
+        prezzo_v = f"{s['price']:.2f}EUR" if s['price'] is not None else "prezzo N/D"
+        acquisto_prec = buys_by_card.get(s['card_slug'])
+        if acquisto_prec:
+            a = acquisto_prec[0]
+            prezzo_a = f"{a['price']:.2f}EUR" if a['price'] is not None else "prezzo N/D"
+            margine = ""
+            if a['price'] is not None and s['price'] is not None and a['price'] > 0:
+                margine = f", margine {(s['price'] - a['price']) / a['price']:.1%}"
+            log(f"[snipe analysis]   {s['date']} -- {s['player_name']} ({s['card_slug']}): "
+                f"venduta a {s['counterparty']} per {prezzo_v} -- comprata il {a['date']} "
+                f"({a['type']}) per {prezzo_a}{margine}")
+        else:
+            log(f"[snipe analysis]   {s['date']} -- {s['player_name']} ({s['card_slug']}): "
+                f"venduta a {s['counterparty']} per {prezzo_v} -- acquisto precedente non "
+                f"trovato nella finestra analizzata")
+    log(f"[snipe analysis] analisi trades completata.")
+
+
 # FIX 16/07 (v3, richiesta esplicita dell'utente, caso Kotto/Sengezer): il v2 bloccava la
 # notifica del tutto se una delle ultime 3 transazioni era pari o piu' economica. Ripensato su
 # richiesta dell'utente: invece manda comunque la notifica, ma segnalando chiaramente se nella
