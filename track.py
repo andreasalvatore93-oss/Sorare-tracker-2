@@ -1150,16 +1150,20 @@ def find_cheaper_recent_sale(true_min_price, recent_sales):
 
 # FIX 17/07 (richiesta esplicita dell'utente): find_cheaper_recent_sale segnala solo SE esiste
 # almeno una vendita recente pari o piu' economica, ma non dice QUANTE -- l'utente ha chiesto di
-# ragionare sulla proporzione, su un campione di 5 vendite entro RECENT_SALE_WINDOW_DAYS giorni:
-# fino a 2 su 5 pari o piu' economiche restano un rumore normale di mercato, la notifica parte
-# comunque (con l'avviso soft gia' esistente). Da 3 su 5 in su, e' piu' probabile che il prezzo
-# "basso" sia semplicemente il livello reale del mercato piuttosto che un affare genuino: in quel
-# caso la notifica va bloccata, ma il dettaglio va comunque loggato per poter verificare a mano se
-# la segnalazione avrebbe avuto senso. Il blocco si applica SOLO quando il campione e' pieno (5
-# vendite nella finestra): con meno di 5, il mercato e' semplicemente sottile e resta valido il
-# percorso "MERCATO SOTTILE" gia' esistente in build_sale_history_context (notifica comunque,
-# solo avviso informativo) -- richiesta esplicita dell'utente, per non bloccare su un campione
-# troppo piccolo per essere significativo.
+# ragionare sulla proporzione. Il dettaglio va comunque loggato per poter verificare a mano se
+# la segnalazione avrebbe avuto senso. Il blocco si applica SOLO quando il campione e' pieno
+# (RECENT_SALE_GATE_SAMPLE_SIZE vendite nella finestra): con meno, il mercato e' semplicemente
+# sottile e resta valido il percorso "MERCATO SOTTILE" gia' esistente in
+# build_sale_history_context (notifica comunque, solo avviso informativo) -- richiesta esplicita
+# dell'utente, per non bloccare su un campione troppo piccolo per essere significativo.
+#
+# FIX 17/07 (v2, richiesta esplicita dell'utente, "rendiamolo meno hard"): soglia inizialmente
+# 3 su 5 in 7 giorni, ripensata subito dopo -- troppo facile da far scattare (bastava una
+# maggioranza semplice). Alzata a un consenso quasi totale: 6 vendite su 6 (non solo "la
+# maggioranza"), guardando una finestra piu' ampia di 14 giorni invece di 7 per avere un
+# campione piu' robusto prima di bloccare. La finestra di 7 giorni (RECENT_SALE_WINDOW_DAYS)
+# resta invariata per l'avviso soft esistente (find_cheaper_recent_sale) -- e' una feature
+# distinta, l'utente ha chiesto di ammorbidire solo il gate.
 #
 # LIMITE NOTO (17/07, richiesta esplicita dell'utente): idealmente questo confronto andrebbe
 # fatto solo contro vendite dello STESSO bucket (classic o in_season) della carta segnalata, ma
@@ -1171,18 +1175,19 @@ def find_cheaper_recent_sale(true_min_price, recent_sales):
 # dell'utente: accettare il mix classic/in_season di tokenPrices com'e' piuttosto che aspettare
 # settimane di dati scoped o bloccare la feature -- da rivedere se si trova un altro campo/query
 # che espone la stagione per vendita.
-RECENT_SALE_GATE_MIN_CHEAPER = 3
-RECENT_SALE_GATE_SAMPLE_SIZE = 5
+RECENT_SALE_GATE_MIN_CHEAPER = 6
+RECENT_SALE_GATE_SAMPLE_SIZE = 6
+RECENT_SALE_GATE_WINDOW_DAYS = 14
 
 
 def count_cheaper_recent_sales(true_min_price, recent_sales):
     """Ritorna (cheaper_count, total_in_window): quante transazioni concluse (vendita/scambio/
-    asta/offerta) negli ultimi RECENT_SALE_WINDOW_DAYS giorni sono pari o piu' economiche di
-    true_min_price, su quante totali cadono in quella stessa finestra (tra le fino a 5
-    restituite da get_recent_sale_history)."""
+    asta/offerta) negli ultimi RECENT_SALE_GATE_WINDOW_DAYS giorni sono pari o piu' economiche
+    di true_min_price, su quante totali cadono in quella stessa finestra (tra le fino a
+    RECENT_SALE_GATE_SAMPLE_SIZE restituite da get_recent_sale_history)."""
     if not recent_sales:
         return 0, 0
-    cutoff = datetime.datetime.now() - datetime.timedelta(days=RECENT_SALE_WINDOW_DAYS)
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=RECENT_SALE_GATE_WINDOW_DAYS)
     cheaper_count = 0
     total_in_window = 0
     for date_str, price in recent_sales:
@@ -1589,7 +1594,11 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             # FIX 16/07 (v3, richiesta esplicita dell'utente): non blocchiamo piu' -- notifica
             # comunque, con un avviso se nella finestra di RECENT_SALE_WINDOW_DAYS giorni esiste
             # gia' una transazione pari o piu' economica (vedi find_cheaper_recent_sale).
-            recent_sales = get_recent_sale_history(player_slug, eth_rate)
+            # FIX 17/07: last_n alzato a RECENT_SALE_GATE_SAMPLE_SIZE (6, era 5) per avere
+            # abbastanza dati anche per il gate qui sotto, che guarda una finestra piu' ampia
+            # (14gg) del semplice avviso soft (7gg) -- find_cheaper_recent_sale/build_sale_
+            # history_context restano invariati, filtrano comunque da soli sui 7gg.
+            recent_sales = get_recent_sale_history(player_slug, eth_rate, last_n=RECENT_SALE_GATE_SAMPLE_SIZE)
             cheaper_recent = find_cheaper_recent_sale(true_min_price, recent_sales)
             sale_history_log, sale_history_msg = build_sale_history_context(recent_sales, cheaper_recent)
             if sale_history_log:
@@ -1609,7 +1618,7 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
 
             if recent_sales_blocked:
                 log(f"{player_name}: BLOCCATO -- {cheaper_count}/{sales_in_window} vendite negli "
-                    f"ultimi {RECENT_SALE_WINDOW_DAYS} giorni pari o piu' economiche di "
+                    f"ultimi {RECENT_SALE_GATE_WINDOW_DAYS} giorni pari o piu' economiche di "
                     f"{true_min_price:.2f}EUR, probabile prezzo di mercato reale: notifica NON "
                     f"inviata (solo loggata per controllo)")
                 log_decision(player_slug, player_name, season_type, season_name,
@@ -1708,7 +1717,9 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                         # FIX 16/07 (v3, richiesta esplicita dell'utente): non blocchiamo piu' --
                         # notifica comunque, con avviso se c'e' una transazione recente pari o
                         # piu' economica (vedi find_cheaper_recent_sale).
-                        recent_sales = get_recent_sale_history(player_slug, eth_rate)
+                        # FIX 17/07: last_n alzato a RECENT_SALE_GATE_SAMPLE_SIZE (6, era 5), vedi
+                        # nota gemella nel percorso ALERT diretto qui sopra.
+                        recent_sales = get_recent_sale_history(player_slug, eth_rate, last_n=RECENT_SALE_GATE_SAMPLE_SIZE)
                         cheaper_recent = find_cheaper_recent_sale(true_min_price, recent_sales)
                         sale_history_log, sale_history_msg = build_sale_history_context(
                             recent_sales, cheaper_recent)
@@ -1730,7 +1741,7 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                                 f"secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%}, "
                                 f"richiesto {required_margin:.1%}) -- BLOCCATO: "
                                 f"{cheaper_count}/{sales_in_window} vendite negli ultimi "
-                                f"{RECENT_SALE_WINDOW_DAYS} giorni pari o piu' economiche, notifica "
+                                f"{RECENT_SALE_GATE_WINDOW_DAYS} giorni pari o piu' economiche, notifica "
                                 f"NON inviata (solo loggata per controllo)")
                             if sale_history_log:
                                 log(f"{player_name}: {sale_history_log}")
