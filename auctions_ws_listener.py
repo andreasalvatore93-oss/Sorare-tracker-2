@@ -1011,9 +1011,15 @@ def discover_auctions_pagination():
 # (nessun ordinamento server-side esiste, vedi discover_auctions_end_date_sort) per raggiungere
 # le aste FERME (nessuna nuova offerta -> nessun evento WS) ma vicine alla scadenza, che sono
 # proprio quelle a rischio di scivolare fuori dalla finestra delle 50 piu' recenti restando
-# invisibili fino alla chiusura. Guardata da un env var (default OFF) per poterla testare a
-# mano via workflow_dispatch prima di deciderne l'attivazione regolare nel cron esterno.
-AUCTION_ENDING_SOON_ENABLED = bool(os.environ.get('AUCTION_ENDING_SOON_ENABLED', '').strip())
+# invisibili fino alla chiusura. Testata a mano il 17/07 (run reale: 500 aste scansionate in
+# 10 pagine, 54 in scadenza entro 6h, tutte valutate correttamente, nessun errore/rate-limit,
+# ~23s di overhead) -- richiesta esplicita dell'utente di lasciarla ON di default da subito nel
+# cron esterno (non piu' solo opt-in via workflow_dispatch). Il costo delle rivalutazioni ripetute
+# resta comunque basso: process_auction scarta subito (already_notified/skip_unchanged_since_
+# last_eval, cache SQLite persistente tra run) le aste gia' viste e invariate, senza rifare le
+# query pesanti (storico vendite, prezzo diretto, riverifica live) -- stesso identico
+# meccanismo gia' usato per run_safety_poll/WS, nessuna logica nuova serviva per questo.
+AUCTION_ENDING_SOON_ENABLED = bool(os.environ.get('AUCTION_ENDING_SOON_ENABLED', 'si').strip())
 AUCTION_ENDING_SOON_MAX_PAGES = int(os.environ.get('AUCTION_ENDING_SOON_MAX_PAGES', '10'))
 AUCTION_ENDING_SOON_WINDOW_HOURS = float(os.environ.get('AUCTION_ENDING_SOON_WINDOW_HOURS', '6'))
 
@@ -1551,8 +1557,8 @@ def main():
     run_safety_poll(eth_rate, stats)
 
     # Seconda scansione di sicurezza, complementare -- vedi commento su get_ending_soon_auctions.
-    # OFF di default (AUCTION_ENDING_SOON_ENABLED vuoto): il cron esterno non la attiva finche'
-    # l'utente non decide di abilitarla dopo aver visto i risultati di un run manuale di test.
+    # ON di default (AUCTION_ENDING_SOON_ENABLED='si' se non impostata): gira anche nei run del
+    # cron esterno. Valorizzare la env var a vuoto/qualcosa di falsy per disattivarla di nuovo.
     if AUCTION_ENDING_SOON_ENABLED:
         run_ending_soon_poll(eth_rate, stats)
 
