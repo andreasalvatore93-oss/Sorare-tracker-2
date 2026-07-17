@@ -134,6 +134,18 @@ def required_margin_eur(reference_price):
     return max(MIN_MARGIN_EUR, _AUCTION_MARGIN_FINAL_FLOOR)
 
 
+# FIX 17/07 (richiesta esplicita dell'utente, caso concreto "asta 1EUR senza offerte, ultime 3
+# vendite 2.00/1.50/2.50EUR, ma nessuna vendita diretta live" -- stesso principio gia' collaudato
+# oggi per il fallback storico di ZenLock quando manca il comparabile live): senza questo, il
+# margine non era MAI calcolabile quando get_live_min_direct_sale/get_current_min_direct_sale non
+# trovavano nulla (direct_sale_price=None -> margin_estimate=None -> scarto automatico), anche
+# quando la storia recente mostrava chiaramente un affare. Non e' un prezzo GARANTITO disponibile
+# adesso (a differenza di direct_sale_price vero, e' solo l'ultima vendita osservata), quindi
+# richiediamo un margine estra oltre al normale scaglione -- moltiplicatore invece di un valore
+# fisso, cosi' scala correttamente con il prezzo di riferimento come gli altri scaglioni.
+AUCTION_HISTORICAL_FALLBACK_MARGIN_MULTIPLIER = float(
+    os.environ.get('AUCTION_HISTORICAL_FALLBACK_MARGIN_MULTIPLIER', '1.5'))
+
 # FIX 17/07 (stessa richiesta, secondo punto): last_price era un tetto RIGIDO su
 # recommended_ceiling (vedi piu' sotto) -- un singolo dato (l'ultima vendita) puo' essere
 # rumoroso quanto un intero mercato, e capitare basso per puro caso blocca la raccomandazione
@@ -1112,6 +1124,14 @@ def process_auction(auction, eth_rate, stats):
         # query live fallisce.
         direct_sale_price = get_current_min_direct_sale(player_slug, season_type)
 
+    # FIX 17/07: se anche il fallback in cache non trova nulla, usiamo l'ultima vendita REALE
+    # recente (last_price, gia' calcolato sopra) come riferimento di riserva invece di
+    # arrenderci del tutto -- vedi nota su AUCTION_HISTORICAL_FALLBACK_MARGIN_MULTIPLIER.
+    is_historical_reference = False
+    if direct_sale_price is None:
+        direct_sale_price = last_price
+        is_historical_reference = True
+
     # FIX 16/07: prima direct_sale_price veniva infilato dentro la mediana insieme ai
     # prezzi di vendite recenti -- con pochi valori recenti alti, la mediana lo diluiva e
     # il tetto consigliato finale poteva finire SOPRA il prezzo di vendita diretta (casi
@@ -1227,6 +1247,8 @@ def process_auction(auction, eth_rate, stats):
     # FIX 17/07: soglia minima ora a scaglioni (vedi required_margin_eur piu' in alto) invece
     # del vecchio MIN_MARGIN_EUR fisso -- stesso spirito del fix gemello di zenlock/track.py.
     min_margin_required = required_margin_eur(direct_sale_price)
+    if is_historical_reference:
+        min_margin_required *= AUCTION_HISTORICAL_FALLBACK_MARGIN_MULTIPLIER
 
     if margin_estimate is None or margin_estimate < min_margin_required:
         # FIX 17/07 (richiesta esplicita dell'utente, "279 aste zero notifiche, non mi sembra
@@ -1235,14 +1257,17 @@ def process_auction(auction, eth_rate, stats):
         # giusto senza rifare i calcoli a mano. Aggiunti entrambi qui.
         log(f"{player_name}: margine stimato "
             f"{margin_estimate if margin_estimate is not None else 'n/d'} sotto la soglia minima "
-            f"({min_margin_required:.2f}EUR), non notifico -- vendita diretta minima "
-            f"{direct_sale_price if direct_sale_price is not None else 'n/d'}, minimo per essere "
-            f"in testa {starting_bid:.2f}EUR")
-        log_decision(auction_id, player_slug, player_name, season_type, "skip_margin_too_low",
+            f"({min_margin_required:.2f}EUR{' , riferimento STORICO' if is_historical_reference else ''}), "
+            f"non notifico -- vendita diretta minima "
+            f"{direct_sale_price if direct_sale_price is not None else 'n/d'}"
+            f"{' (storico/ultima vendita, non live)' if is_historical_reference else ''}, "
+            f"minimo per essere in testa {starting_bid:.2f}EUR")
+        log_decision(auction_id, player_slug, player_name, season_type,
+                     "skip_margin_too_low_historical" if is_historical_reference else "skip_margin_too_low",
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price, margin_estimate=margin_estimate)
-        bump(stats, 'skip_margin_too_low')
+        bump(stats, 'skip_margin_too_low_historical' if is_historical_reference else 'skip_margin_too_low')
         save_eval_snapshot(auction_id, entry_current_price_eur, entry_min_next_bid_eur)
         return
 
@@ -1259,12 +1284,14 @@ def process_auction(auction, eth_rate, stats):
     if suggested_max_offer < starting_bid:
         suggested_max_offer = starting_bid  # rete di sicurezza, non dovrebbe mai servire
 
-    log(f"ASTA INTERESSANTE! {player_name}: attuale {current_price_eur:.2f}EUR, "
+    log(f"ASTA INTERESSANTE!{' [RIFERIMENTO STORICO]' if is_historical_reference else ''} "
+        f"{player_name}: attuale {current_price_eur:.2f}EUR, "
         f"minimo per essere in testa {starting_bid:.2f}EUR, "
         f"mediana riferimento {median_reference:.2f}EUR, "
         f"tetto consigliato (informativo) {recommended_ceiling:.2f}EUR, "
         f"offri fino a {suggested_max_offer:.2f}EUR, "
-        f"vendita diretta minima {direct_sale_price if direct_sale_price is not None else 'n/d'}, "
+        f"vendita diretta minima {direct_sale_price if direct_sale_price is not None else 'n/d'}"
+        f"{' (storico/ultima vendita, NON live)' if is_historical_reference else ''}, "
         f"margine stimato {margin_estimate if margin_estimate is not None else 'n/d'}")
     # FIX 17/07 (richiesta esplicita dell'utente, caso Seo Jin-Su -- "la mediana e' corretta?"):
     # senza i prezzi grezzi usati non era possibile verificare la mediana confrontandola con lo
@@ -1319,19 +1346,26 @@ def process_auction(auction, eth_rate, stats):
         f"\U0001F4CA Mediana di riferimento: {median_reference:.2f}€",
     ]
     if direct_sale_price is not None:
-        msg_lines.append(f"\U0001F3F7 Vendita diretta minima: {direct_sale_price:.2f}€")
+        label = "Riferimento STORICO (ultima vendita, non live)" if is_historical_reference else "Vendita diretta minima"
+        msg_lines.append(f"\U0001F3F7 {label}: {direct_sale_price:.2f}€")
     if margin_estimate is not None:
         msg_lines.append(f"\U0001F4B0 Margine stimato: ~{margin_estimate:.2f}€")
+    if is_historical_reference:
+        msg_lines.append(
+            "⚠️ <b>Nessuna vendita diretta live disponibile ora</b> -- riferimento preso "
+            "dall'ultima vendita reale osservata, non da un prezzo garantito adesso. Verifica a "
+            "mano prima di offrire.")
     msg_lines += ["", f"<a href='{link}'>{link_text}</a>"]
 
     msg_text = "\n".join(msg_lines)
     send_telegram_msg(msg_text)
     mark_notified(auction_id)
-    log_decision(auction_id, player_slug, player_name, season_type, "notify",
+    log_decision(auction_id, player_slug, player_name, season_type,
+                 "notify_historical" if is_historical_reference else "notify",
                  current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                  median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                  direct_sale_price=direct_sale_price, margin_estimate=margin_estimate)
-    bump(stats, 'notify')
+    bump(stats, 'notify_historical' if is_historical_reference else 'notify')
 
 
 def handle_auction_event(auction, eth_rate, stats):
