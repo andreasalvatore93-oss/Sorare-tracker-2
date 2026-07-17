@@ -1032,7 +1032,20 @@ def handle_offer_update(offer, eth_rate, stats):
     # Sorare a volte restituisce il prezzo. Serve un altro modo per isolare il caso Kim Dae-Won,
     # ancora in backlog.
 
-    for card in (sender_side.get('anyCards') or []):
+    # FIX 17/07 (sessione 3, stesso bug gia' trovato e risolto in fetch_user_trades per le
+    # analisi retroattive -- richiesta esplicita dell'utente "sistema questo bug" dopo la
+    # scoperta): un'offerta puo' impacchettare PIU' carte per un unico prezzo aggregato
+    # (bundle). Il loop sotto valutava ogni carta del lotto con l'intero price_eur come se
+    # fosse il prezzo di QUELLA singola carta -- gonfiando falsamente il margine (o
+    # nascondendo affari veri, a seconda del caso) su qualsiasi annuncio multi-carta. Non
+    # esiste un modo affidabile di scomporre il prezzo aggregato in un prezzo per-carta
+    # (potrebbero avere valore molto diverso tra loro), quindi scartiamo l'intero annuncio
+    # invece di leggerlo sbagliato -- stessa scelta gia' fatta per l'analisi storica.
+    sender_cards = sender_side.get('anyCards') or []
+    if len(sender_cards) > 1:
+        return
+
+    for card in sender_cards:
         if card.get('rarityTyped') != 'limited':
             continue
         if card.get('sport') != 'FOOTBALL':
