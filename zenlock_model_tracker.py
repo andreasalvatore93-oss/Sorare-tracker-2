@@ -79,7 +79,11 @@ ZENLOCK_PRICE_CEILINGS = {
 # classic_looks_cheap_everywhere) -- quelli restano, servono a evitare di reintrodurre proprio i
 # falsi positivi gia' risolti in sessione (Balerdi, Jo Hyeon-Woo-style). Facile da riportare a
 # 0.30 se il volume di notifiche sale troppo.
-ZENLOCK_DISCOUNT_NORMAL = float(os.environ.get('ZENLOCK_DISCOUNT_NORMAL', '0.25'))
+# FIX 17/07 (v8, richiesta esplicita dell'utente, "scendi al 15 e nel caso alziamo" -- dopo
+# analisi dati reali su 245 scarti "sostituto in season": solo 11 avevano sconto positivo, e
+# 25% ne tagliava fuori 10; al 15% ne passano di piu' senza scendere fino ad accettare sconti
+# quasi nulli). Da rialzare se il volume/qualita' non convince nei prossimi giri.
+ZENLOCK_DISCOUNT_NORMAL = float(os.environ.get('ZENLOCK_DISCOUNT_NORMAL', '0.15'))
 # FIX 17/07 (v6, richiesta esplicita dell'utente, caso Emiliano Martínez): 40% -> 20%. Sull'unico
 # snipe eccezione con confronto di mercato verificabile (85 snipe/14gg), ZenLock ha comprato con
 # solo il 9.7% di sconto reale -- ben sotto il 40% che il modello richiedeva, quindi quel caso

@@ -907,6 +907,43 @@ query ListLiveAuctions($n: Int!) {
 """
 
 
+# FIX 17/07 (backlog, richiesta esplicita dell'utente "se tracciassimo anche le 50 piu' vicine
+# alla scadenza?"): liveAuctions(last: N) prende le N aste piu' RECENTI (per creazione, stesso
+# principio di "last" usato ovunque in questo codebase, es. fetch_all_live_offers) -- un'asta
+# aperta da tempo, ferma (nessuna nuova offerta, quindi nessun evento tokenAuctionWasUpdated,
+# che scatta solo sui CAMBIAMENTI) e vicina alla scadenza puo' scivolare fuori da questa finestra
+# ed essere invisibile sia al WS che alla scansione di sicurezza -- proprio le aste ferme e vicine
+# alla chiusura sono pero' le piu' interessanti per uno snipe (nessun altro le sta piu'
+# guardando). Proviamo per tentativi (introspection disabilitata, stesso approccio usato in tutta
+# la sessione per i campi/argomenti scoperti finora) se liveAuctions supporta un ordinamento per
+# data di scadenza invece che solo "piu' recenti per creazione".
+def discover_auctions_end_date_sort():
+    candidates = [
+        ("orderBy: END_DATE_ASC",
+         "query D($n: Int!) { tokens { liveAuctions(last: $n, orderBy: END_DATE_ASC) { nodes { id endDate } } } }"),
+        ("sort: END_DATE_ASC",
+         "query D($n: Int!) { tokens { liveAuctions(last: $n, sort: END_DATE_ASC) { nodes { id endDate } } } }"),
+        ("sortBy: END_DATE_ASC",
+         "query D($n: Int!) { tokens { liveAuctions(last: $n, sortBy: END_DATE_ASC) { nodes { id endDate } } } }"),
+        ("orderBy: endDate_ASC",
+         "query D($n: Int!) { tokens { liveAuctions(last: $n, orderBy: endDate_ASC) { nodes { id endDate } } } }"),
+        ("endingSoon: true",
+         "query D($n: Int!) { tokens { liveAuctions(last: $n, endingSoon: true) { nodes { id endDate } } } }"),
+        ("first: N (senza last, per vedere se cambia l'ordine di default)",
+         "query D($n: Int!) { tokens { liveAuctions(first: $n) { nodes { id endDate } } } }"),
+    ]
+    for label, query in candidates:
+        try:
+            data = graphql_query(query, {"n": 5})
+            if data.get('errors'):
+                log(f"[diagnostica ordinamento aste] {label}: errore -- {data['errors']}")
+            else:
+                log(f"[diagnostica ordinamento aste] {label}: SUCCESSO -- {data['data']}")
+        except Exception as e:
+            log(f"[diagnostica ordinamento aste] {label}: eccezione -- {e}")
+    log("[diagnostica ordinamento aste] tentativi completati.")
+
+
 def get_live_auctions(n):
     """Le N aste live piu' recenti su tutto il mercato (query identica a quella gia'
     validata dal vecchio auctions.py). NOTA: n=50 e' gia' al limite di troncamento noto
@@ -1323,6 +1360,11 @@ def main():
     reset_season_filter_stats()
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
+
+    # Diagnostico una tantum (vedi discover_auctions_end_date_sort): lascia vuoto normalmente,
+    # valorizza AUCTION_DIAGNOSTIC_END_DATE_SORT a qualunque valore per farlo scattare.
+    if os.environ.get('AUCTION_DIAGNOSTIC_END_DATE_SORT', '').strip():
+        discover_auctions_end_date_sort()
 
     stats = {"processed": 0, "seen_events": set()}
 
