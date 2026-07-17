@@ -292,6 +292,9 @@ def handle_zenlock_offer_update(offer, eth_rate, stats):
 
 
 def run_zenlock_listener(eth_rate):
+    track.reset_currency_branch_stats()  # stesso motivo del tracker principale: azzera eventuali
+    # chiamate precedenti (es. diagnostic_dump_missing_offer) cosi' il conteggio riflette solo
+    # questo ascolto.
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
         "query": track.SUBSCRIPTION_QUERY,
@@ -346,6 +349,8 @@ def run_zenlock_listener(eth_rate):
                   f"{stats.get('skipped_reference_too_low', 0)}, scartate per differenza assoluta "
                   f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}, scartate per gemello "
                   f"in_season altrettanto economico: {stats.get('skipped_cheap_sibling', 0)}")
+        track.log(f"[modello zenlock] [diagnostica valute] branch usati in "
+                  f"eur_price_from_amounts questa esecuzione: {track.get_currency_branch_stats()}")
 
     ws = websocket.WebSocketApp(
         track.WS_URL,

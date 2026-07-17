@@ -677,26 +677,56 @@ def get_gbp_eur_rate():
     return rate
 
 
+# FIX 17/07 (richiesta esplicita dell'utente, dopo la scoperta del bug valute): contatore
+# leggero per capire QUANTO materiale reale stavamo perdendo prima del fix usdCents/gbpCents --
+# finora solo aneddotico (caso Mendez: 2 annunci su 4-5). Un dict globale incrementato dentro
+# eur_price_from_amounts copre automaticamente OGNI punto di chiamata (listener live, bucket
+# prices, storico vendite, analisi trade) senza dover passare 'stats' attraverso ogni funzione
+# che lo chiama -- costo trascurabile (un incremento di dict per chiamata, nessuna I/O).
+_CURRENCY_BRANCH_STATS = {'eurCents': 0, 'wei': 0, 'usdCents': 0, 'gbpCents': 0, 'none': 0}
+
+
+def get_currency_branch_stats():
+    return dict(_CURRENCY_BRANCH_STATS)
+
+
+def reset_currency_branch_stats():
+    for k in _CURRENCY_BRANCH_STATS:
+        _CURRENCY_BRANCH_STATS[k] = 0
+
+
 def eur_price_from_amounts(amounts, eth_rate):
     if not amounts:
+        _CURRENCY_BRANCH_STATS['none'] += 1
         return None
     if amounts.get('eurCents') is not None:
+        _CURRENCY_BRANCH_STATS['eurCents'] += 1
         return amounts['eurCents'] / 100
     if amounts.get('wei') is not None:
         try:
-            return float(amounts['wei']) / 1e18 * eth_rate
+            price = float(amounts['wei']) / 1e18 * eth_rate
         except (TypeError, ValueError):
+            _CURRENCY_BRANCH_STATS['none'] += 1
             return None
+        _CURRENCY_BRANCH_STATS['wei'] += 1
+        return price
     if amounts.get('usdCents') is not None:
         try:
-            return amounts['usdCents'] / 100 * get_usd_eur_rate()
+            price = amounts['usdCents'] / 100 * get_usd_eur_rate()
         except (TypeError, ValueError):
+            _CURRENCY_BRANCH_STATS['none'] += 1
             return None
+        _CURRENCY_BRANCH_STATS['usdCents'] += 1
+        return price
     if amounts.get('gbpCents') is not None:
         try:
-            return amounts['gbpCents'] / 100 * get_gbp_eur_rate()
+            price = amounts['gbpCents'] / 100 * get_gbp_eur_rate()
         except (TypeError, ValueError):
+            _CURRENCY_BRANCH_STATS['none'] += 1
             return None
+        _CURRENCY_BRANCH_STATS['gbpCents'] += 1
+        return price
+    _CURRENCY_BRANCH_STATS['none'] += 1
     return None
 
 
@@ -2557,6 +2587,8 @@ def process_pending_rechecks(eth_rate):
 
 # --- WebSocket / ActionCable ---
 def run_listener(eth_rate):
+    reset_currency_branch_stats()  # azzera eventuali chiamate a eur_price_from_amounts avvenute
+    # prima dell'ascolto (es. diagnostici), cosi' il conteggio riflette solo questa esecuzione.
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
         "query": SUBSCRIPTION_QUERY,
@@ -2613,6 +2645,8 @@ def run_listener(eth_rate):
         log(f"Connessione chiusa (codice {close_status_code}). "
             f"Eventi ricevuti: {stats['received']}, carte Limited/football elaborate: {stats['processed']}")
         log(f"[diagnostica tracker] distribuzione status offerte osservate: {stats['status_counts']}")
+        log(f"[diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: "
+            f"{get_currency_branch_stats()}")
 
     ws = websocket.WebSocketApp(
         WS_URL,
