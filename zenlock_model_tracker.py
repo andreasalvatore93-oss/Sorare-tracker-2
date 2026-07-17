@@ -39,6 +39,7 @@ loop eventi sono un percorso completamente separato: workflow GitHub Actions ded
 (zenlock_model_tracker.yml), nessuna scrittura su tracker.db, nessun impatto sul tracker
 principale nemmeno in caso di bug qui dentro.
 """
+import datetime
 import json
 import os
 import time
@@ -163,6 +164,22 @@ ZENLOCK_RECHECK_TOLERANCE = float(os.environ.get('ZENLOCK_RECHECK_TOLERANCE', '0
 # scartiamo PRIMA della riverifica (inutile aspettare 3 secondi per un caso che scartiamo comunque).
 ZENLOCK_MAX_REFERENCE_CEILING_MULTIPLIER = float(
     os.environ.get('ZENLOCK_MAX_REFERENCE_CEILING_MULTIPLIER', '3.0'))
+
+# FIX 17/07 (v12, caso Egil Selvik -- richiesta esplicita dell'utente, "e' stato un errore"): il
+# riferimento live (prossimo annuncio piu' economico) puo' essere un annuncio fermo/sovraprezzato
+# che nessuno sta davvero comprando, anche con piu' di un comparabile (qui n=3, 6.20-6.99EUR)
+# mentre la cronologia vendite REALE mostrava l'ultima vendita vera a 4.33EUR, 5 ore prima --
+# quasi identica al prezzo evento (4.29EUR): nessuno sconto vero, il modello ha confuso un
+# "prezzo chiesto" stagnante con il vero valore di mercato. Prima di notificare, confrontiamo il
+# riferimento live con l'ultima vendita REALE recente (tokenPrices, stesso dato gia' usato per il
+# fallback "nessun comparabile"): se il riferimento live e' troppo piu' caro di quanto la gente
+# abbia DAVVERO pagato di recente, lo trattiamo come inaffidabile e scartiamo. Il controllo vale
+# solo se la vendita reale trovata e' abbastanza recente (ZENLOCK_REAL_SALE_MAX_AGE_DAYS) --
+# altrimenti non e' un confronto significativo (stesso problema di staleness gia' visto nel
+# fallback "nessun comparabile", casi Traore/Montiel).
+ZENLOCK_LIVE_VS_REAL_SALE_TOLERANCE = float(
+    os.environ.get('ZENLOCK_LIVE_VS_REAL_SALE_TOLERANCE', '0.25'))
+ZENLOCK_REAL_SALE_MAX_AGE_DAYS = float(os.environ.get('ZENLOCK_REAL_SALE_MAX_AGE_DAYS', '5'))
 
 ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 
@@ -305,6 +322,28 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     if classic_looks_cheap_everywhere(buckets, season_type, price_eur):
         stats['skipped_cheap_sibling'] = stats.get('skipped_cheap_sibling', 0) + 1
         return  # classic "scontata" ma l'in_season gemello e' economico uguale/di piu' (Perišić)
+
+    # FIX 17/07 (v12, caso Egil Selvik): il riferimento live puo' essere un annuncio fermo che
+    # nessuno compra davvero -- controlliamo contro l'ultima vendita REALE recente, se abbastanza
+    # fresca da essere un confronto significativo.
+    recent_for_check = track.get_recent_sale_history(player_slug, eth_rate, last_n=1)
+    if recent_for_check:
+        last_sale_date_str, last_sale_price = recent_for_check[0]
+        try:
+            last_sale_dt = datetime.datetime.fromisoformat(last_sale_date_str.replace('Z', '+00:00'))
+            age_days = (datetime.datetime.now(datetime.timezone.utc) - last_sale_dt).total_seconds() / 86400
+        except (ValueError, TypeError):
+            age_days = None
+        if (age_days is not None and age_days <= ZENLOCK_REAL_SALE_MAX_AGE_DAYS
+                and last_sale_price > 0
+                and reference_price > last_sale_price * (1 + ZENLOCK_LIVE_VS_REAL_SALE_TOLERANCE)):
+            stats['skipped_reference_stale_vs_real_sale'] = stats.get(
+                'skipped_reference_stale_vs_real_sale', 0) + 1
+            track.log(f"[modello zenlock] riferimento live {reference_price:.2f}EUR per "
+                      f"{player_name} molto piu' caro dell'ultima vendita REALE "
+                      f"({last_sale_price:.2f}EUR, {age_days:.1f}gg fa) -- probabile annuncio "
+                      f"stagnante, non notifico")
+            return
 
     if discount >= ZENLOCK_SUSPECT_DISCOUNT_THRESHOLD:
         # FIX 17/07 (v10, caso Pedrinho): sconto estremo, oltre ogni snipe reale osservato --
@@ -456,7 +495,8 @@ def run_zenlock_listener(eth_rate):
                   f"in_season altrettanto economico: {stats.get('skipped_cheap_sibling', 0)}, "
                   f"sconto sospetto non confermato alla riverifica: "
                   f"{stats.get('skipped_suspect_not_confirmed', 0)}, riferimento troppo alto/non "
-                  f"rappresentativo: {stats.get('skipped_reference_too_high', 0)}")
+                  f"rappresentativo: {stats.get('skipped_reference_too_high', 0)}, riferimento "
+                  f"stagnante vs vendita reale: {stats.get('skipped_reference_stale_vs_real_sale', 0)}")
         track.log(f"[modello zenlock] [diagnostica vendite recenti] su "
                   f"{stats.get('skipped_no_comparable', 0)} casi senza comparabile live, "
                   f"{stats.get('no_comparable_but_recent_sale_available', 0)} avevano comunque "

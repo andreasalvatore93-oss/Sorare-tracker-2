@@ -332,6 +332,17 @@ def log(message):
 # ZenLock, entrambi nella stessa finestra di carico pesante di oggi). Ora rileva il 429
 # esplicitamente e ritenta con backoff (rispetta l'header Retry-After se Sorare lo manda,
 # altrimenti backoff esponenziale breve) invece di arrendersi subito.
+#
+# FIX 17/07 (v2, caso Egil Selvik/ping-pong timeout): rispettare alla lettera un Retry-After
+# lungo (osservato 15s) ha fatto scadere il ping/pong del WebSocket del listener (ping_timeout
+# 10s) che gira nello STESSO thread -- il time.sleep() qui dentro blocca tutto, la libreria
+# websocket non puo' rispondere ai ping del server nel frattempo, la connessione cade. Mettiamo
+# un tetto massimo all'attesa: meglio rinunciare prima e lasciar fallire questa query (il
+# chiamante la tratta comunque come "nessun dato", niente di nuovo) che uccidere l'intero
+# ascolto per una singola query lenta.
+GRAPHQL_RETRY_MAX_WAIT_SECONDS = 8.0
+
+
 def graphql_query(query, variables=None, max_retries=3):
     headers = {
         'Content-Type': 'application/json',
@@ -348,6 +359,7 @@ def graphql_query(query, variables=None, max_retries=3):
                 wait_seconds = float(retry_after) if retry_after else (2 ** attempt) * 2
             except ValueError:
                 wait_seconds = (2 ** attempt) * 2
+            wait_seconds = min(wait_seconds, GRAPHQL_RETRY_MAX_WAIT_SECONDS)
             log(f"[rate limit] HTTP 429 da Sorare (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s prima di ritentare...")
             time.sleep(wait_seconds)

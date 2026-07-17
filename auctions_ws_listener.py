@@ -113,6 +113,14 @@ def log(message):
 # controllato esplicitamente finora. Rileva il 429 e ritenta con backoff invece di trattarlo
 # come un generico errore/dato vuoto (probabile causa reale dell'apparente crollo dei "prezzi
 # recenti trovati" osservato in un run precedente, non necessariamente il filtro stagione).
+#
+# FIX 17/07 (v2, stesso giorno, caso gemello Egil Selvik su zenlock_model_tracker.py): un
+# Retry-After lungo (osservato 15s) fatto rispettare alla lettera dentro il thread del listener
+# WebSocket ha fatto scadere il ping/pong (ping_timeout 10s) e chiuso la connessione. Tetto
+# massimo all'attesa: meglio rinunciare prima e lasciar fallire la singola query.
+GRAPHQL_RETRY_MAX_WAIT_SECONDS = 8.0
+
+
 def graphql_query(query, variables=None, max_retries=3):
     headers = {
         'Content-Type': 'application/json',
@@ -129,6 +137,7 @@ def graphql_query(query, variables=None, max_retries=3):
                 wait_seconds = float(retry_after) if retry_after else (2 ** attempt) * 2
             except ValueError:
                 wait_seconds = (2 ** attempt) * 2
+            wait_seconds = min(wait_seconds, GRAPHQL_RETRY_MAX_WAIT_SECONDS)
             log(f"[rate limit] HTTP 429 da Sorare (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s prima di ritentare...")
             time.sleep(wait_seconds)
