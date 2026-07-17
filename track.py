@@ -3018,10 +3018,13 @@ def discover_offer_node_shape(player_slug):
 def discover_sale_card_season_fields(player_slug):
     """Prova a leggere inSeasonEligible/sportSeason/rarityTyped/sport dentro tokenPrices.card,
     per capire se lo storico vendite puo' essere filtrato per stagione come i comparabili live."""
+    # NOTA (17/07): 'last' rimosso -- tokenPrices non lo accetta come argomento (confermato
+    # dall'errore reale "Field 'tokenPrices' doesn't accept argument 'last'"; la query di
+    # produzione in get_recent_sale_history infatti non lo passa mai, solo playerSlug/rarity).
     query = """
     query DiscoverSaleCardSeasonFields($p: String!) {
       tokens {
-        tokenPrices(playerSlug: $p, rarity: limited, last: 5) {
+        tokenPrices(playerSlug: $p, rarity: limited) {
           date
           card {
             slug
