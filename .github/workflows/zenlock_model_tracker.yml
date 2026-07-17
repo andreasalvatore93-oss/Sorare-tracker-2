@@ -64,10 +64,27 @@ jobs:
           ZENLOCK_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '250' }}
           ZENLOCK_DIAGNOSTIC_PLAYER_SLUG: ${{ github.event.inputs.diagnostic_player_slug || '' }}
           ZENLOCK_DIAGNOSTIC_SALE_SEASON_SLUG: ${{ github.event.inputs.diagnostic_sale_season_slug || '' }}
+        # FIX 17/07 (v2, richiesta esplicita dell'utente, stesso motivo gemello di check.yml):
+        # sovrascritto -> ACCODATO (tee -a) con separatore per run, cosi' si puo' far girare il
+        # tracker per una mezz'ora e pullare tutti i run accumulati insieme, non solo l'ultimo.
         run: |
           set -o pipefail
           mkdir -p logs
-          python zenlock_model_tracker.py 2>&1 | tee logs/zenlock_last_run.log
+          {
+            echo ""
+            echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
+            python zenlock_model_tracker.py
+          } 2>&1 | tee -a logs/zenlock_last_run.log
+          # Rete di sicurezza SOLO per non far crescere il file all'infinito se l'utente non
+          # pulla mai -- vedi commento gemello in check.yml.
+          awk -v maxruns=200 '
+            /^===== RUN / { runs++; starts[runs]=NR }
+            { buf[NR]=$0; last=NR }
+            END {
+              from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
+              for (i=from; i<=last; i++) print buf[i]
+            }
+          ' logs/zenlock_last_run.log > logs/zenlock_last_run.log.tmp && mv logs/zenlock_last_run.log.tmp logs/zenlock_last_run.log
 
       # if: always() -- vogliamo il log salvato anche se lo script fallisce/va in timeout.
       - name: Save log
