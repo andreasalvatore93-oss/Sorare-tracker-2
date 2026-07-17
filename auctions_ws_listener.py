@@ -1107,43 +1107,31 @@ def process_auction(auction, eth_rate, stats):
     min_next_bid_eur = fresh_min_next_bid_eur
     auction = dict(auction, endDate=fresh.get('endDate'))
 
-    if min_next_bid_eur is not None:
-        if min_next_bid_eur > recommended_ceiling:
-            log(f"{player_name}: offerta minima valida ({min_next_bid_eur:.2f}EUR) supera il tetto "
-                f"consigliato ({recommended_ceiling:.2f}EUR), ignorata")
-            log_decision(auction_id, player_slug, player_name, season_type, "skip_min_bid_exceeds_ceiling",
-                         current_price=current_price_eur, min_next_bid=min_next_bid_eur,
-                         median_reference=median_reference, recommended_ceiling=recommended_ceiling,
-                         direct_sale_price=direct_sale_price)
-            bump(stats, 'skip_min_bid_exceeds_ceiling')
-            save_eval_snapshot(auction_id, entry_current_price_eur, entry_min_next_bid_eur)
-            return
-        starting_bid = min_next_bid_eur
-    else:
-        if current_price_eur >= recommended_ceiling:
-            log(f"{player_name}: asta a {current_price_eur:.2f}EUR gia' oltre il tetto consigliato "
-                f"({recommended_ceiling:.2f}EUR), ignorata")
-            log_decision(auction_id, player_slug, player_name, season_type, "skip_price_exceeds_ceiling",
-                         current_price=current_price_eur, min_next_bid=min_next_bid_eur,
-                         median_reference=median_reference, recommended_ceiling=recommended_ceiling,
-                         direct_sale_price=direct_sale_price)
-            bump(stats, 'skip_price_exceeds_ceiling')
-            save_eval_snapshot(auction_id, entry_current_price_eur, entry_min_next_bid_eur)
-            return
-        starting_bid = current_price_eur
+    # FIX 17/07 (richiesta esplicita dell'utente, "vada vada" -- dopo aver verificato che
+    # skip_min_bid_exceeds_ceiling da solo scartava 21 aste su 55 in un run, PRIMA che il
+    # controllo sul margine (appena reso piu' permissivo) potesse mai essere raggiunto):
+    # recommended_ceiling (mediana scontata del 20%, o vendita diretta, o ultima vendita) era
+    # usato come un muro rigido -- se l'offerta minima per stare in testa lo superava anche di
+    # poco, l'asta veniva scartata SENZA MAI calcolare il margine vero contro direct_sale_price.
+    # Questo aveva senso quando il margine si calcolava (per bug) su recommended_ceiling stesso
+    # -- ora che si calcola sul prezzo VERO da pagare (starting_bid), il muro e' ridondante e
+    # scarta affari legittimi: un'offerta minima leggermente sopra il tetto-mediana puo' avere
+    # comunque un margine enorme se la vendita diretta e' molto piu' cara. Il prezzo da pagare
+    # e' semplicemente quello vero (offerta minima se c'e', altrimenti il prezzo attuale);
+    # recommended_ceiling resta calcolato e mostrato nella notifica come riferimento
+    # informativo, ma non scarta piu' nulla da solo -- ci pensa il controllo sul margine
+    # qui sotto, l'unico che conta davvero.
+    starting_bid = min_next_bid_eur if min_next_bid_eur is not None else current_price_eur
 
     # FIX 17/07 (richiesta esplicita dell'utente, "impossibile zero notifiche" -- log reali
     # mostravano margine stimato ESATTAMENTE 0.0 su piu' aste, es. Ros/Hrvoje Babec): il margine
-    # veniva calcolato come direct_sale_price - recommended_ceiling, ma recommended_ceiling e'
-    # gia' forzato a non superare MAI direct_sale_price (e' uno dei tre tetti presi col minimo,
-    # vedi sopra) -- quindi ogni volta che il vincolo piu' stretto era proprio direct_sale_price
-    # (caso comune quando il mercato diretto e' piu' economico di mediana/ultima vendita), il
-    # margine risultava matematicamente SEMPRE zero, indipendentemente da quanto l'asta fosse
-    # davvero conveniente al prezzo che si pagherebbe ORA. Non era una soglia da tarare, era un
-    # bug tautologico che scartava affari veri. Il margine vero e' quanto si risparmia rispetto
-    # alla vendita diretta AL PREZZO CHE SI PAGHEREBBE DAVVERO per essere in testa ora
-    # (starting_bid, gia' garantito <= recommended_ceiling <= direct_sale_price dai controlli
-    # sopra), non rispetto al tetto di sicurezza.
+    # veniva calcolato come direct_sale_price - recommended_ceiling invece che sul prezzo VERO
+    # da pagare. Il margine vero e' quanto si risparmia rispetto alla vendita diretta AL PREZZO
+    # CHE SI PAGHEREBBE DAVVERO per essere in testa ora (starting_bid). NOTA (aggiornata dopo il
+    # fix piu' sopra che ha tolto il muro rigido su recommended_ceiling): starting_bid NON e'
+    # piu' garantito <= recommended_ceiling -- ma non serve piu' quella garanzia, perche' se
+    # starting_bid supera direct_sale_price il margine risulta negativo e fallisce comunque
+    # questo controllo da solo, senza bisogno di un muro separato a monte.
     margin_estimate = (direct_sale_price - starting_bid) if direct_sale_price is not None else None
     # FIX 17/07: soglia minima ora a scaglioni (vedi required_margin_eur piu' in alto) invece
     # del vecchio MIN_MARGIN_EUR fisso -- stesso spirito del fix gemello di zenlock/track.py.
@@ -1161,10 +1149,24 @@ def process_auction(auction, eth_rate, stats):
         save_eval_snapshot(auction_id, entry_current_price_eur, entry_min_next_bid_eur)
         return
 
+    # FIX 17/07 (bug introdotto dal fix precedente sullo stesso giro, trovato con un test
+    # mirato prima di consegnare): rimosso il muro rigido su recommended_ceiling, un'offerta
+    # minima per stare in testa (starting_bid) puo' ora essere SOPRA recommended_ceiling (e'
+    # proprio il punto del fix -- casi con margine vero ottimo anche oltre il tetto-mediana).
+    # Ma "OFFRI FINO A" nel messaggio Telegram usava ancora recommended_ceiling: risultato,
+    # un'istruzione contraddittoria ("offri fino a 2.88" quando servono almeno 3.20 per essere
+    # validi). Il vero tetto consigliabile ora e' quanto si puo' offrire mantenendo ALMENO il
+    # margine minimo richiesto rispetto alla vendita diretta -- per costruzione sempre
+    # >= starting_bid qui, visto che abbiamo gia' superato il controllo sul margine sopra.
+    suggested_max_offer = (direct_sale_price - min_margin_required) if direct_sale_price is not None else recommended_ceiling
+    if suggested_max_offer < starting_bid:
+        suggested_max_offer = starting_bid  # rete di sicurezza, non dovrebbe mai servire
+
     log(f"ASTA INTERESSANTE! {player_name}: attuale {current_price_eur:.2f}EUR, "
         f"minimo per essere in testa {starting_bid:.2f}EUR, "
         f"mediana riferimento {median_reference:.2f}EUR, "
-        f"tetto consigliato {recommended_ceiling:.2f}EUR, "
+        f"tetto consigliato (informativo) {recommended_ceiling:.2f}EUR, "
+        f"offri fino a {suggested_max_offer:.2f}EUR, "
         f"vendita diretta minima {direct_sale_price if direct_sale_price is not None else 'n/d'}, "
         f"margine stimato {margin_estimate if margin_estimate is not None else 'n/d'}")
 
@@ -1208,7 +1210,7 @@ def process_auction(auction, eth_rate, stats):
         time_line,
         "",
         separator,
-        f"\U0001F3AF <b>OFFRI FINO A: {recommended_ceiling:.2f}€</b>",
+        f"\U0001F3AF <b>OFFRI FINO A: {suggested_max_offer:.2f}€</b>",
         separator,
         "",
         f"\U0001F4CA Mediana di riferimento: {median_reference:.2f}€",
