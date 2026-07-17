@@ -54,7 +54,13 @@ import track
 ZENLOCK_CEILING_CLASSIC_NORMAL = float(os.environ.get('ZENLOCK_CEILING_CLASSIC_NORMAL', '4.0'))
 ZENLOCK_CEILING_CLASSIC_EXCEPTION = float(os.environ.get('ZENLOCK_CEILING_CLASSIC_EXCEPTION', '30.0'))
 ZENLOCK_CEILING_IN_SEASON_NORMAL = float(os.environ.get('ZENLOCK_CEILING_IN_SEASON_NORMAL', '8.0'))
-ZENLOCK_CEILING_IN_SEASON_EXCEPTION = float(os.environ.get('ZENLOCK_CEILING_IN_SEASON_EXCEPTION', '70.0'))
+# FIX 17/07 (v6, ricalibrazione su 85 snipe reali/14gg, margin_model post-fix valute/paginazione):
+# 70 -> 90. Distribuzione osservata: 43/48 in_season sotto 8EUR (soglia normale confermata), ma
+# il piu' caro snipe eccezione osservato e' Messi a 65.71EUR -- solo 4.29EUR sotto il vecchio
+# ceiling di 70. Troppo poco margine: un suo prossimo acquisto anche di poco piu' caro sarebbe
+# stato scartato per prezzo, prima ancora di valutare lo sconto. 90 da' respiro mantenendo
+# comunque un limite (non illimitato).
+ZENLOCK_CEILING_IN_SEASON_EXCEPTION = float(os.environ.get('ZENLOCK_CEILING_IN_SEASON_EXCEPTION', '90.0'))
 
 ZENLOCK_PRICE_CEILINGS = {
     'classic': (ZENLOCK_CEILING_CLASSIC_NORMAL, ZENLOCK_CEILING_CLASSIC_EXCEPTION),
@@ -66,8 +72,21 @@ ZENLOCK_PRICE_CEILINGS = {
 # del run 14gg) meno un margine di sicurezza; sopra (fascia "eccezione", carte piu' costose e
 # piu' rare) alziamo la soglia perche' il campione li' e' quasi zero e vogliamo essere piu'
 # conservativi.
-ZENLOCK_DISCOUNT_NORMAL = float(os.environ.get('ZENLOCK_DISCOUNT_NORMAL', '0.30'))
-ZENLOCK_DISCOUNT_HIGH_VALUE = float(os.environ.get('ZENLOCK_DISCOUNT_HIGH_VALUE', '0.40'))
+# FIX 17/07 (v7, TEST richiesto esplicitamente dall'utente -- "voglio ammorbidire, giro da
+# un'ora e zero notifiche, se vengo inondato torniamo indietro"): 30% -> 25%. Tocco solo le
+# soglie di sconto, NON i filtri anti-rumore aggiunti oggi (MIN_REFERENCE_EUR, MIN_COMPARABLES,
+# classic_looks_cheap_everywhere) -- quelli restano, servono a evitare di reintrodurre proprio i
+# falsi positivi gia' risolti in sessione (Balerdi, Jo Hyeon-Woo-style). Facile da riportare a
+# 0.30 se il volume di notifiche sale troppo.
+ZENLOCK_DISCOUNT_NORMAL = float(os.environ.get('ZENLOCK_DISCOUNT_NORMAL', '0.25'))
+# FIX 17/07 (v6, richiesta esplicita dell'utente, caso Emiliano Martínez): 40% -> 20%. Sull'unico
+# snipe eccezione con confronto di mercato verificabile (85 snipe/14gg), ZenLock ha comprato con
+# solo il 9.7% di sconto reale -- ben sotto il 40% che il modello richiedeva, quindi quel caso
+# oggi non l'avremmo notificato. Un solo dato, quindi non lo usiamo come soglia diretta: 20% e'
+# circa il doppio del 9.7% osservato, un margine di sicurezza nel dubbio (non sappiamo ancora se
+# 9.7% e' tipico o un'eccezione lui stesso). Da ritarare se emergono altri casi eccezione con
+# confronto di mercato.
+ZENLOCK_DISCOUNT_HIGH_VALUE = float(os.environ.get('ZENLOCK_DISCOUNT_HIGH_VALUE', '0.20'))
 
 # Sotto il piu' economico snipe osservato (0.33-0.48EUR): filtro solo rumore vero (annunci a
 # pochi centesimi), NON il MIN_PRICE_EUR=2.0 del tracker principale (troppo alto per questo
@@ -97,7 +116,10 @@ ZENLOCK_MIN_COMPARABLES = int(os.environ.get('ZENLOCK_MIN_COMPARABLES', '2'))
 #   comparabili di ZenLock (Owusu mediana 0.99EUR, Utvik mediana 0.88EUR) -- compromesso
 #   consapevole, prima iterazione: meglio perdere qualche caso genuino su carte da centesimi che
 #   restare sommersi di notifiche senza edge reale. Da ritarare coi prossimi test.
-ZENLOCK_MIN_DISCOUNT_EUR = float(os.environ.get('ZENLOCK_MIN_DISCOUNT_EUR', '0.50'))
+# FIX 17/07 (v7, stesso TEST di ammorbidimento richiesto dall'utente): 0.50 -> 0.40, resta
+# comunque sopra il minimo scarto assoluto reale osservato (0.39EUR, Bjorn Utvik) -- non lo
+# tocchiamo verso il basso, solo ci avviciniamo.
+ZENLOCK_MIN_DISCOUNT_EUR = float(os.environ.get('ZENLOCK_MIN_DISCOUNT_EUR', '0.40'))
 ZENLOCK_MIN_REFERENCE_EUR = float(os.environ.get('ZENLOCK_MIN_REFERENCE_EUR', '1.50'))
 
 # FIX 17/07 (v6, caso Ivan Perišić -- richiesta esplicita dell'utente dopo verifica a mano):
