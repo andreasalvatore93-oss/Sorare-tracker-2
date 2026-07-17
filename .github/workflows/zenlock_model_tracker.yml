@@ -1,0 +1,39 @@
+name: ZenLock Model Tracker
+# Tracker LIVE separato dal tracker principale (check.yml) -- backlog #8/#11, richiesta esplicita
+# dell'utente 17/07: stesse notifiche Telegram (stesso canale/secrets), ma girato con un proprio
+# workflow dedicato apposta per non toccare/rallentare/rompere in nessun modo il tracker
+# principale. Nessuna scrittura su tracker.db: questo tracker e' stateless, valuta ogni annuncio
+# live contro le soglie del modello ZenLock (vedi zenlock_model_tracker.py) e basta.
+on:
+  workflow_dispatch:
+    inputs:
+      listen_seconds:
+        description: "Secondi di ascolto (lascia vuoto per 200 = normale; usa 20-30 per test veloci)"
+        required: false
+        default: "200"
+permissions:
+  contents: read
+concurrency:
+  group: zenlock-model-tracker
+  cancel-in-progress: false
+jobs:
+  zenlock_model_tracker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Run ZenLock model tracker
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+          ZENLOCK_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '200' }}
+        run: python zenlock_model_tracker.py
