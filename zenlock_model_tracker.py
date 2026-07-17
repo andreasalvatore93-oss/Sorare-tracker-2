@@ -199,6 +199,12 @@ ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 # (attivo solo se ZENLOCK_DIAGNOSTIC_PLAYER_SLUG e' valorizzato) per il prossimo caso dubbio.
 ZENLOCK_DIAGNOSTIC_PLAYER_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_PLAYER_SLUG', '').strip()
 
+# FIX 17/07 (caso "none" nel counter valute, es. petar-musa): hook diagnostico separato per
+# testare nomi di campo extra nel tipo amounts (candidati Solana in primis, su suggerimento
+# dell'utente). Stesso pattern di ZENLOCK_DIAGNOSTIC_PLAYER_SLUG sopra: attivo solo se
+# valorizzato, nessun impatto sul run normale. Vedi discover_amount_currency_fields in track.py.
+ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG', '').strip()
+
 
 # FIX 17/07 (v3, caso Nayef Aguerd -- verificato a mano dall'utente): la carta era infortunata da
 # mesi (Groin Injury, ritorno sconosciuto) -- TUTTO il mercato era gia' sceso in un cluster
@@ -563,6 +569,9 @@ if __name__ == "__main__":
 
     if ZENLOCK_DIAGNOSTIC_PLAYER_SLUG:
         track.diagnostic_dump_missing_offer(ZENLOCK_DIAGNOSTIC_PLAYER_SLUG)
+
+    if ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG:
+        track.discover_amount_currency_fields(ZENLOCK_DIAGNOSTIC_CURRENCY_SLUG)
 
     track.log(f"[modello zenlock] Tasso ETH/EUR: {eth_rate}")
     track.log(f"[modello zenlock] Ascolto per {ZENLOCK_LISTEN_SECONDS} secondi "

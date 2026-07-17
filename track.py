@@ -2888,6 +2888,50 @@ def diagnostic_dump_missing_offer(player_slug):
     log(f"[diagnostica offerta mancante] dump completato.")
 
 
+# FIX 17/07 (v16, caso "none" nel counter valute, es. petar-musa -- richiesta esplicita
+# dell'utente): un annuncio manager aperto (non uno scambio) con tutti e 4 i campi prezzo che
+# chiediamo (eurCents/wei/usdCents/gbpCents) esplicitamente null. L'utente (esperto, anni di
+# Sorare) esclude che possa esistere un annuncio manager senza prezzo fisso -- ipotesi piu'
+# probabile: esiste un'altra valuta nello schema che non stiamo chiedendo (l'utente stesso
+# suggerisce Solana, caso raro ma plausibile dato che Sorare supporta piu' blockchain). Stesso
+# approccio gia' usato con successo in discover_sales_history_field() qui sotto: proviamo
+# candidati UNO ALLA VOLTA in query separate, mai insieme nella query di produzione -- GraphQL
+# rifiuta l'INTERA query se anche un solo campo richiesto non esiste nello schema, quindi
+# aggiungerli tutti insieme a LIVE_OFFERS_QUERY rischierebbe di rompere ogni valutazione finche'
+# non sappiamo quali nomi sono validi. Solo diagnostica, nessun impatto sulla logica esistente
+# finche' non confermiamo un nome di campo vero.
+def discover_amount_currency_fields(player_slug):
+    """Prova candidati di campo extra nel tipo amounts (oltre a eurCents/wei/usdCents/gbpCents
+    gia' noti), uno alla volta, su un annuncio live reale del giocatore indicato. Logga solo
+    esito (successo/errore), non tocca la logica del bot."""
+    candidates = [
+        'solLamports', 'lamports', 'solCents', 'sol',
+        'referenceEurCents', 'audCents', 'chfCents', 'cadCents',
+    ]
+    log(f"[diagnostica valuta extra] inizio tentativi campo amounts per {player_slug}...")
+    for field_name in candidates:
+        query = f"""
+        query DiscoverAmountField($slug: String!) {{
+          tokens {{
+            liveSingleSaleOffers(playerSlug: $slug, last: 1) {{
+              nodes {{
+                receiverSide {{ amounts {{ {field_name} }} }}
+              }}
+            }}
+          }}
+        }}
+        """
+        try:
+            data = graphql_query(query, {"slug": player_slug})
+            if data.get('errors'):
+                log(f"[diagnostica valuta extra] campo '{field_name}': errore -- {data['errors']}")
+            else:
+                log(f"[diagnostica valuta extra] campo '{field_name}': SUCCESSO -- {data['data']}")
+        except Exception as e:
+            log(f"[diagnostica valuta extra] campo '{field_name}': eccezione -- {e}")
+    log("[diagnostica valuta extra] tentativi completati.")
+
+
 def discover_sales_history_field():
     """Tenta diversi nomi di campo candidati sotto tokens{} per scoprire come accedere allo
     storico delle vendite concluse (non solo agli annunci live). Logga solo esito, non tocca
