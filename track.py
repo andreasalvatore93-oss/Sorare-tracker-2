@@ -1457,12 +1457,12 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
               sender { ... on User { slug nickname } }
               senderSide {
                 amounts { eurCents wei }
-                anyCards { slug anyPlayer { slug displayName } }
+                anyCards { slug anyPlayer { slug displayName } sportSeason { name } inSeasonEligible }
               }
               receiver { ... on User { slug nickname } }
               receiverSide {
                 amounts { eurCents wei }
-                anyCards { slug anyPlayer { slug displayName } }
+                anyCards { slug anyPlayer { slug displayName } sportSeason { name } inSeasonEligible }
               }
             }
           }
@@ -1528,6 +1528,7 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
             price = eur_price_from_amounts(pay_amounts, eth_rate)
             for c in cards:
                 player = c.get('anyPlayer') or {}
+                season_name = (c.get('sportSeason') or {}).get('name', 'unknown')
                 results.append({
                     "type": n.get('type'),
                     "date": n.get('transactionDate'),
@@ -1537,6 +1538,12 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
                     "player_slug": player.get('slug'),
                     "player_name": player.get('displayName'),
                     "card_slug": c.get('slug'),
+                    "season_name": season_name,
+                    # riusa season_type_for_card gia' esistente (stessa logica in_season/classic
+                    # del bot principale, basata su inSeasonEligible con fallback testuale) --
+                    # richiesta esplicita dell'utente (17/07): "guarda anche la tipologia che
+                    # compra, se in season, se classic".
+                    "season_type": season_type_for_card(c, season_name),
                 })
 
         if stop or not (trades.get('pageInfo') or {}).get('hasNextPage'):
@@ -1571,12 +1578,35 @@ def diagnostic_manager_trades_report(eth_rate):
     log(f"[snipe analysis] --- SNIPE (SINGLE_SALE_OFFER, acquisto diretto) ---")
     for b in sorted(buys, key=lambda x: x['date'], reverse=True):
         prezzo = f"{b['price']:.2f}EUR" if b['price'] is not None else "prezzo N/D"
-        log(f"[snipe analysis]   {b['date']} -- {b['player_name']} ({b['card_slug']}): {prezzo} "
+        log(f"[snipe analysis]   {b['date']} -- {b['player_name']} ({b['card_slug']}) "
+            f"[{b.get('season_type', '?')}/{b.get('season_name', '?')}]: {prezzo} "
             f"da {b['counterparty']}")
     prices = [b['price'] for b in buys if b['price'] is not None]
     if prices:
         log(f"[snipe analysis] prezzo medio snipe: {sum(prices) / len(prices):.2f}EUR, "
             f"min {min(prices):.2f}EUR, max {max(prices):.2f}EUR")
+
+    # FIX 17/07 (richiesta esplicita dell'utente, "concentriamoci sul puro snipe... guarda
+    # anche la tipologia che compra, se in season, se classic, e a quale prezzo"): bucket
+    # in_season/classic (riusa season_type_for_card, stessa logica del bot principale) +
+    # fasce di prezzo (stessi confini concettuali di MARGIN_TIERS) sulla SOLA lista di snipe --
+    # primo mattone per modellare le sue soglie e progettare un tracker sul suo comportamento.
+    for season_key in ('in_season', 'classic', 'unknown'):
+        bucket_prices = [b['price'] for b in buys
+                          if b.get('season_type') == season_key and b['price'] is not None]
+        if bucket_prices:
+            log(f"[snipe analysis] bucket {season_key}: {len(bucket_prices)}/{len(buys)} snipe, "
+                f"prezzo medio {sum(bucket_prices) / len(bucket_prices):.2f}EUR, "
+                f"range {min(bucket_prices):.2f}-{max(bucket_prices):.2f}EUR")
+    price_tiers = [(3, '<3'), (5, '3-5'), (10, '5-10'), (15, '10-15'), (20, '15-20'),
+                   (30, '20-30'), (60, '30-60'), (float('inf'), '60+')]
+    lo = 0
+    for hi, label in price_tiers:
+        tier_prices = [p for p in prices if lo <= p < hi]
+        if tier_prices:
+            log(f"[snipe analysis] fascia {label}EUR: {len(tier_prices)}/{len(prices)} snipe "
+                f"({len(tier_prices) / len(prices):.0%}), media {sum(tier_prices) / len(tier_prices):.2f}EUR")
+        lo = hi
 
     log(f"[snipe analysis] --- VENDITE (con acquisto precedente della stessa carta, se trovato) ---")
     for s in sorted(sells, key=lambda x: x['date'], reverse=True):
