@@ -1149,7 +1149,7 @@ def fetch_user_recent_cards(user_slug, max_pages=20, page_size=20):
       user(slug: $userSlug) {
         slug
         searchCards(
-          rarity: "limited"
+          rarity: limited
           sport: FOOTBALL
           query: ""
           page: $page
