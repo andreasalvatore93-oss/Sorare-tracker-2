@@ -1440,24 +1440,30 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
     esce dalla finestra window_days (i nodi sono ordinati dal piu' recente) o finisce
     max_pages. Ritorna una lista di dict: type, date, role ("buy"/"sell"), price, counterparty,
     player_slug, player_name, card_slug."""
+    # NOTA (fix dopo primo test in produzione, 17/07): trades.nodes e' di tipo TokenDeal, union
+    # come deal in tokenPrices -- stesso errore "Selections can't be made directly on unions"
+    # gia' visto li', stessa soluzione: fragment inline "... on TokenOffer". sender/receiver
+    # sono a loro volta BlockchainUser (union), serve "... on User" anche li'.
     query = """
     query SnipeUserTrades($slug: String!, $after: String) {
       user(slug: $slug) {
         slug
         trades(sport: FOOTBALL, after: $after) {
           nodes {
-            id
-            type
-            transactionDate
-            sender { slug nickname }
-            senderSide {
-              amounts { eurCents wei }
-              anyCards { slug anyPlayer { slug displayName } }
-            }
-            receiver { slug nickname }
-            receiverSide {
-              amounts { eurCents wei }
-              anyCards { slug anyPlayer { slug displayName } }
+            ... on TokenOffer {
+              id
+              type
+              transactionDate
+              sender { ... on User { slug nickname } }
+              senderSide {
+                amounts { eurCents wei }
+                anyCards { slug anyPlayer { slug displayName } }
+              }
+              receiver { ... on User { slug nickname } }
+              receiverSide {
+                amounts { eurCents wei }
+                anyCards { slug anyPlayer { slug displayName } }
+              }
             }
           }
           pageInfo { endCursor hasNextPage }
