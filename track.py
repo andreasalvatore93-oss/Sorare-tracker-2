@@ -1348,12 +1348,23 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
 # recentissimo (es. infortunio, caso Muric) lo storico puo' restare ancorato al prezzo vecchio
 # piu' alto per un po' -- ma questo giocherebbe contro il blocco (falso negativo, non falso
 # positivo: al peggio non blocchiamo un caso che forse avremmo dovuto), non a favore.
-def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True):
+#
+# FIX 17/07 (v22, richiesta esplicita dell'utente, "evitiamo che li mescoli, sai gia' come
+# fare"): la nota sopra ("tokenPrices non espone stagione per singola vendita") NON e' piu'
+# vera -- era vera solo per i campi provati DIRETTAMENTE su TokenPrice. Confermato via
+# discover_sale_card_season_fields che tokenPrices.card accetta inSeasonEligible/sportSeason
+# (lo stesso sotto-oggetto Card usato ovunque nel resto del codice), quindi ora possiamo
+# classificare ogni vendita con season_type_for_card esattamente come i comparabili live.
+# Nuovo parametro season_type opzionale: se valorizzato, filtra le vendite restituite a quelle
+# della stessa categoria in_season/classic richiesta -- se None (default, comportamento
+# INVARIATO per tutti i chiamanti esistenti), nessun filtro, stesso mix di prima.
+def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True, season_type=None):
     # FIX 17/07 (v15): stessa cache TTL breve di get_bucket_prices, stesso motivo (volume di
     # query del bot come causa piu' probabile dei ban 429, vedi commento li' sopra). Chiave
     # separata per last_n perche' last_n=1 (riverifica stagnante) e last_n=5 (default) sono
-    # tagli diversi dello stesso storico.
-    cache_key = (player_slug, last_n)
+    # tagli diversi dello stesso storico; ora anche per season_type, risultati diversi a seconda
+    # del filtro richiesto.
+    cache_key = (player_slug, last_n, season_type)
     if use_cache:
         cached = _cache_get(_RECENT_SALE_HISTORY_CACHE, cache_key)
         if cached is not _CACHE_MISS:
@@ -1364,6 +1375,7 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True):
         tokenPrices(playerSlug: $p, rarity: limited) {
           date
           amounts { eurCents wei usdCents gbpCents lamport }
+          card { rarityTyped sport sportSeason { name } inSeasonEligible }
         }
       }
     }
@@ -1377,6 +1389,11 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True):
         return None
     sales = []
     for n in nodes:
+        if season_type is not None:
+            card = n.get('card') or {}
+            season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
+            if season_type_for_card(card, season_name) != season_type:
+                continue
         price = eur_price_from_amounts(n.get('amounts'), eth_rate)
         if price is not None:
             sales.append((n.get('date') or '', price))

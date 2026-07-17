@@ -165,6 +165,18 @@ ZENLOCK_RECHECK_TOLERANCE = float(os.environ.get('ZENLOCK_RECHECK_TOLERANCE', '0
 ZENLOCK_MAX_REFERENCE_CEILING_MULTIPLIER = float(
     os.environ.get('ZENLOCK_MAX_REFERENCE_CEILING_MULTIPLIER', '3.0'))
 
+# FIX 17/07 (v23, richiesta esplicita dell'utente, "proviamo cosi'" -- dopo aver confermato via
+# discover_sale_card_season_fields che lo storico vendite ORA si puo' filtrare per stagione,
+# vedi get_recent_sale_history(season_type=...) in track.py): quando non c'e' NESSUN comparabile
+# live (caso prima solo misurato, mai usato per decidere -- "vorrei scendere dall'86% di casi
+# ciechi"), usiamo come fallback l'ultima vendita reale della STESSA stagione come riferimento.
+# E' pero' un singolo dato storico, non uno snapshot di mercato live con piu' annunci --
+# richiediamo uno sconto minimo piu' alto del solito (margine di sicurezza extra) prima di
+# fidarcene, e la notifica (se scatta) va sempre etichettata chiaramente come basata su
+# riferimento storico, non live, cosi' l'utente sa che questa specifica ha una base meno solida
+# delle altre e vale una verifica a mano in piu'.
+ZENLOCK_DISCOUNT_HISTORICAL_MARGIN = float(os.environ.get('ZENLOCK_DISCOUNT_HISTORICAL_MARGIN', '0.05'))
+
 # FIX 17/07 (v12, caso Egil Selvik -- richiesta esplicita dell'utente, "e' stato un errore"): il
 # riferimento live (prossimo annuncio piu' economico) puo' essere un annuncio fermo/sovraprezzato
 # che nessuno sta davvero comprando, anche con piu' di un comparabile (qui n=3, 6.20-6.99EUR)
@@ -311,21 +323,43 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     result = compute_live_discount(buckets, season_type, price_eur, card_slug)
     if result is None:
         stats['skipped_no_comparable'] = stats.get('skipped_no_comparable', 0) + 1
-        # FIX 17/07 (v8, TEST diagnostico richiesto dall'utente -- "vorrei scendere dall'86% di
-        # casi ciechi"): SOLO misurazione, non cambia la decisione (niente notifica qui). Verifica
-        # se una fonte alternativa (vendite REALI recenti, tokenPrices) avrebbe dato un
-        # riferimento anche quando il bucket live e' troppo scarno -- se i numeri mostrano che
-        # aiuta abbastanza, diventera' un vero fallback in una prossima iterazione. Rischio noto
-        # gia' documentato su get_recent_sale_history: tokenPrices non distingue classic/in_season
-        # per singola vendita, quindi va usato con piu' cautela di un confronto live.
-        recent_sales = track.get_recent_sale_history(player_slug, eth_rate)
-        if recent_sales:
-            stats['no_comparable_but_recent_sale_available'] = stats.get(
-                'no_comparable_but_recent_sale_available', 0) + 1
-            track.log(f"[modello zenlock] DEBUG fallback vendite recenti disponibile per "
-                      f"{player_slug} (nessun comparabile live, prezzo evento {price_eur:.2f}EUR): "
-                      f"{recent_sales}")
-        return  # nessun confronto affidabile: per policy esplicita NON notifichiamo "al buio"
+        # FIX 17/07 (v23, "proviamo cosi'" -- da sola misurazione a vero fallback, ora che
+        # get_recent_sale_history puo' filtrare per stagione, vedi costante
+        # ZENLOCK_DISCOUNT_HISTORICAL_MARGIN sopra per il ragionamento completo): usiamo l'ultima
+        # vendita reale della STESSA stagione come riferimento quando non c'e' nessun comparabile
+        # live, con soglia di sconto piu' alta del solito e notifica etichettata come "storico".
+        recent_sales = track.get_recent_sale_history(player_slug, eth_rate, season_type=season_type)
+        if not recent_sales:
+            return  # nessun confronto affidabile nemmeno cosi': per policy esplicita NON
+            # notifichiamo "al buio"
+        stats['no_comparable_but_recent_sale_available'] = stats.get(
+            'no_comparable_but_recent_sale_available', 0) + 1
+        historical_date, historical_reference = recent_sales[0]
+        if historical_reference <= 0:
+            return
+        historical_discount = (historical_reference - price_eur) / historical_reference
+        historical_required_discount = required_discount + ZENLOCK_DISCOUNT_HISTORICAL_MARGIN
+        if historical_discount < historical_required_discount:
+            stats['skipped_historical_discount_too_low'] = stats.get(
+                'skipped_historical_discount_too_low', 0) + 1
+            return
+        if historical_reference < ZENLOCK_MIN_REFERENCE_EUR:
+            stats['skipped_historical_reference_too_low'] = stats.get(
+                'skipped_historical_reference_too_low', 0) + 1
+            return
+        if historical_reference > exception_ceiling * ZENLOCK_MAX_REFERENCE_CEILING_MULTIPLIER:
+            stats['skipped_historical_reference_too_high'] = stats.get(
+                'skipped_historical_reference_too_high', 0) + 1
+            return
+        if (historical_reference - price_eur) < ZENLOCK_MIN_DISCOUNT_EUR:
+            stats['skipped_historical_diff_too_small'] = stats.get(
+                'skipped_historical_diff_too_small', 0) + 1
+            return
+        fire_zenlock_historical_match(player_slug, player_name, season_type, price_eur,
+                                       card_slug, normal_ceiling, historical_reference,
+                                       historical_discount, historical_required_discount,
+                                       historical_date, is_eth_only, stats)
+        return
 
     discount, n_comparables, reference_price, others_raw = result
     if n_comparables == 1:
@@ -426,6 +460,39 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     # (bug di paginazione/bucket) o se erano davvero solo 5 in quel preciso istante.
     track.log(f"[modello zenlock] DEBUG comparabili grezzi per {player_slug}/{season_type}: "
               f"{others_raw}")
+    track.send_telegram_msg(msg)
+
+
+# FIX 17/07 (v23, richiesta esplicita dell'utente, "proviamo cosi'"): notifica gemella di
+# evaluate_zenlock_offer, usata SOLO per il fallback su riferimento storico (nessun comparabile
+# live disponibile). Messaggio ed etichetta separati apposta -- l'utente deve poter distinguere
+# a colpo d'occhio una notifica basata su uno snapshot di mercato live (piu' affidabile) da una
+# basata su un singolo dato storico (margine di sicurezza extra applicato, ma comunque piu'
+# rumoroso), per sapere quando vale la pena una verifica a mano in piu' prima di agire.
+def fire_zenlock_historical_match(player_slug, player_name, season_type, price_eur, card_slug,
+                                   normal_ceiling, historical_reference, historical_discount,
+                                   historical_required_discount, historical_date, is_eth_only,
+                                   stats):
+    stats['fired'] = stats.get('fired', 0) + 1
+    stats['fired_historical'] = stats.get('fired_historical', 0) + 1
+    if is_eth_only:
+        stats['fired_eth_only'] = stats.get('fired_eth_only', 0) + 1
+    fascia = "normale" if price_eur <= normal_ceiling else "eccezione (carta di valore)"
+    eth_only_tag = "\n⚠️ <b>Pagabile SOLO in ETH</b> (nessuna opzione fiat su questo annuncio)\n" if is_eth_only else ""
+    base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+    link = f"{base_link}?card={card_slug}" if card_slug else base_link
+    msg = (f"🎯 <b>Modello ZenLock</b> -- {player_name} [{season_type}]\n\n"
+           f"⚠️ <b>Riferimento STORICO, non live</b> -- nessun comparabile live disponibile, "
+           f"verifica a mano prima di comprare\n\n"
+           f"Prezzo: {price_eur:.2f}EUR (fascia {fascia})\n"
+           f"Ultima vendita reale ({season_type}): {historical_reference:.2f}EUR il {historical_date}\n"
+           f"Sconto: {historical_discount:.1%} (soglia richiesta {historical_required_discount:.0%}, "
+           f"maggiorata per riferimento storico)\n"
+           f"{eth_only_tag}\n"
+           f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈")
+    track.log(f"[modello zenlock] MATCH STORICO -- {player_name} [{season_type}] {price_eur:.2f}EUR, "
+              f"sconto {historical_discount:.1%} su ultima vendita reale {historical_reference:.2f}EUR "
+              f"del {historical_date} (nessun comparabile live)")
     track.send_telegram_msg(msg)
 
 
@@ -531,7 +598,8 @@ def run_zenlock_listener(eth_rate):
         track.log(f"[modello zenlock] connessione chiusa (codice {close_status_code}). "
                   f"Eventi: {stats['received']}, carte valutate: {stats['processed']}, "
                   f"notifiche inviate: {stats['fired']} (di cui solo ETH: "
-                  f"{stats.get('fired_eth_only', 0)}), scartate per mancanza comparabili: "
+                  f"{stats.get('fired_eth_only', 0)}, di cui su riferimento storico: "
+                  f"{stats.get('fired_historical', 0)}), scartate per mancanza comparabili: "
                   f"{stats.get('skipped_no_comparable', 0)}, scartate per riferimento troppo basso: "
                   f"{stats.get('skipped_reference_too_low', 0)}, scartate per differenza assoluta "
                   f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}, scartate per gemello "
@@ -540,10 +608,17 @@ def run_zenlock_listener(eth_rate):
                   f"{stats.get('skipped_suspect_not_confirmed', 0)}, riferimento troppo alto/non "
                   f"rappresentativo: {stats.get('skipped_reference_too_high', 0)}, riferimento "
                   f"stagnante vs vendita reale: {stats.get('skipped_reference_stale_vs_real_sale', 0)}")
-        track.log(f"[modello zenlock] [diagnostica vendite recenti] su "
+        # FIX 17/07 (v23): da "solo misurazione" a fallback vero -- vedi ZENLOCK_DISCOUNT_HISTORICAL_MARGIN.
+        track.log(f"[modello zenlock] [diagnostica vendite recenti/fallback storico] su "
                   f"{stats.get('skipped_no_comparable', 0)} casi senza comparabile live, "
-                  f"{stats.get('no_comparable_but_recent_sale_available', 0)} avevano comunque "
-                  f"vendite recenti disponibili (tokenPrices) come possibile riferimento futuro")
+                  f"{stats.get('no_comparable_but_recent_sale_available', 0)} avevano una vendita "
+                  f"storica della stessa stagione come riferimento -- di questi, "
+                  f"{stats.get('fired_historical', 0)} hanno notificato, "
+                  f"{stats.get('skipped_historical_discount_too_low', 0)} scartati per sconto "
+                  f"insufficiente, {stats.get('skipped_historical_reference_too_low', 0)} per "
+                  f"riferimento troppo basso, {stats.get('skipped_historical_reference_too_high', 0)} "
+                  f"per riferimento troppo alto, {stats.get('skipped_historical_diff_too_small', 0)} "
+                  f"per differenza assoluta troppo piccola")
         track.log(f"[modello zenlock] [diagnostica valute] branch usati in "
                   f"eur_price_from_amounts questa esecuzione: {track.get_currency_branch_stats()}")
 
