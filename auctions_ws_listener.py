@@ -750,10 +750,17 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
     if cached is not _CACHE_MISS:
         return cached
 
+    # FIX 17/07 (richiesta esplicita dell'utente, caso Seo Jin-Su -- mediana notificata 4.34EUR
+    # non tornava con le ultime 3 vendite "pubbliche" viste nello storico reale, 3.68/4.34/4.10):
+    # includePrivateSales era false, escludeva le "Offerta diretta" (vendite negoziate). Stessa
+    # scelta gia' fatta esplicitamente dall'utente per il tracker classico (RECENT_SALE_GATE in
+    # track.py: "se altre 3 persone prima di me l'hanno gia' avuto a un prezzo piu' basso, non e'
+    # un affare, anche se sembra un calo" -- ogni vendita reale conta come segnale, negoziata o
+    # no). Stessa filosofia qui: includePrivateSales true, piu' dati invece di escluderne un tipo.
     query = """
     query RecentPrices($slug: String!, $rarity: Rarity!, $season: Int, $lastN: Int!) {
       anyPlayer(slug: $slug) {
-        tokenPrices(rarity: $rarity, season: $season, last: $lastN, includePrivateSales: false) {
+        tokenPrices(rarity: $rarity, season: $season, last: $lastN, includePrivateSales: true) {
           nodes {
             amounts { eurCents wei usdCents gbpCents lamport }
           }
@@ -1210,6 +1217,12 @@ def process_auction(auction, eth_rate, stats):
         f"offri fino a {suggested_max_offer:.2f}EUR, "
         f"vendita diretta minima {direct_sale_price if direct_sale_price is not None else 'n/d'}, "
         f"margine stimato {margin_estimate if margin_estimate is not None else 'n/d'}")
+    # FIX 17/07 (richiesta esplicita dell'utente, caso Seo Jin-Su -- "la mediana e' corretta?"):
+    # senza i prezzi grezzi usati non era possibile verificare la mediana confrontandola con lo
+    # storico vendite reale su Sorare. Dump esplicito, stesso principio gia' usato in zenlock
+    # ("DEBUG comparabili grezzi") per poter controllare 1:1 ogni notifica futura.
+    log(f"[asta] DEBUG prezzi grezzi usati per la mediana ({player_name}, ultime "
+        f"{RECENT_PRICES_COUNT} vendite pubbliche+private): {recent_prices}")
 
     card_slug = target_card.get('slug')
     if card_slug:
