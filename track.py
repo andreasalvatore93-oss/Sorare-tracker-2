@@ -1512,7 +1512,19 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         if second_min_price is not None and second_min_price > 0:
             margin_percent = (second_min_price - true_min_price) / second_min_price
             required_margin = required_margin_fraction(second_min_price)
-            if margin_percent < required_margin:
+            # FIX 17/07 (backlog item 1, richiesta esplicita dell'utente): questo controllo
+            # girava per QUALSIASI calo, anche minimo (es. 0.3%), che non avrebbe comunque mai
+            # superato DROP_THRESHOLD -- gonfiava la coda pending_recheck (27-44 casi/run) con
+            # casi che, anche dopo un doppio controllo riuscito, non sarebbero mai diventati un
+            # ALERT diretto (il drop_percent resta sotto soglia a prescindere dal margine). Ora
+            # il blocco "troppo vicino, riaccoda per riverifica" scatta solo se il calo aveva
+            # comunque una possibilita' reale di superare la soglia (drop_percent >=
+            # DROP_THRESHOLD). Per i cali sotto soglia, invece di uscire subito qui, si prosegue
+            # verso il ramo "piccola variazione" piu' sotto (che gia' mostra margine/secondo
+            # prezzo a scopo informativo e valuta comunque l'eventuale "opportunita' di
+            # margine") -- stesso esito finale (nessuna notifica ALERT), ma senza lo spreco di
+            # una riverifica con nuova chiamata API che non avrebbe mai potuto cambiare l'esito.
+            if margin_percent < required_margin and drop_percent >= DROP_THRESHOLD:
                 log(f"{player_name} ({season_type}, {season_name}): prezzo minimo ({true_min_price:.2f}EUR) "
                     f"troppo vicino al secondo annuncio attuale ({second_min_price:.2f}EUR, "
                     f"margine {margin_percent:.1%}, richiesto {required_margin:.1%} "
