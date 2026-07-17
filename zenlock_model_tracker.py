@@ -119,18 +119,23 @@ ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 def compute_live_discount(player_slug, season_type, price_eur, exclude_card_slug, eth_rate):
     """Prezzo del prossimo annuncio live piu' economico tra gli ALTRI annunci aperti dello stesso
     giocatore/bucket (esclude l'annuncio che ha scatenato l'evento), e sconto di price_eur
-    rispetto a quel prezzo. Ritorna (sconto_frazione, n_comparabili, prezzo_riferimento) oppure
-    None se il campione e' troppo scarno per fidarsene (vedi ZENLOCK_MIN_COMPARABLES)."""
+    rispetto a quel prezzo. Ritorna (sconto_frazione, n_comparabili, prezzo_riferimento,
+    others_raw) oppure None se il campione e' troppo scarno per fidarsene (vedi
+    ZENLOCK_MIN_COMPARABLES). others_raw (lista completa (prezzo, slug_carta) ordinata) viene
+    tenuta a disposizione SOLO per diagnostica sui MATCH (vedi FIX 17/07 v4, caso Barreiro --
+    l'utente ha verificato a mano che il mercato aveva piu' annunci economici NON Early Access di
+    quanti ne vedevamo noi (5), causa ancora da confermare -- serve il dato grezzo per capire se
+    e' un bug di paginazione/bucket stagione o altro, invece di continuare a indovinare."""
     buckets = track.get_bucket_prices(player_slug, eth_rate)
     prices, _incomplete = buckets.get(season_type, ([], False))
-    others = sorted(p for p, slug in prices if slug != exclude_card_slug)
+    others = sorted((p, slug) for p, slug in prices if slug != exclude_card_slug)
     if len(others) < ZENLOCK_MIN_COMPARABLES:
         return None
-    reference_price = others[0]
+    reference_price = others[0][0]
     if reference_price <= 0:
         return None
     discount = (reference_price - price_eur) / reference_price
-    return discount, len(others), reference_price
+    return discount, len(others), reference_price, others
 
 
 def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, price_eur,
@@ -149,7 +154,7 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
         stats['skipped_no_comparable'] = stats.get('skipped_no_comparable', 0) + 1
         return  # nessun confronto affidabile: per policy esplicita NON notifichiamo "al buio"
 
-    discount, n_comparables, reference_price = result
+    discount, n_comparables, reference_price, others_raw = result
     if discount < required_discount:
         return
     if reference_price < ZENLOCK_MIN_REFERENCE_EUR:
@@ -173,6 +178,14 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
            f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈")
     track.log(f"[modello zenlock] MATCH -- {player_name} [{season_type}] {price_eur:.2f}EUR, "
               f"sconto {discount:.1%} su prossimo annuncio {reference_price:.2f}EUR (n={n_comparables})")
+    # FIX 17/07 (v4, caso Barreiro -- diagnostica temporanea, rimuovere dopo verifica): l'utente
+    # ha verificato a mano che il mercato reale aveva piu' annunci economici (non Early Access,
+    # a suo dire) di quanti ne vedeva get_bucket_prices (5). Logghiamo la lista grezza completa
+    # (prezzo, slug carta) di TUTTI i comparabili che la nostra query ha effettivamente visto, per
+    # poterla confrontare 1:1 col mercato reale sul prossimo match e capire se manca un pezzo
+    # (bug di paginazione/bucket) o se erano davvero solo 5 in quel preciso istante.
+    track.log(f"[modello zenlock] DEBUG comparabili grezzi per {player_slug}/{season_type}: "
+              f"{others_raw}")
     track.send_telegram_msg(msg)
 
 
@@ -294,18 +307,10 @@ def run_zenlock_listener(eth_rate):
 
 
 if __name__ == "__main__":
-    # DIAGNOSTICA TEMPORANEA (17/07, caso "module 'track' has no attribute 'get_eth_rate'" --
-    # rimuovere dopo verifica): in locale track.py ha get_eth_rate definita (riga 626), quindi
-    # o su GitHub gira una track.py diversa/vecchia, o "import track" sta risolvendo un modulo
-    # diverso (es. un pacchetto omonimo installato da requirements.txt che si mette avanti nella
-    # ricerca). Stampiamo path del modulo importato e le sue funzioni disponibili per capire
-    # quale dei due casi e' -- stesso approccio "per tentativi" gia' usato altrove nel progetto
-    # (es. discover_token_price_type_field) invece di indovinare alla cieca.
-    print(f"[debug track import] file: {getattr(track, '__file__', '???')}")
-    print(f"[debug track import] ha get_eth_rate: {hasattr(track, 'get_eth_rate')}")
-    print(f"[debug track import] funzioni definite (prime 40): "
-          f"{sorted(n for n in dir(track) if not n.startswith('_'))[:40]}")
-
+    # NOTA STORICA (17/07): qui c'era un diagnostico temporaneo per il caso "module 'track' has
+    # no attribute 'get_eth_rate'" -- causa trovata (track.py su GitHub era stato sovrascritto
+    # per sbaglio col contenuto di questo stesso script) e file ripristinato dall'utente.
+    # Diagnostico rimosso dopo conferma che il run seguente funzionava di nuovo.
     eth_rate = track.get_eth_rate()
     track.log(f"[modello zenlock] Tasso ETH/EUR: {eth_rate}")
     track.log(f"[modello zenlock] Ascolto per {ZENLOCK_LISTEN_SECONDS} secondi "
