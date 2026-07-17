@@ -1004,6 +1004,98 @@ def discover_auctions_pagination():
     log("[diagnostica paginazione aste] tentativi completati.")
 
 
+# FIX 17/07 (seguito a discover_auctions_pagination, confermata funzionante: before/cursor +
+# totalCount=1048 aste live sul mercato contro le 50 coperte oggi da run_safety_poll). Seconda
+# scansione di sicurezza complementare: run_safety_poll prende le 50 aste piu' RECENTI per
+# creazione (last: N), questa pagina un campione piu' ampio e filtra CLIENT-SIDE per endDate
+# (nessun ordinamento server-side esiste, vedi discover_auctions_end_date_sort) per raggiungere
+# le aste FERME (nessuna nuova offerta -> nessun evento WS) ma vicine alla scadenza, che sono
+# proprio quelle a rischio di scivolare fuori dalla finestra delle 50 piu' recenti restando
+# invisibili fino alla chiusura. Guardata da un env var (default OFF) per poterla testare a
+# mano via workflow_dispatch prima di deciderne l'attivazione regolare nel cron esterno.
+AUCTION_ENDING_SOON_ENABLED = bool(os.environ.get('AUCTION_ENDING_SOON_ENABLED', '').strip())
+AUCTION_ENDING_SOON_MAX_PAGES = int(os.environ.get('AUCTION_ENDING_SOON_MAX_PAGES', '10'))
+AUCTION_ENDING_SOON_WINDOW_HOURS = float(os.environ.get('AUCTION_ENDING_SOON_WINDOW_HOURS', '6'))
+
+LIVE_AUCTIONS_PAGINATED_QUERY = """
+query ListLiveAuctionsPaginated($n: Int!, $cursor: String) {
+  tokens {
+    liveAuctions(last: $n, before: $cursor) {
+      pageInfo { hasPreviousPage startCursor }
+      nodes {
+        id
+        currentPrice
+        minNextBid
+        endDate
+        anyCards {
+          slug
+          rarityTyped
+          sport
+          anyPlayer { slug displayName }
+          sportSeason { name }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def get_ending_soon_auctions(max_pages, window_hours):
+    """Pagina fino a max_pages pagine da 50 aste (before/startCursor, meccanismo confermato in
+    discover_auctions_pagination), poi filtra client-side quelle con endDate entro le prossime
+    window_hours ore usando seconds_until_end (stessa funzione gia' usata per il countdown nei
+    messaggi Telegram, cosi' la definizione di "quanto manca" resta unica in tutto il file)."""
+    all_nodes = []
+    cursor = None
+    pages_fetched = 0
+    for _ in range(max_pages):
+        try:
+            data = graphql_query(LIVE_AUCTIONS_PAGINATED_QUERY, {"n": 50, "cursor": cursor})
+        except Exception as e:
+            log(f"[scansione ending-soon] eccezione pagina {pages_fetched + 1}: {e}")
+            break
+        if data.get('errors'):
+            log(f"[scansione ending-soon] errore pagina {pages_fetched + 1}: {data['errors']}")
+            break
+        conn = (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {})
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        pages_fetched += 1
+        page_info = conn.get('pageInfo') or {}
+        if not page_info.get('hasPreviousPage'):
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            break
+    window_seconds = window_hours * 3600
+    ending_soon = []
+    for node in all_nodes:
+        remaining = seconds_until_end(node.get('endDate'))
+        if remaining is not None and 0 < remaining <= window_seconds:
+            ending_soon.append(node)
+    log(f"[scansione ending-soon] {pages_fetched} pagine scansionate ({len(all_nodes)} aste totali), "
+        f"{len(ending_soon)} in scadenza entro {window_hours}h")
+    return ending_soon
+
+
+def run_ending_soon_poll(eth_rate, stats):
+    """Seconda scansione di sicurezza (vedi commento sopra get_ending_soon_auctions). Le aste
+    gia' viste da run_safety_poll o dal WS vengono ri-processate anche qui, ma
+    handle_auction_event/skip_unchanged_since_last_eval le scarta subito se invariate dall'ultima
+    valutazione -- nessun rischio di doppia notifica, solo query GraphQL extra."""
+    log(f"Scansione ending-soon: fino a {AUCTION_ENDING_SOON_MAX_PAGES} pagine, finestra "
+        f"{AUCTION_ENDING_SOON_WINDOW_HOURS}h...")
+    auctions = get_ending_soon_auctions(AUCTION_ENDING_SOON_MAX_PAGES, AUCTION_ENDING_SOON_WINDOW_HOURS)
+    log(f"Scansione ending-soon: {len(auctions)} aste in scadenza trovate, valutazione in corso...")
+    for auction in auctions:
+        try:
+            handle_auction_event(auction, eth_rate, stats)
+        except Exception as e:
+            log(f"Errore nel processare un'asta durante la scansione ending-soon: {e}")
+    log("Scansione ending-soon completata.")
+
+
 def get_live_auctions(n):
     """Le N aste live piu' recenti su tutto il mercato (query identica a quella gia'
     validata dal vecchio auctions.py). NOTA: n=50 e' gia' al limite di troncamento noto
@@ -1457,6 +1549,12 @@ def main():
 
     # Scansione di sicurezza PRIMA di aprire il WS -- vedi nota su NUM_SAFETY_POLL_AUCTIONS.
     run_safety_poll(eth_rate, stats)
+
+    # Seconda scansione di sicurezza, complementare -- vedi commento su get_ending_soon_auctions.
+    # OFF di default (AUCTION_ENDING_SOON_ENABLED vuoto): il cron esterno non la attiva finche'
+    # l'utente non decide di abilitarla dopo aver visto i risultati di un run manuale di test.
+    if AUCTION_ENDING_SOON_ENABLED:
+        run_ending_soon_poll(eth_rate, stats)
 
     log(f"Ascolto aste in tempo reale per {LISTEN_SECONDS} secondi...")
 
