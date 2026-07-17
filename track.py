@@ -1200,9 +1200,11 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
           amounts { eurCents wei }
           card { slug serialNumber }
           deal {
-            type
-            buyer { slug nickname }
-            seller { slug nickname }
+            ... on TokenOffer {
+              type
+              buyer { slug nickname }
+              seller { slug nickname }
+            }
           }
         }
       }
