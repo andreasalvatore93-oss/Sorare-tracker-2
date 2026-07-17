@@ -1525,7 +1525,25 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
                 cards = receiver_cards if is_selling else sender_cards
                 pay_amounts = sender_side.get('amounts') if is_selling else receiver_side.get('amounts')
 
-            price = eur_price_from_amounts(pay_amounts, eth_rate)
+            # FIX 17/07 (richiesta esplicita dell'utente, scoperto sui dati reali di Satonio:
+            # decine di carte diverse vendute allo stesso secondo allo stesso prezzo, es. Yunus
+            # Akgun x14 a 2.24EUR, Kamal Miller x6 a 1.98EUR -- sono trade bundle, PIU' carte in
+            # un'unica offerta con UN prezzo aggregato). Prima il prezzo totale del bundle veniva
+            # assegnato per intero a OGNI carta del bundle (stesso importo ripetuto N volte),
+            # gonfiando artificialmente prezzo pagato/incassato e quindi anche i margini
+            # calcolati sulle vendite (visti margini assurdi tipo -91.7%/-96.9% su Satonio, un
+            # acquisto bundle da 85.91EUR attribuito per intero a due carte vendute separatamente
+            # per pochi euro). Non c'e' modo affidabile di scomporre il prezzo aggregato per
+            # singola carta (i valori delle carte in un bundle non sono necessariamente uguali),
+            # quindi seguendo lo stesso principio gia' usato altrove nel bot (scambi carta-per-
+            # carta esclusi dalla verifica live perche' il prezzo non e' attribuibile) i bundle
+            # (piu' di una carta sullo stesso lato) vengono ESCLUSI dal prezzo per-carta: price
+            # resta None (non entra nelle statistiche di prezzo/sconto/margine), ma la
+            # transazione resta visibile nei log con bundle_size per trasparenza.
+            bundle_size = len(cards)
+            is_bundle = bundle_size > 1
+            price = None if is_bundle else eur_price_from_amounts(pay_amounts, eth_rate)
+            bundle_total_price = eur_price_from_amounts(pay_amounts, eth_rate) if is_bundle else None
             for c in cards:
                 player = c.get('anyPlayer') or {}
                 season_name = (c.get('sportSeason') or {}).get('name', 'unknown')
@@ -1544,6 +1562,8 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
                     # richiesta esplicita dell'utente (17/07): "guarda anche la tipologia che
                     # compra, se in season, se classic".
                     "season_type": season_type_for_card(c, season_name),
+                    "bundle_size": bundle_size,
+                    "bundle_total_price": bundle_total_price,
                 })
 
         if stop or not (trades.get('pageInfo') or {}).get('hasNextPage'):
@@ -1609,9 +1629,21 @@ def diagnostic_manager_trades_report(eth_rate):
         lo = hi
 
     log(f"[snipe analysis] --- VENDITE (con acquisto precedente della stessa carta, se trovato) ---")
+    bundle_sells_skipped = 0
     for s in sorted(sells, key=lambda x: x['date'], reverse=True):
+        # FIX 17/07: se e' un bundle (piu' carte nella stessa offerta), il prezzo per-carta non
+        # e' attribuibile -- vedi nota sopra fetch_user_trades. Lo segnaliamo esplicitamente
+        # invece di scrivere "prezzo N/D" generico, che farebbe pensare a un dato mancante
+        # invece che a un limite strutturale del calcolo.
+        if s.get('bundle_size', 1) > 1:
+            bundle_sells_skipped += 1
+            tot = f"{s['bundle_total_price']:.2f}EUR" if s.get('bundle_total_price') is not None else "N/D"
+            log(f"[snipe analysis]   {s['date']} -- {s['player_name']} ({s['card_slug']}): "
+                f"venduta a {s['counterparty']} in un BUNDLE di {s['bundle_size']} carte "
+                f"(prezzo totale bundle {tot}, non attribuibile a questa carta singola) -- saltata")
+            continue
         prezzo_v = f"{s['price']:.2f}EUR" if s['price'] is not None else "prezzo N/D"
-        acquisto_prec = buys_by_card.get(s['card_slug'])
+        acquisto_prec = [b for b in buys_by_card.get(s['card_slug'], []) if b.get('bundle_size', 1) == 1]
         if acquisto_prec:
             a = acquisto_prec[0]
             prezzo_a = f"{a['price']:.2f}EUR" if a['price'] is not None else "prezzo N/D"
@@ -1625,6 +1657,9 @@ def diagnostic_manager_trades_report(eth_rate):
             log(f"[snipe analysis]   {s['date']} -- {s['player_name']} ({s['card_slug']}): "
                 f"venduta a {s['counterparty']} per {prezzo_v} -- acquisto precedente non "
                 f"trovato nella finestra analizzata")
+    if bundle_sells_skipped:
+        log(f"[snipe analysis] {bundle_sells_skipped} vendite bundle saltate dal calcolo margine "
+            f"(prezzo non attribuibile a singola carta)")
     log(f"[snipe analysis] analisi trades completata.")
 
 
