@@ -446,16 +446,50 @@ PAGE_SIZE = 50  # il vero massimo per richiesta imposto dal server, confermato i
 MAX_PAGES = 20  # tetto di sicurezza (fino a 1000 annunci totali)
 
 
+# FIX 17/07 (richiesta esplicita dell'utente, "i due tracker girano insieme" + log reale con
+# ban 429 a meta' scansione di sicurezza): stesso identico fix gia' applicato oggi a track.py
+# (get_bucket_prices/get_recent_sale_history) per zenlock/tracker classico -- durante la
+# scansione di sicurezza (fino a 50 aste per run) piu' aste dello stesso giocatore (piu' carte
+# in vendita) o eventi WS ravvicinati facevano ripartire da zero fetch_all_live_offers/
+# get_recent_public_prices per lo stesso player_slug piu' volte nella stessa esecuzione --
+# volume di query evitabile che si somma a quello degli altri tracker attivi in concorrenza.
+# Cache in-memory con TTL breve (il mercato non cambia cosi' in fretta da rendere un dato di
+# pochi secondi fa inutile): niente impatto su correttezza, solo meno richieste ripetute.
+_LIVE_OFFERS_CACHE = {}
+_RECENT_PUBLIC_PRICES_CACHE = {}
+_CACHE_TTL_SECONDS = 30.0
+_CACHE_MISS = object()
+
+
+def _cache_get(cache_dict, key):
+    entry = cache_dict.get(key, _CACHE_MISS)
+    if entry is _CACHE_MISS:
+        return _CACHE_MISS
+    ts, value = entry
+    if time.time() - ts > _CACHE_TTL_SECONDS:
+        return _CACHE_MISS
+    return value
+
+
+def _cache_set(cache_dict, key, value):
+    cache_dict[key] = (time.time(), value)
+
+
 def fetch_all_live_offers(player_slug):
     """Scorre TUTTE le pagine di annunci live per un giocatore usando la paginazione a
     cursore confermata funzionante (before/startCursor), invece di fidarsi di un singolo
     "last: N" che il server tronca comunque a ~50 per richiesta."""
+    cached = _cache_get(_LIVE_OFFERS_CACHE, player_slug)
+    if cached is not _CACHE_MISS:
+        return cached
     all_nodes = []
     cursor = None
+    had_error = False
     for _ in range(MAX_PAGES):
         data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": PAGE_SIZE, "cursor": cursor})
         if data.get('errors'):
             log(f"[paginazione annunci live] errore per {player_slug}: {data['errors']}")
+            had_error = True
             break
         conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
         nodes = conn.get('nodes') or []
@@ -466,6 +500,12 @@ def fetch_all_live_offers(player_slug):
         cursor = page_info.get('startCursor')
         if not cursor:
             break
+    # Cache-ato SOLO se completata senza errori -- un fallimento a meta' paginazione (es. rate
+    # limit) non va ricordato come "questi sono TUTTI gli annunci" per 30s, altrimenti un
+    # elenco parziale/vuoto per colpa di un 429 sembrerebbe "nessun annuncio live" invece che
+    # "non siamo riusciti a chiederlo".
+    if not had_error:
+        _cache_set(_LIVE_OFFERS_CACHE, player_slug, all_nodes)
     return all_nodes
 
 
@@ -622,6 +662,11 @@ def reset_season_filter_stats():
 
 
 def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_PRICES_COUNT):
+    cache_key = (player_slug, season_year, last_n)
+    cached = _cache_get(_RECENT_PUBLIC_PRICES_CACHE, cache_key)
+    if cached is not _CACHE_MISS:
+        return cached
+
     query = """
     query RecentPrices($slug: String!, $rarity: Rarity!, $season: Int, $lastN: Int!) {
       anyPlayer(slug: $slug) {
@@ -634,13 +679,22 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
     }
     """
 
+    # FIX 17/07 (richiesta esplicita dell'utente, "scettico sul funzionamento" -- log reale con
+    # un ban 429 a meta' scansione: 12 giocatori di fila finiti su "nessun prezzo precedente
+    # trovato" nello stesso identico secondo): _run() trattava QUALSIASI errore GraphQL (incluso
+    # un ban rate-limit) esattamente come "il giocatore non ha vendite recenti" -- restituendo
+    # [] in entrambi i casi, indistinguibili. Falso: durante quel ban i comparabili NON sono mai
+    # stati davvero interrogati con successo, quindi non sappiamo se il giocatore ha vendite o
+    # no. Ora _run() ritorna anche un flag "errored" cosi' il chiamante puo' distinguere una
+    # genuina assenza di dati (stabile, ok da cachare) da un fallimento transitorio di query
+    # (da NON cachare come "asta invariata", va ritentata al prossimo giro).
     def _run(season_arg):
         variables = {"slug": player_slug, "rarity": "limited", "lastN": last_n}
         if season_arg is not None:
             variables["season"] = season_arg
         data = graphql_query(query, variables)
         if data.get('errors'):
-            return []
+            return [], True
         nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
         prices = []
         for node in nodes:
@@ -650,29 +704,37 @@ def get_recent_public_prices(player_slug, season_year, eth_rate, last_n=RECENT_P
             p = eur_price_from_amounts(node.get('amounts'), eth_rate)
             if p is not None:
                 prices.append(p)
-        return prices
+        return prices, False
+
+    # Cache-ato SOLO se la query e' andata a buon fine (errored=False) -- un fallimento di rete/
+    # rate limit non deve essere ricordato come "risultato vero" per 30s, va ritentato al
+    # prossimo utilizzo (stesso motivo del fix gemello su save_eval_snapshot piu' sopra).
+    def _finish(prices, errored):
+        if not errored:
+            _cache_set(_RECENT_PUBLIC_PRICES_CACHE, cache_key, (prices, errored))
+        return prices, errored
 
     try:
-        prices = _run(season_year)
+        prices, errored = _run(season_year)
         if prices:
             _SEASON_FILTER_STATS['with_season_ok'] += 1
-            return prices
+            return _finish(prices, errored)
         if season_year is None:
             _SEASON_FILTER_STATS['both_empty'] += 1
-            return prices
+            return _finish(prices, errored)
         # RISCHIO NOTO: senza filtro stagione possiamo mescolare vendite classic/in_season dello
         # stesso giocatore (stesso limite gia' documentato per tokens.tokenPrices in track.py) --
         # ma le aste sono sempre in_season, quindi un riferimento "sporco" e' comunque meglio di
         # uno zero strutturale che ci fa saltare l'asta a prescindere.
-        fallback_prices = _run(None)
+        fallback_prices, fb_errored = _run(None)
         if fallback_prices:
             _SEASON_FILTER_STATS['fallback_no_season_ok'] += 1
-            return fallback_prices
+            return _finish(fallback_prices, fb_errored)
         _SEASON_FILTER_STATS['both_empty'] += 1
-        return []
+        return _finish([], (errored or fb_errored))
     except Exception as e:
         log(f"Errore nel recuperare i prezzi recenti per {player_slug}: {e}")
-        return []
+        return [], True
 
 
 # --- Riverifica live pre-notifica: query tokens.liveAuctions, la STESSA gia' usata e
@@ -823,7 +885,19 @@ def process_auction(auction, eth_rate, stats):
         if _floats_equal(last_price, current_price_eur) and _floats_equal(last_min_bid, min_next_bid_eur):
             bump(stats, 'skip_unchanged_since_last_eval')
             return
-    save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur)
+    # Valori "di ingresso" (prima della riverifica live piu' sotto, che puo' riassegnare
+    # current_price_eur/min_next_bid_eur a valori leggermente diversi/piu' precisi): lo snapshot
+    # va sempre salvato/confrontato su QUESTI, altrimenti il confronto "invariata dall'ultimo
+    # giro" fatto in cima a questa funzione (che legge sempre i valori grezzi dell'evento/poll,
+    # mai quelli della riverifica) non troverebbe mai una corrispondenza -- vanificando la cache.
+    entry_current_price_eur = current_price_eur
+    entry_min_next_bid_eur = min_next_bid_eur
+
+    # NOTA: il salvataggio dello snapshot NON avviene qui in blocco -- vedi FIX piu' sotto
+    # (get_recent_public_prices/skip_recent_prices_query_failed): un'asta va marcata come "vista
+    # a questo prezzo" solo quando l'abbiamo valutata DAVVERO fino in fondo con dati validi, mai
+    # quando un fallimento di rete/rate-limit ci ha impedito di concludere -- altrimenti la
+    # cache "invariata" la nasconderebbe per sempre anche dopo che il rate limit e' passato.
 
     cards = auction.get('anyCards') or []
     target_card = None
@@ -837,6 +911,7 @@ def process_auction(auction, eth_rate, stats):
 
     if not target_card:
         bump(stats, 'skip_no_limited_football_card')
+        save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur)
         return
 
     # Stampa sempre id asta E slug carta, per ogni asta valutata -- cosi' e' facile prenderne
@@ -865,12 +940,24 @@ def process_auction(auction, eth_rate, stats):
     season_type = 'in_season'
 
     season_year = parse_season_year(season_name)
-    recent_prices = get_recent_public_prices(player_slug, season_year, eth_rate)
+    recent_prices, recent_prices_errored = get_recent_public_prices(player_slug, season_year, eth_rate)
     if not recent_prices:
+        if recent_prices_errored:
+            # Fallimento di query (es. rate limit 429), NON un'assenza genuina di vendite -- non
+            # sappiamo davvero se il giocatore ha comparabili o no. Contatore separato per non
+            # confonderlo con skip_no_recent_prices genuino, e NIENTE salvataggio snapshot: va
+            # ritentato al prossimo giro, non marcato come "gia' visto, niente di nuovo".
+            log(f"{player_name}: query prezzi recenti fallita (probabile rate limit), salto "
+                f"per questo giro senza marcare l'asta come vista")
+            log_decision(auction_id, player_slug, player_name, season_type, "skip_recent_prices_query_failed",
+                         current_price=current_price_eur, min_next_bid=min_next_bid_eur)
+            bump(stats, 'skip_recent_prices_query_failed')
+            return
         log(f"{player_name}: nessun prezzo precedente trovato, salto")
         log_decision(auction_id, player_slug, player_name, season_type, "skip_no_recent_prices",
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur)
         bump(stats, 'skip_no_recent_prices')
+        save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur)
         return
 
     last_price = recent_prices[-1]
@@ -880,6 +967,7 @@ def process_auction(auction, eth_rate, stats):
         log_decision(auction_id, player_slug, player_name, season_type, "skip_not_below_last_price",
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur)
         bump(stats, 'skip_not_below_last_price')
+        save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur)
         return
 
     # Verifica LIVE del prezzo minimo di vendita diretta -- confronto per bucket in_season/
@@ -939,6 +1027,7 @@ def process_auction(auction, eth_rate, stats):
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price)
         bump(stats, 'skip_could_not_reverify_live')
+        save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur)
         return
     if fresh.get('cancelled') or not fresh.get('open'):
         debug_price = wei_to_eur(fresh.get('currentPrice'), eth_rate)
@@ -951,6 +1040,7 @@ def process_auction(auction, eth_rate, stats):
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price)
         bump(stats, 'skip_auction_no_longer_open')
+        save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur)
         return
 
     fresh_current_price_eur = wei_to_eur(fresh.get('currentPrice'), eth_rate)
@@ -979,6 +1069,7 @@ def process_auction(auction, eth_rate, stats):
                          median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                          direct_sale_price=direct_sale_price)
             bump(stats, 'skip_min_bid_exceeds_ceiling')
+            save_eval_snapshot(auction_id, entry_current_price_eur, entry_min_next_bid_eur)
             return
         starting_bid = min_next_bid_eur
     else:
@@ -990,6 +1081,7 @@ def process_auction(auction, eth_rate, stats):
                          median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                          direct_sale_price=direct_sale_price)
             bump(stats, 'skip_price_exceeds_ceiling')
+            save_eval_snapshot(auction_id, entry_current_price_eur, entry_min_next_bid_eur)
             return
         starting_bid = current_price_eur
 
@@ -1016,6 +1108,7 @@ def process_auction(auction, eth_rate, stats):
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price, margin_estimate=margin_estimate)
         bump(stats, 'skip_margin_too_low')
+        save_eval_snapshot(auction_id, entry_current_price_eur, entry_min_next_bid_eur)
         return
 
     log(f"ASTA INTERESSANTE! {player_name}: attuale {current_price_eur:.2f}EUR, "
