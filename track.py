@@ -1680,6 +1680,9 @@ def diagnostic_manager_trades_report(eth_rate):
     acquistate quelle carte"). Solo raccolta/log, nessuna azione automatica."""
     log(f"[snipe analysis] avvio analisi trades per {SNIPE_USER_SLUG}, finestra "
         f"{SNIPE_WINDOW_DAYS} giorni (max {SNIPE_MAX_PAGES} pagine)...")
+    reset_currency_branch_stats()  # FIX 17/07 (richiesta esplicita, dopo scoperta bug valute):
+    # quantifica quanti prezzi di questa analisi arrivavano da USD/GBP -- prima del fix erano
+    # invisibili (None), quindi questi snipe/vendite mancavano del tutto dal report.
     trades = fetch_user_trades(SNIPE_USER_SLUG, SNIPE_WINDOW_DAYS, eth_rate, max_pages=SNIPE_MAX_PAGES)
     buys = [t for t in trades if t['role'] == 'buy' and t['type'] == 'SINGLE_SALE_OFFER']
     sells = [t for t in trades if t['role'] == 'sell']
@@ -1756,6 +1759,8 @@ def diagnostic_manager_trades_report(eth_rate):
     if bundle_sells_skipped:
         log(f"[snipe analysis] {bundle_sells_skipped} vendite bundle saltate dal calcolo margine "
             f"(prezzo non attribuibile a singola carta)")
+    log(f"[snipe analysis] [diagnostica valute] branch usati in eur_price_from_amounts durante "
+        f"questa analisi: {get_currency_branch_stats()}")
     log(f"[snipe analysis] analisi trades completata.")
 
 
@@ -1779,6 +1784,7 @@ def diagnostic_snipe_margin_model_report(eth_rate):
     tracker calibrato sul comportamento di SNIPE_USER_SLUG invece che sul nostro."""
     log(f"[snipe analysis] avvio modello soglie snipe per {SNIPE_USER_SLUG}, finestra "
         f"{SNIPE_WINDOW_DAYS} giorni...")
+    reset_currency_branch_stats()  # FIX 17/07: vedi nota in diagnostic_manager_trades_report
     trades = fetch_user_trades(SNIPE_USER_SLUG, SNIPE_WINDOW_DAYS, eth_rate, max_pages=SNIPE_MAX_PAGES)
     buys = [t for t in trades if t['role'] == 'buy' and t['type'] == 'SINGLE_SALE_OFFER']
     log(f"[snipe analysis] {len(buys)} snipe trovati, arricchimento margine per giocatore "
@@ -1832,6 +1838,8 @@ def diagnostic_snipe_margin_model_report(eth_rate):
                 log(f"[snipe analysis]   {season_key} {label}EUR: n={len(bucket)}, "
                     f"sconto medio {sum(discounts) / len(discounts):.1%}")
             lo = hi
+    log(f"[snipe analysis] [diagnostica valute] branch usati in eur_price_from_amounts durante "
+        f"questa analisi: {get_currency_branch_stats()}")
     log(f"[snipe analysis] modello soglie completato.")
 
 
