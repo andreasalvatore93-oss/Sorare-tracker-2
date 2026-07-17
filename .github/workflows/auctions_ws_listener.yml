@@ -16,9 +16,9 @@ on:
         required: false
         default: ""
       ending_soon_enabled:
-        description: "Lascia vuoto normalmente (OFF). Valorizza (es. 'si') per abilitare in questo run la scansione 'ending soon' (aste ferme vicine alla scadenza)"
+        description: "ON di default (scansione 'ending soon' attiva anche nei run del cron). Svuota (rimuovi 'si') per disattivarla in questo run"
         required: false
-        default: ""
+        default: "si"
       ending_soon_max_pages:
         description: "Numero massimo di pagine da 50 aste da scansionare per 'ending soon'"
         required: false
@@ -86,7 +86,7 @@ jobs:
           AUCTION_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '160' }}
           AUCTION_DIAGNOSTIC_END_DATE_SORT: ${{ github.event.inputs.diagnostic_end_date_sort || '' }}
           AUCTION_DIAGNOSTIC_PAGINATION: ${{ github.event.inputs.diagnostic_pagination || '' }}
-          AUCTION_ENDING_SOON_ENABLED: ${{ github.event.inputs.ending_soon_enabled || '' }}
+          AUCTION_ENDING_SOON_ENABLED: ${{ github.event.inputs.ending_soon_enabled || 'si' }}
           AUCTION_ENDING_SOON_MAX_PAGES: ${{ github.event.inputs.ending_soon_max_pages || '10' }}
           AUCTION_ENDING_SOON_WINDOW_HOURS: ${{ github.event.inputs.ending_soon_window_hours || '6' }}
           PYTHONUNBUFFERED: "1"
