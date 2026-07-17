@@ -44,9 +44,14 @@ jobs:
       # consultare), scriviamo lo stesso output anche su file, poi lo committiamo (vedi step
       # "Save state" sotto) -- dato che il repo e' gia' sincronizzato in locale via GitHub
       # Desktop, dopo un pull il log e' leggibile direttamente da file, senza copia-incolla ne'
-      # browser. Sovrascritto ad ogni run (niente "tee -a"), cosi' il file resta piccolo. "set -o
-      # pipefail" garantisce che un errore di track.py faccia comunque fallire lo step (senza,
-      # il codice di uscita di "tee" mascererebbe quello di python).
+      # browser.
+      # FIX 17/07 (v2, richiesta esplicita dell'utente, "faccio girare i tracker per mezz'ora,
+      # accumulo un po' di log e poi te li leggi tutti insieme quando pullo"): da sovrascritto
+      # (ogni run cancellava il precedente) ad ACCODATO (tee -a), con un separatore "===== RUN
+      # <timestamp> =====" tra un'esecuzione e la successiva, cosi' un pull dopo N run mostra
+      # tutta la sequenza, non solo l'ultima. "set -o pipefail" garantisce che un errore di
+      # track.py faccia comunque fallire lo step (senza, il codice di uscita di "tee"
+      # mascererebbe quello di python).
       - name: Run tracker
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
