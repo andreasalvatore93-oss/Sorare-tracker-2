@@ -2910,9 +2910,17 @@ def discover_amount_currency_fields(player_slug):
     # concreta che esiste un campo legato a Solana/lamport su MonetaryAmount), e per
     # 'referenceEurCents' ha suggerito 'referenceCurrency'. Questi due non sono piu' ipotesi,
     # sono nomi di campo REALI restituiti dallo schema stesso: priorita' massima.
+    # FIX 17/07 (v3, caso petar-musa CONFERMATO): referenceCurrency = 'GBP' per un annuncio con
+    # gbpCents comunque null -- quindi il valore vero non e' in nessuno dei 4 campi fissi che gia'
+    # chiediamo, ma probabilmente in un campo separato "importo nella valuta di riferimento".
+    # lamport = None per questo caso specifico -> non e' un annuncio Solana, e' semplicemente in
+    # una valuta di riferimento (GBP qui) il cui importo numerico non e' ancora stato convertito/
+    # esposto nei campi eurCents/wei/usdCents/gbpCents. Priorita' massima ai candidati per quel
+    # valore numerico mancante.
     candidates = [
-        'lamport', 'referenceCurrency',
-        'solLamports', 'solCents', 'sol',
+        'referenceCurrency', 'referenceCents', 'referenceAmountCents',
+        'referenceAmount', 'amountCents', 'cents', 'value', 'amount',
+        'lamport', 'solLamports', 'solCents', 'sol',
         'audCents', 'chfCents', 'cadCents',
     ]
     log(f"[diagnostica valuta extra] inizio tentativi campo amounts per {player_slug}...")
