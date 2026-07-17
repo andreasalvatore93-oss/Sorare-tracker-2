@@ -119,11 +119,16 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
 
     stats['fired'] = stats.get('fired', 0) + 1
     fascia = "normale" if price_eur <= normal_ceiling else "eccezione (carta di valore)"
-    msg = (f"🎯 <b>Modello ZenLock</b> -- {player_name} [{season_type}]\n"
+    # Stesso pattern di link gia' usato e testato dal tracker principale (vedi send_instant_alert
+    # in track.py) -- porta direttamente alla scheda della carta sul market Sorare, per la
+    # verifica rapida prima di comprare.
+    base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+    link = f"{base_link}?card={card_slug}" if card_slug else base_link
+    msg = (f"🎯 <b>Modello ZenLock</b> -- {player_name} [{season_type}]\n\n"
            f"Prezzo: {price_eur:.2f}EUR (fascia {fascia})\n"
            f"Mediana live altri annunci: {median:.2f}EUR ({n_comparables} comparabili)\n"
-           f"Sconto: {discount:.1%} (soglia richiesta {required_discount:.0%})\n"
-           f"Carta: {card_slug}")
+           f"Sconto: {discount:.1%} (soglia richiesta {required_discount:.0%})\n\n"
+           f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈")
     track.log(f"[modello zenlock] MATCH -- {player_name} [{season_type}] {price_eur:.2f}EUR, "
               f"sconto {discount:.1%} su mediana {median:.2f}EUR (n={n_comparables})")
     track.send_telegram_msg(msg)
