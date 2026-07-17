@@ -153,6 +153,17 @@ ZENLOCK_SUSPECT_DISCOUNT_THRESHOLD = float(os.environ.get('ZENLOCK_SUSPECT_DISCO
 ZENLOCK_RECHECK_DELAY_SECONDS = float(os.environ.get('ZENLOCK_RECHECK_DELAY_SECONDS', '3'))
 ZENLOCK_RECHECK_TOLERANCE = float(os.environ.get('ZENLOCK_RECHECK_TOLERANCE', '0.05'))
 
+# FIX 17/07 (v11, stesso giorno, caso Mario Vušković -- sconto 99.1% su un riferimento di
+# 569.93EUR classic, ~19x il ceiling eccezione di quel bucket): la riverifica sopra CONFERMA
+# questi casi (il dato e' realmente li' e stabile), ma "stabile" non vuol dire "rappresentativo"
+# -- un annuncio a 569.93EUR per una classic e' quasi certamente una stampa rara/particolare
+# (numero di serie basso, non lo vediamo), non lo stesso tipo di carta che ZenLock compra
+# davvero (il suo massimo storico osservato e' 21.96EUR, Kvaratskhelia). Se il comparabile costa
+# piu' di un multiplo del ceiling eccezione del bucket, lo trattiamo come non rappresentativo e
+# scartiamo PRIMA della riverifica (inutile aspettare 3 secondi per un caso che scartiamo comunque).
+ZENLOCK_MAX_REFERENCE_CEILING_MULTIPLIER = float(
+    os.environ.get('ZENLOCK_MAX_REFERENCE_CEILING_MULTIPLIER', '3.0'))
+
 ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 
 # NOTA STORICA (17/07, v5, caso Jhegson Sebastian Mendez -- indagine chiusa): il debug
@@ -279,6 +290,15 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     if reference_price < ZENLOCK_MIN_REFERENCE_EUR:
         stats['skipped_reference_too_low'] = stats.get('skipped_reference_too_low', 0) + 1
         return  # giocatore "quasi gratis", sconto% e' rumore per costruzione qui
+    if reference_price > exception_ceiling * ZENLOCK_MAX_REFERENCE_CEILING_MULTIPLIER:
+        # FIX 17/07 (v11, caso Vušković): comparabile troppo lontano dal range di prezzo che
+        # ZenLock ha mai davvero pagato in questo bucket -- probabile stampa rara/particolare,
+        # non un vero confronto di mercato.
+        stats['skipped_reference_too_high'] = stats.get('skipped_reference_too_high', 0) + 1
+        track.log(f"[modello zenlock] riferimento {reference_price:.2f}EUR troppo alto per il "
+                  f"bucket {season_type} (ceiling eccezione {exception_ceiling:.2f}EUR) per "
+                  f"{player_name}, probabile stampa non rappresentativa, non notifico")
+        return
     if (reference_price - price_eur) < ZENLOCK_MIN_DISCOUNT_EUR:
         stats['skipped_diff_too_small'] = stats.get('skipped_diff_too_small', 0) + 1
         return  # sconto% alto ma differenza assoluta trascurabile, non un vero mispricing
@@ -435,7 +455,8 @@ def run_zenlock_listener(eth_rate):
                   f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}, scartate per gemello "
                   f"in_season altrettanto economico: {stats.get('skipped_cheap_sibling', 0)}, "
                   f"sconto sospetto non confermato alla riverifica: "
-                  f"{stats.get('skipped_suspect_not_confirmed', 0)}")
+                  f"{stats.get('skipped_suspect_not_confirmed', 0)}, riferimento troppo alto/non "
+                  f"rappresentativo: {stats.get('skipped_reference_too_high', 0)}")
         track.log(f"[modello zenlock] [diagnostica vendite recenti] su "
                   f"{stats.get('skipped_no_comparable', 0)} casi senza comparabile live, "
                   f"{stats.get('no_comparable_but_recent_sale_available', 0)} avevano comunque "

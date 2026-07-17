@@ -322,7 +322,17 @@ def log(message):
     print(f"[{ts}] {message}", flush=True)
 
 
-def graphql_query(query, variables=None):
+# FIX 17/07 (richiesta esplicita dell'utente, "mai capitato prima, ora con le aste 429"): con
+# tre tracker attivi in concorrenza (classico, ZenLock, aste), il carico cumulativo di query
+# verso Sorare a volte supera il rate limit (HTTP 429). Prima nessuna delle nostre graphql_query
+# controllava lo status code -- un 429 veniva passato a .json() cosi' com'e' e il chiamante lo
+# trattava come un generico "data.get('errors')" o, peggio, come lista vuota silenziosa
+# (indistinguibile da "nessun dato reale disponibile" -- probabile causa dell'apparente bug nel
+# filtro stagione delle aste e del picco anomalo di "scartate per mancanza comparabili" su
+# ZenLock, entrambi nella stessa finestra di carico pesante di oggi). Ora rileva il 429
+# esplicitamente e ritenta con backoff (rispetta l'header Retry-After se Sorare lo manda,
+# altrimenti backoff esponenziale breve) invece di arrendersi subito.
+def graphql_query(query, variables=None, max_retries=3):
     headers = {
         'Content-Type': 'application/json',
         'Cookie': COOKIES,
@@ -330,8 +340,21 @@ def graphql_query(query, variables=None):
         'User-Agent': 'Mozilla/5.0',
     }
     payload = {"query": query, "variables": variables or {}}
-    r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
-    return r.json()
+    for attempt in range(max_retries):
+        r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+        if r.status_code == 429:
+            retry_after = r.headers.get('Retry-After')
+            try:
+                wait_seconds = float(retry_after) if retry_after else (2 ** attempt) * 2
+            except ValueError:
+                wait_seconds = (2 ** attempt) * 2
+            log(f"[rate limit] HTTP 429 da Sorare (tentativo {attempt + 1}/{max_retries}), "
+                f"attendo {wait_seconds:.1f}s prima di ritentare...")
+            time.sleep(wait_seconds)
+            continue
+        return r.json()
+    log(f"[rate limit] HTTP 429 persistente dopo {max_retries} tentativi, rinuncio a questa query")
+    return {"errors": [{"message": "rate_limited_max_retries_exceeded"}]}
 
 
 # --- Database: prezzo minimo storico per (giocatore, stagione) ---
