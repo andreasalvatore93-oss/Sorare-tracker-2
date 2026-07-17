@@ -100,6 +100,11 @@ ZENLOCK_MIN_COMPARABLES = int(os.environ.get('ZENLOCK_MIN_COMPARABLES', '2'))
 ZENLOCK_MIN_DISCOUNT_EUR = float(os.environ.get('ZENLOCK_MIN_DISCOUNT_EUR', '0.50'))
 ZENLOCK_MIN_REFERENCE_EUR = float(os.environ.get('ZENLOCK_MIN_REFERENCE_EUR', '1.50'))
 
+# FIX 17/07 (v6, caso Ivan Perišić -- richiesta esplicita dell'utente dopo verifica a mano):
+# stessa tolleranza gia' usata dal tracker principale per il check incrociato tra bucket
+# (UNIQUE_DEAL_TOLERANCE) -- vedi classic_looks_cheap_everywhere piu' sotto.
+ZENLOCK_SIBLING_TOLERANCE = float(os.environ.get('ZENLOCK_SIBLING_TOLERANCE', '0.05'))
+
 ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 
 # NOTA STORICA (17/07, v5, caso Jhegson Sebastian Mendez -- indagine chiusa): il debug
@@ -132,7 +137,7 @@ ZENLOCK_DIAGNOSTIC_PLAYER_SLUG = os.environ.get('ZENLOCK_DIAGNOSTIC_PLAYER_SLUG'
 # (own_prices[1] li', others[0] qui) -- se il mercato si e' davvero gia' adeguato (caso Aguerd),
 # quel prezzo e' anch'esso basso e il confronto scarta correttamente il falso positivo; se invece
 # e' un vero mispricing, il prossimo annuncio piu' economico resta comunque ben piu' caro.
-def compute_live_discount(player_slug, season_type, price_eur, exclude_card_slug, eth_rate):
+def compute_live_discount(buckets, season_type, price_eur, exclude_card_slug):
     """Prezzo del prossimo annuncio live piu' economico tra gli ALTRI annunci aperti dello stesso
     giocatore/bucket (esclude l'annuncio che ha scatenato l'evento), e sconto di price_eur
     rispetto a quel prezzo. Ritorna (sconto_frazione, n_comparabili, prezzo_riferimento,
@@ -141,8 +146,11 @@ def compute_live_discount(player_slug, season_type, price_eur, exclude_card_slug
     tenuta a disposizione SOLO per diagnostica sui MATCH (vedi FIX 17/07 v4, caso Barreiro --
     l'utente ha verificato a mano che il mercato aveva piu' annunci economici NON Early Access di
     quanti ne vedevamo noi (5), causa ancora da confermare -- serve il dato grezzo per capire se
-    e' un bug di paginazione/bucket stagione o altro, invece di continuare a indovinare."""
-    buckets = track.get_bucket_prices(player_slug, eth_rate)
+    e' un bug di paginazione/bucket stagione o altro, invece di continuare a indovinare.
+
+    FIX 17/07 (v6, caso Perišić): prende 'buckets' gia' calcolato invece di rifare la query --
+    get_bucket_prices restituisce GIA' entrambi i bucket (in_season e classic) in un'unica
+    lettura, serve anche a classic_looks_cheap_everywhere subito sotto senza query aggiuntive."""
     prices, _incomplete = buckets.get(season_type, ([], False))
     others = sorted((p, slug) for p, slug in prices if slug != exclude_card_slug)
     if len(others) < ZENLOCK_MIN_COMPARABLES:
@@ -152,6 +160,31 @@ def compute_live_discount(player_slug, season_type, price_eur, exclude_card_slug
         return None
     discount = (reference_price - price_eur) / reference_price
     return discount, len(others), reference_price, others
+
+
+def classic_looks_cheap_everywhere(buckets, season_type, price_eur):
+    """FIX 17/07 (v6, richiesta esplicita dell'utente, caso Ivan Perišić): una carta CLASSIC
+    segnalata va confrontata anche col bucket gemello IN_SEASON -- se il minimo in_season non e'
+    sensibilmente piu' caro del prezzo che stiamo per notificare, il giocatore e' economico
+    ovunque (non solo quella carta), il calo% calcolato nel solo bucket classic e' rumore, non un
+    vero mispricing. Applicato SOLO in questa direzione (classic notificata -> controlla anche
+    in_season): il contrario (carta in_season notificata, classic gemello piu' economico) e'
+    normale/atteso -- il classic e' quasi sempre piu' economico dell'in_season per costruzione,
+    non invalida un affare in_season vero, quindi non blocchiamo in quel verso.
+
+    Caso reale che ha innescato il fix: Perišić classic 4.00EUR notificato con riferimento
+    classic corretto (6.37EUR, secondo prezzo classic), ma il minimo in_season era 3.99EUR --
+    piu' economico persino del prezzo "scontato" che stavamo per notificare. Confermato
+    dall'utente via screenshot del mercato reale."""
+    if season_type != 'classic':
+        return False
+    sibling_prices, _incomplete = buckets.get('in_season', ([], False))
+    if not sibling_prices:
+        return False  # nessun dato sul gemello, non possiamo giudicare: non blocchiamo al buio
+    sibling_min = sibling_prices[0][0]
+    if sibling_min <= 0:
+        return False
+    return price_eur >= sibling_min * (1 - ZENLOCK_SIBLING_TOLERANCE)
 
 
 def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, price_eur,
@@ -165,7 +198,11 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
 
     required_discount = ZENLOCK_DISCOUNT_NORMAL if price_eur <= normal_ceiling else ZENLOCK_DISCOUNT_HIGH_VALUE
 
-    result = compute_live_discount(player_slug, season_type, price_eur, card_slug, eth_rate)
+    # Un'unica lettura di ENTRAMBI i bucket (in_season + classic) -- serve sia al calcolo dello
+    # sconto nel proprio bucket sia al check incrociato con l'in_season sotto (caso Perišić),
+    # senza query duplicate.
+    buckets = track.get_bucket_prices(player_slug, eth_rate)
+    result = compute_live_discount(buckets, season_type, price_eur, card_slug)
     if result is None:
         stats['skipped_no_comparable'] = stats.get('skipped_no_comparable', 0) + 1
         return  # nessun confronto affidabile: per policy esplicita NON notifichiamo "al buio"
@@ -179,6 +216,9 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     if (reference_price - price_eur) < ZENLOCK_MIN_DISCOUNT_EUR:
         stats['skipped_diff_too_small'] = stats.get('skipped_diff_too_small', 0) + 1
         return  # sconto% alto ma differenza assoluta trascurabile, non un vero mispricing
+    if classic_looks_cheap_everywhere(buckets, season_type, price_eur):
+        stats['skipped_cheap_sibling'] = stats.get('skipped_cheap_sibling', 0) + 1
+        return  # classic "scontata" ma l'in_season gemello e' economico uguale/di piu' (Perišić)
 
     stats['fired'] = stats.get('fired', 0) + 1
     fascia = "normale" if price_eur <= normal_ceiling else "eccezione (carta di valore)"
@@ -304,7 +344,8 @@ def run_zenlock_listener(eth_rate):
                   f"notifiche inviate: {stats['fired']}, scartate per mancanza comparabili: "
                   f"{stats.get('skipped_no_comparable', 0)}, scartate per riferimento troppo basso: "
                   f"{stats.get('skipped_reference_too_low', 0)}, scartate per differenza assoluta "
-                  f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}")
+                  f"troppo piccola: {stats.get('skipped_diff_too_small', 0)}, scartate per gemello "
+                  f"in_season altrettanto economico: {stats.get('skipped_cheap_sibling', 0)}")
 
     ws = websocket.WebSocketApp(
         track.WS_URL,
