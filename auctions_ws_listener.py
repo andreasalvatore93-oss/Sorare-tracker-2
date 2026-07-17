@@ -617,13 +617,25 @@ def run_safety_poll(eth_rate, stats):
 # --- Logica di valutazione di un'asta, identica a quella gia' validata in auctions.py:
 #     l'evento WS (con anyCards incluso) ha la STESSA forma di un nodo liveAuctions, quindi
 #     questa funzione e' riutilizzabile cosi' com'e'. ---
-def process_auction(auction, eth_rate):
+# FIX 17/07 (richiesta esplicita dell'utente, "troppe poche notifiche, qualcosa non torna"):
+# aggiunto un contatore diagnostico per ogni motivo di scarto -- prima l'unico modo per capire
+# perche' un'asta non veniva notificata era scorrere i log riga per riga o interrogare
+# decisions_log su auctions.db. Stesso schema gia' usato oggi per track.py/zenlock_model_
+# tracker.py: un dict condiviso, incrementato ad ogni punto di uscita, stampato in un unico
+# riepilogo a fine esecuzione.
+def bump(stats, key):
+    stats[key] = stats.get(key, 0) + 1
+
+
+def process_auction(auction, eth_rate, stats):
     auction_id = auction.get('id')
     current_price_eur = wei_to_eur(auction.get('currentPrice'), eth_rate)
     if auction_id is None or current_price_eur is None:
+        bump(stats, 'skip_no_price_data')
         return
 
     if already_notified(auction_id):
+        bump(stats, 'skip_already_notified')
         return
 
     min_next_bid_raw = auction.get('minNextBid')
@@ -640,6 +652,7 @@ def process_auction(auction, eth_rate):
         break
 
     if not target_card:
+        bump(stats, 'skip_no_limited_football_card')
         return
 
     # Stampa sempre id asta E slug carta, per ogni asta valutata -- cosi' e' facile prenderne
@@ -651,6 +664,7 @@ def process_auction(auction, eth_rate):
     player_slug = player.get('slug')
     player_name = player.get('displayName', player_slug)
     if not player_slug:
+        bump(stats, 'skip_no_player_slug')
         return
 
     season_name = (target_card.get('sportSeason') or {}).get('name', 'unknown')
@@ -672,6 +686,7 @@ def process_auction(auction, eth_rate):
         log(f"{player_name}: nessun prezzo precedente trovato, salto")
         log_decision(auction_id, player_slug, player_name, season_type, "skip_no_recent_prices",
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur)
+        bump(stats, 'skip_no_recent_prices')
         return
 
     last_price = recent_prices[-1]
@@ -680,6 +695,7 @@ def process_auction(auction, eth_rate):
             f"({last_price:.2f}EUR), salto")
         log_decision(auction_id, player_slug, player_name, season_type, "skip_not_below_last_price",
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur)
+        bump(stats, 'skip_not_below_last_price')
         return
 
     # Verifica LIVE del prezzo minimo di vendita diretta -- confronto per bucket in_season/
@@ -729,6 +745,7 @@ def process_auction(auction, eth_rate):
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price)
+        bump(stats, 'skip_recheck_query_failed')
         return
     if fresh is None:
         log(f"{player_name}: l'asta non esiste piu' alla riverifica live "
@@ -737,6 +754,7 @@ def process_auction(auction, eth_rate):
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price)
+        bump(stats, 'skip_could_not_reverify_live')
         return
     if fresh.get('cancelled') or not fresh.get('open'):
         debug_price = wei_to_eur(fresh.get('currentPrice'), eth_rate)
@@ -748,6 +766,7 @@ def process_auction(auction, eth_rate):
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price)
+        bump(stats, 'skip_auction_no_longer_open')
         return
 
     fresh_current_price_eur = wei_to_eur(fresh.get('currentPrice'), eth_rate)
@@ -758,6 +777,7 @@ def process_auction(auction, eth_rate):
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price)
+        bump(stats, 'skip_recheck_missing_price')
         return
     if abs(fresh_current_price_eur - current_price_eur) > 0.01:
         log(f"{player_name}: prezzo aggiornato alla riverifica live ({current_price_eur:.2f}EUR "
@@ -774,6 +794,7 @@ def process_auction(auction, eth_rate):
                          current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                          median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                          direct_sale_price=direct_sale_price)
+            bump(stats, 'skip_min_bid_exceeds_ceiling')
             return
         starting_bid = min_next_bid_eur
     else:
@@ -784,6 +805,7 @@ def process_auction(auction, eth_rate):
                          current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                          median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                          direct_sale_price=direct_sale_price)
+            bump(stats, 'skip_price_exceeds_ceiling')
             return
         starting_bid = current_price_eur
 
@@ -797,6 +819,7 @@ def process_auction(auction, eth_rate):
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                      direct_sale_price=direct_sale_price, margin_estimate=margin_estimate)
+        bump(stats, 'skip_margin_too_low')
         return
 
     log(f"ASTA INTERESSANTE! {player_name}: attuale {current_price_eur:.2f}EUR, "
@@ -864,6 +887,7 @@ def process_auction(auction, eth_rate):
                  current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                  median_reference=median_reference, recommended_ceiling=recommended_ceiling,
                  direct_sale_price=direct_sale_price, margin_estimate=margin_estimate)
+    bump(stats, 'notify')
 
 
 def handle_auction_event(auction, eth_rate, stats):
@@ -883,7 +907,7 @@ def handle_auction_event(auction, eth_rate, stats):
     stats["seen_events"].add(dedup_key)
 
     stats["processed"] += 1
-    process_auction(auction, eth_rate)
+    process_auction(auction, eth_rate, stats)
 
 
 def main():
@@ -952,6 +976,9 @@ def main():
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). "
             f"Aste processate in questa esecuzione: {stats['processed']}")
+        skip_keys = [k for k in stats if k.startswith('skip_')]
+        breakdown = ', '.join(f"{k}={stats[k]}" for k in sorted(skip_keys)) or "nessuno scarto"
+        log(f"[diagnostica aste] notifiche inviate: {stats.get('notify', 0)}, scarti: {breakdown}")
         log(f"[diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: "
             f"{get_currency_branch_stats()}")
 
