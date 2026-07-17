@@ -98,7 +98,7 @@ MIN_MARGIN_OVER_SECOND = float(os.environ.get('MIN_MARGIN_OVER_SECOND', '0.08'))
 # FIX 16/07 (v2): ogni soglia percentuale abbassata di 1 punto percentuale su richiesta
 # esplicita dell'utente (il flat da 5EUR oltre i 60EUR NON tocco, non e' una percentuale).
 MARGIN_TIERS = [
-    (3, 2.53),
+    (3, 2.59),  # FIX 17/07 (caso Philipp Kohn, richiesta esplicita): 15.7% -> 13.7%
     (5, 4.45),  # FIX 16/07 (v21, caso Amad Diallo): 12.0% -> 11.0%, richiesta esplicita
     (10, 9.05),  # FIX 16/07 (v17, caso Mike Penders): 10.0% -> 9.5%, richiesta esplicita
     (15, 13.65),
@@ -443,6 +443,7 @@ _DECISION_LABELS = [
     ("skip_cross_bucket_dead", "Bucket morto/residuale"),
     ("skip_in_season_substitute_cheaper", "Sostituto in season piu' economico"),
     ("skip_recent_sales_gate", "Bloccato (vendite recenti gia' piu' economiche)"),
+    ("skip_thin_market_gate", "Bloccato (mercato troppo sottile, poche transazioni)"),
     ("skip_dubbio_unconfirmed", "Dubbio non confermato"),
     ("notify", "Notificati (calo diretto)"),
     ("notify_after_recheck", "Notificati (dopo doppio controllo)"),
@@ -1063,7 +1064,7 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
         f"Prezzo: {price_eur:.2f}EUR\n\n"
         f"⚠️ Non ancora verificato (nessun controllo su margine/dati sospetti) -- "
         f"controlla a mano prima di comprare, arriva anche l'alert ufficiale a breve.\n\n"
-        f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
+        f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈"
     )
     send_telegram_msg(msg_text)
     return True
@@ -1209,8 +1210,15 @@ def count_cheaper_recent_sales(true_min_price, recent_sales):
 # margine e' meno affidabile (basta un singolo annuncio isolato a determinarlo): non e' che il
 # prezzo sia sopravvalutato come nel caso Sengezer, e' che il mercato e' troppo sottile per
 # fidarsi del segnale. Soglia tarata esplicitamente sull'esempio dell'utente: MIN_SALES=4 in
-# WINDOW_DAYS=21 fa scattare l'avviso proprio sul caso "3 vendite in 21 giorni". Solo
-# informativo, non blocca mai la notifica -- stesso principio di find_cheaper_recent_sale.
+# WINDOW_DAYS=21 fa scattare l'avviso proprio sul caso "3 vendite in 21 giorni".
+#
+# FIX 17/07 (v2, richiesta esplicita dell'utente, stesso giorno): inizialmente solo un avviso
+# informativo (vedi build_sale_history_context piu' sotto, non toccato). L'utente ha poi chiesto
+# esplicitamente di bloccare del tutto la notifica in questo caso, non solo segnalarlo: "non
+# notificare se ci sono state solo 3 transazioni reali negli ultimi 21 giorni". Il blocco vero e
+# proprio (thin_market_blocked) e' cablato in evaluate_player_offer, su entrambi i percorsi di
+# notifica (ALERT diretto e opportunita' di margine) -- l'avviso testuale qui sotto in
+# build_sale_history_context resta com'era, viene comunque loggato prima del blocco per referenza.
 THIN_MARKET_MIN_SALES = int(os.environ.get('THIN_MARKET_MIN_SALES', '4'))
 THIN_MARKET_WINDOW_DAYS = int(os.environ.get('THIN_MARKET_WINDOW_DAYS', '21'))
 
@@ -1616,6 +1624,13 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                 and cheaper_count >= RECENT_SALE_GATE_MIN_CHEAPER
             )
 
+            # FIX 17/07 (v2, richiesta esplicita dell'utente, caso Issahaku Fatawu): non piu'
+            # solo avviso informativo -- se ci sono meno di THIN_MARKET_MIN_SALES transazioni
+            # reali negli ultimi THIN_MARKET_WINDOW_DAYS giorni, il mercato e' troppo sottile per
+            # fidarsi del margine e la notifica va bloccata del tutto, non solo segnalata.
+            recent_count_21d = count_recent_sales_in_window(recent_sales, THIN_MARKET_WINDOW_DAYS)
+            thin_market_blocked = recent_count_21d < THIN_MARKET_MIN_SALES
+
             if recent_sales_blocked:
                 log(f"{player_name}: BLOCCATO -- {cheaper_count}/{sales_in_window} vendite negli "
                     f"ultimi {RECENT_SALE_GATE_WINDOW_DAYS} giorni pari o piu' economiche di "
@@ -1627,6 +1642,17 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                              second_min_price=second_min_price, margin_percent=margin_percent,
                              reasons=[f"{cheaper_count}/{sales_in_window} vendite recenti pari o "
                                       f"piu' economiche"])
+            elif thin_market_blocked:
+                log(f"{player_name}: BLOCCATO -- solo {recent_count_21d} transazioni reali negli "
+                    f"ultimi {THIN_MARKET_WINDOW_DAYS} giorni (minimo richiesto "
+                    f"{THIN_MARKET_MIN_SALES}), mercato troppo sottile per fidarsi del margine: "
+                    f"notifica NON inviata (solo loggata per controllo)")
+                log_decision(player_slug, player_name, season_type, season_name,
+                             "skip_thin_market_gate", floor_price=floor,
+                             true_min_price=true_min_price, drop_percent=drop_percent,
+                             second_min_price=second_min_price, margin_percent=margin_percent,
+                             reasons=[f"{recent_count_21d} transazioni negli ultimi "
+                                      f"{THIN_MARKET_WINDOW_DAYS}gg"])
             else:
                 log_decision(player_slug, player_name, season_type, season_name, decision,
                              floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
@@ -1654,7 +1680,7 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                     + sale_history_msg
                     + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
                        if is_dubbio else "")
-                    + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
+                    + f"\n👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈"
                 )
                 send_telegram_msg(msg_text)
         elif drop_percent >= DROP_THRESHOLD:
@@ -1735,6 +1761,13 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                             and cheaper_count >= RECENT_SALE_GATE_MIN_CHEAPER
                         )
 
+                        # FIX 17/07 (v2, richiesta esplicita dell'utente, caso Issahaku Fatawu):
+                        # stessa regola del percorso ALERT diretto -- meno di THIN_MARKET_MIN_SALES
+                        # transazioni reali negli ultimi THIN_MARKET_WINDOW_DAYS giorni blocca
+                        # l'invio, non solo lo segnala.
+                        recent_count_21d = count_recent_sales_in_window(recent_sales, THIN_MARKET_WINDOW_DAYS)
+                        thin_market_blocked = recent_count_21d < THIN_MARKET_MIN_SALES
+
                         if recent_sales_blocked:
                             log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
                                 f"({season_type}, {season_name}): minimo {true_min_price:.2f}EUR, "
@@ -1751,6 +1784,23 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                                          second_min_price=second_min_price, margin_percent=margin_percent,
                                          reasons=[f"{cheaper_count}/{sales_in_window} vendite recenti "
                                                   f"pari o piu' economiche"])
+                            set_last_margin_alert_price(player_slug, season_type, true_min_price)
+                        elif thin_market_blocked:
+                            log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
+                                f"({season_type}, {season_name}): minimo {true_min_price:.2f}EUR, "
+                                f"secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%}, "
+                                f"richiesto {required_margin:.1%}) -- BLOCCATO: solo {recent_count_21d} "
+                                f"transazioni reali negli ultimi {THIN_MARKET_WINDOW_DAYS} giorni "
+                                f"(minimo richiesto {THIN_MARKET_MIN_SALES}), mercato troppo sottile, "
+                                f"notifica NON inviata (solo loggata per controllo)")
+                            if sale_history_log:
+                                log(f"{player_name}: {sale_history_log}")
+                            log_decision(player_slug, player_name, season_type, season_name,
+                                         "skip_thin_market_gate", floor_price=floor,
+                                         true_min_price=true_min_price, drop_percent=drop_percent,
+                                         second_min_price=second_min_price, margin_percent=margin_percent,
+                                         reasons=[f"{recent_count_21d} transazioni negli ultimi "
+                                                  f"{THIN_MARKET_WINDOW_DAYS}gg"])
                             set_last_margin_alert_price(player_slug, season_type, true_min_price)
                         else:
                             log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
@@ -1776,7 +1826,7 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                                 + sale_history_msg
                                 + f"\nNon e' un calo rispetto allo storico, ma il divario verso il secondo "
                                 f"prezzo e' gia' ampio -- puo' valere la pena controllare.\n\n"
-                                f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
+                                f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈"
                             )
                             send_telegram_msg(msg_text)
                             set_last_margin_alert_price(player_slug, season_type, true_min_price)
@@ -1904,47 +1954,25 @@ def run_listener(eth_rate):
 SALES_HISTORY_DISCOVERY_PLAYER_SLUG = os.environ.get('SALES_HISTORY_DISCOVERY_PLAYER_SLUG', 'samuel-junior-kotto')
 
 
-# FIX 17/07 (richiesta esplicita, caso Mamadou Sangare/talwiwi): l'utente ha trovato via DevTools
-# del browser (query anyCard.liveSingleSaleOffer.deal.blockchain) un'offerta live REALE (4.59EUR,
-# in vendita da mesi, pagabile in cash secondo le preferenze del venditore) su una carta con
-# blockchain "SOLANA" -- che NON compare MAI tra i nodi restituiti da fetch_all_live_offers/
-# tokens.liveSingleSaleOffers. Stesso pattern mai risolto di Nico O'Reilly e Jeong Seung-Won
-# (annuncio attivo da giorni/mesi, escluso senza eccezione ne' flag "dati incompleti"). Ipotesi
-# da verificare: tokens.liveSingleSaleOffers e' un campo "storico" (da prima che Sorare
-# supportasse Solana) e non include le carte su quella blockchain, indipendentemente da come si
-# pagano (blockchain della carta e valuta di pagamento sono cose distinte). Diagnostico
-# temporaneo in due passi: 1) prova ad aggiungere un campo blockchain/chain sui nodi restituiti,
-# per scoprire se e' interrogabile li'; 2) dump COMPLETO non filtrato di tutti i nodi per
-# mamadou-sangare, per vedere se l'offerta di talwiwi compare del tutto nella risposta grezza --
-# se non compare per niente, il problema e' nella query/lato server, non in un nostro filtro.
+# FIX 17/07 (richiesta esplicita, caso Mamadou Sangare/talwiwi): un'offerta live REALE (4.59EUR,
+# in vendita da mesi) non compariva tra i nodi restituiti da fetch_all_live_offers/
+# tokens.liveSingleSaleOffers -- stesso pattern mai risolto di Nico O'Reilly e Jeong Seung-Won.
+# Indagata a fondo (ipotesi blockchain Solana, confronto con l'indice Algolia usato dalla UI
+# Sorare, campo blockchainId): nessuna delle piste ha trovato la causa -- l'offerta risultava
+# assente anche da Algolia, e blockchainId si e' rivelato un ID univoco per carta, non un
+# indicatore di blockchain utile a filtrare. Causa radice non risolvibile con le fonti dati
+# disponibili (vedi task "Tetto su margine Opportunita' di margine (caso Sangare)" per il
+# seguito). Questa funzione resta per un dump grezzo non filtrato generico, utile se dovesse
+# ripresentarsi un caso simile in futuro.
 DIAGNOSTIC_MISSING_OFFER_PLAYER_SLUG = os.environ.get('DIAGNOSTIC_MISSING_OFFER_PLAYER_SLUG', 'mamadou-sangare')
 
 
 def diagnostic_dump_missing_offer(player_slug):
-    log(f"[diagnostica offerta mancante] passo 1: provo campi blockchain/chain su liveSingleSaleOffers...")
-    for field_name in ('blockchain', 'chain', 'network'):
-        query = f"""
-        query DiscoverBlockchainField($slug: String!, $n: Int!) {{
-          tokens {{
-            liveSingleSaleOffers(playerSlug: $slug, last: $n) {{
-              nodes {{
-                status
-                {field_name}
-              }}
-            }}
-          }}
-        }}
-        """
-        try:
-            data = graphql_query(query, {"slug": player_slug, "n": 5})
-            if data.get('errors'):
-                log(f"[diagnostica offerta mancante] campo '{field_name}': errore -- {data['errors']}")
-            else:
-                log(f"[diagnostica offerta mancante] campo '{field_name}': SUCCESSO -- {data['data']}")
-        except Exception as e:
-            log(f"[diagnostica offerta mancante] campo '{field_name}': eccezione -- {e}")
-
-    log(f"[diagnostica offerta mancante] passo 2: dump completo NON filtrato per {player_slug}...")
+    """Dump grezzo e COMPLETO (nessun filtro su status/rarita'/sport) di tutti i nodi restituiti
+    da fetch_all_live_offers per un giocatore, per verificare se un'offerta nota compare o meno
+    nella risposta -- se non compare per niente, il problema e' lato server/query, non un nostro
+    filtro lato client."""
+    log(f"[diagnostica offerta mancante] dump completo NON filtrato per {player_slug}...")
     nodes = fetch_all_live_offers(player_slug)
     log(f"[diagnostica offerta mancante] {player_slug}: {len(nodes)} nodi grezzi totali restituiti "
         f"(nessun filtro status/rarita'/sport applicato)")
@@ -1961,65 +1989,7 @@ def diagnostic_dump_missing_offer(player_slug):
                 f"slug={c.get('slug')} rarita'={c.get('rarityTyped')} sport={c.get('sport')} "
                 f"stagione={(c.get('sportSeason') or {}).get('name')} "
                 f"inSeasonEligible={c.get('inSeasonEligible')}")
-    log(f"[diagnostica offerta mancante] dump completato -- cerca qui sopra un prezzo vicino a "
-        f"4.59EUR (talwiwi, mamadou-sangare-2025-limited-...): se non c'e' per niente, l'offerta "
-        f"e' esclusa dalla query stessa, non da un nostro filtro lato client.")
-
-    # FIX 17/07 (proseguimento, log reale): 'blockchain' non esiste su TokenOffer, ma l'errore
-    # GraphQL ha suggerito 'blockchainId' -- confermato anche che nel dump del passo 2 mancano
-    # non solo l'offerta di talwiwi (4.59EUR) ma anche altre due (6.37EUR Quikila, 6.44EUR
-    # satonio, viste nello screenshot dell'utente ma assenti dai 33 nodi restituiti): non e' un
-    # caso isolato. Passo 3: richiediamo blockchainId su OGNI nodo restituito (paginazione
-    # dedicata, non tocca fetch_all_live_offers) per vedere se i nodi che VEDIAMO condividono
-    # tutti lo stesso valore -- se si', e' una forte conferma che la query esclude
-    # sistematicamente un'altra blockchain (probabilmente Solana).
-    log(f"[diagnostica offerta mancante] passo 3: provo 'blockchainId' su ogni nodo restituito...")
-    query_with_blockchain_id = """
-    query LiveOffersWithBlockchainId($slug: String!, $n: Int!, $cursor: String) {
-      tokens {
-        liveSingleSaleOffers(playerSlug: $slug, last: $n, before: $cursor) {
-          totalCount
-          pageInfo { hasPreviousPage startCursor }
-          nodes {
-            status
-            blockchainId
-            receiverSide { amounts { eurCents wei } }
-            senderSide { anyCards { slug } }
-          }
-        }
-      }
-    }
-    """
-    try:
-        all_nodes_bc = []
-        cursor = None
-        for _ in range(MAX_PAGES):
-            data = graphql_query(query_with_blockchain_id, {"slug": player_slug, "n": PAGE_SIZE, "cursor": cursor})
-            if data.get('errors'):
-                log(f"[diagnostica offerta mancante] passo 3: errore -- {data['errors']}")
-                break
-            conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
-            nodes_bc = conn.get('nodes') or []
-            all_nodes_bc.extend(nodes_bc)
-            page_info = conn.get('pageInfo') or {}
-            if not page_info.get('hasPreviousPage'):
-                break
-            cursor = page_info.get('startCursor')
-            if not cursor:
-                break
-        blockchain_values = set()
-        for node in all_nodes_bc:
-            bc_id = node.get('blockchainId')
-            blockchain_values.add(bc_id)
-            amounts = (node.get('receiverSide') or {}).get('amounts')
-            cards = (node.get('senderSide') or {}).get('anyCards') or []
-            slugs = ", ".join(c.get('slug', '') for c in cards) or "(nessuna carta)"
-            log(f"[diagnostica offerta mancante]   blockchainId={bc_id} status={node.get('status')} "
-                f"amounts={amounts} slug={slugs}")
-        log(f"[diagnostica offerta mancante] passo 3 completato -- valori blockchainId distinti "
-            f"trovati tra i {len(all_nodes_bc)} nodi: {blockchain_values}")
-    except Exception as e:
-        log(f"[diagnostica offerta mancante] passo 3: eccezione -- {e}")
+    log(f"[diagnostica offerta mancante] dump completato.")
 
 
 def discover_sales_history_field():
@@ -2183,9 +2153,13 @@ def main():
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
 
     # FIX 17/07: diagnostico temporaneo per il caso Mamadou Sangare/talwiwi (ipotesi Solana
-    # escluso da tokens.liveSingleSaleOffers) -- vedi diagnostic_dump_missing_offer. RIMUOVERE
-    # questa riga dopo aver raccolto il log di una esecuzione, non serve lasciarla attiva.
-    diagnostic_dump_missing_offer(DIAGNOSTIC_MISSING_OFFER_PLAYER_SLUG)
+    # esclusa da tokens.liveSingleSaleOffers) rimosso da qui dopo la raccolta dei log --
+    # conclusione: l'offerta mancante non e' visibile ne' dalla nostra query ne' da Algolia
+    # (stesso indice usato dalla UI Sorare) ne' distinguibile via blockchainId (e' un ID
+    # univoco per carta, non un indicatore di blockchain) -- causa radice non risolvibile con
+    # le fonti dati disponibili. diagnostic_dump_missing_offer resta definita piu' sotto nel
+    # caso serva in futuro (stesso principio di discover_token_price_type_field/
+    # discover_sales_history_field).
 
     # FIX 16/07: entrambi i diagnostici temporanei (campo storico vendite, poi campo tipo
     # transazione) sono stati rimossi da qui -- il secondo (discover_token_price_type_field) ha
