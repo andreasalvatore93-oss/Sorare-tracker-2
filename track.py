@@ -441,6 +441,8 @@ _DECISION_LABELS = [
     ("stale_realign", "Riferimento riallineato (stantio)"),
     ("skip_margin_too_close", "Margine insufficiente"),
     ("skip_cross_bucket_dead", "Bucket morto/residuale"),
+    ("skip_in_season_substitute_cheaper", "Sostituto in season piu' economico"),
+    ("skip_recent_sales_gate", "Bloccato (vendite recenti gia' piu' economiche)"),
     ("skip_dubbio_unconfirmed", "Dubbio non confermato"),
     ("notify", "Notificati (calo diretto)"),
     ("notify_after_recheck", "Notificati (dopo doppio controllo)"),
@@ -808,6 +810,9 @@ def double_check_suspect_drop(player_slug, season_type, first_price, eth_rate):
     return diff_percent <= RECHECK_TOLERANCE
 
 
+DIAGNOSTIC_MAX_ROWS = 8  # FIX 17/07: vedi nota sotto, il dump completo era pura verbosita'
+
+
 def log_raw_offers_diagnostic(player_slug, eth_rate):
     """FIX 16/07 (caso Nico O'Reilly): quando scatta un ALERT, salviamo anche il dump grezzo di
     TUTTI gli annunci live per quel giocatore (status, prezzo, slug, rarita', sport, stagione),
@@ -815,25 +820,40 @@ def log_raw_offers_diagnostic(player_slug, eth_rate):
     carta da 4.70EUR di NFT Sportsclub, esclusa senza che nei log restasse traccia del motivo --
     ne' un'eccezione ne' un flag "dati incompleti") avremo l'evidenza per capire quale filtro
     l'ha esclusa, invece di doverlo dedurre ore dopo da uno screenshot. Chiamata solo sugli
-    ALERT (evento raro), quindi il costo di un'interrogazione extra e' trascurabile."""
+    ALERT (evento raro), quindi il costo di un'interrogazione extra e' trascurabile.
+
+    FIX 17/07 (richiesta esplicita, verificato su log reali): il dump completo arrivava a
+    60+ righe per un singolo alert (es. Rodrigo De Paul) senza aggiungere informazione utile --
+    cio' che serve per verificare true_min/second_min e' vedere i prezzi piu' bassi, non l'intera
+    lista di annunci. Ridotto ai DIAGNOSTIC_MAX_ROWS piu' economici (ordinati per prezzo, quelli
+    senza prezzo/None in fondo), col conteggio totale comunque loggato per contesto."""
     try:
         nodes = fetch_all_live_offers(player_slug)
     except Exception as e:
         log(f"[diagnostica alert] impossibile scaricare il dump grezzo per {player_slug}: {e}")
         return
     log(f"[diagnostica alert] {player_slug}: {len(nodes)} annunci live grezzi trovati")
+
+    rows = []
     for node in nodes:
         status = node.get('status')
         price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
         cards = (node.get('senderSide') or {}).get('anyCards') or []
         if not cards:
-            log(f"[diagnostica alert]   status={status} prezzo={price} (nessuna carta compatibile sul lato venditore)")
+            rows.append((price, f"status={status} prezzo={price} (nessuna carta compatibile sul lato venditore)"))
             continue
         for c in cards:
-            log(f"[diagnostica alert]   status={status} prezzo={price} slug={c.get('slug')} "
-                f"rarita'={c.get('rarityTyped')} sport={c.get('sport')} "
-                f"stagione={(c.get('sportSeason') or {}).get('name')} "
-                f"inSeasonEligible={c.get('inSeasonEligible')}")
+            rows.append((price, f"status={status} prezzo={price} slug={c.get('slug')} "
+                                 f"rarita'={c.get('rarityTyped')} sport={c.get('sport')} "
+                                 f"stagione={(c.get('sportSeason') or {}).get('name')} "
+                                 f"inSeasonEligible={c.get('inSeasonEligible')}"))
+
+    rows.sort(key=lambda r: (r[0] is None, r[0]))
+    for _, line in rows[:DIAGNOSTIC_MAX_ROWS]:
+        log(f"[diagnostica alert]   {line}")
+    if len(rows) > DIAGNOSTIC_MAX_ROWS:
+        log(f"[diagnostica alert]   ... altri {len(rows) - DIAGNOSTIC_MAX_ROWS} annunci omessi "
+            f"(mostrati solo i {DIAGNOSTIC_MAX_ROWS} piu' economici)")
 
 
 # FIX 16/07 (caso Sengezer, richiesta esplicita): vedi nota su sale_history in init_db per il
@@ -1128,6 +1148,57 @@ def find_cheaper_recent_sale(true_min_price, recent_sales):
     return None
 
 
+# FIX 17/07 (richiesta esplicita dell'utente): find_cheaper_recent_sale segnala solo SE esiste
+# almeno una vendita recente pari o piu' economica, ma non dice QUANTE -- l'utente ha chiesto di
+# ragionare sulla proporzione, su un campione di 5 vendite entro RECENT_SALE_WINDOW_DAYS giorni:
+# fino a 2 su 5 pari o piu' economiche restano un rumore normale di mercato, la notifica parte
+# comunque (con l'avviso soft gia' esistente). Da 3 su 5 in su, e' piu' probabile che il prezzo
+# "basso" sia semplicemente il livello reale del mercato piuttosto che un affare genuino: in quel
+# caso la notifica va bloccata, ma il dettaglio va comunque loggato per poter verificare a mano se
+# la segnalazione avrebbe avuto senso. Il blocco si applica SOLO quando il campione e' pieno (5
+# vendite nella finestra): con meno di 5, il mercato e' semplicemente sottile e resta valido il
+# percorso "MERCATO SOTTILE" gia' esistente in build_sale_history_context (notifica comunque,
+# solo avviso informativo) -- richiesta esplicita dell'utente, per non bloccare su un campione
+# troppo piccolo per essere significativo.
+#
+# LIMITE NOTO (17/07, richiesta esplicita dell'utente): idealmente questo confronto andrebbe
+# fatto solo contro vendite dello STESSO bucket (classic o in_season) della carta segnalata, ma
+# tokenPrices (unica fonte di storico vendite retroattivo che abbiamo) non espone la stagione
+# per singola transazione (vedi nota sopra in get_recent_sale_history: season/sportSeason/
+# cardSlug tutti assenti su TokenPrice, verificato per tentativi). L'alternativa scoped
+# (sale_history/get_own_recent_sales) esiste ma non si popola piu' (cattura disattivata per
+# costo) e comunque partirebbe da zero, quindi non utilizzabile subito. Scelta consapevole
+# dell'utente: accettare il mix classic/in_season di tokenPrices com'e' piuttosto che aspettare
+# settimane di dati scoped o bloccare la feature -- da rivedere se si trova un altro campo/query
+# che espone la stagione per vendita.
+RECENT_SALE_GATE_MIN_CHEAPER = 3
+RECENT_SALE_GATE_SAMPLE_SIZE = 5
+
+
+def count_cheaper_recent_sales(true_min_price, recent_sales):
+    """Ritorna (cheaper_count, total_in_window): quante transazioni concluse (vendita/scambio/
+    asta/offerta) negli ultimi RECENT_SALE_WINDOW_DAYS giorni sono pari o piu' economiche di
+    true_min_price, su quante totali cadono in quella stessa finestra (tra le fino a 5
+    restituite da get_recent_sale_history)."""
+    if not recent_sales:
+        return 0, 0
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=RECENT_SALE_WINDOW_DAYS)
+    cheaper_count = 0
+    total_in_window = 0
+    for date_str, price in recent_sales:
+        try:
+            sale_dt = datetime.datetime.fromisoformat((date_str or '').replace('Z', '+00:00'))
+            sale_dt = sale_dt.replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            continue
+        if sale_dt < cutoff:
+            continue
+        total_in_window += 1
+        if price <= true_min_price:
+            cheaper_count += 1
+    return cheaper_count, total_in_window
+
+
 # FIX 17/07 (richiesta esplicita dell'utente, caso Issahaku Fatawu): "il giocatore ha appena 3
 # vendite in 21 giorni" -- con cosi' poche transazioni reali, il secondo prezzo che genera il
 # margine e' meno affidabile (basta un singolo annuncio isolato a determinarlo): non e' che il
@@ -1405,6 +1476,23 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             in_season_prices, _ = buckets.get('in_season', ([], False))
             if in_season_prices:
                 in_season_min = in_season_prices[0][0]
+                # FIX 17/07 (caso Franko Kolic): in_season_min puo' essere piu' economico anche
+                # del true_min_price CLASSIC stesso, non solo del secondo prezzo classic --
+                # usarlo comunque come "secondo prezzo" produceva un margine negativo senza senso
+                # (es. -79.2%, true_min 3.44 vs "secondo" 1.92). Se il sostituto in season e' gia'
+                # piu' economico del nostro stesso minimo, il problema non e' "margine troppo
+                # stretto", e' che il sostituto e' semplicemente il vero affare adesso: messaggio
+                # e motivo di scarto dedicati, niente calcolo di margine in quel verso.
+                if in_season_min < true_min_price:
+                    log(f"{player_name} ({season_type}, {season_name}): sostituto in season ancora "
+                        f"piu' economico ({in_season_min:.2f}EUR contro {true_min_price:.2f}EUR "
+                        f"classic), non e' un affare distinto, salto la notifica")
+                    log_decision(player_slug, player_name, season_type, season_name,
+                                 "skip_in_season_substitute_cheaper",
+                                 floor_price=floor, true_min_price=true_min_price,
+                                 drop_percent=drop_percent, second_min_price=in_season_min)
+                    set_floor(player_slug, season_type, true_min_price)
+                    return
                 if second_min_price is None or in_season_min < second_min_price:
                     second_min_price = in_season_min
         margin_percent = None
@@ -1497,10 +1585,6 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             # live per quel giocatore, cosi' se ricapita abbiamo l'evidenza invece di doverla
             # dedurre da uno screenshot fatto ore dopo.
             log_raw_offers_diagnostic(player_slug, eth_rate)
-            log_decision(player_slug, player_name, season_type, season_name, decision,
-                         floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
-                         second_min_price=second_min_price, margin_percent=margin_percent,
-                         reasons=reasons_log or None)
 
             # FIX 16/07 (v3, richiesta esplicita dell'utente): non blocchiamo piu' -- notifica
             # comunque, con un avviso se nella finestra di RECENT_SALE_WINDOW_DAYS giorni esiste
@@ -1511,30 +1595,59 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             if sale_history_log:
                 log(f"{player_name}: {sale_history_log}")
 
-            # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
-            # (verificata live), non necessariamente quella di questo specifico evento.
-            base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
-            if true_min_card_slug:
-                link = f"{base_link}?card={true_min_card_slug}"
-            else:
-                sort_param = "s=Cards+On+Sale+Lowest+Price"
-                link = f"{base_link}?{sort_param}"
-
-            msg_text = (
-                f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
-                f"Giocatore: {player_name}\n"
-                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
-                f"Stagione carta: {season_name}\n"
-                f"Calo: {drop_percent:.1%}\n"
-                f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
-                + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
-                   if second_min_price is not None else "")
-                + sale_history_msg
-                + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
-                   if is_dubbio else "")
-                + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
+            # FIX 17/07 (richiesta esplicita dell'utente): su un campione pieno di 5 vendite
+            # nella finestra, se 3 o piu' sono gia' pari o piu' economiche del prezzo che stiamo
+            # per notificare, blocchiamo l'invio -- probabile che sia il livello reale del
+            # mercato, non un affare. Con meno di 5 vendite nella finestra il campione e' troppo
+            # piccolo per essere significativo: niente blocco, resta il percorso "MERCATO
+            # SOTTILE" gia' esistente sopra (notifica comunque, solo avviso informativo).
+            cheaper_count, sales_in_window = count_cheaper_recent_sales(true_min_price, recent_sales)
+            recent_sales_blocked = (
+                sales_in_window >= RECENT_SALE_GATE_SAMPLE_SIZE
+                and cheaper_count >= RECENT_SALE_GATE_MIN_CHEAPER
             )
-            send_telegram_msg(msg_text)
+
+            if recent_sales_blocked:
+                log(f"{player_name}: BLOCCATO -- {cheaper_count}/{sales_in_window} vendite negli "
+                    f"ultimi {RECENT_SALE_WINDOW_DAYS} giorni pari o piu' economiche di "
+                    f"{true_min_price:.2f}EUR, probabile prezzo di mercato reale: notifica NON "
+                    f"inviata (solo loggata per controllo)")
+                log_decision(player_slug, player_name, season_type, season_name,
+                             "skip_recent_sales_gate", floor_price=floor,
+                             true_min_price=true_min_price, drop_percent=drop_percent,
+                             second_min_price=second_min_price, margin_percent=margin_percent,
+                             reasons=[f"{cheaper_count}/{sales_in_window} vendite recenti pari o "
+                                      f"piu' economiche"])
+            else:
+                log_decision(player_slug, player_name, season_type, season_name, decision,
+                             floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
+                             second_min_price=second_min_price, margin_percent=margin_percent,
+                             reasons=reasons_log or None)
+
+                # true_min_card_slug e' la carta REALMENTE piu' economica in questo momento
+                # (verificata live), non necessariamente quella di questo specifico evento.
+                base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+                if true_min_card_slug:
+                    link = f"{base_link}?card={true_min_card_slug}"
+                else:
+                    sort_param = "s=Cards+On+Sale+Lowest+Price"
+                    link = f"{base_link}?{sort_param}"
+
+                msg_text = (
+                    f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
+                    f"Giocatore: {player_name}\n"
+                    f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
+                    f"Stagione carta: {season_name}\n"
+                    f"Calo: {drop_percent:.1%}\n"
+                    f"Nuovo prezzo: {true_min_price:.2f}EUR\n"
+                    + (f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
+                       if second_min_price is not None else "")
+                    + sale_history_msg
+                    + (f"⚠️ Confermato al secondo controllo dopo un calo dubbio iniziale ({', '.join(reasons_log)})\n"
+                       if is_dubbio else "")
+                    + f"\n<a href='{link}'>Clicca qui per vedere le offerte</a>"
+                )
+                send_telegram_msg(msg_text)
         elif drop_percent >= DROP_THRESHOLD:
             log_decision(player_slug, player_name, season_type, season_name, "skip_dubbio_unconfirmed",
                          floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
@@ -1597,37 +1710,65 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                         # piu' economica (vedi find_cheaper_recent_sale).
                         recent_sales = get_recent_sale_history(player_slug, eth_rate)
                         cheaper_recent = find_cheaper_recent_sale(true_min_price, recent_sales)
-
-                        log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
-                            f"({season_type}, {season_name}): minimo {true_min_price:.2f}EUR, "
-                            f"secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%}, "
-                            f"richiesto {required_margin:.1%})")
-                        log_decision(player_slug, player_name, season_type, season_name,
-                                     "notify_margin_opportunity", floor_price=floor,
-                                     true_min_price=true_min_price, drop_percent=drop_percent,
-                                     second_min_price=second_min_price, margin_percent=margin_percent)
-
                         sale_history_log, sale_history_msg = build_sale_history_context(
                             recent_sales, cheaper_recent)
-                        if sale_history_log:
-                            log(f"{player_name}: {sale_history_log}")
 
-                        base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
-                        link = f"{base_link}?card={true_min_card_slug}" if true_min_card_slug else base_link
-                        msg_text = (
-                            f"\U0001F4D0 <b>Opportunita' di margine (nessun calo recente)</b>\n\n"
-                            f"Giocatore: {player_name}\n"
-                            f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
-                            f"Stagione carta: {season_name}\n"
-                            f"Prezzo minimo: {true_min_price:.2f}EUR\n"
-                            f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
-                            + sale_history_msg
-                            + f"\nNon e' un calo rispetto allo storico, ma il divario verso il secondo "
-                            f"prezzo e' gia' ampio -- puo' valere la pena controllare.\n\n"
-                            f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
+                        # FIX 17/07 (richiesta esplicita dell'utente): stessa regola del percorso
+                        # ALERT diretto -- su un campione pieno di 5 vendite nella finestra, 3 o
+                        # piu' pari o piu' economiche del prezzo segnalato blocca l'invio (probabile
+                        # livello di mercato reale, non un affare); con meno di 5 vendite niente
+                        # blocco, resta valido il percorso "MERCATO SOTTILE" gia' esistente.
+                        cheaper_count, sales_in_window = count_cheaper_recent_sales(true_min_price, recent_sales)
+                        recent_sales_blocked = (
+                            sales_in_window >= RECENT_SALE_GATE_SAMPLE_SIZE
+                            and cheaper_count >= RECENT_SALE_GATE_MIN_CHEAPER
                         )
-                        send_telegram_msg(msg_text)
-                        set_last_margin_alert_price(player_slug, season_type, true_min_price)
+
+                        if recent_sales_blocked:
+                            log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
+                                f"({season_type}, {season_name}): minimo {true_min_price:.2f}EUR, "
+                                f"secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%}, "
+                                f"richiesto {required_margin:.1%}) -- BLOCCATO: "
+                                f"{cheaper_count}/{sales_in_window} vendite negli ultimi "
+                                f"{RECENT_SALE_WINDOW_DAYS} giorni pari o piu' economiche, notifica "
+                                f"NON inviata (solo loggata per controllo)")
+                            if sale_history_log:
+                                log(f"{player_name}: {sale_history_log}")
+                            log_decision(player_slug, player_name, season_type, season_name,
+                                         "skip_recent_sales_gate", floor_price=floor,
+                                         true_min_price=true_min_price, drop_percent=drop_percent,
+                                         second_min_price=second_min_price, margin_percent=margin_percent,
+                                         reasons=[f"{cheaper_count}/{sales_in_window} vendite recenti "
+                                                  f"pari o piu' economiche"])
+                            set_last_margin_alert_price(player_slug, season_type, true_min_price)
+                        else:
+                            log(f"OPPORTUNITA' DI MARGINE (nessun calo recente) {player_name} "
+                                f"({season_type}, {season_name}): minimo {true_min_price:.2f}EUR, "
+                                f"secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%}, "
+                                f"richiesto {required_margin:.1%})")
+                            log_decision(player_slug, player_name, season_type, season_name,
+                                         "notify_margin_opportunity", floor_price=floor,
+                                         true_min_price=true_min_price, drop_percent=drop_percent,
+                                         second_min_price=second_min_price, margin_percent=margin_percent)
+                            if sale_history_log:
+                                log(f"{player_name}: {sale_history_log}")
+
+                            base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+                            link = f"{base_link}?card={true_min_card_slug}" if true_min_card_slug else base_link
+                            msg_text = (
+                                f"\U0001F4D0 <b>Opportunita' di margine (nessun calo recente)</b>\n\n"
+                                f"Giocatore: {player_name}\n"
+                                f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
+                                f"Stagione carta: {season_name}\n"
+                                f"Prezzo minimo: {true_min_price:.2f}EUR\n"
+                                f"Secondo prezzo attuale: {second_min_price:.2f}EUR (margine {margin_percent:.1%})\n"
+                                + sale_history_msg
+                                + f"\nNon e' un calo rispetto allo storico, ma il divario verso il secondo "
+                                f"prezzo e' gia' ampio -- puo' valere la pena controllare.\n\n"
+                                f"<a href='{link}'>Clicca qui per vedere le offerte</a>"
+                            )
+                            send_telegram_msg(msg_text)
+                            set_last_margin_alert_price(player_slug, season_type, true_min_price)
 
         set_floor(player_slug, season_type, true_min_price)
 
