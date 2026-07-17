@@ -283,3 +283,33 @@
 [2026-07-17 21:18:17] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 6, 'wei': 0, 'usdCents': 0, 'gbpCents': 0, 'lamport': 0, 'none': 0}
 [2026-07-17 21:18:17] [diagnostica filtro stagione] con season ok: 2, fallback senza season riuscito: 0, entrambi vuoti: 0
 [2026-07-17 21:18:17] Ascolto aste terminato.
+
+===== RUN 2026-07-17 21:47:29 UTC =====
+[2026-07-17 21:47:29] Tasso ETH/EUR: 1609.12
+[2026-07-17 21:47:29] [diagnostica ordinamento aste] orderBy: END_DATE_ASC: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'orderBy'", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'orderBy'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'orderBy'}}]
+[2026-07-17 21:47:30] [diagnostica ordinamento aste] sort: END_DATE_ASC: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'sort' (Did you mean `sport`?)", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'sort'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'sort'}}]
+[2026-07-17 21:47:30] [diagnostica ordinamento aste] sortBy: END_DATE_ASC: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'sortBy' (Did you mean `sport`?)", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'sortBy'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'sortBy'}}]
+[2026-07-17 21:47:30] [diagnostica ordinamento aste] orderBy: endDate_ASC: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'orderBy'", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'orderBy'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'orderBy'}}]
+[2026-07-17 21:47:30] [diagnostica ordinamento aste] endingSoon: true: errore -- [{'message': "Field 'liveAuctions' doesn't accept argument 'endingSoon'", 'locations': [{'line': 1, 'column': 53}], 'path': ['query D', 'tokens', 'liveAuctions', 'endingSoon'], 'extensions': {'code': 'argumentNotAccepted', 'name': 'liveAuctions', 'typeName': 'Field', 'argumentName': 'endingSoon'}}]
+[2026-07-17 21:47:30] [diagnostica ordinamento aste] first: N (senza last, per vedere se cambia l'ordine di default): SUCCESSO -- {'tokens': {'liveAuctions': {'nodes': [{'id': 'EnglishAuction:37e8dddc-826e-42b2-9d42-1d18fde50498', 'endDate': '2026-07-20T20:01:42Z'}, {'id': 'EnglishAuction:dbc5b3ed-c36f-4ed5-a4b6-afe6da7dd8f9', 'endDate': '2026-07-19T20:01:42Z'}, {'id': 'EnglishAuction:7270ac82-02b6-4d56-876a-9a95f30d53b2', 'endDate': '2026-07-18T00:10:31Z'}, {'id': 'EnglishAuction:bbc0b05b-5838-49cc-a167-798aeb841fcd', 'endDate': '2026-07-18T00:32:46Z'}, {'id': 'EnglishAuction:f660a1ad-7154-4f59-aadf-40fb8933ddc7', 'endDate': '2026-07-17T23:37:09Z'}]}}}
+[2026-07-17 21:47:30] [diagnostica ordinamento aste] tentativi completati.
+[2026-07-17 21:47:30] Scansione di sicurezza: controllo le 50 aste live piu' recenti...
+[2026-07-17 21:47:31] Scansione di sicurezza: 50 aste trovate, valutazione in corso...
+[2026-07-17 21:47:31] [asta] valutazione evento id=EnglishAuction:ab977629-38c0-4e2b-8176-0fc61580da58 card_slug=juan-antonio-ros-martinez-2026-limited-409
+[2026-07-17 21:47:34] Ros: margine stimato 0.0 sotto la soglia minima (1.00EUR), non notifico -- vendita diretta minima 3.0573279999999996, minimo per essere in testa 3.06EUR
+[2026-07-17 21:47:34] [asta] valutazione evento id=EnglishAuction:014ea711-028f-4524-bb21-685139f5a488 card_slug=emerson-ramon-bezerra-oliveira-2026-limited-412
+[2026-07-17 21:47:39] Emerson Negueba: margine stimato 0.6744960000000004 sotto la soglia minima (1.00EUR), non notifico -- vendita diretta minima 3.41, minimo per essere in testa 2.74EUR
+[2026-07-17 21:47:39] [asta] valutazione evento id=EnglishAuction:d958b4d2-cb49-4f65-a51d-2b67e5caa539 card_slug=anderson-de-oliveira-da-silva-2026-limited-412
+[2026-07-17 21:47:42] ASTA INTERESSANTE! Anderson Oliveira: attuale 2.09EUR, minimo per essere in testa 2.41EUR, mediana riferimento 3.36EUR, tetto consigliato (informativo) 2.69EUR, offri fino a 3.43EUR, vendita diretta minima 4.43, margine stimato 2.01632
+[2026-07-17 21:47:42] [asta] DEBUG prezzi grezzi usati per la mediana (Anderson Oliveira, ultime 3 vendite pubbliche+private): [3.36, 3.07, 3.7]
+[2026-07-17 21:47:43] Scansione di sicurezza completata.
+[2026-07-17 21:47:43] Ascolto aste in tempo reale per 60 secondi...
+[2026-07-17 21:47:43] Connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-17 21:47:44] Sottoscrizione confermata, in ascolto...
+[2026-07-17 21:48:28] [asta] valutazione evento id=EnglishAuction:4b3d2524-08fd-45b4-a39d-a2b542516548 card_slug=soo-il-park-2026-limited-208
+[2026-07-17 21:48:28] Park Soo-Il: asta attuale (2.09EUR) non sotto l'ultimo prezzo (1.60EUR), salto
+[2026-07-17 21:48:43] Connessione chiusa (codice None). Aste processate in questa esecuzione: 55
+[2026-07-17 21:48:43] [diagnostica aste] notifiche inviate: 1 (di cui su riferimento storico: 0), scarti: skip_already_notified=4, skip_margin_too_low=2, skip_no_limited_football_card=29, skip_not_below_last_price=1, skip_unchanged_since_last_eval=18
+[2026-07-17 21:48:43] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 27, 'wei': 3, 'usdCents': 1, 'gbpCents': 0, 'lamport': 0, 'none': 0}
+[2026-07-17 21:48:43] [diagnostica filtro stagione] con season ok: 4, fallback senza season riuscito: 0, entrambi vuoti: 0
+[2026-07-17 21:48:43] Ascolto aste terminato.
