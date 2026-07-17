@@ -10,15 +10,21 @@ name: ZenLock Model Tracker
 # replay degli eventi persi) -- osservato nei log reali un buco di ~40-43s (es. run chiuso alle
 # 14:47:35, run successivo connesso alle 14:48:18). Alzare listen_seconds accorcia quel buco
 # (il tempo "morto" resta comunque quello di avvio del runner GitHub Actions, non eliminabile
-# da qui) senza rischiare sovrapposizioni pericolose: 215s lascia ancora margine sotto sia il
-# ciclo di 240s del cron sia il timeout-minutes:5 (300s) del job.
+# da qui) senza rischiare sovrapposizioni pericolose.
+# FIX 17/07 (v3, richiesta esplicita dell'utente): il cron esterno e' stato spostato da 4 a 5
+# minuti (300s) per ridurre il carico cumulativo verso Sorare (meno 429, vedi fix cache/margine
+# in auctions_ws_listener.py) -- ma senza alzare listen_seconds in proporzione il buco tra le
+# esecuzioni si sarebbe allargato da ~40s a ~85-100s, e zenlock (a differenza delle aste) non ha
+# una scansione di sicurezza di ripristino: un annuncio aperto e richiuso proprio in quel buco
+# piu' largo sarebbe invisibile. 215 -> 250s riporta il buco a dimensioni simili a prima, con
+# margine sotto sia il ciclo di 300s del cron sia il timeout-minutes:5 (300s) del job.
 on:
   workflow_dispatch:
     inputs:
       listen_seconds:
-        description: "Secondi di ascolto (lascia vuoto per 215 = normale; usa 20-30 per test veloci)"
+        description: "Secondi di ascolto (lascia vuoto per 250 = normale; usa 20-30 per test veloci)"
         required: false
-        default: "215"
+        default: "250"
       diagnostic_player_slug:
         description: "Lascia vuoto normalmente. Slug giocatore per dump grezzo COMPLETO (non filtrato) degli annunci live, per casi dubbi (annuncio noto mancante dai comparabili)"
         required: false
@@ -47,6 +53,6 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
-          ZENLOCK_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '215' }}
+          ZENLOCK_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '250' }}
           ZENLOCK_DIAGNOSTIC_PLAYER_SLUG: ${{ github.event.inputs.diagnostic_player_slug || '' }}
         run: python zenlock_model_tracker.py

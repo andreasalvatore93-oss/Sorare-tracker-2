@@ -6,7 +6,7 @@ on:
       listen_seconds:
         description: "Secondi di ascolto (deve stare sotto l'intervallo del cron)"
         required: false
-        default: "110"
+        default: "160"
 
 permissions:
   contents: write
@@ -20,6 +20,12 @@ permissions:
 # stessa asta notificata due volte. concurrency in coda (non cancel-in-progress) garantisce
 # che GitHub non faccia MAI partire una nuova esecuzione finche' la precedente non ha
 # finito di salvare, a prescindere dai tempi del cron.
+# FIX 17/07 (richiesta esplicita dell'utente): cron esterno spostato da 4 a 5 minuti (300s,
+# stesso motivo del fix gemello su zenlock_model_tracker.yml -- ridurre il carico cumulativo
+# verso Sorare). 110 -> 160s per mantenere proporzionalmente stretto il buco WS tra
+# un'esecuzione e la successiva col nuovo ciclo piu' lungo. La scansione di sicurezza copre
+# comunque gran parte del rischio residuo (ripesca le 50 aste live piu' recenti a ogni avvio),
+# quindi qui il margine e' meno critico che su zenlock (che non ha un equivalente).
 concurrency:
   group: auctions-ws-listener
   cancel-in-progress: false
@@ -50,7 +56,7 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
           AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
-          AUCTION_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '110' }}
+          AUCTION_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '160' }}
           PYTHONUNBUFFERED: "1"
         run: python auctions_ws_listener.py
 

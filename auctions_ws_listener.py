@@ -51,7 +51,49 @@ RECENT_PRICES_COUNT = int(os.environ.get('RECENT_PRICES_COUNT', '3'))
 # Se il margine non e' calcolabile (nessun direct_sale_price trovato, live ne' in cache),
 # per sicurezza NON si notifica: senza un riferimento di vendita diretta non possiamo
 # confermare che valga davvero la pena rilanciare invece di comprare subito.
-MIN_MARGIN_EUR = float(os.environ.get('MIN_MARGIN_EUR', '1.5'))
+MIN_MARGIN_EUR = float(os.environ.get('MIN_MARGIN_EUR', '1.5'))  # usato solo come fallback
+# quando direct_sale_price non e' disponibile per calcolare uno scaglione -- vedi
+# required_margin_eur() piu' sotto per il caso normale.
+
+# FIX 17/07 (richiesta esplicita dell'utente, "troppo stringente coi parametri... forse per
+# questo poche notifiche"): MIN_MARGIN_EUR fisso a 1.5EUR era uguale per una carta da 2EUR e
+# una da 50EUR -- su una carta da 2EUR equivale a pretendere uno sconto reale del 75% per
+# notificare, quasi impossibile, mentre su una da 50EUR e' solo il 3%. Stesso approccio a
+# scaglioni GIA' calibrato su tanti casi reali in track.py (MARGIN_TIERS/
+# required_margin_fraction, tracker classico), qui riadattato alle aste: la percentuale
+# minima di margine richiesta scende progressivamente al salire del prezzo di riferimento
+# (vendita diretta), invece di un euro fisso identico per tutte le fasce.
+AUCTION_MARGIN_TIERS = [
+    (3, 0.15),
+    (5, 0.12),
+    (10, 0.10),
+    (20, 0.08),
+    (40, 0.06),
+    (60, 0.05),
+]
+
+
+def required_margin_eur(reference_price):
+    """Margine minimo in EUR richiesto per notificare, a scaglioni percentuali in base al
+    prezzo di riferimento (direct_sale_price) -- stesso spirito di required_margin_fraction in
+    track.py. Sotto ogni soglia si applica la percentuale di quello scaglione convertita in
+    EUR; oltre l'ultima soglia (60EUR) o se il riferimento non e' disponibile, si torna al
+    vecchio margine assoluto fisso MIN_MARGIN_EUR."""
+    if reference_price is None or reference_price <= 0:
+        return MIN_MARGIN_EUR
+    for upper_bound, fraction in AUCTION_MARGIN_TIERS:
+        if reference_price < upper_bound:
+            return reference_price * fraction
+    return MIN_MARGIN_EUR
+
+
+# FIX 17/07 (stessa richiesta, secondo punto): last_price era un tetto RIGIDO su
+# recommended_ceiling (vedi piu' sotto) -- un singolo dato (l'ultima vendita) puo' essere
+# rumoroso quanto un intero mercato, e capitare basso per puro caso blocca la raccomandazione
+# a prescindere da quanto la mediana (gia' scontata del 20%) suggerirebbe di poter offrire.
+# Tolleranza che ammorbidisce il tetto senza eliminarlo (resta comunque ancorato all'ultima
+# vendita vera, protezione originale del caso Tverskov, solo meno rigida).
+AUCTION_LAST_PRICE_TOLERANCE = float(os.environ.get('AUCTION_LAST_PRICE_TOLERANCE', '0.15'))
 
 # Ritardo prima della riverifica live pre-notifica: nei log di produzione del 16/07 la
 # riverifica risultava "asta non piu' aperta" per QUASI OGNI asta valutata (7/7 in un run,
@@ -997,10 +1039,15 @@ def process_auction(auction, eth_rate, stats):
     # se quella e' scesa rispetto alle precedenti (caso reale: ultima vendita 8.70EUR 37
     # minuti fa, ma mediana 11.40EUR presa insieme a due vendite piu' vecchie e piu' care ->
     # tetto consigliato 9.12EUR, SOPRA l'ultima vendita vera). Non ha senso consigliare di
-    # offrire piu' di quanto sia costata l'ultima carta equivalente venduta: last_price fa
-    # da tetto massimo esplicito esattamente come direct_sale_price.
-    if last_price < recommended_ceiling:
-        recommended_ceiling = last_price
+    # offrire molto piu' di quanto sia costata l'ultima carta equivalente venduta.
+    # FIX 17/07 (richiesta esplicita dell'utente, "troppo stringente... poche notifiche"):
+    # last_price come tetto RIGIDO (senza tolleranza) rendeva la raccomandazione ostaggio di
+    # un singolo dato -- rumoroso quanto un intero mercato preso da solo. Ammorbidito con
+    # AUCTION_LAST_PRICE_TOLERANCE: il tetto resta ancorato all'ultima vendita vera (protezione
+    # originale del caso Tverskov), ma con un po' di margine invece di essere assoluto.
+    last_price_ceiling = last_price * (1 + AUCTION_LAST_PRICE_TOLERANCE)
+    if last_price_ceiling < recommended_ceiling:
+        recommended_ceiling = last_price_ceiling
 
     # Riverifica live subito prima di decidere se notificare: l'evento che ha innescato
     # questo controllo potrebbe essere vecchio (caso Marco Reus: evento con currentPrice=
@@ -1098,11 +1145,14 @@ def process_auction(auction, eth_rate, stats):
     # (starting_bid, gia' garantito <= recommended_ceiling <= direct_sale_price dai controlli
     # sopra), non rispetto al tetto di sicurezza.
     margin_estimate = (direct_sale_price - starting_bid) if direct_sale_price is not None else None
+    # FIX 17/07: soglia minima ora a scaglioni (vedi required_margin_eur piu' in alto) invece
+    # del vecchio MIN_MARGIN_EUR fisso -- stesso spirito del fix gemello di zenlock/track.py.
+    min_margin_required = required_margin_eur(direct_sale_price)
 
-    if margin_estimate is None or margin_estimate < MIN_MARGIN_EUR:
+    if margin_estimate is None or margin_estimate < min_margin_required:
         log(f"{player_name}: margine stimato "
             f"{margin_estimate if margin_estimate is not None else 'n/d'} sotto la soglia minima "
-            f"({MIN_MARGIN_EUR:.2f}EUR), non notifico")
+            f"({min_margin_required:.2f}EUR), non notifico")
         log_decision(auction_id, player_slug, player_name, season_type, "skip_margin_too_low",
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,
