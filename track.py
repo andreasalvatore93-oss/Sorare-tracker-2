@@ -1202,8 +1202,8 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
           deal {
             ... on TokenOffer {
               type
-              buyer { slug nickname }
-              seller { slug nickname }
+              buyer { ... on User { slug nickname } }
+              seller { ... on User { slug nickname } }
             }
           }
         }
