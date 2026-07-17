@@ -115,18 +115,52 @@ MARGIN_TIERS = [
 FLAT_MARGIN_EUR_ABOVE_60 = 5.0
 
 
+# FIX 17/07 (v23, scoperto per analogia col bug "salto ai bordi" gia' trovato e fixato oggi in
+# AUCTION_MARGIN_TIERS su auctions_ws_listener.py): required_margin_fraction usava
+# "(upper_bound - max_price) / upper_bound" -- una frazione della SOGLIA superiore dello
+# scaglione, non del prezzo vero passato in reference_price. Per un reference_price appena SOTTO
+# un confine, la frazione veniva comunque moltiplicata per un prezzo vicino alla soglia, dando un
+# margine assoluto (EUR) prossimo a "upper_bound - max_price" dello scaglione corrente; appena
+# SOPRA il confine, lo scaglione successivo (di solito con percentuale piu' bassa, calibrata per
+# prezzi piu' alti) si applicava gia' dal primo centesimo, facendo CROLLARE il margine assoluto
+# richiesto proprio nel punto di passaggio (verificato con uno sweep: 9 confini su 13 facevano
+# diminuire il margine assoluto attraversando la soglia, es. 4.99EUR->0.55EUR richiesti ma
+# 5.00EUR->0.48EUR). Stessa soluzione gia' collaudata in auctions_ws_listener.py: un floor
+# calcolato una volta sola all'avvio, che garantisce che il margine assoluto in EUR non
+# diminuisca mai attraversando un confine di scaglione, qualunque siano le percentuali.
+def _compute_margin_tier_entry_floors():
+    floors = []
+    running_floor = 0.0
+    for upper_bound, max_price in MARGIN_TIERS:
+        floors.append(running_floor)
+        value_at_top = upper_bound - max_price
+        running_floor = max(running_floor, value_at_top)
+    return floors, running_floor
+
+
+_MARGIN_TIER_ENTRY_FLOORS, _MARGIN_TIER_FINAL_FLOOR = _compute_margin_tier_entry_floors()
+
+
 def required_margin_fraction(reference_price):
     """Frazione minima di sconto richiesta tra il prezzo minimo vero e il secondo prezzo
     attuale, a scaglioni in base al prezzo di riferimento (vedi MARGIN_TIERS). Sotto ogni
-    soglia si applica la percentuale di quello scaglione; da 60EUR in su si passa a uno
-    sconto assoluto fisso di 5EUR (converte in percentuale via FLAT_MARGIN_EUR_ABOVE_60 /
+    soglia si applica la percentuale di quello scaglione (mai sotto il floor assoluto ereditato
+    dagli scaglioni precedenti, vedi _compute_margin_tier_entry_floors); da 60EUR in su si passa
+    a uno sconto assoluto fisso di 5EUR (converte in percentuale via FLAT_MARGIN_EUR_ABOVE_60 /
     reference_price, quindi via via piu' basso in % man mano che il prezzo sale)."""
     if reference_price <= 0:
         return MIN_MARGIN_OVER_SECOND
-    for upper_bound, max_price in MARGIN_TIERS:
+    for i, (upper_bound, max_price) in enumerate(MARGIN_TIERS):
         if reference_price < upper_bound:
-            return (upper_bound - max_price) / upper_bound
-    return FLAT_MARGIN_EUR_ABOVE_60 / reference_price
+            # Frazione COSTANTE per scaglione, comportamento originale invariato (scala
+            # linearmente con reference_price all'interno dello scaglione) -- il floor entra in
+            # gioco solo vicino al confine, dove altrimenti scenderebbe sotto quanto richiesto
+            # dallo scaglione precedente.
+            fraction = (upper_bound - max_price) / upper_bound
+            required_eur = max(fraction * reference_price, _MARGIN_TIER_ENTRY_FLOORS[i])
+            return required_eur / reference_price
+    required_eur = max(FLAT_MARGIN_EUR_ABOVE_60, _MARGIN_TIER_FINAL_FLOOR)
+    return required_eur / reference_price
 
 
 # NOTA STORICA: qui c'era find_meaningful_second_price (v7, caso Arijanet Muric), che
@@ -2075,16 +2109,17 @@ def find_cheaper_recent_sale(true_min_price, recent_sales):
 # resta invariata per l'avviso soft esistente (find_cheaper_recent_sale) -- e' una feature
 # distinta, l'utente ha chiesto di ammorbidire solo il gate.
 #
-# LIMITE NOTO (17/07, richiesta esplicita dell'utente): idealmente questo confronto andrebbe
-# fatto solo contro vendite dello STESSO bucket (classic o in_season) della carta segnalata, ma
-# tokenPrices (unica fonte di storico vendite retroattivo che abbiamo) non espone la stagione
-# per singola transazione (vedi nota sopra in get_recent_sale_history: season/sportSeason/
-# cardSlug tutti assenti su TokenPrice, verificato per tentativi). L'alternativa scoped
-# (sale_history/get_own_recent_sales) esiste ma non si popola piu' (cattura disattivata per
-# costo) e comunque partirebbe da zero, quindi non utilizzabile subito. Scelta consapevole
-# dell'utente: accettare il mix classic/in_season di tokenPrices com'e' piuttosto che aspettare
-# settimane di dati scoped o bloccare la feature -- da rivedere se si trova un altro campo/query
-# che espone la stagione per vendita.
+# RISOLTO (17/07, v2 -- rilettura generale del tracker classico "alla luce dei miglioramenti
+# odierni"): il LIMITE NOTO qui sotto era corretto quando scritto (tokenPrices non esponeva la
+# stagione), ma la stessa sessione ha poi scoperto (indagine season-aware per il fallback storico
+# di ZenLock) che tokens.tokenPrices.card ACCETTA in realta' rarityTyped/sport/sportSeason/
+# inSeasonEligible -- get_recent_sale_history ora li legge e filtra via season_type (vedi sopra).
+# I due punti che usano questo gate (RECENT_SALE_GATE piu' sotto, sia percorso ALERT diretto che
+# "opportunita' di margine") pero' non passavano season_type -- mischiavano ancora vendite
+# classic e in_season dello stesso giocatore in un gate che BLOCCA la notifica, lo stesso rischio
+# di mix segnalato dall'utente per ZenLock ("due mercati con valori anche 10x diversi"). Corretto
+# passando season_type=season_type in entrambi i punti (RECENT_SALE_GATE/THIN_MARKET_GATE ora
+# guardano solo le vendite dello stesso bucket della carta segnalata).
 RECENT_SALE_GATE_MIN_CHEAPER = 6
 RECENT_SALE_GATE_SAMPLE_SIZE = 6
 RECENT_SALE_GATE_WINDOW_DAYS = 14
@@ -2527,7 +2562,9 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             # abbastanza dati anche per il gate qui sotto, che guarda una finestra piu' ampia
             # (14gg) del semplice avviso soft (7gg) -- find_cheaper_recent_sale/build_sale_
             # history_context restano invariati, filtrano comunque da soli sui 7gg.
-            recent_sales = get_recent_sale_history(player_slug, eth_rate, last_n=RECENT_SALE_GATE_SAMPLE_SIZE)
+            recent_sales = get_recent_sale_history(player_slug, eth_rate,
+                                                    last_n=RECENT_SALE_GATE_SAMPLE_SIZE,
+                                                    season_type=season_type)
             cheaper_recent = find_cheaper_recent_sale(true_min_price, recent_sales)
             sale_history_log, sale_history_msg = build_sale_history_context(recent_sales, cheaper_recent)
             if sale_history_log:
@@ -2666,7 +2703,9 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                         # piu' economica (vedi find_cheaper_recent_sale).
                         # FIX 17/07: last_n alzato a RECENT_SALE_GATE_SAMPLE_SIZE (6, era 5), vedi
                         # nota gemella nel percorso ALERT diretto qui sopra.
-                        recent_sales = get_recent_sale_history(player_slug, eth_rate, last_n=RECENT_SALE_GATE_SAMPLE_SIZE)
+                        recent_sales = get_recent_sale_history(player_slug, eth_rate,
+                                                    last_n=RECENT_SALE_GATE_SAMPLE_SIZE,
+                                                    season_type=season_type)
                         cheaper_recent = find_cheaper_recent_sale(true_min_price, recent_sales)
                         sale_history_log, sale_history_msg = build_sale_history_context(
                             recent_sales, cheaper_recent)

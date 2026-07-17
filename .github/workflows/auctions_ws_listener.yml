@@ -50,6 +50,10 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # FIX 17/07 (richiesta esplicita dell'utente, "non c'e' modo di avere i log senza Chrome"):
+      # stesso pattern gemello di check.yml -- log anche su file, poi committato (vedi step
+      # "Save state" sotto), cosi' dopo un pull in GitHub Desktop e' leggibile in locale senza
+      # copia-incolla ne' Chrome.
       - name: Run auction websocket listener
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
@@ -58,18 +62,25 @@ jobs:
           AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
           AUCTION_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '160' }}
           PYTHONUNBUFFERED: "1"
-        run: python auctions_ws_listener.py
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          python auctions_ws_listener.py 2>&1 | tee logs/auctions_last_run.log
 
       - name: Save state
+        if: always()
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
           git add auctions.db
+          if [ -f logs/auctions_last_run.log ]; then
+            git add logs/auctions_last_run.log
+          fi
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "update auctions db (ws listener)"
+          git commit -m "update auctions db + log (ws listener)"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))

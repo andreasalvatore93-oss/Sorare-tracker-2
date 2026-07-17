@@ -39,6 +39,14 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
+      # FIX 17/07 (richiesta esplicita dell'utente, "non c'e' modo di avere i log senza Chrome"):
+      # oltre a stampare su stdout (visibile solo nella UI di GitHub Actions, lenta/scomoda da
+      # consultare), scriviamo lo stesso output anche su file, poi lo committiamo (vedi step
+      # "Save state" sotto) -- dato che il repo e' gia' sincronizzato in locale via GitHub
+      # Desktop, dopo un pull il log e' leggibile direttamente da file, senza copia-incolla ne'
+      # browser. Sovrascritto ad ogni run (niente "tee -a"), cosi' il file resta piccolo. "set -o
+      # pipefail" garantisce che un errore di track.py faccia comunque fallire lo step (senza,
+      # il codice di uscita di "tee" mascererebbe quello di python).
       - name: Run tracker
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
@@ -50,17 +58,26 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '200' }}
-        run: python track.py
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          python track.py 2>&1 | tee logs/track_last_run.log
+      # if: always() -- vogliamo il log salvato anche se track.py fallisce/va in timeout,
+      # e' proprio in quei casi che serve di piu' per capire cosa e' successo.
       - name: Save state
+        if: always()
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
           git add tracker.db
+          if [ -f logs/track_last_run.log ]; then
+            git add logs/track_last_run.log
+          fi
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "update tracker db"
+          git commit -m "update tracker db + log ultima esecuzione"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))

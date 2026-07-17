@@ -33,8 +33,12 @@ on:
         description: "Lascia vuoto normalmente. Slug giocatore per verificare se tokenPrices.card accetta inSeasonEligible/sportSeason (indagine storico vendite per stagione)"
         required: false
         default: ""
+# FIX 17/07 (richiesta esplicita dell'utente, "non c'e' modo di avere i log senza Chrome"):
+# read -> write. Il tracker resta stateless per tracker.db (nessuna scrittura, vedi nota sopra),
+# ma ora scrive e committa il log dell'ultima esecuzione (vedi step "Save log" in fondo), quindi
+# serve il permesso di scrittura sul repo.
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: zenlock-model-tracker
   cancel-in-progress: false
@@ -60,4 +64,35 @@ jobs:
           ZENLOCK_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '250' }}
           ZENLOCK_DIAGNOSTIC_PLAYER_SLUG: ${{ github.event.inputs.diagnostic_player_slug || '' }}
           ZENLOCK_DIAGNOSTIC_SALE_SEASON_SLUG: ${{ github.event.inputs.diagnostic_sale_season_slug || '' }}
-        run: python zenlock_model_tracker.py
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          python zenlock_model_tracker.py 2>&1 | tee logs/zenlock_last_run.log
+
+      # if: always() -- vogliamo il log salvato anche se lo script fallisce/va in timeout.
+      - name: Save log
+        if: always()
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -f logs/zenlock_last_run.log ]; then
+            git add logs/zenlock_last_run.log
+          fi
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "update zenlock log (ultima esecuzione)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare log dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito (probabile esecuzione in parallelo), ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
