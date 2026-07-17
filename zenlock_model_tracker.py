@@ -225,15 +225,28 @@ ZENLOCK_LISTEN_SECONDS = int(os.environ.get('ZENLOCK_LISTEN_SECONDS', '200'))
 # Due mitigazioni insieme, come richiesto: un piccolo delay fisso dopo ogni valutazione completa
 # (spalma le query nel tempo) + un tetto al numero di valutazioni consecutive per finestra breve
 # (oltre il tetto, si salta la valutazione invece di accodare altre query -- l'annuncio non e'
-# perso per sempre, verra' ricontrollato al prossimo evento/esecuzione se resta live). Punto di
-# partenza deliberatamente conservativo (non abbiamo ancora un secondo caso reale su cui
-# ricalibrare): 5 valutazioni ogni 15 secondi e' gia' un throughput di ~20/minuto, ben sopra i 4
-# MATCH reali osservati in un minuto intero nel caso che ha causato il problema, quindi non
-# dovrebbe far perdere occasioni vere in condizioni normali -- da stringere ulteriormente se il
-# 429 si ripresenta, o allentare se si rivela troppo conservativo sui prossimi run reali.
-ZENLOCK_BURST_MAX_EVALUATIONS = int(os.environ.get('ZENLOCK_BURST_MAX_EVALUATIONS', '5'))
+# perso per sempre, verra' ricontrollato al prossimo evento/esecuzione se resta live).
+#
+# FIX 18/07 (v2, STESSO GIORNO, errore di calibrazione mio scoperto dall'utente col primo run
+# reale post-deploy): il punto di partenza sopra confrontava il tetto con la frequenza dei MATCH
+# (4/minuto, cioe' le notifiche vere, rarissime), non con la frequenza REALE di "carte valutate"
+# -- che nei run normali di questa stessa giornata (prima del fix, quindi senza alcun problema di
+# rate-limit) era 273-438 carte valutate per singolo run di ~250s, cioe' ~70-105/minuto. Il primo
+# run con la v1 del fix attivo ha valutato solo 64 carte su 329 (329-265 saltate per throttle,
+# 80.5% dell'esecuzione buttata via) con ZERO notifiche -- una perdita di copertura enorme e
+# ingiustificata, visto che il tracker girava benissimo a quel volume per giorni prima d'oggi
+# senza mai un 429. L'incidente reale che ha originato il fix e' quasi certamente stato causato
+# PRINCIPALMENTE dall'uso manuale CONCORRENTE dell'utente sulla stessa quota account (confermato
+# a voce: "probabilmente ero io che facevo offerte"), non dal volume normale del bot da solo.
+# Nuova calibrazione, basata sui numeri REALI osservati invece che su una stima sbagliata: tetto
+# alzato a un livello che in pratica non scatta MAI nel traffico normale (~70-105/minuto), ma
+# resta come freno di emergenza per un caso davvero patologico (es. un bug che genera un loop di
+# eventi). Delay fisso RIMOSSO (portato a 0 di default): con 300-440 valutazioni per run, anche
+# 0.1s a valutazione si sarebbe sommato a 30-44s sottratti al budget di ascolto, un costo non
+# giustificato quando il vero problema era l'uso concorrente umano, non il ritmo del bot.
+ZENLOCK_BURST_MAX_EVALUATIONS = int(os.environ.get('ZENLOCK_BURST_MAX_EVALUATIONS', '60'))
 ZENLOCK_BURST_WINDOW_SECONDS = float(os.environ.get('ZENLOCK_BURST_WINDOW_SECONDS', '15'))
-ZENLOCK_THROTTLE_DELAY_SECONDS = float(os.environ.get('ZENLOCK_THROTTLE_DELAY_SECONDS', '1.0'))
+ZENLOCK_THROTTLE_DELAY_SECONDS = float(os.environ.get('ZENLOCK_THROTTLE_DELAY_SECONDS', '0'))
 
 _recent_evaluation_times = collections.deque()
 
