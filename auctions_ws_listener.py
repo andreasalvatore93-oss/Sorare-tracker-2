@@ -1192,9 +1192,15 @@ def process_auction(auction, eth_rate, stats):
     min_margin_required = required_margin_eur(direct_sale_price)
 
     if margin_estimate is None or margin_estimate < min_margin_required:
+        # FIX 17/07 (richiesta esplicita dell'utente, "279 aste zero notifiche, non mi sembra
+        # normale"): la riga di log non salvava direct_sale_price/starting_bid, quindi non era
+        # possibile verificare a posteriori se required_margin_eur avesse usato il riferimento
+        # giusto senza rifare i calcoli a mano. Aggiunti entrambi qui.
         log(f"{player_name}: margine stimato "
             f"{margin_estimate if margin_estimate is not None else 'n/d'} sotto la soglia minima "
-            f"({min_margin_required:.2f}EUR), non notifico")
+            f"({min_margin_required:.2f}EUR), non notifico -- vendita diretta minima "
+            f"{direct_sale_price if direct_sale_price is not None else 'n/d'}, minimo per essere "
+            f"in testa {starting_bid:.2f}EUR")
         log_decision(auction_id, player_slug, player_name, season_type, "skip_margin_too_low",
                      current_price=current_price_eur, min_next_bid=min_next_bid_eur,
                      median_reference=median_reference, recommended_ceiling=recommended_ceiling,

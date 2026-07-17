@@ -380,11 +380,32 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
         if in_season_prices:
             in_season_min = in_season_prices[0][0]
             if in_season_min <= price_eur:
+                # FIX 17/07 (v25, richiesta esplicita dell'utente, "non so ancora dirti con
+                # certezza se questi scarti stessero bloccando affari che sarebbero passati" --
+                # prima questo skip non salvava il riferimento classic originale, solo il
+                # confronto con l'in_season): ricalcoliamo qui cosa sarebbe successo SENZA questo
+                # controllo (stessa soglia single-comparable di sotto, replicata localmente perche'
+                # a questo punto del codice non e' ancora stata applicata a required_discount),
+                # cosi' ogni riga di skip dice esplicitamente se stava davvero bloccando una
+                # notifica altrimenti valida o no -- niente piu' da dedurre a occhio dal log.
+                classic_required_discount = required_discount
+                if n_comparables == 1:
+                    classic_required_discount = max(classic_required_discount,
+                                                      ZENLOCK_DISCOUNT_SINGLE_COMPARABLE)
+                classic_discount = (reference_price - price_eur) / reference_price if reference_price > 0 else None
+                would_have_fired = (classic_discount is not None
+                                     and classic_discount >= classic_required_discount)
                 stats['skipped_in_season_substitute_cheaper'] = stats.get(
                     'skipped_in_season_substitute_cheaper', 0) + 1
+                if would_have_fired:
+                    stats['skipped_in_season_substitute_would_have_fired'] = stats.get(
+                        'skipped_in_season_substitute_would_have_fired', 0) + 1
                 track.log(f"[modello zenlock] sostituto in season ancora piu' economico "
                           f"({in_season_min:.2f}EUR contro {price_eur:.2f}EUR classic) per "
-                          f"{player_name}, non e' un affare distinto, non notifico")
+                          f"{player_name}, non e' un affare distinto, non notifico -- riferimento "
+                          f"classic originale {reference_price:.2f}EUR (n={n_comparables}), sconto "
+                          f"classic {classic_discount:.1%} (richiesto {classic_required_discount:.0%}) "
+                          f"-- {'AVREBBE notificato senza questo controllo' if would_have_fired else 'non avrebbe comunque notificato'}")
                 return
             if in_season_min < reference_price:
                 track.log(f"[modello zenlock] riferimento classic ({reference_price:.2f}EUR) "
