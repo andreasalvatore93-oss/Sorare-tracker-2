@@ -10,7 +10,11 @@ on:
       listen_seconds:
         description: "Secondi di ascolto (lascia vuoto per 200 = normale; usa 20-30 per test veloci)"
         required: false
-        default: "200"
+        default: "5"
+      diagnostic_player_slug:
+        description: "Lascia vuoto normalmente. Slug giocatore per dump grezzo COMPLETO (non filtrato) degli annunci live, per casi tipo Jhegson Mendez (annuncio noto mancante dai comparabili)"
+        required: false
+        default: "jhegson-sebastian-mendez-carabali"
 permissions:
   contents: read
 concurrency:
@@ -36,4 +40,5 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
           ZENLOCK_LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '200' }}
+          ZENLOCK_DIAGNOSTIC_PLAYER_SLUG: ${{ github.event.inputs.diagnostic_player_slug || '' }}
         run: python zenlock_model_tracker.py
