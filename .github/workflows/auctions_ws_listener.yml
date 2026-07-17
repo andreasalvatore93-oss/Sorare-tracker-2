@@ -54,6 +54,9 @@ jobs:
       # stesso pattern gemello di check.yml -- log anche su file, poi committato (vedi step
       # "Save state" sotto), cosi' dopo un pull in GitHub Desktop e' leggibile in locale senza
       # copia-incolla ne' Chrome.
+      # FIX 17/07 (v2, richiesta esplicita dell'utente, stesso motivo gemello di check.yml):
+      # sovrascritto -> ACCODATO (tee -a) con separatore per run, cosi' si puo' far girare il
+      # tracker per una mezz'ora e pullare tutti i run accumulati insieme, non solo l'ultimo.
       - name: Run auction websocket listener
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
@@ -65,7 +68,21 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p logs
-          python auctions_ws_listener.py 2>&1 | tee logs/auctions_last_run.log
+          {
+            echo ""
+            echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
+            python auctions_ws_listener.py
+          } 2>&1 | tee -a logs/auctions_last_run.log
+          # Rete di sicurezza SOLO per non far crescere il file all'infinito se l'utente non
+          # pulla mai -- vedi commento gemello in check.yml.
+          awk -v maxruns=200 '
+            /^===== RUN / { runs++; starts[runs]=NR }
+            { buf[NR]=$0; last=NR }
+            END {
+              from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
+              for (i=from; i<=last; i++) print buf[i]
+            }
+          ' logs/auctions_last_run.log > logs/auctions_last_run.log.tmp && mv logs/auctions_last_run.log.tmp logs/auctions_last_run.log
 
       - name: Save state
         if: always()
