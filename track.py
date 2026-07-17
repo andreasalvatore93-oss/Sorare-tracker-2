@@ -1,3 +1,4 @@
+[2026-07-17 09:41:50] Tasso ETH/EUR: 1601.93
 import json
 import os
 import re
@@ -1229,11 +1230,20 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
         return []
     cutoff = datetime.datetime.now() - datetime.timedelta(days=window_days)
 
-    # Prima passata: tutte le vendite SINGLE_SALE_OFFER (qualunque acquirente) di questo
-    # giocatore nella risposta -- e' il campione di riferimento per il "prezzo tipico".
+    # Prima passata: tutte le vendite SINGLE_SALE_OFFER di questo giocatore nella risposta --
+    # e' il campione di riferimento per il "prezzo tipico". FIX 17/07 (richiesta esplicita
+    # dell'utente): ESCLUSE le transazioni dove buyer_slug e' acquirente O venditore -- un
+    # manager che compra e rimette subito in vendita la stessa carta (flip) genera transazioni
+    # che non sono un prezzo di mercato indipendente, includerle nella mediana la farebbe
+    # tendere verso il SUO stesso comportamento invece di misurarlo contro il mercato esterno.
     all_single_sale_prices = []
     for n in nodes:
-        if ((n.get('deal') or {}).get('type')) != 'SINGLE_SALE_OFFER':
+        deal_ctx = n.get('deal') or {}
+        if deal_ctx.get('type') != 'SINGLE_SALE_OFFER':
+            continue
+        b_slug = (deal_ctx.get('buyer') or {}).get('slug')
+        s_slug = (deal_ctx.get('seller') or {}).get('slug')
+        if b_slug == buyer_slug or s_slug == buyer_slug:
             continue
         price = eur_price_from_amounts(n.get('amounts'), eth_rate)
         if price is not None:
