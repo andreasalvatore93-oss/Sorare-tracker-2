@@ -1145,7 +1145,7 @@ def fetch_user_recent_cards(user_slug, max_pages=20, page_size=20):
     momento della query -- se le ha gia' rivendute prima di questo controllo, non compaiono qui
     (mancherebbero all'analisi)."""
     query = """
-    query SatonioRecentCards($userSlug: String!, $page: Int!, $pageSize: Int!) {
+    query SnipeRecentCards($userSlug: String!, $page: Int!, $pageSize: Int!) {
       user(slug: $userSlug) {
         slug
         searchCards(
@@ -1170,21 +1170,83 @@ def fetch_user_recent_cards(user_slug, max_pages=20, page_size=20):
         try:
             data = graphql_query(query, {"userSlug": user_slug, "page": page, "pageSize": page_size})
         except Exception as e:
-            log(f"[satonio snipe] eccezione pagina {page} per {user_slug}: {e}")
+            log(f"[snipe analysis] eccezione pagina {page} per {user_slug}: {e}")
             break
         if data.get('errors'):
-            log(f"[satonio snipe] errore GraphQL pagina {page} per {user_slug}: {data['errors']}")
+            log(f"[snipe analysis] errore GraphQL pagina {page} per {user_slug}: {data['errors']}")
             break
         search = ((data.get('data') or {}).get('user') or {}).get('searchCards') or {}
         hits = search.get('hits') or []
         if page == 1:
-            log(f"[satonio snipe] {user_slug}: {search.get('nbHits')} carte Limited totali possedute, "
+            log(f"[snipe analysis] {user_slug}: {search.get('nbHits')} carte Limited totali possedute, "
                 f"scansiono le piu' recenti (max {max_pages * page_size})...")
         if not hits:
             break
         all_hits.extend(hits)
         time.sleep(0.2)
     return all_hits
+
+
+# FIX 17/07 (richiesta esplicita dell'utente, "c'e' modo di velocizzarlo?"): fetch_player_
+# recent_direct_buys interroga la cronologia COMPLETA di ogni giocatore trovato (anche 300+),
+# ma la maggior parte delle carte possedute da un manager non sono nemmeno arrivate li' via
+# sniping (pacchetti, scambi, altro) -- collo di bottiglia principale. Questa funzione fa un
+# controllo rapido A BLOCCHI (tante carte per chiamata, invece di una chiamata per giocatore)
+# usando "anyCards(slugs: [...])" con tokenOwner{transferType, from} -- lo stesso campo
+# scoperto ieri sul caso Alex Kral -- per scartare SUBITO le carte la cui acquisizione attuale
+# non e' un SINGLE_SALE_OFFER recente, prima di spendere una query per-giocatore su
+# tokenPrices. Query ricostruita per tentativi (stesso principio di fetch_user_recent_cards),
+# non garantita al 100% -- se fallisce l'errore GraphQL dice cosa correggere.
+def filter_recent_direct_buy_candidates(hits, buyer_slug, window_days, batch_size=40):
+    """Da una lista di hit (slug carta + player slug) restituisce solo i player_slug le cui
+    carte risultano acquisite da buyer_slug via SINGLE_SALE_OFFER negli ultimi window_days
+    giorni (secondo il tokenOwner ATTUALE della carta -- riflette l'acquisizione vera di
+    buyer_slug dato che e' lui il proprietario corrente, vedi hits gia' filtrati per user_slug
+    a monte in fetch_user_recent_cards)."""
+    query = """
+    query SnipeCardsFilter($slugs: [String!]!) {
+      anyCards(slugs: $slugs) {
+        slug
+        anyPlayer { slug }
+        tokenOwner {
+          transferType
+          from
+        }
+      }
+    }
+    """
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=window_days)
+    candidates = []
+    seen_players = set()
+    card_slugs = [h.get('slug') for h in hits if h.get('slug')]
+    for i in range(0, len(card_slugs), batch_size):
+        batch = card_slugs[i:i + batch_size]
+        try:
+            data = graphql_query(query, {"slugs": batch})
+        except Exception as e:
+            log(f"[snipe analysis] eccezione filtro rapido blocco {i // batch_size + 1}: {e}")
+            continue
+        if data.get('errors'):
+            log(f"[snipe analysis] errore GraphQL filtro rapido blocco {i // batch_size + 1}: {data['errors']}")
+            continue
+        cards = (data.get('data') or {}).get('anyCards') or []
+        for c in cards:
+            owner = c.get('tokenOwner') or {}
+            if owner.get('transferType') != 'SINGLE_SALE_OFFER':
+                continue
+            try:
+                dt = datetime.datetime.fromisoformat(
+                    (owner.get('from') or '').replace('Z', '+00:00')).replace(tzinfo=None)
+            except (ValueError, AttributeError):
+                continue
+            if dt < cutoff:
+                continue
+            p_slug = (c.get('anyPlayer') or {}).get('slug')
+            if p_slug and p_slug not in seen_players:
+                seen_players.add(p_slug)
+                candidates.append(p_slug)
+        time.sleep(0.2)
+    return candidates
 
 
 def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_rate):
@@ -1201,7 +1263,7 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
     quella mediana) -- serve a capire se il prezzo pagato era un vero affare o nella norma per
     quel giocatore, non solo il prezzo assoluto."""
     query = """
-    query SatonioPlayerBuys($p: String!) {
+    query SnipePlayerBuys($p: String!) {
       tokens {
         tokenPrices(playerSlug: $p, rarity: limited) {
           date
@@ -1221,11 +1283,11 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
     try:
         data = graphql_query(query, {"p": player_slug})
         if data.get('errors'):
-            log(f"[satonio snipe] errore GraphQL tokenPrices per {player_slug}: {data['errors']}")
+            log(f"[snipe analysis] errore GraphQL tokenPrices per {player_slug}: {data['errors']}")
             return []
         nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
     except Exception as e:
-        log(f"[satonio snipe] eccezione tokenPrices per {player_slug}: {e}")
+        log(f"[snipe analysis] eccezione tokenPrices per {player_slug}: {e}")
         return []
     cutoff = datetime.datetime.now() - datetime.timedelta(days=window_days)
 
@@ -1290,39 +1352,37 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
     return results
 
 
-SATONIO_SNIPE_USER_SLUG = os.environ.get('SATONIO_SNIPE_USER_SLUG', 'zenlock')
-SATONIO_SNIPE_WINDOW_DAYS = int(os.environ.get('SATONIO_SNIPE_WINDOW_DAYS', '7'))
-SATONIO_SNIPE_MAX_PAGES = int(os.environ.get('SATONIO_SNIPE_MAX_PAGES', '10'))
+SNIPE_USER_SLUG = os.environ.get('SNIPE_USER_SLUG', 'zenlock')
+SNIPE_WINDOW_DAYS = int(os.environ.get('SNIPE_WINDOW_DAYS', '7'))
+SNIPE_MAX_PAGES = int(os.environ.get('SNIPE_MAX_PAGES', '10'))
 
 
 def diagnostic_snipe_pattern_report(eth_rate):
     """Backlog item "Satonio pattern-mining" (richiesta esplicita dell'utente, 17/07): raccoglie
     gli acquisti diretti a prezzo fisso (SINGLE_SALE_OFFER, il vero sniping) fatti da
-    SATONIO_SNIPE_USER_SLUG negli ultimi SATONIO_SNIPE_WINDOW_DAYS giorni, per capire il pattern
+    SNIPE_USER_SLUG negli ultimi SNIPE_WINDOW_DAYS giorni, per capire il pattern
     (che margine cerca, che tipo di giocatori, che ora del giorno). Solo raccolta/log, nessuna
     azione automatica. Prima prova su ZenLock (meno carte di Satonio, piu' veloce da validare),
-    poi si riusa la stessa funzione su satonio cambiando SATONIO_SNIPE_USER_SLUG."""
-    log(f"[satonio snipe] avvio analisi per {SATONIO_SNIPE_USER_SLUG}, finestra "
-        f"{SATONIO_SNIPE_WINDOW_DAYS} giorni, max {SATONIO_SNIPE_MAX_PAGES * 20} carte scansionate...")
-    hits = fetch_user_recent_cards(SATONIO_SNIPE_USER_SLUG, max_pages=SATONIO_SNIPE_MAX_PAGES)
-    player_slugs = []
-    seen = set()
-    for h in hits:
-        p_slug = (h.get('anyPlayer') or {}).get('slug')
-        if p_slug and p_slug not in seen:
-            seen.add(p_slug)
-            player_slugs.append(p_slug)
-    log(f"[satonio snipe] {len(hits)} carte scansionate, {len(player_slugs)} giocatori distinti da controllare")
+    poi si riusa la stessa funzione su satonio cambiando SNIPE_USER_SLUG."""
+    log(f"[snipe analysis] avvio analisi per {SNIPE_USER_SLUG}, finestra "
+        f"{SNIPE_WINDOW_DAYS} giorni, max {SNIPE_MAX_PAGES * 20} carte scansionate...")
+    hits = fetch_user_recent_cards(SNIPE_USER_SLUG, max_pages=SNIPE_MAX_PAGES)
+    log(f"[snipe analysis] {len(hits)} carte scansionate, filtro rapido a blocchi per scartare "
+        f"quelle non acquisite via SINGLE_SALE_OFFER nella finestra...")
+    player_slugs = filter_recent_direct_buy_candidates(hits, SNIPE_USER_SLUG, SNIPE_WINDOW_DAYS)
+    log(f"[snipe analysis] {len(player_slugs)} giocatori candidati dopo il filtro rapido "
+        f"(invece di {len(set((h.get('anyPlayer') or {}).get('slug') for h in hits))} totali) "
+        f"-- controllo per intero solo questi")
 
     all_buys = []
     for p_slug in player_slugs:
         all_buys.extend(fetch_player_recent_direct_buys(
-            p_slug, SATONIO_SNIPE_USER_SLUG, SATONIO_SNIPE_WINDOW_DAYS, eth_rate))
+            p_slug, SNIPE_USER_SLUG, SNIPE_WINDOW_DAYS, eth_rate))
         time.sleep(0.3)
 
     all_buys.sort(key=lambda b: b['date'], reverse=True)
-    log(f"[satonio snipe] === RISULTATO: {len(all_buys)} acquisti diretti (SINGLE_SALE_OFFER) di "
-        f"{SATONIO_SNIPE_USER_SLUG} negli ultimi {SATONIO_SNIPE_WINDOW_DAYS} giorni ===")
+    log(f"[snipe analysis] === RISULTATO: {len(all_buys)} acquisti diretti (SINGLE_SALE_OFFER) di "
+        f"{SNIPE_USER_SLUG} negli ultimi {SNIPE_WINDOW_DAYS} giorni ===")
     for b in all_buys:
         prezzo = f"{b['price']:.2f}EUR" if b['price'] is not None else "prezzo N/D"
         contesto = ""
@@ -1331,17 +1391,17 @@ def diagnostic_snipe_pattern_report(eth_rate):
                         f"sconto {b['discount_vs_median']:.1%}, campione {b['sample_size']}]")
         elif b.get('market_median') is None:
             contesto = " [nessuna altra vendita SINGLE_SALE_OFFER trovata per confronto]"
-        log(f"[satonio snipe]   {b['date']} -- {b['player_slug']} ({b['card_slug']}): {prezzo} "
+        log(f"[snipe analysis]   {b['date']} -- {b['player_slug']} ({b['card_slug']}): {prezzo} "
             f"da {b['seller']}{contesto}")
     prices = [b['price'] for b in all_buys if b['price'] is not None]
     if prices:
-        log(f"[satonio snipe] prezzo medio: {sum(prices)/len(prices):.2f}EUR, "
+        log(f"[snipe analysis] prezzo medio: {sum(prices)/len(prices):.2f}EUR, "
             f"min {min(prices):.2f}EUR, max {max(prices):.2f}EUR")
     discounts = [b['discount_vs_median'] for b in all_buys if b.get('discount_vs_median') is not None]
     if discounts:
-        log(f"[satonio snipe] sconto medio vs mediana altre vendite: {sum(discounts)/len(discounts):.1%} "
+        log(f"[snipe analysis] sconto medio vs mediana altre vendite: {sum(discounts)/len(discounts):.1%} "
             f"(su {len(discounts)}/{len(all_buys)} acquisti con campione di confronto disponibile)")
-    log(f"[satonio snipe] analisi completata.")
+    log(f"[snipe analysis] analisi completata.")
 
 
 # FIX 16/07 (v3, richiesta esplicita dell'utente, caso Kotto/Sengezer): il v2 bloccava la
@@ -2388,10 +2448,10 @@ def main():
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
 
-    # FIX 17/07 (backlog "Satonio pattern-mining", richiesta esplicita dell'utente): la funzione
-    # diagnostic_snipe_pattern_report (e le sue dipendenze fetch_user_recent_cards/
+    # FIX 17/07 (backlog "pattern-mining sniping manager", richiesta esplicita dell'utente): la
+    # funzione diagnostic_snipe_pattern_report (e le sue dipendenze fetch_user_recent_cards/
     # fetch_player_recent_direct_buys, vedi sopra) NON viene piu' richiamata da qui -- gira invece
-    # da un workflow GitHub Actions separato e dedicato (satonio_snipe.yml + satonio_snipe_
+    # da un workflow GitHub Actions separato e dedicato (snipe_pattern.yml + snipe_pattern_
     # analysis.py, che importa questo modulo), per non impattare mai l'esecuzione normale del
     # bot (timeout, rate limit, rischio di girare ad ogni ciclo se ci si dimentica di disattivarla).
 
