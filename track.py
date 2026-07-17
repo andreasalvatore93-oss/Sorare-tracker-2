@@ -1121,12 +1121,175 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5):
     return sales[:last_n] or None
 
 
+# FIX 17/07 (backlog item "Satonio pattern-mining", richiesta esplicita dell'utente): indagine
+# manuale via DevTools (pagina "Cronologia delle vendite" di un giocatore) ha scoperto che
+# tokens.tokenPrices ACCETTA in realta' un sotto-campo "deal" (tipo TokenOffer) con "type",
+# "buyer", "seller" -- smentisce la nota precedente ("tokenPrices non distingue il tipo") e i
+# vecchi tentativi fallliti di discover_token_price_type_field (che provava nomi di campo
+# direttamente su TokenPrice, non dentro un sotto-oggetto "deal"). Valori di "deal.type"
+# confermati empiricamente su transazioni reali con esito noto (screenshot utente + cronologia):
+# SINGLE_SALE_OFFER = annuncio a prezzo fisso, comprato al volo dal primo che clicca (UI: label
+# fuorviante "Scambia") -- e' il vero sniping, quello che interessa per l'analisi Satonio/ZenLock.
+# SINGLE_BUY_OFFER e DIRECT_OFFER = offerte negoziate/proposte da una parte e accettate dall'altra
+# (UI: entrambe raggruppate sotto "Offerta diretta") -- non lo sniping, escluse dall'analisi.
+# Non ancora usato per RECENT_SALE_GATE/build_sale_history_context (restano com'erano, l'utente
+# non ha chiesto di toccarli) -- per ora solo per il pattern-mining sotto.
+def fetch_user_recent_cards(user_slug, max_pages=20, page_size=20):
+    """Recupera gli slug delle carte Limited possedute ATTUALMENTE da user_slug, ordinate dalla
+    piu' recente acquisizione, paginando fino a max_pages. Ricostruita per tentativi dai nomi di
+    variabile osservati via DevTools sulla richiesta reale "UserCardsSearchQuery" (query
+    persistita lato client, solo operationId, niente testo della query originale disponibile) --
+    quindi qui e' una query ad-hoc scritta a mano con gli stessi nomi di campo/variabili, non
+    garantita al 100% di matchare lo schema esatto: se fallisce, l'errore GraphQL va letto per
+    capire cosa correggere. LIMITE NOTO: cattura solo carte ancora possedute da user_slug al
+    momento della query -- se le ha gia' rivendute prima di questo controllo, non compaiono qui
+    (mancherebbero all'analisi)."""
+    query = """
+    query SatonioRecentCards($userSlug: String!, $page: Int!, $pageSize: Int!) {
+      user(slug: $userSlug) {
+        slug
+        searchCards(
+          rarity: "limited"
+          sport: FOOTBALL
+          query: ""
+          page: $page
+          pageSize: $pageSize
+          sorts: [{field: "user_owner.from", direction: DESC}]
+        ) {
+          hits {
+            slug
+            anyPlayer { slug }
+          }
+          nbHits
+        }
+      }
+    }
+    """
+    all_hits = []
+    for page in range(1, max_pages + 1):
+        try:
+            data = graphql_query(query, {"userSlug": user_slug, "page": page, "pageSize": page_size})
+        except Exception as e:
+            log(f"[satonio snipe] eccezione pagina {page} per {user_slug}: {e}")
+            break
+        if data.get('errors'):
+            log(f"[satonio snipe] errore GraphQL pagina {page} per {user_slug}: {data['errors']}")
+            break
+        search = ((data.get('data') or {}).get('user') or {}).get('searchCards') or {}
+        hits = search.get('hits') or []
+        if page == 1:
+            log(f"[satonio snipe] {user_slug}: {search.get('nbHits')} carte Limited totali possedute, "
+                f"scansiono le piu' recenti (max {max_pages * page_size})...")
+        if not hits:
+            break
+        all_hits.extend(hits)
+        time.sleep(0.2)
+    return all_hits
+
+
+def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_rate):
+    """Interroga tokens.tokenPrices(playerSlug, rarity: limited) col sotto-campo deal{type buyer
+    seller} scoperto oggi, filtra alle transazioni dove deal.buyer.slug == buyer_slug e
+    deal.type == 'SINGLE_SALE_OFFER' (acquisto diretto a prezzo fisso, vedi nota sopra), negli
+    ultimi window_days giorni. Ritorna una lista di dict con giocatore/carta/prezzo/data/venditore."""
+    query = """
+    query SatonioPlayerBuys($p: String!) {
+      tokens {
+        tokenPrices(playerSlug: $p, rarity: limited) {
+          date
+          amounts { eurCents wei }
+          card { slug serialNumber }
+          deal {
+            type
+            buyer { slug nickname }
+            seller { slug nickname }
+          }
+        }
+      }
+    }
+    """
+    try:
+        data = graphql_query(query, {"p": player_slug})
+        if data.get('errors'):
+            log(f"[satonio snipe] errore GraphQL tokenPrices per {player_slug}: {data['errors']}")
+            return []
+        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
+    except Exception as e:
+        log(f"[satonio snipe] eccezione tokenPrices per {player_slug}: {e}")
+        return []
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=window_days)
+    results = []
+    for n in nodes:
+        deal = n.get('deal') or {}
+        buyer = deal.get('buyer') or {}
+        if buyer.get('slug') != buyer_slug or deal.get('type') != 'SINGLE_SALE_OFFER':
+            continue
+        try:
+            dt = datetime.datetime.fromisoformat((n.get('date') or '').replace('Z', '+00:00')).replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            continue
+        if dt < cutoff:
+            continue
+        results.append({
+            "player_slug": player_slug,
+            "card_slug": (n.get('card') or {}).get('slug'),
+            "date": n.get('date') or '',
+            "price": eur_price_from_amounts(n.get('amounts'), eth_rate),
+            "seller": (deal.get('seller') or {}).get('nickname'),
+        })
+    return results
+
+
+SATONIO_SNIPE_USER_SLUG = os.environ.get('SATONIO_SNIPE_USER_SLUG', 'zenlock')
+SATONIO_SNIPE_WINDOW_DAYS = int(os.environ.get('SATONIO_SNIPE_WINDOW_DAYS', '7'))
+SATONIO_SNIPE_MAX_PAGES = int(os.environ.get('SATONIO_SNIPE_MAX_PAGES', '10'))
+
+
+def diagnostic_snipe_pattern_report(eth_rate):
+    """Backlog item "Satonio pattern-mining" (richiesta esplicita dell'utente, 17/07): raccoglie
+    gli acquisti diretti a prezzo fisso (SINGLE_SALE_OFFER, il vero sniping) fatti da
+    SATONIO_SNIPE_USER_SLUG negli ultimi SATONIO_SNIPE_WINDOW_DAYS giorni, per capire il pattern
+    (che margine cerca, che tipo di giocatori, che ora del giorno). Solo raccolta/log, nessuna
+    azione automatica. Prima prova su ZenLock (meno carte di Satonio, piu' veloce da validare),
+    poi si riusa la stessa funzione su satonio cambiando SATONIO_SNIPE_USER_SLUG."""
+    log(f"[satonio snipe] avvio analisi per {SATONIO_SNIPE_USER_SLUG}, finestra "
+        f"{SATONIO_SNIPE_WINDOW_DAYS} giorni, max {SATONIO_SNIPE_MAX_PAGES * 20} carte scansionate...")
+    hits = fetch_user_recent_cards(SATONIO_SNIPE_USER_SLUG, max_pages=SATONIO_SNIPE_MAX_PAGES)
+    player_slugs = []
+    seen = set()
+    for h in hits:
+        p_slug = (h.get('anyPlayer') or {}).get('slug')
+        if p_slug and p_slug not in seen:
+            seen.add(p_slug)
+            player_slugs.append(p_slug)
+    log(f"[satonio snipe] {len(hits)} carte scansionate, {len(player_slugs)} giocatori distinti da controllare")
+
+    all_buys = []
+    for p_slug in player_slugs:
+        all_buys.extend(fetch_player_recent_direct_buys(
+            p_slug, SATONIO_SNIPE_USER_SLUG, SATONIO_SNIPE_WINDOW_DAYS, eth_rate))
+        time.sleep(0.3)
+
+    all_buys.sort(key=lambda b: b['date'], reverse=True)
+    log(f"[satonio snipe] === RISULTATO: {len(all_buys)} acquisti diretti (SINGLE_SALE_OFFER) di "
+        f"{SATONIO_SNIPE_USER_SLUG} negli ultimi {SATONIO_SNIPE_WINDOW_DAYS} giorni ===")
+    for b in all_buys:
+        prezzo = f"{b['price']:.2f}EUR" if b['price'] is not None else "prezzo N/D"
+        log(f"[satonio snipe]   {b['date']} -- {b['player_slug']} ({b['card_slug']}): {prezzo} da {b['seller']}")
+    prices = [b['price'] for b in all_buys if b['price'] is not None]
+    if prices:
+        log(f"[satonio snipe] prezzo medio: {sum(prices)/len(prices):.2f}EUR, "
+            f"min {min(prices):.2f}EUR, max {max(prices):.2f}EUR")
+    log(f"[satonio snipe] analisi completata.")
+
+
 # FIX 16/07 (v3, richiesta esplicita dell'utente, caso Kotto/Sengezer): il v2 bloccava la
 # notifica del tutto se una delle ultime 3 transazioni era pari o piu' economica. Ripensato su
 # richiesta dell'utente: invece manda comunque la notifica, ma segnalando chiaramente se nella
 # finestra di RECENT_SALE_WINDOW_DAYS giorni precedenti esiste gia' una transazione (vendita,
-# scambio, asta -- tokenPrices non distingue il tipo) pari o piu' economica -- l'utente decide
-# con tutte le informazioni, invece di non vedere affatto il caso.
+# scambio, asta -- confermato oggi che tokenPrices ESPONE il tipo tramite deal.type, vedi nota
+# sopra su fetch_player_recent_direct_buys) pari o piu' economica -- l'utente decide con tutte
+# le informazioni, invece di non vedere affatto il caso.
 RECENT_SALE_WINDOW_DAYS = int(os.environ.get('RECENT_SALE_WINDOW_DAYS', '7'))
 
 
@@ -2163,6 +2326,13 @@ def main():
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"Stagione In Season corrente: {CURRENT_SEASON}")
+
+    # FIX 17/07 (backlog "Satonio pattern-mining", richiesta esplicita dell'utente): la funzione
+    # diagnostic_snipe_pattern_report (e le sue dipendenze fetch_user_recent_cards/
+    # fetch_player_recent_direct_buys, vedi sopra) NON viene piu' richiamata da qui -- gira invece
+    # da un workflow GitHub Actions separato e dedicato (satonio_snipe.yml + satonio_snipe_
+    # analysis.py, che importa questo modulo), per non impattare mai l'esecuzione normale del
+    # bot (timeout, rate limit, rischio di girare ad ogni ciclo se ci si dimentica di disattivarla).
 
     # FIX 17/07: diagnostico temporaneo per il caso Mamadou Sangare/talwiwi (ipotesi Solana
     # esclusa da tokens.liveSingleSaleOffers) rimosso da qui dopo la raccolta dei log --
