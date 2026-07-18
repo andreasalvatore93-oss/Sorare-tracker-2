@@ -584,7 +584,14 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
     # verifica rapida prima di comprare.
     base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
     link = f"{base_link}?card={card_slug}" if card_slug else base_link
-    msg = (f"🎯 <b>Modello ZenLock</b> -- {player_name} [{season_type}]\n\n"
+    # FIX 18/07 (richiesta esplicita dell'utente, QoL): banner grande per le notifiche PULITE
+    # (match live, nessun avviso ETH-only) -- segnala di essere rapidi con l'acquisto. Il match
+    # storico (fire_zenlock_historical_match) non lo riceve mai: porta gia' un avviso per
+    # definizione.
+    clean_banner = ("\U0001F6A8\U0001F6A8 <b>AFFARE IMPERDIBILE</b> \U0001F6A8\U0001F6A8\n"
+                    "<b>Nessun segnale contrario: muoviti subito!</b>\n\n") if not is_eth_only else ""
+    msg = (clean_banner
+           + f"🎯 <b>Modello ZenLock</b> -- {player_name} [{season_type}]\n\n"
            f"Prezzo: {price_eur:.2f}EUR (fascia {fascia})\n"
            f"Prossimo annuncio piu' economico: {reference_price:.2f}EUR ({n_comparables} comparabili)\n"
            f"Sconto: {discount:.1%} (soglia richiesta {required_discount:.0%})\n"
@@ -652,6 +659,13 @@ def handle_zenlock_offer_update(offer, eth_rate, stats):
     if dedup_key in stats['seen_offer_status']:
         return
     stats['seen_offer_status'].add(dedup_key)
+
+    # FIX 18/07 (richiesta esplicita dell'utente): ignora gli annunci dei manager blacklistati
+    # (track.BLACKLISTED_SELLER_SLUGS: privacy/eli-aquim/clem777) anche qui, stesso filtro del
+    # canale WS di track.py -- le loro carte non vanno notificate nemmeno se sembrano affari.
+    seller_slug = ((offer.get('sender') or {}).get('slug') or '').lower()
+    if seller_slug in track.BLACKLISTED_SELLER_SLUGS:
+        return
 
     sender_side = offer.get('senderSide') or {}
     receiver_side = offer.get('receiverSide') or {}

@@ -17,7 +17,11 @@ on:
       auto_find_listen_seconds:
         description: "Solo per auto-discovery: secondi di ascolto del mercato prima di scegliere il manager"
         required: false
-        default: "60"
+        default: "120"
+      remove_cooldown_managers:
+        description: "Anti-raffreddamento: slug (separati da virgola) da TOGLIERE subito dalla coda di raffreddamento 7gg dell'auto-discovery"
+        required: false
+        default: ""
       auto_find_cooldown_days:
         description: "Solo per auto-discovery: dopo quanti giorni un manager gia' scansionato torna scansionabile (non riguarda l'input manuale)"
         required: false
@@ -84,8 +88,9 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
           MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
           AUTO_FIND_MANAGER: ${{ github.event.inputs.auto_find_manager || 'si' }}
-          AUTO_FIND_LISTEN_SECONDS: ${{ github.event.inputs.auto_find_listen_seconds || '60' }}
+          AUTO_FIND_LISTEN_SECONDS: ${{ github.event.inputs.auto_find_listen_seconds || '120' }}
           AUTO_FIND_COOLDOWN_DAYS: ${{ github.event.inputs.auto_find_cooldown_days || '7' }}
+          REMOVE_COOLDOWN_MANAGERS: ${{ github.event.inputs.remove_cooldown_managers }}
           BLACKLIST_MANAGERS: ${{ github.event.inputs.blacklist_managers }}
           BUNDLE_OFFER_MARGIN_FRACTION: ${{ github.event.inputs.bundle_offer_margin_fraction || '0.25' }}
           MAX_OWNED_CARD_PAGES: ${{ github.event.inputs.max_owned_card_pages || '20' }}

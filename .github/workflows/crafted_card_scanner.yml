@@ -1,0 +1,105 @@
+name: Crafted Card Scanner
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_run_seconds:
+        description: "Durata massima del run in secondi (si ferma comunque appena trova un match)"
+        required: false
+        default: "500"
+      craft_window_hours:
+        description: "Finestra: quante ore indietro cercare carte create dello stesso tipo"
+        required: false
+        default: "6"
+      min_price_eur:
+        description: "Fascia prezzo minimo di mercato: limite inferiore in EUR"
+        required: false
+        default: "1"
+      max_price_eur:
+        description: "Fascia prezzo minimo di mercato: limite superiore in EUR"
+        required: false
+        default: "20"
+      blacklist_managers:
+        description: "Manager da bloccare in aggiunta agli hardcoded (lista slug separati da virgola): se il match appartiene a loro viene skippato"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crafted-card-scanner
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run crafted card scanner
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          # Stesso canale Telegram di track classico e zenlock (richiesta esplicita).
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CRAFT_MAX_RUN_SECONDS: ${{ github.event.inputs.max_run_seconds || '500' }}
+          CRAFT_WINDOW_HOURS: ${{ github.event.inputs.craft_window_hours || '6' }}
+          CRAFT_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
+          CRAFT_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '20' }}
+          CRAFT_BLACKLIST_MANAGERS: ${{ github.event.inputs.blacklist_managers }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          {
+            echo ""
+            echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
+            python crafted_card_scanner.py
+          } 2>&1 | tee -a logs/crafted_card_scanner_last_run.log
+          # Rete di sicurezza: mantieni le ultime 200 run intere
+          awk -v maxruns=200 '
+            /^===== RUN / { runs++; starts[runs]=NR }
+            { buf[NR]=$0; last=NR }
+            END {
+              from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
+              for (i=from; i<=last; i++) print buf[i]
+            }
+          ' logs/crafted_card_scanner_last_run.log > logs/crafted_card_scanner_last_run.log.tmp && mv logs/crafted_card_scanner_last_run.log.tmp logs/crafted_card_scanner_last_run.log
+
+      - name: Save log
+        if: always()
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -f logs/crafted_card_scanner_last_run.log ]; then
+            git add logs/crafted_card_scanner_last_run.log
+          fi
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "update crafted card scanner log"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
