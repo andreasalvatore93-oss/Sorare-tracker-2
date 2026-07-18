@@ -72,6 +72,16 @@ AUTO_FIND_BLACKLIST_MANAGERS = {
     'jrodwalts-trade-115-active-buyer-seller', 'meowmeow7',
     'bellona-f0b1a9d7-3700-4d59-9044-ec54b7b348aa',
 }
+# Aggiungi blacklist permanente da file (salvate dalle run precedenti)
+_blacklist_file = '.github/auto_find_blacklist_additions.txt'
+if os.path.exists(_blacklist_file):
+    try:
+        with open(_blacklist_file) as f:
+            _file_slugs = [line.strip().lower() for line in f if line.strip() and not line.startswith('#')]
+            AUTO_FIND_BLACKLIST_MANAGERS.update(_file_slugs)
+    except Exception as e:
+        pass  # se il file non è leggibile, ignora silenziosamente
+
 # Aggiungi blacklist temporanea dal workflow (lista separata da virgola)
 _temp_blacklist = os.environ.get('BLACKLIST_MANAGERS', '').strip()
 if _temp_blacklist:

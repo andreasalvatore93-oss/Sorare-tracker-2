@@ -109,7 +109,7 @@ jobs:
       # Nessun database da salvare qui (a differenza degli altri tre workflow): questo strumento
       # non ha stato persistente tra un'esecuzione e l'altra, ogni run e' autonomo. Salviamo solo
       # il log.
-      - name: Save log
+      - name: Save log and persist blacklist
         if: always()
         run: |
           git config user.name "sorare-tracker-bot"
@@ -117,11 +117,17 @@ jobs:
           if [ -f logs/manager_bundle_scan_last_run.log ]; then
             git add logs/manager_bundle_scan_last_run.log
           fi
+          # Se questa run ha aggiunto manager alla blacklist temporanea, salva nel file per sempre
+          if [ -n "$BLACKLIST_MANAGERS" ]; then
+            echo "# Aggiunti dal workflow in data $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> .github/auto_find_blacklist_additions.txt
+            echo "$BLACKLIST_MANAGERS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sort -u >> .github/auto_find_blacklist_additions.txt
+            git add .github/auto_find_blacklist_additions.txt
+          fi
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "update manager bundle scan log"
+          git commit -m "update manager bundle scan log $([ -n "$BLACKLIST_MANAGERS" ] && echo "e blacklist")"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
