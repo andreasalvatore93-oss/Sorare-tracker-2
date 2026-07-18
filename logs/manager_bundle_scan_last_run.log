@@ -41,3 +41,16 @@
 [2026-07-18 11:04:00] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 6771, 'wei': 793, 'usdCents': 1256, 'gbpCents': 373, 'lamport': 4, 'none': 0}
 [2026-07-18 11:04:00] [manager bundle scan] RISULTATO -- 'flobob-fc': 19 carte in vendita organizzate in 2 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 154.15EUR, minimo di mercato totale 149.82EUR (dettaglio/offerta per blocco nel messaggio Telegram).
 [2026-07-18 11:04:00] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo).
+
+===== RUN 2026-07-18 11:27:05 UTC =====
+[2026-07-18 11:27:05] [manager bundle scan] input ricevuto: 'https://sorare.com/it/football/my-club/flobob-fc' -> slug estratto: 'flobob-fc'
+[2026-07-18 11:27:05] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 11:27:06] [manager bundle scan] 'flobob-fc': 1742 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 11:27:17] [manager bundle scan] ATTENZIONE: 'flobob-fc' possiede 1742 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 11:27:17] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 21 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 979.
+[2026-07-18 11:27:17] [manager bundle scan] 'flobob-fc': 18 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 11:27:17] [manager bundle scan] controllo il mercato live per 18 giocatori diversi (18 carte possedute da verificare)...
+[2026-07-18 11:27:25] [manager bundle scan] [diagnostica] 18 carte in_season possedute controllate, 18 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 0 errori di query.
+[2026-07-18 11:27:25] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 320, 'wei': 56, 'usdCents': 30, 'gbpCents': 21, 'lamport': 1, 'none': 0}
+[2026-07-18 11:27:25] [manager bundle scan] RISULTATO -- 'flobob-fc': 18 carte in vendita organizzate in 2 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 120.78EUR, minimo di mercato totale 120.45EUR (dettaglio/offerta per blocco nel messaggio Telegram).
+[2026-07-18 11:27:26] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo).
