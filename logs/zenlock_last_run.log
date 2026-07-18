@@ -2372,3 +2372,23 @@
 [2026-07-18 09:59:55] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 0 casi senza comparabile live, 0 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
 [2026-07-18 09:59:55] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 6465, 'wei': 844, 'usdCents': 4460, 'gbpCents': 224, 'lamport': 4, 'none': 0}
 [2026-07-18 09:59:55] [modello zenlock] esecuzione terminata.
+
+===== RUN 2026-07-18 12:39:52 UTC =====
+[2026-07-18 12:39:52] [modello zenlock] Tasso ETH/EUR: 1610.73
+[2026-07-18 12:39:52] [modello zenlock] Ascolto per 250 secondi (soglie: classic <=4.0EUR / in_season <=8.0EUR, sconto min 15%)...
+[2026-07-18 12:39:52] [modello zenlock] connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 12:39:53] [modello zenlock] sottoscrizione confermata, in ascolto...
+[2026-07-18 12:40:18] [modello zenlock] riferimento classic (1.72EUR) sostituito dal minimo in_season piu' economico (0.74EUR) per Chris Richards, vedi caso Szoboszlai
+[2026-07-18 12:40:20] [storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).
+[2026-07-18 12:40:20] [modello zenlock] riferimento live 3.20EUR per Marcel Lotka molto piu' caro dell'ultima vendita REALE (0.97EUR, 0.1gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 12:40:30] [modello zenlock] throttle raffica: gia' 60 valutazioni negli ultimi 15s, salto Mounaïm El Idrissy per non rischiare di sforare la quota rate-limit condivisa con l'account -- verra' ricontrollato al prossimo evento/esecuzione se l'annuncio resta live
+[2026-07-18 12:40:59] [modello zenlock] riferimento classic (3.22EUR) sostituito dal minimo in_season piu' economico (2.90EUR) per Jan Bednarek, vedi caso Szoboszlai
+[2026-07-18 12:41:49] [modello zenlock] MATCH -- Tate Johnson [classic] 2.94EUR, sconto 17.2% su prossimo annuncio 3.55EUR (n=6)
+[2026-07-18 12:41:49] [modello zenlock] DEBUG comparabili grezzi per tate-johnson/classic: [(3.55, 'tate-johnson-2025-limited-427'), (3.6, 'tate-johnson-2025-limited-392'), (3.8, 'tate-johnson-2025-limited-293'), (4.5387069, 'tate-johnson-2025-limited-464'), (4.6, 'tate-johnson-2025-limited-387'), (5.798628, 'tate-johnson-2025-limited-308')]
+[2026-07-18 12:42:26] [modello zenlock] riferimento classic (0.51EUR) sostituito dal minimo in_season piu' economico (0.48EUR) per Lukas Petkov, vedi caso Szoboszlai
+[2026-07-18 12:43:06] [modello zenlock] riferimento classic (1.75EUR) sostituito dal minimo in_season piu' economico (1.45EUR) per Matheus Bueno, vedi caso Szoboszlai
+[2026-07-18 12:43:50] [modello zenlock] riferimento classic (1.88EUR) sostituito dal minimo in_season piu' economico (1.14EUR) per Ayumu Yokoyama, vedi caso Szoboszlai
+[2026-07-18 12:44:02] [modello zenlock] connessione chiusa (codice None). Eventi: 1105, carte valutate: 400, notifiche inviate: 1 (di cui solo ETH: 0, di cui su riferimento storico: 0), scartate per mancanza comparabili: 2, scartate per riferimento troppo basso: 1, scartate per differenza assoluta troppo piccola: 0, scartate per gemello in_season altrettanto economico: 0, sconto sospetto non confermato alla riverifica: 0, riferimento troppo alto/non rappresentativo: 0, riferimento stagnante vs vendita reale: 1, saltate per throttle raffica (protezione rate-limit condiviso): 1, sostituto in_season piu' economico (non un affare distinto): 45 (di cui avrebbero notificato senza questo controllo: 0)
+[2026-07-18 12:44:02] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 2 casi senza comparabile live, 2 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 2 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
+[2026-07-18 12:44:02] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 6067, 'wei': 744, 'usdCents': 4470, 'gbpCents': 221, 'lamport': 3, 'none': 0}
+[2026-07-18 12:44:02] [modello zenlock] esecuzione terminata.
