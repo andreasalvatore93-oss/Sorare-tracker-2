@@ -312,3 +312,27 @@
 [2026-07-18 18:15:36] [manager bundle scan] [auto-find] 'mikey100': 2 carte in_season in vendita (soglia 10).
 [2026-07-18 18:15:36] [manager bundle scan] [auto-find] nessun manager sopra la soglia tra i primi 5 controllati -- nessuno scan, riprova piu' tardi (o allunga AUTO_FIND_LISTEN_SECONDS).
 [2026-07-18 18:15:36] [manager bundle scan] [auto-find] nessun manager idoneo trovato in questo giro -- interrompo, nessuna notifica Telegram.
+
+===== RUN 2026-07-18 18:16:56 UTC =====
+[2026-07-18 18:16:56] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 10 carte in_season in vendita...
+[2026-07-18 18:18:56] [manager bundle scan] [auto-find] ascolto terminato: 16 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-07-18 18:18:56] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-07-18 18:19:02] [manager bundle scan] [auto-find] 7 manager venditori distinti individuati (top: eli-aquim x8, clem777 x3, flobob-fc x1, prodigetaktik x1, kawasakifront x1) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-07-18 18:19:02] [manager bundle scan] [auto-find] 'eli-aquim': blacklistato (bot noto che non accetta offerte negoziate), passo oltre.
+[2026-07-18 18:19:02] [manager bundle scan] [auto-find] 'clem777': blacklistato (bot noto che non accetta offerte negoziate), passo oltre.
+[2026-07-18 18:19:03] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 18:19:03] [manager bundle scan] 'flobob-fc': 1750 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 18:19:15] [manager bundle scan] ATTENZIONE: 'flobob-fc' possiede 1750 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 18:19:15] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 23 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 977.
+[2026-07-18 18:19:15] [manager bundle scan] [auto-find] 'flobob-fc': 19 carte in_season in vendita (soglia 10).
+[2026-07-18 18:19:15] [manager bundle scan] [auto-find] SELEZIONATO 'flobob-fc' -- parte lo scan classico su di lui (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-07-18 18:19:15] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 18:19:15] [manager bundle scan] 'flobob-fc': 1750 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 18:19:26] [manager bundle scan] ATTENZIONE: 'flobob-fc' possiede 1750 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 18:19:26] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 23 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 977.
+[2026-07-18 18:19:26] [manager bundle scan] 'flobob-fc': 19 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 18:19:26] [manager bundle scan] controllo il mercato live per 19 giocatori diversi (19 carte possedute da verificare)...
+[2026-07-18 18:19:35] [manager bundle scan] [diagnostica] 19 carte in_season possedute controllate, 19 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 0 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-07-18 18:19:35] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 451, 'wei': 84, 'usdCents': 56, 'gbpCents': 24, 'lamport': 1, 'none': 0}
+[2026-07-18 18:19:35] [manager bundle scan] RISULTATO -- 'flobob-fc': 19 carte in vendita organizzate in 2 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 180.93EUR, minimo di mercato totale 180.55EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 11 gia' al minimo di mercato (sezione bonus separata).
+[2026-07-18 18:19:38] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 3 messaggio/i.
