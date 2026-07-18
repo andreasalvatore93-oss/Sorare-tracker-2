@@ -2481,3 +2481,17 @@
 [2026-07-18 12:49:08] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 11 casi senza comparabile live, 0 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
 [2026-07-18 12:49:08] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 7085, 'wei': 967, 'usdCents': 5479, 'gbpCents': 230, 'lamport': 4, 'none': 0}
 [2026-07-18 12:49:08] [modello zenlock] esecuzione terminata.
+
+===== RUN 2026-07-18 12:50:20 UTC =====
+[2026-07-18 12:50:21] [modello zenlock] Tasso ETH/EUR: 1612.94
+[2026-07-18 12:50:21] [modello zenlock] Ascolto per 250 secondi (soglie: classic <=4.0EUR / in_season <=8.0EUR, sconto min 15%)...
+[2026-07-18 12:50:21] [modello zenlock] connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 12:50:22] [modello zenlock] sottoscrizione confermata, in ascolto...
+[2026-07-18 12:50:58] [modello zenlock] riferimento classic (0.38EUR) sostituito dal minimo in_season piu' economico (0.38EUR) per Alexander Briedl, vedi caso Szoboszlai
+[2026-07-18 12:52:40] [modello zenlock] riferimento classic (0.48EUR) sostituito dal minimo in_season piu' economico (0.38EUR) per Thomas Sparrow, vedi caso Szoboszlai
+[2026-07-18 12:53:22] [modello zenlock] riferimento classic (2.10EUR) sostituito dal minimo in_season piu' economico (1.94EUR) per Trevoh Chalobah, vedi caso Szoboszlai
+[2026-07-18 12:53:30] [storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).
+[2026-07-18 12:54:31] [modello zenlock] connessione chiusa (codice None). Eventi: 903, carte valutate: 325, notifiche inviate: 0 (di cui solo ETH: 0, di cui su riferimento storico: 0), scartate per mancanza comparabili: 1, scartate per riferimento troppo basso: 2, scartate per differenza assoluta troppo piccola: 0, scartate per gemello in_season altrettanto economico: 0, sconto sospetto non confermato alla riverifica: 0, riferimento troppo alto/non rappresentativo: 0, riferimento stagnante vs vendita reale: 0, saltate per throttle raffica (protezione rate-limit condiviso): 0, sostituto in_season piu' economico (non un affare distinto): 53 (di cui avrebbero notificato senza questo controllo: 0)
+[2026-07-18 12:54:31] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 1 casi senza comparabile live, 1 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 1 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
+[2026-07-18 12:54:31] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 5811, 'wei': 700, 'usdCents': 4664, 'gbpCents': 196, 'lamport': 3, 'none': 0}
+[2026-07-18 12:54:31] [modello zenlock] esecuzione terminata.
