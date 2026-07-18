@@ -726,3 +726,43 @@
 [2026-07-18 11:29:16] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 1143, 'wei': 172, 'usdCents': 177, 'gbpCents': 50, 'lamport': 0, 'none': 0}
 [2026-07-18 11:29:16] [riepilogo] Inizializzati 2, Riferimento riallineato (stantio) 8, Margine insufficiente 2, Notificati (opportunita' di margine) 1, Piccola variazione 6
 [2026-07-18 11:29:16] Esecuzione terminata.
+
+===== RUN 2026-07-18 11:57:56 UTC =====
+[2026-07-18 11:57:57] Tasso ETH/EUR: 1612.4
+[2026-07-18 11:57:57] Stagione In Season corrente: 2025-26
+[2026-07-18 11:57:57] [coda riverifica] Filip Jörgensen (in_season, 2025-26): caso troppo vecchio (accodato il 2026-07-18T11:27:13.245027), scartato senza riverificare
+[2026-07-18 11:57:57] [coda riverifica] Oscar Gloukh (in_season, 2025-26): caso troppo vecchio (accodato il 2026-07-18T11:27:30.148255), scartato senza riverificare
+[2026-07-18 11:57:57] Ascolto per 200 secondi...
+[2026-07-18 11:57:57] Connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 11:57:58] Sottoscrizione confermata, in ascolto...
+[2026-07-18 11:58:15] Rome-Jayden Owusu-Oduro (in_season, 2025-26): l'annuncio che ha scatenato l'evento (6.80EUR) e' piu' economico del minimo trovato dalla verifica live (7.09EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 6.80EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 11:58:15] Rome-Jayden Owusu-Oduro (in_season, 2025-26): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-15T21:21:30.171704), lo riallineo senza notificare (8.00EUR -> 6.80EUR)
+[2026-07-18 11:58:15] Marco Palestra (classic, 2024-25): l'annuncio che ha scatenato l'evento (6.50EUR) e' piu' economico del minimo trovato dalla verifica live (6.77EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 6.50EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 11:58:15] Marco Palestra (classic, 2024-25): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-15T20:36:50.558534), lo riallineo senza notificare (7.06EUR -> 6.50EUR)
+[2026-07-18 11:58:18] ALERT! Fabián Ruiz (classic, 2024-25) sceso: 4.50EUR -> 4.00EUR (11.1%) [prezzo minimo verificato live]
+[2026-07-18 11:58:18] [storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).
+[2026-07-18 11:58:18] Fabián Ruiz: ultime 6 transazioni concluse, dalla piu' recente (vendita/scambio/asta/offerta, tutte le stampe 'limited'): 4.51EUR, 4.35EUR, 4.31EUR, 3.44EUR, 3.35EUR, 4.19EUR -- ATTENZIONE: una transazione del 2026-07-16T22:21:42Z si e' gia' conclusa a 3.44EUR, pari o piu' economica: potrebbe non essere un vero affare nonostante il calo rilevato
+[2026-07-18 11:58:33] Leroy Sané (in_season, 2025-26): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-15T10:47:28.583676), lo riallineo senza notificare (2.00EUR -> 2.12EUR)
+[2026-07-18 11:58:47] Sebastian Berhalter (in_season, 2026): l'annuncio che ha scatenato l'evento (21.00EUR) e' piu' economico del minimo trovato dalla verifica live (21.21EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 21.00EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 11:58:47] Sebastian Berhalter (in_season, 2026): piccola variazione, aggiorno il riferimento (21.21EUR -> 21.00EUR), secondo prezzo 21.21EUR (margine 1.0%)
+[2026-07-18 11:58:47] Marcão (in_season, 2026): l'annuncio che ha scatenato l'evento (2.41EUR) e' piu' economico del minimo trovato dalla verifica live (2.50EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 2.41EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 11:58:47] Marcão (in_season, 2026): inizializzazione a 2.41EUR
+[2026-07-18 11:58:49] Pep Biel (in_season, 2026): l'annuncio che ha scatenato l'evento (9.00EUR) e' piu' economico del minimo trovato dalla verifica live (9.45EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 9.00EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 11:58:49] Pep Biel (in_season, 2026): prezzo minimo (9.00EUR) troppo vicino al secondo annuncio attuale (9.45EUR, margine 4.8%, richiesto 9.5% per questa fascia di prezzo), non e' un affare distinto, salto la notifica
+[2026-07-18 11:58:53] CJ Dos Santos  (in_season, 2026): prezzo minimo (3.45EUR) troppo vicino al secondo annuncio attuale (3.85EUR, margine 10.4%, richiesto 11.0% per questa fascia di prezzo), non e' un affare distinto, salto la notifica
+[2026-07-18 11:59:26] Antonio Rüdiger (in_season, 2025-26): l'annuncio che ha scatenato l'evento (2.00EUR) e' piu' economico del minimo trovato dalla verifica live (2.21EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 2.00EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 11:59:26] Antonio Rüdiger (in_season, 2025-26): inizializzazione a 2.00EUR
+[2026-07-18 11:59:44] Joško Gvardiol (classic, 2021-22): l'annuncio che ha scatenato l'evento (6.89EUR) e' piu' economico del minimo trovato dalla verifica live (6.95EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 6.89EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 11:59:44] Joško Gvardiol (classic, 2021-22): piccola variazione, aggiorno il riferimento (7.00EUR -> 6.89EUR), secondo prezzo 6.93EUR (margine 0.6%)
+[2026-07-18 11:59:45] Jordan Pickford (classic, 2023-24): l'annuncio che ha scatenato l'evento (13.00EUR) e' piu' economico del minimo trovato dalla verifica live (13.22EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 13.00EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 11:59:56] Jorthy Mokio (in_season, 2025-26): piccola variazione, aggiorno il riferimento (5.34EUR -> 5.33EUR), secondo prezzo 5.50EUR (margine 3.1%)
+[2026-07-18 12:00:09] Pau López (in_season, 2025-26): l'annuncio che ha scatenato l'evento (2.00EUR) e' piu' economico del minimo trovato dalla verifica live (2.15EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 2.00EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 12:00:09] Pau López (in_season, 2025-26): prezzo minimo (2.00EUR) troppo vicino al secondo annuncio attuale (2.15EUR, margine 7.0%, richiesto 13.7% per questa fascia di prezzo), non e' un affare distinto, salto la notifica
+[2026-07-18 12:00:10] Stjepan Radeljić (in_season, 2025-26): inizializzazione a 2.20EUR
+[2026-07-18 12:01:12] Júnior Alonso (in_season, 2025-26): l'annuncio che ha scatenato l'evento (2.89EUR) e' piu' economico del minimo trovato dalla verifica live (2.90EUR) -- probabilmente ancora nella finestra di invisibilita' di Sorare, uso subito 2.89EUR come vero minimo (nessuna attesa/riverifica, vedi FIX 18/07)
+[2026-07-18 12:01:12] Júnior Alonso (in_season, 2025-26): inizializzazione a 2.89EUR
+[2026-07-18 12:02:02] Connessione chiusa (codice None). Eventi ricevuti: 678, carte Limited/football elaborate: 22
+[2026-07-18 12:02:02] [diagnostica tracker] distribuzione status offerte osservate: {'opened': 283, 'cancelled': 142, 'accepted': 22, 'ended': 153, 'settlement_published': 6, 'ready_for_scoring': 19, 'pending_migration': 18, 'settlable': 18}
+[2026-07-18 12:02:02] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 624, 'wei': 91, 'usdCents': 81, 'gbpCents': 42, 'lamport': 1, 'none': 0}
+[2026-07-18 12:02:02] [riepilogo] Inizializzati 4, Riferimento riallineato (stantio) 3, Margine insufficiente 3, Notificati (calo diretto) 1, Piccola variazione 3
+[2026-07-18 12:02:02] Esecuzione terminata.
