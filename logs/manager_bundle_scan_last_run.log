@@ -548,3 +548,26 @@
 [2026-07-18 20:08:43] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 306, 'wei': 88, 'usdCents': 131, 'gbpCents': 16, 'lamport': 0, 'none': 0}
 [2026-07-18 20:08:43] [manager bundle scan] RISULTATO -- 'rocfc': 5 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 51.32EUR, minimo di mercato totale 25.69EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 2 gia' al minimo di mercato (sezione bonus separata).
 [2026-07-18 20:08:45] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 3 messaggio/i.
+
+===== RUN 2026-07-18 20:26:24 UTC =====
+[2026-07-18 20:26:25] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-07-18 20:28:25] [manager bundle scan] [auto-find] ascolto terminato: 26 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-07-18 20:28:25] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-07-18 20:28:34] [manager bundle scan] [auto-find] 12 manager venditori distinti individuati (top: bwoah x7, zarkane-open-for-trade x5, satonio x4, clem777 x2, laurent6d x1) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-07-18 20:28:34] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 20:28:35] [manager bundle scan] 'bwoah': 1435 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 20:28:45] [manager bundle scan] ATTENZIONE: 'bwoah' possiede 1435 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 20:28:45] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 702 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 298.
+[2026-07-18 20:28:45] [manager bundle scan] [auto-find] 'bwoah': 409 carte in_season in vendita (soglia 5).
+[2026-07-18 20:28:45] [manager bundle scan] [auto-find] SELEZIONATO 'bwoah' -- parte lo scan classico su di lui (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-07-18 20:28:46] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 20:28:46] [manager bundle scan] 'bwoah': 1435 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 20:28:56] [manager bundle scan] ATTENZIONE: 'bwoah' possiede 1435 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 20:28:56] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 702 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 298.
+[2026-07-18 20:28:56] [manager bundle scan] 'bwoah': 409 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 20:28:56] [manager bundle scan] ATTENZIONE: 'bwoah' ha 379 giocatori diversi tra le carte in_season possedute, oltre il tetto MAX_PLAYERS_TO_CHECK=300 -- controllo solo i primi 300 (per acquisizione piu' recente), il risultato potrebbe essere incompleto.
+[2026-07-18 20:28:56] [manager bundle scan] controllo il mercato live per 300 giocatori diversi (327 carte possedute da verificare)...
+[2026-07-18 20:31:35] [manager bundle scan] [diagnostica] 327 carte in_season possedute controllate, 64 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 263 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-07-18 20:31:35] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 6783, 'wei': 820, 'usdCents': 3245, 'gbpCents': 246, 'lamport': 3, 'none': 0}
+[2026-07-18 20:31:35] [manager bundle scan] RISULTATO -- 'bwoah': 64 carte in vendita organizzate in 7 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 537.20EUR, minimo di mercato totale 163.09EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 0 gia' al minimo di mercato (sezione bonus separata).
+[2026-07-18 20:31:37] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 2 messaggio/i.
