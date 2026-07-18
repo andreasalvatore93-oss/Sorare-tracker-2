@@ -1,13 +1,27 @@
 """
 Tracker: Analisi profit carte mie
 
-Scansiona TUTTE le carte dell'utente (eccetto sealed), le confronta col prezzo più basso
-del mercato. Se ho un profit (prezzo_acquisto < prezzo_market), manda notifica.
+Scansiona TUTTE le carte dell'utente, le confronta col prezzo più basso del mercato.
+Se ho un profit (prezzo_acquisto < prezzo_market), manda notifica.
 
-- Ignora carte già analizzate precedentemente
-- Mantiene backlog per carte non scannerizzabili (prezzo acquisto non trovato)
-- Processa sempre almeno 10 carte NUOVE per run (ignorate non contano nel counter)
-- Notifiche in blocchi da 10
+FIX 18/07 (richiesta esplicita dell'utente, "il bot deve analizzare SEMPRE tutte le carte,
+deve ignorare solo quelle che ha già rilevato in profitto"): la versione precedente segnava
+come "già analizzata" (e quindi saltava per sempre) OGNI carta processata almeno una volta,
+profittevole o no. Rischio reale: una carta in perdita al primo controllo ma che in seguito
+sale di prezzo di mercato non veniva MAI più ricontrollata, perdendo l'occasione. Ora si
+ignorano SOLO le carte già trovate in profitto e già notificate (non ha senso ri-notificarle
+all'infinito) -- tutte le altre (in perdita, o senza prezzo di acquisto disponibile) vengono
+sempre rimesse in coda per il prossimo giro. Dato che scansionare 1900+ carte per intero ad
+ogni run sarebbe lento, si usa un cursore persistente che avanza di CARDS_TO_SCAN carte ad
+ogni run e riparte da capo una volta arrivato in fondo alla lista (rotazione continua) --
+cosi' TUTTE le carte vengono ricontrollate nel tempo, non solo le prime N per sempre.
+
+FIX 18/07 (bug prezzo acquisto): la query precedente (anyCard.tokenTransfers con
+buyer/seller/salePrice) non esiste nello schema ("Field 'tokenTransfers' doesn't exist on
+type 'AnyCardInterface'", suggerimento dell'errore: 'tokenOwner'), quindi ogni carta finiva
+sempre in backlog. Sostituita con track.fetch_user_trades(), la stessa query gia' collaudata
+in produzione (snipe_pattern_analysis.py) che restituisce TUTTA la cronologia acquisti/vendite
+di un manager in un'unica query paginata (molto piu' efficiente di una query per carta).
 """
 import os
 import json
@@ -25,49 +39,80 @@ MANAGER_SLUG = 'crowss'
 BLOCK_SIZE = 10
 BLOCK_SEPARATOR = "\n" + "=" * 50 + "\n"
 
-# Salva lo stato delle carte già analizzate
-ANALYZED_CARDS_FILE = '.my_cards_profit_analyzed.txt'
-# Salva il backlog di carte con prezzo acquisto non trovato
+# Salva SOLO le carte gia' trovate in profitto e notificate (skip permanente -- non ha senso
+# ri-notificare la stessa carta ad ogni run).
+PROFITABLE_FOUND_FILE = '.my_cards_profit_found.txt'
+# Cursore persistente: indice da cui riprendere la scansione al prossimo run (rotazione
+# continua sulla lista di carte NON ancora trovate in profitto, cosi' nel tempo si ricontrollano
+# tutte, non solo le prime N per sempre).
+CURSOR_FILE = '.my_cards_profit_cursor.txt'
+# Backlog solo informativo (carte per cui non si e' trovato un prezzo di acquisto nell'ultimo
+# tentativo) -- NON usato per saltare carte, solo per diagnostica nei log.
 UNSCANNED_BACKLOG_FILE = '.my_cards_profit_backlog.txt'
 
 # Input dal workflow
 CARDS_TO_SCAN = int(os.environ.get('MY_CARDS_PROFIT_SCAN_COUNT', '10'))
+# Finestra e paginazione per lo storico acquisti (track.fetch_user_trades) -- di default molto
+# ampia (anni), perche' ci serve la cronologia acquisti COMPLETA per calcolare il profit, non
+# solo gli ultimi giorni come nell'uso originale (snipe pattern) di questa funzione.
+PURCHASE_HISTORY_WINDOW_DAYS = int(os.environ.get('MY_CARDS_PROFIT_HISTORY_DAYS', '3650'))
+PURCHASE_HISTORY_MAX_PAGES = int(os.environ.get('MY_CARDS_PROFIT_HISTORY_MAX_PAGES', '100'))
+
 
 def log(msg):
     print(f"[my-cards-profit] {msg}")
 
 
-def load_analyzed_cards():
-    """Carica la lista di carte già analizzate."""
-    if not os.path.exists(ANALYZED_CARDS_FILE):
+def load_profitable_found():
+    """Carica lo slug delle carte gia' trovate in profitto (skip permanente)."""
+    if not os.path.exists(PROFITABLE_FOUND_FILE):
         return set()
     try:
-        with open(ANALYZED_CARDS_FILE) as f:
+        with open(PROFITABLE_FOUND_FILE) as f:
             return set(line.strip() for line in f if line.strip())
-    except:
+    except Exception:
         return set()
 
 
-def save_analyzed_cards(slugs):
-    """Salva le carte analizzate (append)."""
-    with open(ANALYZED_CARDS_FILE, 'a') as f:
+def save_profitable_found(slugs):
+    """Aggiunge slug al file delle carte gia' trovate in profitto (append)."""
+    if not slugs:
+        return
+    with open(PROFITABLE_FOUND_FILE, 'a') as f:
         for slug in slugs:
             f.write(slug + '\n')
 
 
+def load_cursor():
+    """Carica l'indice da cui riprendere la scansione."""
+    if not os.path.exists(CURSOR_FILE):
+        return 0
+    try:
+        with open(CURSOR_FILE) as f:
+            return int(f.read().strip() or '0')
+    except Exception:
+        return 0
+
+
+def save_cursor(cursor):
+    """Salva l'indice per il prossimo run."""
+    with open(CURSOR_FILE, 'w') as f:
+        f.write(str(cursor))
+
+
 def load_backlog():
-    """Carica il backlog di carte non scannerizzabili."""
+    """Carica il backlog (solo informativo) di carte senza prezzo di acquisto trovato."""
     if not os.path.exists(UNSCANNED_BACKLOG_FILE):
         return {}
     try:
         with open(UNSCANNED_BACKLOG_FILE) as f:
             return json.load(f)
-    except:
+    except Exception:
         return {}
 
 
 def save_backlog(backlog):
-    """Salva il backlog."""
+    """Salva il backlog (solo informativo, non usato per saltare carte)."""
     with open(UNSCANNED_BACKLOG_FILE, 'w') as f:
         json.dump(backlog, f, indent=2)
 
@@ -141,76 +186,43 @@ def get_all_my_cards():
     return all_cards
 
 
-_purchase_price_error_logged = False  # log l'errore GraphQL UNA SOLA volta per run (evita
-                                       # spam su ~1900 carte se il campo e' proprio sbagliato)
-
-
-def get_purchase_price(card_slug):
-    """Ottieni il prezzo di acquisto dalla cronologia transazioni.
-    ATTENZIONE (diagnosticato 18/07): 'tokenTransfers'/'buyer'/'seller'/'salePrice' su anyCard
-    NON sono mai stati validati altrove in questo progetto (a differenza di 'tokenPrices' su
-    tokens, usato con successo in track.py per lo storico vendite) -- sono un campo indovinato.
-    La versione precedente ingoiava silenziosamente qualsiasi errore GraphQL (return None senza
-    log), quindi TUTTE le 10 carte finivano in backlog ad ogni run senza modo di distinguere
-    'campo sbagliato' da 'nessun acquisto trovato'. Ora l'errore viene loggato (una sola volta
-    per run, per non fare spam) cosi' il prossimo log dira' con certezza qual e' il problema."""
-    global _purchase_price_error_logged
-    query = """
-    {
-      anyCard(slug: "%s") {
-        tokenTransfers(first: 50) {
-          edges {
-            node {
-              createdAt
-              buyer {
-                slug
-              }
-              seller {
-                slug
-              }
-              salePrice
-            }
-          }
-        }
-      }
-    }
-    """ % card_slug
-
+def build_purchase_price_map():
+    """Costruisce slug_carta -> prezzo_pagato usando track.fetch_user_trades (query bulk gia'
+    collaudata in produzione, vedi snipe_pattern_analysis.py) invece di una query per carta.
+    Solo le transazioni role='buy' con un prezzo attribuibile (esclusi i bundle multi-carta,
+    dove il prezzo aggregato non e' scomponibile per singola carta -- stesso limite noto e
+    documentato in track.py) entrano nella mappa. Se la stessa carta compare piu' volte
+    (comprata, rivenduta, ricomprata), vince l'acquisto piu' recente (i nodi sono ordinati dal
+    piu' recente al piu' vecchio da fetch_user_trades, quindi il primo trovato per slug vince)."""
+    log(f"Ricerca cronologia acquisti (finestra {PURCHASE_HISTORY_WINDOW_DAYS} giorni, "
+        f"max {PURCHASE_HISTORY_MAX_PAGES} pagine)...")
+    eth_rate = track.get_eth_rate()
     try:
-        data = track.graphql_query(query, {})
-        if data.get('errors'):
-            if not _purchase_price_error_logged:
-                log(f"⚠️ Errore GraphQL su tokenTransfers (carta di esempio: {card_slug}): "
-                    f"{data['errors']} -- il campo e' probabilmente sbagliato/inesistente, "
-                    f"tutte le carte finiranno in backlog finche' non viene corretto.")
-                _purchase_price_error_logged = True
-            return None
-
-        transfers = (data.get('data', {}).get('anyCard', {}).get('tokenTransfers', {})
-                    .get('edges', []))
-
-        if not _purchase_price_error_logged and transfers:
-            # Primo caso con dati validi in questo run: dump grezzo per capire la forma reale
-            # (nomi campo buyer/seller potrebbero essere diversi da quanto indovinato sopra).
-            log(f"🔍 Diagnostica tokenTransfers per {card_slug}: {transfers[:3]}")
-            _purchase_price_error_logged = True
-
-        # Cerca la transazione dove buyer == crowss (l'acquisto)
-        for transfer in transfers:
-            node = transfer.get('node', {})
-            buyer = node.get('buyer', {}).get('slug', '')
-            if buyer.lower() == 'crowss':
-                # Trovato l'acquisto
-                price_str = node.get('salePrice', '')
-                if price_str:
-                    try:
-                        return float(price_str)
-                    except:
-                        return None
-        return None
+        trades = track.fetch_user_trades(MANAGER_SLUG, PURCHASE_HISTORY_WINDOW_DAYS, eth_rate,
+                                          max_pages=PURCHASE_HISTORY_MAX_PAGES)
     except Exception as e:
-        log(f"Eccezione durante ricerca prezzo acquisto per {card_slug}: {e}")
-        return None
+        log(f"Eccezione durante fetch cronologia acquisti: {e}")
+        return {}
+
+    price_map = {}
+    bundle_skipped = 0
+    for t in trades:
+        if t.get('role') != 'buy':
+            continue
+        card_slug = t.get('card_slug')
+        if not card_slug:
+            continue
+        if t.get('price') is None:
+            # Acquisto in bundle (piu' carte, un unico prezzo aggregato) -- non attribuibile
+            # alla singola carta, stesso principio gia' usato in track.py.
+            bundle_skipped += 1
+            continue
+        if card_slug not in price_map:
+            price_map[card_slug] = t['price']
+
+    log(f"Cronologia acquisti: {len(trades)} transazioni totali, {len(price_map)} carte con "
+        f"prezzo di acquisto attribuibile, {bundle_skipped} scartate (acquisti in bundle)")
+    return price_map
 
 
 def get_market_min_price(card_slug, in_season_eligible):
@@ -306,47 +318,58 @@ def get_market_min_price(card_slug, in_season_eligible):
 
 
 def run_profit_scan():
-    """Scansiona le carte e calcola profit."""
-    log(f"Inizio scan profit ({CARDS_TO_SCAN} carte nuove)...")
+    """Scansiona le carte e calcola profit. Ignora SOLO le carte gia' trovate in profitto in
+    un run precedente (gia' notificate) -- tutte le altre vengono sempre rimesse in coda,
+    tramite un cursore rotante, cosi' una carta prima in perdita che poi diventa profittevole
+    non viene mai persa."""
+    log(f"Inizio scan profit ({CARDS_TO_SCAN} carte per run)...")
 
-    analyzed = load_analyzed_cards()
-    backlog = load_backlog()
+    profitable_found = load_profitable_found()
+    cursor = load_cursor()
 
     all_cards = get_all_my_cards()
     if not all_cards:
         log("Nessuna carta trovata")
         return
 
-    # Nessun sort client-side: la query gia' ordina per user_owner.from DESC (piu' recenti prima)
+    # Escludi SOLO le carte gia' trovate in profitto e notificate -- tutte le altre restano
+    # candidate per la rotazione (anche quelle gia' controllate in passato senza profit).
+    candidates = [c for c in all_cards if c.get('slug') not in profitable_found]
+    log(f"{len(all_cards)} carte totali, {len(all_cards) - len(candidates)} gia' trovate in "
+        f"profitto (escluse), {len(candidates)} candidate per questo giro")
+
+    if not candidates:
+        log("Nessuna carta candidata (tutte gia' trovate in profitto?)")
+        return
+
+    # Cursore rotante: riprende da dove si era arrivati, ricomincia da capo se supera la fine
+    # della lista -- cosi' nel tempo TUTTE le carte candidate vengono ricontrollate.
+    if cursor >= len(candidates):
+        cursor = 0
+
+    # Prezzi di acquisto per TUTTE le carte in un colpo solo (query bulk), invece di una query
+    # per carta come nella versione precedente (rotta e comunque inefficiente su 1900+ carte).
+    purchase_price_map = build_purchase_price_map()
 
     profitable = []
-    newly_analyzed = []
-    updated_backlog = backlog.copy()
+    newly_profitable_slugs = []
+    updated_backlog = {}
 
-    processed_count = 0
+    batch = []
+    idx = cursor
+    while len(batch) < CARDS_TO_SCAN and len(batch) < len(candidates):
+        batch.append(candidates[idx])
+        idx = (idx + 1) % len(candidates)
 
-    for card in all_cards:
+    log(f"Batch di questo giro: {len(batch)} carte (da indice {cursor})")
+
+    for i, card in enumerate(batch, 1):
         card_slug = card.get('slug')
+        log(f"Analizzando ({i}/{len(batch)}): {card_slug}")
 
-        # Se già analizzata, salta (non conteggia)
-        if card_slug in analyzed:
-            log(f"⏭️ {card_slug} - già analizzata, ignoro")
-            continue
-
-        # Se raggiunto il numero di carte da scannerizzare, stop
-        if processed_count >= CARDS_TO_SCAN:
-            log(f"Limite {CARDS_TO_SCAN} carte raggiunto")
-            break
-
-        processed_count += 1
-        newly_analyzed.append(card_slug)
-
-        log(f"Analizzando ({processed_count}/{CARDS_TO_SCAN}): {card_slug}")
-
-        # Ottieni prezzo di acquisto
-        purchase_price = get_purchase_price(card_slug)
+        purchase_price = purchase_price_map.get(card_slug)
         if purchase_price is None:
-            log(f"  ⚠️ Prezzo acquisto non trovato → backlog")
+            log(f"  ⚠️ Prezzo acquisto non trovato")
             updated_backlog[card_slug] = {
                 'reason': 'prezzo_acquisto_non_trovato',
                 'last_attempt': datetime.now().isoformat(),
@@ -376,21 +399,27 @@ def run_profit_scan():
                 'season': card.get('sportSeason', {}).get('name', 'N/A'),
                 'in_season': card.get('inSeasonEligible'),
             })
+            newly_profitable_slugs.append(card_slug)
         else:
             log(f"  ❌ No profit: acquistato {purchase_price:.2f}€, market {market_price:.2f}€ "
                 f"({profit_percent:+.1f}%)")
 
-    # Salva stato
-    if newly_analyzed:
-        save_analyzed_cards(newly_analyzed)
-        log(f"Salvate {len(newly_analyzed)} carte analizzate")
+    # Salva stato: cursore avanzato di quante carte abbiamo effettivamente processato in questo
+    # giro (rotazione continua sulla lista candidati, non su all_cards).
+    save_cursor(idx)
+    log(f"Cursore aggiornato a {idx}/{len(candidates)} (prossimo run riparte da li')")
+
+    if newly_profitable_slugs:
+        save_profitable_found(newly_profitable_slugs)
+        log(f"Salvate {len(newly_profitable_slugs)} carte in profitto (skip permanente)")
 
     save_backlog(updated_backlog)
     if updated_backlog:
-        log(f"Backlog aggiornato: {len(updated_backlog)} carte con problema")
+        log(f"Backlog (solo informativo) di questo giro: {len(updated_backlog)} carte senza "
+            f"prezzo di acquisto")
 
     if not profitable:
-        log("Nessuna carta con profit trovata")
+        log("Nessuna carta con profit trovata in questo giro")
         return
 
     log(f"Totale carte con profit: {len(profitable)}")

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       scan_count:
-        description: "Quante carte nuove scannerizzare per run (default 10, ignora le già analizzate)"
+        description: "Quante carte scannerizzare per run (rotazione continua su tutte le carte, ignora solo quelle già trovate in profitto)"
         required: false
         default: "10"
 
@@ -67,9 +67,19 @@ jobs:
           if [ -f logs/my_cards_profit_last_run.log ]; then
             git add logs/my_cards_profit_last_run.log
           fi
-          # Salva i file di stato (carte analizzate e backlog)
+          # Salva i file di stato (carte gia' trovate in profitto, cursore di rotazione, backlog
+          # informativo). FIX 18/07: rimosso .my_cards_profit_analyzed.txt (skippava per sempre
+          # anche le carte senza profit, impedendo di rilevare un passaggio da perdita a profit
+          # -- vedi note nel .py). Se il vecchio file esiste ancora da run precedenti lo
+          # salviamo comunque per non perdere storico, ma non e' piu' usato dal codice.
           if [ -f .my_cards_profit_analyzed.txt ]; then
             git add .my_cards_profit_analyzed.txt
+          fi
+          if [ -f .my_cards_profit_found.txt ]; then
+            git add .my_cards_profit_found.txt
+          fi
+          if [ -f .my_cards_profit_cursor.txt ]; then
+            git add .my_cards_profit_cursor.txt
           fi
           if [ -f .my_cards_profit_backlog.txt ]; then
             git add .my_cards_profit_backlog.txt
