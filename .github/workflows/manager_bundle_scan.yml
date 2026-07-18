@@ -4,8 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       manager_slug_or_url:
-        description: "Slug del manager (es. 'satonio') oppure URL del suo profilo (es. https://sorare.com/it/football/my-club/satonio)"
-        required: true
+        description: "Slug del manager (es. 'satonio') oppure URL del suo profilo. Lascia VUOTO solo se usi l'auto-discovery qui sotto."
+        required: false
+      auto_find_manager:
+        description: "Scrivi 'si' per l'auto-discovery: ascolta il mercato e trova da solo un manager con almeno 10 carte in season in vendita (usato SOLO se il campo manager sopra e' vuoto)"
+        required: false
+        default: ""
+      auto_find_listen_seconds:
+        description: "Solo per auto-discovery: secondi di ascolto del mercato prima di scegliere il manager"
+        required: false
+        default: "60"
       bundle_offer_margin_fraction:
         description: "Margine di sconto sul totale minimo di mercato per l'offerta suggerita (es. 0.25 = 25%, provvisorio da tarare)"
         required: false
@@ -67,6 +75,8 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
           MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
+          AUTO_FIND_MANAGER: ${{ github.event.inputs.auto_find_manager }}
+          AUTO_FIND_LISTEN_SECONDS: ${{ github.event.inputs.auto_find_listen_seconds || '60' }}
           BUNDLE_OFFER_MARGIN_FRACTION: ${{ github.event.inputs.bundle_offer_margin_fraction || '0.25' }}
           MAX_OWNED_CARD_PAGES: ${{ github.event.inputs.max_owned_card_pages || '20' }}
           MAX_PLAYERS_TO_CHECK: ${{ github.event.inputs.max_players_to_check || '300' }}

@@ -2535,14 +2535,31 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             except ValueError:
                 stale = True
 
+        # FIX 18/07 (v3, domanda esplicita dell'utente sul caso Antony 7.42->8.46): PRIMA questo
+        # ramo usciva con "return" subito dopo il riallineamento -- corretto quando il prezzo
+        # attuale e' SALITO rispetto al vecchio riferimento (caso Antony: 7.42EUR era solo il
+        # riferimento salvato 3 giorni prima, NON una carta in vendita ora; il minimo vero attuale
+        # era 8.46EUR, quindi nessun affare perso), ma SBAGLIATO quando il prezzo attuale e'
+        # SCESO: usciva senza mai controllare il margine verso il secondo prezzo ATTUALE, che e'
+        # il vero criterio ("noi ragioniamo sempre su check prezzo minimo e distanza da seconda
+        # attualmente in vendita" -- il criterio non dipende affatto dall'eta' del floor). Caso
+        # potenzialmente perso: floor stantio 2.75EUR, minimo attuale 2.09EUR con secondo prezzo
+        # a 3.00EUR -- margine 30% reale, mai valutato. Ora: il floor viene comunque riallineato
+        # (il calo% verso un riferimento stantio resta non affidabile, quindi NIENTE percorso
+        # ALERT "calo"), ma si prosegue verso la normale valutazione, dove con drop_percent=0 si
+        # finisce nel ramo "opportunita' di margine" (gia' esistente, con dedup via margin_alerts)
+        # che decide col solo confronto minimo/secondo prezzo attuale.
+        stale_realigned = False
         if stale:
             log(f"{player_name} ({season_type}, {season_name}): riferimento salvato troppo vecchio "
-                f"(ultimo aggiornamento {floor_updated_at}), lo riallineo senza notificare "
-                f"({floor:.2f}EUR -> {true_min_price:.2f}EUR)")
+                f"(ultimo aggiornamento {floor_updated_at}), lo riallineo "
+                f"({floor:.2f}EUR -> {true_min_price:.2f}EUR) e proseguo con la sola valutazione "
+                f"del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)")
             log_decision(player_slug, player_name, season_type, season_name, "stale_realign",
                          floor_price=floor, true_min_price=true_min_price)
             set_floor(player_slug, season_type, true_min_price)
-            return
+            floor = true_min_price  # drop_percent diventa 0: mai percorso ALERT su floor stantio
+            stale_realigned = True
 
         # FIX 18/07 (richiesta esplicita dell'utente, caso reale Song Bumkeun): PRIMA, quando il
         # prezzo attuale non era un nuovo minimo, si usciva QUI in silenzio senza mai aggiornare
@@ -2561,7 +2578,11 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # solo come rete di sicurezza residua per i giocatori che non generano NESSUN evento per
         # tanto tempo (qui il floor non ha comunque modo di autoaggiornarsi, dato che questa
         # funzione non viene nemmeno chiamata in quel caso).
-        if true_min_price >= floor:
+        # FIX 18/07 (v3): "and not stale_realigned" -- dopo un riallineamento stantio floor ==
+        # true_min_price per costruzione, ma NON dobbiamo uscire qui: la valutazione del margine
+        # verso il secondo prezzo attuale (piu' sotto, ramo "opportunita' di margine") deve
+        # comunque avvenire, vedi nota sul ramo stale sopra.
+        if true_min_price >= floor and not stale_realigned:
             if true_min_price > floor:
                 log(f"{player_name} ({season_type}, {season_name}): prezzo attuale "
                     f"({true_min_price:.2f}EUR) sopra il riferimento salvato ({floor:.2f}EUR), "
@@ -2831,13 +2852,19 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             # FIX 16/07 (richiesta utente): mostrare margine/secondo prezzo anche qui, non solo
             # negli scarti -- utile per vedere ad occhio quanto ci si avvicina alle soglie anche
             # sui casi che non arrivano nemmeno al 13% di calo, per tararle meglio nel tempo.
-            margin_info = (f", secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%})"
-                           if second_min_price is not None else "")
-            log(f"{player_name} ({season_type}, {season_name}): piccola variazione, aggiorno il riferimento "
-                f"({floor:.2f}EUR -> {true_min_price:.2f}EUR){margin_info}")
-            log_decision(player_slug, player_name, season_type, season_name, "update_small_variation",
-                         floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
-                         second_min_price=second_min_price, margin_percent=margin_percent)
+            # FIX 18/07 (v3): dopo un riallineamento stantio floor == true_min_price -- la riga
+            # "piccola variazione (X -> X)" e la decision update_small_variation sarebbero solo
+            # rumore duplicato (stale_realign gia' loggato sopra); si salta direttamente alla
+            # valutazione dell'opportunita' di margine qui sotto, che e' il motivo per cui non
+            # siamo usciti prima.
+            if not stale_realigned:
+                margin_info = (f", secondo prezzo {second_min_price:.2f}EUR (margine {margin_percent:.1%})"
+                               if second_min_price is not None else "")
+                log(f"{player_name} ({season_type}, {season_name}): piccola variazione, aggiorno il riferimento "
+                    f"({floor:.2f}EUR -> {true_min_price:.2f}EUR){margin_info}")
+                log_decision(player_slug, player_name, season_type, season_name, "update_small_variation",
+                             floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
+                             second_min_price=second_min_price, margin_percent=margin_percent)
 
             # FIX 16/07 (v19, caso Andres Cubas): niente calo nuovo rispetto allo storico, ma se
             # il margine verso il secondo prezzo e' GIA' abbastanza ampio da essere considerato
@@ -2876,8 +2903,12 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                         # margine" non lo faceva, quindi per Jeong Seung-Won non abbiamo
                         # l'evidenza. Aggiunta qui, cosi' alla prossima occorrenza avremo i dati
                         # per capire la causa (status diverso da opened? rarita'/sport non
-                        # combacianti? altro?).
-                        log_raw_offers_diagnostic(player_slug, eth_rate)
+                        # combacianti? altro?). FIX 18/07 (v3): gate ALERT_RAW_OFFERS_DIAGNOSTIC
+                        # anche qui -- quando il dump e' stato reso opt-in sul percorso ALERT,
+                        # questo punto gemello era sfuggito e continuava a scaricare/loggare il
+                        # dump su ogni opportunita' di margine.
+                        if ALERT_RAW_OFFERS_DIAGNOSTIC:
+                            log_raw_offers_diagnostic(player_slug, eth_rate)
 
                         # FIX 16/07 (v3, richiesta esplicita dell'utente): non blocchiamo piu' --
                         # notifica comunque, con avviso se c'e' una transazione recente pari o

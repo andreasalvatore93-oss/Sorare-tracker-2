@@ -747,6 +747,54 @@ parita' di scarto); pipeline completa `build_telegram_messages` su 23 carte sint
 messaggi generati, tutti sotto 4096 caratteri, separatore presente, sezioni BEST DEAL e BONUS
 entrambe presenti).
 
+## Aggiornamento 18/07 (sesto giro -- fix stale_realign + auto-discovery manager)
+
+**Caso Antony (domanda esplicita dell'utente)**: la riga "riferimento salvato troppo vecchio...
+7.42EUR -> 8.46EUR" NON significa che c'era un Antony in vendita a 7.42 -- 7.42 era solo il
+RIFERIMENTO salvato in tracker.db 3 giorni prima (15/07), il minimo vero attuale era 8.46 (prezzo
+SALITO, nessun affare perso in quel caso specifico). MA la domanda ha portato a un fix vero: il
+ramo stale usciva con return senza MAI valutare il margine verso il secondo prezzo attuale, e
+quando il prezzo era SCESO (caso reale nello stesso log: Hugo Lloris 5.40 -> 5.19, David Ruiz
+2.75 -> 2.09 nel log precedente) un affare vero poteva sparire in silenzio -- in contrasto con la
+filosofia esplicita dell'utente "noi ragioniamo sempre su check prezzo minimo e distanza da
+seconda attualmente in vendita".
+
+**FIX 18/07 (v3) in track.py**: il ramo stale ora riallinea il floor (invariato: mai percorso
+ALERT "calo" su un riferimento stantio, il calo% non e' affidabile) ma NON esce piu' -- prosegue
+con floor = true_min_price (drop_percent=0) fino al ramo "opportunita' di margine" gia' esistente
+(dedup via margin_alerts), che decide col solo confronto minimo/secondo prezzo attuale. Modifiche
+collegate: condizione realign_up con "and not stale_realigned"; riga "piccola variazione (X->X)"
+e decision update_small_variation soppresse nel caso stale (sarebbero duplicati). Scoperto e
+corretto nel passaggio anche un buco del giro precedente: il percorso "opportunita' di margine"
+chiamava log_raw_offers_diagnostic SENZA il gate ALERT_RAW_OFFERS_DIAGNOSTIC (il gate era stato
+messo solo sul percorso ALERT). Testato con 5 scenari mock, tutti PASSED: Antony (salita: solo
+riallineo), Ruiz (stantio+margine 30%: NOTIFICA opportunita' di margine), dedup a evento
+ripetuto, floor fresco (realign_up invariato), stantio+margine stretto (nessuna notifica).
+
+**Auto-discovery manager nel bundle scanner (nuova funzione, richiesta esplicita)**: scelta
+l'opzione "campo opzionale dentro lo scanner" (non un workflow separato). `AUTO_FIND_MANAGER`
+(default SPENTO) parte SOLO se il campo manager e' vuoto -- l'input manuale resta intoccato e ha
+sempre precedenza. Meccanica: ascolta il canale eventi WS (STESSA subscription collaudata di
+track.py) per `AUTO_FIND_LISTEN_SECONDS` (60s default) raccogliendo carte Limited FOOTBALL
+in_season appena messe in vendita (status opened, vendita singola a soldi, prezzo >= 1EUR);
+risale al proprietario/venditore di ogni carta via query `anyCard(slug){...}` con probe a 3
+varianti MAI testate prima (user / userOwner.user / tokenOwner.user -- la prima che funziona
+viene loggata e riusata, se nessuna funziona stop pulito con gli errori nel log per correggere i
+nomi); raggruppa per manager e controlla per primi i visti piu' volte nello stream (euristica:
+chi lista molte carte ora e' il candidato migliore); il primo con >= `AUTO_FIND_MIN_CARDS_FOR_
+SALE` (10) carte in_season in vendita (conteggio via fetch esistente con liveSingleSaleOffer)
+fa partire lo scan classico. Tetti: AUTO_FIND_MAX_MANAGERS_TO_CHECK=5, AUTO_FIND_MAX_OWNER_
+LOOKUPS=30. Workflow: manager_slug_or_url ora required:false, nuovi input auto_find_manager
+(default vuoto) e auto_find_listen_seconds (60). ATTENZIONE al primo run reale: la query
+proprietario e' da validare in produzione (introspection disabilitata, stile "prova e leggi
+l'errore"). Testato con mock: scelta per frequenza, salto sotto-soglia, nessun idoneo, nessuna
+variante funzionante, stop pulito senza rete se input vuoto e auto spenta -- tutti PASSED.
+QoL: riga finale log scanner corretta ("bot dedicato scanner", non piu' "canale aste").
+
+**Conferma dal log fresco**: la run track 12:52 UTC mostra gia' il formato compatto del quinto
+giro in produzione ("in finestra di invisibilita': 12", niente righe per-evento ne' diagnostica)
+-- il quinto giro e' stato pushato e funziona.
+
 ## Stato a fine sessione 18/07 (quinto giro)
 
 Implementato e testato (compilazione + mock), NON ANCORA PUSHATO dall'utente via GitHub Desktop:

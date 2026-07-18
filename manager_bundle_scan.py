@@ -34,14 +34,32 @@ Se sportSeason/inSeasonEligible non risultassero leggibili su questi hit (mai pr
 combinazione esatta prima d'ora), l'errore GraphQL nel log dira' subito quale campo correggere,
 stesso principio "prova e leggi l'errore" usato in tutto il resto del progetto.
 """
+import json
 import math
 import os
 import re
+import threading
 import time
 
 import track
 
 MANAGER_INPUT = os.environ.get('MANAGER_SLUG_OR_URL', '').strip()
+
+# FIX 18/07 (v3, richiesta esplicita dell'utente, "trova dei manager da scansionare"): modalita'
+# auto-discovery OPZIONALE, di default SPENTA e attiva SOLO se non e' stato fornito nessun
+# manager (l'input manuale resta intoccato e ha sempre la precedenza). Se attiva: ascolta il
+# mercato (stessa subscription WS gia' collaudata di track.py) per un po', raccoglie le carte
+# Limited in_season appena messe in vendita, risale al manager venditore di ciascuna, e al primo
+# manager trovato con ALMENO AUTO_FIND_MIN_CARDS_FOR_SALE carte in_season in vendita fa partire
+# lo scan classico su di lui.
+AUTO_FIND_MANAGER = os.environ.get('AUTO_FIND_MANAGER', '').strip().lower() in ('1', 'true', 'si', 'yes')
+AUTO_FIND_LISTEN_SECONDS = float(os.environ.get('AUTO_FIND_LISTEN_SECONDS', '60'))
+AUTO_FIND_MIN_CARDS_FOR_SALE = int(os.environ.get('AUTO_FIND_MIN_CARDS_FOR_SALE', '10'))
+# Tetti di sicurezza: quanti manager diversi controllare al massimo (ognuno costa la scansione
+# paginata delle sue carte possedute) e quante carte al massimo sottoporre al lookup del
+# proprietario (1 query ciascuna).
+AUTO_FIND_MAX_MANAGERS_TO_CHECK = int(os.environ.get('AUTO_FIND_MAX_MANAGERS_TO_CHECK', '5'))
+AUTO_FIND_MAX_OWNER_LOOKUPS = int(os.environ.get('AUTO_FIND_MAX_OWNER_LOOKUPS', '30'))
 
 MAX_OWNED_CARD_PAGES = int(os.environ.get('MAX_OWNED_CARD_PAGES', '20'))
 OWNED_CARD_PAGE_SIZE = int(os.environ.get('OWNED_CARD_PAGE_SIZE', '50'))
@@ -316,16 +334,225 @@ def format_eur(value):
     return f"{value:.2f}EUR"
 
 
+# --- Auto-discovery del manager (FIX 18/07 v3, vedi AUTO_FIND_MANAGER sopra) ---
+
+# Come risalire dal singolo card_slug al manager che lo possiede (= il venditore, dato che
+# raccogliamo solo carte con un annuncio di vendita appena aperto): introspection disabilitata
+# come sempre, quindi si prova per tentativi una lista di forme note/plausibili del campo
+# "proprietario attuale" su anyCard, nello stesso stile di probe_live_single_sale_offer_field.
+# La prima che risponde senza errori con uno slug leggibile viene usata per tutte le carte.
+CARD_OWNER_QUERY_CANDIDATES = [
+    ("user", "query CardOwner($slug: String!) { anyCard(slug: $slug) { slug user { slug } } }"),
+    ("userOwner", "query CardOwner($slug: String!) { anyCard(slug: $slug) { slug userOwner { user { slug } } } }"),
+    ("tokenOwner", "query CardOwner($slug: String!) { anyCard(slug: $slug) { slug tokenOwner { user { slug } } } }"),
+]
+
+_card_owner_variant = None  # None = non ancora scoperto, '' = nessun candidato funziona
+
+
+def _extract_owner_slug(card_data, variant):
+    if not card_data:
+        return None
+    if variant == 'user':
+        return (card_data.get('user') or {}).get('slug')
+    return ((card_data.get(variant) or {}).get('user') or {}).get('slug')
+
+
+def lookup_card_owner(card_slug):
+    """Ritorna lo slug del manager proprietario di card_slug, o None. Al primo utilizzo scopre
+    (e logga) quale variante di query funziona; le chiamate successive riusano quella."""
+    global _card_owner_variant
+    if _card_owner_variant == '':
+        return None
+    variants = ([v for v in CARD_OWNER_QUERY_CANDIDATES if v[0] == _card_owner_variant]
+                if _card_owner_variant else CARD_OWNER_QUERY_CANDIDATES)
+    for variant, query in variants:
+        try:
+            data = track.graphql_query(query, {"slug": card_slug})
+        except Exception as e:
+            log(f"[auto-find] eccezione di rete sul lookup proprietario di {card_slug}: {e}")
+            return None
+        if data.get('errors'):
+            if _card_owner_variant is None:
+                log(f"[auto-find] variante proprietario '{variant}' NON leggibile: {data['errors']}")
+            continue
+        card_data = (data.get('data') or {}).get('anyCard')
+        owner = _extract_owner_slug(card_data, variant)
+        if _card_owner_variant is None:
+            _card_owner_variant = variant
+            log(f"[auto-find] variante proprietario '{variant}' FUNZIONA su anyCard -- la uso "
+                f"per tutti i lookup successivi.")
+        return owner
+    if _card_owner_variant is None:
+        _card_owner_variant = ''
+        log("[auto-find] NESSUNA variante di lookup proprietario funziona su anyCard -- "
+            "auto-discovery impossibile con le query note, interrompo (gli errori esatti sono "
+            "sopra nel log, da li' si capisce come correggere i nomi di campo).")
+    return None
+
+
+def collect_on_sale_candidates_from_market(eth_rate, listen_seconds):
+    """Ascolta il canale eventi Sorare (STESSA subscription gia' collaudata di track.py, zero
+    query nuove da scoprire) per listen_seconds secondi e raccoglie le carte Limited FOOTBALL
+    in_season appena messe in vendita: status 'opened', vendita diretta a soldi (nessuna carta
+    lato ricevente), singola carta (niente bundle, stesso principio di track.py), prezzo >=
+    BUNDLE_MIN_MARKET_PRICE_EUR (coerente col filtro dello scan). Ritorna una lista di dict
+    {card_slug, player_slug, price} senza doppioni."""
+    candidates = []
+    seen_slugs = set()
+    identifier = json.dumps({"channel": "GraphqlChannel"})
+    subscription_payload = {
+        "query": track.SUBSCRIPTION_QUERY,
+        "variables": {},
+        "operationName": "OnTokenOfferUpdated",
+        "action": "execute",
+    }
+
+    def on_open(ws):
+        ws.send(json.dumps({"command": "subscribe", "identifier": identifier}))
+        time.sleep(1)
+        ws.send(json.dumps({"command": "message", "identifier": identifier,
+                            "data": json.dumps(subscription_payload)}))
+
+    def on_message(ws, raw_message):
+        try:
+            message = json.loads(raw_message)
+        except json.JSONDecodeError:
+            return
+        if message.get('type') in ('welcome', 'ping', 'confirm_subscription'):
+            return
+        payload = message.get('message')
+        if not payload or payload.get('errors'):
+            return
+        offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
+        if not offer:
+            return
+        if not (offer.get('id') or '').startswith('SingleSaleOffer:'):
+            return
+        if offer.get('status') != 'opened':
+            return
+        sender_side = offer.get('senderSide') or {}
+        receiver_side = offer.get('receiverSide') or {}
+        if receiver_side.get('anyCards'):
+            return  # scambio carta-per-carta, non una vendita a soldi
+        price = track.eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
+        if price is None or price < BUNDLE_MIN_MARKET_PRICE_EUR:
+            return
+        cards = sender_side.get('anyCards') or []
+        if len(cards) != 1:
+            return  # bundle multi-carta o dato vuoto, prezzo non attribuibile
+        card = cards[0]
+        if card.get('rarityTyped') != 'limited' or card.get('sport') != 'FOOTBALL':
+            return
+        season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
+        if track.season_type_for_card(card, season_name) != 'in_season':
+            return
+        card_slug = card.get('slug')
+        if not card_slug or card_slug in seen_slugs:
+            return
+        seen_slugs.add(card_slug)
+        candidates.append({
+            'card_slug': card_slug,
+            'player_slug': (card.get('anyPlayer') or {}).get('slug'),
+            'price': price,
+        })
+
+    def on_error(ws, error):
+        log(f"[auto-find] errore WebSocket durante l'ascolto: {error}")
+
+    ws = track.websocket.WebSocketApp(
+        track.WS_URL,
+        header=[f"Cookie: {track.COOKIES}"] if track.COOKIES else [],
+        on_open=on_open,
+        on_message=on_message,
+        on_error=on_error,
+    )
+    timer = threading.Timer(listen_seconds, ws.close)
+    timer.daemon = True
+    timer.start()
+    ws.run_forever(ping_interval=60, ping_timeout=45)
+    timer.cancel()
+    return candidates
+
+
+def auto_find_manager(eth_rate):
+    """Trova un manager 'interessante' da scansionare: ascolta il mercato, raggruppa le carte
+    appena messe in vendita per manager venditore (i manager visti PIU' volte nello stream sono
+    controllati per primi: chi sta listando molte carte e' il candidato piu' probabile ad averne
+    almeno AUTO_FIND_MIN_CARDS_FOR_SALE), e ritorna lo slug del primo che supera la soglia --
+    oppure None se nessuno la supera entro i tetti di sicurezza."""
+    log(f"[auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il "
+        f"mercato per {AUTO_FIND_LISTEN_SECONDS:.0f}s a caccia di manager con almeno "
+        f"{AUTO_FIND_MIN_CARDS_FOR_SALE} carte in_season in vendita...")
+    candidates = collect_on_sale_candidates_from_market(eth_rate, AUTO_FIND_LISTEN_SECONDS)
+    log(f"[auto-find] ascolto terminato: {len(candidates)} carte in_season appena messe in "
+        f"vendita raccolte (sopra {format_eur(BUNDLE_MIN_MARKET_PRICE_EUR)}).")
+    if not candidates:
+        return None
+
+    owner_counts = {}
+    lookups = 0
+    for cand in candidates:
+        if lookups >= AUTO_FIND_MAX_OWNER_LOOKUPS:
+            break
+        owner = lookup_card_owner(cand['card_slug'])
+        lookups += 1
+        time.sleep(PER_PLAYER_QUERY_DELAY_SECONDS)
+        if _card_owner_variant == '':
+            return None  # nessuna query di lookup funziona, gia' loggato
+        if owner:
+            owner_counts[owner] = owner_counts.get(owner, 0) + 1
+    if not owner_counts:
+        log("[auto-find] nessun proprietario leggibile tra le carte raccolte, interrompo.")
+        return None
+
+    ordered = sorted(owner_counts.items(), key=lambda kv: kv[1], reverse=True)
+    log(f"[auto-find] {len(ordered)} manager venditori distinti individuati "
+        f"(top: {', '.join(f'{m} x{c}' for m, c in ordered[:5])}) -- controllo quante carte "
+        f"in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...")
+    for owner, seen_count in ordered[:AUTO_FIND_MAX_MANAGERS_TO_CHECK]:
+        cards, _nb, found, has_sale_field = fetch_manager_owned_in_season_limited_cards(owner)
+        if not found:
+            log(f"[auto-find] '{owner}': non trovato (slug non risolvibile?), passo oltre.")
+            continue
+        if not has_sale_field:
+            log(f"[auto-find] '{owner}': campo liveSingleSaleOffer non disponibile, il "
+                f"conteggio 'in vendita' non e' verificabile a costo ragionevole -- passo oltre.")
+            continue
+        n_for_sale = len(cards)
+        log(f"[auto-find] '{owner}': {n_for_sale} carte in_season in vendita "
+            f"(soglia {AUTO_FIND_MIN_CARDS_FOR_SALE}).")
+        if n_for_sale >= AUTO_FIND_MIN_CARDS_FOR_SALE:
+            log(f"[auto-find] SELEZIONATO '{owner}' -- parte lo scan classico su di lui.")
+            return owner
+    log(f"[auto-find] nessun manager sopra la soglia tra i primi "
+        f"{AUTO_FIND_MAX_MANAGERS_TO_CHECK} controllati -- nessuno scan, riprova piu' tardi "
+        f"(o allunga AUTO_FIND_LISTEN_SECONDS).")
+    return None
+
+
 def run_bundle_scan():
     manager_slug = extract_manager_slug(MANAGER_INPUT)
-    if not manager_slug:
-        log("nessuno slug/URL manager fornito (env var MANAGER_SLUG_OR_URL vuota) -- interrompo, "
-            "nessuna notifica Telegram.")
+
+    # FIX 18/07 (v3): l'input manuale ha SEMPRE la precedenza (richiesta esplicita: "non mi
+    # toccare la possibilita' di inserire io il manager che voglio") -- l'auto-discovery parte
+    # solo se il campo manager e' vuoto E la modalita' e' esplicitamente attivata.
+    if not manager_slug and not AUTO_FIND_MANAGER:
+        log("nessuno slug/URL manager fornito (env var MANAGER_SLUG_OR_URL vuota) e "
+            "auto-discovery spenta -- interrompo, nessuna notifica Telegram.")
         return
-    log(f"input ricevuto: {MANAGER_INPUT!r} -> slug estratto: '{manager_slug}'")
 
     eth_rate = track.get_eth_rate()
     track.reset_currency_branch_stats()
+
+    if manager_slug:
+        log(f"input ricevuto: {MANAGER_INPUT!r} -> slug estratto: '{manager_slug}'")
+    else:
+        manager_slug = auto_find_manager(eth_rate)
+        if not manager_slug:
+            log("[auto-find] nessun manager idoneo trovato in questo giro -- interrompo, "
+                "nessuna notifica Telegram.")
+            return
 
     owned_in_season_cards, nb_hits_total, manager_found, has_sale_field = \
         fetch_manager_owned_in_season_limited_cards(manager_slug)
@@ -430,8 +657,7 @@ def run_bundle_scan():
         track.send_telegram_msg(msg)
         if i < len(messages) - 1:
             time.sleep(TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS)
-    log(f"notifica Telegram inviata (canale aste, riuso temporaneo) -- {len(messages)} "
-        f"messaggio/i.")
+    log(f"notifica Telegram inviata (bot dedicato scanner) -- {len(messages)} messaggio/i.")
 
 
 # FIX 18/07 (richiesta esplicita dell'utente, "cosa accade su telegram se il manager ha 100 carte
