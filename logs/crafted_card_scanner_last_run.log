@@ -12,3 +12,10 @@
 [2026-07-18 19:39:24] [craft-scanner] probe 'assetCreatedAt': ERRORE -- Field 'assetCreatedAt' doesn't exist on type 'AnyCardInterface'
 [2026-07-18 19:39:24] [craft-scanner] >>> NESSUN candidato timestamp funziona su anyCard -- impossibile applicare la finestra delle 6 ore. Prossimi candidati da provare a mano nei log sopra (guarda i suggerimenti 'Did you mean' negli errori). Interrompo il run.
 [2026-07-18 19:39:24] [craft-scanner] esecuzione terminata.
+
+===== RUN 2026-07-18 20:11:47 UTC =====
+Traceback (most recent call last):
+  File "/home/runner/work/Sorare-tracker-2/Sorare-tracker-2/crafted_card_scanner.py", line 78, in <module>
+    'createdAt', 'publicMintedAt', 'assetCreatedAt', publicMinPrices]
+                                                     ^^^^^^^^^^^^^^^
+NameError: name 'publicMinPrices' is not defined
