@@ -141,8 +141,20 @@ def get_all_my_cards():
     return all_cards
 
 
+_purchase_price_error_logged = False  # log l'errore GraphQL UNA SOLA volta per run (evita
+                                       # spam su ~1900 carte se il campo e' proprio sbagliato)
+
+
 def get_purchase_price(card_slug):
-    """Ottieni il prezzo di acquisto dalla cronologia transazioni."""
+    """Ottieni il prezzo di acquisto dalla cronologia transazioni.
+    ATTENZIONE (diagnosticato 18/07): 'tokenTransfers'/'buyer'/'seller'/'salePrice' su anyCard
+    NON sono mai stati validati altrove in questo progetto (a differenza di 'tokenPrices' su
+    tokens, usato con successo in track.py per lo storico vendite) -- sono un campo indovinato.
+    La versione precedente ingoiava silenziosamente qualsiasi errore GraphQL (return None senza
+    log), quindi TUTTE le 10 carte finivano in backlog ad ogni run senza modo di distinguere
+    'campo sbagliato' da 'nessun acquisto trovato'. Ora l'errore viene loggato (una sola volta
+    per run, per non fare spam) cosi' il prossimo log dira' con certezza qual e' il problema."""
+    global _purchase_price_error_logged
     query = """
     {
       anyCard(slug: "%s") {
@@ -167,10 +179,21 @@ def get_purchase_price(card_slug):
     try:
         data = track.graphql_query(query, {})
         if data.get('errors'):
+            if not _purchase_price_error_logged:
+                log(f"⚠️ Errore GraphQL su tokenTransfers (carta di esempio: {card_slug}): "
+                    f"{data['errors']} -- il campo e' probabilmente sbagliato/inesistente, "
+                    f"tutte le carte finiranno in backlog finche' non viene corretto.")
+                _purchase_price_error_logged = True
             return None
 
         transfers = (data.get('data', {}).get('anyCard', {}).get('tokenTransfers', {})
                     .get('edges', []))
+
+        if not _purchase_price_error_logged and transfers:
+            # Primo caso con dati validi in questo run: dump grezzo per capire la forma reale
+            # (nomi campo buyer/seller potrebbero essere diversi da quanto indovinato sopra).
+            log(f"🔍 Diagnostica tokenTransfers per {card_slug}: {transfers[:3]}")
+            _purchase_price_error_logged = True
 
         # Cerca la transazione dove buyer == crowss (l'acquisto)
         for transfer in transfers:
