@@ -73,55 +73,61 @@ def get_all_my_cards():
     log("Ricerca tutte le carte (no sealed)...")
 
     query = """
-    {
-      manager(slug: "crowss") {
-        ownedCards(first: 100) {
-          edges {
-            node {
-              slug
-              sport
-              rarity
-              inSeasonEligible
-              seasonYear
-              status
-              createdAt
-              liveSingleSaleOffer {
-                amountInCents
-              }
+    query MyAllCards($userSlug: String!, $page: Int!, $pageSize: Int!) {
+      user(slug: $userSlug) {
+        searchCards(
+          rarity: limited
+          sport: FOOTBALL
+          query: ""
+          page: $page
+          pageSize: $pageSize
+          sorts: [{field: "user_owner.from", direction: DESC}]
+        ) {
+          hits {
+            slug
+            sport
+            rarityTyped
+            inSeasonEligible
+            sportSeason { name }
+            status
+            createdAt
+            liveSingleSaleOffer {
+              amountInCents
             }
           }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
+          nbHits
         }
       }
     }
     """
 
     all_cards = []
-    has_next = True
-    cursor = None
+    page = 1
+    max_pages = 100
 
-    while has_next:
+    while page <= max_pages:
         try:
-            data = track.graphql_query(query, {"cursor": cursor} if cursor else {})
+            data = track.graphql_query(query, {
+                "userSlug": "crowss",
+                "page": page,
+                "pageSize": 100
+            })
             if data.get('errors'):
                 log(f"Errore GraphQL: {data['errors']}")
                 break
 
-            edges = (data.get('data', {}).get('manager', {}).get('ownedCards', {}).get('edges', []))
-            for e in edges:
-                card = e['node']
+            hits = (data.get('data', {}).get('user', {}).get('searchCards', {}).get('hits', []))
+            if not hits:
+                break
+
+            for card in hits:
                 # Filtra out le carte sealed
                 if card.get('status') != 'sealed':
                     all_cards.append(card)
 
-            page_info = (data.get('data', {}).get('manager', {}).get('ownedCards', {}).get('pageInfo', {}))
-            has_next = page_info.get('hasNextPage', False)
-            cursor = page_info.get('endCursor')
+            page += 1
         except Exception as e:
-            log(f"Eccezione durante fetch carte: {e}")
+            log(f"Eccezione durante fetch carte pagina {page}: {e}")
             break
 
     log(f"Trovate {len(all_cards)} carte (escluse sealed)")
@@ -282,7 +288,7 @@ def run_profit_scan():
                 'market_price': market_price,
                 'profit': profit,
                 'profit_percent': profit_percent,
-                'season': card.get('seasonYear'),
+                'season': card.get('sportSeason', {}).get('name', 'N/A'),
                 'in_season': card.get('inSeasonEligible'),
             })
         else:

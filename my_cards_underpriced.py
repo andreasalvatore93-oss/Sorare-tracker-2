@@ -28,50 +28,55 @@ def get_my_cards_for_sale():
     log("Ricerca carte in vendita...")
 
     query = """
-    {
-      manager(slug: "crowss") {
-        ownedCards(first: 100, filter: {onSale: true}) {
-          edges {
-            node {
-              slug
-              sport
-              rarity
-              inSeasonEligible
-              seasonYear
-              liveSingleSaleOffer {
-                amountInCents
-                currencyCode
-              }
+    query MyCardsForSale($userSlug: String!, $page: Int!, $pageSize: Int!) {
+      user(slug: $userSlug) {
+        searchCards(
+          rarity: limited
+          sport: FOOTBALL
+          query: ""
+          page: $page
+          pageSize: $pageSize
+        ) {
+          hits {
+            slug
+            sport
+            rarityTyped
+            inSeasonEligible
+            sportSeason { name }
+            liveSingleSaleOffer {
+              amountInCents
+              currencyCode
             }
           }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
+          nbHits
         }
       }
     }
     """
 
     all_cards = []
-    has_next = True
-    cursor = None
+    page = 1
+    max_pages = 100
 
-    while has_next:
+    while page <= max_pages:
         try:
-            data = track.graphql_query(query, {"cursor": cursor} if cursor else {})
+            data = track.graphql_query(query, {
+                "userSlug": "crowss",
+                "page": page,
+                "pageSize": 100
+            })
             if data.get('errors'):
                 log(f"Errore GraphQL: {data['errors']}")
                 break
 
-            edges = (data.get('data', {}).get('manager', {}).get('ownedCards', {}).get('edges', []))
-            all_cards.extend([e['node'] for e in edges])
+            hits = (data.get('data', {}).get('user', {}).get('searchCards', {}).get('hits', []))
+            if not hits:
+                break
 
-            page_info = (data.get('data', {}).get('manager', {}).get('ownedCards', {}).get('pageInfo', {}))
-            has_next = page_info.get('hasNextPage', False)
-            cursor = page_info.get('endCursor')
+            all_cards.extend(hits)
+            page += 1
         except Exception as e:
-            log(f"Eccezione durante fetch carte: {e}")
+            log(f"Eccezione durante fetch carte pagina {page}: {e}")
             break
 
     log(f"Trovate {len(all_cards)} carte in vendita")
@@ -131,8 +136,13 @@ def run_underpriced_scan():
 
     for card in my_cards:
         card_slug = card.get('slug')
-        my_price_cents = card.get('liveSingleSaleOffer', {}).get('amountInCents')
-        my_currency = card.get('liveSingleSaleOffer', {}).get('currencyCode')
+        sale_offer = card.get('liveSingleSaleOffer')
+
+        if not sale_offer:
+            continue
+
+        my_price_cents = sale_offer.get('amountInCents')
+        my_currency = sale_offer.get('currencyCode')
 
         if not my_price_cents:
             continue
@@ -150,8 +160,8 @@ def run_underpriced_scan():
         market_price_eur = get_market_min_price(
             card_slug,
             card.get('sport'),
-            card.get('rarity'),
-            card.get('seasonYear')
+            card.get('rarityTyped'),
+            card.get('sportSeason', {}).get('name', '')
         )
 
         if market_price_eur is None:
@@ -168,7 +178,7 @@ def run_underpriced_scan():
                 'market_price': market_price_eur,
                 'diff': diff,
                 'diff_percent': diff_percent,
-                'season': card.get('seasonYear'),
+                'season': card.get('sportSeason', {}).get('name', 'N/A'),
                 'in_season': card.get('inSeasonEligible'),
             })
             log(f"🔴 {card_slug}: mio {my_price_eur:.2f}€ vs market {market_price_eur:.2f}€ "
