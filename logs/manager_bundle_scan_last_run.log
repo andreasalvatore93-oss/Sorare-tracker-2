@@ -72,3 +72,15 @@
 [2026-07-18 12:13:30] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer NON leggibile in questo contesto (searchCards.hits) -- fallback al comportamento precedente (controllo il mercato per ogni giocatore posseduto, piu' lento). Errore: [{'message': 'User(slug=BigFlow13) not found', 'extensions': {'code': 'NOT_FOUND'}}]
 [2026-07-18 12:13:30] [manager bundle scan] errore GraphQL pagina 1 carte possedute per 'BigFlow13': [{'message': 'User(slug=BigFlow13) not found', 'extensions': {'code': 'NOT_FOUND'}}]
 [2026-07-18 12:13:30] [manager bundle scan] impossibile determinare se 'BigFlow13' esiste (errore di rete/GraphQL prima ancora di ricevere una risposta valida, vedi dettaglio errore sopra nel log). Nessuna notifica Telegram inviata.
+
+===== RUN 2026-07-18 12:14:02 UTC =====
+[2026-07-18 12:14:02] [manager bundle scan] input ricevuto: 'https://sorare.com/it/football/my-club/bigflow13' -> slug estratto: 'bigflow13'
+[2026-07-18 12:14:03] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 12:14:03] [manager bundle scan] 'bigflow13': 349 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 12:14:06] [manager bundle scan] [filtro carte in vendita] 349 carte possedute scansionate, 181 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 168.
+[2026-07-18 12:14:06] [manager bundle scan] 'bigflow13': 138 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 12:14:06] [manager bundle scan] controllo il mercato live per 138 giocatori diversi (138 carte possedute da verificare)...
+[2026-07-18 12:15:15] [manager bundle scan] [diagnostica] 138 carte in_season possedute controllate, 138 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 0 errori di query.
+[2026-07-18 12:15:15] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 2640, 'wei': 458, 'usdCents': 861, 'gbpCents': 150, 'lamport': 2, 'none': 0}
+[2026-07-18 12:15:15] [manager bundle scan] RISULTATO -- 'bigflow13': 138 carte in vendita organizzate in 14 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 403.78EUR, minimo di mercato totale 347.90EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 13 gia' al minimo di mercato (sezione bonus separata).
+[2026-07-18 12:15:19] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo) -- 4 messaggio/i.
