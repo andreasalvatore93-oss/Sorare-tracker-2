@@ -2508,3 +2508,16 @@
 [2026-07-18 14:19:38] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 1 casi senza comparabile live, 1 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 1 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
 [2026-07-18 14:19:38] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 3627, 'wei': 489, 'usdCents': 2439, 'gbpCents': 150, 'lamport': 1, 'none': 0}
 [2026-07-18 14:19:38] [modello zenlock] esecuzione terminata.
+
+===== RUN 2026-07-18 14:42:18 UTC =====
+[2026-07-18 14:42:19] [modello zenlock] Tasso ETH/EUR: 1612.34
+[2026-07-18 14:42:19] [modello zenlock] Ascolto per 250 secondi (soglie: classic <=4.0EUR / in_season <=8.0EUR, sconto min 15%)...
+[2026-07-18 14:42:19] [modello zenlock] connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 14:42:20] [modello zenlock] sottoscrizione confermata, in ascolto...
+[2026-07-18 14:43:51] [modello zenlock] sostituto in season ancora piu' economico (0.95EUR contro 0.97EUR classic) per Maurits Kjærgaard, non e' un affare distinto, non notifico -- riferimento classic originale 1.39EUR (n=8), sconto classic 30.4% (richiesto 15%) -- AVREBBE notificato senza questo controllo
+[2026-07-18 14:44:19] [modello zenlock] sostituto in season ancora piu' economico (0.42EUR contro 0.48EUR classic) per Aleksandar Dragović, non e' un affare distinto, non notifico -- riferimento classic originale 0.60EUR (n=3), sconto classic 19.8% (richiesto 15%) -- AVREBBE notificato senza questo controllo
+[2026-07-18 14:46:08] [modello zenlock] sostituto in season ancora piu' economico (0.33EUR contro 0.33EUR classic) per Josan Ferrández, non e' un affare distinto, non notifico -- riferimento classic originale 0.52EUR (n=29), sconto classic 37.1% (richiesto 15%) -- AVREBBE notificato senza questo controllo
+[2026-07-18 14:46:29] [modello zenlock] connessione chiusa (codice None). Eventi: 722, carte valutate: 194, notifiche inviate: 0 (di cui solo ETH: 0, di cui su riferimento storico: 0), scartate per mancanza comparabili: 0, scartate per riferimento troppo basso: 0, scartate per differenza assoluta troppo piccola: 1, scartate per gemello in_season altrettanto economico: 0, sconto sospetto non confermato alla riverifica: 0, riferimento troppo alto/non rappresentativo: 0, riferimento stagnante vs vendita reale: 0, saltate per throttle raffica (protezione rate-limit condiviso): 0, sostituto in_season piu' economico (non un affare distinto): 18 (di cui avrebbero notificato senza questo controllo: 3)
+[2026-07-18 14:46:29] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 0 casi senza comparabile live, 0 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
+[2026-07-18 14:46:29] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 2913, 'wei': 426, 'usdCents': 2072, 'gbpCents': 105, 'lamport': 1, 'none': 0}
+[2026-07-18 14:46:29] [modello zenlock] esecuzione terminata.
