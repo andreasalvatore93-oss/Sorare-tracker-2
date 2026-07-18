@@ -156,17 +156,22 @@ def run_underpriced_scan():
         return
 
     underpriced = []
+    checked_count = 0
+    skipped_no_price = 0
+    skipped_no_market = 0
 
-    for card in my_cards:
+    for idx, card in enumerate(my_cards, 1):
         card_slug = card.get('slug')
         sale_offer = card.get('liveSingleSaleOffer')
 
         if not sale_offer:
+            skipped_no_price += 1
             continue
 
         eur_cents = sale_offer.get('receiverSide', {}).get('amounts', {}).get('eurCents')
 
         if not eur_cents:
+            skipped_no_price += 1
             continue
 
         my_price_eur = eur_cents / 100
@@ -180,7 +185,14 @@ def run_underpriced_scan():
         )
 
         if market_price_eur is None:
+            skipped_no_market += 1
             continue
+
+        checked_count += 1
+
+        # Diagnostica ogni 100 carte
+        if checked_count % 100 == 0:
+            log(f"  📊 Controllate {checked_count} carte, underpriced trovate: {len(underpriced)}")
 
         # Se il mio prezzo è maggiore del market → underpriced
         if my_price_eur > market_price_eur:
@@ -198,13 +210,25 @@ def run_underpriced_scan():
             })
             log(f"🔴 {card_slug}: mio {my_price_eur:.2f}€ vs market {market_price_eur:.2f}€ "
                 f"({diff_percent:+.1f}%)")
+        else:
+            # Log sample di carte OK (ogni 500)
+            if checked_count % 500 == 0:
+                log(f"  ✅ Sample: {card_slug}: mio {my_price_eur:.2f}€ ≤ market {market_price_eur:.2f}€ (OK)")
+
+    # Statistiche finali
+    log(f"\n📈 Statistiche scansione:")
+    log(f"  Totale carte in vendita: {len(my_cards)}")
+    log(f"  Carte effettivamente controllate: {checked_count}")
+    log(f"  Carte scartate (no prezzo mio): {skipped_no_price}")
+    log(f"  Carte scartate (no market price): {skipped_no_market}")
+    log(f"  Carte underpriced trovate: {len(underpriced)}")
 
     if not underpriced:
         log("Nessuna carta underpriced")
         return
 
     # Manda notifiche in blocchi da BLOCK_SIZE
-    log(f"Totale carte underpriced: {len(underpriced)}")
+    log(f"\n💬 Invio {len(underpriced)} carte via Telegram...")
     send_notifications(underpriced)
 
 
