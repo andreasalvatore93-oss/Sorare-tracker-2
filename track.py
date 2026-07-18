@@ -3176,6 +3176,114 @@ def diagnostic_dump_missing_offer(player_slug):
     log(f"[diagnostica offerta mancante] dump completato.")
 
 
+def report_hit_rate(days_window=7):
+    """FIX 18/07 (v4, richiesta esplicita dell'utente): analizza decisions_log per calcolare il
+    tasso di "hit" (carte notificate come affari che sono davvero scomparse dal mercato entro
+    days_window giorni). Per ogni notifica (decision in ["notify", "notify_after_recheck",
+    "notify_margin_opportunity"]), controlla se la stessa carta compare di nuovo in decisions_log
+    entro days_window giorni con un calo successivo (conferma che la notifica era appropriata):
+    hit rate = numero carte scomparse / numero carte notificate.
+    Risultati raggruppati per decision_type e fascia_prezzo per calibrare MARGIN_TIERS su dati
+    veri invece che a occhio.
+    Ritorna un dict con statistiche (scrivibile in log per periodi ricorrenti)."""
+    conn = sqlite3.connect('tracker.db')
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    # Tutte le notifiche inviate
+    notify_decisions = ['notify', 'notify_after_recheck', 'notify_margin_opportunity']
+    cur.execute('''
+        SELECT id, ts, player_slug, season_type, decision, true_min_price
+        FROM decisions_log
+        WHERE decision IN (?, ?, ?)
+        ORDER BY ts
+    ''', tuple(notify_decisions))
+    notifications = cur.fetchall()
+
+    stats = {
+        'total': len(notifications),
+        'by_decision': {},
+        'by_price_tier': {},
+        'by_decision_and_tier': {},
+        'confirmed_hits': 0,
+        'unconfirmed': 0,
+    }
+
+    cutoff_days = datetime.datetime.now() - datetime.timedelta(days=days_window)
+
+    for notif in notifications:
+        notif_id, notif_ts, player_slug, season_type, decision, true_min_price = notif
+        stats['by_decision'].setdefault(decision, {'total': 0, 'hits': 0})
+        stats['by_decision'][decision]['total'] += 1
+
+        # Fascia prezzo
+        if true_min_price is None:
+            price_tier = 'unknown'
+        elif true_min_price < 2.0:
+            price_tier = '<2EUR'
+        elif true_min_price < 5.0:
+            price_tier = '2-5EUR'
+        elif true_min_price < 10.0:
+            price_tier = '5-10EUR'
+        elif true_min_price < 20.0:
+            price_tier = '10-20EUR'
+        else:
+            price_tier = '>=20EUR'
+
+        stats['by_price_tier'].setdefault(price_tier, {'total': 0, 'hits': 0})
+        stats['by_price_tier'][price_tier]['total'] += 1
+
+        key = f"{decision}/{price_tier}"
+        stats['by_decision_and_tier'].setdefault(key, {'total': 0, 'hits': 0})
+        stats['by_decision_and_tier'][key]['total'] += 1
+
+        # Controlla se la carta ricompare con un calo successivo entro days_window giorni
+        try:
+            notif_datetime = datetime.datetime.fromisoformat(notif_ts)
+        except (ValueError, TypeError):
+            continue
+
+        cur.execute('''
+            SELECT COUNT(*) as cnt
+            FROM decisions_log
+            WHERE player_slug = ?
+              AND season_type = ?
+              AND decision IN ('notify', 'notify_after_recheck')
+              AND ts > ?
+              AND ts <= ?
+        ''', (player_slug, season_type, notif_ts, (notif_datetime + datetime.timedelta(days=days_window)).isoformat()))
+        follow_up_rows = cur.fetchone()
+        if follow_up_rows and follow_up_rows['cnt'] > 0:
+            stats['confirmed_hits'] += 1
+            stats['by_decision'][decision]['hits'] += 1
+            stats['by_price_tier'][price_tier]['hits'] += 1
+            stats['by_decision_and_tier'][key]['hits'] += 1
+        else:
+            stats['unconfirmed'] += 1
+
+    conn.close()
+
+    # Calcola tassi
+    if stats['total'] > 0:
+        stats['overall_hit_rate'] = stats['confirmed_hits'] / stats['total']
+    else:
+        stats['overall_hit_rate'] = 0
+
+    for dec_stats in stats['by_decision'].values():
+        if dec_stats['total'] > 0:
+            dec_stats['hit_rate'] = dec_stats['hits'] / dec_stats['total']
+
+    for tier_stats in stats['by_price_tier'].values():
+        if tier_stats['total'] > 0:
+            tier_stats['hit_rate'] = tier_stats['hits'] / tier_stats['total']
+
+    for combo_stats in stats['by_decision_and_tier'].values():
+        if combo_stats['total'] > 0:
+            combo_stats['hit_rate'] = combo_stats['hits'] / combo_stats['total']
+
+    return stats
+
+
 # FIX 17/07 (v16, caso "none" nel counter valute, es. petar-musa -- richiesta esplicita
 # dell'utente): un annuncio manager aperto (non uno scambio) con tutti e 4 i campi prezzo che
 # chiediamo (eurCents/wei/usdCents/gbpCents) esplicitamente null. L'utente (esperto, anni di

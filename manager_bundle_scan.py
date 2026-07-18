@@ -61,6 +61,17 @@ AUTO_FIND_MIN_CARDS_FOR_SALE = int(os.environ.get('AUTO_FIND_MIN_CARDS_FOR_SALE'
 AUTO_FIND_MAX_MANAGERS_TO_CHECK = int(os.environ.get('AUTO_FIND_MAX_MANAGERS_TO_CHECK', '5'))
 AUTO_FIND_MAX_OWNER_LOOKUPS = int(os.environ.get('AUTO_FIND_MAX_OWNER_LOOKUPS', '30'))
 
+# FIX 18/07 (v4, richiesta esplicita dell'utente): blacklist di manager bot noti che non accettano
+# offerte negoziate -- scansionarli e' inutile perche' rispondono solo a loro stessa logica bot,
+# non a margini. Ignorati durante l'auto-discovery (l'input manuale resta intoccato per il testing).
+AUTO_FIND_BLACKLIST_MANAGERS = {
+    'clem777', 'satonio', 'zenlock', 'cheaper-than-him', 'eli-aquim',
+    'lamella-4aa53b98-9221-410e-8092-05aaabd1ba30', 'sir-hiss-the-swap-bot',
+    'paweltrader', 'basilbot', 'ruv-liquidation-of-gallery-at-fixed-prices',
+    'jrodwalts-trade-115-active-buyer-seller', 'meowmeow7',
+    'bellona-f0b1a9d7-3700-4d59-9044-ec54b7b348aa',
+}
+
 MAX_OWNED_CARD_PAGES = int(os.environ.get('MAX_OWNED_CARD_PAGES', '20'))
 OWNED_CARD_PAGE_SIZE = int(os.environ.get('OWNED_CARD_PAGE_SIZE', '50'))
 MAX_PLAYERS_TO_CHECK = int(os.environ.get('MAX_PLAYERS_TO_CHECK', '300'))
@@ -511,6 +522,11 @@ def auto_find_manager(eth_rate):
         f"(top: {', '.join(f'{m} x{c}' for m, c in ordered[:5])}) -- controllo quante carte "
         f"in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...")
     for owner, seen_count in ordered[:AUTO_FIND_MAX_MANAGERS_TO_CHECK]:
+        # FIX 18/07 (v4): ignora i manager in blacklist durante auto-discovery
+        if owner in AUTO_FIND_BLACKLIST_MANAGERS:
+            log(f"[auto-find] '{owner}': blacklistato (bot noto che non accetta offerte "
+                f"negoziate), passo oltre.")
+            continue
         cards, _nb, found, has_sale_field = fetch_manager_owned_in_season_limited_cards(owner)
         if not found:
             log(f"[auto-find] '{owner}': non trovato (slug non risolvibile?), passo oltre.")
