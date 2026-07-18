@@ -571,3 +571,25 @@
 [2026-07-18 20:31:35] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 6783, 'wei': 820, 'usdCents': 3245, 'gbpCents': 246, 'lamport': 3, 'none': 0}
 [2026-07-18 20:31:35] [manager bundle scan] RISULTATO -- 'bwoah': 64 carte in vendita organizzate in 7 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 537.20EUR, minimo di mercato totale 163.09EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 0 gia' al minimo di mercato (sezione bonus separata).
 [2026-07-18 20:31:37] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 2 messaggio/i.
+
+===== RUN 2026-07-18 20:34:04 UTC =====
+[2026-07-18 20:34:04] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-07-18 20:36:04] [manager bundle scan] [auto-find] ascolto terminato: 34 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-07-18 20:36:05] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-07-18 20:36:16] [manager bundle scan] [auto-find] 7 manager venditori distinti individuati (top: aymericbdb-selling-my-gallery x17, zarkane-open-for-trade x6, clem777 x2, satonio x2, fabry93 x1) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-07-18 20:36:16] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 20:36:17] [manager bundle scan] 'aymericbdb-selling-my-gallery': 2423 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 20:36:17] [manager bundle scan] ATTENZIONE: 'aymericbdb-selling-my-gallery' possiede 2423 carte Limited ma ne ho scansionate solo 49 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 20:36:17] [manager bundle scan] [filtro carte in vendita] 49 carte possedute scansionate, 49 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 0.
+[2026-07-18 20:36:17] [manager bundle scan] [auto-find] 'aymericbdb-selling-my-gallery': 41 carte in_season in vendita (soglia 5).
+[2026-07-18 20:36:17] [manager bundle scan] [auto-find] SELEZIONATO 'aymericbdb-selling-my-gallery' -- parte lo scan classico su di lui (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-07-18 20:36:17] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 20:36:17] [manager bundle scan] 'aymericbdb-selling-my-gallery': 2423 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 20:36:17] [manager bundle scan] ATTENZIONE: 'aymericbdb-selling-my-gallery' possiede 2423 carte Limited ma ne ho scansionate solo 49 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 20:36:17] [manager bundle scan] [filtro carte in vendita] 49 carte possedute scansionate, 49 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 0.
+[2026-07-18 20:36:17] [manager bundle scan] 'aymericbdb-selling-my-gallery': 41 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 20:36:17] [manager bundle scan] controllo il mercato live per 41 giocatori diversi (41 carte possedute da verificare)...
+[2026-07-18 20:36:37] [manager bundle scan] [diagnostica] 41 carte in_season possedute controllate, 22 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 19 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-07-18 20:36:37] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 892, 'wei': 104, 'usdCents': 342, 'gbpCents': 22, 'lamport': 0, 'none': 0}
+[2026-07-18 20:36:37] [manager bundle scan] RISULTATO -- 'aymericbdb-selling-my-gallery': 22 carte in vendita organizzate in 3 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 56.08EUR, minimo di mercato totale 53.09EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 10 gia' al minimo di mercato (sezione bonus separata).
+[2026-07-18 20:36:39] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 3 messaggio/i.
