@@ -99,3 +99,28 @@
 [my-cards-underpriced]   Carte underpriced trovate: 0
 [my-cards-underpriced] Nessuna carta underpriced
 [my-cards-underpriced] Esecuzione terminata.
+
+===== RUN 2026-07-18 16:51:20 UTC =====
+[my-cards-underpriced] Inizio scan carte underpriced...
+[my-cards-underpriced] Ricerca carte in vendita...
+[my-cards-underpriced] Trovate 1923 carte in vendita
+[my-cards-underpriced] 🔴 kalvin-phillips-2025-limited-525: mio 1.50€ vs market 1.48€ (+1.4%)
+[my-cards-underpriced] 🔴 cheol-woo-park-2026-limited-353: mio 3.90€ vs market 3.26€ (+19.6%)
+[my-cards-underpriced] 🔴 gabriel-silva-moscardo-de-salles-2025-limited-461: mio 0.99€ vs market 0.95€ (+4.2%)
+[my-cards-underpriced] 
+📈 Statistiche scansione:
+[my-cards-underpriced]   Totale carte in vendita: 1923
+[my-cards-underpriced]   Carte effettivamente controllate: 13
+[my-cards-underpriced]   Carte scartate (no prezzo mio): 1910
+[my-cards-underpriced]   Carte scartate (no market price): 0
+[my-cards-underpriced]   Carte underpriced trovate: 3
+[my-cards-underpriced] 
+💬 Invio 3 carte via Telegram...
+Traceback (most recent call last):
+  File "/home/runner/work/Sorare-tracker-2/Sorare-tracker-2/my_cards_underpriced.py", line 288, in <module>
+    run_underpriced_scan()
+  File "/home/runner/work/Sorare-tracker-2/Sorare-tracker-2/my_cards_underpriced.py", line 260, in run_underpriced_scan
+    send_notifications(underpriced)
+  File "/home/runner/work/Sorare-tracker-2/Sorare-tracker-2/my_cards_underpriced.py", line 283, in send_notifications
+    track.send_telegram_msg(msg, token=TELEGRAM_TOKEN, chat_id=TELEGRAM_CHAT_ID)
+TypeError: send_telegram_msg() got an unexpected keyword argument 'token'
