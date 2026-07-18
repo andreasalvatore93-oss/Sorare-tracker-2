@@ -96,3 +96,21 @@
 [2026-07-18 12:53:22] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 28, 'wei': 2, 'usdCents': 0, 'gbpCents': 1, 'lamport': 0, 'none': 0}
 [2026-07-18 12:53:22] [manager bundle scan] RISULTATO -- 'rivionze': 2 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 4.00EUR, minimo di mercato totale 3.99EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 1 gia' al minimo di mercato (sezione bonus separata).
 [2026-07-18 12:53:25] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo) -- 3 messaggio/i.
+
+===== RUN 2026-07-18 13:58:06 UTC =====
+[2026-07-18 13:58:06] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 60s a caccia di manager con almeno 10 carte in_season in vendita...
+[2026-07-18 13:59:06] [manager bundle scan] [auto-find] ascolto terminato: 8 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-07-18 13:59:07] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-07-18 13:59:09] [manager bundle scan] [auto-find] 6 manager venditori distinti individuati (top: clem777 x3, krygarr x1, sbirroteam x1, turbo424 x1, michi-1-cb1864e6-108f-4d83-94d6-c44bd7b5d68f x1) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-07-18 13:59:10] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 13:59:10] [manager bundle scan] 'clem777': 4600 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 13:59:12] [manager bundle scan] ATTENZIONE: 'clem777' possiede 4600 carte Limited ma ne ho scansionate solo 199 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 13:59:12] [manager bundle scan] [filtro carte in vendita] 199 carte possedute scansionate, 168 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 31.
+[2026-07-18 13:59:12] [manager bundle scan] [auto-find] 'clem777': 100 carte in_season in vendita (soglia 10).
+[2026-07-18 13:59:12] [manager bundle scan] [auto-find] SELEZIONATO 'clem777' -- parte lo scan classico su di lui.
+[2026-07-18 13:59:12] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 13:59:12] [manager bundle scan] 'clem777': 4600 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 13:59:14] [manager bundle scan] ATTENZIONE: 'clem777' possiede 4600 carte Limited ma ne ho scansionate solo 199 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-07-18 13:59:14] [manager bundle scan] [filtro carte in vendita] 199 carte possedute scansionate, 168 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 31.
+[2026-07-18 13:59:14] [manager bundle scan] 'clem777': 100 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 13:59:14] [manager bundle scan] controllo il mercato live per 100 giocatori diversi (100 carte possedute da verificare)...
