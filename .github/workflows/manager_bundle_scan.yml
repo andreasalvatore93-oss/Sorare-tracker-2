@@ -18,6 +18,10 @@ on:
         description: "Solo per auto-discovery: secondi di ascolto del mercato prima di scegliere il manager"
         required: false
         default: "60"
+      auto_find_cooldown_days:
+        description: "Solo per auto-discovery: dopo quanti giorni un manager gia' scansionato torna scansionabile (non riguarda l'input manuale)"
+        required: false
+        default: "7"
       bundle_offer_margin_fraction:
         description: "Margine di sconto sul totale minimo di mercato per l'offerta suggerita (es. 0.25 = 25%, provvisorio da tarare)"
         required: false
@@ -81,6 +85,7 @@ jobs:
           MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
           AUTO_FIND_MANAGER: ${{ github.event.inputs.auto_find_manager || 'si' }}
           AUTO_FIND_LISTEN_SECONDS: ${{ github.event.inputs.auto_find_listen_seconds || '60' }}
+          AUTO_FIND_COOLDOWN_DAYS: ${{ github.event.inputs.auto_find_cooldown_days || '7' }}
           BLACKLIST_MANAGERS: ${{ github.event.inputs.blacklist_managers }}
           BUNDLE_OFFER_MARGIN_FRACTION: ${{ github.event.inputs.bundle_offer_margin_fraction || '0.25' }}
           MAX_OWNED_CARD_PAGES: ${{ github.event.inputs.max_owned_card_pages || '20' }}
@@ -122,6 +127,11 @@ jobs:
             echo "# Aggiunti dal workflow in data $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> .github/auto_find_blacklist_additions.txt
             echo "$BLACKLIST_MANAGERS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sort -u >> .github/auto_find_blacklist_additions.txt
             git add .github/auto_find_blacklist_additions.txt
+          fi
+          # Salva il raffreddamento auto-discovery (quali manager sono stati scansionati e
+          # quando) -- solo per la modalita' auto-discovery, l'input manuale non lo tocca.
+          if [ -f .manager_bundle_scan_cooldown.json ]; then
+            git add .manager_bundle_scan_cooldown.json
           fi
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."

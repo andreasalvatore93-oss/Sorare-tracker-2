@@ -34,6 +34,7 @@ Se sportSeason/inSeasonEligible non risultassero leggibili su questi hit (mai pr
 combinazione esatta prima d'ora), l'errore GraphQL nel log dira' subito quale campo correggere,
 stesso principio "prova e leggi l'errore" usato in tutto il resto del progetto.
 """
+import datetime
 import json
 import math
 import os
@@ -87,6 +88,48 @@ _temp_blacklist = os.environ.get('BLACKLIST_MANAGERS', '').strip()
 if _temp_blacklist:
     _temp_slugs = [s.strip().lower() for s in _temp_blacklist.split(',') if s.strip()]
     AUTO_FIND_BLACKLIST_MANAGERS.update(_temp_slugs)
+
+# FIX 18/07 (v5, richiesta esplicita dell'utente): raffreddamento (cooldown) SOLO per
+# l'auto-discovery -- se una carta di un manager gia' scansionato di recente resta "sotto tiro"
+# nello stream WS, l'auto-discovery lo riselezionerebbe ad ogni run, generando notifiche
+# ripetute sullo stesso manager/stesse carte. Una volta scansionato (auto-discovery), il manager
+# resta escluso dalla SOLA auto-discovery per AUTO_FIND_COOLDOWN_DAYS giorni. L'input MANUALE
+# (slug/URL inserito a mano) NON viene mai ne' controllato ne' scritto qui -- resta identico a
+# prima, nessun raffreddamento, richiesta esplicita: "se cerco un manager specifico resta tutto
+# uguale".
+AUTO_FIND_COOLDOWN_DAYS = float(os.environ.get('AUTO_FIND_COOLDOWN_DAYS', '7'))
+AUTO_FIND_COOLDOWN_FILE = '.manager_bundle_scan_cooldown.json'
+
+
+def _load_auto_find_cooldown():
+    """Carica {slug: timestamp_iso_ultima_scansione_auto-discovery} dal file persistente."""
+    if not os.path.exists(AUTO_FIND_COOLDOWN_FILE):
+        return {}
+    try:
+        with open(AUTO_FIND_COOLDOWN_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_auto_find_cooldown(cooldown):
+    with open(AUTO_FIND_COOLDOWN_FILE, 'w') as f:
+        json.dump(cooldown, f, indent=2)
+
+
+def _is_in_auto_find_cooldown(slug, cooldown):
+    """True se 'slug' e' stato scansionato via auto-discovery meno di AUTO_FIND_COOLDOWN_DAYS
+    giorni fa. Timestamp illeggibile/malformato = tratta come NON in cooldown (mai bloccare per
+    un dato corrotto)."""
+    ts = cooldown.get(slug)
+    if not ts:
+        return False
+    try:
+        last_scanned = datetime.datetime.fromisoformat(ts)
+    except ValueError:
+        return False
+    age_days = (datetime.datetime.now() - last_scanned).total_seconds() / 86400
+    return age_days < AUTO_FIND_COOLDOWN_DAYS
 
 MAX_OWNED_CARD_PAGES = int(os.environ.get('MAX_OWNED_CARD_PAGES', '20'))
 OWNED_CARD_PAGE_SIZE = int(os.environ.get('OWNED_CARD_PAGE_SIZE', '50'))
@@ -537,11 +580,20 @@ def auto_find_manager(eth_rate):
     log(f"[auto-find] {len(ordered)} manager venditori distinti individuati "
         f"(top: {', '.join(f'{m} x{c}' for m, c in ordered[:5])}) -- controllo quante carte "
         f"in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...")
+    cooldown = _load_auto_find_cooldown()
     for owner, seen_count in ordered[:AUTO_FIND_MAX_MANAGERS_TO_CHECK]:
         # FIX 18/07 (v4): ignora i manager in blacklist durante auto-discovery
         if owner in AUTO_FIND_BLACKLIST_MANAGERS:
             log(f"[auto-find] '{owner}': blacklistato (bot noto che non accetta offerte "
                 f"negoziate), passo oltre.")
+            continue
+        # FIX 18/07 (v5, richiesta esplicita dell'utente): gia' scansionato via auto-discovery
+        # negli ultimi AUTO_FIND_COOLDOWN_DAYS giorni -- passo oltre per evitare di notificare
+        # ripetutamente sullo stesso manager solo perche' una sua carta e' rimasta "sotto tiro"
+        # nello stream. Non si applica all'input manuale (che non passa da questa funzione).
+        if _is_in_auto_find_cooldown(owner, cooldown):
+            log(f"[auto-find] '{owner}': scansionato di recente (entro {AUTO_FIND_COOLDOWN_DAYS:.0f} "
+                f"giorni) via auto-discovery, in raffreddamento -- passo oltre.")
             continue
         cards, _nb, found, has_sale_field = fetch_manager_owned_in_season_limited_cards(owner)
         if not found:
@@ -555,7 +607,11 @@ def auto_find_manager(eth_rate):
         log(f"[auto-find] '{owner}': {n_for_sale} carte in_season in vendita "
             f"(soglia {AUTO_FIND_MIN_CARDS_FOR_SALE}).")
         if n_for_sale >= AUTO_FIND_MIN_CARDS_FOR_SALE:
-            log(f"[auto-find] SELEZIONATO '{owner}' -- parte lo scan classico su di lui.")
+            log(f"[auto-find] SELEZIONATO '{owner}' -- parte lo scan classico su di lui "
+                f"(in raffreddamento per i prossimi {AUTO_FIND_COOLDOWN_DAYS:.0f} giorni per "
+                f"la sola auto-discovery).")
+            cooldown[owner] = datetime.datetime.now().isoformat()
+            _save_auto_find_cooldown(cooldown)
             return owner
     log(f"[auto-find] nessun manager sopra la soglia tra i primi "
         f"{AUTO_FIND_MAX_MANAGERS_TO_CHECK} controllati -- nessuno scan, riprova piu' tardi "
