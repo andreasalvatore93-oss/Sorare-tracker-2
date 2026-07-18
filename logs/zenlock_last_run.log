@@ -5750,3 +5750,15 @@
 [2026-07-18 22:35:59] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 0 casi senza comparabile live, 0 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
 [2026-07-18 22:35:59] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 3717, 'wei': 484, 'usdCents': 2377, 'gbpCents': 199, 'lamport': 1, 'none': 0}
 [2026-07-18 22:35:59] [modello zenlock] esecuzione terminata.
+
+===== RUN 2026-07-18 22:36:24 UTC =====
+[2026-07-18 22:36:24] [modello zenlock] Tasso ETH/EUR: 1626.7
+[2026-07-18 22:36:24] [modello zenlock] Ascolto per 250 secondi (soglie: classic <=4.0EUR / in_season <=8.0EUR, sconto min 15%)...
+[2026-07-18 22:36:25] [modello zenlock] connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 22:36:26] [modello zenlock] sottoscrizione confermata, in ascolto...
+[2026-07-18 22:39:20] [modello zenlock] riferimento classic (0.40EUR) sostituito dal minimo in_season piu' economico (0.40EUR) per Nicolás Domínguez, vedi caso Szoboszlai
+[2026-07-18 22:39:44] [modello zenlock] riferimento classic (0.38EUR) sostituito dal minimo in_season piu' economico (0.38EUR) per Alexander Briedl, vedi caso Szoboszlai
+[2026-07-18 22:40:34] [modello zenlock] connessione chiusa (codice None). Eventi: 915, carte valutate: 236, notifiche inviate: 0 (di cui solo ETH: 0, di cui su riferimento storico: 0), scartate per mancanza comparabili: 0, scartate per riferimento troppo basso: 4, scartate per differenza assoluta troppo piccola: 0, scartate per gemello in_season altrettanto economico: 0, sconto sospetto non confermato alla riverifica: 0, riferimento troppo alto/non rappresentativo: 0, riferimento stagnante vs vendita reale: 0, saltate per throttle raffica (protezione rate-limit condiviso): 0, sostituto in_season piu' economico (non un affare distinto): 54 (di cui avrebbero notificato senza questo controllo: 0)
+[2026-07-18 22:40:34] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 0 casi senza comparabile live, 0 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
+[2026-07-18 22:40:34] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 3683, 'wei': 491, 'usdCents': 2902, 'gbpCents': 187, 'lamport': 2, 'none': 0}
+[2026-07-18 22:40:34] [modello zenlock] esecuzione terminata.
