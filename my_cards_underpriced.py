@@ -47,6 +47,7 @@ def get_my_cards_for_sale():
             rarityTyped
             inSeasonEligible
             sportSeason { name }
+            anyPlayer { slug }
             liveSingleSaleOffer {
               receiverSide {
                 amounts { eurCents }
@@ -233,6 +234,7 @@ def run_underpriced_scan():
 
             underpriced.append({
                 'slug': card_slug,
+                'player_slug': (card.get('anyPlayer') or {}).get('slug'),
                 'my_price': my_price_eur,
                 'market_price': market_price_eur,
                 'diff': diff,
@@ -273,13 +275,24 @@ def send_notifications(underpriced_cards):
 
         for card in block:
             season_label = f"{card['season']} {'(In Season)' if card['in_season'] else '(Classic)'}"
+            # FIX 18/07 (richiesta esplicita, link portava al mercato generale invece che alla
+            # carta): 'market/shop/{slug_carta}' NON e' un percorso valido per una carta
+            # specifica -- lo schema che punta davvero alla carta (gia' usato e verificato in
+            # produzione da track.py, vedi send_instant_alert/evaluate_player_offer) e'
+            # market/shop/manager-sales/{slug_giocatore}/limited?card={slug_carta}.
+            player_slug = card.get('player_slug')
+            if player_slug:
+                card_link = (f"https://sorare.com/it/football/market/shop/manager-sales/"
+                             f"{player_slug}/limited?card={card['slug']}")
+            else:
+                card_link = f"https://sorare.com/it/football/market/shop/{card['slug']}"
             msg += (
                 f"<b>{card['slug']}</b>\n"
                 f"Mio prezzo: <b>{card['my_price']:.2f}€</b>\n"
                 f"Market min: {card['market_price']:.2f}€\n"
                 f"Differenza: +{card['diff']:.2f}€ ({card['diff_percent']:+.1f}%)\n"
                 f"Stagione: {season_label}\n"
-                f"👉 <a href='https://sorare.com/it/football/market/shop/{card['slug']}'>Vedi sul market</a>\n"
+                f"👉 <a href='{card_link}'>Vedi la carta</a>\n"
                 f"\n"
             )
 

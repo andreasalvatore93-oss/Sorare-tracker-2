@@ -77,9 +77,13 @@ def get_all_my_cards():
     FIX 18/07: 'status' non esiste su AnyCardInterface (l'errore GraphQL bloccava l'intera
     query, quindi 0 carte trovate ad ogni run) -- rimosso. 'amountInCents' su liveSingleSaleOffer
     non esiste nemmeno lui (stesso bug gia' corretto in my_cards_underpriced.py) ed era comunque
-    inutilizzato qui, rimosso anche quello. Introspection disabilitata: senza un campo/stato
-    "sealed" noto e funzionante, per ora non filtriamo le carte sealed (rischio di includerne
-    qualcuna per errore e' preferibile a bloccare l'intero tracker su un campo indovinato)."""
+    inutilizzato qui, rimosso anche quello. 'createdAt' NEMMENO esiste su AnyCardInterface
+    (stesso errore, stesso blocco) -- rimosso anche quello: l'ordinamento "piu' recenti prima"
+    e' gia' garantito server-side da sorts: user_owner.from DESC, non serve un campo data
+    lato client per rifare lo stesso ordinamento in Python. Introspection disabilitata: senza
+    un campo/stato "sealed" noto e funzionante, per ora non filtriamo le carte sealed (rischio
+    di includerne qualcuna per errore e' preferibile a bloccare l'intero tracker su un campo
+    indovinato)."""
     log("Ricerca tutte le carte...")
 
     query = """
@@ -99,7 +103,7 @@ def get_all_my_cards():
             rarityTyped
             inSeasonEligible
             sportSeason { name }
-            createdAt
+            anyPlayer { slug }
           }
           nbHits
         }
@@ -290,8 +294,7 @@ def run_profit_scan():
         log("Nessuna carta trovata")
         return
 
-    # Ordina per data più recente (nuove carte prima)
-    all_cards.sort(key=lambda c: c.get('createdAt', ''), reverse=True)
+    # Nessun sort client-side: la query gia' ordina per user_owner.from DESC (piu' recenti prima)
 
     profitable = []
     newly_analyzed = []
@@ -342,6 +345,7 @@ def run_profit_scan():
                 f"(+{profit:.2f}€, {profit_percent:+.1f}%)")
             profitable.append({
                 'slug': card_slug,
+                'player_slug': (card.get('anyPlayer') or {}).get('slug'),
                 'purchase_price': purchase_price,
                 'market_price': market_price,
                 'profit': profit,
@@ -379,13 +383,22 @@ def send_notifications(profit_cards):
 
         for card in block:
             season_label = f"{card['season']} {'(In Season)' if card['in_season'] else '(Classic)'}"
+            # FIX 18/07 (richiesta esplicita, link portava al mercato generale invece che alla
+            # carta): stesso schema corretto gia' applicato in my_cards_underpriced.py, verificato
+            # in produzione da track.py (send_instant_alert/evaluate_player_offer).
+            player_slug = card.get('player_slug')
+            if player_slug:
+                card_link = (f"https://sorare.com/it/football/market/shop/manager-sales/"
+                             f"{player_slug}/limited?card={card['slug']}")
+            else:
+                card_link = f"https://sorare.com/it/football/market/shop/{card['slug']}"
             msg += (
                 f"<b>{card['slug']}</b>\n"
                 f"Acquistato: {card['purchase_price']:.2f}€\n"
                 f"Market min: {card['market_price']:.2f}€\n"
                 f"<b>Profit: +{card['profit']:.2f}€ ({card['profit_percent']:+.1f}%)</b>\n"
                 f"Stagione: {season_label}\n"
-                f"👉 <a href='https://sorare.com/it/football/market/shop/{card['slug']}'>Vedi sul market</a>\n"
+                f"👉 <a href='{card_link}'>Vedi la carta</a>\n"
                 f"\n"
             )
 
