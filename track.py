@@ -1392,17 +1392,34 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
 # Nuovo parametro season_type opzionale: se valorizzato, filtra le vendite restituite a quelle
 # della stessa categoria in_season/classic richiesta -- se None (default, comportamento
 # INVARIATO per tutti i chiamanti esistenti), nessun filtro, stesso mix di prima.
-def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True, season_type=None):
-    # FIX 17/07 (v15): stessa cache TTL breve di get_bucket_prices, stesso motivo (volume di
-    # query del bot come causa piu' probabile dei ban 429, vedi commento li' sopra). Chiave
-    # separata per last_n perche' last_n=1 (riverifica stagnante) e last_n=5 (default) sono
-    # tagli diversi dello stesso storico; ora anche per season_type, risultati diversi a seconda
-    # del filtro richiesto.
-    cache_key = (player_slug, last_n, season_type)
-    if use_cache:
-        cached = _cache_get(_RECENT_SALE_HISTORY_CACHE, cache_key)
-        if cached is not _CACHE_MISS:
-            return cached
+# FIX 18/07 (caso reale Bukayo Saka, richiesta esplicita dell'utente): il gate ha bloccato un
+# ALERT valido (15.91EUR -> 12.93EUR, -18.8%) dicendo "solo 2 transazioni negli ultimi 21 giorni"
+# -- ma la pagina "Cronologia delle vendite" del sito mostrava almeno 9 transazioni REALI (Offerta
+# diretta + Scambio) nella sola ultima settimana. Causa: la query sotto (tokens.tokenPrices(
+# playerSlug, rarity: limited)) NON accetta un argomento 'last' (confermato dall'errore reale
+# "Field 'tokenPrices' doesn't accept argument 'last'", vedi discover_sale_history_last_arg piu'
+# sotto) -- quindi non c'e' NESSUNA garanzia che il server restituisca le transazioni piu' recenti:
+# per un giocatore molto scambiato come Saka, l'ordine/troncamento lato server e' arbitrario e puo'
+# restituire un campione non rappresentativo, che dopo il filtro season_type lascia solo 2 vendite
+# "in_season" anche se la realta' e' ben diversa. Soluzione: esiste GIA' nel progetto (auctions.py/
+# auctions_ws_listener.py, get_recent_public_prices) una query gemella MA sotto anyPlayer invece di
+# tokens, che accetta un 'last' esplicito confermato funzionante -- se lo stesso campo, in questo
+# contesto, espone ANCHE date/card (mai provato prima d'ora insieme a 'last'), risolviamo alla
+# radice. NON passiamo l'argomento 'season' di questo stesso campo: e' gia' documentato altrove nel
+# progetto come inaffidabile (puo' azzerare risultati veri per la maggior parte dei giocatori, vedi
+# auctions_ws_listener.py) -- il filtro season resta client-side come sempre, ma ora su un pool
+# abbondante (RECENT_SALE_HISTORY_POOL_SIZE) di transazioni GARANTITE le piu' recenti, non piu' un
+# campione a scelta del server. Discovery fatta UNA VOLTA SOLA per processo (fatto di schema, non
+# per-giocatore): se il primo tentativo fallisce, fallback permanente alla vecchia query per tutto
+# il resto del run (mai un crash, solo l'ottimizzazione mancata finche' non si trova il campo giusto).
+RECENT_SALE_HISTORY_POOL_SIZE = int(os.environ.get('RECENT_SALE_HISTORY_POOL_SIZE', '50'))
+_recent_sale_history_v2_available = None  # None=non ancora provato, True/False dopo il 1o tentativo
+
+
+def _fetch_recent_sale_history_v1(player_slug):
+    """Query originale (sempre disponibile): tokens.tokenPrices(playerSlug, rarity: limited),
+    nessun argomento 'last'. Vedi FIX 18/07 sopra per il rischio noto di troncamento arbitrario
+    lato server. Ritorna la lista grezza di nodi, o None in caso di errore/eccezione."""
     query = """
     query RecentSaleHistory($p: String!) {
       tokens {
@@ -1418,9 +1435,74 @@ def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True, sea
         data = graphql_query(query, {"p": player_slug})
         if data.get('errors'):
             return None
-        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
+        return ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
     except Exception:
         return None
+
+
+def _fetch_recent_sale_history_v2(player_slug, pool_size):
+    """FIX 18/07: variante con 'last' esplicito (garantisce le VERE ultime pool_size transazioni,
+    niente piu' troncamento arbitrario). includePrivateSales: true per restare coerenti con la
+    filosofia gia' scelta dall'utente per questo gate (vedi commento FIX 16/07 v2 sopra: vendita/
+    scambio/offerta diretta contano tutte come segnale valido). Ritorna None se anche un solo
+    campo richiesto (date/card) non fosse leggibile in questo contesto -- mai presa per buona
+    senza verifica."""
+    query = """
+    query RecentSaleHistoryV2($p: String!, $lastN: Int!) {
+      anyPlayer(slug: $p) {
+        tokenPrices(rarity: limited, last: $lastN, includePrivateSales: true) {
+          nodes {
+            date
+            amounts { eurCents wei usdCents gbpCents lamport }
+            card { rarityTyped sport sportSeason { name } inSeasonEligible }
+          }
+        }
+      }
+    }
+    """
+    try:
+        data = graphql_query(query, {"p": player_slug, "lastN": pool_size})
+        if data.get('errors'):
+            return None
+        return (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes')
+    except Exception:
+        return None
+
+
+def get_recent_sale_history(player_slug, eth_rate, last_n=5, use_cache=True, season_type=None):
+    # FIX 17/07 (v15): stessa cache TTL breve di get_bucket_prices, stesso motivo (volume di
+    # query del bot come causa piu' probabile dei ban 429, vedi commento li' sopra). Chiave
+    # separata per last_n perche' last_n=1 (riverifica stagnante) e last_n=5 (default) sono
+    # tagli diversi dello stesso storico; ora anche per season_type, risultati diversi a seconda
+    # del filtro richiesto.
+    global _recent_sale_history_v2_available
+    cache_key = (player_slug, last_n, season_type)
+    if use_cache:
+        cached = _cache_get(_RECENT_SALE_HISTORY_CACHE, cache_key)
+        if cached is not _CACHE_MISS:
+            return cached
+
+    nodes = None
+    if _recent_sale_history_v2_available is not False:
+        nodes = _fetch_recent_sale_history_v2(player_slug, RECENT_SALE_HISTORY_POOL_SIZE)
+        if _recent_sale_history_v2_available is None:
+            # Prima volta in assoluto in questo processo: e' un fatto di schema (supportato o no),
+            # non di questo singolo giocatore -- decidiamo una volta per tutte per il resto del run.
+            if nodes is not None:
+                _recent_sale_history_v2_available = True
+                log("[storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) "
+                    "FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento "
+                    "arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).")
+            else:
+                _recent_sale_history_v2_available = False
+                log("[storico vendite] query v2 non disponibile in questo contesto -- fallback "
+                    "alla query v1 originale (nessuna garanzia di 'ultime N', stesso rischio di "
+                    "prima, vedi FIX 18/07).")
+    if nodes is None:
+        nodes = _fetch_recent_sale_history_v1(player_slug)
+    if nodes is None:
+        return None
+
     sales = []
     for n in nodes:
         if season_type is not None:

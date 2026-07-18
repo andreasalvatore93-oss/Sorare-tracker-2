@@ -503,16 +503,83 @@ alla volta") corrisponde ESATTAMENTE a quanto gia' implementato nel punto 8 sopr
 message) -- l'utente lo ha ridescritto perche' non lo vedeva ancora deployato, non e' una
 richiesta nuova.
 
+## Aggiornamento 18/07 (dopo il secondo giro di test reale -- primi 6 candidati falliti + caso Saka)
+
+L'utente ha pushato e testato il primo giro (punti 8/9): confermato via log reale che i 6
+candidati di filtro on-sale su searchCards sono TUTTI falliti con errore netto "Field
+'searchCards' doesn't accept argument '...'" (run 2026-07-18 11:02 UTC) -- searchCards non ha
+nessun argomento booleano diretto "solo in vendita". **Sostituito con TENTATIVO 2**: invece di un
+ARGOMENTO su searchCards, proviamo un CAMPO sulla carta stessa dentro `hits`, `liveSingleSaleOffer
+{ __typename }` -- stesso campo gia' individuato (ma mai testato in questo contesto esatto) in
+`diagnostic_live_auction_lookup.py` per un altro scopo. Se leggibile, `hit['liveSingleSaleOffer']
+is not None` diventa un segnale diretto e GRATIS (nessuna query aggiuntiva) di "questa carta e' in
+vendita ORA", permettendo di filtrare PRIMA di entrare nel ciclo costoso di controllo mercato.
+Probe singolo con fallback automatico se il campo non e' leggibile in questo contesto (mai un
+crash). **ANCORA NON CONFERMATO SU DATI REALI** -- la prossima run reale dira' se funziona.
+Rimossa la vecchia `discover_on_sale_query`/`ON_SALE_FILTER_CANDIDATES` (dead end confermato,
+inutile riprovarla ogni run). Testato con mock: campo funzionante (filtra 5 carte -> 2 confermate
+in vendita) e fallback (campo non leggibile, comportamento precedente preservato). Entrambi PASSED.
+
+**FIX 18/07 (caso reale Bukayo Saka, track.py)**: log reale mostrava un ALERT valido (15.91EUR ->
+12.93EUR, -18.8%) bloccato dal gate THIN_MARKET ("solo 2 transazioni negli ultimi 21 giorni,
+minimo richiesto 4") -- ma la pagina "Cronologia delle vendite" del sito mostrava almeno 9
+transazioni reali (Offerta diretta + Scambio) nella sola ultima settimana, tutte sul print
+2025-26 (in_season). Causa individuata: `get_recent_sale_history` usa
+`tokens.tokenPrices(playerSlug, rarity: limited)`, che NON accetta l'argomento `last` (confermato
+da un errore reale gia' documentato nel codice) -- quindi NESSUNA garanzia che il server
+restituisca le transazioni piu' recenti: per un giocatore molto scambiato come Saka, il
+troncamento/ordine lato server e' arbitrario e puo' restituire un campione non rappresentativo,
+che dopo il filtro season_type lascia solo 2 vendite anche se la realta' e' ben diversa.
+**Soluzione**: esiste gia' nel progetto (auctions.py/auctions_ws_listener.py,
+get_recent_public_prices) una query GEMELLA ma sotto `anyPlayer(slug)` invece di `tokens`, che
+ACCETTA un `last` esplicito (gia' confermato funzionante altrove) -- provato ad aggiungere
+date/card (mai testati insieme a `last` in questo contesto preciso). Se funziona: pool di
+`RECENT_SALE_HISTORY_POOL_SIZE=50` transazioni GARANTITE le piu' recenti (non piu' un campione a
+scelta del server), poi stesso filtro/sort/troncamento client-side di sempre. NON passato
+l'argomento `season` di questo stesso campo: gia' documentato altrove nel progetto come
+inaffidabile (puo' azzerare risultati veri per la maggior parte dei giocatori). Discovery fatta
+UNA VOLTA SOLA per processo (fatto di schema, non per-giocatore) tramite flag globale
+`_recent_sale_history_v2_available`, con fallback automatico e permanente alla vecchia query se
+il primo tentativo fallisce (mai un crash). Testato con mock: (1) v2 funzionante risolve
+esattamente il caso Saka (pool con 9 vendite recenti in_season -> count_recent_sales_in_window
+trova 6, non piu' 2, gate non blocca piu'); (2) v2 non disponibile -> fallback automatico a v1,
+discovery fatta una sola volta (non ri-provata per il giocatore successivo). Entrambi PASSED.
+**ANCORA NON CONFERMATO SU DATI REALI** se il campo v2 funziona davvero in questo contesto --
+prossima run reale con un ALERT lo dira'.
+
+**QoL 18/07 su `manager_bundle_scan.py`** (richiesta esplicita dell'utente dopo aver visto la
+notifica coi blocchi):
+- **"Offri fino a" piu' vistoso**: Telegram HTML non supporta dimensione font, quindi simulato
+  risalto visivo con cornice di emoji (💰━━━...━━━💰) sopra/sotto la riga, testo in maiuscolo,
+  frecce doppie 👉👉/👈👈 -- "salta subito all'occhio" scorrendo il messaggio.
+- **Link diretto al profilo del manager**: aggiunto in testa al messaggio, costruito dallo slug
+  (`https://sorare.com/it/football/my-club/{slug}/cards/limited?sale=true&is=true`, stesso URL
+  osservato dall'utente nel browser), con `&` HTML-escaped (`&amp;`) dentro l'attributo href per
+  correttezza.
+- Testato con mock (link presente, emphasis presente nel messaggio finale).
+
+**Domanda aperta dell'utente, NON risolta con certezza (punto 2 del suo messaggio)**: "il manager
+bundle scanner non e' partito mentre girava il tracker classico, si e' messo in coda". Verificato
+che i due workflow hanno `concurrency.group` DIVERSI e non correlati (`sorare-tracker` per
+check.yml vs `manager-bundle-scan` per manager_bundle_scan.yml) -- nessuna ragione di codice per
+cui dovrebbero bloccarsi a vicenda. Verificato anche (ricerca web) che il limite GitHub Actions
+per account personali Free e' 20 job concorrenti TOTALI per l'intero account -- ben oltre i 2 job
+in questione, quindi non e' nemmeno un limite di piano. Ipotesi piu' probabile: normale latenza di
+provisioning di un secondo runner GitHub-hosted (di solito pochi secondi, a volte fino a ~1
+minuto), non un bug nei nostri workflow. Da verificare guardando i timestamp esatti
+"queued"/"in progress" dei due run nella tab Actions di GitHub la prossima volta che succede, per
+confermare se e' un blocco vero o solo latenza normale.
+
 ## Stato a fine sessione 18/07 (continuazione, aggiornato)
 
 Implementato e testato (compilazione + mock), MA NON ANCORA PUSHATO dall'utente via GitHub
-Desktop: fix invisibilita' `track.py` (punto 9), QoL blocchi/evidenziazione
-`manager_bundle_scan.py` (punto 8), fix performance filtro on-sale `manager_bundle_scan.py`
-(questo aggiornamento). **Prossimo passo per l'utente**: pushare via GitHub Desktop, POI
-rilanciare il test su 'flobob-fc' (o altro manager con tante carte possedute ma poche in
-vendita) per (a) vedere finalmente il formato Telegram a blocchi con emoji, e (b) scoprire dal
-log se uno dei 6 candidati di filtro on-sale ha funzionato e quanto si e' abbassato il tempo di
-esecuzione. Backlog invariato: filtro Satonio (item 6b, non richiesto), pulsanti Telegram
-deep-link "compra ora"/"fai offerta" (item 6, non richiesto), eventuale ulteriore revisione
-soglie zenlock (item 5, gia' risolto ma aperto a ulteriori tarature se emergono nuovi casi
-reali).
+Desktop: sostituzione del filtro on-sale (campo liveSingleSaleOffer invece di argomenti falliti),
+fix v2/v1 per lo storico vendite (caso Saka), QoL "Offri fino a" piu' vistoso + link manager.
+**Prossimo passo per l'utente**: pushare via GitHub Desktop, poi (a) rilanciare bundle scan su un
+manager con tante carte possedute ma poche in vendita per vedere se liveSingleSaleOffer funziona
+e quanto si abbassa il tempo di esecuzione, con il nuovo formato blocchi/emphasis/link; (b)
+aspettare il prossimo ALERT o "mercato sottile" del tracker classico per vedere se la query v2
+dello storico vendite risolve casi come Bukayo Saka; (c) se ricapita la stessa sensazione di
+"scanner in coda dietro al tracker", controllare i timestamp esatti su GitHub Actions. Backlog
+invariato: filtro Satonio (item 6b, non richiesto), pulsanti Telegram deep-link "compra ora"/"fai
+offerta" (item 6, non richiesto).

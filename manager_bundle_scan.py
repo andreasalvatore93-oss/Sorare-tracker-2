@@ -99,9 +99,9 @@ def extract_manager_slug(raw_input):
 # confermati altrove, es. LIVE_OFFERS_QUERY, sullo stesso tipo di oggetto carta) per poter
 # distinguere in_season da classic, cosa che fetch_user_recent_cards non fa.
 #
-# FIX 18/07 (performance, caso reale flobob-fc): {filter_arg} e' un punto di innesto per un
-# argomento opzionale di filtro "solo carte attualmente in vendita" -- vedi
-# discover_on_sale_query() piu' sotto per il motivo e il meccanismo di scoperta.
+# FIX 18/07 (performance, caso reale flobob-fc): {sale_field} e' un punto di innesto per un
+# campo opzionale che dice se QUESTA carta specifica ha un'offerta di vendita attiva -- vedi
+# probe_live_single_sale_offer_field() piu' sotto per il motivo e il meccanismo di scoperta.
 OWNED_CARDS_QUERY_TEMPLATE = """
 query ManagerOwnedLimitedCards($userSlug: String!, $page: Int!, $pageSize: Int!) {{
   user(slug: $userSlug) {{
@@ -113,7 +113,6 @@ query ManagerOwnedLimitedCards($userSlug: String!, $page: Int!, $pageSize: Int!)
       page: $page
       pageSize: $pageSize
       sorts: [{{field: "user_owner.from", direction: DESC}}]
-      {filter_arg}
     ) {{
       hits {{
         slug
@@ -122,6 +121,7 @@ query ManagerOwnedLimitedCards($userSlug: String!, $page: Int!, $pageSize: Int!)
         sportSeason {{ name }}
         inSeasonEligible
         anyPlayer {{ slug displayName }}
+        {sale_field}
       }}
       nbHits
     }}
@@ -129,73 +129,66 @@ query ManagerOwnedLimitedCards($userSlug: String!, $page: Int!, $pageSize: Int!)
 }}
 """
 
-OWNED_CARDS_QUERY = OWNED_CARDS_QUERY_TEMPLATE.format(filter_arg="")
+OWNED_CARDS_QUERY = OWNED_CARDS_QUERY_TEMPLATE.format(sale_field="")
 
 # FIX 18/07 (performance, caso reale flobob-fc): possedeva 1741 carte Limited (464 giocatori
 # diversi in_season), ma SOLO 18 erano davvero in vendita -- il codice pre-fix scaricava tutte
 # le carte possedute e poi controllava il mercato live per OGNI giocatore posseduto (anche i
-# 446 che non c'entravano), costando ~115 secondi solo per quel ciclo. Il sito Sorare stesso
-# applica un filtro lato server per "carte in vendita" nella galleria di un manager (vedi URL
-# osservato dall'utente: .../cards/limited?sale=true&is=true) -- proviamo quindi a passare un
-# argomento booleano analogo direttamente a searchCards (la STESSA query che gia' usiamo per le
-# carte possedute), invece di scaricare tutto e filtrare dopo. Introspection disabilitata su
-# tutto questo progetto: nessun modo di sapere il nome esatto dell'argomento in anticipo, quindi
-# proviamo una lista di candidati e usiamo il primo che non da' errore GraphQL -- stesso identico
-# principio "prova e leggi l'errore" gia' usato altrove (vedi diagnostic_live_auction_lookup.py).
-# Se NESSUNO dei candidati funziona, fallback automatico al comportamento precedente (scarica
-# tutto, filtra dopo) -- piu' lento ma sempre corretto, non deve mai bloccare la scansione.
-ON_SALE_FILTER_CANDIDATES = [
-    "onSale: true",
-    "forSale: true",
-    "sale: true",
-    "isOnSale: true",
-    "onlyOnSale: true",
-    "listedForSale: true",
-]
+# 446 che non c'entravano), costando ~115 secondi solo per quel ciclo.
+#
+# TENTATIVO 1 (FALLITO, confermato dal log reale 18/07 11:02 UTC): un argomento booleano diretto
+# su searchCards (onSale/forSale/sale/isOnSale/onlyOnSale/listedForSale) -- TUTTI e 6 hanno dato
+# lo stesso identico errore netto "Field 'searchCards' doesn't accept argument '...'": searchCards
+# NON ha nessun argomento del genere (almeno non con questi nomi). Rimosso, inutile riprovarlo a
+# ogni run.
+#
+# TENTATIVO 2 (questo): un CAMPO (non un argomento) sulla carta stessa, "liveSingleSaleOffer" --
+# stesso campo gia' individuato (ma mai testato in QUESTO contesto/tipo esatto) in
+# diagnostic_live_auction_lookup.py per un altro scopo (riverifica pre-notifica di
+# auctions_ws_listener.py). Se leggibile anche dentro searchCards.hits, ci dice DIRETTAMENTE
+# (nessuna query aggiuntiva) quali carte possedute sono in vendita ORA, permettendoci di saltare
+# il controllo mercato per i giocatori che non c'entrano. Introspection disabilitata: un solo
+# probe minimo (pageSize=1), se da' errore fallback automatico alla query senza questo campo
+# (comportamento precedente, piu' lento ma sempre corretto, mai un crash).
+SALE_FIELD_PROBE = "liveSingleSaleOffer { __typename }"
+OWNED_CARDS_QUERY_WITH_SALE_FIELD = OWNED_CARDS_QUERY_TEMPLATE.format(sale_field=SALE_FIELD_PROBE)
 
 
-def discover_on_sale_query(manager_slug):
-    """Prova ogni candidato in ON_SALE_FILTER_CANDIDATES con un probe minimo (pageSize=1) contro
-    il manager reale che stiamo per analizzare. Ritorna (query_da_usare, filter_arg_trovato) --
-    filter_arg_trovato e' None se nessun candidato ha funzionato (fallback alla query originale
-    senza filtro). MAI presa per buona senza verifica: se un candidato non da' errori GraphQL lo
-    consideriamo valido, ma logghiamo comunque il conteggio hits del probe per un controllo
-    manuale a occhio nel log."""
-    for filter_arg in ON_SALE_FILTER_CANDIDATES:
-        query = OWNED_CARDS_QUERY_TEMPLATE.format(filter_arg=filter_arg)
-        try:
-            data = track.graphql_query(query, {
-                "userSlug": manager_slug, "page": 1, "pageSize": 1})
-        except Exception as e:
-            log(f"[filtro carte in vendita] candidato '{filter_arg}' -- eccezione di rete: {e}")
-            continue
-        if data.get('errors'):
-            log(f"[filtro carte in vendita] candidato '{filter_arg}' -- errore GraphQL "
-                f"(candidato scartato): {data['errors']}")
-            continue
-        probe_hits = (((data.get('data') or {}).get('user') or {}).get('searchCards') or {})
-        log(f"[filtro carte in vendita] candidato '{filter_arg}' FUNZIONA (nbHits probe="
-            f"{probe_hits.get('nbHits')}) -- lo uso per tutta la scansione: niente piu' "
-            f"controllo mercato sulle carte NON in vendita.")
-        return query, filter_arg
-    log("[filtro carte in vendita] nessun candidato ha funzionato -- fallback al comportamento "
-        "precedente (scarico tutte le carte Limited possedute e controllo il mercato per ogni "
-        "giocatore diverso, piu' lento). Vedi gli errori sopra per capire il nome giusto da "
-        "aggiungere ai candidati in futuro.")
-    return OWNED_CARDS_QUERY, None
+def probe_live_single_sale_offer_field(manager_slug):
+    """Prova il campo liveSingleSaleOffer dentro searchCards.hits con un probe minimo
+    (pageSize=1) contro il manager reale che stiamo per analizzare. Ritorna True se leggibile
+    (lo useremo per tutta la scansione), False altrimenti (fallback automatico). MAI presa per
+    buona senza verifica: logghiamo l'esito esatto."""
+    try:
+        data = track.graphql_query(OWNED_CARDS_QUERY_WITH_SALE_FIELD, {
+            "userSlug": manager_slug, "page": 1, "pageSize": 1})
+    except Exception as e:
+        log(f"[filtro carte in vendita] campo liveSingleSaleOffer -- eccezione di rete: {e} "
+            f"-- fallback al comportamento precedente.")
+        return False
+    if data.get('errors'):
+        log(f"[filtro carte in vendita] campo liveSingleSaleOffer NON leggibile in questo "
+            f"contesto (searchCards.hits) -- fallback al comportamento precedente (controllo il "
+            f"mercato per ogni giocatore posseduto, piu' lento). Errore: {data['errors']}")
+        return False
+    log("[filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- "
+        "lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza "
+        "controllare il mercato per i giocatori che non c'entrano.")
+    return True
 
 
 def fetch_manager_owned_in_season_limited_cards(manager_slug):
     """Scarica le carte Limited possedute dal manager (paginato fino a MAX_OWNED_CARD_PAGES),
     filtra client-side alle sole IN SEASON (season_type_for_card, stessa classificazione di
-    track.py/zenlock). Prima di scaricare, prova (discover_on_sale_query) a restringere GIA' lato
-    server alle sole carte attualmente in vendita -- se funziona, evitiamo di scaricare l'intera
-    collezione e controllare il mercato per giocatori che non sono nemmeno in vendita (vedi FIX
-    18/07 sopra). Ritorna (lista_carte_in_season, nb_hits_totale, manager_trovato,
-    filtrato_lato_server). manager_trovato=False se user() e' risultato nullo (slug inesistente);
-    None se non siamo nemmeno riusciti a interrogare (errore di rete/GraphQL alla prima pagina)."""
-    query, filter_arg = discover_on_sale_query(manager_slug)
-    filtered_to_on_sale = filter_arg is not None
+    track.py/zenlock). Prima di scaricare, prova (probe_live_single_sale_offer_field) ad
+    aggiungere un campo che dice DIRETTAMENTE se ogni carta e' in vendita ora -- se funziona,
+    filtriamo subito alle sole carte confermate in vendita, evitando di controllare il mercato
+    per i giocatori che non c'entrano (vedi FIX 18/07 sopra). Ritorna (lista_carte_in_season,
+    nb_hits_totale, manager_trovato, filtrato_lato_client). manager_trovato=False se user() e'
+    risultato nullo (slug inesistente); None se non siamo nemmeno riusciti a interrogare (errore
+    di rete/GraphQL alla prima pagina)."""
+    has_sale_field = probe_live_single_sale_offer_field(manager_slug)
+    query = OWNED_CARDS_QUERY_WITH_SALE_FIELD if has_sale_field else OWNED_CARDS_QUERY
 
     all_hits = []
     nb_hits_total = None
@@ -219,11 +212,9 @@ def fetch_manager_owned_in_season_limited_cards(manager_slug):
         hits = search.get('hits') or []
         if page == 1:
             nb_hits_total = search.get('nbHits')
-            scope = ("GIA' filtrate lato server alle sole in vendita" if filtered_to_on_sale
-                     else "possedute in totale (tutte le stagioni) -- nessun filtro on-sale "
-                          "disponibile, controllero' il mercato per ogni giocatore posseduto")
-            log(f"'{manager_slug}': {nb_hits_total} carte Limited {scope}, scansiono fino a un "
-                f"massimo di {MAX_OWNED_CARD_PAGES * OWNED_CARD_PAGE_SIZE}...")
+            log(f"'{manager_slug}': {nb_hits_total} carte Limited possedute in totale (tutte le "
+                f"stagioni), scansiono fino a un massimo di "
+                f"{MAX_OWNED_CARD_PAGES * OWNED_CARD_PAGE_SIZE}...")
         if not hits:
             break
         all_hits.extend(hits)
@@ -232,10 +223,17 @@ def fetch_manager_owned_in_season_limited_cards(manager_slug):
         time.sleep(0.2)
 
     if manager_found and nb_hits_total is not None and nb_hits_total > len(all_hits):
-        log(f"ATTENZIONE: '{manager_slug}' ha {nb_hits_total} carte Limited (in questo scope) ma "
-            f"ne ho scansionate solo {len(all_hits)} (limite MAX_OWNED_CARD_PAGES="
+        log(f"ATTENZIONE: '{manager_slug}' possiede {nb_hits_total} carte Limited ma ne ho "
+            f"scansionate solo {len(all_hits)} (limite MAX_OWNED_CARD_PAGES="
             f"{MAX_OWNED_CARD_PAGES}) -- alcune carte piu' vecchie potrebbero non essere state "
             f"controllate, il risultato finale potrebbe essere incompleto.")
+
+    if has_sale_field:
+        before = len(all_hits)
+        all_hits = [h for h in all_hits if h.get('liveSingleSaleOffer') is not None]
+        log(f"[filtro carte in vendita] {before} carte possedute scansionate, {len(all_hits)} "
+            f"confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo "
+            f"mercato per le restanti {before - len(all_hits)}.")
 
     in_season_cards = []
     skipped_no_player = 0
@@ -257,7 +255,7 @@ def fetch_manager_owned_in_season_limited_cards(manager_slug):
     if skipped_no_player:
         log(f"[diagnostica] {skipped_no_player} carte possedute scartate: nessun anyPlayer.slug "
             f"leggibile (dato grezzo anomalo, da controllare se capita spesso).")
-    return in_season_cards, nb_hits_total, manager_found, filtered_to_on_sale
+    return in_season_cards, nb_hits_total, manager_found, has_sale_field
 
 
 def find_current_listing_and_market_min(card_slug, player_slug, eth_rate):
@@ -299,7 +297,7 @@ def run_bundle_scan():
     eth_rate = track.get_eth_rate()
     track.reset_currency_branch_stats()
 
-    owned_in_season_cards, nb_hits_total, manager_found, filtered_to_on_sale = \
+    owned_in_season_cards, nb_hits_total, manager_found, has_sale_field = \
         fetch_manager_owned_in_season_limited_cards(manager_slug)
 
     if manager_found is False:
@@ -312,8 +310,8 @@ def run_bundle_scan():
             f"Nessuna notifica Telegram inviata.")
         return
 
-    scope_desc = ("gia' filtrate lato server alle sole in vendita" if filtered_to_on_sale
-                  else f"su {nb_hits_total} carte Limited totali, tutte le stagioni")
+    scope_desc = ("GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)"
+                  if has_sale_field else f"su {nb_hits_total} carte Limited totali, tutte le stagioni")
     log(f"'{manager_slug}': {len(owned_in_season_cards)} carte Limited IN SEASON possedute "
         f"({scope_desc}).")
     if not owned_in_season_cards:
@@ -408,8 +406,18 @@ def build_telegram_message(manager_slug, on_sale):
     blocks = [on_sale[i:i + BUNDLE_BLOCK_SIZE] for i in range(0, len(on_sale), BUNDLE_BLOCK_SIZE)]
     blocks_shown = blocks[:MAX_BLOCKS_IN_TELEGRAM_MESSAGE]
 
+    # FIX 18/07 (richiesta esplicita dell'utente): link diretto alla pagina Sorare del manager
+    # filtrata alle carte in vendita in_season -- stesso URL osservato dall'utente nel browser
+    # (.../my-club/{slug}/cards/limited?sale=true&is=true).
+    # '&' va sempre HTML-escaped dentro un attributo href (Telegram parse_mode=HTML), anche se
+    # in pratica molti client sono permissivi -- meglio essere corretti ed evitare un 400 su un
+    # URL con piu' di un parametro di query.
+    manager_url = (f"https://sorare.com/it/football/my-club/{manager_slug}/cards/limited"
+                   f"?sale=true&amp;is=true")
+
     lines = [f"🎯 <b>{manager_slug}</b> -- carte Limited in_season in vendita ({len(on_sale)}, "
-             f"{len(blocks)} blocchi da {BUNDLE_BLOCK_SIZE})\n"]
+             f"{len(blocks)} blocchi da {BUNDLE_BLOCK_SIZE})",
+             f'📂 <a href="{manager_url}">Vai alle carte in vendita di {manager_slug}</a>\n']
 
     for block_idx, block in enumerate(blocks_shown, start=1):
         start_n = (block_idx - 1) * BUNDLE_BLOCK_SIZE + 1
@@ -425,9 +433,14 @@ def build_telegram_message(manager_slug, on_sale):
         block_offer = block_market_min * (1 - BUNDLE_OFFER_MARGIN_FRACTION)
         lines.append(f"Subtotale: richiesto {format_eur(block_asking)}, minimo mercato "
                       f"{format_eur(block_market_min)}")
-        lines.append(f"👉 <b>Offri fino a {format_eur(block_offer)}</b> per questo blocco "
-                      f"(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, "
-                      f"da tarare)")
+        # FIX 18/07 (richiesta esplicita dell'utente, "piu' grande e piu' in risalto"): Telegram
+        # HTML non supporta dimensione del font, quindi simuliamo risalto visivo con una cornice
+        # di emoji sopra/sotto + maiuscolo + frecce, cosi' la riga "salta subito all'occhio"
+        # anche scorrendo veloce il messaggio.
+        lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
+        lines.append(f"👉👉 <b>OFFRI FINO A {format_eur(block_offer)}</b> 👈👈")
+        lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
+        lines.append(f"(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)")
         lines.append("")
 
     if len(blocks) > MAX_BLOCKS_IN_TELEGRAM_MESSAGE:
