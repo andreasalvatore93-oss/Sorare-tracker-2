@@ -18,6 +18,10 @@ on:
         description: "Tetto di sicurezza: numero massimo di giocatori diversi da controllare sul mercato"
         required: false
         default: "300"
+      bundle_block_size:
+        description: "Numero di carte per blocco (limite Sorare per offerta cumulativa: max 10)"
+        required: false
+        default: "10"
 
 permissions:
   contents: write
@@ -62,6 +66,7 @@ jobs:
           BUNDLE_OFFER_MARGIN_FRACTION: ${{ github.event.inputs.bundle_offer_margin_fraction || '0.15' }}
           MAX_OWNED_CARD_PAGES: ${{ github.event.inputs.max_owned_card_pages || '20' }}
           MAX_PLAYERS_TO_CHECK: ${{ github.event.inputs.max_players_to_check || '300' }}
+          BUNDLE_BLOCK_SIZE: ${{ github.event.inputs.bundle_block_size || '10' }}
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail

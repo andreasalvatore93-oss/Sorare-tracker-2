@@ -372,3 +372,147 @@ CRLF sopra) invece di assumere. File toccati oggi: `track.py`, `zenlock_model_tr
    patologico 200 eventi in 1s -> il freno scatta ancora. Push ancora da fare da parte
    dell'utente -- monitorare il prossimo run reale per confermare che il volume normale non
    venga piu' toccato.
+
+## Aggiornamento 18/07 (continuazione stessa giornata)
+
+7. **NUOVO STRUMENTO: `manager_bundle_scan.py` + `.github/workflows/manager_bundle_scan.yml`**
+   (workflow manuale, uno-shot, separato dai 3 tracker esistenti). Dato lo slug o l'URL profilo
+   di un manager, trova tutte le sue carte Limited IN SEASON attualmente in vendita (niente
+   classic, richiesta esplicita) e per ciascuna calcola il minimo di mercato dello stesso
+   giocatore incrociando `fetch_user_recent_cards`-style query (carte possedute) con
+   `get_bucket_prices` (mercato live) via card_slug -- nessun filtro GraphQL diretto "in vendita"
+   scoperto, quindi si usa questo incrocio piu' pesante ma sicuro. Nessuno stato persistente
+   (niente .db). Notifica su Telegram riusando TEMPORANEAMENTE i secret del canale aste
+   (`AUCTION_TELEGRAM_TOKEN`/`AUCTION_TELEGRAM_CHAT_ID`), su richiesta esplicita dell'utente.
+   Testato dall'utente in produzione su se stesso (slug "crowss"): funzionante, incluse tutte le
+   valute (eurCents/wei/usdCents/gbpCents branch tutti attivati correttamente nel test reale).
+   Backlog collegato (NON implementare finche' non richiesto): filtro/peso diverso per le offerte
+   di mercato originate dal manager "Satonio" (bulk relisting a prezzi tondi, "sempre
+   fuorvianti") -- vedi item 6b sopra, stesso principio si applicherebbe qui.
+
+8. **QoL 18/07 su `manager_bundle_scan.py`** (richiesta esplicita dell'utente dopo il primo test
+   reale):
+   - **Blocchi da 10**: Sorare permette un'unica offerta cumulativa su max 10 carte per manager.
+     Il messaggio Telegram ora organizza le carte in blocchi da `BUNDLE_BLOCK_SIZE` (default 10,
+     configurabile da input workflow), ognuno con il proprio subtotale (richiesto, minimo
+     mercato) e la propria offerta suggerita (stesso `BUNDLE_OFFER_MARGIN_FRACTION`, applicata al
+     minimo di mercato DEL BLOCCO, non al totale). Ordine di scoperta, non riordinato (l'utente ha
+     confermato "va bene anche in ordine sparso"). Niente margine di profitto per blocco --
+     l'utente lo calcola da solo. Tetto di sicurezza `MAX_BLOCKS_IN_TELEGRAM_MESSAGE` (default 10
+     blocchi = 100 carte) oltre il quale i blocchi restanti vengono solo riassunti con un
+     conteggio (dettaglio comunque nel log completo su GitHub) -- limite di lunghezza messaggi
+     Telegram.
+   - **Evidenziazione visiva**: Telegram (parse_mode HTML) NON supporta colori del testo, solo
+     grassetto/corsivo/link -- ho usato un'emoji come equivalente pratico: 🟢 quando la carta e'
+     GIA' al prezzo minimo di mercato (nessuna alternativa piu' economica, es. "Darijan Bojanić:
+     in vendita a 7.35EUR, minimo mercato 7.35EUR" -- lasciata cosi' come richiesto), 🔴 quando il
+     prezzo chiesto e' SOPRA il minimo di mercato (esiste un'alternativa piu' economica altrove,
+     es. "Park Cheol-Woo: in vendita a 3.90EUR, minimo mercato 3.50EUR" -- evidenziata). Legenda
+     emoji aggiunta in fondo al messaggio.
+   - Nuova funzione `build_telegram_message(manager_slug, on_sale)` estratta da `run_bundle_scan`
+     per poterla testare isolatamente. Testato con mock: caso esatto dato dall'utente (Bojanić
+     verde/invariato, Cheol-Woo rosso/evidenziato), 23 carte -> 3 blocchi (10/10/3) con subtotali
+     verificati aritmeticamente, troncamento oltre il tetto blocchi, e un test end-to-end completo
+     di `run_bundle_scan()` con 12 carte finte -> 2 blocchi. Tutti PASSED.
+   - Rimossa la vecchia `MAX_LINES_IN_TELEGRAM_MESSAGE=30` (limite piatto sostituito dalla logica
+     a blocchi).
+
+9. **FIX 18/07 (caso reale confermato dall'utente): finestra di invisibilita' in `track.py` faceva
+   perdere affari veri.** Caso concreto: David Pereira da Costa, annuncio nuovo a 4EUR (minimo
+   mercato reale 5EUR, quindi un buon affare), MAI notificato -- il log mostrava la carta
+   accodata per riverifica (`queue_pending_recheck`) alle 09:40 UTC perche' la query di verifica
+   live non la vedeva ancora (finestra di invisibilita' Sorare, storicamente stimata ~2 minuti),
+   poi riverificata alle 09:46 UTC (~6 minuti dopo, ben oltre i 2 minuti attesi) e ANCORA
+   invisibile alla query -- caso scartato per sempre (nessun secondo tentativo). Richiesta
+   esplicita dell'utente: semplificare, non far dipendere la notifica dalla nostra query di
+   verifica che raggiunga l'annuncio, il tempo di reazione umana e' gia' un buffer sufficiente.
+   Vincolo esplicito dell'utente: non trattare solo `price_eur` come se fosse solo EUR letterale,
+   dev'essere gestito anche per le altre valute (wei/usdCents/gbpCents/lamport) -- confermato che
+   `price_eur` e' GIA' il valore convertito in EUR a prescindere dalla valuta originale (via
+   `eur_price_from_amounts`), quindi il fix si applica correttamente a tutte le valute senza
+   distinzioni.
+   - **Modifica in `evaluate_player_offer`** (blocco "l'annuncio e' piu' economico del minimo
+     trovato dalla verifica live, probabile finestra di invisibilita'"): invece di accodare per
+     riverifica e aspettare, ora si usa SUBITO `price_eur` (e il suo `card_slug`) come vero nuovo
+     minimo, prependendolo a `own_prices` (cosi' il vecchio `true_min_price` diventa
+     `own_prices[1]`, il comparabile corretto, esattamente come se questa carta fosse stata
+     visibile fin dall'inizio) e riassegnando `true_min_price`/`true_min_card_slug`. Nessuna
+     attesa, nessun secondo giro di query, l'ALERT scatta subito con il prezzo reale dell'evento.
+     Precedente citato come riferimento di design gia' accettato nel progetto:
+     `send_instant_alert` gia' si fida di un prezzo raw non verificato dal vivo (con le sue
+     proprie soglie di sicurezza).
+   - Gli ALTRI due punti che chiamano `queue_pending_recheck` in `track.py` (fallback per
+     errore di rete/query fallita; e il controllo "margine troppo vicino"/possibile secondo
+     annuncio ancora piu' economico non ancora visto, caso Antonio Sivera) sono stati
+     DELIBERATAMENTE lasciati INVARIATI -- sono scenari genuinamente diversi da questo.
+   - Testato con 3 scenari mock: (1) replica esatta caso invisibile (evento 4.00EUR, query vede
+     solo 5.00EUR, slug diverso) -> ALERT immediato "5.00EUR -> 4.00EUR (20.0%)", nessuna
+     `queue_pending_recheck` chiamata -- PASSED; (2) caso normale/nessuna invisibilita' (carta
+     evento gia' visibile come piu' economica) -> comportamento ALERT invariato, nessun log di
+     invisibilita' spurio -- PASSED; (3) "bug del centesimo" (stesso slug carta, differenza di
+     prezzo minima per arrotondamento, dentro `INVISIBILITY_GAP_TOLERANCE`) -> correttamente NON
+     trattato come invisibilita', nessun falso trigger -- PASSED.
+   - `py_compile track.py` OK.
+
+## Aggiornamento 18/07 (dopo il primo giro di test reale dell'utente)
+
+**Scoperta importante**: l'utente aveva lanciato i workflow (test su "flobob-fc" per il bundle
+scanner) PRIMA di aver pushato i fix del punto 8/9 via GitHub Desktop -- confermato confrontando
+`origin/main` con i file locali (`git diff origin/main -- manager_bundle_scan.py` mostrava
+differenze, `build_telegram_message`/`Blocco`/`BUNDLE_BLOCK_SIZE` assenti su origin). Per questo
+la notifica Telegram mostrata dall'utente era ancora nel formato VECCHIO (lista piatta, "Offri
+fino a X per il pacchetto" su TUTTE le carte insieme -- non fattibile su Sorare oltre le 10
+carte). Nessun bug nel codice: semplicemente non ancora deployato. Chiarito esplicitamente
+all'utente.
+
+**NUOVO PROBLEMA REALE emerso dallo stesso test (log run 2026-07-18 10:40:09 UTC, 'flobob-fc')**:
+1741 carte Limited possedute, 560 in_season, 464 giocatori diversi -- il ciclo di controllo
+mercato (`find_current_listing_and_market_min` per OGNI giocatore posseduto, capped a
+MAX_PLAYERS_TO_CHECK=300) ha impiegato ~115 secondi (10:40:19->10:42:14) per trovare solo 18
+carte DAVVERO in vendita. Causa: nessun filtro server-side "solo in vendita" veniva applicato
+alla query delle carte possedute -- si scaricava tutto e si controllava il mercato anche per i
+446 giocatori le cui carte NON erano in vendita. L'utente ha notato che il sito Sorare stesso usa
+un filtro lato server per questo (URL osservato:
+`.../cards/limited?sale=true&is=true`), chiedendo esplicitamente di "fargli filtrare solo e
+direttamente per carte vendita in season, e far partire [il controllo prezzo minimo] solo dopo".
+
+**FIX 18/07 (performance)** in `manager_bundle_scan.py`: `OWNED_CARDS_QUERY` trasformato in
+`OWNED_CARDS_QUERY_TEMPLATE` con un punto di innesto `{filter_arg}` sull'argomento searchCards.
+Nuova `discover_on_sale_query(manager_slug)`: prova in ordine una lista di candidati
+(`ON_SALE_FILTER_CANDIDATES = ["onSale: true", "forSale: true", "sale: true", "isOnSale: true",
+"onlyOnSale: true", "listedForSale: true"]`) con un probe minimo (pageSize=1) contro il manager
+reale, usa il primo che non da' errore GraphQL per TUTTA la scansione (introspection disabilitata,
+nessun modo di sapere il nome esatto in anticipo -- stesso principio "prova e leggi l'errore" di
+tutto il resto del progetto). Se NESSUN candidato funziona: fallback automatico al comportamento
+precedente (scarica tutto, controlla il mercato per ogni giocatore posseduto -- piu' lento ma
+sempre corretto, mai un crash). `fetch_manager_owned_in_season_limited_cards` ora ritorna anche
+`filtered_to_on_sale` (bool) per loggare chiaramente quale scope e' stato usato. **NON ANCORA
+VERIFICATO SU DATI REALI quale candidato (se uno) funziona davvero** -- la prossima run reale
+dira' se uno dei 6 candidati ha funzionato (log espliciti per ognuno) o se serve aggiungerne
+altri sulla base dell'errore GraphQL esatto restituito da Sorare.
+Testato con mock: (1) discover_on_sale_query trova il candidato giusto al 3o tentativo; (2)
+fallback quando nessun candidato funziona; (3) fetch con filtro funzionante scarica SOLO le carte
+gia' in vendita (non centinaia); (4) end-to-end completo `run_bundle_scan()` con filtro
+funzionante (12 carte -> 2 blocchi correttamente formattati con emoji); (5) end-to-end completo
+con fallback (nessun filtro disponibile, comportamento precedente preservato, notifica comunque
+corretta). Tutti PASSED.
+
+Confermato che il resto della richiesta dell'utente (organizzazione in pacchetti da 10 con
+subtotale/offerta per pacchetto, "non tutte insieme perche' posso offrire solo per dieci carte
+alla volta") corrisponde ESATTAMENTE a quanto gia' implementato nel punto 8 sopra (build_telegram_
+message) -- l'utente lo ha ridescritto perche' non lo vedeva ancora deployato, non e' una
+richiesta nuova.
+
+## Stato a fine sessione 18/07 (continuazione, aggiornato)
+
+Implementato e testato (compilazione + mock), MA NON ANCORA PUSHATO dall'utente via GitHub
+Desktop: fix invisibilita' `track.py` (punto 9), QoL blocchi/evidenziazione
+`manager_bundle_scan.py` (punto 8), fix performance filtro on-sale `manager_bundle_scan.py`
+(questo aggiornamento). **Prossimo passo per l'utente**: pushare via GitHub Desktop, POI
+rilanciare il test su 'flobob-fc' (o altro manager con tante carte possedute ma poche in
+vendita) per (a) vedere finalmente il formato Telegram a blocchi con emoji, e (b) scoprire dal
+log se uno dei 6 candidati di filtro on-sale ha funzionato e quanto si e' abbassato il tempo di
+esecuzione. Backlog invariato: filtro Satonio (item 6b, non richiesto), pulsanti Telegram
+deep-link "compra ora"/"fai offerta" (item 6, non richiesto), eventuale ulteriore revisione
+soglie zenlock (item 5, gia' risolto ma aperto a ulteriori tarature se emergono nuovi casi
+reali).

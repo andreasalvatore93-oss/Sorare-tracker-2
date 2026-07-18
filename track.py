@@ -2326,17 +2326,46 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # di un centesimo) e' un segnale vero di invisibilita', non rumore, e va sempre riaccodato.
         is_same_card = true_min_card_slug == card_slug
         gap_relative = (true_min_price - price_eur) / true_min_price if true_min_price > 0 else 0
+        # FIX 18/07 (richiesta esplicita dell'utente, caso reale David Pereira da Costa): PRIMA,
+        # quando l'evento risultava piu' economico del minimo trovato dalla query (invisibilita'),
+        # il codice si limitava a loggare e mettere il caso in coda per UNA riverifica futura,
+        # ma continuava a valutare/notificare con true_min_price preso dalla query (qui sopra),
+        # ignorando price_eur. Caso reale: annuncio a 4.00EUR accodato alle 09:40, riverificato
+        # alle 09:46 (quasi 6 minuti dopo, il DOPPIO dei ~2 minuti di finestra assunti) -- la
+        # query vedeva ANCORA solo 5.00EUR. Essendo gia' una riverifica, il codice si rifiutava
+        # di riaccodare di nuovo ("evito un ciclo senza fine") e il caso e' andato perso per
+        # sempre, senza alcuna notifica, pur essendo un affare reale confermato a mano
+        # dall'utente. Il problema di fondo: l'intero meccanismo dipendeva dal fatto che fosse la
+        # NOSTRA query a "scoprire" l'annuncio, ma quella query puo' restare cieca per un tempo
+        # non garantito (qui il doppio dell'assunzione), con un solo tentativo di ripescaggio
+        # prima di arrendersi. price_eur e' pero' un push LIVE autentico di Sorare (status=
+        # 'opened' sulla subscription), gia' convertito in EUR qualunque fosse la valuta reale
+        # dell'annuncio (eurCents/wei/usdCents/gbpCents/lamport, vedi eur_price_from_amounts) --
+        # non e' un dato "di serie B" solo perche' la nostra query di verifica non l'ha ancora
+        # visto. Da oggi lo trattiamo SUBITO come il vero minimo (stesso principio gia' usato
+        # dalla notifica veloce non verificata, send_instant_alert, che pero' richiede un floor
+        # fresco ed e' un percorso separato/piu' rischioso): own_prices (i prezzi visti dalla
+        # query, che NON includono questa carta essendo invisibile) diventano automaticamente i
+        # comparabili "altri annunci" per il calcolo del margine piu' sotto -- esattamente come
+        # accadrebbe se la carta fosse stata visibile fin dall'inizio. La coda pending_recheck
+        # per questo scenario specifico non serve piu' (nessuna attesa, nessun ciclo di
+        # riverifiche): resta invariata solo per il caso, diverso, di un vero fallimento di rete
+        # della query (piu' sopra, buckets is None) e per il caso "margine troppo vicino, forse
+        # esiste un annuncio ANCORA piu' economico che non conosciamo affatto" (piu' sotto).
         if (price_eur < true_min_price and true_min_price > 0
                 and (not is_same_card or gap_relative > INVISIBILITY_GAP_TOLERANCE)):
             log(f"{player_name} ({season_type}, {season_name}): l'annuncio che ha scatenato "
                 f"l'evento ({price_eur:.2f}EUR) e' piu' economico del minimo trovato dalla "
                 f"verifica live ({true_min_price:.2f}EUR) -- probabilmente ancora nella "
-                f"finestra di invisibilita' di Sorare"
-                + (", accodo per riverifica" if allow_requeue else ", ma questa e' gia' una "
-                   "riverifica: non riaccodo di nuovo, evito un ciclo senza fine"))
-            if allow_requeue:
-                queue_pending_recheck(player_slug, player_name, season_type, season_name,
-                                       price_eur, card_slug)
+                f"finestra di invisibilita' di Sorare, uso subito {price_eur:.2f}EUR come vero "
+                f"minimo (nessuna attesa/riverifica, vedi FIX 18/07)")
+            # NOTA: own_prices[0] e' GIA' (true_min_price, true_min_card_slug) di prima (e' cosi'
+            # che li abbiamo ottenuti poco sopra) -- prependiamo SOLO la nuova entry (price_eur,
+            # card_slug), lasciando own_prices intatto dietro: own_prices[1] piu' sotto (usato
+            # come "secondo prezzo") risultera' cosi' il vecchio true_min_price, esattamente il
+            # comparabile giusto, come se questa carta fosse stata visibile fin dall'inizio.
+            own_prices = [(price_eur, card_slug)] + own_prices
+            true_min_price, true_min_card_slug = price_eur, card_slug
 
         # Il controllo sopra (price_eur < MIN_PRICE_EUR) filtra solo il prezzo dell'EVENTO
         # che ha innescato il controllo, non il vero prezzo minimo verificato live -- per
