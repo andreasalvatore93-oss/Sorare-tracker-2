@@ -3708,3 +3708,82 @@
 [2026-07-18 21:37:34] Connessione chiusa (codice None). Eventi ricevuti: 1015, carte Limited/football elaborate: 46, in finestra di invisibilita': 14
 [2026-07-18 21:37:34] [riepilogo] Inizializzati 1, Riferimento riallineato (stantio) 9, Sostituto in season piu' economico 1, Bloccato (mercato troppo sottile, poche transazioni) 1, Notificati (calo diretto) 1, Notificati (opportunita' di margine) 1, Piccola variazione 8, Notifiche veloci (non verificate) 1, realign_up 4
 [2026-07-18 21:37:34] Esecuzione terminata.
+
+===== RUN 2026-07-18 21:38:00 UTC =====
+[2026-07-18 21:38:01] Tasso ETH/EUR: 1624.28
+[2026-07-18 21:38:01] Stagione In Season corrente: 2025-26
+[2026-07-18 21:38:01] Ascolto per 250 secondi...
+[2026-07-18 21:38:01] Connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 21:38:02] Sottoscrizione confermata, in ascolto...
+[2026-07-18 21:38:11] VELOCE (non verificato) Francisco Conceição (classic, 2023-24) sceso: 3.81EUR -> 3.00EUR (21.3%) -- notifica immediata, prima della verifica live completa
+[2026-07-18 21:38:13] ALERT! Francisco Conceição (classic, 2023-24) sceso: 3.81EUR -> 3.00EUR (21.3%) [prezzo minimo verificato live]
+[2026-07-18 21:38:13] [storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).
+[2026-07-18 21:38:13] Francisco Conceição: ultime 6 transazioni concluse, dalla piu' recente (vendita/scambio/asta/offerta, tutte le stampe 'limited'): 3.55EUR, 3.51EUR, 4.04EUR, 4.06EUR, 4.87EUR, 4.25EUR
+[2026-07-18 21:38:51] Vitor Roque (classic, 2024-25): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-15T17:18:20.971896), lo riallineo (5.32EUR -> 4.00EUR) e proseguo con la sola valutazione del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)
+[2026-07-18 21:38:52] OPPORTUNITA' DI MARGINE (nessun calo recente) Vitor Roque (classic, 2024-25): minimo 4.00EUR, secondo prezzo 4.62EUR (margine 13.4%, richiesto 11.0%) -- BLOCCATO: solo 3 transazioni reali negli ultimi 21 giorni (minimo richiesto 4), mercato troppo sottile, notifica NON inviata (solo loggata per controllo)
+[2026-07-18 21:38:52] Vitor Roque: ultime 6 transazioni concluse, dalla piu' recente (vendita/scambio/asta/offerta, tutte le stampe 'limited'): 5.10EUR, 3.99EUR, 5.16EUR, 3.64EUR, 3.73EUR, 3.75EUR -- MERCATO SOTTILE: solo 3 transazioni negli ultimi 21 giorni, il secondo prezzo e' meno affidabile
+[2026-07-18 21:39:33] VELOCE (non verificato) Kerim-Sam Alajbegović (in_season, 2025-26) sceso: 15.00EUR -> 7.20EUR (52.0%) -- notifica immediata, prima della verifica live completa
+[2026-07-18 21:39:33] DUBBIO (calo molto ampio (>50%)) Kerim-Sam Alajbegović (in_season, 2025-26) sceso: 15.00EUR -> 7.20EUR (52.0%) -- eseguo un secondo controllo prima di scartare
+[2026-07-18 21:39:36] SALTATO (dubbio non confermato al secondo controllo: calo molto ampio (>50%)) Kerim-Sam Alajbegović (in_season, 2025-26) -- non notifico per evitare falsi allarmi
+[2026-07-18 21:40:34] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1166', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:40:34] [rate limit] Retry-After=1166s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:40:34] [paginazione annunci live] errore per david-soria-solis: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:40:34] David Soria (classic, 2021-22): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-16T17:44:26.263012), lo riallineo (5.00EUR -> 5.50EUR) e proseguo con la sola valutazione del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)
+[2026-07-18 21:40:52] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1149', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:40:52] [rate limit] Retry-After=1149s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:40:52] [paginazione annunci live] errore per darijan-bojanic: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:40:52] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1148', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:40:52] [rate limit] Retry-After=1148s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:40:52] [paginazione annunci live] errore per matthieu-luka-epolo: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:40:52] Matthieu Epolo (classic, 2023-24): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-16T20:28:32.387598), lo riallineo (4.00EUR -> 11.00EUR) e proseguo con la sola valutazione del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)
+[2026-07-18 21:41:08] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1132', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:08] [rate limit] Retry-After=1132s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:08] [paginazione annunci live] errore per dejan-kulusevski: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:08] Dejan Kulusevski (classic, 2023-24): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-15T12:36:10.782625), lo riallineo (3.00EUR -> 2.30EUR) e proseguo con la sola valutazione del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)
+[2026-07-18 21:41:11] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1129', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:11] [rate limit] Retry-After=1129s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:11] [paginazione annunci live] errore per mika-marcel-godts: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:11] Mika Godts (in_season, 2025-26): piccola variazione, aggiorno il riferimento (17.36EUR -> 16.00EUR)
+[2026-07-18 21:41:15] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1125', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:15] [rate limit] Retry-After=1125s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:15] [paginazione annunci live] errore per maximilian-hofmann: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:15] Maximilian Hofmann (classic, 2021-22): inizializzazione a 2.19EUR
+[2026-07-18 21:41:31] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1109', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:31] [rate limit] Retry-After=1109s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:31] [paginazione annunci live] errore per ismael-kone-2002-06-06: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:31] Ismaël Koné (in_season, 2025-26): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-16T11:35:13.016265), lo riallineo (2.00EUR -> 2.61EUR) e proseguo con la sola valutazione del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)
+[2026-07-18 21:41:32] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1108', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:32] [rate limit] Retry-After=1108s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:32] [paginazione annunci live] errore per azzedine-ounahi: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:32] Azzedine Ounahi (classic, 2022-23): prezzo attuale (6.30EUR) sopra il riferimento salvato (4.94EUR), lo allineo al rialzo senza notificare (nessun calo, vedi FIX 18/07)
+[2026-07-18 21:41:32] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1108', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:32] [rate limit] Retry-After=1108s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:32] [paginazione annunci live] errore per justin-che: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:32] Justin Che (classic, 2025-26): prezzo attuale (3.09EUR) sopra il riferimento salvato (2.00EUR), lo allineo al rialzo senza notificare (nessun calo, vedi FIX 18/07)
+[2026-07-18 21:41:33] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1107', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:33] [rate limit] Retry-After=1107s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:33] [paginazione annunci live] errore per lassine-sinayoko: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:33] Lassine Sinayoko (classic, 2024-25): prezzo attuale (2.30EUR) sopra il riferimento salvato (2.00EUR), lo allineo al rialzo senza notificare (nessun calo, vedi FIX 18/07)
+[2026-07-18 21:41:33] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1107', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:33] [rate limit] Retry-After=1107s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:33] [paginazione annunci live] errore per maksim-paskotsi: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:33] Maksim Paskotši (in_season, 2025-26): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-15T18:41:36.099003), lo riallineo (0.36EUR -> 3.90EUR) e proseguo con la sola valutazione del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)
+[2026-07-18 21:41:40] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1100', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:40] [rate limit] Retry-After=1100s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:40] [paginazione annunci live] errore per keisuke-tada: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:40] Keisuke Tada (in_season, 2026): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-15T20:38:13.148585), lo riallineo (2.86EUR -> 2.71EUR) e proseguo con la sola valutazione del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)
+[2026-07-18 21:41:41] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1099', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:41] [rate limit] Retry-After=1099s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:41] [paginazione annunci live] errore per ho-jae-lee: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:41] Lee Ho-Jae (in_season, 2026): prezzo attuale (6.18EUR) sopra il riferimento salvato (5.61EUR), lo allineo al rialzo senza notificare (nessun calo, vedi FIX 18/07)
+[2026-07-18 21:41:52] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1088', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:41:52] [rate limit] Retry-After=1088s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:41:52] [paginazione annunci live] errore per che-adams: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:41:52] Ché Adams (in_season, 2025-26): inizializzazione a 2.61EUR
+[2026-07-18 21:42:08] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='1072', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:42:08] [rate limit] Retry-After=1072s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:42:08] [paginazione annunci live] errore per nicolas-pepe: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:42:08] Nicolas Pépé (in_season, 2025-26): riferimento salvato troppo vecchio (ultimo aggiornamento 2026-07-15T13:11:04.123567), lo riallineo (4.56EUR -> 4.90EUR) e proseguo con la sola valutazione del margine verso il secondo prezzo attuale (vedi FIX 18/07 v3)
+[2026-07-18 21:42:11] Connessione chiusa (codice None). Eventi ricevuti: 862, carte Limited/football elaborate: 31, in finestra di invisibilita': 4
+[2026-07-18 21:42:11] [riepilogo] Inizializzati 2, Riferimento riallineato (stantio) 8, Bloccato (mercato troppo sottile, poche transazioni) 1, Dubbio non confermato 1, Notificati (calo diretto) 1, Piccola variazione 1, Notifiche veloci (non verificate) 2, realign_up 4
+[2026-07-18 21:42:11] Esecuzione terminata.
