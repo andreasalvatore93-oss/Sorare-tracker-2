@@ -377,11 +377,13 @@ def run_bundle_scan():
     total_asking = sum(c['listing_price'] for c in on_sale)
     total_market_min = sum(c['market_min_price'] for c in on_sale)
     n_blocks = math.ceil(len(on_sale) / BUNDLE_BLOCK_SIZE)
+    n_cheapest_only = sum(1 for c in on_sale if c['listing_price'] <= c['market_min_price'])
 
     log(f"RISULTATO -- '{manager_slug}': {len(on_sale)} carte in vendita organizzate in "
         f"{n_blocks} blocchi da {BUNDLE_BLOCK_SIZE} (limite Sorare per offerta cumulativa), "
         f"richiesta totale {format_eur(total_asking)}, minimo di mercato totale "
-        f"{format_eur(total_market_min)} (dettaglio/offerta per blocco nel messaggio Telegram).")
+        f"{format_eur(total_market_min)} (dettaglio/offerta per blocco nel messaggio Telegram) -- "
+        f"di cui {n_cheapest_only} gia' al minimo di mercato (sezione bonus separata).")
 
     messages = build_telegram_messages(manager_slug, on_sale)
     for i, msg in enumerate(messages):
@@ -404,39 +406,14 @@ TELEGRAM_SAFE_MESSAGE_CHARS = int(os.environ.get('TELEGRAM_SAFE_MESSAGE_CHARS', 
 TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS = float(os.environ.get('TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS', '0.5'))
 
 
-def build_telegram_messages(manager_slug, on_sale):
-    """Organizza le carte in vendita in BLOCCHI DA BUNDLE_BLOCK_SIZE (default 10) -- limite
-    pratico di Sorare per fare un'unica offerta cumulativa su piu' carte dello stesso manager
-    (richiesta esplicita dell'utente). Ogni blocco riporta il proprio subtotale (richiesto,
-    minimo di mercato) e la propria offerta suggerita, cosi' e' immediatamente azionabile su
-    Sorare senza dover ricalcolare nulla a mano. L'ordine e' quello di scoperta (arbitrario --
-    l'utente ha confermato "va bene anche in ordine sparso"). Niente margine di profitto per
-    blocco: "poi il margine di profitto eventualmente me lo trovo io" (l'utente lo calcola da
-    solo).
-
-    Evidenziazione: Telegram (parse_mode HTML) non supporta colori del testo, solo grassetto/
-    corsivo/link/ecc -- l'unico modo pratico di "colorare" una riga e' un'emoji. Usiamo 🔴
-    quando il prezzo chiesto e' SOPRA il minimo di mercato (esiste un'alternativa piu' economica
-    altrove: questa carta pesa nel pacchetto ma non e' lei stessa l'occasione) e 🟢 quando la
-    carta e' GIA' al prezzo minimo di mercato (nessuna alternativa piu' economica trovata).
-
-    Ritorna una LISTA di messaggi (non piu' una singola stringa): se il contenuto supera
-    TELEGRAM_SAFE_MESSAGE_CHARS viene impacchettato in piu' messaggi separati, ognuno sotto il
-    limite reale di Telegram (4096 caratteri) -- vedi FIX 18/07 sopra."""
-    blocks = [on_sale[i:i + BUNDLE_BLOCK_SIZE] for i in range(0, len(on_sale), BUNDLE_BLOCK_SIZE)]
-    blocks_shown = blocks[:MAX_BLOCKS_IN_TELEGRAM_MESSAGE]
-
-    # Link diretto alla pagina Sorare del manager filtrata alle carte in vendita in_season --
-    # stesso URL osservato dall'utente nel browser (.../my-club/{slug}/cards/limited?sale=true&is=true).
-    # '&' va sempre HTML-escaped dentro un attributo href (Telegram parse_mode=HTML).
-    manager_url = (f"https://sorare.com/it/football/my-club/{manager_slug}/cards/limited"
-                   f"?sale=true&amp;is=true")
-    header = (f"🎯 <b>{manager_slug}</b> -- carte Limited in_season in vendita ({len(on_sale)}, "
-              f"{len(blocks)} blocchi da {BUNDLE_BLOCK_SIZE})\n"
-              f'📂 <a href="{manager_url}">Vai alle carte in vendita di {manager_slug}</a>')
-
+def _render_card_blocks(cards):
+    """Genera (blocks, block_texts) per una lista generica di carte, spezzata in pezzi da
+    BUNDLE_BLOCK_SIZE -- ogni block_text include gia' il subtotale e l'offerta suggerita con la
+    cornice di risalto. Fattorizzato per essere riusato sia per TUTTE le carte in vendita sia per
+    il sotto-insieme "gia' al minimo di mercato" (vedi FIX 18/07 sotto in build_telegram_messages)."""
+    blocks = [cards[i:i + BUNDLE_BLOCK_SIZE] for i in range(0, len(cards), BUNDLE_BLOCK_SIZE)]
     block_texts = []
-    for block_idx, block in enumerate(blocks_shown, start=1):
+    for block_idx, block in enumerate(blocks, start=1):
         start_n = (block_idx - 1) * BUNDLE_BLOCK_SIZE + 1
         end_n = start_n + len(block) - 1
         lines = [f"<b>Blocco {block_idx} (carte {start_n}-{end_n})</b>"]
@@ -459,6 +436,82 @@ def build_telegram_messages(manager_slug, on_sale):
         lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
         lines.append(f"(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)")
         block_texts.append("\n".join(lines))
+    return blocks, block_texts
+
+
+def _pack_into_messages(header, block_texts, footer=None):
+    """Impacchetta block_texts in piu' messaggi Telegram, ciascuno sotto
+    TELEGRAM_SAFE_MESSAGE_CHARS, ripetendo l'intestazione (+ indicatore "parte X/Y" se piu' di
+    uno) su ognuno cosi' ogni messaggio e' comprensibile anche da solo. Il footer (se presente) va
+    sull'ultimo corpo se ci sta, altrimenti diventa un messaggio a se stante."""
+    body_chunks = []
+    current_parts, current_len = [], 0
+    for bt in block_texts:
+        add_len = len(bt) + 2  # + "\n\n" di separazione
+        if current_parts and current_len + add_len > TELEGRAM_SAFE_MESSAGE_CHARS:
+            body_chunks.append("\n\n".join(current_parts))
+            current_parts, current_len = [], 0
+        current_parts.append(bt)
+        current_len += add_len
+    if current_parts:
+        body_chunks.append("\n\n".join(current_parts))
+    if not body_chunks:
+        body_chunks = [""]
+
+    if footer:
+        if len(body_chunks[-1]) + len(footer) + 4 <= TELEGRAM_SAFE_MESSAGE_CHARS:
+            body_chunks[-1] = (body_chunks[-1] + "\n\n" + footer) if body_chunks[-1] else footer
+        else:
+            body_chunks.append(footer)
+
+    n = len(body_chunks)
+    messages = []
+    for i, body in enumerate(body_chunks, start=1):
+        part_note = f"\n<i>(parte {i}/{n})</i>" if n > 1 else ""
+        messages.append(f"{header}{part_note}\n\n{body}")
+    return messages
+
+
+def build_telegram_messages(manager_slug, on_sale):
+    """Organizza le carte in vendita in BLOCCHI DA BUNDLE_BLOCK_SIZE (default 10) -- limite
+    pratico di Sorare per fare un'unica offerta cumulativa su piu' carte dello stesso manager
+    (richiesta esplicita dell'utente). Ogni blocco riporta il proprio subtotale (richiesto,
+    minimo di mercato) e la propria offerta suggerita, cosi' e' immediatamente azionabile su
+    Sorare senza dover ricalcolare nulla a mano. L'ordine e' quello di scoperta (arbitrario --
+    l'utente ha confermato "va bene anche in ordine sparso"). Niente margine di profitto per
+    blocco: "poi il margine di profitto eventualmente me lo trovo io" (l'utente lo calcola da
+    solo).
+
+    Evidenziazione: Telegram (parse_mode HTML) non supporta colori del testo, solo grassetto/
+    corsivo/link/ecc -- l'unico modo pratico di "colorare" una riga e' un'emoji. Usiamo 🔴
+    quando il prezzo chiesto e' SOPRA il minimo di mercato (esiste un'alternativa piu' economica
+    altrove: questa carta pesa nel pacchetto ma non e' lei stessa l'occasione) e 🟢 quando la
+    carta e' GIA' al prezzo minimo di mercato (nessuna alternativa piu' economica trovata).
+
+    FIX 18/07 (richiesta esplicita dell'utente, dopo aver visto un caso reale con parecchie
+    carte 🟢 sparse nei blocchi 9/10): oltre alla struttura a blocchi normale (INVARIATA, "va
+    bene cosi'"), AGGIUNGIAMO in coda una sezione bonus con SOLO le carte gia' al minimo di
+    mercato (listing_price <= market_min_price) raggruppate a loro volta in blocchi da
+    BUNDLE_BLOCK_SIZE con lo stesso subtotale/offerta -- utile perche' per queste carte il
+    manager e' gia' il venditore piu' economico, quindi sono "sicure" indipendentemente da dove
+    cadono nei blocchi principali.
+
+    Ritorna una LISTA di messaggi (non piu' una singola stringa): se il contenuto supera
+    TELEGRAM_SAFE_MESSAGE_CHARS viene impacchettato in piu' messaggi separati, ognuno sotto il
+    limite reale di Telegram (4096 caratteri)."""
+    # Link diretto alla pagina Sorare del manager filtrata alle carte in vendita in_season --
+    # stesso URL osservato dall'utente nel browser (.../my-club/{slug}/cards/limited?sale=true&is=true).
+    # '&' va sempre HTML-escaped dentro un attributo href (Telegram parse_mode=HTML).
+    manager_url = (f"https://sorare.com/it/football/my-club/{manager_slug}/cards/limited"
+                   f"?sale=true&amp;is=true")
+    manager_link = f'📂 <a href="{manager_url}">Vai alle carte in vendita di {manager_slug}</a>'
+
+    # --- Sezione principale (struttura invariata) ---
+    blocks, block_texts = _render_card_blocks(on_sale)
+    blocks_shown = block_texts[:MAX_BLOCKS_IN_TELEGRAM_MESSAGE]
+
+    header = (f"🎯 <b>{manager_slug}</b> -- carte Limited in_season in vendita ({len(on_sale)}, "
+              f"{len(blocks)} blocchi da {BUNDLE_BLOCK_SIZE})\n{manager_link}")
 
     footer_lines = []
     if len(blocks) > MAX_BLOCKS_IN_TELEGRAM_MESSAGE:
@@ -476,34 +529,40 @@ def build_telegram_messages(manager_slug, on_sale):
                          "mercato (esiste altrove piu' a buon mercato)")
     footer = "\n".join(footer_lines)
 
-    # Impacchetta i blocchi in piu' "corpi" di messaggio, ciascuno sotto il limite di sicurezza
-    # (senza contare ancora l'intestazione, aggiunta dopo a ogni corpo).
-    body_chunks = []
-    current_parts = []
-    current_len = 0
-    for bt in block_texts:
-        add_len = len(bt) + 2  # + "\n\n" di separazione
-        if current_parts and current_len + add_len > TELEGRAM_SAFE_MESSAGE_CHARS:
-            body_chunks.append("\n\n".join(current_parts))
-            current_parts, current_len = [], 0
-        current_parts.append(bt)
-        current_len += add_len
-    if current_parts:
-        body_chunks.append("\n\n".join(current_parts))
-    if not body_chunks:
-        body_chunks = [""]
+    messages = _pack_into_messages(header, blocks_shown, footer)
 
-    # Il footer va sull'ULTIMO corpo se ci sta, altrimenti diventa un messaggio a se stante.
-    if len(body_chunks[-1]) + len(footer) + 4 <= TELEGRAM_SAFE_MESSAGE_CHARS:
-        body_chunks[-1] = (body_chunks[-1] + "\n\n" + footer) if body_chunks[-1] else footer
-    else:
-        body_chunks.append(footer)
+    # --- Sezione bonus: SOLO le carte gia' al minimo di mercato (marcatore 🟢), AGGIUNTA in coda
+    # (non sostituisce la struttura principale sopra) ---
+    cheapest_only = [c for c in on_sale if c['listing_price'] <= c['market_min_price']]
+    if cheapest_only:
+        cheapest_blocks, cheapest_block_texts = _render_card_blocks(cheapest_only)
+        cheapest_blocks_shown = cheapest_block_texts[:MAX_BLOCKS_IN_TELEGRAM_MESSAGE]
 
-    n = len(body_chunks)
-    messages = []
-    for i, body in enumerate(body_chunks, start=1):
-        part_note = f"\n<i>(parte {i}/{n})</i>" if n > 1 else ""
-        messages.append(f"{header}{part_note}\n\n{body}")
+        bonus_header = (f"🟢 <b>{manager_slug}</b> -- BONUS: SOLO carte GIA' al minimo di "
+                         f"mercato ({len(cheapest_only)}, {len(cheapest_blocks)} blocchi da "
+                         f"{BUNDLE_BLOCK_SIZE})\n"
+                         f"Per queste il manager e' gia' il venditore piu' economico -- nessuna "
+                         f"alternativa piu' a buon mercato altrove.\n{manager_link}")
+
+        bonus_footer_lines = []
+        if len(cheapest_blocks) > MAX_BLOCKS_IN_TELEGRAM_MESSAGE:
+            remaining_bonus_blocks = cheapest_blocks[MAX_BLOCKS_IN_TELEGRAM_MESSAGE:]
+            remaining_bonus_cards = sum(len(b) for b in remaining_bonus_blocks)
+            bonus_footer_lines.append(f"... altri {len(remaining_bonus_blocks)} blocchi "
+                                       f"({remaining_bonus_cards} carte) omessi dal messaggio, "
+                                       f"vedi log completo su GitHub")
+        bonus_total_asking = sum(c['listing_price'] for c in cheapest_only)
+        bonus_total_market_min = sum(c['market_min_price'] for c in cheapest_only)
+        bonus_footer_lines.append(f"Totale complessivo (tutti i blocchi bonus): "
+                                   f"{len(cheapest_only)} carte, richiesto "
+                                   f"{format_eur(bonus_total_asking)}, minimo mercato "
+                                   f"{format_eur(bonus_total_market_min)} (informativo -- non "
+                                   f"offribile in un colpo solo oltre le {BUNDLE_BLOCK_SIZE} "
+                                   f"carte, vedi offerte per blocco sopra)")
+        bonus_footer = "\n".join(bonus_footer_lines)
+
+        messages += _pack_into_messages(bonus_header, cheapest_blocks_shown, bonus_footer)
+
     return messages
 
 

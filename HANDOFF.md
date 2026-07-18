@@ -625,17 +625,67 @@ posso farlo io, sono credenziali): aggiungere su GitHub (Settings > Secrets and 
 Actions > New repository secret) due nuovi secret: `BUNDLE_TELEGRAM_TOKEN` = il token del bot da
 BotFather, `BUNDLE_TELEGRAM_CHAT_ID` = `409250306`.
 
+## Aggiornamento 18/07 (quarto giro -- CONFERMATO IN PRODUZIONE + fix floor alla radice + bonus scanner)
+
+**Confermato su log reali (run successivi al push dell'utente)**:
+- Query v2 storico vendite (`anyPlayer.tokenPrices` con `last` esplicito): **FUNZIONA IN
+  PRODUZIONE** ("[storico vendite] query v2 ... FUNZIONA", loggato su piu' run). Eo Jeong-Won e
+  Fabián Ruiz sono passati da "solo 2 transazioni viste" (bug v1) a 6 transazioni recuperate
+  correttamente, e ENTRAMBI hanno notificato con successo (non piu' bloccati dal gate mercato
+  sottile). Fix confermato efficace.
+- Campo `liveSingleSaleOffer` in `manager_bundle_scan.py`: **FUNZIONA IN PRODUZIONE**
+  ("campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits"). Risultato reale su flobob-fc:
+  da ~115s (run precedente, 300 giocatori controllati) a ~8s (18 carte confermate in vendita via
+  il campo, market-check solo su quelle) -- lo stesso manager e' passato da 18/19 carte trovate a
+  18, coerente. Su un secondo manager ("mikileefoo", 187 carte in_season in vendita su 360
+  possedute) lo split multi-messaggio ha funzionato correttamente (3 messaggi Telegram, tutti sotto
+  il limite).
+
+**FIX 18/07 (root-cause, richiesta esplicita dell'utente sul caso Song Bumkeun)**: l'utente ha
+proposto due alternative -- accorciare MAX_FLOOR_AGE_HOURS a 30 minuti, OPPURE "il nuovo minimo e'
+semplicemente la carta piu' bassa che il giocatore trova ora sul mercato, che senso ha continuare
+a salvare riferimenti vecchi". Confermato che la seconda intuizione e' quella giusta e piu' pulita:
+in `evaluate_player_offer` (track.py), il ramo `if true_min_price >= floor: return` usciva SEMPRE
+in silenzio senza mai aggiornare il floor quando il prezzo non era un nuovo minimo -- quindi il
+floor poteva SOLO scendere (via "piccola variazione" o ALERT), MAI salire, restando "congelato" a
+un vecchio minimo (es. 7.16EUR) fino a 48h anche se il mercato vero si era ormai stabilizzato molto
+piu' in alto. Ora, quando `true_min_price > floor` (prezzo salito, non e' un calo), il floor viene
+riallineato SUBITO al nuovo prezzo corrente (loggato come "realign_up", nessuna notifica) --
+esattamente lo stesso principio gia' usato per i cali sotto soglia ("piccola variazione"), solo
+applicato anche in salita. Questo risolve il problema ALLA RADICE senza bisogno di accorciare
+MAX_FLOOR_AGE_HOURS (che resta com'era, 48h, ora utile solo come rete di sicurezza residua per
+giocatori senza eventi per lungo tempo -- per i giocatori attivi il floor ora si auto-mantiene
+sempre aggiornato). Testato con mock: (1) caso Song Bumkeun replicato esatto (floor 7.16 ->
+riallineato a 10.13, nessun ALERT spurio); (2) dopo il riallineamento, un vero calo sotto il nuovo
+floor notifica correttamente; (3) prezzo esattamente invariato non causa scritture/log spuri.
+Tutti PASSED.
+
+**NUOVA FUNZIONALITA' bundle scanner (richiesta esplicita, "AGGIUNGERE non sostituire")**: oltre
+alla normale struttura a blocchi da 10 (invariata), il messaggio ora include in coda una sezione
+BONUS separata con SOLO le carte dove `listing_price <= market_min_price` (marcatore 🟢, il
+manager e' gia' il venditore piu' economico) -- raggruppate anch'esse in blocchi da
+BUNDLE_BLOCK_SIZE con lo stesso subtotale/offerta suggerita. Refactoring: estratte
+`_render_card_blocks(cards)` (genera blocchi+testo per una lista di carte generica) e
+`_pack_into_messages(header, block_texts, footer)` (impacchetta in piu' messaggi Telegram sotto
+il limite), riusate sia per la sezione principale sia per quella bonus -- nessuna duplicazione di
+logica. Log RISULTATO esteso con il conteggio "di cui N gia' al minimo di mercato". Testato con
+mock: replica esatta del caso reale dell'utente (blocchi 9/10 con Gerard Martín/Kevin Schade/
+A.Nuñez/Jens Stage/Jessy Benet) -- la sezione bonus contiene ESATTAMENTE queste 5 carte e nessuna
+delle altre; struttura principale invariata (blocchi 9/10 ancora presenti); edge case nessuna
+carta al minimo (niente sezione bonus) e tutte le carte al minimo (bonus = tutto l'elenco)
+entrambi PASSED.
+
 ## Stato a fine sessione 18/07 (continuazione, aggiornato)
 
 Implementato e testato (compilazione + mock), MA NON ANCORA PUSHATO dall'utente via GitHub
-Desktop: sostituzione del filtro on-sale (campo liveSingleSaleOffer), fix v2/v1 storico vendite
-(caso Saka), QoL "Offri fino a" piu' vistoso + link manager, pulizia rumore log (track.py +
-zenlock), split messaggi Telegram lunghi + controllo errori invio, secrets nuovo bot dedicato.
-**Prossimo passo per l'utente**: (1) aggiungere i 2 nuovi secret GitHub per il bot dedicato
-(sopra); (2) pushare via GitHub Desktop; (3) rilanciare bundle scan su un manager con tante carte
-possedute ma poche in vendita per vedere se liveSingleSaleOffer funziona; (4) aspettare il
-prossimo ALERT/mercato sottile per vedere se la query v2 storico vendite risolve casi come Saka;
-(5) decidere insieme cosa fare del floor "bloccato" tipo Song Bumkeun (nessuna modifica fatta,
-in attesa di indicazioni); (6) se ricapita la sensazione di "scanner in coda dietro al tracker",
-controllare i timestamp esatti su GitHub Actions. Backlog invariato: filtro Satonio (item 6b, non
-richiesto), pulsanti Telegram deep-link "compra ora"/"fai offerta" (item 6, non richiesto).
+Desktop: fix floor alla radice (root-cause, caso Song Bumkeun) in track.py, sezione bonus "carte
+gia' al minimo" nel bundle scanner. GIA' CONFERMATO IN PRODUZIONE (round precedente, gia' pushato
+e testato dall'utente): filtro on-sale liveSingleSaleOffer, query v2 storico vendite, QoL "Offri
+fino a" + link manager, pulizia rumore log, split messaggi Telegram, secrets nuovo bot.
+**Prossimo passo per l'utente**: pushare via GitHub Desktop, poi (1) aspettare un caso tipo Song
+Bumkeun (floor vecchio, prezzo di mercato salito) per confermare il riallineamento al rialzo in
+produzione; (2) rilanciare bundle scan su un manager con parecchie carte gia' al minimo per vedere
+la nuova sezione bonus. Backlog invariato: filtro Satonio (item 6b, non richiesto), pulsanti
+Telegram deep-link "compra ora"/"fai offerta" (item 6, non richiesto), domanda ancora aperta sulla
+concorrenza dei workflow (item precedente, nessuna causa di codice trovata, probabile latenza
+normale di provisioning runner).

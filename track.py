@@ -2520,7 +2520,31 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             set_floor(player_slug, season_type, true_min_price)
             return
 
+        # FIX 18/07 (richiesta esplicita dell'utente, caso reale Song Bumkeun): PRIMA, quando il
+        # prezzo attuale non era un nuovo minimo, si usciva QUI in silenzio senza mai aggiornare
+        # il riferimento -- un floor impostato una volta (es. un'offerta anomala/temporanea a
+        # 7.16EUR) restava "congelato" fino a MAX_FLOOR_AGE_HOURS (48h), rendendo il bot cieco a
+        # qualunque prezzo sopra quel vecchio riferimento per tutto quel tempo, anche quando il
+        # mercato vero si era ormai stabilizzato molto piu' in alto (caso reale: floor 7.16EUR del
+        # 17/07, mercato vero 10-68EUR il 18/07, NESSUN alert possibile per ~20 altre ore).
+        # L'utente ha fatto notare, giustamente: non ha senso continuare a "ricordare" un
+        # riferimento vecchio quando il mercato ha gia' un prezzo minimo ATTUALE diverso -- il
+        # vero riferimento e' sempre "qual e' il prezzo piu' basso disponibile ORA", non
+        # un'istantanea storica. Allineiamo quindi il floor al rialzo ESATTAMENTE come gia'
+        # avveniva al ribasso per i cali sotto soglia (vedi "piccola variazione" piu' sotto,
+        # stesso principio, stessa non-notifica): niente piu' riferimenti "bloccati" che fanno
+        # perdere occasioni di mercato reali. MAX_FLOOR_AGE_HOURS/lo stale-realign sopra restano
+        # solo come rete di sicurezza residua per i giocatori che non generano NESSUN evento per
+        # tanto tempo (qui il floor non ha comunque modo di autoaggiornarsi, dato che questa
+        # funzione non viene nemmeno chiamata in quel caso).
         if true_min_price >= floor:
+            if true_min_price > floor:
+                log(f"{player_name} ({season_type}, {season_name}): prezzo attuale "
+                    f"({true_min_price:.2f}EUR) sopra il riferimento salvato ({floor:.2f}EUR), "
+                    f"lo allineo al rialzo senza notificare (nessun calo, vedi FIX 18/07)")
+                log_decision(player_slug, player_name, season_type, season_name, "realign_up",
+                             floor_price=floor, true_min_price=true_min_price)
+                set_floor(player_slug, season_type, true_min_price)
             return
 
         drop_percent = (floor - true_min_price) / floor if floor > 0 else 0
