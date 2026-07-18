@@ -54,8 +54,10 @@ MANAGER_INPUT = os.environ.get('MANAGER_SLUG_OR_URL', '').strip()
 # manager trovato con ALMENO AUTO_FIND_MIN_CARDS_FOR_SALE carte in_season in vendita fa partire
 # lo scan classico su di lui.
 AUTO_FIND_MANAGER = os.environ.get('AUTO_FIND_MANAGER', '').strip().lower() in ('1', 'true', 'si', 'yes')
-AUTO_FIND_LISTEN_SECONDS = float(os.environ.get('AUTO_FIND_LISTEN_SECONDS', '60'))
-AUTO_FIND_MIN_CARDS_FOR_SALE = int(os.environ.get('AUTO_FIND_MIN_CARDS_FOR_SALE', '10'))
+# FIX 18/07 (v6, richiesta esplicita dell'utente): ascolto default 60->120s (piu' candidati per
+# giro) e soglia carte in vendita 10->5 (anche manager con 5+ carte in season valgono uno scan).
+AUTO_FIND_LISTEN_SECONDS = float(os.environ.get('AUTO_FIND_LISTEN_SECONDS', '120'))
+AUTO_FIND_MIN_CARDS_FOR_SALE = int(os.environ.get('AUTO_FIND_MIN_CARDS_FOR_SALE', '5'))
 # Tetti di sicurezza: quanti manager diversi controllare al massimo (ognuno costa la scansione
 # paginata delle sue carte possedute) e quante carte al massimo sottoporre al lookup del
 # proprietario (1 query ciascuna).
@@ -115,6 +117,24 @@ def _load_auto_find_cooldown():
 def _save_auto_find_cooldown(cooldown):
     with open(AUTO_FIND_COOLDOWN_FILE, 'w') as f:
         json.dump(cooldown, f, indent=2)
+
+
+# FIX 18/07 (v6, richiesta esplicita dell'utente, "anti raffreddamento"): input dal workflow per
+# TOGLIERE manager dalla coda di raffreddamento (7gg) senza aspettare la scadenza -- lista di
+# slug separati da virgola, rimossi dal file di cooldown all'avvio.
+_remove_cooldown = os.environ.get('REMOVE_COOLDOWN_MANAGERS', '').strip()
+if _remove_cooldown:
+    _cd = _load_auto_find_cooldown()
+    _removed = []
+    for _slug in (s.strip().lower() for s in _remove_cooldown.split(',') if s.strip()):
+        if _slug in _cd:
+            del _cd[_slug]
+            _removed.append(_slug)
+    if _removed:
+        _save_auto_find_cooldown(_cd)
+        print(f"[bundle-scan] anti-raffreddamento: rimossi dal cooldown {_removed}")
+    else:
+        print(f"[bundle-scan] anti-raffreddamento: nessuno degli slug richiesti era in cooldown")
 
 
 def _is_in_auto_find_cooldown(slug, cooldown):
@@ -916,6 +936,11 @@ def build_telegram_messages(manager_slug, on_sale):
     manager_url = (f"https://sorare.com/it/football/my-club/{manager_slug}/cards/limited"
                    f"?sale=true&amp;is=true")
     manager_link = f'📂 <a href="{manager_url}">Vai alle carte in vendita di {manager_slug}</a>'
+
+    # FIX 18/07 (richiesta esplicita dell'utente): niente piu' ordine di scoperta ("alla
+    # rinfusa") -- le carte vengono ordinate per prezzo chiesto crescente PRIMA di essere
+    # divise in blocchi: blocco 1 = le piu' economiche, blocco 2 piu' costoso del blocco 1, ecc.
+    on_sale = sorted(on_sale, key=lambda c: c['listing_price'])
 
     # --- Sezione principale (struttura invariata) ---
     blocks, block_texts = _render_card_blocks(on_sale)

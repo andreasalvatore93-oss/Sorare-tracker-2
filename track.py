@@ -29,7 +29,15 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 # get_bucket_prices, my_cards_underpriced.py, my_cards_profit.py) -- ESCLUSE le aste
 # (auctions.py/auctions_ws_listener.py, richiesta esplicita "tranne le aste ovvio"), che non
 # usano questa lista. Slug sempre confrontati in minuscolo.
-BLACKLISTED_SELLER_SLUGS = {'privacy'}
+# FIX 18/07 (v2, richiesta esplicita dell'utente): aggiunti 'eli-aquim' e 'clem777' -- le loro
+# carte vanno ignorate da track classico e zenlock anche se risultano come affari.
+BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
+
+# FIX 18/07 (richiesta esplicita dell'utente, pattern "3 carte classic 2021-22 di giocatori
+# oscuri inizializzate insieme a ~500EUR tondi", stesso stile dei bot tipo Satonio): il tracker
+# classico ignora del tutto le carte con prezzo sopra questo tetto -- al momento non esistono
+# Limited legittime a quei prezzi, sono quasi certamente esche/bot.
+TRACK_MAX_PRICE_EUR = float(os.environ.get('TRACK_MAX_PRICE_EUR', '300'))
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione.
 # FIX 18/07 (richiesta esplicita dell'utente, analisi log: 40% delle carte finiva in "riferimento
@@ -425,6 +433,28 @@ GRAPHQL_RETRY_MAX_WAIT_SECONDS = 8.0
 GRAPHQL_RETRY_AFTER_BAN_THRESHOLD_SECONDS = 15.0
 
 
+# FIX 18/07 (richiesta esplicita dell'utente, "spesso mi butta fuori da sorare mentre lui cerca
+# carte e io sto scorrendo le pagine"): il rate limit di Sorare e' legato alla SESSIONE (stesso
+# cookie del browser dell'utente), quindi ogni query dei tracker consuma quota condivisa con la
+# navigazione manuale -- quando i tracker martellano, e' l'utente a beccarsi i 429 sul sito.
+# Mitigazione: intervallo minimo GLOBALE tra query GraphQL consecutive (thread-safe), che
+# distribuisce il carico nel tempo invece di concentrarlo in raffiche. 0.35s = max ~2.8 query/s
+# da tutti i tracker che passano da qui, abbastanza lento da lasciare respiro alla quota
+# condivisa, abbastanza veloce da non rallentare in modo percepibile una singola valutazione.
+GRAPHQL_MIN_INTERVAL_SECONDS = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS', '0.35'))
+_graphql_throttle_lock = threading.Lock()
+_graphql_last_call_ts = [0.0]
+
+
+def _graphql_throttle():
+    with _graphql_throttle_lock:
+        now = time.time()
+        wait = GRAPHQL_MIN_INTERVAL_SECONDS - (now - _graphql_last_call_ts[0])
+        if wait > 0:
+            time.sleep(wait)
+        _graphql_last_call_ts[0] = time.time()
+
+
 def graphql_query(query, variables=None, max_retries=3):
     headers = {
         'Content-Type': 'application/json',
@@ -434,6 +464,7 @@ def graphql_query(query, variables=None, max_retries=3):
     }
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(max_retries):
+        _graphql_throttle()
         r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             retry_after = r.headers.get('Retry-After')
@@ -1354,6 +1385,11 @@ def handle_offer_update(offer, eth_rate, stats):
         if price_eur < MIN_PRICE_EUR:
             continue  # scarto veloce sul prezzo dell'evento, solo per non fare la verifica live inutilmente:
                       # il controllo vero (sul prezzo REALE verificato) e' piu' sotto, dopo get_live_min_offer
+
+        # FIX 18/07 (richiesta esplicita dell'utente): tetto massimo -- carte Limited sopra
+        # TRACK_MAX_PRICE_EUR sono quasi certamente esche/bot (vedi nota sulla costante).
+        if price_eur > TRACK_MAX_PRICE_EUR:
+            continue
 
         season_type = season_type_for_card(card, season_name)
 
@@ -2535,6 +2571,11 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         if true_min_price < MIN_PRICE_EUR:
             return
 
+        # FIX 18/07 (richiesta esplicita dell'utente): tetto massimo anche sul prezzo verificato
+        # live -- sopra TRACK_MAX_PRICE_EUR non esistono Limited legittime, ignora del tutto.
+        if true_min_price > TRACK_MAX_PRICE_EUR:
+            return
+
         # Il riferimento (floor) e' tracciato per bucket in_season/classic (non per stagione
         # esatta): verificato con dati reali che le stampe Classic di anni diversi hanno prezzi
         # tra loro simili -- per i manager sono equivalenti, cambia solo se e' In Season o no.
@@ -2861,8 +2902,15 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                     sort_param = "s=Cards+On+Sale+Lowest+Price"
                     link = f"{base_link}?{sort_param}"
 
+                # FIX 18/07 (richiesta esplicita dell'utente, QoL): se la notifica e' PULITA
+                # (nessuna vendita recente pari o piu' economica, nessun dubbio confermato al
+                # secondo controllo), banner grande in testa per segnalare di essere rapidi.
+                is_clean = (cheaper_recent is None) and not is_dubbio
+                clean_banner = ("\U0001F6A8\U0001F6A8 <b>AFFARE IMPERDIBILE</b> \U0001F6A8\U0001F6A8\n"
+                                "<b>Nessun segnale contrario: muoviti subito!</b>\n\n") if is_clean else ""
                 msg_text = (
-                    f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
+                    clean_banner
+                    + f"\U0001F525 <b>Occasione Sorare!</b>\n\n"
                     f"Giocatore: {player_name}\n"
                     f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
                     f"Stagione carta: {season_name}\n"
@@ -3021,8 +3069,13 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
 
                             base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
                             link = f"{base_link}?card={true_min_card_slug}" if true_min_card_slug else base_link
+                            # FIX 18/07 (richiesta esplicita dell'utente, QoL): stesso banner
+                            # del percorso ALERT per le notifiche pulite.
+                            clean_banner = ("\U0001F6A8\U0001F6A8 <b>AFFARE IMPERDIBILE</b> \U0001F6A8\U0001F6A8\n"
+                                            "<b>Nessun segnale contrario: muoviti subito!</b>\n\n") if cheaper_recent is None else ""
                             msg_text = (
-                                f"\U0001F4D0 <b>Opportunita' di margine (nessun calo recente)</b>\n\n"
+                                clean_banner
+                                + f"\U0001F4D0 <b>Opportunita' di margine (nessun calo recente)</b>\n\n"
                                 f"Giocatore: {player_name}\n"
                                 f"Categoria: {'In Season' if season_type == 'in_season' else 'Classic (stagione passata)'}\n"
                                 f"Stagione carta: {season_name}\n"
