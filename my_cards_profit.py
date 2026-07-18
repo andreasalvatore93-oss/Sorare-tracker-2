@@ -74,8 +74,8 @@ def get_all_my_cards():
 
     query = """
     {
-      me {
-        cards(first: 100) {
+      manager(slug: "crowss") {
+        ownedCards(first: 100) {
           edges {
             node {
               slug
@@ -110,14 +110,14 @@ def get_all_my_cards():
                 log(f"Errore GraphQL: {data['errors']}")
                 break
 
-            edges = (data.get('data', {}).get('me', {}).get('cards', {}).get('edges', []))
+            edges = (data.get('data', {}).get('manager', {}).get('ownedCards', {}).get('edges', []))
             for e in edges:
                 card = e['node']
                 # Filtra out le carte sealed
                 if card.get('status') != 'sealed':
                     all_cards.append(card)
 
-            page_info = (data.get('data', {}).get('me', {}).get('cards', {}).get('pageInfo', {}))
+            page_info = (data.get('data', {}).get('manager', {}).get('ownedCards', {}).get('pageInfo', {}))
             has_next = page_info.get('hasNextPage', False)
             cursor = page_info.get('endCursor')
         except Exception as e:

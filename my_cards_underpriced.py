@@ -29,8 +29,8 @@ def get_my_cards_for_sale():
 
     query = """
     {
-      me {
-        cards(first: 100, filter: {onSale: true}) {
+      manager(slug: "crowss") {
+        ownedCards(first: 100, filter: {onSale: true}) {
           edges {
             node {
               slug
@@ -64,10 +64,10 @@ def get_my_cards_for_sale():
                 log(f"Errore GraphQL: {data['errors']}")
                 break
 
-            edges = (data.get('data', {}).get('me', {}).get('cards', {}).get('edges', []))
+            edges = (data.get('data', {}).get('manager', {}).get('ownedCards', {}).get('edges', []))
             all_cards.extend([e['node'] for e in edges])
 
-            page_info = (data.get('data', {}).get('me', {}).get('cards', {}).get('pageInfo', {}))
+            page_info = (data.get('data', {}).get('manager', {}).get('ownedCards', {}).get('pageInfo', {}))
             has_next = page_info.get('hasNextPage', False)
             cursor = page_info.get('endCursor')
         except Exception as e:
