@@ -84,3 +84,15 @@
 [2026-07-18 12:15:15] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 2640, 'wei': 458, 'usdCents': 861, 'gbpCents': 150, 'lamport': 2, 'none': 0}
 [2026-07-18 12:15:15] [manager bundle scan] RISULTATO -- 'bigflow13': 138 carte in vendita organizzate in 14 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 403.78EUR, minimo di mercato totale 347.90EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 13 gia' al minimo di mercato (sezione bonus separata).
 [2026-07-18 12:15:19] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo) -- 4 messaggio/i.
+
+===== RUN 2026-07-18 12:53:17 UTC =====
+[2026-07-18 12:53:17] [manager bundle scan] input ricevuto: 'rivionze' -> slug estratto: 'rivionze'
+[2026-07-18 12:53:18] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 12:53:18] [manager bundle scan] 'rivionze': 336 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 12:53:21] [manager bundle scan] [filtro carte in vendita] 336 carte possedute scansionate, 2 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 334.
+[2026-07-18 12:53:21] [manager bundle scan] 'rivionze': 2 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 12:53:21] [manager bundle scan] controllo il mercato live per 2 giocatori diversi (2 carte possedute da verificare)...
+[2026-07-18 12:53:22] [manager bundle scan] [diagnostica] 2 carte in_season possedute controllate, 2 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 0 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-07-18 12:53:22] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 28, 'wei': 2, 'usdCents': 0, 'gbpCents': 1, 'lamport': 0, 'none': 0}
+[2026-07-18 12:53:22] [manager bundle scan] RISULTATO -- 'rivionze': 2 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 4.00EUR, minimo di mercato totale 3.99EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 1 gia' al minimo di mercato (sezione bonus separata).
+[2026-07-18 12:53:25] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo) -- 3 messaggio/i.
