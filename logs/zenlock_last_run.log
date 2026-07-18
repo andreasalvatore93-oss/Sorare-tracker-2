@@ -5368,3 +5368,334 @@
 [2026-07-18 22:15:29] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 0 casi senza comparabile live, 0 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
 [2026-07-18 22:15:29] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 3620, 'wei': 424, 'usdCents': 3048, 'gbpCents': 100, 'lamport': 1, 'none': 0}
 [2026-07-18 22:15:29] [modello zenlock] esecuzione terminata.
+
+===== RUN 2026-07-18 22:15:42 UTC =====
+[2026-07-18 22:15:42] [modello zenlock] Tasso ETH/EUR: 1628.32
+[2026-07-18 22:15:42] [modello zenlock] Ascolto per 250 secondi (soglie: classic <=4.0EUR / in_season <=8.0EUR, sconto min 15%)...
+[2026-07-18 22:15:43] [modello zenlock] connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 22:15:44] [modello zenlock] sottoscrizione confermata, in ascolto...
+[2026-07-18 22:16:00] [modello zenlock] riferimento classic (3.00EUR) sostituito dal minimo in_season piu' economico (2.93EUR) per Kim Hyung-Geun, vedi caso Szoboszlai
+[2026-07-18 22:16:33] [storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).
+[2026-07-18 22:16:33] [modello zenlock] riferimento live 8.00EUR per Ibrahima Konaté molto piu' caro dell'ultima vendita REALE (5.03EUR, 0.0gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 22:16:48] [modello zenlock] MATCH -- Karim Benzema [classic] 2.35EUR, sconto 26.3% su prossimo annuncio 3.19EUR (n=4)
+[2026-07-18 22:16:48] [modello zenlock] DEBUG comparabili grezzi per karim-benzema/classic: [(3.19, 'karim-benzema-2021-limited-511'), (3.77, 'karim-benzema-2021-limited-288'), (4.8849599999999995, 'karim-benzema-2021-limited-526'), (5.536288, 'karim-benzema-2021-limited-232')]
+[2026-07-18 22:17:22] [modello zenlock] MATCH -- Maxence Lacroix [in_season] 1.50EUR, sconto 29.1% su prossimo annuncio 2.12EUR (n=12)
+[2026-07-18 22:17:22] [modello zenlock] DEBUG comparabili grezzi per maxence-lacroix/in_season: [(2.116816, 'maxence-lacroix-2025-limited-962'), (2.99, 'maxence-lacroix-2025-limited-369'), (3.0, 'maxence-lacroix-2025-limited-24'), (3.0, 'maxence-lacroix-2025-limited-868'), (3.09, 'maxence-lacroix-2025-limited-175'), (3.2, 'maxence-lacroix-2025-limited-23'), (3.2, 'maxence-lacroix-2025-limited-368'), (3.2, 'maxence-lacroix-2025-limited-733'), (3.3, 'maxence-lacroix-2025-limited-978'), (3.4892949000000004, 'maxence-lacroix-2025-limited-579'), (4.0, 'maxence-lacroix-2025-limited-159'), (7.9, 'maxence-lacroix-2025-limited-327')]
+[2026-07-18 22:18:16] [modello zenlock] MATCH -- Anthony Gordon [in_season] 8.00EUR, sconto 15.5% su prossimo annuncio 9.47EUR (n=15)
+[2026-07-18 22:18:16] [modello zenlock] DEBUG comparabili grezzi per anthony-gordon/in_season: [(9.47, 'anthony-gordon-2025-limited-65'), (9.607088, 'anthony-gordon-2025-limited-961'), (10.0, 'anthony-gordon-2025-limited-541'), (10.0, 'anthony-gordon-2025-limited-731'), (10.319218000000001, 'anthony-gordon-2025-limited-941'), (10.9, 'anthony-gordon-2025-limited-585'), (11.39824, 'anthony-gordon-2025-limited-423'), (12.0, 'anthony-gordon-2025-limited-930'), (15.0, 'anthony-gordon-2025-limited-559'), (16.99, 'anthony-gordon-2025-limited-722'), (17.6265, 'anthony-gordon-2025-limited-256'), (19.99, 'anthony-gordon-2025-limited-605'), (25.0, 'anthony-gordon-2025-limited-76'), (25.0, 'anthony-gordon-2025-limited-807'), (32.0, 'anthony-gordon-2025-limited-411')]
+[2026-07-18 22:18:52] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='68', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:52] [rate limit] Retry-After=68s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:52] [paginazione annunci live] errore per franco-emanuel-cervi: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:18:53] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='67', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:53] [rate limit] Retry-After=67s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:53] [paginazione annunci live] errore per christopher-wernitznig: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:18:53] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='67', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:53] [rate limit] Retry-After=67s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:53] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='67', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:53] [rate limit] Retry-After=67s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:54] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='66', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:54] [rate limit] Retry-After=66s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:54] [paginazione annunci live] errore per ivan-gil-calero: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:18:54] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='66', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:54] [rate limit] Retry-After=66s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:54] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='66', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:54] [rate limit] Retry-After=66s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:55] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='65', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:55] [rate limit] Retry-After=65s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:55] [paginazione annunci live] errore per sandi-krizman: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:18:55] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='65', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:55] [rate limit] Retry-After=65s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:55] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='65', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:55] [rate limit] Retry-After=65s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:56] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='64', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:56] [rate limit] Retry-After=64s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:56] [paginazione annunci live] errore per lisandro-martinez: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:18:56] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='64', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:56] [rate limit] Retry-After=64s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:57] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='64', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:57] [rate limit] Retry-After=64s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:57] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='63', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:57] [rate limit] Retry-After=63s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:57] [paginazione annunci live] errore per nicolas-closset: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:18:57] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='63', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:57] [rate limit] Retry-After=63s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:58] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='62', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:58] [rate limit] Retry-After=62s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:58] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='62', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:58] [rate limit] Retry-After=62s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:58] [paginazione annunci live] errore per yuji-hoshi: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:18:58] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='62', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:58] [rate limit] Retry-After=62s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:59] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='61', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:59] [rate limit] Retry-After=61s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:59] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='61', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:59] [rate limit] Retry-After=61s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:18:59] [paginazione annunci live] errore per william-saliba: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:18:59] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='61', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:18:59] [rate limit] Retry-After=61s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:00] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='60', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:00] [rate limit] Retry-After=60s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:00] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='60', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:00] [rate limit] Retry-After=60s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:00] [paginazione annunci live] errore per david-moller-wolfe: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:00] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='60', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:00] [rate limit] Retry-After=60s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:01] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='59', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:01] [rate limit] Retry-After=59s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:01] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='59', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:01] [rate limit] Retry-After=59s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:01] [paginazione annunci live] errore per seok-yeong-jo: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:01] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='59', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:01] [rate limit] Retry-After=59s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:02] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='58', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:02] [rate limit] Retry-After=58s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:02] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='58', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:02] [rate limit] Retry-After=58s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:02] [paginazione annunci live] errore per luka-vuskovic: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:02] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='58', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:02] [rate limit] Retry-After=58s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:03] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='57', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:03] [rate limit] Retry-After=57s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:03] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='57', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:03] [rate limit] Retry-After=57s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:03] [paginazione annunci live] errore per turgay-gemicibasi: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:04] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='57', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:04] [rate limit] Retry-After=57s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:04] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='56', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:04] [rate limit] Retry-After=56s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:10] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='50', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:10] [rate limit] Retry-After=50s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:10] [paginazione annunci live] errore per ayumi-niekawa: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:10] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='50', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:10] [rate limit] Retry-After=50s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:11] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='49', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:11] [rate limit] Retry-After=49s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:11] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='49', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:11] [rate limit] Retry-After=49s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:11] [paginazione annunci live] errore per miki-yamane: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:11] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='49', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:11] [rate limit] Retry-After=49s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:12] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='48', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:12] [rate limit] Retry-After=48s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:12] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='48', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:12] [rate limit] Retry-After=48s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:12] [paginazione annunci live] errore per felix-uduokhai: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:12] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='48', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:12] [rate limit] Retry-After=48s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:13] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='47', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:13] [rate limit] Retry-After=47s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:13] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='47', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:13] [rate limit] Retry-After=47s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:13] [paginazione annunci live] errore per kevin-de-bruyne: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:14] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='47', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:14] [rate limit] Retry-After=47s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:14] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='46', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:14] [rate limit] Retry-After=46s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:14] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='46', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:14] [rate limit] Retry-After=46s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:14] [paginazione annunci live] errore per ryu-takao: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:15] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='45', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:15] [rate limit] Retry-After=45s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:15] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='45', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:15] [rate limit] Retry-After=45s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:15] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='45', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:15] [rate limit] Retry-After=45s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:15] [paginazione annunci live] errore per mikkel-konradsen-ceide-2001-09-03: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:16] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='44', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:16] [rate limit] Retry-After=44s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:16] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='44', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:16] [rate limit] Retry-After=44s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:16] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='44', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:16] [rate limit] Retry-After=44s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:16] [paginazione annunci live] errore per redouane-halhal: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:17] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='43', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:17] [rate limit] Retry-After=43s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:17] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='43', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:17] [rate limit] Retry-After=43s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:17] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='43', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:17] [rate limit] Retry-After=43s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:17] [paginazione annunci live] errore per julen-lobete-cienfuegos: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:18] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='42', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:18] [rate limit] Retry-After=42s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:18] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='42', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:18] [rate limit] Retry-After=42s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:18] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='42', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:18] [rate limit] Retry-After=42s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:18] [paginazione annunci live] errore per declan-rice: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:19] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='41', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:19] [rate limit] Retry-After=41s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:19] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='41', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:19] [rate limit] Retry-After=41s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:19] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='41', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:19] [rate limit] Retry-After=41s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:19] [paginazione annunci live] errore per xavi-simons: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:20] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='40', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:20] [rate limit] Retry-After=40s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:20] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='40', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:20] [rate limit] Retry-After=40s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:21] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='40', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:21] [rate limit] Retry-After=40s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:21] [paginazione annunci live] errore per ryoya-ogawa: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:21] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='39', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:21] [rate limit] Retry-After=39s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:21] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='39', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:21] [rate limit] Retry-After=39s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:22] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='38', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:22] [rate limit] Retry-After=38s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:22] [paginazione annunci live] errore per rogerio-oliveira-da-silva: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:22] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='38', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:22] [rate limit] Retry-After=38s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:22] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='38', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:22] [rate limit] Retry-After=38s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:23] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='37', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:23] [rate limit] Retry-After=37s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:23] [paginazione annunci live] errore per alexander-ranacher: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:23] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='37', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:23] [rate limit] Retry-After=37s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:23] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='37', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:23] [rate limit] Retry-After=37s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:24] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='36', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:24] [rate limit] Retry-After=36s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:24] [paginazione annunci live] errore per eiji-kubo-null: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:24] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='36', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:24] [rate limit] Retry-After=36s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:24] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='36', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:24] [rate limit] Retry-After=36s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:25] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='35', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:25] [rate limit] Retry-After=35s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:25] [paginazione annunci live] errore per jae-hee-jung: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:25] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='35', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:25] [rate limit] Retry-After=35s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:25] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='35', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:25] [rate limit] Retry-After=35s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:26] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='34', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:26] [rate limit] Retry-After=34s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:26] [paginazione annunci live] errore per jordan-zacharie-lukaku-menama-mokelenge: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:26] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='34', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:26] [rate limit] Retry-After=34s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:27] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='34', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:27] [rate limit] Retry-After=34s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:27] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='33', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:27] [rate limit] Retry-After=33s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:27] [paginazione annunci live] errore per maxim-de-cuyper: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:27] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='33', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:27] [rate limit] Retry-After=33s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:28] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='33', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:28] [rate limit] Retry-After=33s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:28] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='32', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:28] [rate limit] Retry-After=32s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:28] [paginazione annunci live] errore per yuto-edward-baigorria-nishizawa: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:28] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='32', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:28] [rate limit] Retry-After=32s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:29] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='31', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:29] [rate limit] Retry-After=31s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:29] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='31', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:29] [rate limit] Retry-After=31s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:29] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='31', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:29] [rate limit] Retry-After=31s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:30] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='30', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:30] [rate limit] Retry-After=30s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:30] [paginazione annunci live] errore per seiichiro-kubo: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:30] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='30', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:30] [rate limit] Retry-After=30s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:30] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='30', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:30] [rate limit] Retry-After=30s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:31] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='29', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:31] [rate limit] Retry-After=29s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:31] [paginazione annunci live] errore per benjamin-leroy: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:31] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='29', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:31] [rate limit] Retry-After=29s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:31] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='29', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:31] [rate limit] Retry-After=29s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:32] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='28', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:32] [rate limit] Retry-After=28s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:32] [paginazione annunci live] errore per ryo-nemoto: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:32] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='28', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:32] [rate limit] Retry-After=28s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:32] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='28', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:32] [rate limit] Retry-After=28s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:33] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='27', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:33] [rate limit] Retry-After=27s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:33] [paginazione annunci live] errore per mickael-biron: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:33] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='27', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:33] [rate limit] Retry-After=27s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:34] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='27', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:34] [rate limit] Retry-After=27s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:34] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='26', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:34] [rate limit] Retry-After=26s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:34] [paginazione annunci live] errore per johan-felipe-vasquez-ibarra: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:34] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='26', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:34] [rate limit] Retry-After=26s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:35] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='26', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:35] [rate limit] Retry-After=26s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:35] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='25', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:35] [rate limit] Retry-After=25s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:35] [paginazione annunci live] errore per robin-himmelmann: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:35] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='25', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:35] [rate limit] Retry-After=25s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:36] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='24', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:36] [rate limit] Retry-After=24s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:36] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='24', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:36] [rate limit] Retry-After=24s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:36] [paginazione annunci live] errore per ryo-tabei: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:36] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='24', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:36] [rate limit] Retry-After=24s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:37] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='23', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:37] [rate limit] Retry-After=23s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:37] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='23', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:37] [rate limit] Retry-After=23s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:37] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='23', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:37] [rate limit] Retry-After=23s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:38] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='22', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:38] [rate limit] Retry-After=22s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:38] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='22', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:38] [rate limit] Retry-After=22s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:38] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='22', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:38] [rate limit] Retry-After=22s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:38] [paginazione annunci live] errore per malachi-jones: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:39] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='21', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:39] [rate limit] Retry-After=21s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:39] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='21', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:39] [rate limit] Retry-After=21s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:39] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='21', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:39] [rate limit] Retry-After=21s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:39] [paginazione annunci live] errore per maaya-sako: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:40] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='20', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:40] [rate limit] Retry-After=20s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:40] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='20', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:40] [rate limit] Retry-After=20s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:41] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='20', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:41] [rate limit] Retry-After=20s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:41] [paginazione annunci live] errore per mio-backhaus: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:41] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='19', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:41] [rate limit] Retry-After=19s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:41] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='19', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:41] [rate limit] Retry-After=19s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:42] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='19', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:42] [rate limit] Retry-After=19s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:42] [paginazione annunci live] errore per oscar-melendo-jimenez: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:42] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='18', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:42] [rate limit] Retry-After=18s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:42] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='18', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:42] [rate limit] Retry-After=18s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:43] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='17', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:43] [rate limit] Retry-After=17s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:43] [paginazione annunci live] errore per oguz-aydin: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:43] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='17', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:43] [rate limit] Retry-After=17s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:43] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='17', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:43] [rate limit] Retry-After=17s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:44] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='16', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:44] [rate limit] Retry-After=16s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:44] [paginazione annunci live] errore per ao-tanaka: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 22:19:44] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='16', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:44] [rate limit] Retry-After=16s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:44] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='16', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:44] [rate limit] Retry-After=16s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 22:19:45] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='15', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 22:19:45] [rate limit] HTTP 429 da Sorare (tentativo 1/3), attendo 8.0s prima di ritentare...
+[2026-07-18 22:19:53] [rate limit] HTTP 429 da Sorare (tentativo 2/3), attendo 7.0s prima di ritentare...
+[2026-07-18 22:20:00] [modello zenlock] connessione chiusa (codice None). Eventi: 852, carte valutate: 237, notifiche inviate: 3 (di cui solo ETH: 0, di cui su riferimento storico: 0), scartate per mancanza comparabili: 47, scartate per riferimento troppo basso: 0, scartate per differenza assoluta troppo piccola: 1, scartate per gemello in_season altrettanto economico: 0, sconto sospetto non confermato alla riverifica: 0, riferimento troppo alto/non rappresentativo: 0, riferimento stagnante vs vendita reale: 1, saltate per throttle raffica (protezione rate-limit condiviso): 0, sostituto in_season piu' economico (non un affare distinto): 34 (di cui avrebbero notificato senza questo controllo: 0)
+[2026-07-18 22:20:00] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 47 casi senza comparabile live, 2 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 2 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
+[2026-07-18 22:20:00] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 2956, 'wei': 360, 'usdCents': 2402, 'gbpCents': 79, 'lamport': 1, 'none': 0}
+[2026-07-18 22:20:00] [modello zenlock] esecuzione terminata.
