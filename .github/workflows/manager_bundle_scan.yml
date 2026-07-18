@@ -1,0 +1,113 @@
+name: Manager Bundle Offer Scanner
+
+on:
+  workflow_dispatch:
+    inputs:
+      manager_slug_or_url:
+        description: "Slug del manager (es. 'satonio') oppure URL del suo profilo (es. https://sorare.com/it/football/my-club/satonio)"
+        required: true
+      bundle_offer_margin_fraction:
+        description: "Margine di sconto sul totale minimo di mercato per l'offerta suggerita (es. 0.15 = 15%, provvisorio da tarare)"
+        required: false
+        default: "0.15"
+      max_owned_card_pages:
+        description: "Tetto di sicurezza: numero massimo di pagine di carte possedute da scansionare"
+        required: false
+        default: "20"
+      max_players_to_check:
+        description: "Tetto di sicurezza: numero massimo di giocatori diversi da controllare sul mercato"
+        required: false
+        default: "300"
+
+permissions:
+  contents: write
+
+# Workflow manuale, uno-shot (nessun ascolto, nessuna cadenza cron esterna) -- a differenza dei
+# tre tracker esistenti, gira finche' non termina l'analisi e basta. Concurrency comunque in
+# coda (non cancel-in-progress) per lo stesso motivo degli altri workflow: se lanci due analisi
+# quasi in contemporanea, la seconda aspetta che la prima finisca di salvare il log invece di
+# rischiare un conflitto push.
+concurrency:
+  group: manager-bundle-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      # Stesso pattern di log-su-file-accodato gia' usato dai tre tracker esistenti (leggibile
+      # dopo un pull, senza Chrome ne' copia-incolla).
+      - name: Run manager bundle scan
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          # Richiesta esplicita dell'utente: "usiamo canale aste sorare temporaneamente, che e'
+          # gia' configurato". track.py (riusato per send_telegram_msg) legge le variabili
+          # TELEGRAM_TOKEN/TELEGRAM_CHAT_ID -- qui le valorizziamo con i secret gia' esistenti
+          # delle aste, cosi' non serve creare nessun nuovo secret solo per questo test.
+          TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
+          MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
+          BUNDLE_OFFER_MARGIN_FRACTION: ${{ github.event.inputs.bundle_offer_margin_fraction || '0.15' }}
+          MAX_OWNED_CARD_PAGES: ${{ github.event.inputs.max_owned_card_pages || '20' }}
+          MAX_PLAYERS_TO_CHECK: ${{ github.event.inputs.max_players_to_check || '300' }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          {
+            echo ""
+            echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
+            python manager_bundle_scan.py
+          } 2>&1 | tee -a logs/manager_bundle_scan_last_run.log
+          # Rete di sicurezza SOLO per non far crescere il file all'infinito -- stesso pattern
+          # gemello degli altri tre workflow, tiene le ultime 200 run intere.
+          awk -v maxruns=200 '
+            /^===== RUN / { runs++; starts[runs]=NR }
+            { buf[NR]=$0; last=NR }
+            END {
+              from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
+              for (i=from; i<=last; i++) print buf[i]
+            }
+          ' logs/manager_bundle_scan_last_run.log > logs/manager_bundle_scan_last_run.log.tmp && mv logs/manager_bundle_scan_last_run.log.tmp logs/manager_bundle_scan_last_run.log
+
+      # Nessun database da salvare qui (a differenza degli altri tre workflow): questo strumento
+      # non ha stato persistente tra un'esecuzione e l'altra, ogni run e' autonomo. Salviamo solo
+      # il log.
+      - name: Save log
+        if: always()
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -f logs/manager_bundle_scan_last_run.log ]; then
+            git add logs/manager_bundle_scan_last_run.log
+          fi
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "update manager bundle scan log"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito (probabile esecuzione in parallelo), ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
