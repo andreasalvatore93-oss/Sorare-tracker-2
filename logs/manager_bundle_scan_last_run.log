@@ -657,3 +657,24 @@
 [2026-07-18 20:54:25] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 576, 'wei': 122, 'usdCents': 219, 'gbpCents': 21, 'lamport': 0, 'none': 0}
 [2026-07-18 20:54:25] [manager bundle scan] RISULTATO -- 'vinaslovensrega': 7 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 53.81EUR, minimo di mercato totale 27.16EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 0 gia' al minimo di mercato (sezione bonus separata).
 [2026-07-18 20:54:26] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 1 messaggio/i.
+
+===== RUN 2026-07-18 21:24:28 UTC =====
+[2026-07-18 21:24:28] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-07-18 21:26:28] [manager bundle scan] [auto-find] ascolto terminato: 15 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-07-18 21:26:28] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-07-18 21:26:34] [manager bundle scan] [auto-find] 10 manager venditori distinti individuati (top: clem777 x4, prodigetaktik x3, teo_22 x1, madara06 x1, transfer-listed x1) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-07-18 21:26:34] [manager bundle scan] [auto-find] 'clem777': blacklistato (bot noto che non accetta offerte negoziate), passo oltre.
+[2026-07-18 21:26:34] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 21:26:34] [manager bundle scan] 'prodigetaktik': 578 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 21:26:40] [manager bundle scan] [filtro carte in vendita] 578 carte possedute scansionate, 144 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 434.
+[2026-07-18 21:26:40] [manager bundle scan] [auto-find] 'prodigetaktik': 74 carte in_season in vendita (soglia 5).
+[2026-07-18 21:26:40] [manager bundle scan] [auto-find] SELEZIONATO 'prodigetaktik' -- parte lo scan classico su di lui (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-07-18 21:26:41] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 21:26:41] [manager bundle scan] 'prodigetaktik': 578 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 21:26:47] [manager bundle scan] [filtro carte in vendita] 578 carte possedute scansionate, 144 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 434.
+[2026-07-18 21:26:47] [manager bundle scan] 'prodigetaktik': 74 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 21:26:47] [manager bundle scan] controllo il mercato live per 74 giocatori diversi (74 carte possedute da verificare)...
+[2026-07-18 21:27:20] [manager bundle scan] [diagnostica] 74 carte in_season possedute controllate, 42 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 32 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-07-18 21:27:20] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 1416, 'wei': 208, 'usdCents': 457, 'gbpCents': 63, 'lamport': 0, 'none': 0}
+[2026-07-18 21:27:20] [manager bundle scan] RISULTATO -- 'prodigetaktik': 42 carte in vendita organizzate in 5 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 164.90EUR, minimo di mercato totale 163.42EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 35 gia' al minimo di mercato (sezione bonus separata).
+[2026-07-18 21:27:24] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 4 messaggio/i.
