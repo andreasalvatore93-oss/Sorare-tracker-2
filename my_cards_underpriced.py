@@ -44,8 +44,9 @@ def get_my_cards_for_sale():
             inSeasonEligible
             sportSeason { name }
             liveSingleSaleOffer {
-              amountInCents
-              currencyCode
+              receiverSide {
+                amounts { eurCents }
+              }
             }
           }
           nbHits
@@ -163,20 +164,12 @@ def run_underpriced_scan():
         if not sale_offer:
             continue
 
-        my_price_cents = sale_offer.get('amountInCents')
-        my_currency = sale_offer.get('currencyCode')
+        eur_cents = sale_offer.get('receiverSide', {}).get('amounts', {}).get('eurCents')
 
-        if not my_price_cents:
+        if not eur_cents:
             continue
 
-        # Converti il mio prezzo in EUR
-        if my_currency == 'EUR':
-            my_price_eur = my_price_cents / 100
-        elif my_currency == 'WEI':
-            eth_rate = track.get_eth_rate()
-            my_price_eur = (my_price_cents / 1e18) * eth_rate
-        else:
-            continue
+        my_price_eur = eur_cents / 100
 
         # Ottieni il prezzo più basso del mercato
         market_price_eur = get_market_min_price(
