@@ -6,6 +6,10 @@ on:
         description: "Secondi di ascolto (lascia vuoto per 200 = normale; usa 20-30 per test veloci)"
         required: false
         default: "200"
+      alert_raw_offers_diagnostic:
+        description: "Dump grezzo di tutti gli annunci live su ogni ALERT (solo per indagare un caso sospetto, di default spento)"
+        required: false
+        default: "no"
 permissions:
   contents: write
 # FIX 16/07: cancel-in-progress era true -- se un'esecuzione ne cancellava un'altra a meta'
@@ -63,6 +67,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '200' }}
+          ALERT_RAW_OFFERS_DIAGNOSTIC: ${{ github.event.inputs.alert_raw_offers_diagnostic || 'no' }}
         run: |
           set -o pipefail
           mkdir -p logs

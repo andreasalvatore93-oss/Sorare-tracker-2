@@ -475,15 +475,24 @@ def evaluate_zenlock_offer(player_slug, player_name, season_type, season_name, p
                                      and classic_discount >= classic_required_discount)
                 stats['skipped_in_season_substitute_cheaper'] = stats.get(
                     'skipped_in_season_substitute_cheaper', 0) + 1
+                # FIX 18/07 (richiesta esplicita dell'utente, "questa parte e' fastidiosa e
+                # inutile"): la v25 (17/07) logghava QUESTA riga per OGNI carta scartata qui,
+                # per capire se il controllo stesse bloccando affari veri -- verificato su una
+                # giornata intera di log reali che il caso "AVREBBE notificato" e' rarissimo
+                # (quasi sempre "non avrebbe comunque notificato", centinaia di righe identiche
+                # e inutili per run). Ora logghiamo per esteso SOLO il caso raro/interessante
+                # (would_have_fired=True); quello routine resta comunque contato e visibile in
+                # aggregato nel riepilogo finale (on_close), solo non piu' riga per riga.
                 if would_have_fired:
                     stats['skipped_in_season_substitute_would_have_fired'] = stats.get(
                         'skipped_in_season_substitute_would_have_fired', 0) + 1
-                track.log(f"[modello zenlock] sostituto in season ancora piu' economico "
-                          f"({in_season_min:.2f}EUR contro {price_eur:.2f}EUR classic) per "
-                          f"{player_name}, non e' un affare distinto, non notifico -- riferimento "
-                          f"classic originale {reference_price:.2f}EUR (n={n_comparables}), sconto "
-                          f"classic {classic_discount:.1%} (richiesto {classic_required_discount:.0%}) "
-                          f"-- {'AVREBBE notificato senza questo controllo' if would_have_fired else 'non avrebbe comunque notificato'}")
+                    track.log(f"[modello zenlock] sostituto in season ancora piu' economico "
+                              f"({in_season_min:.2f}EUR contro {price_eur:.2f}EUR classic) per "
+                              f"{player_name}, non e' un affare distinto, non notifico -- "
+                              f"riferimento classic originale {reference_price:.2f}EUR "
+                              f"(n={n_comparables}), sconto classic {classic_discount:.1%} "
+                              f"(richiesto {classic_required_discount:.0%}) -- AVREBBE notificato "
+                              f"senza questo controllo")
                 return
             if in_season_min < reference_price:
                 track.log(f"[modello zenlock] riferimento classic ({reference_price:.2f}EUR) "
@@ -751,7 +760,10 @@ def run_zenlock_listener(eth_rate):
                   f"rappresentativo: {stats.get('skipped_reference_too_high', 0)}, riferimento "
                   f"stagnante vs vendita reale: {stats.get('skipped_reference_stale_vs_real_sale', 0)}, "
                   f"saltate per throttle raffica (protezione rate-limit condiviso): "
-                  f"{stats.get('skipped_burst_throttle', 0)}")
+                  f"{stats.get('skipped_burst_throttle', 0)}, sostituto in_season piu' economico "
+                  f"(non un affare distinto): {stats.get('skipped_in_season_substitute_cheaper', 0)} "
+                  f"(di cui avrebbero notificato senza questo controllo: "
+                  f"{stats.get('skipped_in_season_substitute_would_have_fired', 0)})")
         # FIX 17/07 (v23): da "solo misurazione" a fallback vero -- vedi ZENLOCK_DISCOUNT_HISTORICAL_MARGIN.
         track.log(f"[modello zenlock] [diagnostica vendite recenti/fallback storico] su "
                   f"{stats.get('skipped_no_comparable', 0)} casi senza comparabile live, "

@@ -570,16 +570,72 @@ minuto), non un bug nei nostri workflow. Da verificare guardando i timestamp esa
 "queued"/"in progress" dei due run nella tab Actions di GitHub la prossima volta che succede, per
 confermare se e' un blocco vero o solo latenza normale.
 
+## Aggiornamento 18/07 (terzo giro -- analisi log reali, caso Song Bumkeun, pulizia rumore log)
+
+**CASO SONG BUMKEUN (nessun bug -- comportamento per design, spiegato all'utente)**: l'utente ha
+chiesto perche' non sia scattato un ALERT con annunci reali visti a mano a ~10EUR/~12EUR. Log
+(11:26:31): il FIX 18/07 sull'invisibilita' ha funzionato correttamente, usando SUBITO 10.13EUR
+come vero minimo -- ma nessun ALERT e' seguito. Causa (verificata leggendo `tracker.db` via
+sqlite3): il floor salvato per `bum-keun-song` (in_season) e' 7.16EUR, aggiornato il 17/07 alle
+07:20 -- SOTTO il prezzo attuale (10.13EUR). Il controllo `if true_min_price >= floor: return`
+(riga ~2503 di track.py) esce SILENZIOSAMENTE (nessun log) perche' 10.13 non e' un nuovo minimo
+rispetto a quel 7.16 storico. Il floor a 28 ore di eta' e' ancora "fresco" per
+`MAX_FLOOR_AGE_HOURS=48`, quindi non scatta nemmeno il riallineamento silenzioso (stale-realign)
+che lo avrebbe aggiornato. **Non e' un bug del fix di oggi**: e' una conseguenza del design
+esistente del floor (si muove solo in DISCESA, mai in salita, finche' non scade dopo 48h) --
+finche' non passano le restanti ~20h da quel 7.16EUR, il bot restera' "cieco" su questo giocatore
+per qualunque prezzo sopra 7.16, anche se il mercato reale e' ormai chiaramente piu' alto. Non
+ancora modificato (soglia gia' calibrata in precedenza, va discusso con l'utente prima di
+toccarla: es. far scadere prima un floor se il prezzo resta persistentemente piu' alto per N
+letture consecutive, o ridurre MAX_FLOOR_AGE_HOURS). **In attesa di indicazioni dall'utente.**
+
+**Pulizia rumore log (richiesta esplicita, "questa parte e' fastidiosa e inutile")**:
+- `track.py`: `log_raw_offers_diagnostic` (dump grezzo di tutti gli annunci live su OGNI ALERT)
+  reso OPT-IN via `ALERT_RAW_OFFERS_DIAGNOSTIC` (default OFF, nuovo input anche nel workflow
+  `check.yml`) -- resta disponibile per indagare un caso sospetto specifico, ma non piu'
+  automatico. Utile riattivarlo solo se si sospetta di nuovo un prezzo minimo notificato sbagliato
+  (caso storico Nico O'Reilly).
+- `zenlock_model_tracker.py`: la riga "sostituto in season ancora piu' economico... non avrebbe
+  comunque notificato" (aggiunta 17/07 per capire se un controllo bloccasse affari veri) sparava
+  300+ righe quasi identiche per run (verificato sul log reale: 416 carte valutate, riga ripetuta
+  per la stragrande maggioranza, MAI un caso "avrebbe notificato" in tutta la giornata). Ora
+  loggata per esteso SOLO nel caso raro/interessante (avrebbe notificato senza il controllo); il
+  caso routine resta comunque contato e visibile in aggregato nel riepilogo finale (on_close).
+
+**Robustezza Telegram (bug reale trovato rispondendo alla domanda dell'utente "cosa succede con
+100 carte in vendita?")**: verificato con un test che un manager con 100 carte in vendita genera
+un messaggio di 11187 caratteri, quasi 3x il limite reale di Telegram (4096) -- **la notifica
+sarebbe fallita in modo COMPLETAMENTE SILENZIOSO** (Telegram risponde 400, `send_telegram_msg` non
+controllava mai lo status della risposta). Due fix: (1) `track.send_telegram_msg` ora controlla
+`response.ok` e logga l'errore esatto se Telegram rifiuta il messaggio (beneficia tutti i
+tracker, non solo lo scanner); (2) `manager_bundle_scan.py`: `build_telegram_message` (singola
+stringa) sostituita da `build_telegram_messages` (lista) che impacchetta i blocchi in PIU'
+messaggi separati, ciascuno sotto `TELEGRAM_SAFE_MESSAGE_CHARS` (3500, margine di sicurezza sotto
+4096), con intestazione ripetuta su ognuno (+ indicatore "parte X/Y" se piu' di uno). Testato:
+100 carte -> 4 messaggi, nessuno oltre il limite, tutte le carte presenti nell'unione; 60 carte ->
+2 messaggi; caso piccolo invariato a 1 messaggio.
+
+**Nuovo bot Telegram dedicato allo scanner**: l'utente ha creato un bot dedicato (non piu' il
+riuso temporaneo del canale aste) e incollato la risposta `getUpdates` per ricavare il chat_id.
+Chiarito: il chat id giusto e' `409250306` (campo `chat.id`/`from.id`), NON `113519546` (quello e'
+`update_id`, un numero di sequenza interno di Telegram, mai un chat id). Aggiornato
+`manager_bundle_scan.yml` per leggere `secrets.BUNDLE_TELEGRAM_TOKEN`/
+`secrets.BUNDLE_TELEGRAM_CHAT_ID` invece dei secret aste. **AZIONE RICHIESTA ALL'UTENTE** (non
+posso farlo io, sono credenziali): aggiungere su GitHub (Settings > Secrets and variables >
+Actions > New repository secret) due nuovi secret: `BUNDLE_TELEGRAM_TOKEN` = il token del bot da
+BotFather, `BUNDLE_TELEGRAM_CHAT_ID` = `409250306`.
+
 ## Stato a fine sessione 18/07 (continuazione, aggiornato)
 
 Implementato e testato (compilazione + mock), MA NON ANCORA PUSHATO dall'utente via GitHub
-Desktop: sostituzione del filtro on-sale (campo liveSingleSaleOffer invece di argomenti falliti),
-fix v2/v1 per lo storico vendite (caso Saka), QoL "Offri fino a" piu' vistoso + link manager.
-**Prossimo passo per l'utente**: pushare via GitHub Desktop, poi (a) rilanciare bundle scan su un
-manager con tante carte possedute ma poche in vendita per vedere se liveSingleSaleOffer funziona
-e quanto si abbassa il tempo di esecuzione, con il nuovo formato blocchi/emphasis/link; (b)
-aspettare il prossimo ALERT o "mercato sottile" del tracker classico per vedere se la query v2
-dello storico vendite risolve casi come Bukayo Saka; (c) se ricapita la stessa sensazione di
-"scanner in coda dietro al tracker", controllare i timestamp esatti su GitHub Actions. Backlog
-invariato: filtro Satonio (item 6b, non richiesto), pulsanti Telegram deep-link "compra ora"/"fai
-offerta" (item 6, non richiesto).
+Desktop: sostituzione del filtro on-sale (campo liveSingleSaleOffer), fix v2/v1 storico vendite
+(caso Saka), QoL "Offri fino a" piu' vistoso + link manager, pulizia rumore log (track.py +
+zenlock), split messaggi Telegram lunghi + controllo errori invio, secrets nuovo bot dedicato.
+**Prossimo passo per l'utente**: (1) aggiungere i 2 nuovi secret GitHub per il bot dedicato
+(sopra); (2) pushare via GitHub Desktop; (3) rilanciare bundle scan su un manager con tante carte
+possedute ma poche in vendita per vedere se liveSingleSaleOffer funziona; (4) aspettare il
+prossimo ALERT/mercato sottile per vedere se la query v2 storico vendite risolve casi come Saka;
+(5) decidere insieme cosa fare del floor "bloccato" tipo Song Bumkeun (nessuna modifica fatta,
+in attesa di indicazioni); (6) se ricapita la sensazione di "scanner in coda dietro al tracker",
+controllare i timestamp esatti su GitHub Actions. Backlog invariato: filtro Satonio (item 6b, non
+richiesto), pulsanti Telegram deep-link "compra ora"/"fai offerta" (item 6, non richiesto).

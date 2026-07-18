@@ -56,12 +56,16 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
-          # Richiesta esplicita dell'utente: "usiamo canale aste sorare temporaneamente, che e'
-          # gia' configurato". track.py (riusato per send_telegram_msg) legge le variabili
-          # TELEGRAM_TOKEN/TELEGRAM_CHAT_ID -- qui le valorizziamo con i secret gia' esistenti
-          # delle aste, cosi' non serve creare nessun nuovo secret solo per questo test.
-          TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
+          # FIX 18/07 (richiesta esplicita dell'utente, "creato chat bot dedicato per le notifiche
+          # telegram dello scanner"): non piu' un riuso temporaneo del canale aste -- bot Telegram
+          # dedicato a questo scanner. Servono 2 NUOVI secret su GitHub (Settings > Secrets and
+          # variables > Actions > New repository secret), che l'utente deve aggiungere lui stesso
+          # (mai gestiti da qui): BUNDLE_TELEGRAM_TOKEN = il token del bot da BotFather,
+          # BUNDLE_TELEGRAM_CHAT_ID = 409250306 (il chat.id/from.id nella risposta getUpdates
+          # incollata dall'utente -- NON l'update_id, quello e' solo un numero di sequenza interno
+          # di Telegram, mai un chat id).
+          TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
           MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
           BUNDLE_OFFER_MARGIN_FRACTION: ${{ github.event.inputs.bundle_offer_margin_fraction || '0.15' }}
           MAX_OWNED_CARD_PAGES: ${{ github.event.inputs.max_owned_card_pages || '20' }}

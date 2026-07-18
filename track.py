@@ -722,13 +722,25 @@ def send_email(subject, body):
         log(f"Errore invio email: {e}")
 
 
+# FIX 18/07 (richiesta esplicita dell'utente, domanda "cosa succede se il manager ha 100 carte in
+# vendita? mi arriva una notifica lunghissima?"): risposta -- PRIMA di questo fix, se il messaggio
+# superava il limite Telegram (4096 caratteri, verificato con un caso reale da 100 carte: 11187
+# caratteri, quasi 3x il limite), l'API Telegram rispondeva con un errore HTTP (400, messaggio
+# troppo lungo) ma questa funzione non controllava mai lo status della risposta -- la notifica
+# spariva SILENZIOSAMENTE, senza nessuna riga di log a segnalarlo. Ora controlliamo sempre
+# response.ok e logghiamo il testo esatto dell'errore se Telegram rifiuta il messaggio (utile per
+# qualunque chiamante, non solo il bundle scanner: se in futuro un ALERT dovesse mai avere un testo
+# anomalo/troppo lungo, ora lo sapremmo dal log invece di scoprirlo solo per assenza di notifica).
 def send_telegram_msg(message):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML'}
     try:
-        requests.post(url, json=payload, timeout=10)
+        r = requests.post(url, json=payload, timeout=10)
+        if not r.ok:
+            log(f"Errore invio Telegram (HTTP {r.status_code}): {r.text[:500]} -- messaggio "
+                f"lungo {len(message)} caratteri (limite Telegram: 4096)")
     except Exception as e:
         log(f"Errore invio Telegram: {e}")
 
@@ -1087,6 +1099,14 @@ def double_check_suspect_drop(player_slug, season_type, first_price, eth_rate):
 
 
 DIAGNOSTIC_MAX_ROWS = 8  # FIX 17/07: vedi nota sotto, il dump completo era pura verbosita'
+
+# FIX 18/07 (richiesta esplicita dell'utente, "questa parte e' fastidiosa e inutile"): il dump
+# grezzo qui sotto era pensato per un caso specifico (Nico O'Reilly, un prezzo minimo notificato
+# risultato sbagliato) e resta utile SE si sospetta di nuovo un problema del genere -- ma su ogni
+# singolo ALERT (evento non piu' cosi' raro dopo il FIX 18/07 sull'invisibilita', che ne genera di
+# piu') e' verboso senza motivo la maggior parte delle volte. Reso opt-in (default OFF): si
+# riaccende con un env var solo quando serve davvero indagare un caso sospetto.
+ALERT_RAW_OFFERS_DIAGNOSTIC = os.environ.get('ALERT_RAW_OFFERS_DIAGNOSTIC', '').strip().lower() in ('1', 'true', 'si', 'yes')
 
 
 def log_raw_offers_diagnostic(player_slug, eth_rate):
@@ -2663,8 +2683,10 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
             # sport non combacianti? altro?) non era ricostruibile a posteriori. Su ogni ALERT
             # (evento raro, costo trascurabile) salviamo ora il dump grezzo di TUTTI gli annunci
             # live per quel giocatore, cosi' se ricapita abbiamo l'evidenza invece di doverla
-            # dedurre da uno screenshot fatto ore dopo.
-            log_raw_offers_diagnostic(player_slug, eth_rate)
+            # dedurre da uno screenshot fatto ore dopo. FIX 18/07: reso opt-in (vedi
+            # ALERT_RAW_OFFERS_DIAGNOSTIC sopra), non piu' automatico su ogni ALERT.
+            if ALERT_RAW_OFFERS_DIAGNOSTIC:
+                log_raw_offers_diagnostic(player_slug, eth_rate)
 
             # FIX 16/07 (v3, richiesta esplicita dell'utente): non blocchiamo piu' -- notifica
             # comunque, con un avviso se nella finestra di RECENT_SALE_WINDOW_DAYS giorni esiste

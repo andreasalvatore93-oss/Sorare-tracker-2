@@ -383,12 +383,28 @@ def run_bundle_scan():
         f"richiesta totale {format_eur(total_asking)}, minimo di mercato totale "
         f"{format_eur(total_market_min)} (dettaglio/offerta per blocco nel messaggio Telegram).")
 
-    message = build_telegram_message(manager_slug, on_sale)
-    track.send_telegram_msg(message)
-    log("notifica Telegram inviata (canale aste, riuso temporaneo).")
+    messages = build_telegram_messages(manager_slug, on_sale)
+    for i, msg in enumerate(messages):
+        track.send_telegram_msg(msg)
+        if i < len(messages) - 1:
+            time.sleep(TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS)
+    log(f"notifica Telegram inviata (canale aste, riuso temporaneo) -- {len(messages)} "
+        f"messaggio/i.")
 
 
-def build_telegram_message(manager_slug, on_sale):
+# FIX 18/07 (richiesta esplicita dell'utente, "cosa accade su telegram se il manager ha 100 carte
+# in vendita? mi arriva una notifica lunghissima?"): risposta -- PRIMA di questo fix, si': un solo
+# messaggio enorme che con 100 carte arrivava a 11187 caratteri, ben oltre il limite Telegram di
+# 4096 -- l'invio sarebbe FALLITO silenziosamente (vedi fix gemello su track.send_telegram_msg,
+# che ora almeno lo segnala nel log). Ora il contenuto viene impacchettato in PIU' messaggi
+# separati, ciascuno sotto TELEGRAM_SAFE_MESSAGE_CHARS (margine di sicurezza sotto i 4096 reali),
+# con un'intestazione ripetuta su ognuno (+ indicatore "parte X/Y" se piu' di uno) cosi' ogni
+# messaggio e' comprensibile anche da solo.
+TELEGRAM_SAFE_MESSAGE_CHARS = int(os.environ.get('TELEGRAM_SAFE_MESSAGE_CHARS', '3500'))
+TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS = float(os.environ.get('TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS', '0.5'))
+
+
+def build_telegram_messages(manager_slug, on_sale):
     """Organizza le carte in vendita in BLOCCHI DA BUNDLE_BLOCK_SIZE (default 10) -- limite
     pratico di Sorare per fare un'unica offerta cumulativa su piu' carte dello stesso manager
     (richiesta esplicita dell'utente). Ogni blocco riporta il proprio subtotale (richiesto,
@@ -402,27 +418,28 @@ def build_telegram_message(manager_slug, on_sale):
     corsivo/link/ecc -- l'unico modo pratico di "colorare" una riga e' un'emoji. Usiamo 🔴
     quando il prezzo chiesto e' SOPRA il minimo di mercato (esiste un'alternativa piu' economica
     altrove: questa carta pesa nel pacchetto ma non e' lei stessa l'occasione) e 🟢 quando la
-    carta e' GIA' al prezzo minimo di mercato (nessuna alternativa piu' economica trovata)."""
+    carta e' GIA' al prezzo minimo di mercato (nessuna alternativa piu' economica trovata).
+
+    Ritorna una LISTA di messaggi (non piu' una singola stringa): se il contenuto supera
+    TELEGRAM_SAFE_MESSAGE_CHARS viene impacchettato in piu' messaggi separati, ognuno sotto il
+    limite reale di Telegram (4096 caratteri) -- vedi FIX 18/07 sopra."""
     blocks = [on_sale[i:i + BUNDLE_BLOCK_SIZE] for i in range(0, len(on_sale), BUNDLE_BLOCK_SIZE)]
     blocks_shown = blocks[:MAX_BLOCKS_IN_TELEGRAM_MESSAGE]
 
-    # FIX 18/07 (richiesta esplicita dell'utente): link diretto alla pagina Sorare del manager
-    # filtrata alle carte in vendita in_season -- stesso URL osservato dall'utente nel browser
-    # (.../my-club/{slug}/cards/limited?sale=true&is=true).
-    # '&' va sempre HTML-escaped dentro un attributo href (Telegram parse_mode=HTML), anche se
-    # in pratica molti client sono permissivi -- meglio essere corretti ed evitare un 400 su un
-    # URL con piu' di un parametro di query.
+    # Link diretto alla pagina Sorare del manager filtrata alle carte in vendita in_season --
+    # stesso URL osservato dall'utente nel browser (.../my-club/{slug}/cards/limited?sale=true&is=true).
+    # '&' va sempre HTML-escaped dentro un attributo href (Telegram parse_mode=HTML).
     manager_url = (f"https://sorare.com/it/football/my-club/{manager_slug}/cards/limited"
                    f"?sale=true&amp;is=true")
+    header = (f"🎯 <b>{manager_slug}</b> -- carte Limited in_season in vendita ({len(on_sale)}, "
+              f"{len(blocks)} blocchi da {BUNDLE_BLOCK_SIZE})\n"
+              f'📂 <a href="{manager_url}">Vai alle carte in vendita di {manager_slug}</a>')
 
-    lines = [f"🎯 <b>{manager_slug}</b> -- carte Limited in_season in vendita ({len(on_sale)}, "
-             f"{len(blocks)} blocchi da {BUNDLE_BLOCK_SIZE})",
-             f'📂 <a href="{manager_url}">Vai alle carte in vendita di {manager_slug}</a>\n']
-
+    block_texts = []
     for block_idx, block in enumerate(blocks_shown, start=1):
         start_n = (block_idx - 1) * BUNDLE_BLOCK_SIZE + 1
         end_n = start_n + len(block) - 1
-        lines.append(f"<b>Blocco {block_idx} (carte {start_n}-{end_n})</b>")
+        lines = [f"<b>Blocco {block_idx} (carte {start_n}-{end_n})</b>"]
         for c in block:
             marker = "🟢" if c['listing_price'] <= c['market_min_price'] else "🔴"
             lines.append(f"{marker} {c['player_name']}: in vendita a "
@@ -441,24 +458,53 @@ def build_telegram_message(manager_slug, on_sale):
         lines.append(f"👉👉 <b>OFFRI FINO A {format_eur(block_offer)}</b> 👈👈")
         lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
         lines.append(f"(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)")
-        lines.append("")
+        block_texts.append("\n".join(lines))
 
+    footer_lines = []
     if len(blocks) > MAX_BLOCKS_IN_TELEGRAM_MESSAGE:
         remaining_blocks = blocks[MAX_BLOCKS_IN_TELEGRAM_MESSAGE:]
         remaining_cards = sum(len(b) for b in remaining_blocks)
-        lines.append(f"... altri {len(remaining_blocks)} blocchi ({remaining_cards} carte) "
-                      f"omessi dal messaggio, vedi log completo su GitHub")
-        lines.append("")
-
+        footer_lines.append(f"... altri {len(remaining_blocks)} blocchi ({remaining_cards} "
+                             f"carte) omessi dal messaggio, vedi log completo su GitHub")
     total_asking = sum(c['listing_price'] for c in on_sale)
     total_market_min = sum(c['market_min_price'] for c in on_sale)
-    lines.append(f"Totale complessivo (tutti i blocchi): {len(on_sale)} carte, richiesto "
-                 f"{format_eur(total_asking)}, minimo mercato {format_eur(total_market_min)} "
-                 f"(informativo -- non offribile in un colpo solo oltre le {BUNDLE_BLOCK_SIZE} "
-                 f"carte, vedi offerte per blocco sopra)")
-    lines.append("🟢 = gia' al minimo di mercato   🔴 = in vendita sopra il minimo di mercato "
-                 "(esiste altrove piu' a buon mercato)")
-    return "\n".join(lines)
+    footer_lines.append(f"Totale complessivo (tutti i blocchi): {len(on_sale)} carte, richiesto "
+                         f"{format_eur(total_asking)}, minimo mercato {format_eur(total_market_min)} "
+                         f"(informativo -- non offribile in un colpo solo oltre le "
+                         f"{BUNDLE_BLOCK_SIZE} carte, vedi offerte per blocco sopra)")
+    footer_lines.append("🟢 = gia' al minimo di mercato   🔴 = in vendita sopra il minimo di "
+                         "mercato (esiste altrove piu' a buon mercato)")
+    footer = "\n".join(footer_lines)
+
+    # Impacchetta i blocchi in piu' "corpi" di messaggio, ciascuno sotto il limite di sicurezza
+    # (senza contare ancora l'intestazione, aggiunta dopo a ogni corpo).
+    body_chunks = []
+    current_parts = []
+    current_len = 0
+    for bt in block_texts:
+        add_len = len(bt) + 2  # + "\n\n" di separazione
+        if current_parts and current_len + add_len > TELEGRAM_SAFE_MESSAGE_CHARS:
+            body_chunks.append("\n\n".join(current_parts))
+            current_parts, current_len = [], 0
+        current_parts.append(bt)
+        current_len += add_len
+    if current_parts:
+        body_chunks.append("\n\n".join(current_parts))
+    if not body_chunks:
+        body_chunks = [""]
+
+    # Il footer va sull'ULTIMO corpo se ci sta, altrimenti diventa un messaggio a se stante.
+    if len(body_chunks[-1]) + len(footer) + 4 <= TELEGRAM_SAFE_MESSAGE_CHARS:
+        body_chunks[-1] = (body_chunks[-1] + "\n\n" + footer) if body_chunks[-1] else footer
+    else:
+        body_chunks.append(footer)
+
+    n = len(body_chunks)
+    messages = []
+    for i, body in enumerate(body_chunks, start=1):
+        part_note = f"\n<i>(parte {i}/{n})</i>" if n > 1 else ""
+        messages.append(f"{header}{part_note}\n\n{body}")
+    return messages
 
 
 if __name__ == '__main__':
