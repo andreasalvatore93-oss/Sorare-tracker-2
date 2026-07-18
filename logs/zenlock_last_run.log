@@ -3359,3 +3359,22 @@
 [2026-07-18 21:00:32] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 3 casi senza comparabile live, 3 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 3 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
 [2026-07-18 21:00:32] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 3406, 'wei': 449, 'usdCents': 2418, 'gbpCents': 130, 'lamport': 3, 'none': 0}
 [2026-07-18 21:00:32] [modello zenlock] esecuzione terminata.
+
+===== RUN 2026-07-18 21:02:09 UTC =====
+[2026-07-18 21:02:09] [modello zenlock] Tasso ETH/EUR: 1622.85
+[2026-07-18 21:02:09] [modello zenlock] Ascolto per 250 secondi (soglie: classic <=4.0EUR / in_season <=8.0EUR, sconto min 15%)...
+[2026-07-18 21:02:10] [modello zenlock] connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 21:02:11] [modello zenlock] sottoscrizione confermata, in ascolto...
+[2026-07-18 21:03:11] [storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).
+[2026-07-18 21:03:11] [modello zenlock] riferimento live 2.00EUR per Matt Lendfers molto piu' caro dell'ultima vendita REALE (1.15EUR, 2.0gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 21:03:26] [modello zenlock] riferimento classic (1.88EUR) sostituito dal minimo in_season piu' economico (1.14EUR) per Ayumu Yokoyama, vedi caso Szoboszlai
+[2026-07-18 21:04:22] [modello zenlock] riferimento classic (0.59EUR) sostituito dal minimo in_season piu' economico (0.58EUR) per Josip Silić, vedi caso Szoboszlai
+[2026-07-18 21:04:25] [modello zenlock] riferimento live 5.82EUR per Casemiro molto piu' caro dell'ultima vendita REALE (3.41EUR, 0.0gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 21:04:41] [modello zenlock] riferimento classic (0.45EUR) sostituito dal minimo in_season piu' economico (0.38EUR) per Yukinari Sugawara, vedi caso Szoboszlai
+[2026-07-18 21:05:07] [modello zenlock] riferimento live 2.03EUR per Stjepan Radeljić molto piu' caro dell'ultima vendita REALE (1.31EUR, 2.0gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 21:05:21] [modello zenlock] riferimento classic (0.60EUR) sostituito dal minimo in_season piu' economico (0.60EUR) per Maxence Prévot, vedi caso Szoboszlai
+[2026-07-18 21:05:58] [modello zenlock] riferimento classic (3.00EUR) sostituito dal minimo in_season piu' economico (0.50EUR) per Oleksandr Zinchenko, vedi caso Szoboszlai
+[2026-07-18 21:06:19] [modello zenlock] connessione chiusa (codice None). Eventi: 1059, carte valutate: 387, notifiche inviate: 0 (di cui solo ETH: 0, di cui su riferimento storico: 0), scartate per mancanza comparabili: 0, scartate per riferimento troppo basso: 5, scartate per differenza assoluta troppo piccola: 0, scartate per gemello in_season altrettanto economico: 0, sconto sospetto non confermato alla riverifica: 0, riferimento troppo alto/non rappresentativo: 0, riferimento stagnante vs vendita reale: 3, saltate per throttle raffica (protezione rate-limit condiviso): 0, sostituto in_season piu' economico (non un affare distinto): 41 (di cui avrebbero notificato senza questo controllo: 0)
+[2026-07-18 21:06:19] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 0 casi senza comparabile live, 0 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
+[2026-07-18 21:06:19] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 6637, 'wei': 805, 'usdCents': 4031, 'gbpCents': 276, 'lamport': 4, 'none': 0}
+[2026-07-18 21:06:19] [modello zenlock] esecuzione terminata.
