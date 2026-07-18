@@ -1,0 +1,83 @@
+name: My Cards Underpriced Scanner
+
+on:
+  workflow_dispatch:
+    inputs:
+      listen_seconds:
+        description: "Secondi di ascolto (per testing, di solito questo tracker non ascolta WebSocket)"
+        required: false
+        default: "30"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: my-cards-underpriced
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run my cards underpriced scan
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          BUNDLE_TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
+          BUNDLE_TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          {
+            echo ""
+            echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
+            python my_cards_underpriced.py
+          } 2>&1 | tee -a logs/my_cards_underpriced_last_run.log
+          # Rete di sicurezza: mantieni le ultime 200 run intere
+          awk -v maxruns=200 '
+            /^===== RUN / { runs++; starts[runs]=NR }
+            { buf[NR]=$0; last=NR }
+            END {
+              from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
+              for (i=from; i<=last; i++) print buf[i]
+            }
+          ' logs/my_cards_underpriced_last_run.log > logs/my_cards_underpriced_last_run.log.tmp && mv logs/my_cards_underpriced_last_run.log.tmp logs/my_cards_underpriced_last_run.log
+
+      - name: Save log
+        if: always()
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -f logs/my_cards_underpriced_last_run.log ]; then
+            git add logs/my_cards_underpriced_last_run.log
+          fi
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "update my_cards_underpriced log"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
