@@ -64,6 +64,7 @@ AUTO_FIND_MAX_OWNER_LOOKUPS = int(os.environ.get('AUTO_FIND_MAX_OWNER_LOOKUPS', 
 # FIX 18/07 (v4, richiesta esplicita dell'utente): blacklist di manager bot noti che non accettano
 # offerte negoziate -- scansionarli e' inutile perche' rispondono solo a loro stessa logica bot,
 # non a margini. Ignorati durante l'auto-discovery (l'input manuale resta intoccato per il testing).
+# BLACKLIST_MANAGERS env var (da workflow) aggiunge manager temporaneamente per quella run.
 AUTO_FIND_BLACKLIST_MANAGERS = {
     'clem777', 'satonio', 'zenlock', 'cheaper-than-him', 'eli-aquim',
     'lamella-4aa53b98-9221-410e-8092-05aaabd1ba30', 'sir-hiss-the-swap-bot',
@@ -71,6 +72,11 @@ AUTO_FIND_BLACKLIST_MANAGERS = {
     'jrodwalts-trade-115-active-buyer-seller', 'meowmeow7',
     'bellona-f0b1a9d7-3700-4d59-9044-ec54b7b348aa',
 }
+# Aggiungi blacklist temporanea dal workflow (lista separata da virgola)
+_temp_blacklist = os.environ.get('BLACKLIST_MANAGERS', '').strip()
+if _temp_blacklist:
+    _temp_slugs = [s.strip().lower() for s in _temp_blacklist.split(',') if s.strip()]
+    AUTO_FIND_BLACKLIST_MANAGERS.update(_temp_slugs)
 
 MAX_OWNED_CARD_PAGES = int(os.environ.get('MAX_OWNED_CARD_PAGES', '20'))
 OWNED_CARD_PAGE_SIZE = int(os.environ.get('OWNED_CARD_PAGE_SIZE', '50'))
