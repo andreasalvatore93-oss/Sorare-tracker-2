@@ -54,3 +54,15 @@
 [2026-07-18 11:27:25] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 320, 'wei': 56, 'usdCents': 30, 'gbpCents': 21, 'lamport': 1, 'none': 0}
 [2026-07-18 11:27:25] [manager bundle scan] RISULTATO -- 'flobob-fc': 18 carte in vendita organizzate in 2 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 120.78EUR, minimo di mercato totale 120.45EUR (dettaglio/offerta per blocco nel messaggio Telegram).
 [2026-07-18 11:27:26] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo).
+
+===== RUN 2026-07-18 11:57:47 UTC =====
+[2026-07-18 11:57:48] [manager bundle scan] input ricevuto: 'https://sorare.com/it/football/my-club/mikileefoo' -> slug estratto: 'mikileefoo'
+[2026-07-18 11:57:48] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 11:57:48] [manager bundle scan] 'mikileefoo': 360 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 11:57:52] [manager bundle scan] [filtro carte in vendita] 360 carte possedute scansionate, 210 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 150.
+[2026-07-18 11:57:52] [manager bundle scan] 'mikileefoo': 187 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 11:57:52] [manager bundle scan] controllo il mercato live per 184 giocatori diversi (187 carte possedute da verificare)...
+[2026-07-18 11:59:18] [manager bundle scan] [diagnostica] 187 carte in_season possedute controllate, 187 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 0 errori di query.
+[2026-07-18 11:59:18] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 3685, 'wei': 396, 'usdCents': 997, 'gbpCents': 154, 'lamport': 0, 'none': 0}
+[2026-07-18 11:59:18] [manager bundle scan] RISULTATO -- 'mikileefoo': 187 carte in vendita organizzate in 19 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 321.21EUR, minimo di mercato totale 309.55EUR (dettaglio/offerta per blocco nel messaggio Telegram).
+[2026-07-18 11:59:20] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo) -- 3 messaggio/i.
