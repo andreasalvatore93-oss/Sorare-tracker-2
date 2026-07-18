@@ -1108,6 +1108,23 @@ DIAGNOSTIC_MAX_ROWS = 8  # FIX 17/07: vedi nota sotto, il dump completo era pura
 # riaccende con un env var solo quando serve davvero indagare un caso sospetto.
 ALERT_RAW_OFFERS_DIAGNOSTIC = os.environ.get('ALERT_RAW_OFFERS_DIAGNOSTIC', '').strip().lower() in ('1', 'true', 'si', 'yes')
 
+# FIX 18/07 (v2, richiesta esplicita dell'utente, "il log e' molto pesante... molto
+# confusionario"): due categorie di righe finite in questo giro di pulizia, entrambe opt-in
+# (default OFF) dietro questo stesso flag:
+# 1) la riga per-evento "l'annuncio che ha scatenato l'evento... uso subito X come vero minimo"
+#    (introdotta dal FIX 18/07 sull'invisibilita' qui sotto) e' stata utile per validare quel
+#    fix, ma un giro di log fresco mostra che ormai spara su QUASI OGNI evento (e' cosi' per
+#    costruzione: l'evento arriva sempre pochi secondi prima che la query lo veda) -- non e'
+#    piu' un segnale raro/diagnostico, e' diventata boilerplate. L'aggregato (quante volte e'
+#    scattata in questa esecuzione) resta comunque visibile in modo compatto nella riga
+#    "Connessione chiusa" di fine ascolto, quindi l'informazione non si perde, solo la verbosita'
+#    per-riga.
+# 2) le due righe [diagnostica tracker]/[diagnostica valute] a fine connessione (distribuzione
+#    status offerte, branch valute usati) erano utili in fase di sviluppo di quei meccanismi,
+#    ora confermati stabili su molte run -- tenute disponibili qui dietro flag per il giorno in
+#    cui servisse indagare di nuovo, ma tolte dal log di default.
+RUN_DIAGNOSTICS = os.environ.get('RUN_DIAGNOSTICS', '').strip().lower() in ('1', 'true', 'si', 'yes')
+
 
 def log_raw_offers_diagnostic(player_slug, eth_rate):
     """FIX 16/07 (caso Nico O'Reilly): quando scatta un ALERT, salviamo anche il dump grezzo di
@@ -2456,11 +2473,18 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # esiste un annuncio ANCORA piu' economico che non conosciamo affatto" (piu' sotto).
         if (price_eur < true_min_price and true_min_price > 0
                 and (not is_same_card or gap_relative > INVISIBILITY_GAP_TOLERANCE)):
-            log(f"{player_name} ({season_type}, {season_name}): l'annuncio che ha scatenato "
-                f"l'evento ({price_eur:.2f}EUR) e' piu' economico del minimo trovato dalla "
-                f"verifica live ({true_min_price:.2f}EUR) -- probabilmente ancora nella "
-                f"finestra di invisibilita' di Sorare, uso subito {price_eur:.2f}EUR come vero "
-                f"minimo (nessuna attesa/riverifica, vedi FIX 18/07)")
+            # FIX 18/07 (v2, "log troppo pesante"): questa riga ormai scatta su quasi ogni
+            # evento (e' cosi' per costruzione, vedi nota su RUN_DIAGNOSTICS piu' sopra) --
+            # tenuta come opt-in per debug futuro, ma di default contiamo solo l'aggregato
+            # (visibile nella riga "Connessione chiusa" a fine ascolto) invece di stampare una
+            # riga per ogni occorrenza.
+            stats['invisibility_window_used'] = stats.get('invisibility_window_used', 0) + 1
+            if RUN_DIAGNOSTICS:
+                log(f"{player_name} ({season_type}, {season_name}): l'annuncio che ha scatenato "
+                    f"l'evento ({price_eur:.2f}EUR) e' piu' economico del minimo trovato dalla "
+                    f"verifica live ({true_min_price:.2f}EUR) -- probabilmente ancora nella "
+                    f"finestra di invisibilita' di Sorare, uso subito {price_eur:.2f}EUR come vero "
+                    f"minimo (nessuna attesa/riverifica, vedi FIX 18/07)")
             # NOTA: own_prices[0] e' GIA' (true_min_price, true_min_card_slug) di prima (e' cosi'
             # che li abbiamo ottenuti poco sopra) -- prependiamo SOLO la nuova entry (price_eur,
             # card_slug), lasciando own_prices intatto dietro: own_prices[1] piu' sotto (usato
@@ -3032,11 +3056,16 @@ def run_listener(eth_rate):
         log(f"Errore WebSocket: {error}")
 
     def on_close(ws, close_status_code, close_message):
+        invisibility_count = stats.get('invisibility_window_used', 0)
         log(f"Connessione chiusa (codice {close_status_code}). "
-            f"Eventi ricevuti: {stats['received']}, carte Limited/football elaborate: {stats['processed']}")
-        log(f"[diagnostica tracker] distribuzione status offerte osservate: {stats['status_counts']}")
-        log(f"[diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: "
-            f"{get_currency_branch_stats()}")
+            f"Eventi ricevuti: {stats['received']}, carte Limited/football elaborate: "
+            f"{stats['processed']}, in finestra di invisibilita': {invisibility_count}")
+        # FIX 18/07 (v2): le due righe sotto sono opt-in (vedi nota su RUN_DIAGNOSTICS piu' sopra
+        # nel file) -- utili solo per indagare un caso sospetto, tolte dal log di default.
+        if RUN_DIAGNOSTICS:
+            log(f"[diagnostica tracker] distribuzione status offerte osservate: {stats['status_counts']}")
+            log(f"[diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: "
+                f"{get_currency_branch_stats()}")
 
     ws = websocket.WebSocketApp(
         WS_URL,
