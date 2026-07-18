@@ -5762,3 +5762,25 @@
 [2026-07-18 22:40:34] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 0 casi senza comparabile live, 0 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 0 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
 [2026-07-18 22:40:34] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 3683, 'wei': 491, 'usdCents': 2902, 'gbpCents': 187, 'lamport': 2, 'none': 0}
 [2026-07-18 22:40:34] [modello zenlock] esecuzione terminata.
+
+===== RUN 2026-07-18 22:41:40 UTC =====
+[2026-07-18 22:41:40] [modello zenlock] Tasso ETH/EUR: 1626.74
+[2026-07-18 22:41:40] [modello zenlock] Ascolto per 250 secondi (soglie: classic <=4.0EUR / in_season <=8.0EUR, sconto min 15%)...
+[2026-07-18 22:41:40] [modello zenlock] connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 22:41:41] [modello zenlock] sottoscrizione confermata, in ascolto...
+[2026-07-18 22:41:45] [modello zenlock] riferimento classic (2.00EUR) sostituito dal minimo in_season piu' economico (1.98EUR) per Pau López, vedi caso Szoboszlai
+[2026-07-18 22:41:54] [modello zenlock] riferimento classic (2.00EUR) sostituito dal minimo in_season piu' economico (1.98EUR) per Pau López, vedi caso Szoboszlai
+[2026-07-18 22:43:00] [storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).
+[2026-07-18 22:44:39] [modello zenlock] MATCH -- SONG BUMKEUN [in_season] 9.40EUR, sconto 9.6% su prossimo annuncio 10.40EUR (n=11)
+[2026-07-18 22:44:39] [modello zenlock] DEBUG comparabili grezzi per bum-keun-song/in_season: [(10.399635, 'bum-keun-song-2026-limited-665'), (10.47, 'bum-keun-song-2026-limited-570'), (10.48, 'bum-keun-song-2026-limited-406'), (10.49412, 'bum-keun-song-2026-limited-70'), (11.36863, 'bum-keun-song-2026-limited-506'), (12.24314, 'bum-keun-song-2026-limited-601'), (12.5, 'bum-keun-song-2026-limited-476'), (14.74, 'bum-keun-song-2026-limited-426'), (16.267400000000002, 'bum-keun-song-2026-limited-642'), (18.554828999999998, 'bum-keun-song-2026-limited-307'), (26.2353, 'bum-keun-song-2026-limited-330')]
+[2026-07-18 22:44:43] [modello zenlock] MATCH -- Tijmen Holla [in_season] 1.34EUR, sconto 30.7% su prossimo annuncio 1.93EUR (n=5)
+[2026-07-18 22:44:43] [modello zenlock] DEBUG comparabili grezzi per tijmen-holla/in_season: [(1.9326671, 'tijmen-holla-2025-limited-122'), (1.96, 'tijmen-holla-2025-limited-158'), (2.18, 'tijmen-holla-2025-limited-84'), (2.186275, 'tijmen-holla-2025-limited-136'), (4.41, 'tijmen-holla-2025-limited-14')]
+[2026-07-18 22:45:00] [modello zenlock] MATCH -- Dominik Nisandzic [in_season] 1.44EUR, sconto 23.0% su prossimo annuncio 1.87EUR (n=4)
+[2026-07-18 22:45:00] [modello zenlock] DEBUG comparabili grezzi per dominik-nisandzic/in_season: [(1.87, 'dominik-nisandzic-2025-limited-14'), (1.9151769, 'dominik-nisandzic-2025-limited-16'), (1.9414122000000003, 'dominik-nisandzic-2025-limited-12'), (1.9676475, 'dominik-nisandzic-2025-limited-10')]
+[2026-07-18 22:45:17] [modello zenlock] riferimento classic (2.90EUR) sostituito dal minimo in_season piu' economico (2.75EUR) per Willer Ditta, vedi caso Szoboszlai
+[2026-07-18 22:45:46] [modello zenlock] MATCH -- Zlatko Junuzovic [classic] 2.19EUR, sconto 89.1% su prossimo annuncio 20.00EUR (n=1)
+[2026-07-18 22:45:46] [modello zenlock] DEBUG comparabili grezzi per zlatko-junuzovic/classic: [(20.0, 'zlatko-junuzovic-2021-limited-96')]
+[2026-07-18 22:45:50] [modello zenlock] connessione chiusa (codice None). Eventi: 1013, carte valutate: 213, notifiche inviate: 4 (di cui solo ETH: 0, di cui su riferimento storico: 0), scartate per mancanza comparabili: 1, scartate per riferimento troppo basso: 3, scartate per differenza assoluta troppo piccola: 1, scartate per gemello in_season altrettanto economico: 0, sconto sospetto non confermato alla riverifica: 0, riferimento troppo alto/non rappresentativo: 0, riferimento stagnante vs vendita reale: 0, saltate per throttle raffica (protezione rate-limit condiviso): 0, sostituto in_season piu' economico (non un affare distinto): 46 (di cui avrebbero notificato senza questo controllo: 0)
+[2026-07-18 22:45:50] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 1 casi senza comparabile live, 1 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 1 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
+[2026-07-18 22:45:50] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 3605, 'wei': 462, 'usdCents': 2355, 'gbpCents': 207, 'lamport': 0, 'none': 0}
+[2026-07-18 22:45:50] [modello zenlock] esecuzione terminata.
