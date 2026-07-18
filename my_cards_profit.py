@@ -52,6 +52,9 @@ UNSCANNED_BACKLOG_FILE = '.my_cards_profit_backlog.txt'
 
 # Input dal workflow
 CARDS_TO_SCAN = int(os.environ.get('MY_CARDS_PROFIT_SCAN_COUNT', '10'))
+# FIX 18/07 (richiesta esplicita dell'utente): non segnalare se il profit assoluto e' sotto
+# questa soglia -- pochi centesimi non sono un vero affare, solo rumore.
+MIN_PROFIT_EUR = float(os.environ.get('MY_CARDS_PROFIT_MIN_EUR', '0.50'))
 # Finestra e paginazione per lo storico acquisti (track.fetch_user_trades) -- di default molto
 # ampia (anni), perche' ci serve la cronologia acquisti COMPLETA per calcolare il profit, non
 # solo gli ultimi giorni come nell'uso originale (snipe pattern) di questa funzione.
@@ -225,16 +228,28 @@ def build_purchase_price_map():
     return price_map
 
 
-def get_market_min_price(card_slug, in_season_eligible):
+def get_market_min_price(card_slug, season_type):
     """Ottieni il prezzo più basso del mercato per il giocatore di questa carta, tra gli
     annunci aperti con la stessa categoria (in_season/classic) -- stesso schema query di
     track.py (fetch_all_live_offers/get_live_min_offer): la carta messa in vendita sta in
     senderSide.anyCards, il prezzo chiesto sta in receiverSide.amounts. receiverSide.anyCards
     NON vuoto significa scambio carta-per-carta (nessun prezzo in denaro, va escluso).
-    FIX 18/07: la versione precedente cercava card_slug dentro receiverSide.anyCards (il lato
-    del pagamento, quasi sempre vuoto per una vendita a prezzo fisso) invece che in
+    FIX 18/07 (v1): la versione precedente cercava card_slug dentro receiverSide.anyCards (il
+    lato del pagamento, quasi sempre vuoto per una vendita a prezzo fisso) invece che in
     senderSide.anyCards (il lato della carta venduta) -- il match falliva quasi sempre,
-    lasciando il prezzo di mercato sempre a None."""
+    lasciando il prezzo di mercato sempre a None.
+    FIX 18/07 (v2, caso reale cheol-woo-park-2024-limited-143, richiesta esplicita dell'utente):
+    confrontare inSeasonEligible con un uguaglianza diretta (True/False) e' fragile -- questo
+    campo puo' risultare None per alcuni annunci (dato non sempre popolato da Sorare), e in quel
+    caso l'annuncio passava comunque il filtro per errore, mescolando prezzi in_season con
+    carte classic dello stesso giocatore (la carta 2024/classic dell'utente veniva confrontata
+    con un annuncio in_season a 4.28EUR invece che con la sua vera categoria). Fix: usa
+    track.season_type_for_card (stessa funzione, stesso fallback su sportSeason.name gia'
+    collaudato in track.py) sia per la mia carta che per ogni candidato, e confronta le
+    CATEGORIE ('in_season'/'classic') invece del booleano grezzo.
+    FIX 18/07 (v3, richiesta esplicita dell'utente): esclude gli annunci del manager
+    'privacy' (vende solo in ETH, non e' un'opzione utilizzabile per l'utente) dal calcolo
+    del prezzo minimo di mercato -- stesso blacklist condiviso di track.py."""
     query = """
     {
       anyCard(slug: "%s") {
@@ -259,6 +274,7 @@ def get_market_min_price(card_slug, in_season_eligible):
             liveSingleSaleOffers(playerSlug: $slug, last: $n) {
               nodes {
                 status
+                sender { ... on User { slug } }
                 receiverSide {
                   amounts { eurCents }
                   anyCards { slug }
@@ -269,6 +285,7 @@ def get_market_min_price(card_slug, in_season_eligible):
                     rarityTyped
                     sport
                     inSeasonEligible
+                    sportSeason { name }
                   }
                 }
               }
@@ -291,6 +308,9 @@ def get_market_min_price(card_slug, in_season_eligible):
         for node in nodes:
             if node.get('status') != 'opened':
                 continue
+            seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
+            if seller_slug in track.BLACKLISTED_SELLER_SLUGS:
+                continue
             # scambio carta-per-carta (nessun prezzo in denaro): escluso, stesso filtro di track.py
             if (node.get('receiverSide') or {}).get('anyCards'):
                 continue
@@ -301,7 +321,8 @@ def get_market_min_price(card_slug, in_season_eligible):
                     continue
                 if c.get('sport') != 'FOOTBALL':
                     continue
-                if c.get('inSeasonEligible') != in_season_eligible:
+                c_season_name = (c.get('sportSeason') or {}).get('name', 'unknown')
+                if track.season_type_for_card(c, c_season_name) != season_type:
                     continue
                 match = c
                 break
@@ -376,8 +397,11 @@ def run_profit_scan():
             }
             continue
 
-        # Ottieni prezzo market minimo (stessa categoria in_season/classic)
-        market_price = get_market_min_price(card_slug, card.get('inSeasonEligible'))
+        # Ottieni prezzo market minimo (stessa categoria in_season/classic, FIX 18/07: match
+        # per season_type invece che booleano grezzo, vedi docstring di get_market_min_price)
+        season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
+        season_type = track.season_type_for_card(card, season_name)
+        market_price = get_market_min_price(card_slug, season_type)
         if market_price is None:
             log(f"  ⚠️ Prezzo market non trovato")
             continue
@@ -386,7 +410,10 @@ def run_profit_scan():
         profit = market_price - purchase_price
         profit_percent = (profit / purchase_price * 100) if purchase_price > 0 else 0
 
-        if profit > 0:
+        # FIX 18/07 (richiesta esplicita dell'utente): non segnalare se il profit assoluto e'
+        # sotto MIN_PROFIT_EUR -- pochi centesimi di "profit" sono spesso solo rumore di
+        # arrotondamento/differenze di 1-2 offerte, non un vero affare da cogliere.
+        if profit > MIN_PROFIT_EUR:
             log(f"  ✅ PROFIT: acquistato {purchase_price:.2f}€, market {market_price:.2f}€ "
                 f"(+{profit:.2f}€, {profit_percent:+.1f}%)")
             profitable.append({

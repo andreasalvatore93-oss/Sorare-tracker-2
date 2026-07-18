@@ -22,6 +22,15 @@ TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
+# FIX 18/07 (richiesta esplicita dell'utente): il manager 'privacy' (sorare.com/it/football/
+# my-club/privacy) vende solo in ETH -- non un'opzione utilizzabile per l'utente (non compra in
+# ETH), quindi i suoi annunci vanno esclusi da OGNI calcolo di prezzo minimo di mercato in tutti
+# i tracker che condividono questa logica (track.py/zenlock/manager_bundle_scan tramite
+# get_bucket_prices, my_cards_underpriced.py, my_cards_profit.py) -- ESCLUSE le aste
+# (auctions.py/auctions_ws_listener.py, richiesta esplicita "tranne le aste ovvio"), che non
+# usano questa lista. Slug sempre confrontati in minuscolo.
+BLACKLISTED_SELLER_SLUGS = {'privacy'}
+
 # Per quanti secondi restare in ascolto ad ogni esecuzione.
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '200'))
 
@@ -269,6 +278,7 @@ subscription OnTokenOfferUpdated {
   tokenOfferWasUpdated {
     id
     status
+    sender { ... on User { slug } }
     senderSide {
       amounts { eurCents wei usdCents gbpCents lamport }
       anyCards {
@@ -308,6 +318,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
       pageInfo { hasPreviousPage startCursor }
       nodes {
         status
+        sender { ... on User { slug } }
         receiverSide { amounts { eurCents wei usdCents gbpCents lamport } anyCards { slug } }
         senderSide {
           anyCards {
@@ -331,7 +342,11 @@ MAX_PAGES = 20  # tetto di sicurezza (fino a 1000 annunci totali) per evitare lo
 def fetch_all_live_offers(player_slug):
     """Scorre TUTTE le pagine di annunci live per un giocatore usando la paginazione a
     cursore confermata funzionante (before/startCursor), invece di fidarsi di un singolo
-    "last: N" che il server tronca comunque a ~50 per richiesta."""
+    "last: N" che il server tronca comunque a ~50 per richiesta.
+    FIX 18/07 (richiesta esplicita dell'utente): esclude qui, alla fonte, gli annunci del
+    manager blacklistato (BLACKLISTED_SELLER_SLUGS, es. 'privacy' che vende solo in ETH) --
+    cosi' TUTTI i consumatori (get_bucket_prices -> track.py/zenlock_model_tracker.py/
+    manager_bundle_scan.py) li ignorano automaticamente, senza dover duplicare il filtro."""
     all_nodes = []
     cursor = None
     for _ in range(MAX_PAGES):
@@ -341,7 +356,11 @@ def fetch_all_live_offers(player_slug):
             break
         conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
         nodes = conn.get('nodes') or []
-        all_nodes.extend(nodes)
+        for node in nodes:
+            seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
+            if seller_slug in BLACKLISTED_SELLER_SLUGS:
+                continue
+            all_nodes.append(node)
         page_info = conn.get('pageInfo') or {}
         if not page_info.get('hasPreviousPage'):
             break
@@ -1268,6 +1287,13 @@ def handle_offer_update(offer, eth_rate, stats):
     # record_accepted_sale/get_own_recent_sales restano definite piu' sotto ma non sono piu'
     # chiamate, nel caso servano in futuro per un uso mirato invece che globale.
     if offer_status != 'opened':
+        return
+
+    # FIX 18/07 (richiesta esplicita dell'utente): ignora gli annunci del manager blacklistato
+    # (BLACKLISTED_SELLER_SLUGS, es. 'privacy' che vende solo in ETH) anche sul canale WS in
+    # tempo reale, stesso filtro gia' applicato alla verifica live in fetch_all_live_offers.
+    seller_slug = ((offer.get('sender') or {}).get('slug') or '').lower()
+    if seller_slug in BLACKLISTED_SELLER_SLUGS:
         return
 
     sender_side = offer.get('senderSide') or {}

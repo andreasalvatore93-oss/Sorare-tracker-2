@@ -89,16 +89,24 @@ def get_my_cards_for_sale():
     return all_cards
 
 
-def get_market_min_price(card_slug, in_season_eligible):
+def get_market_min_price(card_slug, season_type):
     """Ottieni il prezzo più basso del mercato per il giocatore di questa carta, tra gli
     annunci aperti con la stessa categoria (in_season/classic) -- stesso schema query di
     track.py (fetch_all_live_offers/get_live_min_offer): la carta messa in vendita sta in
     senderSide.anyCards, il prezzo chiesto sta in receiverSide.amounts. receiverSide.anyCards
     NON vuoto significa scambio carta-per-carta (nessun prezzo in denaro, va escluso).
-    FIX 18/07: la versione precedente cercava card_slug dentro receiverSide.anyCards (il lato
-    del pagamento, quasi sempre vuoto per una vendita a prezzo fisso) invece che in
+    FIX 18/07 (v1): la versione precedente cercava card_slug dentro receiverSide.anyCards (il
+    lato del pagamento, quasi sempre vuoto per una vendita a prezzo fisso) invece che in
     senderSide.anyCards (il lato della carta venduta) -- il match falliva quasi sempre,
-    lasciando il prezzo di mercato sempre a None."""
+    lasciando il prezzo di mercato sempre a None.
+    FIX 18/07 (v2, richiesta esplicita dell'utente, stesso bug diagnosticato su
+    my_cards_profit.py): confrontare inSeasonEligible con un'uguaglianza diretta e' fragile --
+    puo' risultare None per alcuni annunci, facendoli passare per errore e mescolando prezzi
+    in_season con carte classic dello stesso giocatore. Fix: usa track.season_type_for_card
+    (stesso fallback su sportSeason.name gia' collaudato in track.py) sia per la mia carta che
+    per ogni candidato, confrontando le CATEGORIE invece del booleano grezzo.
+    FIX 18/07 (v3, richiesta esplicita dell'utente): esclude gli annunci del manager 'privacy'
+    (vende solo in ETH) dal calcolo del prezzo minimo -- stesso blacklist condiviso di track.py."""
     query = """
     {
       anyCard(slug: "%s") {
@@ -123,6 +131,7 @@ def get_market_min_price(card_slug, in_season_eligible):
             liveSingleSaleOffers(playerSlug: $slug, last: $n) {
               nodes {
                 status
+                sender { ... on User { slug } }
                 receiverSide {
                   amounts { eurCents }
                   anyCards { slug }
@@ -133,6 +142,7 @@ def get_market_min_price(card_slug, in_season_eligible):
                     rarityTyped
                     sport
                     inSeasonEligible
+                    sportSeason { name }
                   }
                 }
               }
@@ -155,6 +165,9 @@ def get_market_min_price(card_slug, in_season_eligible):
         for node in nodes:
             if node.get('status') != 'opened':
                 continue
+            seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
+            if seller_slug in track.BLACKLISTED_SELLER_SLUGS:
+                continue
             # scambio carta-per-carta (nessun prezzo in denaro): escluso, stesso filtro di track.py
             if (node.get('receiverSide') or {}).get('anyCards'):
                 continue
@@ -165,7 +178,8 @@ def get_market_min_price(card_slug, in_season_eligible):
                     continue
                 if c.get('sport') != 'FOOTBALL':
                     continue
-                if c.get('inSeasonEligible') != in_season_eligible:
+                c_season_name = (c.get('sportSeason') or {}).get('name', 'unknown')
+                if track.season_type_for_card(c, c_season_name) != season_type:
                     continue
                 match = c
                 break
@@ -211,11 +225,11 @@ def run_underpriced_scan():
 
         my_price_eur = eur_cents / 100
 
-        # Ottieni il prezzo più basso del mercato (stessa categoria in_season/classic)
-        market_price_eur = get_market_min_price(
-            card_slug,
-            card.get('inSeasonEligible')
-        )
+        # Ottieni il prezzo più basso del mercato (stessa categoria in_season/classic, FIX
+        # 18/07: match per season_type invece che booleano grezzo, vedi docstring funzione)
+        season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
+        season_type = track.season_type_for_card(card, season_name)
+        market_price_eur = get_market_min_price(card_slug, season_type)
 
         if market_price_eur is None:
             skipped_no_market += 1
