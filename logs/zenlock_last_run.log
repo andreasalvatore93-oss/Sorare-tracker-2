@@ -3419,3 +3419,55 @@
 [2026-07-18 21:19:37] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 1 casi senza comparabile live, 1 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 1 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
 [2026-07-18 21:19:37] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 5054, 'wei': 659, 'usdCents': 3939, 'gbpCents': 122, 'lamport': 0, 'none': 0}
 [2026-07-18 21:19:37] [modello zenlock] esecuzione terminata.
+
+===== RUN 2026-07-18 21:20:25 UTC =====
+[2026-07-18 21:20:25] [modello zenlock] Tasso ETH/EUR: 1627.14
+[2026-07-18 21:20:25] [modello zenlock] Ascolto per 250 secondi (soglie: classic <=4.0EUR / in_season <=8.0EUR, sconto min 15%)...
+[2026-07-18 21:20:26] [modello zenlock] connesso al canale eventi Sorare, sottoscrizione in corso...
+[2026-07-18 21:20:27] [modello zenlock] sottoscrizione confermata, in ascolto...
+[2026-07-18 21:20:58] [storico vendite] query v2 (anyPlayer.tokenPrices con 'last' esplicito) FUNZIONA -- la uso da ora in poi, niente piu' rischio di troncamento arbitrario lato server (vedi FIX 18/07, caso Bukayo Saka).
+[2026-07-18 21:20:58] [modello zenlock] riferimento live 2.73EUR per José Sá molto piu' caro dell'ultima vendita REALE (1.93EUR, 1.0gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 21:20:59] [modello zenlock] riferimento live 8.80EUR per Arthur Okonkwo molto piu' caro dell'ultima vendita REALE (2.59EUR, 1.8gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 21:21:28] [modello zenlock] riferimento live 2.07EUR per Youri Regeer molto piu' caro dell'ultima vendita REALE (1.46EUR, 0.0gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 21:22:56] [modello zenlock] MATCH -- N'Golo Kanté [in_season] 3.11EUR, sconto 22.0% su prossimo annuncio 3.99EUR (n=11)
+[2026-07-18 21:22:56] [modello zenlock] DEBUG comparabili grezzi per n-golo-kante/in_season: [(3.99, 'n-golo-kante-2025-limited-36'), (4.37255, 'n-golo-kante-2025-limited-123'), (4.4949813999999995, 'n-golo-kante-2025-limited-384'), (4.5, 'n-golo-kante-2025-limited-114'), (4.5, 'n-golo-kante-2025-limited-53'), (4.555992, 'n-golo-kante-2025-limited-129'), (4.6, 'n-golo-kante-2025-limited-132'), (4.69, 'n-golo-kante-2025-limited-22'), (5.0, 'n-golo-kante-2025-limited-28'), (7.0, 'n-golo-kante-2025-limited-137'), (8.68, 'n-golo-kante-2025-limited-373')]
+[2026-07-18 21:23:06] [modello zenlock] riferimento live 2.02EUR per Armin Gigovic molto piu' caro dell'ultima vendita REALE (0.50EUR, 2.9gg fa) -- probabile annuncio stagnante, non notifico
+[2026-07-18 21:24:30] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='30', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:30] [rate limit] Retry-After=30s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:30] [paginazione annunci live] errore per ramiz-harakate: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:24:31] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='29', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:31] [rate limit] Retry-After=29s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:31] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='29', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:31] [rate limit] Retry-After=29s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:31] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='29', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:31] [rate limit] Retry-After=29s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:31] [paginazione annunci live] errore per alp-arda: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:24:32] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='28', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:32] [rate limit] Retry-After=28s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:32] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='28', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:32] [rate limit] Retry-After=28s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:32] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='28', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:32] [rate limit] Retry-After=28s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:32] [paginazione annunci live] errore per jon-gallagher: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:24:33] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='27', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:33] [rate limit] Retry-After=27s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:33] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='27', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:33] [rate limit] Retry-After=27s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:33] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='27', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:33] [rate limit] Retry-After=27s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:33] [paginazione annunci live] errore per kristjan-asllani: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:24:34] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='26', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:34] [rate limit] Retry-After=26s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:34] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='26', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:34] [rate limit] Retry-After=26s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:34] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='26', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:34] [rate limit] Retry-After=26s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:34] [paginazione annunci live] errore per jose-manuel-fontan-mondragon: [{'message': 'rate_limited_ban_detected'}]
+[2026-07-18 21:24:35] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='25', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:35] [rate limit] Retry-After=25s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:35] [rate limit] dettaglio risposta 429 -- headers rilevanti: Retry-After='25', corpo: '{"error":"Too many requests, please retry later."}'
+[2026-07-18 21:24:35] [rate limit] Retry-After=25s troppo lungo (soglia 15s), probabile ban a tempo fisso -- rinuncio subito senza ritentare
+[2026-07-18 21:24:35] [modello zenlock] connessione chiusa (codice None). Eventi: 1064, carte valutate: 351, notifiche inviate: 1 (di cui solo ETH: 0, di cui su riferimento storico: 0), scartate per mancanza comparabili: 6, scartate per riferimento troppo basso: 8, scartate per differenza assoluta troppo piccola: 1, scartate per gemello in_season altrettanto economico: 0, sconto sospetto non confermato alla riverifica: 0, riferimento troppo alto/non rappresentativo: 0, riferimento stagnante vs vendita reale: 4, saltate per throttle raffica (protezione rate-limit condiviso): 0, sostituto in_season piu' economico (non un affare distinto): 32 (di cui avrebbero notificato senza questo controllo: 0)
+[2026-07-18 21:24:35] [modello zenlock] [diagnostica vendite recenti/fallback storico] su 6 casi senza comparabile live, 1 avevano una vendita storica della stessa stagione come riferimento -- di questi, 0 hanno notificato, 1 scartati per sconto insufficiente, 0 per riferimento troppo basso, 0 per riferimento troppo alto, 0 per differenza assoluta troppo piccola
+[2026-07-18 21:24:35] [modello zenlock] [diagnostica valute] branch usati in eur_price_from_amounts questa esecuzione: {'eurCents': 5133, 'wei': 662, 'usdCents': 3235, 'gbpCents': 183, 'lamport': 3, 'none': 0}
+[2026-07-18 21:24:35] [modello zenlock] esecuzione terminata.
