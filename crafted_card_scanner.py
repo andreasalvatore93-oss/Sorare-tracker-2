@@ -75,7 +75,7 @@ def log(msg):
 # AnyCardInterface (errore reale visto in my_cards_profit.py) ma lo riproviamo comunque per
 # completezza in questo contesto diverso.
 CREATION_TS_CANDIDATES = ['mintedAt', 'craftedAt', 'forgedAt', 'issuedAt', 'bornAt',
-                          'createdAt', 'publicMintedAt', 'assetCreatedAt']
+                          'createdAt', 'publicMintedAt', 'assetCreatedAt', publicMinPrices]
 # Candidati "tipo/provenienza" (facoltativi: se nessuno funziona, la finestra temporale basta
 # comunque -- una carta apparsa da poche ore e' comunque "nuova").
 CREATION_TYPE_CANDIDATES = ['mintType', 'creationType', 'provenance', 'crafted', 'isCrafted',
