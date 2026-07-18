@@ -87,37 +87,59 @@ def get_market_min_price(card_slug, sport, rarity, season_year):
     """Ottieni il prezzo più basso del mercato per questa carta."""
     query = """
     {
-      liveOffers(filter: {cardSlugs: ["%s"]}) {
-        edges {
-          node {
-            amountInCents
-            currencyCode
-            card {
-              slug
-            }
-          }
-        }
+      anyCard(slug: "%s") {
+        anyPlayer { slug }
       }
     }
     """ % card_slug
 
     try:
         data = track.graphql_query(query, {})
+        if data.get('errors') or not data.get('data', {}).get('anyCard'):
+            return None
+
+        player_slug = (data.get('data', {}).get('anyCard', {})
+                      .get('anyPlayer', {}).get('slug'))
+        if not player_slug:
+            return None
+
+        offers_query = """
+        query LiveOffers($slug: String!, $n: Int!) {
+          tokens {
+            liveSingleSaleOffers(playerSlug: $slug, last: $n) {
+              nodes {
+                status
+                receiverSide {
+                  amounts { eurCents }
+                  anyCards { slug }
+                }
+              }
+            }
+          }
+        }
+        """
+
+        data = track.graphql_query(offers_query, {"slug": player_slug, "n": 50})
         if data.get('errors'):
             return None
 
-        offers = data.get('data', {}).get('liveOffers', {}).get('edges', [])
-        if offers:
-            min_offer = min(offers, key=lambda e: e['node']['amountInCents'])
-            amount_cents = min_offer['node']['amountInCents']
-            currency = min_offer['node']['currencyCode']
-            # Converti in EUR se necessario
-            if currency == 'EUR':
-                return amount_cents / 100
-            elif currency == 'WEI':
-                eth_rate = track.get_eth_rate()
-                return (amount_cents / 1e18) * eth_rate
-        return None
+        nodes = (data.get('data', {}).get('tokens', {})
+                .get('liveSingleSaleOffers', {}).get('nodes', []))
+
+        if not nodes:
+            return None
+
+        prices = []
+        for node in nodes:
+            if node.get('status') != 'opened':
+                continue
+            cards = node.get('receiverSide', {}).get('anyCards', [])
+            if any(c.get('slug') == card_slug for c in cards):
+                eur_cents = node.get('receiverSide', {}).get('amounts', {}).get('eurCents')
+                if eur_cents:
+                    prices.append(eur_cents / 100)
+
+        return min(prices) if prices else None
     except Exception as e:
         log(f"Eccezione durante fetch market price per {card_slug}: {e}")
         return None
