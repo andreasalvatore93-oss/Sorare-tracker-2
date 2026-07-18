@@ -15,8 +15,12 @@ from datetime import datetime
 import track
 
 MANAGER_SLUG = 'crowss'
-TELEGRAM_TOKEN = os.environ.get('BUNDLE_TELEGRAM_TOKEN', '')
-TELEGRAM_CHAT_ID = os.environ.get('BUNDLE_TELEGRAM_CHAT_ID', '')
+# FIX 18/07: track.send_telegram_msg(msg) non accetta kwargs token/chat_id -- legge da
+# track.TELEGRAM_TOKEN/track.TELEGRAM_CHAT_ID (i suoi globali di modulo, popolati dalle env
+# var TELEGRAM_TOKEN/TELEGRAM_CHAT_ID). Stesso schema di manager_bundle_scan.py: il workflow
+# .yml mappa i secret BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID su QUELLE env var (non su
+# BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID), cosi' i messaggi arrivano nello stesso canale
+# del bundle scanner senza bisogno di kwargs custom qui.
 
 BLOCK_SIZE = 10
 BLOCK_SEPARATOR = "\n" + "=" * 50 + "\n"
@@ -69,8 +73,14 @@ def save_backlog(backlog):
 
 
 def get_all_my_cards():
-    """Fetch tutte le carte di 'crowss' ECCETTO sealed."""
-    log("Ricerca tutte le carte (no sealed)...")
+    """Fetch tutte le carte di 'crowss'.
+    FIX 18/07: 'status' non esiste su AnyCardInterface (l'errore GraphQL bloccava l'intera
+    query, quindi 0 carte trovate ad ogni run) -- rimosso. 'amountInCents' su liveSingleSaleOffer
+    non esiste nemmeno lui (stesso bug gia' corretto in my_cards_underpriced.py) ed era comunque
+    inutilizzato qui, rimosso anche quello. Introspection disabilitata: senza un campo/stato
+    "sealed" noto e funzionante, per ora non filtriamo le carte sealed (rischio di includerne
+    qualcuna per errore e' preferibile a bloccare l'intero tracker su un campo indovinato)."""
+    log("Ricerca tutte le carte...")
 
     query = """
     query MyAllCards($userSlug: String!, $page: Int!, $pageSize: Int!) {
@@ -89,11 +99,7 @@ def get_all_my_cards():
             rarityTyped
             inSeasonEligible
             sportSeason { name }
-            status
             createdAt
-            liveSingleSaleOffer {
-              amountInCents
-            }
           }
           nbHits
         }
@@ -120,17 +126,14 @@ def get_all_my_cards():
             if not hits:
                 break
 
-            for card in hits:
-                # Filtra out le carte sealed
-                if card.get('status') != 'sealed':
-                    all_cards.append(card)
+            all_cards.extend(hits)
 
             page += 1
         except Exception as e:
             log(f"Eccezione durante fetch carte pagina {page}: {e}")
             break
 
-    log(f"Trovate {len(all_cards)} carte (escluse sealed)")
+    log(f"Trovate {len(all_cards)} carte")
     return all_cards
 
 
@@ -387,7 +390,7 @@ def send_notifications(profit_cards):
             )
 
         msg = msg.rstrip() + BLOCK_SEPARATOR
-        track.send_telegram_msg(msg, token=TELEGRAM_TOKEN, chat_id=TELEGRAM_CHAT_ID)
+        track.send_telegram_msg(msg)
         log(f"Notifica blocco {block_num} inviata")
 
 

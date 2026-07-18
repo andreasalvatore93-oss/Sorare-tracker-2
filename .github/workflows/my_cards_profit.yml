@@ -34,8 +34,11 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
-          BUNDLE_TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
-          BUNDLE_TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
+          # FIX 18/07: track.send_telegram_msg legge da TELEGRAM_TOKEN/TELEGRAM_CHAT_ID (i suoi
+          # globali di modulo), non da BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID -- stesso
+          # mapping gia' usato in manager_bundle_scan.yml, per finire nello stesso canale/bot.
+          TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
           MY_CARDS_PROFIT_SCAN_COUNT: ${{ github.event.inputs.scan_count || '10' }}
           PYTHONUNBUFFERED: "1"
         run: |

@@ -13,8 +13,12 @@ from collections import defaultdict
 import track
 
 MANAGER_SLUG = 'crowss'
-TELEGRAM_TOKEN = os.environ.get('BUNDLE_TELEGRAM_TOKEN', '')
-TELEGRAM_CHAT_ID = os.environ.get('BUNDLE_TELEGRAM_CHAT_ID', '')
+# FIX 18/07: track.send_telegram_msg(msg) non accetta kwargs token/chat_id -- legge da
+# track.TELEGRAM_TOKEN/track.TELEGRAM_CHAT_ID (i suoi globali di modulo, popolati dalle env
+# var TELEGRAM_TOKEN/TELEGRAM_CHAT_ID). Stesso schema di manager_bundle_scan.py: il workflow
+# .yml mappa i secret BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID su QUELLE env var (non su
+# BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID), cosi' i messaggi arrivano nello stesso canale
+# del bundle scanner senza bisogno di kwargs custom qui.
 
 BLOCK_SIZE = 10
 BLOCK_SEPARATOR = "\n" + "=" * 50 + "\n"
@@ -280,7 +284,7 @@ def send_notifications(underpriced_cards):
             )
 
         msg = msg.rstrip() + BLOCK_SEPARATOR
-        track.send_telegram_msg(msg, token=TELEGRAM_TOKEN, chat_id=TELEGRAM_CHAT_ID)
+        track.send_telegram_msg(msg)
         log(f"Notifica blocco {block_num} inviata")
 
 
