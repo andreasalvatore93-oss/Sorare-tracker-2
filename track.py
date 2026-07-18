@@ -32,7 +32,14 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 BLACKLISTED_SELLER_SLUGS = {'privacy'}
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione.
-LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '200'))
+# FIX 18/07 (richiesta esplicita dell'utente, analisi log: 40% delle carte finiva in "riferimento
+# riallineato stantio"): cron-job.org lancia questo workflow ogni 5 minuti (300s), ma con soli
+# 200s di ascolto restava un "buco" di ~100s ad ogni ciclo in cui il WebSocket non e' connesso --
+# qualsiasi annuncio in quella finestra viene perso del tutto (non solo ritardato), quindi i
+# giocatori a bassa liquidita' restano piu' facilmente scoperti abbastanza a lungo da far scadere
+# il floor (MAX_FLOOR_AGE_HOURS). Alzato a 250s (vedi anche timeout-minutes in check.yml, alzato
+# in parallelo per lasciare margine a setup+salvataggio) per chiudere quasi tutto il gap.
+LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '250'))
 
 DROP_THRESHOLD = 0.08    # FIX 16/07 (v10, richiesta esplicita): 13% -> 8%, in prova
 

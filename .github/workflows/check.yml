@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       listen_seconds:
-        description: "Secondi di ascolto (lascia vuoto per 200 = normale; usa 20-30 per test veloci)"
+        description: "Secondi di ascolto (lascia vuoto per 250 = normale, chiude quasi tutto il gap col cron da 5 min; usa 20-30 per test veloci)"
         required: false
-        default: "200"
+        default: "250"
       alert_raw_offers_diagnostic:
         description: "Dump grezzo di tutti gli annunci live su ogni ALERT (solo per indagare un caso sospetto, di default spento)"
         required: false
@@ -27,7 +27,14 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # FIX 18/07 (richiesta esplicita dell'utente, chiusura gap 40% stale-realign): alzato da 5 a
+    # 7 minuti in parallelo all'aumento di LISTEN_SECONDS (200->250) in track.py -- lascia ~170s
+    # di margine per checkout/setup/pip install prima e salvataggio (git add/commit/push, con
+    # eventuali retry su conflitto) dopo i 250s di ascolto. Il timeout del JOB (a differenza di
+    # un timeout di singolo step) uccide l'intera esecuzione SENZA lasciare eseguire lo step
+    # "Save state" (anche se ha "if: always()") -- meglio abbondare col margine che rischiare di
+    # perdere lo stato di una run già in corso.
+    timeout-minutes: 7
     steps:
       # FIX 16/07 (v2, caso righe "resuscitate" nella coda pending_recheck): senza "ref: main"
       # il checkout usa lo SHA di main congelato al momento in cui il trigger e' stato CREATO
@@ -70,7 +77,7 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
-          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '200' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '250' }}
           ALERT_RAW_OFFERS_DIAGNOSTIC: ${{ github.event.inputs.alert_raw_offers_diagnostic || 'no' }}
           RUN_DIAGNOSTICS: ${{ github.event.inputs.run_diagnostics || 'no' }}
         run: |
