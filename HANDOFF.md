@@ -675,17 +675,86 @@ delle altre; struttura principale invariata (blocchi 9/10 ancora presenti); edge
 carta al minimo (niente sezione bonus) e tutte le carte al minimo (bonus = tutto l'elenco)
 entrambi PASSED.
 
-## Stato a fine sessione 18/07 (continuazione, aggiornato)
+## Aggiornamento 18/07 (quinto giro -- tuning bundle scanner + pulizia log track.py + fix case slug)
 
-Implementato e testato (compilazione + mock), MA NON ANCORA PUSHATO dall'utente via GitHub
-Desktop: fix floor alla radice (root-cause, caso Song Bumkeun) in track.py, sezione bonus "carte
-gia' al minimo" nel bundle scanner. GIA' CONFERMATO IN PRODUZIONE (round precedente, gia' pushato
-e testato dall'utente): filtro on-sale liveSingleSaleOffer, query v2 storico vendite, QoL "Offri
-fino a" + link manager, pulizia rumore log, split messaggi Telegram, secrets nuovo bot.
-**Prossimo passo per l'utente**: pushare via GitHub Desktop, poi (1) aspettare un caso tipo Song
-Bumkeun (floor vecchio, prezzo di mercato salito) per confermare il riallineamento al rialzo in
-produzione; (2) rilanciare bundle scan su un manager con parecchie carte gia' al minimo per vedere
-la nuova sezione bonus. Backlog invariato: filtro Satonio (item 6b, non richiesto), pulsanti
-Telegram deep-link "compra ora"/"fai offerta" (item 6, non richiesto), domanda ancora aperta sulla
-concorrenza dei workflow (item precedente, nessuna causa di codice trovata, probabile latenza
-normale di provisioning runner).
+Richiesta esplicita dell'utente dopo aver visto in produzione la sezione bonus (screenshot
+confermato funzionante) + una run manuale di check.yml rimasta "Queued" ~1.5min. Tutto
+implementato, compilato e testato con mock, NON ANCORA PUSHATO dall'utente.
+
+**manager_bundle_scan.py**:
+- `BUNDLE_MIN_MARKET_PRICE_EUR = 1.0` (nuovo, env-configurabile): carte con `market_min_price`
+  sotto questa soglia scartate PRIMA di entrare in `on_sale` -- niente blocchi/bonus/best deal
+  per queste. Contate nel log diagnostico ("N scartate perche' sotto 1.00EUR...").
+- `BUNDLE_OFFER_MARGIN_FRACTION` default alzato da 0.15 a 0.25 (anche nel default dell'input
+  workflow `bundle_offer_margin_fraction`, ora "0.25").
+- `find_current_listing_and_market_min` ora ritorna una TERNA `(listing_price, market_min_price,
+  second_min_price)` invece di una coppia -- `second_min_price` e' il secondo prezzo piu'
+  economico dell'intero bucket in_season (None se c'e' un solo annuncio, nessun comparabile).
+- **Nuova sezione BEST DEAL** (AGGIUNTA, non sostituisce blocchi normali ne' sezione bonus): un
+  solo blocco di al massimo `BUNDLE_BLOCK_SIZE` carte, selezionate tra quelle gia' al minimo di
+  mercato (`cheapest_only`) classificando per `gap = second_min_price - market_min_price`
+  decrescente (l'esempio dell'utente: Mbappe venduto a 5EUR contro il secondo venditore a 6EUR ->
+  scarto 1EUR). A parita' di scarto vince la carta con `market_min_price` piu' alto (richiesta
+  esplicita: "a parita' di scarto, preferire la carta piu' costosa"). Le carte senza un secondo
+  prezzo comparabile sono escluse dalla classifica (scarto non calcolabile in modo significativo)
+  ma restano nei blocchi/bonus normali. Nuove funzioni: `_select_best_deal_cards(cheapest_only)`,
+  `_render_best_deal_block(cards)`.
+- **Separatore visivo tra blocchi Telegram** (richiesta esplicita con screenshot, "sembrano un
+  pezzo unico"): nuova costante `BLOCK_SEPARATOR` (riga di trattini unicode), inserita da
+  `_pack_into_messages` TRA un block_text e il successivo (mai prima del primo/dopo l'ultimo) in
+  tutte e tre le sezioni (principale, bonus, best deal).
+- **Fix QoL `extract_manager_slug`** (case-insensitivity + spazi): rimozione di TUTTI gli spazi
+  (incluso non-breaking space unicode da copia-incolla, non solo iniziali/finali) + minuscolo
+  forzato, PRIMA di applicare la regex URL. **Confermato nel log reale** (run 12:13:29 UTC) che
+  questo era un bug vero e non ipotetico: input diretto `'BigFlow13'` (case misto) ha fallito con
+  `User(slug=BigFlow13) not found`, mentre lo stesso manager via URL (`.../bigflow13`, minuscolo)
+  ha funzionato subito dopo -- Sorare fa lookup case-sensitive su `user(slug:)`, e gli
+  slug/username osservati finora sono sempre in minuscolo (flobob-fc, crowss, mikileefoo,
+  bigflow13...), quindi forzare il minuscolo e' una normalizzazione sicura.
+- Workflow `manager_bundle_scan.yml`: default di `bundle_offer_margin_fraction` allineato a
+  "0.25" sia nella description che nel fallback env.
+
+**track.py -- pulizia log (v2)**: un giro di log fresco ha confermato che la riga per-evento
+"l'annuncio che ha scatenato l'evento... uso subito X come vero minimo" (introdotta dal FIX 18/07
+sull'invisibilita') ormai spara su QUASI OGNI evento (e' cosi' per costruzione: l'evento arriva
+sempre pochi secondi prima che la query lo veda) -- non e' piu' un segnale raro, e' diventata
+boilerplate. Stessa diagnosi per le due righe `[diagnostica tracker]`/`[diagnostica valute]` a
+fine connessione (distribuzione status offerte, branch valute), utili solo in fase di sviluppo di
+quei meccanismi, ora confermati stabili. Soluzione: nuovo flag opt-in `RUN_DIAGNOSTICS` (default
+OFF, anche come input workflow `run_diagnostics` in check.yml) che gate tutte e tre le righe --
+quando spento (default), l'informazione non si perde del tutto: il conteggio aggregato della
+finestra di invisibilita' (`stats['invisibility_window_used']`) confluisce in modo compatto nella
+riga "Connessione chiusa" di fine ascolto ("... in finestra di invisibilita': N"). Compilato OK.
+
+**Verifica log**: controllati zenlock (nessuna anomalia, throttle/substitute-cheaper/query v2
+tutti nei binari attesi) e auctions_ws_listener (log vuoto, probabilmente nessuna run recente).
+
+**Domanda "Sorare Price Check lento ad avviarsi oggi" (~1.5min in coda)**: il messaggio esatto
+nello screenshot ("Job is waiting for a hosted runner to come online") e' il messaggio SPECIFICO
+di GitHub per la provisioning dei runner condivisi -- diverso dal messaggio che comparirebbe se
+fosse un conflitto sul nostro `concurrency: group: sorare-tracker` (che direbbe esplicitamente
+"waiting for other workflow runs using the same concurrency group"). Nessuna causa individuabile
+lato nostro codice/configurazione: stessa conclusione del giro precedente (concurrency group
+verificato separato per ogni workflow, limite dei 20 job concorrenti dell'account escluso come
+causa per una singola run manuale). Piu' probabile spiegazione: normale fluttuazione della coda
+runner condivisa di GitHub in quel momento, fuori dal nostro controllo. Nessun fix applicato
+(nulla da fixare lato nostro), solo spiegato.
+
+Test eseguiti (tutti PASSED): `extract_manager_slug` su 7 casi (spazi iniziali/finali/interni,
+non-breaking space, maiuscole, URL con case misto, stringa vuota, None); `_select_best_deal_cards`
+su 4 carte sintetiche (esclusione carta senza second_min_price, tie-break su prezzo piu' alto a
+parita' di scarto); pipeline completa `build_telegram_messages` su 23 carte sintetiche (3
+messaggi generati, tutti sotto 4096 caratteri, separatore presente, sezioni BEST DEAL e BONUS
+entrambe presenti).
+
+## Stato a fine sessione 18/07 (quinto giro)
+
+Implementato e testato (compilazione + mock), NON ANCORA PUSHATO dall'utente via GitHub Desktop:
+tutto il quinto giro sopra (filtro 1EUR, margine 25%, best deal, separatori, pulizia log v2, fix
+case slug). GIA' CONFERMATO IN PRODUZIONE (round precedenti): filtro on-sale
+liveSingleSaleOffer, query v2 storico vendite, sezione bonus "carte gia' al minimo", QoL "Offri
+fino a" + link manager, split messaggi Telegram, secrets nuovo bot. Floor root-fix (Song Bumkeun)
+implementato round precedente, non ancora confermato in produzione (serve un caso reale dopo il
+push). **Prossimo passo per l'utente**: pushare via GitHub Desktop, poi rilanciare il bundle
+scanner per vedere la sezione BEST DEAL + separatori in azione, e osservare se il log di
+track.py risulta effettivamente piu' leggero. Nessun backlog aperto rimasto da questo giro.

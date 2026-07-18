@@ -7,9 +7,9 @@ on:
         description: "Slug del manager (es. 'satonio') oppure URL del suo profilo (es. https://sorare.com/it/football/my-club/satonio)"
         required: true
       bundle_offer_margin_fraction:
-        description: "Margine di sconto sul totale minimo di mercato per l'offerta suggerita (es. 0.15 = 15%, provvisorio da tarare)"
+        description: "Margine di sconto sul totale minimo di mercato per l'offerta suggerita (es. 0.25 = 25%, provvisorio da tarare)"
         required: false
-        default: "0.15"
+        default: "0.25"
       max_owned_card_pages:
         description: "Tetto di sicurezza: numero massimo di pagine di carte possedute da scansionare"
         required: false
@@ -67,7 +67,7 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
           MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
-          BUNDLE_OFFER_MARGIN_FRACTION: ${{ github.event.inputs.bundle_offer_margin_fraction || '0.15' }}
+          BUNDLE_OFFER_MARGIN_FRACTION: ${{ github.event.inputs.bundle_offer_margin_fraction || '0.25' }}
           MAX_OWNED_CARD_PAGES: ${{ github.event.inputs.max_owned_card_pages || '20' }}
           MAX_PLAYERS_TO_CHECK: ${{ github.event.inputs.max_players_to_check || '300' }}
           BUNDLE_BLOCK_SIZE: ${{ github.event.inputs.bundle_block_size || '10' }}

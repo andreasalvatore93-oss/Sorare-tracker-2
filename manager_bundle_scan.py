@@ -51,7 +51,15 @@ MAX_PLAYERS_TO_CHECK = int(os.environ.get('MAX_PLAYERS_TO_CHECK', '300'))
 # provvisorio (stesso valore di ZENLOCK_DISCOUNT_NORMAL per coerenza con il resto del progetto),
 # "poi lo tuniamo" per esplicita ammissione dell'utente: nessun caso reale ancora osservato per
 # calibrarlo meglio.
-BUNDLE_OFFER_MARGIN_FRACTION = float(os.environ.get('BUNDLE_OFFER_MARGIN_FRACTION', '0.15'))
+# FIX 18/07 (v2, richiesta esplicita dell'utente, "alziamo margine di default a 25 percento"):
+# alzato da 0.15 a 0.25 dopo i primi run reali.
+BUNDLE_OFFER_MARGIN_FRACTION = float(os.environ.get('BUNDLE_OFFER_MARGIN_FRACTION', '0.25'))
+
+# FIX 18/07 (v2, richiesta esplicita dell'utente, "ignoriamo le carte che hanno un prezzo minimo
+# di vendita inferiore ad un euro"): carte il cui prezzo minimo di mercato e' sotto questa soglia
+# vengono scartate PRIMA di entrare in on_sale -- niente blocchi, niente bonus, niente best deal
+# per queste, sono considerate troppo marginali per valere l'analisi.
+BUNDLE_MIN_MARKET_PRICE_EUR = float(os.environ.get('BUNDLE_MIN_MARKET_PRICE_EUR', '1.0'))
 
 # FIX 18/07 (richiesta esplicita dell'utente): Sorare permette di fare un'unica offerta
 # cumulativa su al massimo 10 carte dello stesso manager. Organizziamo quindi le carte in
@@ -82,8 +90,20 @@ def extract_manager_slug(raw_input):
     """Accetta sia uno slug diretto (es. 'satonio') sia l'URL del profilo Sorare (es.
     'https://sorare.com/it/football/my-club/satonio', anche con suffissi tipo
     '/cards/limited?sale=true') e ritorna sempre e solo lo slug -- richiesta esplicita
-    dell'utente ("gli inserisco l'url e lui ricava lo slug cosi' non ho rischio di errori")."""
-    raw_input = (raw_input or '').strip()
+    dell'utente ("gli inserisco l'url e lui ricava lo slug cosi' non ho rischio di errori").
+
+    FIX 18/07 (QoL, richiesta esplicita dell'utente dopo un errore reale scrivendo 'satonio'
+    a mano nel campo del workflow invece dell'URL): due normalizzazioni aggiunte, entrambe
+    pensate per tollerare errori di battitura/copia-incolla ("questa non e' una cosa di vitale
+    importanza, e' solo qol"):
+    1) rimozione di TUTTI gli spazi (non solo iniziali/finali, anche eventuali spazi interni
+       accidentali e non-breaking space   tipici di un copia-incolla dal browser) -- uno
+       slug/URL valido non contiene mai spazi, quindi toglierli e' sempre sicuro;
+    2) minuscolo forzato -- tutti gli slug/username Sorare osservati finora in questo progetto
+       sono sempre in minuscolo (flobob-fc, crowss, mikileefoo, satonio...), quindi normalizzare
+       il case e' un'operazione a basso rischio che rende l'input case-insensitive."""
+    raw_input = (raw_input or '').replace(' ', ' ')
+    raw_input = re.sub(r'\s+', '', raw_input).lower()
     if not raw_input:
         return ''
     match = re.search(r'my-club/([^/?#]+)', raw_input)
@@ -266,12 +286,22 @@ def find_current_listing_and_market_min(card_slug, player_slug, eth_rate):
     piu' economico -- in quel caso zero arbitraggio su questa carta specifica, ma resta comunque
     utile mostrarla nel riepilogo) e' il 'prezzo minimo di mercato'. Ritorna None se la carta
     posseduta non risulta (piu') in vendita ora (es. ritirata o venduta nel frattempo, oppure
-    query fallita)."""
+    query fallita).
+
+    FIX 18/07 (v2, richiesta esplicita dell'utente, funzione "best deal"): in aggiunta ai due
+    valori di sempre, ritorna ora anche second_min_price -- il SECONDO prezzo piu' economico
+    dell'intero bucket in_season (in_season_prices e' gia' ordinato crescente, vedi
+    get_bucket_prices), oppure None se in quel bucket c'e' un solo annuncio in vendita (nessun
+    comparabile, "scarto" non calcolabile). Serve SOLO per il caso in cui QUESTA carta e' essa
+    stessa il minimo del bucket: in quel caso second_min_price e' esattamente "la carta
+    immediatamente piu' costosa in vendita sul mercato" richiesta dall'utente per calcolare lo
+    scarto del blocco best deal (vedi run_bundle_scan)."""
     buckets = track.get_bucket_prices(player_slug, eth_rate, use_cache=False)
     in_season_prices, _incomplete = buckets.get('in_season', ([], False))
     if not in_season_prices:
         return None
     market_min_price = in_season_prices[0][0]
+    second_min_price = in_season_prices[1][0] if len(in_season_prices) > 1 else None
     listing_price = None
     for price, slug in in_season_prices:
         if slug == card_slug:
@@ -279,7 +309,7 @@ def find_current_listing_and_market_min(card_slug, player_slug, eth_rate):
             break
     if listing_price is None:
         return None  # posseduta ma non (piu') in vendita adesso
-    return listing_price, market_min_price
+    return listing_price, market_min_price, second_min_price
 
 
 def format_eur(value):
@@ -343,6 +373,7 @@ def run_bundle_scan():
     on_sale = []
     not_on_sale_count = 0
     error_count = 0
+    below_min_price_count = 0
     for card in owned_in_season_cards:
         try:
             result = find_current_listing_and_market_min(
@@ -354,18 +385,27 @@ def run_bundle_scan():
         if result is None:
             not_on_sale_count += 1
             continue
-        listing_price, market_min_price = result
+        listing_price, market_min_price, second_min_price = result
+        # FIX 18/07 (v2, richiesta esplicita dell'utente, "ignoriamo le carte che hanno un
+        # prezzo minimo di vendita inferiore ad un euro"): scartate PRIMA di entrare in on_sale,
+        # quindi assenti da blocchi/bonus/best deal.
+        if market_min_price < BUNDLE_MIN_MARKET_PRICE_EUR:
+            below_min_price_count += 1
+            continue
         on_sale.append({
             'player_name': card['player_name'],
             'card_slug': card['card_slug'],
             'listing_price': listing_price,
             'market_min_price': market_min_price,
+            'second_min_price': second_min_price,
         })
         time.sleep(PER_PLAYER_QUERY_DELAY_SECONDS)
 
     log(f"[diagnostica] {len(owned_in_season_cards)} carte in_season possedute controllate, "
         f"{len(on_sale)} risultano DAVVERO in vendita ora, {not_on_sale_count} possedute ma NON "
-        f"in vendita (o ritirate/vendute nel frattempo), {error_count} errori di query.")
+        f"in vendita (o ritirate/vendute nel frattempo), {below_min_price_count} scartate perche' "
+        f"sotto {format_eur(BUNDLE_MIN_MARKET_PRICE_EUR)} di prezzo minimo di mercato, "
+        f"{error_count} errori di query.")
     log(f"[diagnostica valute] branch usati in eur_price_from_amounts: "
         f"{track.get_currency_branch_stats()}")
 
@@ -439,22 +479,36 @@ def _render_card_blocks(cards):
     return blocks, block_texts
 
 
+# FIX 18/07 (v2, richiesta esplicita dell'utente con screenshot: "le notifiche mi arrivano
+# tutte attaccate... viste cosi' sembrano un pezzo unico"): una semplice riga vuota tra un
+# blocco e l'altro non bastava a renderli "ben distinguibili" scorrendo veloce -- aggiunto un
+# divisore visivo esplicito tra un block_text e il successivo (mai prima del primo/dopo
+# l'ultimo, solo TRA blocchi).
+BLOCK_SEPARATOR = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
+
+
 def _pack_into_messages(header, block_texts, footer=None):
     """Impacchetta block_texts in piu' messaggi Telegram, ciascuno sotto
     TELEGRAM_SAFE_MESSAGE_CHARS, ripetendo l'intestazione (+ indicatore "parte X/Y" se piu' di
     uno) su ognuno cosi' ogni messaggio e' comprensibile anche da solo. Il footer (se presente) va
-    sull'ultimo corpo se ci sta, altrimenti diventa un messaggio a se stante."""
+    sull'ultimo corpo se ci sta, altrimenti diventa un messaggio a se stante. Un BLOCK_SEPARATOR
+    viene inserito TRA un blocco e il successivo (vedi FIX 18/07 v2 sopra), cosi' i blocchi non
+    sembrano piu' "un pezzo unico" scorrendo il messaggio."""
+    joiner_len = len(BLOCK_SEPARATOR) + 4  # "\n\n" + divisore + "\n\n" tra due blocchi consecutivi
     body_chunks = []
     current_parts, current_len = [], 0
     for bt in block_texts:
-        add_len = len(bt) + 2  # + "\n\n" di separazione
+        # Lunghezza che questo blocco aggiungerebbe al chunk corrente: se il chunk e' gia'
+        # non vuoto, ci va anche il divisore prima di lui.
+        add_len = len(bt) + (joiner_len if current_parts else 0)
         if current_parts and current_len + add_len > TELEGRAM_SAFE_MESSAGE_CHARS:
-            body_chunks.append("\n\n".join(current_parts))
+            body_chunks.append(f"\n\n{BLOCK_SEPARATOR}\n\n".join(current_parts))
             current_parts, current_len = [], 0
+            add_len = len(bt)  # primo blocco del nuovo chunk: niente divisore prima
         current_parts.append(bt)
         current_len += add_len
     if current_parts:
-        body_chunks.append("\n\n".join(current_parts))
+        body_chunks.append(f"\n\n{BLOCK_SEPARATOR}\n\n".join(current_parts))
     if not body_chunks:
         body_chunks = [""]
 
@@ -470,6 +524,49 @@ def _pack_into_messages(header, block_texts, footer=None):
         part_note = f"\n<i>(parte {i}/{n})</i>" if n > 1 else ""
         messages.append(f"{header}{part_note}\n\n{body}")
     return messages
+
+
+def _select_best_deal_cards(cheapest_only):
+    """FIX 18/07 (v2, richiesta esplicita dell'utente, funzione 'best deal'): tra le carte GIA'
+    al minimo di mercato (cheapest_only), seleziona fino a BUNDLE_BLOCK_SIZE carte classificando
+    per lo SCARTO verso 'la sua carta immediatamente piu' costosa in vendita sul mercato'
+    (second_min_price). Esempio dell'utente: manager X vende Mbappe a 5EUR (il minimo), il
+    secondo venditore piu' economico lo offre a 6EUR -> scarto 1EUR; tra tutte le carte gia' al
+    minimo, prendiamo le 10 con lo scarto piu' ampio (l'occasione piu' isolata dalla
+    concorrenza). A parita' di scarto, richiesta esplicita dell'utente: "preferire nel pacchetto
+    best deal la carta piu' costosa" -- tie-break su market_min_price decrescente.
+
+    Le carte SENZA un secondo prezzo comparabile (second_min_price None, nessun altro annuncio
+    per quel giocatore) sono escluse da questa classifica: senza un secondo prezzo lo scarto non
+    e' calcolabile in modo significativo -- restano comunque nei blocchi normali e nella sezione
+    bonus, solo non concorrono al best deal. Ritorna una lista (eventualmente vuota) di al
+    massimo BUNDLE_BLOCK_SIZE dict, ciascuno con in piu' la chiave 'gap' rispetto a
+    cheapest_only."""
+    candidates = [dict(c, gap=c['second_min_price'] - c['market_min_price'])
+                  for c in cheapest_only if c.get('second_min_price') is not None]
+    candidates.sort(key=lambda c: (c['gap'], c['market_min_price']), reverse=True)
+    return candidates[:BUNDLE_BLOCK_SIZE]
+
+
+def _render_best_deal_block(cards):
+    """Renderizza l'UNICO blocco speciale 'BEST DEAL' -- al massimo BUNDLE_BLOCK_SIZE carte, mai
+    paginato in piu' blocchi (e' gia' una cernita tra le migliori, non l'intero insieme)."""
+    lines = [f"<b>🏆 BEST DEAL -- le {len(cards)} carte con lo scarto maggiore dal secondo "
+             f"prezzo di mercato</b>"]
+    for c in cards:
+        lines.append(f"🟢 {c['player_name']}: minimo mercato {format_eur(c['market_min_price'])}, "
+                      f"secondo prezzo {format_eur(c['second_min_price'])} "
+                      f"(scarto {format_eur(c['gap'])})")
+    asking = sum(c['listing_price'] for c in cards)
+    market_min = sum(c['market_min_price'] for c in cards)
+    offer = market_min * (1 - BUNDLE_OFFER_MARGIN_FRACTION)
+    lines.append(f"Subtotale: richiesto {format_eur(asking)}, minimo mercato "
+                  f"{format_eur(market_min)}")
+    lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
+    lines.append(f"👉👉 <b>OFFRI FINO A {format_eur(offer)}</b> 👈👈")
+    lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
+    lines.append(f"(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)")
+    return "\n".join(lines)
 
 
 def build_telegram_messages(manager_slug, on_sale):
@@ -562,6 +659,15 @@ def build_telegram_messages(manager_slug, on_sale):
         bonus_footer = "\n".join(bonus_footer_lines)
 
         messages += _pack_into_messages(bonus_header, cheapest_blocks_shown, bonus_footer)
+
+    # --- Sezione BEST DEAL: UN solo blocco (mai piu' di BUNDLE_BLOCK_SIZE carte), selezionato
+    # tra le carte gia' al minimo di mercato per lo scarto maggiore dal secondo prezzo (FIX
+    # 18/07 v2, richiesta esplicita dell'utente) -- AGGIUNTA, non sostituisce le sezioni sopra.
+    best_deal_cards = _select_best_deal_cards(cheapest_only)
+    if best_deal_cards:
+        best_deal_header = (f"🏆 <b>{manager_slug}</b> -- BEST DEAL: le carte piu' isolate dalla "
+                             f"concorrenza\n{manager_link}")
+        messages += _pack_into_messages(best_deal_header, [_render_best_deal_block(best_deal_cards)])
 
     return messages
 
