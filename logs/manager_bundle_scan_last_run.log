@@ -66,3 +66,9 @@
 [2026-07-18 11:59:18] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 3685, 'wei': 396, 'usdCents': 997, 'gbpCents': 154, 'lamport': 0, 'none': 0}
 [2026-07-18 11:59:18] [manager bundle scan] RISULTATO -- 'mikileefoo': 187 carte in vendita organizzate in 19 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 321.21EUR, minimo di mercato totale 309.55EUR (dettaglio/offerta per blocco nel messaggio Telegram).
 [2026-07-18 11:59:20] [manager bundle scan] notifica Telegram inviata (canale aste, riuso temporaneo) -- 3 messaggio/i.
+
+===== RUN 2026-07-18 12:13:29 UTC =====
+[2026-07-18 12:13:29] [manager bundle scan] input ricevuto: 'BigFlow13' -> slug estratto: 'BigFlow13'
+[2026-07-18 12:13:30] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer NON leggibile in questo contesto (searchCards.hits) -- fallback al comportamento precedente (controllo il mercato per ogni giocatore posseduto, piu' lento). Errore: [{'message': 'User(slug=BigFlow13) not found', 'extensions': {'code': 'NOT_FOUND'}}]
+[2026-07-18 12:13:30] [manager bundle scan] errore GraphQL pagina 1 carte possedute per 'BigFlow13': [{'message': 'User(slug=BigFlow13) not found', 'extensions': {'code': 'NOT_FOUND'}}]
+[2026-07-18 12:13:30] [manager bundle scan] impossibile determinare se 'BigFlow13' esiste (errore di rete/GraphQL prima ancora di ricevere una risposta valida, vedi dettaglio errore sopra nel log). Nessuna notifica Telegram inviata.
