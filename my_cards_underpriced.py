@@ -84,8 +84,16 @@ def get_my_cards_for_sale():
     return all_cards
 
 
-def get_market_min_price(card_slug, sport, rarity, season_year):
-    """Ottieni il prezzo più basso del mercato per questa carta."""
+def get_market_min_price(card_slug, in_season_eligible):
+    """Ottieni il prezzo più basso del mercato per il giocatore di questa carta, tra gli
+    annunci aperti con la stessa categoria (in_season/classic) -- stesso schema query di
+    track.py (fetch_all_live_offers/get_live_min_offer): la carta messa in vendita sta in
+    senderSide.anyCards, il prezzo chiesto sta in receiverSide.amounts. receiverSide.anyCards
+    NON vuoto significa scambio carta-per-carta (nessun prezzo in denaro, va escluso).
+    FIX 18/07: la versione precedente cercava card_slug dentro receiverSide.anyCards (il lato
+    del pagamento, quasi sempre vuoto per una vendita a prezzo fisso) invece che in
+    senderSide.anyCards (il lato della carta venduta) -- il match falliva quasi sempre,
+    lasciando il prezzo di mercato sempre a None."""
     query = """
     {
       anyCard(slug: "%s") {
@@ -114,6 +122,14 @@ def get_market_min_price(card_slug, sport, rarity, season_year):
                   amounts { eurCents }
                   anyCards { slug }
                 }
+                senderSide {
+                  anyCards {
+                    slug
+                    rarityTyped
+                    sport
+                    inSeasonEligible
+                  }
+                }
               }
             }
           }
@@ -134,11 +150,25 @@ def get_market_min_price(card_slug, sport, rarity, season_year):
         for node in nodes:
             if node.get('status') != 'opened':
                 continue
-            cards = node.get('receiverSide', {}).get('anyCards', [])
-            if any(c.get('slug') == card_slug for c in cards):
-                eur_cents = node.get('receiverSide', {}).get('amounts', {}).get('eurCents')
-                if eur_cents:
-                    prices.append(eur_cents / 100)
+            # scambio carta-per-carta (nessun prezzo in denaro): escluso, stesso filtro di track.py
+            if (node.get('receiverSide') or {}).get('anyCards'):
+                continue
+            sender_cards = (node.get('senderSide') or {}).get('anyCards') or []
+            match = None
+            for c in sender_cards:
+                if c.get('rarityTyped') != 'limited':
+                    continue
+                if c.get('sport') != 'FOOTBALL':
+                    continue
+                if c.get('inSeasonEligible') != in_season_eligible:
+                    continue
+                match = c
+                break
+            if not match:
+                continue
+            eur_cents = node.get('receiverSide', {}).get('amounts', {}).get('eurCents')
+            if eur_cents:
+                prices.append(eur_cents / 100)
 
         return min(prices) if prices else None
     except Exception as e:
@@ -176,12 +206,10 @@ def run_underpriced_scan():
 
         my_price_eur = eur_cents / 100
 
-        # Ottieni il prezzo più basso del mercato
+        # Ottieni il prezzo più basso del mercato (stessa categoria in_season/classic)
         market_price_eur = get_market_min_price(
             card_slug,
-            card.get('sport'),
-            card.get('rarityTyped'),
-            card.get('sportSeason', {}).get('name', '')
+            card.get('inSeasonEligible')
         )
 
         if market_price_eur is None:
