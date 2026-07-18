@@ -304,6 +304,18 @@ CRLF sopra) invece di assumere. File toccati oggi: `track.py`, `zenlock_model_tr
    INVARIATI. Testato con mock: caso discusso (20/23EUR) ora notifica, fascia normale 15%/14%
    invariata (nessuna regressione), fascia alta a 90EUR ora richiede ~5.3% invece di 20%. Item
    aperto residuo: pulsanti Telegram deep-link "compra ora"/"fai offerta".
+6b. **NUOVO 18/07, backlog non urgente (esplicitamente "non oggi")**: il pattern di 4 notifiche
+   zenlock allo stesso prezzo 0.96EUR/riferimento 2.19EUR (Malcolm Ebiowei, Nacho Monreal, Bruno
+   Gaspar, Filip Stuparević, run 22:50:42 UTC) e' stato identificato dall'utente come il manager
+   "Satonio" che piazza carte in blocco a prezzi tondi -- le sue offerte di mercato sono
+   descritte dall'utente come "sempre fuorvianti". Possibile lavoro futuro: un filtro che
+   ignora/pesa diversamente le offerte di mercato originate da Satonio in zenlock (e forse
+   track.py), perche' non sono un segnale di mercato genuino. NON implementare finche' l'utente
+   non lo richiede esplicitamente -- per ora e' solo un promemoria. Nota tecnica per quando
+   servira': non e' ovvio come identificare "chi ha piazzato l'annuncio" dai dati attualmente
+   loggati (i log mostrano prezzo/slug carta/giocatore, non il manager venditore) -- andra'
+   verificato se receiverSide/senderSide o un altro campo GraphQL espone l'identita' del
+   venditore prima di poter filtrare per manager.
 6. **NUOVO 17-18/07, da mettere in coda e FIXARE (richiesta esplicita dell'utente)**: durante il
    run zenlock delle 22:16:24 UTC un manager ha messo in vendita/aggiornato tante carte a buon
    prezzo in pochi minuti -- 4 ALERT reali ravvicinati (22:17:08-22:18:07 UTC: Heorhii Sudakov,
