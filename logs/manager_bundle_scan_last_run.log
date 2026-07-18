@@ -528,3 +528,23 @@
 [2026-07-18 19:11:53] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 438, 'wei': 82, 'usdCents': 177, 'gbpCents': 43, 'lamport': 0, 'none': 0}
 [2026-07-18 19:11:53] [manager bundle scan] RISULTATO -- 'bhoysin': 5 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 16.10EUR, minimo di mercato totale 9.67EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 1 gia' al minimo di mercato (sezione bonus separata).
 [2026-07-18 19:11:55] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 3 messaggio/i.
+
+===== RUN 2026-07-18 20:06:24 UTC =====
+[2026-07-18 20:06:24] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-07-18 20:08:24] [manager bundle scan] [auto-find] ascolto terminato: 19 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-07-18 20:08:24] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-07-18 20:08:32] [manager bundle scan] [auto-find] 11 manager venditori distinti individuati (top: rocfc x7, jrodwalts-trade-115-active-buyer-seller x3, tschoke1 x1, fibra90 x1, sie7es x1) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-07-18 20:08:32] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 20:08:32] [manager bundle scan] 'rocfc': 209 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 20:08:35] [manager bundle scan] [filtro carte in vendita] 209 carte possedute scansionate, 35 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 174.
+[2026-07-18 20:08:35] [manager bundle scan] [auto-find] 'rocfc': 14 carte in_season in vendita (soglia 5).
+[2026-07-18 20:08:35] [manager bundle scan] [auto-find] SELEZIONATO 'rocfc' -- parte lo scan classico su di lui (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-07-18 20:08:35] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-18 20:08:35] [manager bundle scan] 'rocfc': 209 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-18 20:08:37] [manager bundle scan] [filtro carte in vendita] 209 carte possedute scansionate, 35 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 174.
+[2026-07-18 20:08:37] [manager bundle scan] 'rocfc': 14 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-18 20:08:37] [manager bundle scan] controllo il mercato live per 12 giocatori diversi (14 carte possedute da verificare)...
+[2026-07-18 20:08:43] [manager bundle scan] [diagnostica] 14 carte in_season possedute controllate, 5 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 9 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-07-18 20:08:43] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 306, 'wei': 88, 'usdCents': 131, 'gbpCents': 16, 'lamport': 0, 'none': 0}
+[2026-07-18 20:08:43] [manager bundle scan] RISULTATO -- 'rocfc': 5 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 51.32EUR, minimo di mercato totale 25.69EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 2 gia' al minimo di mercato (sezione bonus separata).
+[2026-07-18 20:08:45] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 3 messaggio/i.
