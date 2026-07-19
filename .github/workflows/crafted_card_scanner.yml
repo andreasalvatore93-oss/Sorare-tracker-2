@@ -10,15 +10,30 @@ on:
       craft_window_hours:
         description: "Finestra: quante ore indietro cercare carte create dello stesso tipo"
         required: false
-        default: "6"
+        default: "10"
       min_price_eur:
         description: "Fascia prezzo minimo di mercato: limite inferiore in EUR"
         required: false
-        default: "1"
+        default: "0.50"
       max_price_eur:
         description: "Fascia prezzo minimo di mercato: limite superiore in EUR"
         required: false
         default: "20"
+      competition:
+        description: "Campionato specifico da cercare (vuoto = tutti)"
+        required: false
+        type: choice
+        default: ""
+        options:
+          - ""
+          - mls
+          - k-league
+          - jupiler-pro-league
+          - eredivisie
+          - ligue-1
+          - bundesliga
+          - j-league
+          - liga-spagnola
       blacklist_managers:
         description: "Manager da bloccare in aggiunta agli hardcoded (lista slug separati da virgola): se il match appartiene a loro viene skippato"
         required: false
@@ -54,9 +69,10 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CRAFT_MAX_RUN_SECONDS: ${{ github.event.inputs.max_run_seconds || '500' }}
-          CRAFT_WINDOW_HOURS: ${{ github.event.inputs.craft_window_hours || '6' }}
-          CRAFT_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
+          CRAFT_WINDOW_HOURS: ${{ github.event.inputs.craft_window_hours || '10' }}
+          CRAFT_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '0.50' }}
           CRAFT_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '20' }}
+          CRAFT_COMPETITION: ${{ github.event.inputs.competition }}
           CRAFT_BLACKLIST_MANAGERS: ${{ github.event.inputs.blacklist_managers }}
           PYTHONUNBUFFERED: "1"
         run: |
