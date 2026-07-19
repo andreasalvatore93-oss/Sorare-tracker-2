@@ -9,19 +9,19 @@ on:
       max_price_eur:
         description: "Prezzo massimo carta da valutare (EUR) -- regolabile per i test, es. fino a 20"
         required: false
-        default: "5"
+        default: "30"
       margin_percent:
         description: "Margine minimo richiesto sul secondo prezzo attuale, in % (es. 15 = 15%)"
         required: false
-        default: "15"
+        default: "20"
       listen_seconds:
         description: "Secondi di ascolto massimi (il bot si ferma comunque prima se raggiunge target_matches)"
         required: false
-        default: "250"
+        default: "900"
       target_matches:
         description: "Quanti casi 'lo avrei acquistato' notificare prima di fermarsi (1-10)"
         required: false
-        default: "1"
+        default: "5"
       autobuy_diagnostic:
         description: "Log extra sul confronto in_season/classic per lega (per verificare gli slug MLS/K League/J League), di default spento"
         required: false
@@ -40,7 +40,7 @@ concurrency:
 jobs:
   autobuy:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,10 +64,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
           AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
-          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '5' }}
-          MARGIN_PERCENT_INPUT: ${{ github.event.inputs.margin_percent || '15' }}
-          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '250' }}
-          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '1' }}
+          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
+          MARGIN_PERCENT_INPUT: ${{ github.event.inputs.margin_percent || '20' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '900' }}
+          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '5' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
         run: |
