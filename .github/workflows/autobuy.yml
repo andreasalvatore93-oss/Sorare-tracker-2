@@ -31,7 +31,7 @@ on:
         required: false
         default: ""
 permissions:
-  contents: read
+  contents: write
 # Nessuna concorrenza con track.py: workflow e job completamente separati, nessuna
 # scrittura su tracker.db, quindi nessun conflitto possibile tra i due bot.
 concurrency:
@@ -76,3 +76,20 @@ jobs:
           # Python vuole invece la frazione (0.15) -- conversione fatta qui.
           export AUTOBUY_MARGIN_FRACTION=$(awk -v p="$MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
           python autobuy_sorare.py
+      - name: Commit purchase log (protezione anti-riacquisto 24h)
+        # Solo per fase 2 (automazione completa, non ancora attiva): il file
+        # autobuy_purchases.json viene scritto da record_player_purchase() SOLO dopo un
+        # acquisto reale completato, quindi in fase 1 (diagnostica) questo file non
+        # cambia mai e questo step non fa nulla di visibile. Committato qui (non tramite
+        # git nello script Python) per tenere la logica di persistenza fuori dal codice
+        # dello scanner.
+        run: |
+          if git diff --quiet -- autobuy_purchases.json 2>/dev/null; then
+            echo "Nessuna modifica al purchase log, niente da committare."
+          else
+            git config user.name "autobuy-bot"
+            git config user.email "autobuy-bot@users.noreply.github.com"
+            git add autobuy_purchases.json
+            git commit -m "AutoBuy: aggiorna registro acquisti (protezione 24h)"
+            git push
+          fi
