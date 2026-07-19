@@ -40,6 +40,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install sorare-sign dependencies
+        run: |
+          cd sorare-sign
+          npm install
       - run: pip install requests websocket-client
       - name: Run AutoBuy (solo diagnostica)
         env:
