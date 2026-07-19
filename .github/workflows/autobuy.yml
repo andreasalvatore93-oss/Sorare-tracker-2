@@ -46,6 +46,10 @@ on:
         description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist SOLO per questo bot (separati da virgola), es. nomeutente -- vengono salvati in sorare_autobuy_manager_blacklist.txt"
         required: false
         default: ""
+      live_mode:
+        description: "'si' = ACQUISTO REALE AUTOMATICO (spende soldi veri dal wallet). Default 'no' = solo diagnostica, nessun acquisto."
+        required: false
+        default: "no"
 permissions:
   contents: write
 # Nessuna concorrenza con track.py: workflow e job completamente separati, nessuna
@@ -159,6 +163,8 @@ jobs:
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'no' }}
+          AUTOBUY_LIVE_MODE: ${{ github.event.inputs.live_mode || 'no' }}
+          SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
           MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '5' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
