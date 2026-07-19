@@ -553,9 +553,6 @@ query RecentTransactionsQuery($p: String!) {
         ... on TokenOffer {
           type
         }
-        ... on TokenPrimaryOffer {
-          type
-        }
       }
     }
   }
@@ -600,11 +597,12 @@ def count_recent_transactions(player_slug):
     count_long = 0
     for n in nodes:
         deal = n.get('deal') or {}
-        # FIX 19/07 (caso reale, errore GraphQL osservato dal vivo): TokenAuction NON ha
-        # un campo 'type' (solo TokenOffer/TokenPrimaryOffer ce l'hanno) -- un'asta e'
-        # comunque una transazione valida da contare, la riconosciamo dal __typename
-        # invece che dal campo 'type' (assente in quel caso).
-        is_countable = bool(deal.get('type')) or deal.get('__typename') == 'TokenAuction'
+        # FIX 19/07 (caso reale, errore GraphQL osservato dal vivo): sia TokenAuction che
+        # TokenPrimaryOffer NON hanno un campo 'type' (solo TokenOffer ce l'ha) -- entrambi
+        # sono comunque transazioni valide da contare, li riconosciamo dal __typename
+        # invece che dal campo 'type' (assente in entrambi i casi).
+        deal_typename = deal.get('__typename')
+        is_countable = bool(deal.get('type')) or deal_typename in ('TokenAuction', 'TokenPrimaryOffer')
         if not is_countable:
             continue  # nodo senza tipo riconoscibile, non contabile con certezza
         date_str = n.get('date') or ''
