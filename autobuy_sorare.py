@@ -58,15 +58,13 @@ AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.15'
 # valido (il bot si ferma comunque al primo caso trovato).
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '250'))
 
-# FIX 19/07 (richiesta esplicita utente): per QUESTI 3 campionati il confronto in_season
+# FIX 19/07 (richiesta esplicita utente): per QUESTI 2 campionati il confronto in_season
 # resta quello attuale (SOLO in_season, nessun classic unito) -- per tutti gli altri
-# campionati il classic viene invece trattato come "un ulteriore in_season" nel calcolo del
-# vero minimo/secondo prezzo. NOTA: gli slug qui sotto sono il nostro miglior tentativo
-# (schema Sorare pubblico non documenta gli slug esatti delle leghe) -- la diagnostica
-# [diagnostica lega] in log stampa league_slug REALE visto sul mercato per ogni evento
-# valutato: verificare i primi casi MLS/K League/J League nei log e correggere qui gli
-# slug se non coincidono con quanto stampato.
-EXCLUDED_LEAGUE_SLUGS = {'mls', 'k-league', 'j-league'}
+# campionati (J League inclusa, tolta dall'esclusione su decisione dell'utente) il classic
+# viene invece trattato come "un ulteriore in_season" nel calcolo del vero minimo/secondo
+# prezzo. Slug confermati dal vivo tramite diagnostica [diagnostica lega]: MLS='mlspa',
+# K League='k-league-1'.
+EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
 # Diagnostica: se attiva, logga info aggiuntive sul confronto in_season/classic per ogni
 # giocatore valutato (lega rilevata, quanti annunci classic trovati, ecc.) -- utile solo
@@ -288,11 +286,13 @@ def get_bucket_prices(player_slug, eth_rate):
 
 
 def is_asia_americas_excluded_league(league_slug):
-    """I 3 campionati (MLS, K League, J League) per cui il confronto con il classic va
-    escluso -- restano solo con la logica in_season pura gia' in produzione. Vedi nota
-    nell'area di memoria del progetto: motivazione non tecnica, richiesta esplicita
-    dell'utente. Se league_slug e' None/sconosciuto, NON viene considerato escluso (quindi
-    per sicurezza si applica comunque il confronto con classic, il caso piu' comune)."""
+    """I 2 campionati (MLS, K League) per cui il confronto con il classic va escluso --
+    restano solo con la logica in_season pura gia' in produzione. J League ESCLUSA da questo
+    filtro su decisione dell'utente (19/07): per J League vale la logica normale in_season+
+    classic come tutti gli altri campionati. Vedi nota nell'area di memoria del progetto:
+    motivazione non tecnica, richiesta esplicita dell'utente. Se league_slug e' None/
+    sconosciuto (es. giocatore attualmente senza squadra), NON viene considerato escluso --
+    si applica comunque in_season+classic, comportamento di default corretto e verificato."""
     return league_slug in EXCLUDED_LEAGUE_SLUGS
 
 
