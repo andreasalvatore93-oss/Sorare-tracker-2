@@ -694,3 +694,24 @@ Traceback (most recent call last):
   File "/home/runner/work/Sorare-tracker-2/Sorare-tracker-2/track.py", line 2176
     = ""
 IndentationError: unexpected indent
+
+===== RUN 2026-07-19 08:46:32 UTC =====
+[2026-07-19 08:46:33] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-07-19 08:48:33] [manager bundle scan] [auto-find] ascolto terminato: 20 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-07-19 08:48:33] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-07-19 08:48:40] [manager bundle scan] [auto-find] 8 manager venditori distinti individuati (top: hairdmin x7, betterthanthem-plusvalencia x4, nico_1893 x2, diabot1 x2, marcofutpolo x2) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-07-19 08:48:40] [manager bundle scan] [auto-find] 'hairdmin': scansionato di recente (entro 7 giorni) via auto-discovery, in raffreddamento -- passo oltre.
+[2026-07-19 08:48:40] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-19 08:48:41] [manager bundle scan] 'betterthanthem-plusvalencia': 601 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-19 08:48:46] [manager bundle scan] [filtro carte in vendita] 601 carte possedute scansionate, 414 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 187.
+[2026-07-19 08:48:46] [manager bundle scan] [auto-find] 'betterthanthem-plusvalencia': 92 carte in_season in vendita (soglia 5).
+[2026-07-19 08:48:46] [manager bundle scan] [auto-find] SELEZIONATO 'betterthanthem-plusvalencia' -- parte lo scan classico su di lui (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-07-19 08:48:47] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-07-19 08:48:47] [manager bundle scan] 'betterthanthem-plusvalencia': 601 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-07-19 08:48:53] [manager bundle scan] [filtro carte in vendita] 601 carte possedute scansionate, 414 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 187.
+[2026-07-19 08:48:53] [manager bundle scan] 'betterthanthem-plusvalencia': 92 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-07-19 08:48:53] [manager bundle scan] controllo il mercato live per 87 giocatori diversi (92 carte possedute da verificare)...
+[2026-07-19 08:49:38] [manager bundle scan] [diagnostica] 92 carte in_season possedute controllate, 22 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 70 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-07-19 08:49:38] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 1668, 'wei': 170, 'usdCents': 1151, 'gbpCents': 60, 'lamport': 0, 'none': 0}
+[2026-07-19 08:49:38] [manager bundle scan] RISULTATO -- 'betterthanthem-plusvalencia': 22 carte in vendita organizzate in 3 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 49.43EUR, minimo di mercato totale 43.53EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 14 gia' al minimo di mercato (sezione bonus separata).
+[2026-07-19 08:49:40] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 3 messaggio/i.
