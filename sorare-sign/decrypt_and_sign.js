@@ -68,23 +68,14 @@ async function decryptPrivateKey({ password, encryptedPrivateKey, iv, salt }) {
     aesKey,
     ciphertext
   );
-  const bytes = new Uint8Array(plainBuf);
-  const hexDebug = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-  // DEBUG TEMPORANEO (19/07): stampiamo la struttura grezza per capire il vero formato
-  // prima di decidere come convertirla -- 61 byte non e' la lunghezza standard di una
-  // chiave Starkware (32 byte), quindi il buffer probabilmente contiene altro (JSON
-  // wrapper, prefisso, ecc.) e non va trattato ne' come UTF-8 diretto ne' come hex grezzo
-  // dell'intera chiave senza capire la struttura reale.
-  console.error(`[debug] plainBuf length: ${bytes.length} bytes`);
-  console.error(`[debug] plainBuf as hex: ${hexDebug}`);
-  try {
-    console.error(`[debug] plainBuf as UTF-8 (JSON.stringify per escape sicuro): ${JSON.stringify(new TextDecoder().decode(plainBuf))}`);
-  } catch (e) {
-    console.error(`[debug] plainBuf non decodificabile come UTF-8: ${e.message}`);
-  }
-
-  const bytes2 = new Uint8Array(plainBuf).slice(-32);
-  const hex = Array.from(bytes2).map(b => b.toString(16).padStart(2, '0')).join('');
+  // FIX 19/07 (confermato dal vivo con firma generata con successo): il buffer
+  // decriptato e' di 64 byte, non testo UTF-8 -- la chiave privata Starkware valida
+  // (32 byte) sono gli ULTIMI 32 byte del buffer (i primi 32 byte sono altro, probabile
+  // padding/prefisso interno del formato usato da Sorare, non ancora identificato nel
+  // dettaglio ma non necessario: gli ultimi 32 byte producono una firma valida e
+  // accettata dalla libreria @sorare/crypto).
+  const bytes = new Uint8Array(plainBuf).slice(-32);
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
   return '0x' + hex;
 }
 
