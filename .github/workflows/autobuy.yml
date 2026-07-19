@@ -27,7 +27,7 @@ on:
         required: false
         default: "no"
       blacklisted_player_slugs:
-        description: "Slug giocatori da ignorare del tutto (separati da virgola), es. aoto-nanamure -- si aggiunge alla lista gia' hardcoded nello script"
+        description: "Slug giocatori da aggiungere PERMANENTEMENTE alla blacklist (separati da virgola), es. aoto-nanamure -- vengono salvati nel file sorare_autobuy_blacklist.txt e restano attivi anche nelle prossime run"
         required: false
         default: ""
       check_classic:
@@ -60,6 +60,44 @@ jobs:
           cd sorare-sign
           npm install
       - run: pip install requests websocket-client
+      - name: Aggiungi giocatori alla blacklist permanente (se specificati)
+        # Se l'utente ha compilato l'input blacklisted_player_slugs, questi slug vengono
+        # scritti nel file sorare_autobuy_blacklist.txt (nella root del repo, unica fonte
+        # di verita' persistente per questo bot) e committati -- cosi' l'esclusione resta
+        # attiva anche nelle esecuzioni future, senza dover ricompilare l'input ogni volta
+        # ne' modificare il file a mano su GitHub. Gli slug vengono comunque passati anche
+        # come env var BLACKLISTED_PLAYER_SLUGS allo step successivo, quindi valgono GIA'
+        # per questa run anche se il commit dovesse fallire per qualche motivo.
+        env:
+          BLACKLISTED_PLAYER_SLUGS_INPUT: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
+        run: |
+          if [ -z "$BLACKLISTED_PLAYER_SLUGS_INPUT" ]; then
+            echo "Nessuno slug da aggiungere alla blacklist permanente."
+          else
+            touch sorare_autobuy_blacklist.txt
+            IFS=',' read -ra SLUGS <<< "$BLACKLISTED_PLAYER_SLUGS_INPUT"
+            added_any=0
+            for raw_slug in "${SLUGS[@]}"; do
+              slug=$(echo "$raw_slug" | xargs | tr '[:upper:]' '[:lower:]')
+              if [ -z "$slug" ]; then
+                continue
+              fi
+              if grep -qxF "$slug" sorare_autobuy_blacklist.txt 2>/dev/null; then
+                echo "Gia' presente in blacklist: $slug"
+              else
+                echo "$slug" >> sorare_autobuy_blacklist.txt
+                echo "Aggiunto alla blacklist: $slug"
+                added_any=1
+              fi
+            done
+            if [ "$added_any" = "1" ]; then
+              git config user.name "autobuy-bot"
+              git config user.email "autobuy-bot@users.noreply.github.com"
+              git add sorare_autobuy_blacklist.txt
+              git commit -m "AutoBuy: aggiunta giocatori alla blacklist da workflow_dispatch"
+              git push
+            fi
+          fi
       - name: Run AutoBuy (solo diagnostica)
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
