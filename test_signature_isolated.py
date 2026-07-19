@@ -140,6 +140,10 @@ def main():
     fingerprint = os.environ.get('TEST_FINGERPRINT', '')
     authorization_request_json = os.environ.get('TEST_AUTHORIZATION_REQUEST', '')
 
+    log(f"[debug] TEST_FINGERPRINT ricevuto: {fingerprint!r}")
+    log(f"[debug] TEST_AUTHORIZATION_REQUEST ricevuto (lunghezza {len(authorization_request_json)}): "
+        f"{authorization_request_json!r}")
+
     if not fingerprint or not authorization_request_json:
         log("ERRORE: servono le variabili TEST_FINGERPRINT e TEST_AUTHORIZATION_REQUEST "
             "(quest'ultima con l'oggetto 'request' completo in JSON, incluso __typename).")
