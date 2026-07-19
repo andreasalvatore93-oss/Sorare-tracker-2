@@ -347,6 +347,39 @@ def build_card_link(player_slug, card_slug):
     return f"{base_link}?card={card_slug}" if card_slug else base_link
 
 
+CARD_COVERAGE_QUERY = """
+query CardCoverageQuery($slug: String!) {
+  anyCard(slug: $slug) {
+    slug
+    coverageStatus
+  }
+}
+"""
+
+
+def get_card_coverage_status(card_slug):
+    """FIX 19/07 (caso Aoto Nanamure): coverageStatus non esiste sull'interfaccia
+    AnyCardInterface usata da LIVE_OFFERS_QUERY/SUBSCRIPTION_QUERY (vedi errore GraphQL
+    osservato dal vivo), ma ESISTE sul tipo Card quando raggiunto tramite la query root
+    anyCard(slug: ...) -- confermato ispezionando la risposta reale della pagina carta
+    (query interna del sito). Per non rischiare di rompere di nuovo la subscription,
+    questa query viene chiamata SOLO qui, come controllo aggiuntivo mirato sulla carta
+    candidata, DOPO che il bot ha gia' trovato un margine valido -- non nel flusso critico
+    del listener. Ritorna la stringa coverageStatus (es. 'FULL', 'NOT_COVERED') o None se
+    la query fallisce per qualunque motivo (in quel caso, per sicurezza, NON blocchiamo
+    l'acquisto solo per questo controllo: vedi chiamata in evaluate_event)."""
+    try:
+        data = graphql_query(CARD_COVERAGE_QUERY, {"slug": card_slug})
+        if data.get('errors'):
+            log(f"[coverage check] errore per {card_slug}: {data['errors']}")
+            return None
+        card = (data.get('data') or {}).get('anyCard') or {}
+        return card.get('coverageStatus')
+    except Exception as e:
+        log(f"[coverage check] eccezione per {card_slug}: {e}")
+        return None
+
+
 EXCHANGE_RATE_QUERY = """
 query ExchangeRateQuery {
   config {
@@ -632,6 +665,17 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
+
+    # FIX 19/07 (caso Aoto Nanamure): controllo mirato SOLO sulla carta candidata (query
+    # separata anyCard(slug), non tocca la subscription) -- se il club del giocatore non e'
+    # coperto da SO5, i punti non vengono conteggiati e la carta e' inutile da giocare,
+    # anche se il prezzo sembra un affare. Se la query fallisce (None), NON blocchiamo
+    # l'acquisto solo per questo -- e' un controllo aggiuntivo, non un requisito core.
+    coverage_status = get_card_coverage_status(card_slug)
+    if coverage_status == 'NOT_COVERED':
+        log(f"{player_name}: scarto -- club non coperto da SO5 (coverageStatus=NOT_COVERED), "
+            f"punti non conteggiati")
+        return False
 
     # FASE 2 (prima meta'): prova a "prenotare" l'offerta lato server PRIMA di notificare,
     # cosi' quando l'utente apre il link ed e' pronto a confermare la finestra di rischio
