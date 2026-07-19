@@ -788,13 +788,32 @@ def send_email(subject, body):
 # response.ok e logghiamo il testo esatto dell'errore se Telegram rifiuta il messaggio (utile per
 # qualunque chiamante, non solo il bundle scanner: se in futuro un ALERT dovesse mai avere un testo
 # anomalo/troppo lungo, ora lo sapremmo dal log invece di scoprirlo solo per assenza di notifica).
-def send_telegram_msg(message):
+def send_telegram_msg(message, url=None):
+    """Invia messaggio Telegram con pulsante inline se viene passato un URL."""
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML'}
+    payload = {
+        'chat_id': TELEGRAM_CHAT_ID,
+        'text': message,
+        'parse_mode': 'HTML'
+    }
+    if url:
+        payload['reply_markup'] = {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "🚀 APRI SU SORARE",
+                        "url": url
+                    }
+                ]
+            ]
+        }
     try:
-        r = requests.post(url, json=payload, timeout=10)
+        r = requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            json=payload,
+            timeout=10
+        )
         if not r.ok:
             log(f"Errore invio Telegram (HTTP {r.status_code}): {r.text[:500]} -- messaggio "
                 f"lungo {len(message)} caratteri (limite Telegram: 4096)")
@@ -1460,7 +1479,7 @@ def send_instant_alert(player_slug, player_name, season_type, season_name, price
         f"controlla a mano prima di comprare, arriva anche l'alert ufficiale a breve.\n\n"
         f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈"
     )
-    send_telegram_msg(msg_text)
+    send_telegram_msg(msg_text, url=link)
     return True
 
 
@@ -1758,7 +1777,7 @@ def fetch_player_recent_direct_buys(player_slug, buyer_slug, window_days, eth_ra
     seller} scoperto oggi, filtra alle transazioni dove deal.buyer.slug == buyer_slug e
     deal.type == 'SINGLE_SALE_OFFER' (acquisto diretto a prezzo fisso, vedi nota sopra), negli
     ultimi window_days giorni. Ritorna una lista di dict con giocatore/carta/prezzo/data/venditore
-    PIU' il contesto di margine: FIX 17/07 (richiesta esplicita dell'utente, "estendere il
+    PIU' il contesto di : FIX 17/07 (richiesta esplicita dell'utente, "estendere il
     contesto"): per ogni acquisto trovato calcola anche "market_median" (mediana di TUTTE le
     altre transazioni SINGLE_SALE_OFFER dello stesso giocatore nella stessa risposta gia'
     scaricata, quindi senza chiamate API aggiuntive -- non e' il "secondo prezzo live" esatto
@@ -1865,7 +1884,7 @@ def diagnostic_snipe_pattern_report(eth_rate):
     """Backlog item "Satonio pattern-mining" (richiesta esplicita dell'utente, 17/07): raccoglie
     gli acquisti diretti a prezzo fisso (SINGLE_SALE_OFFER, il vero sniping) fatti da
     SNIPE_USER_SLUG negli ultimi SNIPE_WINDOW_DAYS giorni, per capire il pattern
-    (che margine cerca, che tipo di giocatori, che ora del giorno). Solo raccolta/log, nessuna
+    (che  cerca, che tipo di giocatori, che ora del giorno). Solo raccolta/log, nessuna
     azione automatica. Prima prova su ZenLock (meno carte di Satonio, piu' veloce da validare),
     poi si riusa la stessa funzione su satonio cambiando SNIPE_USER_SLUG."""
     log(f"[snipe analysis] avvio analisi per {SNIPE_USER_SLUG}, finestra "
@@ -2042,7 +2061,7 @@ def fetch_user_trades(user_slug, window_days, eth_rate, max_pages=10):
             # quindi seguendo lo stesso principio gia' usato altrove nel bot (scambi carta-per-
             # carta esclusi dalla verifica live perche' il prezzo non e' attribuibile) i bundle
             # (piu' di una carta sullo stesso lato) vengono ESCLUSI dal prezzo per-carta: price
-            # resta None (non entra nelle statistiche di prezzo/sconto/margine), ma la
+            # resta None (non entra nelle statistiche di prezzo/sconto/), ma la
             # transazione resta visibile nei log con bundle_size per trasparenza.
             bundle_size = len(cards)
             is_bundle = bundle_size > 1
@@ -2154,18 +2173,18 @@ def diagnostic_manager_trades_report(eth_rate):
         if acquisto_prec:
             a = acquisto_prec[0]
             prezzo_a = f"{a['price']:.2f}EUR" if a['price'] is not None else "prezzo N/D"
-            margine = ""
+             = ""
             if a['price'] is not None and s['price'] is not None and a['price'] > 0:
-                margine = f", margine {(s['price'] - a['price']) / a['price']:.1%}"
+                 = f",  {(s['price'] - a['price']) / a['price']:.1%}"
             log(f"[snipe analysis]   {s['date']} -- {s['player_name']} ({s['card_slug']}): "
                 f"venduta a {s['counterparty']} per {prezzo_v} -- comprata il {a['date']} "
-                f"({a['type']}) per {prezzo_a}{margine}")
+                f"({a['type']}) per {prezzo_a}{}")
         else:
             log(f"[snipe analysis]   {s['date']} -- {s['player_name']} ({s['card_slug']}): "
                 f"venduta a {s['counterparty']} per {prezzo_v} -- acquisto precedente non "
                 f"trovato nella finestra analizzata")
     if bundle_sells_skipped:
-        log(f"[snipe analysis] {bundle_sells_skipped} vendite bundle saltate dal calcolo margine "
+        log(f"[snipe analysis] {bundle_sells_skipped} vendite bundle saltate dal calcolo  "
             f"(prezzo non attribuibile a singola carta)")
     log(f"[snipe analysis] [diagnostica valute] branch usati in eur_price_from_amounts durante "
         f"questa analisi: {get_currency_branch_stats()}")
@@ -2179,7 +2198,7 @@ def diagnostic_manager_trades_report(eth_rate):
 # con il calcolo di discount_vs_median gia' scritto in fetch_player_recent_direct_buys (mediana
 # delle altre vendite SINGLE_SALE_OFFER dello stesso giocatore, escluso lui stesso). Prima
 # c'erano due pipeline separate con scopi diversi (una trovava I candidati partendo dalle carte
-# possedute, l'altra calcolava il margine); ora la lista di snipe e' gia' completa da
+# possedute, l'altra calcolava il ); ora la lista di snipe e' gia' completa da
 # fetch_user_trades, quindi basta arricchirla per-giocatore (un giocatore alla volta, dedup)
 # per ottenere: prezzo, sconto% vs mercato, bucket in_season/classic, fascia di prezzo -- i
 # quattro assi su cui si basera' la tabella di soglie "modello ZenLock" (per ora solo
@@ -2187,7 +2206,7 @@ def diagnostic_manager_trades_report(eth_rate):
 # solidi da calibrarla).
 def diagnostic_snipe_margin_model_report(eth_rate):
     """Come diagnostic_manager_trades_report ma focalizzato SOLO sugli snipe puri
-    (SINGLE_SALE_OFFER) e arricchito col contesto di margine (sconto% vs mediana altre vendite
+    (SINGLE_SALE_OFFER) e arricchito col contesto di  (sconto% vs mediana altre vendite
     dello stesso giocatore) e col bucket in_season/classic -- i dati grezzi per progettare un
     tracker calibrato sul comportamento di SNIPE_USER_SLUG invece che sul nostro."""
     log(f"[snipe analysis] avvio modello soglie snipe per {SNIPE_USER_SLUG}, finestra "
@@ -2195,7 +2214,7 @@ def diagnostic_snipe_margin_model_report(eth_rate):
     reset_currency_branch_stats()  # FIX 17/07: vedi nota in diagnostic_manager_trades_report
     trades = fetch_user_trades(SNIPE_USER_SLUG, SNIPE_WINDOW_DAYS, eth_rate, max_pages=SNIPE_MAX_PAGES)
     buys = [t for t in trades if t['role'] == 'buy' and t['type'] == 'SINGLE_SALE_OFFER']
-    log(f"[snipe analysis] {len(buys)} snipe trovati, arricchimento margine per giocatore "
+    log(f"[snipe analysis] {len(buys)} snipe trovati, arricchimento  per giocatore "
         f"unico (query per-giocatore, come nella pipeline precedente)...")
 
     unique_players = sorted(set(b['player_slug'] for b in buys if b['player_slug']))
@@ -2303,7 +2322,7 @@ def find_cheaper_recent_sale(true_min_price, recent_sales):
 # di ZenLock) che tokens.tokenPrices.card ACCETTA in realta' rarityTyped/sport/sportSeason/
 # inSeasonEligible -- get_recent_sale_history ora li legge e filtra via season_type (vedi sopra).
 # I due punti che usano questo gate (RECENT_SALE_GATE piu' sotto, sia percorso ALERT diretto che
-# "opportunita' di margine") pero' non passavano season_type -- mischiavano ancora vendite
+# "opportunita' di ") pero' non passavano season_type -- mischiavano ancora vendite
 # classic e in_season dello stesso giocatore in un gate che BLOCCA la notifica, lo stesso rischio
 # di mix segnalato dall'utente per ZenLock ("due mercati con valori anche 10x diversi"). Corretto
 # passando season_type=season_type in entrambi i punti (RECENT_SALE_GATE/THIN_MARKET_GATE ora
@@ -2339,7 +2358,7 @@ def count_cheaper_recent_sales(true_min_price, recent_sales):
 
 # FIX 17/07 (richiesta esplicita dell'utente, caso Issahaku Fatawu): "il giocatore ha appena 3
 # vendite in 21 giorni" -- con cosi' poche transazioni reali, il secondo prezzo che genera il
-# margine e' meno affidabile (basta un singolo annuncio isolato a determinarlo): non e' che il
+#  e' meno affidabile (basta un singolo annuncio isolato a determinarlo): non e' che il
 # prezzo sia sopravvalutato come nel caso Sengezer, e' che il mercato e' troppo sottile per
 # fidarsi del segnale. Soglia tarata esplicitamente sull'esempio dell'utente: MIN_SALES=4 in
 # WINDOW_DAYS=21 fa scattare l'avviso proprio sul caso "3 vendite in 21 giorni".
@@ -2349,7 +2368,7 @@ def count_cheaper_recent_sales(true_min_price, recent_sales):
 # esplicitamente di bloccare del tutto la notifica in questo caso, non solo segnalarlo: "non
 # notificare se ci sono state solo 3 transazioni reali negli ultimi 21 giorni". Il blocco vero e
 # proprio (thin_market_blocked) e' cablato in evaluate_player_offer, su entrambi i percorsi di
-# notifica (ALERT diretto e opportunita' di margine) -- l'avviso testuale qui sotto in
+# notifica (ALERT diretto e opportunita' di ) -- l'avviso testuale qui sotto in
 # build_sale_history_context resta com'era, viene comunque loggato prima del blocco per referenza.
 THIN_MARKET_MIN_SALES = int(os.environ.get('THIN_MARKET_MIN_SALES', '4'))
 THIN_MARKET_WINDOW_DAYS = int(os.environ.get('THIN_MARKET_WINDOW_DAYS', '21'))
@@ -2403,7 +2422,7 @@ def build_sale_history_context(recent_sales, cheaper_recent):
         log_line += (f" -- MERCATO SOTTILE: solo {recent_count} transazioni negli ultimi "
                      f"{THIN_MARKET_WINDOW_DAYS} giorni, il secondo prezzo e' meno affidabile")
         msg_extra += (f"📊 Mercato sottile: solo {recent_count} transazioni reali negli ultimi "
-                      f"{THIN_MARKET_WINDOW_DAYS} giorni -- il margine si basa su pochi dati.\n")
+                      f"{THIN_MARKET_WINDOW_DAYS} giorni -- il  si basa su pochi dati.\n")
     return log_line, msg_extra
 
 
@@ -2443,7 +2462,7 @@ def discover_token_price_type_field():
 # handle_offer_update in una funzione a se' stante, cosi' puo' essere richiamata anche dalla
 # coda dei casi da riverificare (process_pending_rechecks) e non solo da un evento WS live.
 # allow_requeue=False quando chiamata dalla riverifica stessa, per evitare di riaccodare
-# all'infinito uno stesso caso che continua a risultare "margine troppo vicino".
+# all'infinito uno stesso caso che continua a risultare " troppo vicino".
 def evaluate_player_offer(player_slug, player_name, season_type, season_name, price_eur,
                            card_slug, eth_rate, stats, allow_requeue=True,
                            instant_alert_just_sent=False):
@@ -2462,12 +2481,12 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # in 3m27s di ascolto), NON dobbiamo fidarci del prezzo grezzo dell'evento come se
         # fosse il prezzo minimo verificato -- e' esattamente cio' che la verifica live serve
         # ad evitare. Prima di questo fix, un'eccezione qui faceva silenziosamente ripiegare su
-        # price_eur come "true_min_price", bypassando tutte le protezioni sotto (margine minimo,
+        # price_eur come "true_min_price", bypassando tutte le protezioni sotto ( minimo,
         # calo sospetto, ecc.): confermato che la carta RealDoha da 3.42EUR su Frank Feller era
         # gia' in vendita da giorni, ma la notifica ha usato 4.20EUR (il prezzo grezzo
         # dell'evento) come se fosse il minimo. Ora, se il fetch fallisce, accodiamo il caso per
         # una riverifica alla prossima occasione (stessa coda pending_recheck usata per il caso
-        # "margine troppo vicino"), invece di notificare alla cieca o perdere il caso del tutto.
+        # " troppo vicino"), invece di notificare alla cieca o perdere il caso del tutto.
         if buckets is None:
             if allow_requeue:
                 log(f"{player_name} ({season_type}, {season_name}): verifica live fallita "
@@ -2534,11 +2553,11 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
         # dalla notifica veloce non verificata, send_instant_alert, che pero' richiede un floor
         # fresco ed e' un percorso separato/piu' rischioso): own_prices (i prezzi visti dalla
         # query, che NON includono questa carta essendo invisibile) diventano automaticamente i
-        # comparabili "altri annunci" per il calcolo del margine piu' sotto -- esattamente come
+        # comparabili "altri annunci" per il calcolo del  piu' sotto -- esattamente come
         # accadrebbe se la carta fosse stata visibile fin dall'inizio. La coda pending_recheck
         # per questo scenario specifico non serve piu' (nessuna attesa, nessun ciclo di
         # riverifiche): resta invariata solo per il caso, diverso, di un vero fallimento di rete
-        # della query (piu' sopra, buckets is None) e per il caso "margine troppo vicino, forse
+        # della query (piu' sopra, buckets is None) e per il caso " troppo vicino, forse
         # esiste un annuncio ANCORA piu' economico che non conosciamo affatto" (piu' sotto).
         if (price_eur < true_min_price and true_min_price > 0
                 and (not is_same_card or gap_relative > INVISIBILITY_GAP_TOLERANCE)):
@@ -2923,7 +2942,7 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                        if is_dubbio else "")
                     + f"\n👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈"
                 )
-                send_telegram_msg(msg_text)
+                                send_telegram_msg(msg_text, url=link)
         elif drop_percent >= DROP_THRESHOLD:
             log_decision(player_slug, player_name, season_type, season_name, "skip_dubbio_unconfirmed",
                          floor_price=floor, true_min_price=true_min_price, drop_percent=drop_percent,
@@ -3086,7 +3105,7 @@ def evaluate_player_offer(player_slug, player_name, season_type, season_name, pr
                                 f"prezzo e' gia' ampio -- puo' valere la pena controllare.\n\n"
                                 f"👉 <b><a href='{link}'>APRI SU SORARE</a></b> 👈"
                             )
-                            send_telegram_msg(msg_text)
+                                                        send_telegram_msg(msg_text, url=link)
                             set_last_margin_alert_price(player_slug, season_type, true_min_price)
 
         set_floor(player_slug, season_type, true_min_price)
