@@ -220,6 +220,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
             sport
             sportSeason { name }
             inSeasonEligible
+            coverageStatus
             anyPlayer { activeClub { domesticLeague { slug } } }
           }
         }
@@ -235,7 +236,14 @@ MAX_PAGES = 20
 
 def fetch_all_live_offers(player_slug):
     """Identica alla versione in track.py: pagina TUTTI gli annunci live di un giocatore
-    (il server tronca a ~50 per richiesta), escludendo i venditori blacklistati."""
+    (il server tronca a ~50 per richiesta). FIX 19/07 (richiesta esplicita utente, caso
+    Julien Celestine): i venditori blacklistati (es. Clem777) NON vengono piu' esclusi qui
+    -- le loro carte contano comunque per il vero minimo/secondo prezzo di mercato, altrimenti
+    il margine calcolato risulta gonfiato (visto dal vivo: un annuncio intermedio di Clem777
+    veniva "saltato", facendo sembrare il margine piu' alto di quanto fosse in realta').
+    L'esclusione dei blacklistati resta, ma solo al momento di DECIDERE se acquistare (vedi
+    evaluate_event): se il vero minimo risulta di un venditore blacklistato, il bot scarta il
+    caso invece di comprare da lui."""
     all_nodes = []
     cursor = None
     for _ in range(MAX_PAGES):
@@ -245,11 +253,7 @@ def fetch_all_live_offers(player_slug):
             break
         conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
         nodes = conn.get('nodes') or []
-        for node in nodes:
-            seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
-            if seller_slug in BLACKLISTED_SELLER_SLUGS:
-                continue
-            all_nodes.append(node)
+        all_nodes.extend(nodes)
         page_info = conn.get('pageInfo') or {}
         if not page_info.get('hasPreviousPage'):
             break
@@ -261,8 +265,10 @@ def fetch_all_live_offers(player_slug):
 
 def get_bucket_prices(player_slug, eth_rate):
     """Legge TUTTI gli annunci live in_season/classic del giocatore in un solo fetch, come
-    get_bucket_prices in track.py. Restituisce {'in_season': [(prezzo, card_slug), ...],
-    'classic': [(prezzo, card_slug), ...]}, entrambe ordinate per prezzo crescente."""
+    get_bucket_prices in track.py. Restituisce {'in_season': [(prezzo, card_slug, seller_slug), ...],
+    'classic': [(prezzo, card_slug, seller_slug), ...]}, entrambe ordinate per prezzo crescente.
+    seller_slug incluso (FIX 19/07) per poter distinguere, a valle, se il vero minimo e' di un
+    venditore blacklistato -- vedi nota in fetch_all_live_offers ed evaluate_event."""
     nodes = fetch_all_live_offers(player_slug)
     raw = {'in_season': [], 'classic': []}
     for node in nodes:
@@ -270,6 +276,7 @@ def get_bucket_prices(player_slug, eth_rate):
             continue
         if (node.get('receiverSide') or {}).get('anyCards'):
             continue  # scambio carta-per-carta, non una vendita in denaro
+        seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
         cards = (node.get('senderSide') or {}).get('anyCards') or []
         match = None
         for c in cards:
@@ -277,6 +284,8 @@ def get_bucket_prices(player_slug, eth_rate):
                 continue
             if c.get('sport') != 'FOOTBALL':
                 continue
+            if c.get('coverageStatus') == 'NOT_COVERED':
+                continue  # carta in un club non coperto da SO5, punti non conteggiati
             match = c
             break
         if not match:
@@ -285,7 +294,7 @@ def get_bucket_prices(player_slug, eth_rate):
         if price is None:
             continue
         bucket = 'in_season' if match.get('inSeasonEligible') else 'classic'
-        raw[bucket].append((price, match.get('slug')))
+        raw[bucket].append((price, match.get('slug'), seller_slug))
     for key in ('in_season', 'classic'):
         raw[key].sort(key=lambda p: p[0])
     return raw
@@ -563,7 +572,7 @@ def send_startup_msg():
 
 
 def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
-                    offer_id=None):
+                    offer_id=None, seller_slug=None):
     """Ritorna True se questo evento ha portato a un caso valido (avrebbe acquistato),
     False altrimenti -- usato dal listener per decidere se fermarsi."""
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
@@ -577,7 +586,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     if not prices:
         return False
 
-    true_min_price, true_min_card_slug = prices[0]
+    true_min_price, true_min_card_slug, true_min_seller_slug = prices[0]
 
     # Il prezzo dell'evento potrebbe non essere il minimo reale attuale (altri annunci gia'
     # piu' economici sullo stesso giocatore) -- criterio esplicito: valutiamo solo se la
@@ -591,19 +600,29 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             # basso in assoluto, ci fidiamo dell'evento invece di scartare.
             log(f"{player_name}: minimo query non aggiornato ({true_min_price:.2f}EUR), "
                 f"ma evento a {price_eur:.2f}EUR e' piu' basso -- procedo con l'evento")
-            true_min_price, true_min_card_slug = price_eur, card_slug
-            prices = [(price_eur, card_slug)] + [p for p in prices if p[1] != card_slug]
+            true_min_price, true_min_card_slug, true_min_seller_slug = price_eur, card_slug, seller_slug
+            prices = [(price_eur, card_slug, seller_slug)] + [p for p in prices if p[1] != card_slug]
         else:
             categoria = "in_season" if excluded_league else "in_season/classic"
             log(f"{player_name}: scarto -- annuncio a {price_eur:.2f}EUR non e' il minimo attuale "
                 f"{categoria} (minimo vero: {true_min_price:.2f}EUR)")
             return False
 
+    # FIX 19/07 (caso Julien Celestine): i venditori blacklistati (es. Clem777) CONTANO nel
+    # confronto prezzi (vedi get_bucket_prices/fetch_all_live_offers), ma non compriamo mai
+    # da loro. Se il vero minimo attuale risulta essere proprio un annuncio blacklistato,
+    # scartiamo il caso -- anche se sembrerebbe "il miglior prezzo", non e' comprabile secondo
+    # le regole dell'utente.
+    if true_min_seller_slug in BLACKLISTED_SELLER_SLUGS:
+        log(f"{player_name}: scarto -- il minimo attuale ({true_min_price:.2f}EUR) e' di un "
+            f"venditore blacklistato ({true_min_seller_slug}), non acquistabile")
+        return False
+
     if len(prices) < 2:
         log(f"{player_name}: scarto -- nessun secondo annuncio per confrontare il margine")
         return False
 
-    second_min_price, _ = prices[1]
+    second_min_price, _, _ = prices[1]
     if second_min_price <= 0:
         return False
 
@@ -652,6 +671,7 @@ subscription OnTokenOfferUpdated {
         anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
         sportSeason { name }
         inSeasonEligible
+        coverageStatus
       }
     }
     receiverSide {
@@ -750,6 +770,8 @@ def run_listener(eth_rate):
                 continue
             if not card.get('inSeasonEligible'):
                 continue  # SOLO in season
+            if card.get('coverageStatus') == 'NOT_COVERED':
+                continue  # club non coperto da SO5, punti non conteggiati -- inutile giocarla
 
             player = card.get('anyPlayer') or {}
             player_slug = player.get('slug')
@@ -761,7 +783,7 @@ def run_listener(eth_rate):
 
             stats["processed"] += 1
             found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
-                                    league_slug, offer_id)
+                                    league_slug, offer_id, seller_slug)
             if found:
                 stats["matches_found"] += 1
                 log(f"Casi trovati finora: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
