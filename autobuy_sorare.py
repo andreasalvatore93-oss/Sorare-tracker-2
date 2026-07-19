@@ -137,7 +137,8 @@ AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione, se non si verifica prima un caso
 # valido (il bot si ferma comunque al primo caso trovato).
-LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '900'))
+LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '3000'))
+LISTEN_SECONDS = min(3600, LISTEN_SECONDS)  # tetto massimo 1h, indipendentemente dall'input
 
 # FIX 19/07 (richiesta esplicita utente): per QUESTI 2 campionati il confronto in_season
 # resta quello attuale (SOLO in_season, nessun classic unito) -- per tutti gli altri
@@ -931,8 +932,12 @@ mutation AcceptOfferMutation($input: acceptOfferInput!, $sport: Sport) {
 
 def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
     """Ultimo passo del flusso di acquisto reale: completa DAVVERO l'operazione.
-    Fail-safe assoluto -- qualunque errore ritorna (False, messaggio_errore), MAI
-    un'eccezione non gestita, MAI un retry automatico."""
+    Fail-safe assoluto -- qualunque errore ritorna (False, categoria, messaggio_errore),
+    MAI un'eccezione non gestita, MAI un retry automatico. La categoria riusa
+    classify_prepare_accept_error (stessa logica gia' usata per prepare_accept_offer:
+    fondi_insufficienti/valuta_non_supportata/offerta_non_disponibile/sconosciuto) cosi'
+    l'utente capisce SUBITO dal log/notifica il tipo di problema, senza dover decifrare
+    il messaggio GraphQL grezzo."""
     variables = {
         "input": {
             "offerId": offer_id,
@@ -960,26 +965,37 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
         payload = (data.get('data') or {}).get('acceptOffer') or {}
         payload_errors = payload.get('errors') or []
         if root_errors or payload_errors:
-            all_errors = list(root_errors or []) + list(payload_errors or [])
-            return False, str(all_errors)
+            category, all_errors = classify_prepare_accept_error(root_errors, payload_errors)
+            log(f"[accept offer] fallita, categoria='{category}', errori={all_errors}")
+            return False, category, str(all_errors)
         if not payload.get('offer'):
-            return False, "risposta senza 'offer', esito incerto"
-        return True, None
+            log(f"[accept offer] risposta senza 'offer', esito incerto: {json.dumps(data)[:1000]}")
+            return False, 'esito_incerto', "risposta senza 'offer'"
+        log(f"[accept offer] successo, offer id={payload.get('offer', {}).get('id')}")
+        return True, None, None
     except Exception as e:
-        return False, f"eccezione: {e}"
+        log(f"[accept offer] eccezione: {e}")
+        return False, 'eccezione', str(e)
 
 
 def execute_live_purchase(offer_id, prepared):
     """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
     AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
     ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
-    altrimenti -- MAI retry, MAI tentativi alternativi, un solo tentativo secco."""
+    altrimenti -- MAI retry, MAI tentativi alternativi, un solo tentativo secco. Ogni
+    step logga il proprio esito (successo o fallimento) per poter capire SUBITO dai log
+    quale step specifico e' fallito, senza dover dedurlo dal messaggio finale."""
+    log(f"[acquisto live] avvio -- offer_id={offer_id}")
+
     if not SORARE_WALLET_PASSWORD:
+        log("[acquisto live] STOP: SORARE_WALLET_PASSWORD non impostata")
         return False, "SORARE_WALLET_PASSWORD non impostata"
 
     key_data = fetch_encrypted_private_key()
     if not key_data:
+        log("[acquisto live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
         return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
+    log("[acquisto live] step 1/3 OK: chiave cifrata recuperata")
 
     fingerprint = prepared.get('fingerprint')
     request = prepared.get('request') or {}
@@ -993,15 +1009,20 @@ def execute_live_purchase(offer_id, prepared):
         request,
     )
     if not signature:
+        log("[acquisto live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
         return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
+    log("[acquisto live] step 2/3 OK: firma generata")
 
     exchange_rate_id = get_exchange_rate_id()
     if not exchange_rate_id:
+        log("[acquisto live] STOP: exchange_rate_id non recuperato")
         return False, "impossibile recuperare exchange_rate_id per l'accept finale"
 
-    success, error = accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id)
+    success, category, error = accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id)
     if not success:
-        return False, f"AcceptOfferMutation fallita: {error}"
+        log(f"[acquisto live] STOP: step 3/3 fallito, categoria='{category}'")
+        return False, f"AcceptOfferMutation fallita [{category}]: {error}"
+    log("[acquisto live] step 3/3 OK: acquisto completato")
     return True, None
 
 
@@ -1045,8 +1066,13 @@ def send_would_have_bought_alert(player_name, player_slug, price_eur, second_pri
 
 def send_startup_msg():
     classic_msg = "\nModalita' CLASSIC attiva (tutti i campionati)" if CHECK_CLASSIC else ""
+    intestazione = (
+        "\U0001F916\u26A0\uFE0F <b>AutoBuy Sorare avviato -- ACQUISTO REALE AUTOMATICO ATTIVO</b>\n"
+        if AUTOBUY_LIVE_MODE else
+        "\U0001F916 <b>AutoBuy Sorare avviato</b> (solo diagnostica, nessun acquisto reale)\n"
+    )
     send_telegram_msg(
-        f"\U0001F916 <b>AutoBuy Sorare avviato</b> (solo diagnostica, nessun acquisto reale)\n"
+        f"{intestazione}"
         f"Fascia prezzo: {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR\n"
         f"Margine richiesto: {AUTOBUY_MARGIN_FRACTION:.0%}\n"
         f"Ascolto per {LISTEN_SECONDS}s o fino al primo caso valido.{classic_msg}"
@@ -1223,7 +1249,15 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     purchase_completed = False
     purchase_error = None
     if AUTOBUY_LIVE_MODE and offer_id and prepared:
-        purchase_completed, purchase_error = execute_live_purchase(offer_id, prepared)
+        try:
+            purchase_completed, purchase_error = execute_live_purchase(offer_id, prepared)
+        except Exception as e:
+            # Ultima rete di sicurezza: qualunque eccezione imprevista qui (bug non
+            # anticipato in uno degli step) NON deve far crashare l'intero bot ne'
+            # lasciare lo stato incerto senza notifica -- si logga e si notifica come
+            # fallimento, esattamente come ogni altro errore gestito.
+            purchase_error = f"eccezione imprevista: {e}"
+            log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
         if purchase_completed:
             log(f"{player_name}: ACQUISTO COMPLETATO CON SUCCESSO")
             if player_slug:
@@ -1410,8 +1444,9 @@ def run_listener(eth_rate):
 def main():
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
-    log(f"AutoBuy Sorare (fase 1, solo diagnostica) -- fascia prezzo "
-        f"{AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
+    modalita = "\u26A0\uFE0F ACQUISTO REALE AUTOMATICO ATTIVO \u26A0\uFE0F" if AUTOBUY_LIVE_MODE else "solo diagnostica, nessun acquisto reale"
+    log(f"AutoBuy Sorare -- MODALITA': {modalita}")
+    log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
         f"margine richiesto {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: "
         f"{AUTOBUY_TARGET_MATCHES}")
     log(f"Giocatori in blacklist manuale ({len(BLACKLISTED_PLAYER_SLUGS)}): "
