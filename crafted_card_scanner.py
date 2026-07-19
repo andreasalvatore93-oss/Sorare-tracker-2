@@ -17,16 +17,23 @@ Flusso:
    minimo attuale, link alla carta -- e si FERMA (uno-shot per run).
 4. Se nessun match entro MAX_RUN_SECONDS (default 500), termina senza notifica.
 
-SCOPERTA SCHEMA (introspection disabilitata, come sempre in questo progetto si va per
-tentativi): non esiste un campo noto "craft" -- la scoperta avviene in due fasi al primo run,
-usando come banco di prova CRAFT_PROBE_CARD_SLUG (una carta DELL'UTENTE sicuramente creata:
-heung-min-son-2026-limited-364):
-  a) probe_creation_fields(): prova una lista di candidati di campo su anyCard (timestamp di
-     creazione + eventuale tipo/provenienza) e logga per ciascuno OK/ERRORE -- il primo
-     timestamp funzionante viene usato per la finestra delle 6 ore.
-  b) probe_player_cards_query(): prova varianti di query per elencare le carte Limited di un
-     giocatore (serve per il passo 2). Se nessuna funziona, il run termina con un log chiaro
-     su cosa e' stato provato, cosi' si itera sui log come per tutto il resto del progetto.
+SCOPERTA SCHEMA (AGGIORNATO 19/07): l'introspection GraphQL standard e' disabilitata, ma
+Sorare espone comunque lo schema completo su https://api.sorare.com/graphql/schema (scaricabile
+con un semplice curl) -- niente piu' probing alla cieca. Da li' si vede che:
+  - "createdAt" NON esiste su AnyCardInterface (da cui torna anyCard(slug)) ma ESISTE sul tipo
+    concreto Card (quello football), quindi va richiesto con un inline fragment
+    "... on Card { createdAt }". E' questo il campo timestamp di creazione/craft che usiamo.
+  - Non esiste nello schema pubblico un campo esplicito tipo "craft"/"mintType"/"provenance":
+    Sorare non distingue via API una carta craftata da una vinta o rivelata da un pacchetto.
+    L'unico segnale aggiuntivo debole disponibile e' "pack" (se valorizzato, la carta e' quasi
+    certamente uscita da un pacchetto acquistato, quindi probabilmente NON craftata via essenze);
+    se e' null il caso craft/premio resta plausibile ma non e' una certezza.
+  a) probe_creation_fields(): prova la lista di candidati (timestamp di creazione + il debole
+     segnale "pack") su anyCard(CRAFT_PROBE_CARD_SLUG), con inline fragment dove serve, e logga
+     OK/ERRORE per ciascuno -- il primo timestamp funzionante viene usato per la finestra ore.
+  b) fetch_player_recent_limited_cards(): prova le varianti di query per elencare le carte
+     Limited di un giocatore (serve per il passo 2), inserendo l'inline fragment scoperto in (a)
+     per il timestamp. Se nessuna variante funziona, il run termina con un log chiaro.
 
 Blacklist manager: se il creatore della carta trovata e' blacklistato, il match viene saltato
 e si continua. Hardcoded: gli stessi 13 bot gia' hardcoded nel bundle scanner (SOLO quelli,
@@ -70,23 +77,37 @@ def log(msg):
     track.log(f"[craft-scanner] {msg}")
 
 
-# --- FASE A: scoperta campo timestamp/tipo di creazione su anyCard ---
-# Candidati timestamp (il primo che funziona vince). 'createdAt' e' GIA' noto NON esistere su
-# AnyCardInterface (errore reale visto in my_cards_profit.py) ma lo riproviamo comunque per
-# completezza in questo contesto diverso.
-CREATION_TS_CANDIDATES = ['mintedAt', 'craftedAt', 'forgedAt', 'issuedAt', 'bornAt',
-                          'createdAt', 'publicMintedAt', 'assetCreatedAt']
-# Candidati "tipo/provenienza" (facoltativi: se nessuno funziona, la finestra temporale basta
-# comunque -- una carta apparsa da poche ore e' comunque "nuova").
-CREATION_TYPE_CANDIDATES = ['mintType', 'creationType', 'provenance', 'crafted', 'isCrafted',
-                            'origin', 'cardEdition { name }']
+# --- FASE A: campo timestamp/segnale di creazione su anyCard ---
+# Candidati come coppie (chiave_nella_risposta, frammento_query). Il frammento va inserito
+# dentro "anyCard(slug: $slug) { ... }" cosi' com'e'; per i campi che esistono solo sul tipo
+# concreto Card (football) serve l'inline fragment "... on Card { campo }" -- GraphQL li fonde
+# comunque allo stesso livello nella risposta JSON, quindi la chiave resta piatta.
+# 'createdAt' e' CONFERMATO dallo schema pubblico (api.sorare.com/graphql/schema): esiste su
+# Card, non su AnyCardInterface. Lo mettiamo per primo; gli altri restano come fallback nel
+# caso lo schema cambi o la carta di prova sia di un altro sport (baseball/NBA hanno altri tipi
+# concreti con probabilmente lo stesso campo).
+CREATION_TS_CANDIDATES = [
+    ('createdAt', '... on Card { createdAt }'),
+    ('createdAt', '... on BaseballCard { createdAt }'),
+    ('mintedAt', 'mintedAt'),
+    ('bornAt', 'bornAt'),
+]
+# Nessun campo "tipo/provenienza" esplicito esiste nello schema pubblico (niente mintType,
+# isCrafted, provenance...). L'unico segnale debole disponibile e' "pack": se valorizzato la
+# carta viene quasi certamente da un pacchetto acquistato (quindi probabilmente NON craft).
+# Non e' una distinzione certa -- va trattato solo come indizio informativo nel log/messaggio.
+CREATION_TYPE_CANDIDATES = [
+    ('pack', '... on Card { pack { slug } }'),
+]
 
-_creation_ts_field = None    # None = non ancora scoperto, '' = nessuno funziona
+_creation_ts_field = None       # None = non ancora scoperto, '' = nessuno funziona
+_creation_ts_fragment = None    # frammento query corrispondente al campo scoperto
 _creation_type_field = None
+_creation_type_fragment = None
 
 
-def _probe_single_field(field_expr):
-    """Prova un singolo campo su anyCard(CRAFT_PROBE_CARD_SLUG). Ritorna (ok, valore)."""
+def _probe_single_field(key, field_expr):
+    """Prova un singolo campo/frammento su anyCard(CRAFT_PROBE_CARD_SLUG). Ritorna (ok, valore)."""
     query = """
     query ProbeCraftField($slug: String!) {
       anyCard(slug: $slug) { %s }
@@ -103,23 +124,24 @@ def _probe_single_field(field_expr):
         log(f"probe '{field_expr}': ERRORE -- {first_err}")
         return False, None
     card = (data.get('data') or {}).get('anyCard') or {}
-    key = field_expr.split(' ')[0].split('{')[0]
     value = card.get(key)
     log(f"probe '{field_expr}': OK, valore = {value!r}")
     return True, value
 
 
 def probe_creation_fields():
-    """Scopre (una volta per run) quale campo timestamp/tipo esiste su anyCard. Ritorna True se
-    almeno un timestamp funziona (indispensabile per la finestra delle 6 ore)."""
-    global _creation_ts_field, _creation_type_field
-    log(f"scoperta campi creazione sulla carta di prova {CRAFT_PROBE_CARD_SLUG} "
+    """Scopre (una volta per run) quale campo timestamp/segnale esiste su anyCard. Ritorna True
+    se almeno un timestamp funziona (indispensabile per la finestra delle 6 ore)."""
+    global _creation_ts_field, _creation_ts_fragment, _creation_type_field, _creation_type_fragment
+    log(f"verifica campi creazione sulla carta di prova {CRAFT_PROBE_CARD_SLUG} "
         f"(sicuramente creata)...")
-    for cand in CREATION_TS_CANDIDATES:
-        ok, value = _probe_single_field(cand)
+    for key, frag in CREATION_TS_CANDIDATES:
+        ok, value = _probe_single_field(key, frag)
         if ok and value:
-            _creation_ts_field = cand
-            log(f">>> campo timestamp di creazione: '{cand}' (valore sulla carta di prova: {value})")
+            _creation_ts_field = key
+            _creation_ts_fragment = frag
+            log(f">>> campo timestamp di creazione: '{key}' via '{frag}' "
+                f"(valore sulla carta di prova: {value})")
             break
     if not _creation_ts_field:
         _creation_ts_field = ''
@@ -127,38 +149,59 @@ def probe_creation_fields():
             "finestra delle 6 ore. Prossimi candidati da provare a mano nei log sopra "
             "(guarda i suggerimenti 'Did you mean' negli errori). Interrompo il run.")
         return False
-    for cand in CREATION_TYPE_CANDIDATES:
-        ok, value = _probe_single_field(cand)
+    for key, frag in CREATION_TYPE_CANDIDATES:
+        ok, value = _probe_single_field(key, frag)
         if ok and value is not None:
-            _creation_type_field = cand
-            log(f">>> campo tipo/provenienza: '{cand}' (valore: {value!r}) -- verra' loggato "
-                f"per ogni match, utile per distinguere craft da premio")
+            _creation_type_field = key
+            _creation_type_fragment = frag
+            log(f">>> segnale provenienza: '{key}' (valore: {value!r}) -- verra' loggato per "
+                f"ogni match; NON e' una certezza di craft, solo un indizio")
             break
     if not _creation_type_field:
         _creation_type_field = ''
-        log(">>> nessun campo tipo/provenienza trovato -- si va di sola finestra temporale "
-            "(comunque sufficiente: una stampa apparsa da poche ore e' 'nuova' a prescindere)")
+        log(">>> nessun segnale di provenienza aggiuntivo trovato -- si va di sola finestra "
+            "temporale (comunque sufficiente: una stampa apparsa da poche ore e' 'nuova' a "
+            "prescindere)")
     return True
 
 
 # --- FASE B: scoperta query "carte di un giocatore" ---
 # Varianti candidate per elencare le stampe Limited di un giocatore (serve slug + timestamp +
-# proprietario). {ts} viene sostituito col campo timestamp scoperto in fase A.
+# proprietario). {ts_frag} e {type_frag} vengono sostituiti coi frammenti scoperti in fase A
+# (es. "... on Card { createdAt }"), NON col solo nome del campo -- altrimenti createdAt
+# richiesto piatto su AnyCardInterface fallisce sempre, come nella versione precedente.
+# "anyPlayer.anyCards" e' la variante CONFERMATA dallo schema pubblico (AnyPlayerInterface ha
+# davvero un campo anyCards con questa firma). Le altre restano come fallback documentati ma
+# non risultano nello schema scaricato: se falliscono, va bene cosi', e' il comportamento atteso.
 PLAYER_CARDS_QUERY_CANDIDATES = [
-    ("anyPlayer.cards", """
-     query PlayerCards($slug: String!) {
-       anyPlayer(slug: $slug) {
-         cards(rarities: [limited], first: 40) {
-           nodes { slug {ts} inSeasonEligible sportSeason { name } user { slug } }
-         }
-       }
-     }
-     """),
     ("anyPlayer.anyCards", """
      query PlayerCards($slug: String!) {
        anyPlayer(slug: $slug) {
          anyCards(rarities: [limited], first: 40) {
-           nodes { slug {ts} inSeasonEligible sportSeason { name } user { slug } }
+           nodes {
+             slug
+             inSeasonEligible
+             sportSeason { name }
+             user { slug }
+             {ts_frag}
+             {type_frag}
+           }
+         }
+       }
+     }
+     """),
+    ("anyPlayer.cards", """
+     query PlayerCards($slug: String!) {
+       anyPlayer(slug: $slug) {
+         cards(rarities: [limited], first: 40) {
+           nodes {
+             slug
+             inSeasonEligible
+             sportSeason { name }
+             user { slug }
+             {ts_frag}
+             {type_frag}
+           }
          }
        }
      }
@@ -168,7 +211,14 @@ PLAYER_CARDS_QUERY_CANDIDATES = [
        football {
          player(slug: $slug) {
            cards(rarities: [limited], first: 40) {
-             nodes { slug {ts} inSeasonEligible sportSeason { name } user { slug } }
+             nodes {
+               slug
+               inSeasonEligible
+               sportSeason { name }
+               user { slug }
+               {ts_frag}
+               {type_frag}
+             }
            }
          }
        }
@@ -198,7 +248,8 @@ def fetch_player_recent_limited_cards(player_slug):
     variants = ([v for v in PLAYER_CARDS_QUERY_CANDIDATES if v[0] == _player_cards_variant]
                 if _player_cards_variant else PLAYER_CARDS_QUERY_CANDIDATES)
     for variant, query_tpl in variants:
-        query = query_tpl.replace('{ts}', _creation_ts_field)
+        query = query_tpl.replace('{ts_frag}', _creation_ts_fragment or '')
+        query = query.replace('{type_frag}', _creation_type_fragment or '')
         try:
             data = track.graphql_query(query, {"slug": player_slug})
         except Exception as e:
@@ -324,8 +375,10 @@ def handle_event(offer, eth_rate, stats):
         card_slug = node.get('slug')
         type_info = ''
         if _creation_type_field:
-            type_key = _creation_type_field.split(' ')[0].split('{')[0]
-            type_info = f" [{type_key}: {node.get(type_key)!r}]"
+            type_value = node.get(_creation_type_field)
+            # 'pack' e' solo un indizio debole (se valorizzato, probabile pacchetto acquistato
+            # e NON craft) -- lo segnaliamo come tale, non come certezza.
+            type_info = f" [{_creation_type_field}: {type_value!r}, indizio non certo]"
         link = (f"https://sorare.com/it/football/market/shop/manager-sales/"
                 f"{player_slug}/limited?card={card_slug}")
         log(f"MATCH! {player_name}: {card_slug} creata {hours_ago:.1f}h fa da "
