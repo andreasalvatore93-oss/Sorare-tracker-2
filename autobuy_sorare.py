@@ -378,7 +378,42 @@ mutation PrepareAcceptOfferMutation($input: prepareAcceptOfferInput!) {
 """
 
 
-def prepare_accept_offer(offer_id):
+def classify_prepare_accept_error(root_errors, payload_errors):
+    """Classifica gli errori di PrepareAcceptOfferMutation/AcceptOfferMutation in categorie
+    note, per poter loggare/notificare in modo chiaro E per dare a fase 2 (automazione
+    completa) un segnale univoco su cosa e' successo. Finche' non osserviamo dal vivo i
+    messaggi esatti per fondi insufficienti / valuta non supportata / offerta scaduta,
+    questa funzione e' VOLUTAMENTE conservativa: qualunque errore non riconosciuto finisce
+    in 'sconosciuto', mai in una categoria che potrebbe indurre un retry o un tentativo
+    alternativo automatico. Principio fisso per fase 2: ogni categoria = STOP, mai retry.
+    Ritorna (category, raw_errors) dove category e' una delle stringhe:
+    'fondi_insufficienti', 'valuta_non_supportata', 'offerta_non_disponibile',
+    'nessun_errore', 'sconosciuto'."""
+    all_errors = list(root_errors or []) + list(payload_errors or [])
+    if not all_errors:
+        return 'nessun_errore', all_errors
+
+    combined_text = ' '.join(
+        str(e.get('message', '')) + ' ' + str(e.get('extensions', {}).get('code', ''))
+        for e in all_errors if isinstance(e, dict)
+    ).lower()
+
+    # Parole chiave PROVVISORIE (da confermare/affinare al primo caso reale osservato) --
+    # non togliamo mai un errore dalla categoria 'sconosciuto' solo per somiglianza vaga.
+    if any(kw in combined_text for kw in
+           ('insufficient', 'not_enough', 'balance', 'fondi', 'saldo')):
+        return 'fondi_insufficienti', all_errors
+    if any(kw in combined_text for kw in
+           ('currency', 'payment_method', 'unsupported', 'valuta')):
+        return 'valuta_non_supportata', all_errors
+    if any(kw in combined_text for kw in
+           ('not_found', 'expired', 'already', 'sold', 'unavailable', 'not_available')):
+        return 'offerta_non_disponibile', all_errors
+
+    return 'sconosciuto', all_errors
+
+
+
     """FASE 2 (prima meta'): 'prenota'/valida l'offerta lato server chiamando la stessa
     PrepareAcceptOfferMutation usata dal sito quando l'utente clicca 'Acquista', PRIMA
     ancora che l'utente clicchi -- riduce la finestra in cui un altro manager potrebbe
@@ -408,26 +443,21 @@ def prepare_accept_offer(offer_id):
     }
     try:
         data = graphql_query(PREPARE_ACCEPT_OFFER_MUTATION, variables)
-        # DIAGNOSTICA: logghiamo SEMPRE la risposta grezza (troncata) finche' non
-        # capiamo perche' authorizations torna vuota -- gli errori GraphQL "root"
-        # (es. NOT_AUTHENTICATED, PERMISSION_DENIED, campo non riconosciuto) finiscono
-        # in data['errors'] a livello radice, NON dentro prepareAcceptOffer.errors, e
-        # finora venivano ignorati silenziosamente.
         root_errors = data.get('errors')
-        if root_errors:
-            log(f"[prepare accept] ERRORI GRAPHQL ROOT: {root_errors}")
-            return None
-        log(f"[prepare accept] risposta grezza: {json.dumps(data)[:1500]}")
         payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
-        errors = payload.get('errors') or []
-        if errors:
-            log(f"[prepare accept] errori da Sorare: {errors}")
+        payload_errors = payload.get('errors') or []
+
+        if root_errors or payload_errors:
+            category, all_errors = classify_prepare_accept_error(root_errors, payload_errors)
+            log(f"[prepare accept] fallita, categoria='{category}', errori={all_errors}")
             return None
+
+        log(f"[prepare accept] risposta grezza: {json.dumps(data)[:1500]}")
         primary_offer = payload.get('primaryOffer') or {}
         log(f"[prepare accept] primaryOffer={primary_offer}")
         auths = payload.get('authorizations') or []
         if not auths:
-            log("[prepare accept] nessuna authorization restituita")
+            log("[prepare accept] nessuna authorization restituita, categoria='sconosciuto'")
             return None
         # Restituiamo fingerprint + request (con __typename incluso) -- servono ENTRAMBI a
         # sign_authorization_via_node/signAuthorizationRequest quando si attivera' la firma
