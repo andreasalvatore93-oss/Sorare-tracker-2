@@ -419,7 +419,7 @@ def classify_prepare_accept_error(root_errors, payload_errors):
     return 'sconosciuto', all_errors
 
 
-
+def prepare_accept_offer(offer_id):
     """FASE 2 (prima meta'): 'prenota'/valida l'offerta lato server chiamando la stessa
     PrepareAcceptOfferMutation usata dal sito quando l'utente clicca 'Acquista', PRIMA
     ancora che l'utente clicchi -- riduce la finestra in cui un altro manager potrebbe
