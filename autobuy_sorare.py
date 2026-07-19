@@ -58,6 +58,21 @@ AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.15'
 # valido (il bot si ferma comunque al primo caso trovato).
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '250'))
 
+# FIX 19/07 (richiesta esplicita utente): per QUESTI 3 campionati il confronto in_season
+# resta quello attuale (SOLO in_season, nessun classic unito) -- per tutti gli altri
+# campionati il classic viene invece trattato come "un ulteriore in_season" nel calcolo del
+# vero minimo/secondo prezzo. NOTA: gli slug qui sotto sono il nostro miglior tentativo
+# (schema Sorare pubblico non documenta gli slug esatti delle leghe) -- la diagnostica
+# [diagnostica lega] in log stampa league_slug REALE visto sul mercato per ogni evento
+# valutato: verificare i primi casi MLS/K League/J League nei log e correggere qui gli
+# slug se non coincidono con quanto stampato.
+EXCLUDED_LEAGUE_SLUGS = {'mls', 'k-league', 'j-league'}
+
+# Diagnostica: se attiva, logga info aggiuntive sul confronto in_season/classic per ogni
+# giocatore valutato (lega rilevata, quanti annunci classic trovati, ecc.) -- utile solo
+# per verificare che la nuova logica scatti davvero come previsto, di default spenta.
+AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+
 _FIAT_RATE_CACHE = {}
 
 
@@ -201,6 +216,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
             sport
             sportSeason { name }
             inSeasonEligible
+            anyPlayer { activeClub { domesticLeague { slug } } }
           }
         }
       }
@@ -239,13 +255,12 @@ def fetch_all_live_offers(player_slug):
     return all_nodes
 
 
-def get_in_season_prices(player_slug, eth_rate):
-    """A differenza di get_bucket_prices in track.py (che restituisce ENTRAMBI i bucket
-    in_season/classic), qui ci interessa SOLO in_season -- l'AutoBuy ignora le carte
-    Classic per criterio esplicito dell'utente. Restituisce una lista (prezzo, card_slug)
-    ordinata crescente, oppure lista vuota se non ci sono annunci validi."""
+def get_bucket_prices(player_slug, eth_rate):
+    """Legge TUTTI gli annunci live in_season/classic del giocatore in un solo fetch, come
+    get_bucket_prices in track.py. Restituisce {'in_season': [(prezzo, card_slug), ...],
+    'classic': [(prezzo, card_slug), ...]}, entrambe ordinate per prezzo crescente."""
     nodes = fetch_all_live_offers(player_slug)
-    prices = []
+    raw = {'in_season': [], 'classic': []}
     for node in nodes:
         if node.get('status') != 'opened':
             continue
@@ -258,8 +273,6 @@ def get_in_season_prices(player_slug, eth_rate):
                 continue
             if c.get('sport') != 'FOOTBALL':
                 continue
-            if not c.get('inSeasonEligible'):
-                continue  # SOLO in season, criterio esplicito AutoBuy
             match = c
             break
         if not match:
@@ -267,9 +280,41 @@ def get_in_season_prices(player_slug, eth_rate):
         price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
         if price is None:
             continue
-        prices.append((price, match.get('slug')))
-    prices.sort(key=lambda p: p[0])
-    return prices
+        bucket = 'in_season' if match.get('inSeasonEligible') else 'classic'
+        raw[bucket].append((price, match.get('slug')))
+    for key in ('in_season', 'classic'):
+        raw[key].sort(key=lambda p: p[0])
+    return raw
+
+
+def is_asia_americas_excluded_league(league_slug):
+    """I 3 campionati (MLS, K League, J League) per cui il confronto con il classic va
+    escluso -- restano solo con la logica in_season pura gia' in produzione. Vedi nota
+    nell'area di memoria del progetto: motivazione non tecnica, richiesta esplicita
+    dell'utente. Se league_slug e' None/sconosciuto, NON viene considerato escluso (quindi
+    per sicurezza si applica comunque il confronto con classic, il caso piu' comune)."""
+    return league_slug in EXCLUDED_LEAGUE_SLUGS
+
+
+def get_in_season_prices(player_slug, eth_rate, league_slug):
+    """Restituisce (prices_da_confrontare, is_excluded_league) dove prices_da_confrontare
+    e' una lista (prezzo, card_slug) ordinata crescente:
+    - Per MLS/K League/J League (is_excluded_league=True): SOLO in_season, comportamento
+      identico a prima del confronto con classic (nessuna modifica di logica per questi 3).
+    - Per tutti gli altri campionati: in_season + classic UNITI in un'unica lista ordinata,
+      trattando il classic come "un ulteriore annuncio in_season" ai fini del vero minimo/
+      secondo prezzo -- criterio esplicito richiesto dall'utente."""
+    buckets = get_bucket_prices(player_slug, eth_rate)
+    excluded = is_asia_americas_excluded_league(league_slug)
+    if excluded:
+        return buckets['in_season'], True
+    combined = buckets['in_season'] + buckets['classic']
+    combined.sort(key=lambda p: p[0])
+    if AUTOBUY_DIAGNOSTIC and buckets['classic']:
+        log(f"[diagnostica lega] player={player_slug} league_slug={league_slug!r} -- "
+            f"unito in_season ({len(buckets['in_season'])} annunci) con classic "
+            f"({len(buckets['classic'])} annunci) per il confronto sul vero minimo")
+    return combined, False
 
 
 def send_telegram_msg(message):
@@ -290,12 +335,14 @@ def build_card_link(player_slug, card_slug):
     return f"{base_link}?card={card_slug}" if card_slug else base_link
 
 
-def send_would_have_bought_alert(player_name, player_slug, price_eur, second_price, margin_percent, card_slug):
+def send_would_have_bought_alert(player_name, player_slug, price_eur, second_price, margin_percent,
+                                  card_slug, excluded_league):
     link = build_card_link(player_slug, card_slug)
+    categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
     msg_text = (
         f"\U0001F916\U0001F4B0 <b>AutoBuy Sorare -- LO AVREI ACQUISTATO</b>\n\n"
         f"Giocatore: {player_name}\n"
-        f"Categoria: In Season\n"
+        f"Categoria: {categoria}\n"
         f"Prezzo minimo attuale: {price_eur:.2f}EUR\n"
         f"Secondo prezzo attuale: {second_price:.2f}EUR (margine {margin_percent:.1%}, "
         f"soglia richiesta {AUTOBUY_MARGIN_FRACTION:.0%})\n\n"
@@ -314,13 +361,17 @@ def send_startup_msg():
     )
 
 
-def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate):
+def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None):
     """Ritorna True se questo evento ha portato a un caso valido (avrebbe acquistato),
     False altrimenti -- usato dal listener per decidere se fermarsi."""
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
         return False
 
-    prices = get_in_season_prices(player_slug, eth_rate)
+    prices, excluded_league = get_in_season_prices(player_slug, eth_rate, league_slug)
+    if AUTOBUY_DIAGNOSTIC:
+        modalita = "SOLO in_season (lega esclusa)" if excluded_league else "in_season + classic uniti"
+        log(f"[diagnostica lega] {player_name}: league_slug={league_slug!r} -> {modalita}, "
+            f"{len(prices)} annunci totali nel confronto")
     if not prices:
         return False
 
@@ -328,7 +379,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate):
 
     # Il prezzo dell'evento potrebbe non essere il minimo reale attuale (altri annunci gia'
     # piu' economici sullo stesso giocatore) -- criterio esplicito: valutiamo solo se la
-    # carta appena spuntata E' il minimo attuale sul mercato in_season.
+    # carta appena spuntata E' il minimo attuale sul mercato in_season (o in_season+classic
+    # unito, a seconda della lega -- vedi get_in_season_prices).
     if true_min_card_slug != card_slug:
         if price_eur < true_min_price:
             # Fallback (no retry, no attese -- critico per lo sniping): l'evento WebSocket
@@ -340,12 +392,13 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate):
             true_min_price, true_min_card_slug = price_eur, card_slug
             prices = [(price_eur, card_slug)] + [p for p in prices if p[1] != card_slug]
         else:
+            categoria = "in_season" if excluded_league else "in_season/classic"
             log(f"{player_name}: scarto -- annuncio a {price_eur:.2f}EUR non e' il minimo attuale "
-                f"in_season (minimo vero: {true_min_price:.2f}EUR)")
+                f"{categoria} (minimo vero: {true_min_price:.2f}EUR)")
             return False
 
     if len(prices) < 2:
-        log(f"{player_name}: scarto -- nessun secondo annuncio in_season per confrontare il margine")
+        log(f"{player_name}: scarto -- nessun secondo annuncio per confrontare il margine")
         return False
 
     second_min_price, _ = prices[1]
@@ -362,7 +415,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate):
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
     send_would_have_bought_alert(player_name, player_slug, true_min_price, second_min_price,
-                                  margin_percent, card_slug)
+                                  margin_percent, card_slug, excluded_league)
     return True
 
 
@@ -378,7 +431,7 @@ subscription OnTokenOfferUpdated {
         slug
         rarityTyped
         sport
-        anyPlayer { slug displayName }
+        anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
         sportSeason { name }
         inSeasonEligible
       }
@@ -484,11 +537,12 @@ def run_listener(eth_rate):
             player_slug = player.get('slug')
             player_name = player.get('displayName', player_slug)
             card_slug = card.get('slug')
+            league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
             if not player_slug:
                 continue
 
             stats["processed"] += 1
-            found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate)
+            found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug)
             if found:
                 stats["found_match"] = True
                 ws.close()
