@@ -15,9 +15,9 @@ on:
         required: false
         default: "20"
       listen_seconds:
-        description: "Secondi di ascolto massimi, max 3600 (1h) -- il bot si ferma comunque prima se raggiunge target_matches"
+        description: "Secondi di ascolto massimi, max 18000 (5h) -- il bot si ferma comunque prima se raggiunge target_matches"
         required: false
-        default: "3000"
+        default: "18000"
       target_matches:
         description: "Quanti casi 'lo avrei acquistato' notificare prima di fermarsi (1-10)"
         required: false
@@ -60,7 +60,7 @@ concurrency:
 jobs:
   autobuy:
     runs-on: ubuntu-latest
-    timeout-minutes: 65
+    timeout-minutes: 340
     steps:
       - uses: actions/checkout@v4
         with:
@@ -158,7 +158,7 @@ jobs:
           AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
           AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
           MARGIN_PERCENT_INPUT: ${{ github.event.inputs.margin_percent || '20' }}
-          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '3000' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '5' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
