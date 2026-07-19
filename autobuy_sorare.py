@@ -66,6 +66,12 @@ LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '250'))
 # K League='k-league-1'.
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
+# Quanti casi "lo avrei acquistato" notificare prima di fermarsi definitivamente (1-10).
+# Utile per la fase di test manuale: si lascia girare finche' non arrivano N notifiche,
+# senza dover riavviare il workflow a mano ogni volta.
+AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '1'))
+AUTOBUY_TARGET_MATCHES = max(1, min(10, AUTOBUY_TARGET_MATCHES))
+
 # Diagnostica: se attiva, logga info aggiuntive sul confronto in_season/classic per ogni
 # giocatore valutato (lega rilevata, quanti annunci classic trovati, ecc.) -- utile solo
 # per verificare che la nuova logica scatti davvero come previsto, di default spenta.
@@ -666,7 +672,7 @@ def run_listener(eth_rate):
         "action": "execute",
     }
 
-    stats = {"received": 0, "processed": 0, "found_match": False}
+    stats = {"received": 0, "processed": 0, "matches_found": 0}
     seen_offer_status = set()
 
     def on_open(ws):
@@ -757,8 +763,10 @@ def run_listener(eth_rate):
             found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
                                     league_slug, offer_id)
             if found:
-                stats["found_match"] = True
-                ws.close()
+                stats["matches_found"] += 1
+                log(f"Casi trovati finora: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
+                if stats["matches_found"] >= AUTOBUY_TARGET_MATCHES:
+                    ws.close()
 
     def on_error(ws, error):
         log(f"Errore WebSocket: {error}")
@@ -766,7 +774,7 @@ def run_listener(eth_rate):
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). Eventi ricevuti: "
             f"{stats['received']}, carte in season elaborate: {stats['processed']}, "
-            f"caso valido trovato: {stats['found_match']}")
+            f"casi validi trovati: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
 
     ws = websocket.WebSocketApp(
         WS_URL,
@@ -784,7 +792,7 @@ def run_listener(eth_rate):
     ws.run_forever(ping_interval=60, ping_timeout=45)
     timer.cancel()
 
-    return stats["found_match"]
+    return stats["matches_found"]
 
 
 def main():
@@ -792,13 +800,16 @@ def main():
     log(f"Tasso ETH/EUR: {eth_rate}")
     log(f"AutoBuy Sorare (fase 1, solo diagnostica) -- fascia prezzo "
         f"{AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
-        f"margine richiesto {AUTOBUY_MARGIN_FRACTION:.0%}")
+        f"margine richiesto {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: "
+        f"{AUTOBUY_TARGET_MATCHES}")
     send_startup_msg()
-    found = run_listener(eth_rate)
-    if found:
-        log("Caso valido trovato e notificato -- esecuzione terminata.")
+    matches_found = run_listener(eth_rate)
+    if matches_found >= AUTOBUY_TARGET_MATCHES:
+        log(f"Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati e "
+            f"notificati -- esecuzione terminata.")
     else:
-        log("Nessun caso valido trovato entro il tempo di ascolto -- esecuzione terminata.")
+        log(f"Tempo di ascolto scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi "
+            f"trovati -- esecuzione terminata.")
 
 
 if __name__ == "__main__":
