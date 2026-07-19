@@ -20,20 +20,9 @@ on:
         required: false
         default: "20"
       competition:
-        description: "Campionato specifico da cercare (vuoto = tutti)"
+        description: "Campionati da cercare, sigle separate da virgola (vuoto = tutti). Valide: mls, k-league, jupiler-pro-league, eredivisie, ligue-1, bundesliga, j-league, liga-spagnola. Es: mls,k-league"
         required: false
-        type: choice
         default: ""
-        options:
-          - ""
-          - mls
-          - k-league
-          - jupiler-pro-league
-          - eredivisie
-          - ligue-1
-          - bundesliga
-          - j-league
-          - liga-spagnola
       blacklist_managers:
         description: "Manager da bloccare in aggiunta agli hardcoded (lista slug separati da virgola): se il match appartiene a loro viene skippato"
         required: false
