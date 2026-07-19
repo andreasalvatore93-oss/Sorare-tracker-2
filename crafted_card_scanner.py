@@ -28,11 +28,14 @@ con un semplice curl) -- niente piu' probing alla cieca. Da li' si vede che:
     L'unico segnale aggiuntivo debole disponibile e' "pack" (se valorizzato, la carta e' quasi
     certamente uscita da un pacchetto acquistato, quindi probabilmente NON craftata via essenze);
     se e' null il caso craft/premio resta plausibile ma non e' una certezza.
-  - CAMPIONATO SINGOLO OPZIONALE (aggiunto 19/07): env CRAFT_COMPETITION, vuoto di default
-    (cerca in tutti i campionati). Se valorizzato con una delle sigle comode in
+  - CAMPIONATO/I OPZIONALI (aggiornato 19/07): env CRAFT_COMPETITION, vuoto di default (cerca
+    in tutti i campionati). Accetta una o piu' sigle separate da virgola tra quelle in
     CRAFT_COMPETITION_CHOICES (mls, k-league, jupiler-pro-league, eredivisie, ligue-1,
-    bundesliga, j-league, liga-spagnola) o con lo slug Sorare diretto, filtra lato server con
-    l'argomento "inActiveCompetitions" di anyCards/cards.
+    bundesliga, j-league, liga-spagnola) -- o lo slug Sorare diretto -- e filtra lato server
+    con l'argomento "inActiveCompetitions" di anyCards/cards. Es. "mls,k-league" cerca in
+    entrambi. NOTA: GitHub Actions non supporta un dropdown a selezione multipla in
+    workflow_dispatch, quindi nel workflow questo e' un campo testo libero (non un menu a
+    tendina "choice"), dove si scrivono le sigle separate da virgola.
   - CRAFT_MIN_PRICE_EUR ora e' 0.50 di default (prima 1).
   a) probe_creation_fields(): prova la lista di candidati (timestamp di creazione + il debole
      segnale "pack") su anyCard(CRAFT_PROBE_CARD_SLUG), con inline fragment dove serve, e logga
@@ -122,12 +125,15 @@ CRAFT_COMPETITION_CHOICES = {
     'liga-spagnola': 'laliga-es',
 }
 _raw_competition = os.environ.get('CRAFT_COMPETITION', '').strip().lower()
-CRAFT_COMPETITION_SLUG = (CRAFT_COMPETITION_CHOICES.get(_raw_competition, _raw_competition)
-                          if _raw_competition else None)
+_competition_tokens = [t.strip() for t in _raw_competition.split(',') if t.strip()]
+CRAFT_COMPETITION_SLUGS = [CRAFT_COMPETITION_CHOICES.get(t, t) for t in _competition_tokens]
 # Frammento da appendere dentro anyCards(...)/cards(...): vuoto se nessun campionato scelto
-# (cerca ovunque, comportamento di default), altrimenti filtra lato server su quel campionato.
-_CRAFT_LEAGUE_FILTER = (f', inActiveCompetitions: ["{CRAFT_COMPETITION_SLUG}"]'
-                        if CRAFT_COMPETITION_SLUG else '')
+# (cerca ovunque, comportamento di default), altrimenti filtra lato server su quei campionati
+# (uno o piu').
+_CRAFT_LEAGUE_FILTER = (
+    ', inActiveCompetitions: [' + ', '.join(f'"{s}"' for s in CRAFT_COMPETITION_SLUGS) + ']'
+    if CRAFT_COMPETITION_SLUGS else ''
+)
 
 _creation_ts_field = None       # None = non ancora scoperto, '' = nessuno funziona
 _creation_ts_fragment = None    # frammento query corrispondente al campo scoperto
@@ -431,8 +437,8 @@ def handle_event(offer, eth_rate, stats):
 def run_scanner():
     log(f"avvio -- fascia {CRAFT_MIN_PRICE_EUR:.2f}-{CRAFT_MAX_PRICE_EUR:.0f}EUR, finestra "
         f"creazione {CRAFT_WINDOW_HOURS:.0f}h, durata max {MAX_RUN_SECONDS:.0f}s, blacklist "
-        f"{len(CRAFT_BLACKLIST_MANAGERS)} manager, campionato: "
-        f"{CRAFT_COMPETITION_SLUG or 'tutti'}")
+        f"{len(CRAFT_BLACKLIST_MANAGERS)} manager, campionati: "
+        f"{CRAFT_COMPETITION_SLUGS or 'tutti'}")
     if not probe_creation_fields():
         return
     eth_rate = track.get_eth_rate()
