@@ -42,8 +42,9 @@ def graphql_query(query, variables=None):
 
 
 ENCRYPTED_PRIVATE_KEY_QUERY = """
-query EncryptedPrivateKeyQuery {
-  currentUser {
+mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
+  fetchEncryptedPrivateKey(input: $input) {
+    errors { message }
     sorarePrivateKey {
       encryptedPrivateKey
       iv
@@ -55,15 +56,22 @@ query EncryptedPrivateKeyQuery {
 
 
 def fetch_encrypted_private_key():
-    """Recupera encryptedPrivateKey/iv/salt -- campo gia' visto rispondere con successo
-    dentro una risposta piu' ampia di currentUser (JSON condiviso dall'utente in
-    precedenza), qui isolato in una query dedicata piu' leggera."""
-    data = graphql_query(ENCRYPTED_PRIVATE_KEY_QUERY)
-    log(f"[debug] risposta grezza query chiave cifrata: {json.dumps(data)}")
+    """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
+    -- nome e struttura CONFERMATI dal vivo (19/07) catturando via DevTools la vera
+    richiesta che il sito manda quando si sblocca il wallet durante un acquisto reale
+    (non e' una query su currentUser.sorarePrivateKey come ipotizzato inizialmente, era
+    quello il motivo per cui tornava sempre null: nome/percorso GraphQL sbagliato)."""
+    data = graphql_query(ENCRYPTED_PRIVATE_KEY_QUERY, {"input": {}})
+    log(f"[debug] risposta grezza mutation chiave cifrata: {json.dumps(data)}")
     if data.get('errors'):
-        log(f"ERRORE query chiave cifrata: {data['errors']}")
+        log(f"ERRORE mutation chiave cifrata: {data['errors']}")
         return None
-    key_data = ((data.get('data') or {}).get('currentUser') or {}).get('sorarePrivateKey')
+    payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
+    payload_errors = payload.get('errors') or []
+    if payload_errors:
+        log(f"ERRORE payload mutation chiave cifrata: {payload_errors}")
+        return None
+    key_data = payload.get('sorarePrivateKey')
     if not key_data:
         log("ERRORE: sorarePrivateKey assente nella risposta")
         return None
