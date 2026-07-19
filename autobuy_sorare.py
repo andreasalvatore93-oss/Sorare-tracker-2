@@ -37,6 +37,16 @@ CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
+# --- FASE 2 (automazione completa, 19/07) ---
+# Interruttore attivato via input workflow AUTOBUY_LIVE_MODE (env var, default "no" ->
+# fase 1, solo diagnostica come sempre). Se valorizzato a "si", il bot COMPRA DAVVERO
+# quando trova un caso valido: firma la mutation con la password del wallet (secret
+# SORARE_WALLET_PASSWORD) e chiama AcceptOfferMutation. Fail-safe assoluto in ogni punto
+# del flusso: qualunque errore (prenotazione, chiave cifrata, firma, accept) ferma SOLO
+# quel tentativo, notifica l'errore esatto, non fa mai retry ne' tentativi alternativi.
+AUTOBUY_LIVE_MODE = os.environ.get('AUTOBUY_LIVE_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
+
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
 
@@ -869,8 +879,135 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
     return output.get('signature')
 
 
+FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION = """
+mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
+  fetchEncryptedPrivateKey(input: $input) {
+    errors { message }
+    sorarePrivateKey {
+      encryptedPrivateKey
+      iv
+      salt
+    }
+  }
+}
+"""
+
+
+def fetch_encrypted_private_key():
+    """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
+    (nome/struttura CONFERMATI dal vivo il 19/07 catturando via DevTools la vera
+    richiesta che il sito manda durante un'offerta reale -- NON e' una query su
+    currentUser.sorarePrivateKey, quella torna sempre null). Ritorna il dict
+    {encryptedPrivateKey, iv, salt} o None se fallisce per qualunque motivo."""
+    try:
+        data = graphql_query(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
+        if data.get('errors'):
+            log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
+            return None
+        payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
+        payload_errors = payload.get('errors') or []
+        if payload_errors:
+            log(f"[chiave cifrata] errore payload: {payload_errors}")
+            return None
+        key_data = payload.get('sorarePrivateKey')
+        if not key_data:
+            log("[chiave cifrata] sorarePrivateKey assente nella risposta")
+            return None
+        return key_data
+    except Exception as e:
+        log(f"[chiave cifrata] eccezione: {e}")
+        return None
+
+
+ACCEPT_OFFER_MUTATION = """
+mutation AcceptOfferMutation($input: acceptOfferInput!, $sport: Sport) {
+  acceptOffer(input: $input, sport: $sport) {
+    offer { id }
+    errors { message }
+  }
+}
+"""
+
+
+def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
+    """Ultimo passo del flusso di acquisto reale: completa DAVVERO l'operazione.
+    Fail-safe assoluto -- qualunque errore ritorna (False, messaggio_errore), MAI
+    un'eccezione non gestita, MAI un retry automatico."""
+    variables = {
+        "input": {
+            "offerId": offer_id,
+            "migrationData": None,
+            "approvals": [{
+                "fingerprint": fingerprint,
+                "mangopayWalletTransferApproval": {
+                    "nonce": nonce,
+                    "signature": signature,
+                },
+            }],
+            "settlementInfo": {
+                "currency": "EUR",
+                "exchangeRateId": exchange_rate_id,
+                "paymentMethod": "WALLET",
+                "platform": "WEB",
+                "useAvailableCredits": False,
+            },
+        },
+        "sport": "FOOTBALL",
+    }
+    try:
+        data = graphql_query(ACCEPT_OFFER_MUTATION, variables)
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('acceptOffer') or {}
+        payload_errors = payload.get('errors') or []
+        if root_errors or payload_errors:
+            all_errors = list(root_errors or []) + list(payload_errors or [])
+            return False, str(all_errors)
+        if not payload.get('offer'):
+            return False, "risposta senza 'offer', esito incerto"
+        return True, None
+    except Exception as e:
+        return False, f"eccezione: {e}"
+
+
+def execute_live_purchase(offer_id, prepared):
+    """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
+    AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
+    ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
+    altrimenti -- MAI retry, MAI tentativi alternativi, un solo tentativo secco."""
+    if not SORARE_WALLET_PASSWORD:
+        return False, "SORARE_WALLET_PASSWORD non impostata"
+
+    key_data = fetch_encrypted_private_key()
+    if not key_data:
+        return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
+
+    fingerprint = prepared.get('fingerprint')
+    request = prepared.get('request') or {}
+    nonce = request.get('nonce')
+
+    signature = sign_authorization_via_node(
+        SORARE_WALLET_PASSWORD,
+        key_data.get('encryptedPrivateKey'),
+        key_data.get('iv'),
+        key_data.get('salt'),
+        request,
+    )
+    if not signature:
+        return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
+
+    exchange_rate_id = get_exchange_rate_id()
+    if not exchange_rate_id:
+        return False, "impossibile recuperare exchange_rate_id per l'accept finale"
+
+    success, error = accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id)
+    if not success:
+        return False, f"AcceptOfferMutation fallita: {error}"
+    return True, None
+
+
 def send_would_have_bought_alert(player_name, player_slug, price_eur, second_price, margin_percent,
-                                  card_slug, excluded_league, prepared=None, is_in_season=True):
+                                  card_slug, excluded_league, prepared=None, is_in_season=True,
+                                  live_mode=False, purchase_completed=False, purchase_error=None):
     link = build_card_link(player_slug, card_slug)
     if not is_in_season:
         categoria = "CLASSIC (modalita' check_classic, confronto su tutti i campionati)"
@@ -881,15 +1018,26 @@ def send_would_have_bought_alert(player_name, player_slug, price_eur, second_pri
         if prepared else
         "\u26A0\uFE0F Prenotazione lato server non riuscita, apri e conferma normalmente\n"
     )
+    if live_mode:
+        if purchase_completed:
+            titolo = "\U0001F916\U0001F4B0 <b>AutoBuy Sorare -- ACQUISTATO IN AUTOMATICO</b>"
+            esito = "\u2705 <b>Acquisto completato con successo, nessuna azione richiesta.</b>\n\n"
+        else:
+            titolo = "\U0001F916\U0001F4B0 <b>AutoBuy Sorare -- ACQUISTO AUTOMATICO FALLITO</b>"
+            esito = (f"\u274C <b>Acquisto automatico NON riuscito</b>: {purchase_error}\n"
+                      f"Apri e valuta se confermare a mano.\n\n")
+    else:
+        titolo = "\U0001F916\U0001F4B0 <b>AutoBuy Sorare -- LO AVREI ACQUISTATO</b>"
+        esito = "\u26A0\uFE0F Fase di test: nessun acquisto reale eseguito, controlla a mano.\n\n"
     msg_text = (
-        f"\U0001F916\U0001F4B0 <b>AutoBuy Sorare -- LO AVREI ACQUISTATO</b>\n\n"
+        f"{titolo}\n\n"
         f"Giocatore: {player_name}\n"
         f"Categoria: {categoria}\n"
         f"Prezzo minimo attuale: {price_eur:.2f}EUR\n"
         f"Secondo prezzo attuale: {second_price:.2f}EUR (margine {margin_percent:.1%}, "
         f"soglia richiesta {AUTOBUY_MARGIN_FRACTION:.0%})\n\n"
         f"{prenotazione}"
-        f"\u26A0\uFE0F Fase di test: nessun acquisto reale eseguito, controlla a mano.\n\n"
+        f"{esito}"
         f"\U0001F449 <b><a href='{link}'>APRI SU SORARE</a></b> \U0001F448"
     )
     send_telegram_msg(msg_text)
@@ -1069,14 +1217,27 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         else:
             log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
 
-    # NOTA per fase 2 (automazione completa, non ancora attiva): quando esistera' una
-    # vera chiamata ad AcceptOfferMutation che completa l'acquisto, chiamare QUI
-    # record_player_purchase(player_slug) SOLO se l'acquisto e' andato a buon fine (mai
-    # in caso di errore/fondi insufficienti/offerta scaduta) -- per attivare davvero la
-    # protezione anti-riacquisto entro 24h.
+    # FASE 2 (automazione completa): se attiva e la prenotazione e' riuscita, prova a
+    # completare DAVVERO l'acquisto. Fail-safe assoluto: qualunque errore ferma solo
+    # questo tentativo, notifica l'errore esatto, NON fa mai retry.
+    purchase_completed = False
+    purchase_error = None
+    if AUTOBUY_LIVE_MODE and offer_id and prepared:
+        purchase_completed, purchase_error = execute_live_purchase(offer_id, prepared)
+        if purchase_completed:
+            log(f"{player_name}: ACQUISTO COMPLETATO CON SUCCESSO")
+            if player_slug:
+                record_player_purchase(player_slug)
+        else:
+            log(f"{player_name}: acquisto automatico fallito -- {purchase_error}")
+    elif AUTOBUY_LIVE_MODE and offer_id and not prepared:
+        purchase_error = "prenotazione (prepareAcceptOffer) non riuscita, acquisto automatico saltato"
+        log(f"{player_name}: {purchase_error}")
 
     send_would_have_bought_alert(player_name, player_slug, true_min_price, second_min_price,
-                                  margin_percent, card_slug, excluded_league, prepared, is_in_season)
+                                  margin_percent, card_slug, excluded_league, prepared, is_in_season,
+                                  live_mode=AUTOBUY_LIVE_MODE, purchase_completed=purchase_completed,
+                                  purchase_error=purchase_error)
     return True
 
 
