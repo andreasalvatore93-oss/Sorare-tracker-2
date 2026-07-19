@@ -44,6 +44,23 @@ WS_URL = "wss://ws.sorare.com/cable"
 # dall'utente) -- non ha senso valutare/comprare da questi annunci.
 BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
 
+# Giocatori da IGNORARE completamente in questo bot (workaround manuale al posto del
+# controllo coverageStatus, che non e' utilizzabile via GraphQL -- vedi note progetto).
+# L'utente aggiunge qui lo slug del giocatore preso dall'URL della pagina giocatore, es.
+# https://sorare.com/it/football/players/aoto-nanamure -> slug 'aoto-nanamure'. Qualsiasi
+# evento su un giocatore in questa lista viene scartato PRIMA di qualunque altro controllo
+# (prezzo, margine, ecc.), quindi non genera mai una notifica ne' una prenotazione.
+# Configurabile anche da workflow tramite la variabile d'ambiente BLACKLISTED_PLAYER_SLUGS
+# (slug separati da virgola), che si somma a questa lista hardcoded senza sostituirla.
+BLACKLISTED_PLAYER_SLUGS = {
+    'aoto-nanamure',
+}
+_extra_blacklisted_players = os.environ.get('BLACKLISTED_PLAYER_SLUGS', '')
+if _extra_blacklisted_players.strip():
+    BLACKLISTED_PLAYER_SLUGS |= {
+        s.strip().lower() for s in _extra_blacklisted_players.split(',') if s.strip()
+    }
+
 # --- Parametri regolabili (fase di test, vedi autobuy.yml per gli input del workflow) ---
 # Fascia di prezzo dell'ANNUNCIO che scatena la valutazione: default 1-5EUR, ma regolabile
 # fino a un tetto piu' alto (es. 20EUR) durante i test.
@@ -350,9 +367,10 @@ def build_card_link(player_slug, card_slug):
 CARD_COVERAGE_QUERY = """
 query CardCoverageQuery($slug: String!) {
   anyCard(slug: $slug) {
-    ... on Card {
+    slug
+    coverageStatus
+    openForGameStatsCompetitions {
       slug
-      coverageStatus
     }
   }
 }
@@ -612,6 +630,10 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                     offer_id=None, seller_slug=None):
     """Ritorna True se questo evento ha portato a un caso valido (avrebbe acquistato),
     False altrimenti -- usato dal listener per decidere se fermarsi."""
+    if player_slug and player_slug.lower() in BLACKLISTED_PLAYER_SLUGS:
+        log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
+        return False
+
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
         return False
 
@@ -680,6 +702,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # blocchiamo l'acquisto solo per questo -- e' un controllo aggiuntivo, non un requisito
     # core.
     coverage_status = get_card_coverage_status(card_slug)
+    log(f"[coverage check] {card_slug} -> {coverage_status!r}")
     if coverage_status == 'NOT_COVERED':
         log(f"{player_name}: scarto -- club non coperto da SO5 (coverageStatus=NOT_COVERED), "
             f"punti non conteggiati")
@@ -870,6 +893,8 @@ def main():
         f"{AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
         f"margine richiesto {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: "
         f"{AUTOBUY_TARGET_MATCHES}")
+    log(f"Giocatori in blacklist manuale ({len(BLACKLISTED_PLAYER_SLUGS)}): "
+        f"{sorted(BLACKLISTED_PLAYER_SLUGS)}")
     send_startup_msg()
     matches_found = run_listener(eth_rate)
     if matches_found >= AUTOBUY_TARGET_MATCHES:
