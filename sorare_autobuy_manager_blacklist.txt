@@ -1,0 +1,17 @@
+# Blacklist MANAGER per AutoBuy Sorare (SOLO questo bot -- non tocca track.py ne'
+# crafted_card_scanner.py, e non e' la stessa lista di BLACKLISTED_SELLER_SLUGS hardcoded
+# nel codice).
+#
+# Un manager_slug per riga. Per trovare lo slug: apri la pagina del manager su Sorare,
+# es. https://sorare.com/it/football/my-club/nomeutente -> lo slug e' 'nomeutente'.
+#
+# Per AGGIUNGERE un manager: aggiungi una riga con il suo slug (oppure compila il campo
+# "blacklisted_manager_slugs" al lancio del workflow, viene aggiunto qui in automatico).
+# Per RIMUOVERE un manager: cancella la riga (o mettici # davanti per disattivarla senza
+# cancellarla).
+# Righe vuote e righe che iniziano con # vengono ignorate.
+#
+# Gli annunci di un manager in questa lista CONTANO nel calcolo del secondo prezzo/
+# margine (stesso comportamento della blacklist storica BLACKLISTED_SELLER_SLUGS) -- ma
+# il bot non compra MAI da loro: se il minimo di mercato risulta essere il loro annuncio,
+# il caso viene scartato invece di essere acquistato.
