@@ -671,7 +671,6 @@ subscription OnTokenOfferUpdated {
         anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
         sportSeason { name }
         inSeasonEligible
-        coverageStatus
       }
     }
     receiverSide {
