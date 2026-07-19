@@ -1,0 +1,56 @@
+name: AutoBuy Sorare (fase diagnostica, no acquisto reale)
+on:
+  workflow_dispatch:
+    inputs:
+      min_price_eur:
+        description: "Prezzo minimo carta da valutare (EUR)"
+        required: false
+        default: "1"
+      max_price_eur:
+        description: "Prezzo massimo carta da valutare (EUR) -- regolabile per i test, es. fino a 20"
+        required: false
+        default: "5"
+      margin_percent:
+        description: "Margine minimo richiesto sul secondo prezzo attuale, in % (es. 15 = 15%)"
+        required: false
+        default: "15"
+      listen_seconds:
+        description: "Secondi di ascolto massimi (il bot si ferma comunque prima se trova un caso valido)"
+        required: false
+        default: "250"
+permissions:
+  contents: read
+# Nessuna concorrenza con track.py: workflow e job completamente separati, nessuna
+# scrittura su tracker.db, quindi nessun conflitto possibile tra i due bot.
+concurrency:
+  group: sorare-autobuy
+  cancel-in-progress: false
+jobs:
+  autobuy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests websocket-client
+      - name: Run AutoBuy (solo diagnostica)
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+          AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
+          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '5' }}
+          MARGIN_PERCENT_INPUT: ${{ github.event.inputs.margin_percent || '15' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '250' }}
+        run: |
+          set -o pipefail
+          # Il workflow espone la percentuale in modo leggibile (es. "15" = 15%), lo script
+          # Python vuole invece la frazione (0.15) -- conversione fatta qui.
+          export AUTOBUY_MARGIN_FRACTION=$(awk -v p="$MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          python autobuy_sorare.py
