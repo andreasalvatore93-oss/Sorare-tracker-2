@@ -139,21 +139,36 @@ def main():
     # [{"fingerprint": "...", "id": "...", "request": {"currency": "EUR", "amount": 1049,
     # "mangopayWalletId": "...", "nonce": 9961, "operationHash": "..."}}], ...}}}
     fingerprint = os.environ.get('TEST_FINGERPRINT', '')
-    authorization_request_json = os.environ.get('TEST_AUTHORIZATION_REQUEST', '')
+    currency = os.environ.get('TEST_CURRENCY', '')
+    amount = os.environ.get('TEST_AMOUNT', '')
+    mangopay_wallet_id = os.environ.get('TEST_MANGOPAY_WALLET_ID', '')
+    nonce = os.environ.get('TEST_NONCE', '')
+    operation_hash = os.environ.get('TEST_OPERATION_HASH', '')
 
-    log(f"[debug] TEST_FINGERPRINT ricevuto: {fingerprint!r}")
-    log(f"[debug] TEST_AUTHORIZATION_REQUEST ricevuto (lunghezza {len(authorization_request_json)}): "
-        f"{authorization_request_json!r}")
+    log(f"[debug] campi ricevuti: fingerprint={fingerprint!r} currency={currency!r} "
+        f"amount={amount!r} mangopayWalletId={mangopay_wallet_id!r} nonce={nonce!r} "
+        f"operationHash={operation_hash!r}")
 
-    if not fingerprint or not authorization_request_json:
-        log("ERRORE: servono le variabili TEST_FINGERPRINT e TEST_AUTHORIZATION_REQUEST "
-            "(quest'ultima con l'oggetto 'request' completo in JSON, incluso __typename).")
+    missing = [name for name, val in [
+        ('TEST_FINGERPRINT', fingerprint), ('TEST_CURRENCY', currency),
+        ('TEST_AMOUNT', amount), ('TEST_MANGOPAY_WALLET_ID', mangopay_wallet_id),
+        ('TEST_NONCE', nonce), ('TEST_OPERATION_HASH', operation_hash),
+    ] if not val]
+    if missing:
+        log(f"ERRORE: variabili mancanti: {missing}")
         return
 
     try:
-        authorization_request = json.loads(authorization_request_json)
-    except json.JSONDecodeError as e:
-        log(f"ERRORE: TEST_AUTHORIZATION_REQUEST non e' JSON valido: {e}")
+        authorization_request = {
+            "currency": currency,
+            "amount": int(amount),
+            "mangopayWalletId": mangopay_wallet_id,
+            "nonce": int(nonce),
+            "operationHash": operation_hash,
+            "__typename": "MangopayWalletTransferAuthorizationRequest",
+        }
+    except ValueError as e:
+        log(f"ERRORE: amount o nonce non numerici: {e}")
         return
 
     test_signature(authorization_request, fingerprint)
