@@ -59,6 +59,7 @@ def fetch_encrypted_private_key():
     dentro una risposta piu' ampia di currentUser (JSON condiviso dall'utente in
     precedenza), qui isolato in una query dedicata piu' leggera."""
     data = graphql_query(ENCRYPTED_PRIVATE_KEY_QUERY)
+    log(f"[debug] risposta grezza query chiave cifrata: {json.dumps(data)}")
     if data.get('errors'):
         log(f"ERRORE query chiave cifrata: {data['errors']}")
         return None
