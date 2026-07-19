@@ -94,6 +94,67 @@ AUTOBUY_TARGET_MATCHES = max(1, min(10, AUTOBUY_TARGET_MATCHES))
 # per verificare che la nuova logica scatti davvero come previsto, di default spenta.
 AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 
+# --- Protezione "no ri-acquisto stesso giocatore entro 24h" (per fase 2, automazione
+# completa) ---
+# Motivazione (richiesta esplicita utente, 19/07): se un giocatore si infortuna e il
+# mercato viene inondato di annunci in svendita dello stesso giocatore, senza questa
+# protezione il bot potrebbe comprare piu' carte dello stesso giocatore di fila -- non
+# desiderato. Il registro e' persistito su file JSON (non solo in memoria) perche' ogni
+# esecuzione del workflow GitHub Actions parte da zero: senza un file, la protezione
+# varrebbe solo all'interno della singola run e non tra run diverse a distanza di ore.
+# Il file va committato/aggiornato nel repo (vedi step dedicato in autobuy.yml) perche'
+# la protezione funzioni davvero tra esecuzioni successive.
+PURCHASE_LOG_PATH = os.environ.get('PURCHASE_LOG_PATH', 'autobuy_purchases.json')
+PLAYER_COOLDOWN_HOURS = 24
+
+
+def _load_purchase_log():
+    """Ritorna {player_slug: iso_timestamp_ultimo_acquisto}. File mancante o corrotto ->
+    dizionario vuoto (fail-safe: non blocchiamo mai gli acquisti solo perche' il file di
+    log non si legge)."""
+    try:
+        with open(PURCHASE_LOG_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            return data
+        return {}
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        log(f"[purchase log] errore lettura {PURCHASE_LOG_PATH}, ignorato: {e}")
+        return {}
+
+
+def _save_purchase_log(log_data):
+    try:
+        with open(PURCHASE_LOG_PATH, 'w', encoding='utf-8') as f:
+            json.dump(log_data, f, indent=2, sort_keys=True)
+    except Exception as e:
+        log(f"[purchase log] errore scrittura {PURCHASE_LOG_PATH}: {e}")
+
+
+def is_player_in_cooldown(player_slug):
+    """True se player_slug e' stato acquistato meno di PLAYER_COOLDOWN_HOURS fa."""
+    purchase_log = _load_purchase_log()
+    last_purchase_iso = purchase_log.get(player_slug)
+    if not last_purchase_iso:
+        return False
+    try:
+        last_purchase = datetime.datetime.fromisoformat(last_purchase_iso)
+    except ValueError:
+        return False
+    elapsed_hours = (datetime.datetime.now(datetime.timezone.utc) - last_purchase).total_seconds() / 3600
+    return elapsed_hours < PLAYER_COOLDOWN_HOURS
+
+
+def record_player_purchase(player_slug):
+    """Da chiamare SOLO dopo un acquisto REALMENTE completato (fase 2, non ancora attiva
+    in questo script -- funzione pronta per quando si collega l'automazione completa)."""
+    purchase_log = _load_purchase_log()
+    purchase_log[player_slug] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    _save_purchase_log(purchase_log)
+    log(f"[purchase log] registrato acquisto di {player_slug}, cooldown {PLAYER_COOLDOWN_HOURS}h")
+
 _FIAT_RATE_CACHE = {}
 
 
@@ -634,6 +695,11 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
         return False
 
+    if player_slug and is_player_in_cooldown(player_slug):
+        log(f"{player_name}: scarto -- gia' acquistato nelle ultime {PLAYER_COOLDOWN_HOURS}h "
+            f"(protezione anti-svendita/infortunio, vedi autobuy_purchases.json)")
+        return False
+
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
         return False
 
@@ -722,6 +788,12 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
         else:
             log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
+
+    # NOTA per fase 2 (automazione completa, non ancora attiva): quando esistera' una
+    # vera chiamata ad AcceptOfferMutation che completa l'acquisto, chiamare QUI
+    # record_player_purchase(player_slug) SOLO se l'acquisto e' andato a buon fine (mai
+    # in caso di errore/fondi insufficienti/offerta scaduta) -- per attivare davvero la
+    # protezione anti-riacquisto entro 24h.
 
     send_would_have_bought_alert(player_name, player_slug, true_min_price, second_min_price,
                                   margin_percent, card_slug, excluded_league, prepared)
