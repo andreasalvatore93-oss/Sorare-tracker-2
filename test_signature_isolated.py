@@ -1,134 +1,205 @@
-// decrypt_and_sign.js
-//
-// Input (via stdin, JSON): {
-//   "password": "...",              // password del wallet Sorare
-//   "encryptedPrivateKey": "...",    // base64, da FetchEncryptedPrivateKey
-//   "iv": "...",                     // base64, da FetchEncryptedPrivateKey
-//   "salt": "...",                   // base64, da FetchEncryptedPrivateKey
-//   "authorizationRequest": {        // l'intero oggetto "request" cosi' com'e' restituito
-//     "__typename": "MangopayWalletTransferAuthorizationRequest",
-//     "nonce": 12345,
-//     "amount": ...,
-//     "currency": "EUR",
-//     "operationHash": "0x...",
-//     "mangopayWalletId": "..."
-//   }
-// }
-//
-// Output (stdout, JSON): { "signature": "..." } oppure { "error": "..." }
-//
-// Algoritmo di decrypt confermato ispezionando wallet.sorare.com/src/lib/encryption.ts:
-//   1) PBKDF2(password, salt, iterations=50000, hash=SHA-256) -> chiave AES-GCM-256
-//   2) AES-GCM-decrypt(encryptedPrivateKey, iv, chiave) -> chiave privata Starkware in chiaro
-// Poi @sorare/crypto.signAuthorizationRequest(privateKey, authorizationRequest) firma --
-// funzione CONFERMATA nel repo ufficiale github.com/sorare/api/examples/authorizations.js,
-// gestisce internamente qualsiasi tipo di authorization (Starkex transfer/limit order,
-// Mangopay wallet transfer) in base al campo __typename dell'oggetto passato.
-//
-// Uso: echo '{"password":"...", ...}' | node decrypt_and_sign.js
+import json
+import os
+import subprocess
 
-const { webcrypto } = require('crypto');
-const subtle = webcrypto.subtle;
+import requests
 
-let sorareCrypto;
-try {
-  sorareCrypto = require('@sorare/crypto');
-} catch (e) {
-  // gestito piu' sotto: errore chiaro se il pacchetto non e' installato
-}
+# =====================================================================================
+# TEST ISOLATO FIRMA STARKWARE -- NESSUN ACQUISTO REALE
+# =====================================================================================
+# Script SEPARATO da autobuy_sorare.py, usato SOLO per verificare che
+# sorare-sign/decrypt_and_sign.js produca una signature valida, PRIMA di collegare
+# l'automazione completa. NON chiama mai AcceptOfferMutation: si ferma subito dopo aver
+# ottenuto (o fallito ad ottenere) la signature.
+#
+# Uso: richiede in input un authorization_request REALE gia' ottenuto da una precedente
+# chiamata a prepare_accept_offer() di autobuy_sorare.py (fingerprint + request), preso
+# dai log di una run passata (es. il caso Sergey Pinyaev). Se quell'offerta e' scaduta o
+# gia' venduta nel frattempo non e' un problema: qui NON si accetta l'offerta, si genera
+# solo la firma per verificare che il meccanismo funzioni.
+# =====================================================================================
 
-function base64ToBuffer(b64) {
-  return Uint8Array.from(Buffer.from(b64, 'base64'));
-}
+COOKIES = os.environ.get('SORARE_COOKIE')
+CSRF_TOKEN = os.environ.get('SORARE_CSRF')
+WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
+GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
-async function deriveAesKey(password, saltB64) {
-  const salt = base64ToBuffer(saltB64);
-  const passwordKey = await subtle.importKey(
-    'raw',
-    new TextEncoder().encode(password),
-    { name: 'PBKDF2' },
-    false,
-    ['deriveKey']
-  );
-  return subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 50000, hash: { name: 'SHA-256' } },
-    passwordKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
-}
 
-async function decryptPrivateKey({ password, encryptedPrivateKey, iv, salt }) {
-  const aesKey = await deriveAesKey(password, salt);
-  const ivBuf = base64ToBuffer(iv);
-  const ciphertext = base64ToBuffer(encryptedPrivateKey);
-  const plainBuf = await subtle.decrypt(
-    { name: 'AES-GCM', iv: ivBuf, tagLength: 128 },
-    aesKey,
-    ciphertext
-  );
-  const bytes = new Uint8Array(plainBuf);
-  const hexDebug = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-  // DEBUG TEMPORANEO (19/07): stampiamo la struttura grezza per capire il vero formato
-  // prima di decidere come convertirla -- 61 byte non e' la lunghezza standard di una
-  // chiave Starkware (32 byte), quindi il buffer probabilmente contiene altro (JSON
-  // wrapper, prefisso, ecc.) e non va trattato ne' come UTF-8 diretto ne' come hex grezzo
-  // dell'intera chiave senza capire la struttura reale.
-  console.error(`[debug] plainBuf length: ${bytes.length} bytes`);
-  console.error(`[debug] plainBuf as hex: ${hexDebug}`);
-  try {
-    console.error(`[debug] plainBuf as UTF-8 (JSON.stringify per escape sicuro): ${JSON.stringify(new TextDecoder().decode(plainBuf))}`);
-  } catch (e) {
-    console.error(`[debug] plainBuf non decodificabile come UTF-8: ${e.message}`);
-  }
+def log(message):
+    print(f"[test firma] {message}", flush=True)
 
-  const bytes2 = new Uint8Array(plainBuf).slice(0, 32);
-  const hex = Array.from(bytes2).map(b => b.toString(16).padStart(2, '0')).join('');
-  return '0x' + hex;
-}
 
-async function main() {
-  let input = '';
-  for await (const chunk of process.stdin) input += chunk;
-  let params;
-  try {
-    params = JSON.parse(input);
-  } catch (e) {
-    console.log(JSON.stringify({ error: `input JSON non valido: ${e.message}` }));
-    process.exit(1);
-  }
+def graphql_query(query, variables=None):
+    headers = {
+        'Content-Type': 'application/json',
+        'Cookie': COOKIES,
+        'x-csrf-token': CSRF_TOKEN,
+        'User-Agent': 'Mozilla/5.0',
+    }
+    payload = {"query": query, "variables": variables or {}}
+    r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+    return r.json()
 
-  const { password, encryptedPrivateKey, iv, salt, authorizationRequest } = params;
-  if (!password || !encryptedPrivateKey || !iv || !salt || !authorizationRequest) {
-    console.log(JSON.stringify({ error: 'parametri mancanti (servono password, encryptedPrivateKey, iv, salt, authorizationRequest)' }));
-    process.exit(1);
-  }
 
-  let privateKey;
-  try {
-    privateKey = await decryptPrivateKey({ password, encryptedPrivateKey, iv, salt });
-  } catch (e) {
-    // Con AES-GCM una password sbagliata fa fallire la verifica del tag di autenticazione
-    // (decrypt lancia eccezione), quindi questo blocco copre anche "password errata".
-    console.log(JSON.stringify({ error: `decrypt fallito (password errata o dati corrotti): ${e.message}` }));
-    process.exit(1);
-  }
-
-  if (!sorareCrypto || typeof sorareCrypto.signAuthorizationRequest !== 'function') {
-    console.log(JSON.stringify({
-      error: '@sorare/crypto non e\' installato o non espone signAuthorizationRequest -- verificare "npm install @sorare/crypto" e la versione installata'
-    }));
-    process.exit(1);
-  }
-
-  try {
-    const signature = sorareCrypto.signAuthorizationRequest(privateKey, authorizationRequest);
-    console.log(JSON.stringify({ signature }));
-  } catch (e) {
-    console.log(JSON.stringify({ error: `firma fallita: ${e.message}` }));
-    process.exit(1);
+ENCRYPTED_PRIVATE_KEY_QUERY = """
+mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
+  fetchEncryptedPrivateKey(input: $input) {
+    errors { message }
+    sorarePrivateKey {
+      encryptedPrivateKey
+      iv
+      salt
+    }
   }
 }
+"""
 
-main();
+
+def fetch_encrypted_private_key():
+    """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
+    -- nome e struttura CONFERMATI dal vivo (19/07) catturando via DevTools la vera
+    richiesta che il sito manda quando si sblocca il wallet durante un acquisto reale
+    (non e' una query su currentUser.sorarePrivateKey come ipotizzato inizialmente, era
+    quello il motivo per cui tornava sempre null: nome/percorso GraphQL sbagliato)."""
+    data = graphql_query(ENCRYPTED_PRIVATE_KEY_QUERY, {"input": {}})
+    log(f"[debug] risposta grezza mutation chiave cifrata: {json.dumps(data)}")
+    if data.get('errors'):
+        log(f"ERRORE mutation chiave cifrata: {data['errors']}")
+        return None
+    payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
+    payload_errors = payload.get('errors') or []
+    if payload_errors:
+        log(f"ERRORE payload mutation chiave cifrata: {payload_errors}")
+        return None
+    key_data = payload.get('sorarePrivateKey')
+    if not key_data:
+        log("ERRORE: sorarePrivateKey assente nella risposta")
+        return None
+    log("Chiave cifrata recuperata con successo (encryptedPrivateKey/iv/salt presenti, "
+        "valori non loggati per sicurezza)")
+    return key_data
+
+
+def test_signature(authorization_request, fingerprint):
+    """Chiama decrypt_and_sign.js con dati REALI ma senza mai completare l'acquisto --
+    stampa solo se la firma e' stata generata, o l'errore esatto, MAI la signature/chiave
+    in chiaro."""
+    # Fallback (19/07, richiesta esplicita utente): se la query GraphQL currentUser.
+    # sorarePrivateKey continua a tornare null (problema non ancora risolto), l'utente
+    # puo' fornire direttamente encryptedPrivateKey/iv/salt gia' recuperati in
+    # precedenza (es. da un JSON incollato manualmente in chat) come GitHub Secret --
+    # questi hanno PRIORITA' sulla query GraphQL se presenti, per isolare il test della
+    # sola firma senza dipendere dal problema ancora aperto sulla query.
+    encrypted_key_env = os.environ.get('TEST_ENCRYPTED_PRIVATE_KEY', '')
+    iv_env = os.environ.get('TEST_IV', '')
+    salt_env = os.environ.get('TEST_SALT', '')
+
+    if encrypted_key_env and iv_env and salt_env:
+        log("Uso encryptedPrivateKey/iv/salt forniti direttamente (bypass query GraphQL, "
+            "valori non loggati per sicurezza).")
+        key_data = {
+            'encryptedPrivateKey': encrypted_key_env,
+            'iv': iv_env,
+            'salt': salt_env,
+        }
+    else:
+        key_data = fetch_encrypted_private_key()
+        if not key_data:
+            log("Impossibile procedere senza la chiave cifrata.")
+            return
+
+    if not WALLET_PASSWORD:
+        log("ERRORE: variabile SORARE_WALLET_PASSWORD non impostata.")
+        return
+
+    payload = json.dumps({
+        'password': WALLET_PASSWORD,
+        'encryptedPrivateKey': key_data.get('encryptedPrivateKey'),
+        'iv': key_data.get('iv'),
+        'salt': key_data.get('salt'),
+        'authorizationRequest': authorization_request,
+    })
+
+    script_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
+    log(f"Chiamo {script_path}...")
+    try:
+        result = subprocess.run(
+            ['node', script_path],
+            input=payload,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except Exception as e:
+        log(f"ERRORE eccezione lanciando node: {e}")
+        return
+
+    if result.returncode != 0:
+        log(f"Script terminato con codice {result.returncode}, stderr: {result.stderr.strip()}")
+
+    try:
+        output = json.loads(result.stdout.strip())
+    except json.JSONDecodeError:
+        log(f"ERRORE: output non JSON valido: {result.stdout!r}")
+        return
+
+    if 'error' in output:
+        log(f"FIRMA FALLITA -- errore riportato: {output['error']}")
+        return
+
+    signature = output.get('signature')
+    if signature:
+        log(f"FIRMA GENERATA CON SUCCESSO (lunghezza: {len(str(signature))} caratteri, "
+            f"contenuto non loggato per sicurezza) -- fingerprint={fingerprint}")
+        log("NESSUN ACQUISTO EFFETTUATO: questo script si ferma qui, non chiama "
+            "AcceptOfferMutation.")
+    else:
+        log("ERRORE: nessuna signature nell'output e nessun campo 'error' -- risposta "
+            f"inattesa: {output}")
+
+
+def main():
+    # ESEMPIO -- sostituire con un caso reale preso dai log di una run precedente di
+    # autobuy_sorare.py (funzione prepare_accept_offer), es. il caso Sergey Pinyaev:
+    # [prepare accept] risposta grezza: {"data": {"prepareAcceptOffer": {"authorizations":
+    # [{"fingerprint": "...", "id": "...", "request": {"currency": "EUR", "amount": 1049,
+    # "mangopayWalletId": "...", "nonce": 9961, "operationHash": "..."}}], ...}}}
+    fingerprint = os.environ.get('TEST_FINGERPRINT', '')
+    currency = os.environ.get('TEST_CURRENCY', '')
+    amount = os.environ.get('TEST_AMOUNT', '')
+    mangopay_wallet_id = os.environ.get('TEST_MANGOPAY_WALLET_ID', '')
+    nonce = os.environ.get('TEST_NONCE', '')
+    operation_hash = os.environ.get('TEST_OPERATION_HASH', '')
+
+    log(f"[debug] campi ricevuti: fingerprint={fingerprint!r} currency={currency!r} "
+        f"amount={amount!r} mangopayWalletId={mangopay_wallet_id!r} nonce={nonce!r} "
+        f"operationHash={operation_hash!r}")
+
+    missing = [name for name, val in [
+        ('TEST_FINGERPRINT', fingerprint), ('TEST_CURRENCY', currency),
+        ('TEST_AMOUNT', amount), ('TEST_MANGOPAY_WALLET_ID', mangopay_wallet_id),
+        ('TEST_NONCE', nonce), ('TEST_OPERATION_HASH', operation_hash),
+    ] if not val]
+    if missing:
+        log(f"ERRORE: variabili mancanti: {missing}")
+        return
+
+    try:
+        authorization_request = {
+            "currency": currency,
+            "amount": int(amount),
+            "mangopayWalletId": mangopay_wallet_id,
+            "nonce": int(nonce),
+            "operationHash": operation_hash,
+            "__typename": "MangopayWalletTransferAuthorizationRequest",
+        }
+    except ValueError as e:
+        log(f"ERRORE: amount o nonce non numerici: {e}")
+        return
+
+    test_signature(authorization_request, fingerprint)
+
+
+if __name__ == "__main__":
+    main()
