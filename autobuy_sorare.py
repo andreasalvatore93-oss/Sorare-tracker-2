@@ -390,7 +390,9 @@ def prepare_accept_offer(offer_id):
     vedi nota progetto)."""
     exchange_rate_id = get_exchange_rate_id()
     if not exchange_rate_id:
+        log("[prepare accept] exchange_rate_id non ottenuto, impossibile procedere")
         return None
+    log(f"[prepare accept] exchange_rate_id={exchange_rate_id}")
     variables = {
         "input": {
             "offerId": offer_id,
@@ -406,11 +408,23 @@ def prepare_accept_offer(offer_id):
     }
     try:
         data = graphql_query(PREPARE_ACCEPT_OFFER_MUTATION, variables)
+        # DIAGNOSTICA: logghiamo SEMPRE la risposta grezza (troncata) finche' non
+        # capiamo perche' authorizations torna vuota -- gli errori GraphQL "root"
+        # (es. NOT_AUTHENTICATED, PERMISSION_DENIED, campo non riconosciuto) finiscono
+        # in data['errors'] a livello radice, NON dentro prepareAcceptOffer.errors, e
+        # finora venivano ignorati silenziosamente.
+        root_errors = data.get('errors')
+        if root_errors:
+            log(f"[prepare accept] ERRORI GRAPHQL ROOT: {root_errors}")
+            return None
+        log(f"[prepare accept] risposta grezza: {json.dumps(data)[:1500]}")
         payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
         errors = payload.get('errors') or []
         if errors:
             log(f"[prepare accept] errori da Sorare: {errors}")
             return None
+        primary_offer = payload.get('primaryOffer') or {}
+        log(f"[prepare accept] primaryOffer={primary_offer}")
         auths = payload.get('authorizations') or []
         if not auths:
             log("[prepare accept] nessuna authorization restituita")
