@@ -58,19 +58,18 @@ BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
 # notifica ne' una prenotazione. Resta anche configurabile via env var
 # BLACKLISTED_PLAYER_SLUGS (slug separati da virgola, utile per un'aggiunta rapida da
 # workflow senza toccare il file), che si SOMMA al contenuto del file senza sostituirlo.
-BLACKLIST_FILE_PATH = os.environ.get('BLACKLIST_FILE_PATH', 'sorare_autobuy_blacklist.txt')
-
-
-def _load_player_blacklist_file():
-    """Legge BLACKLIST_FILE_PATH riga per riga. File mancante o illeggibile -> set vuoto
-    (fail-safe: un file assente/corrotto non deve bloccare l'esecuzione del bot)."""
+def _load_slug_list_file(file_path, label):
+    """Legge file_path riga per riga (un slug per riga, righe vuote o che iniziano con
+    '#' ignorate). File mancante o illeggibile -> set vuoto (fail-safe: un file
+    assente/corrotto non deve bloccare l'esecuzione del bot). Funzione generica, usata
+    sia per la blacklist giocatori sia per quella manager."""
     try:
-        with open(BLACKLIST_FILE_PATH, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
     except FileNotFoundError:
         return set()
     except Exception as e:
-        log(f"[blacklist giocatori] errore lettura {BLACKLIST_FILE_PATH}, ignorato: {e}")
+        log(f"[{label}] errore lettura {file_path}, ignorato: {e}")
         return set()
     slugs = set()
     for line in lines:
@@ -81,11 +80,39 @@ def _load_player_blacklist_file():
     return slugs
 
 
-BLACKLISTED_PLAYER_SLUGS = _load_player_blacklist_file()
+BLACKLIST_FILE_PATH = os.environ.get('BLACKLIST_FILE_PATH', 'sorare_autobuy_blacklist.txt')
+BLACKLISTED_PLAYER_SLUGS = _load_slug_list_file(BLACKLIST_FILE_PATH, 'blacklist giocatori')
 _extra_blacklisted_players = os.environ.get('BLACKLISTED_PLAYER_SLUGS', '')
 if _extra_blacklisted_players.strip():
     BLACKLISTED_PLAYER_SLUGS |= {
         s.strip().lower() for s in _extra_blacklisted_players.split(',') if s.strip()
+    }
+
+# Manager da NON ACQUISTARE MAI in questo bot (richiesta esplicita utente, 19/07:
+# "voglio poter blacklistare in generale gli annunci di alcuni manager, valido solo e
+# soltanto per questo bot" -- poi precisato: "nel calcolo del margine devono contare, se
+# l'affare e' una loro carta in vendita deve ignorarla"). Stesso comportamento della
+# blacklist storica BLACKLISTED_SELLER_SLUGS: i loro annunci CONTANO nel calcolo del vero
+# minimo/secondo prezzo (get_bucket_prices non li filtra), ma se il vero minimo risulta
+# essere un loro annuncio, il caso viene scartato invece di essere acquistato (vedi
+# controllo su true_min_seller_slug in evaluate_event). Stesso pattern della blacklist
+# giocatori ma su un file SEPARATO (sorare_autobuy_manager_blacklist.txt, nella root del
+# repo, un manager_slug per riga) -- non lo stesso file dei giocatori, per tenere le due
+# liste distinte e leggibili. Non tocca in alcun modo BLACKLISTED_SELLER_SLUGS (quella
+# hardcoded, storica, condivisa con track.py) ne' track.py/crafted_card_scanner.py: file
+# e lista completamente separati, validi SOLO per autobuy_sorare.py. Configurabile anche
+# via env var BLACKLISTED_MANAGER_SLUGS (slug separati da virgola, per un'aggiunta rapida
+# da workflow), che si SOMMA al contenuto del file senza sostituirlo -- e viene anche
+# scritta/committata sul file per restare attiva nelle run future (stesso meccanismo gia'
+# usato per blacklisted_player_slugs, vedi step dedicato in autobuy.yml).
+MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
+    'MANAGER_BLACKLIST_FILE_PATH', 'sorare_autobuy_manager_blacklist.txt')
+BLACKLISTED_AUTOBUY_MANAGER_SLUGS = _load_slug_list_file(
+    MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager')
+_extra_blacklisted_managers = os.environ.get('BLACKLISTED_MANAGER_SLUGS', '')
+if _extra_blacklisted_managers.strip():
+    BLACKLISTED_AUTOBUY_MANAGER_SLUGS |= {
+        s.strip().lower() for s in _extra_blacklisted_managers.split(',') if s.strip()
     }
 
 # --- Parametri regolabili (fase di test, vedi autobuy.yml per gli input del workflow) ---
@@ -522,10 +549,8 @@ query RecentTransactionsQuery($p: String!) {
     tokenPrices(playerSlug: $p, rarity: limited) {
       date
       deal {
+        __typename
         ... on TokenOffer {
-          type
-        }
-        ... on TokenAuction {
           type
         }
         ... on TokenPrimaryOffer {
@@ -537,43 +562,61 @@ query RecentTransactionsQuery($p: String!) {
 }
 """
 
-# Soglia minima di transazioni negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS giorni --
-# sotto questa soglia il giocatore viene scartato indipendentemente dal margine trovato.
+# Doppio layer di protezione liquidita' (richiesta esplicita utente, 19/07): la finestra
+# breve (7gg) da sola potrebbe far passare un giocatore con un breve picco isolato di
+# transazioni ma comunque poco liquido nel complesso -- aggiunta una seconda soglia su
+# una finestra piu' lunga (30gg) come controllo incrociato. ENTRAMBE le condizioni devono
+# essere soddisfatte perche' il giocatore passi (basta che UNA delle due fallisca per
+# scartare il caso).
 MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '3'))
 RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '7'))
+MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '5'))
+TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
 
 def count_recent_transactions(player_slug):
-    """Ritorna il numero di transazioni (di qualunque tipo: vendita diretta, offerta diretta,
-    asta, ecc.) di player_slug negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS giorni, oppure
-    None se la query fallisce per qualunque motivo. Fail-safe: se la query fallisce, il
-    chiamante NON deve bloccare l'acquisto solo per questo (stessa filosofia di
-    get_card_coverage_status) -- vedi commento nella chiamata in evaluate_event."""
+    """Ritorna una tupla (count_7d, count_30d): numero di transazioni (di qualunque tipo --
+    vendita diretta, offerta diretta, asta, ecc.) di player_slug rispettivamente negli
+    ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni (in
+    un'unica query/passata sui dati, TRANSACTIONS_WINDOW_30D_DAYS include sempre l'altra
+    finestra essendo piu' lunga). Ritorna (None, None) se la query fallisce per qualunque
+    motivo. Fail-safe: se la query fallisce, il chiamante NON deve bloccare l'acquisto
+    solo per questo (stessa filosofia di get_card_coverage_status) -- vedi commento nella
+    chiamata in evaluate_event."""
     try:
         data = graphql_query(RECENT_TRANSACTIONS_QUERY, {"p": player_slug})
         if data.get('errors'):
             log(f"[liquidita'] errore GraphQL per {player_slug}: {data['errors']}")
-            return None
+            return None, None
         nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
     except Exception as e:
         log(f"[liquidita'] eccezione per {player_slug}: {e}")
-        return None
+        return None, None
 
-    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-        days=RECENT_TRANSACTIONS_WINDOW_DAYS)
-    count = 0
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff_short = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
+    cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
+    count_short = 0
+    count_long = 0
     for n in nodes:
-        deal_type = (n.get('deal') or {}).get('type')
-        if not deal_type:
+        deal = n.get('deal') or {}
+        # FIX 19/07 (caso reale, errore GraphQL osservato dal vivo): TokenAuction NON ha
+        # un campo 'type' (solo TokenOffer/TokenPrimaryOffer ce l'hanno) -- un'asta e'
+        # comunque una transazione valida da contare, la riconosciamo dal __typename
+        # invece che dal campo 'type' (assente in quel caso).
+        is_countable = bool(deal.get('type')) or deal.get('__typename') == 'TokenAuction'
+        if not is_countable:
             continue  # nodo senza tipo riconoscibile, non contabile con certezza
         date_str = n.get('date') or ''
         try:
             dt = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         except (ValueError, AttributeError):
             continue
-        if dt >= cutoff:
-            count += 1
-    return count
+        if dt >= cutoff_long:
+            count_long += 1
+            if dt >= cutoff_short:
+                count_short += 1
+    return count_short, count_long
 
 
 EXCHANGE_RATE_QUERY = """
@@ -839,11 +882,16 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # rende rischioso fidarsi di un margine che sembra un affare (es. svendita a raffica
     # dopo un infortunio). Se la query fallisce (None), NON blocchiamo l'acquisto solo
     # per questo -- stessa filosofia fail-safe del coverage check.
-    recent_tx_count = count_recent_transactions(player_slug)
-    if recent_tx_count is not None and recent_tx_count < MIN_RECENT_TRANSACTIONS:
-        log(f"{player_name}: scarto -- solo {recent_tx_count} transazioni negli ultimi "
+    count_7d, count_30d = count_recent_transactions(player_slug)
+    if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
+        log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
             f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
+        return False
+    if count_30d is not None and count_30d < MIN_TRANSACTIONS_30D:
+        log(f"{player_name}: scarto -- solo {count_30d} transazioni negli ultimi "
+            f"{TRANSACTIONS_WINDOW_30D_DAYS} giorni (minimo richiesto "
+            f"{MIN_TRANSACTIONS_30D}), mercato troppo sottile")
         return False
 
     if is_in_season:
@@ -887,12 +935,15 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                 f"{categoria} (minimo vero: {true_min_price:.2f}EUR)")
             return False
 
-    # FIX 19/07 (caso Julien Celestine): i venditori blacklistati (es. Clem777) CONTANO nel
-    # confronto prezzi (vedi get_bucket_prices/fetch_all_live_offers), ma non compriamo mai
-    # da loro. Se il vero minimo attuale risulta essere proprio un annuncio blacklistato,
-    # scartiamo il caso -- anche se sembrerebbe "il miglior prezzo", non e' comprabile secondo
-    # le regole dell'utente.
-    if true_min_seller_slug in BLACKLISTED_SELLER_SLUGS:
+    # FIX 19/07 (caso Julien Celestine, poi esteso alla blacklist manager AutoBuy):
+    # i venditori blacklistati (sia BLACKLISTED_SELLER_SLUGS storica sia
+    # BLACKLISTED_AUTOBUY_MANAGER_SLUGS solo per questo bot) CONTANO nel confronto prezzi
+    # (vedi get_bucket_prices/fetch_all_live_offers, nessuna delle due liste li filtra
+    # li'), ma non compriamo mai da loro. Se il vero minimo attuale risulta essere
+    # proprio un annuncio di uno di questi venditori, scartiamo il caso -- anche se
+    # sembrerebbe "il miglior prezzo", non e' comprabile secondo le regole dell'utente.
+    if true_min_seller_slug in BLACKLISTED_SELLER_SLUGS or \
+            true_min_seller_slug in BLACKLISTED_AUTOBUY_MANAGER_SLUGS:
         log(f"{player_name}: scarto -- il minimo attuale ({true_min_price:.2f}EUR) e' di un "
             f"venditore blacklistato ({true_min_seller_slug}), non acquistabile")
         return False
@@ -1046,6 +1097,13 @@ def run_listener(eth_rate):
         seller_slug = ((offer.get('sender') or {}).get('slug') or '').lower()
         if seller_slug in BLACKLISTED_SELLER_SLUGS:
             return
+        if seller_slug in BLACKLISTED_AUTOBUY_MANAGER_SLUGS:
+            return  # blacklist manager SOLO per questo bot -- stesso comportamento di
+            # BLACKLISTED_SELLER_SLUGS: qui evitiamo solo di scatenare una valutazione
+            # QUANDO E' PROPRIO LUI a pubblicare l'annuncio-trigger; il suo prezzo conta
+            # comunque nel calcolo del vero minimo/margine tramite get_bucket_prices
+            # (query separata, non filtra questi slug) -- l'esclusione vera dall'ACQUISTO
+            # avviene in evaluate_event, vedi controllo su true_min_seller_slug piu' sotto.
 
         sender_side = offer.get('senderSide') or {}
         receiver_side = offer.get('receiverSide') or {}
@@ -1122,6 +1180,8 @@ def main():
         f"{AUTOBUY_TARGET_MATCHES}")
     log(f"Giocatori in blacklist manuale ({len(BLACKLISTED_PLAYER_SLUGS)}): "
         f"{sorted(BLACKLISTED_PLAYER_SLUGS)}")
+    log(f"Manager in blacklist AutoBuy ({len(BLACKLISTED_AUTOBUY_MANAGER_SLUGS)}): "
+        f"{sorted(BLACKLISTED_AUTOBUY_MANAGER_SLUGS)}")
     send_startup_msg()
     matches_found = run_listener(eth_rate)
     target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
