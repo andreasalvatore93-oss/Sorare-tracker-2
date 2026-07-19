@@ -3,10 +3,22 @@ on:
   workflow_dispatch:
     inputs:
       test_fingerprint:
-        description: "Fingerprint da una prenotazione gia' fatta (vedi log di una run precedente di AutoBuy, es. caso Sergey Pinyaev)"
+        description: "Fingerprint da una prenotazione gia' fatta (vedi log, es. caso Sergey Pinyaev)"
         required: true
-      test_authorization_request:
-        description: "Oggetto 'request' completo in JSON (vedi log, campo 'request' dentro authorizations[0]) -- includere currency/amount/mangopayWalletId/nonce/operationHash"
+      test_currency:
+        description: "Campo 'currency' dal log (es. EUR)"
+        required: true
+      test_amount:
+        description: "Campo 'amount' dal log (es. 1049)"
+        required: true
+      test_mangopay_wallet_id:
+        description: "Campo 'mangopayWalletId' dal log"
+        required: true
+      test_nonce:
+        description: "Campo 'nonce' dal log (es. 9961)"
+        required: true
+      test_operation_hash:
+        description: "Campo 'operationHash' dal log"
         required: true
 permissions:
   contents: read
@@ -35,5 +47,9 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
           TEST_FINGERPRINT: ${{ github.event.inputs.test_fingerprint }}
-          TEST_AUTHORIZATION_REQUEST: ${{ github.event.inputs.test_authorization_request }}
+          TEST_CURRENCY: ${{ github.event.inputs.test_currency }}
+          TEST_AMOUNT: ${{ github.event.inputs.test_amount }}
+          TEST_MANGOPAY_WALLET_ID: ${{ github.event.inputs.test_mangopay_wallet_id }}
+          TEST_NONCE: ${{ github.event.inputs.test_nonce }}
+          TEST_OPERATION_HASH: ${{ github.event.inputs.test_operation_hash }}
         run: python test_signature_isolated.py
