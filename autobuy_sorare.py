@@ -350,24 +350,31 @@ def build_card_link(player_slug, card_slug):
 CARD_COVERAGE_QUERY = """
 query CardCoverageQuery($slug: String!) {
   anyCard(slug: $slug) {
-    slug
-    coverageStatus
+    ... on Card {
+      slug
+      coverageStatus
+    }
   }
 }
 """
 
 
 def get_card_coverage_status(card_slug):
-    """FIX 19/07 (caso Aoto Nanamure): coverageStatus non esiste sull'interfaccia
-    AnyCardInterface usata da LIVE_OFFERS_QUERY/SUBSCRIPTION_QUERY (vedi errore GraphQL
-    osservato dal vivo), ma ESISTE sul tipo Card quando raggiunto tramite la query root
-    anyCard(slug: ...) -- confermato ispezionando la risposta reale della pagina carta
-    (query interna del sito). Per non rischiare di rompere di nuovo la subscription,
-    questa query viene chiamata SOLO qui, come controllo aggiuntivo mirato sulla carta
-    candidata, DOPO che il bot ha gia' trovato un margine valido -- non nel flusso critico
-    del listener. Ritorna la stringa coverageStatus (es. 'FULL', 'NOT_COVERED') o None se
-    la query fallisce per qualunque motivo (in quel caso, per sicurezza, NON blocchiamo
-    l'acquisto solo per questo controllo: vedi chiamata in evaluate_event)."""
+    """FIX 19/07 (caso Aoto Nanamure, poi Benji Michel): coverageStatus non esiste
+    sull'interfaccia AnyCardInterface usata da LIVE_OFFERS_QUERY/SUBSCRIPTION_QUERY (vedi
+    errore GraphQL osservato dal vivo), ma ESISTE sul tipo concreto Card raggiunto tramite
+    la query root anyCard(slug: ...) -- confermato ispezionando la risposta reale della
+    pagina carta (query interna del sito). anyCard(slug:...) ritorna pero' il tipo
+    dell'INTERFACCIA (AnyCardInterface), quindi il campo va richiesto tramite un inline
+    fragment esplicito "... on Card { coverageStatus }" e non come campo diretto -- senza
+    il fragment, GraphQL cerca coverageStatus sull'interfaccia stessa e fallisce sempre
+    (bug osservato dal vivo, caso Benji Michel, 19/07). Per non rischiare di rompere di
+    nuovo la subscription, questa query viene chiamata SOLO qui, come controllo aggiuntivo
+    mirato sulla carta candidata, DOPO che il bot ha gia' trovato un margine valido -- non
+    nel flusso critico del listener. Ritorna la stringa coverageStatus (es. 'FULL',
+    'NOT_COVERED') o None se la query fallisce per qualunque motivo (in quel caso, per
+    sicurezza, NON blocchiamo l'acquisto solo per questo controllo: vedi chiamata in
+    evaluate_event)."""
     try:
         data = graphql_query(CARD_COVERAGE_QUERY, {"slug": card_slug})
         if data.get('errors'):
@@ -666,11 +673,12 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
 
-    # FIX 19/07 (caso Aoto Nanamure): controllo mirato SOLO sulla carta candidata (query
-    # separata anyCard(slug), non tocca la subscription) -- se il club del giocatore non e'
-    # coperto da SO5, i punti non vengono conteggiati e la carta e' inutile da giocare,
-    # anche se il prezzo sembra un affare. Se la query fallisce (None), NON blocchiamo
-    # l'acquisto solo per questo -- e' un controllo aggiuntivo, non un requisito core.
+    # FIX 19/07 (caso Aoto Nanamure, poi Benji Michel): controllo mirato SOLO sulla carta
+    # candidata (query separata anyCard(slug), non tocca la subscription) -- se il club del
+    # giocatore non e' coperto da SO5, i punti non vengono conteggiati e la carta e' inutile
+    # da giocare, anche se il prezzo sembra un affare. Se la query fallisce (None), NON
+    # blocchiamo l'acquisto solo per questo -- e' un controllo aggiuntivo, non un requisito
+    # core.
     coverage_status = get_card_coverage_status(card_slug)
     if coverage_status == 'NOT_COVERED':
         log(f"{player_name}: scarto -- club non coperto da SO5 (coverageStatus=NOT_COVERED), "
