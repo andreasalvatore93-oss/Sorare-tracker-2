@@ -822,7 +822,11 @@ def prepare_accept_offer(offer_id):
         auth = auths[0]
         request = dict(auth.get('request') or {})
         request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
-        return {'fingerprint': auth.get('fingerprint'), 'request': request}
+        # FIX 19/07 (velocizzazione sniping): esponiamo anche exchange_rate_id gia'
+        # ottenuto qui, cosi' execute_live_purchase puo' riusarlo invece di rifare la
+        # stessa query GraphQL una seconda volta -- ogni millisecondo conta nello sniping.
+        return {'fingerprint': auth.get('fingerprint'), 'request': request,
+                'exchange_rate_id': exchange_rate_id}
     except Exception as e:
         log(f"[prepare accept] eccezione: {e}")
         return None
@@ -1013,10 +1017,13 @@ def execute_live_purchase(offer_id, prepared):
         return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
     log("[acquisto live] step 2/3 OK: firma generata")
 
-    exchange_rate_id = get_exchange_rate_id()
+    # FIX 19/07 (velocizzazione sniping): riusiamo l'exchange_rate_id gia' ottenuto da
+    # prepare_accept_offer invece di rifare la stessa query GraphQL una seconda volta --
+    # una chiamata di rete in meno nel percorso critico dell'acquisto.
+    exchange_rate_id = prepared.get('exchange_rate_id')
     if not exchange_rate_id:
-        log("[acquisto live] STOP: exchange_rate_id non recuperato")
-        return False, "impossibile recuperare exchange_rate_id per l'accept finale"
+        log("[acquisto live] STOP: exchange_rate_id non disponibile da prepared")
+        return False, "exchange_rate_id non disponibile"
 
     success, category, error = accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id)
     if not success:
@@ -1114,14 +1121,17 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # Protezione liquidita' minima (richiesta esplicita utente, 19/07): scarta il
     # giocatore se ha meno di MIN_RECENT_TRANSACTIONS transazioni (di qualunque tipo)
     # negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS giorni -- un mercato troppo sottile
-    # rende rischioso fidarsi di un margine che sembra un affare (es. svendita a raffica
-    # dopo un infortunio). Se la query fallisce (None), NON blocchiamo l'acquisto solo
-    # per questo -- stessa filosofia fail-safe del coverage check.
-    # Ottimizzazione velocita' (richiesta esplicita utente, 19/07): se questo giocatore
-    # e' gia' stato scartato per mercato troppo sottile negli ultimi THIN_MARKET_SKIP_DAYS
-    # giorni, saltiamo DEL TUTTO la query GraphQL (compreso lo storico transazioni) --
-    # il numero di transazioni recenti non cambia abbastanza in fretta da giustificare
-    # una riverifica immediata ogni volta che il giocatore ricompare.
+    # rende rischioso fidarsi di un margine che sembra un affare. Se la query fallisce
+    # (None), NON blocchiamo l'acquisto solo per questo.
+    # FIX 19/07 (ottimizzazione velocita' sniping, richiesta esplicita utente, analisi log
+    # reale): riportato QUI, prima del calcolo prezzi -- il caso piu' comune di scarto nei
+    # log e' "non e' il minimo attuale" (spesso il vero minimo e' molto piu' basso
+    # dell'annuncio dell'evento, es. evento 1.29EUR con vero minimo 0.33EUR), quindi
+    # calcolare prima il vero minimo (query pesante, spesso su decine di annunci) solo per
+    # scoprire poi che il caso viene scartato per liquidita' e' comunque uno spreco. La
+    # query di liquidita' e' tipicamente piu' leggera/rapida ed e' un buon filtro
+    # discriminante iniziale -- verificarla per prima riduce il lavoro sui casi che
+    # verrebbero comunque scartati.
     if player_slug and is_player_in_thin_market_cache(player_slug):
         log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile negli "
             f"ultimi {THIN_MARKET_SKIP_DAYS} giorni, salto la riverifica")
@@ -1215,18 +1225,14 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
 
-    # FIX 19/07 (caso Aoto Nanamure, poi Benji Michel): controllo mirato SOLO sulla carta
-    # candidata (query separata anyCard(slug), non tocca la subscription) -- se il club del
-    # giocatore non e' coperto da SO5, i punti non vengono conteggiati e la carta e' inutile
-    # da giocare, anche se il prezzo sembra un affare. Se la query fallisce (None), NON
-    # blocchiamo l'acquisto solo per questo -- e' un controllo aggiuntivo, non un requisito
-    # core.
-    coverage_status = get_card_coverage_status(card_slug)
-    log(f"[coverage check] {card_slug} -> {coverage_status!r}")
-    if coverage_status == 'NOT_COVERED':
-        log(f"{player_name}: scarto -- club non coperto da SO5 (coverageStatus=NOT_COVERED), "
-            f"punti non conteggiati")
-        return False
+    # FIX 19/07 (velocizzazione sniping, richiesta esplicita utente): il coverage check
+    # (get_card_coverage_status) e' stato RIMOSSO da qui -- fallisce SEMPRE con lo stesso
+    # errore GraphQL ("Field 'coverageStatus' doesn't exist on type 'AnyCardInterface'",
+    # mai risolto, vedi note progetto), quindi era una query di rete completamente
+    # inutile che rallentava ogni singolo caso senza mai dare un risultato utile. La
+    # workaround per il coverage resta la blacklist manuale giocatori (BLACKLISTED_
+    # PLAYER_SLUGS), controllata all'inizio di questa funzione, PRIMA di spendere
+    # qualunque query di rete -- unico meccanismo attivo per questo problema.
 
     # FASE 2 (prima meta'): prova a "prenotare" l'offerta lato server PRIMA di notificare,
     # cosi' quando l'utente apre il link ed e' pronto a confermare la finestra di rischio
