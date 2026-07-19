@@ -185,3 +185,19 @@ jobs:
             git commit -m "AutoBuy: aggiorna registro acquisti (protezione 24h)"
             git push
           fi
+      - name: Commit cache mercato sottile (velocizza analisi futura)
+        # A differenza del purchase log, questo file SI aggiorna gia' in fase 1 (ogni
+        # volta che un giocatore viene scartato per liquidita' insufficiente) -- vedi
+        # record_thin_market_skip in autobuy_sorare.py. Committato qui perche' la cache
+        # funzioni davvero tra esecuzioni diverse (il workflow riparte da zero ad ogni
+        # run).
+        run: |
+          if git diff --quiet -- autobuy_thin_market_cache.json 2>/dev/null; then
+            echo "Nessuna modifica alla cache mercato sottile, niente da committare."
+          else
+            git config user.name "autobuy-bot"
+            git config user.email "autobuy-bot@users.noreply.github.com"
+            git add autobuy_thin_market_cache.json
+            git commit -m "AutoBuy: aggiorna cache mercato sottile"
+            git push
+          fi
