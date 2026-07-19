@@ -364,7 +364,7 @@ mutation PrepareAcceptOfferMutation($input: prepareAcceptOfferInput!) {
       request {
         ... on MangopayWalletTransferAuthorizationRequest {
           currency
-          fiatAmount
+          amount
           mangopayWalletId
           nonce
           operationHash
