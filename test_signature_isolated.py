@@ -76,10 +76,29 @@ def test_signature(authorization_request, fingerprint):
     """Chiama decrypt_and_sign.js con dati REALI ma senza mai completare l'acquisto --
     stampa solo se la firma e' stata generata, o l'errore esatto, MAI la signature/chiave
     in chiaro."""
-    key_data = fetch_encrypted_private_key()
-    if not key_data:
-        log("Impossibile procedere senza la chiave cifrata.")
-        return
+    # Fallback (19/07, richiesta esplicita utente): se la query GraphQL currentUser.
+    # sorarePrivateKey continua a tornare null (problema non ancora risolto), l'utente
+    # puo' fornire direttamente encryptedPrivateKey/iv/salt gia' recuperati in
+    # precedenza (es. da un JSON incollato manualmente in chat) come GitHub Secret --
+    # questi hanno PRIORITA' sulla query GraphQL se presenti, per isolare il test della
+    # sola firma senza dipendere dal problema ancora aperto sulla query.
+    encrypted_key_env = os.environ.get('TEST_ENCRYPTED_PRIVATE_KEY', '')
+    iv_env = os.environ.get('TEST_IV', '')
+    salt_env = os.environ.get('TEST_SALT', '')
+
+    if encrypted_key_env and iv_env and salt_env:
+        log("Uso encryptedPrivateKey/iv/salt forniti direttamente (bypass query GraphQL, "
+            "valori non loggati per sicurezza).")
+        key_data = {
+            'encryptedPrivateKey': encrypted_key_env,
+            'iv': iv_env,
+            'salt': salt_env,
+        }
+    else:
+        key_data = fetch_encrypted_private_key()
+        if not key_data:
+            log("Impossibile procedere senza la chiave cifrata.")
+            return
 
     if not WALLET_PASSWORD:
         log("ERRORE: variabile SORARE_WALLET_PASSWORD non impostata.")
