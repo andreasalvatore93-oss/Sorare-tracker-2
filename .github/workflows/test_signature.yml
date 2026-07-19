@@ -46,6 +46,9 @@ jobs:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
+          TEST_ENCRYPTED_PRIVATE_KEY: ${{ secrets.TEST_ENCRYPTED_PRIVATE_KEY }}
+          TEST_IV: ${{ secrets.TEST_IV }}
+          TEST_SALT: ${{ secrets.TEST_SALT }}
           TEST_FINGERPRINT: ${{ github.event.inputs.test_fingerprint }}
           TEST_CURRENCY: ${{ github.event.inputs.test_currency }}
           TEST_AMOUNT: ${{ github.event.inputs.test_amount }}
