@@ -504,6 +504,78 @@ def get_card_coverage_status(card_slug):
         return None
 
 
+# --- Protezione "liquidita' minima del giocatore" (richiesta esplicita utente, 19/07) ---
+# Motivazione: se un giocatore ha pochissime transazioni recenti, un annuncio "affare" puo'
+# essere frutto di un evento anomalo (es. infortunio, con manager che svendono a raffica le
+# poche carte rimaste) piuttosto che un vero errore di prezzo su un mercato liquido -- meglio
+# ignorare il caso piuttosto che rischiare di comprare su un mercato cosi' sottile. Query
+# riusata da track.py (funzione fetch_player_recent_direct_buys, gia' confermata funzionante
+# dal vivo): tokens.tokenPrices(playerSlug, rarity: limited) con deal.type -- a differenza di
+# track.py (che filtra SOLO deal.type == 'SINGLE_SALE_OFFER' per isolare lo sniping), qui
+# contiamo QUALSIASI transazione (deal.type presente, qualunque valore: SINGLE_SALE_OFFER,
+# SINGLE_BUY_OFFER, DIRECT_OFFER, aste, ecc. -- richiesta esplicita "di qualunque tipo incluso
+# le aste, offerta diretta, scambio"), perche' qui l'obiettivo e' misurare la liquidita'
+# generale del giocatore, non isolare un tipo di transazione specifico.
+RECENT_TRANSACTIONS_QUERY = """
+query RecentTransactionsQuery($p: String!) {
+  tokens {
+    tokenPrices(playerSlug: $p, rarity: limited) {
+      date
+      deal {
+        ... on TokenOffer {
+          type
+        }
+        ... on TokenAuction {
+          type
+        }
+        ... on TokenPrimaryOffer {
+          type
+        }
+      }
+    }
+  }
+}
+"""
+
+# Soglia minima di transazioni negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS giorni --
+# sotto questa soglia il giocatore viene scartato indipendentemente dal margine trovato.
+MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '3'))
+RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '7'))
+
+
+def count_recent_transactions(player_slug):
+    """Ritorna il numero di transazioni (di qualunque tipo: vendita diretta, offerta diretta,
+    asta, ecc.) di player_slug negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS giorni, oppure
+    None se la query fallisce per qualunque motivo. Fail-safe: se la query fallisce, il
+    chiamante NON deve bloccare l'acquisto solo per questo (stessa filosofia di
+    get_card_coverage_status) -- vedi commento nella chiamata in evaluate_event."""
+    try:
+        data = graphql_query(RECENT_TRANSACTIONS_QUERY, {"p": player_slug})
+        if data.get('errors'):
+            log(f"[liquidita'] errore GraphQL per {player_slug}: {data['errors']}")
+            return None
+        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
+    except Exception as e:
+        log(f"[liquidita'] eccezione per {player_slug}: {e}")
+        return None
+
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        days=RECENT_TRANSACTIONS_WINDOW_DAYS)
+    count = 0
+    for n in nodes:
+        deal_type = (n.get('deal') or {}).get('type')
+        if not deal_type:
+            continue  # nodo senza tipo riconoscibile, non contabile con certezza
+        date_str = n.get('date') or ''
+        try:
+            dt = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            continue
+        if dt >= cutoff:
+            count += 1
+    return count
+
+
 EXCHANGE_RATE_QUERY = """
 query ExchangeRateQuery {
   config {
@@ -759,6 +831,19 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return False
 
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
+        return False
+
+    # Protezione liquidita' minima (richiesta esplicita utente, 19/07): scarta il
+    # giocatore se ha meno di MIN_RECENT_TRANSACTIONS transazioni (di qualunque tipo)
+    # negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS giorni -- un mercato troppo sottile
+    # rende rischioso fidarsi di un margine che sembra un affare (es. svendita a raffica
+    # dopo un infortunio). Se la query fallisce (None), NON blocchiamo l'acquisto solo
+    # per questo -- stessa filosofia fail-safe del coverage check.
+    recent_tx_count = count_recent_transactions(player_slug)
+    if recent_tx_count is not None and recent_tx_count < MIN_RECENT_TRANSACTIONS:
+        log(f"{player_name}: scarto -- solo {recent_tx_count} transazioni negli ultimi "
+            f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
+            f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
         return False
 
     if is_in_season:
