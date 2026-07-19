@@ -28,13 +28,12 @@ con un semplice curl) -- niente piu' probing alla cieca. Da li' si vede che:
     L'unico segnale aggiuntivo debole disponibile e' "pack" (se valorizzato, la carta e' quasi
     certamente uscita da un pacchetto acquistato, quindi probabilmente NON craftata via essenze);
     se e' null il caso craft/premio resta plausibile ma non e' una certezza.
-  - FILTRO CAMPIONATI (aggiunto 19/07, richiesta esplicita): la ricerca delle stampe create di
-    recente (fase 2) e' ristretta ai campionati in CRAFT_COMPETITIONS (default: MLS "mlspa" e
-    K League 1 "k-league-1", configurabile via env CRAFT_COMPETITIONS separato da virgola),
-    usando l'argomento "inActiveCompetitions" di anyCards/cards -- filtro lato server, non un
-    post-filtro Python. Stesso discorso per "in season": ora e' anche un argomento della query
-    (inSeasonEligible: true) oltre al controllo Python gia' presente in
-    find_recently_created_card (tenuto come doppia sicurezza).
+  - CAMPIONATO SINGOLO OPZIONALE (aggiunto 19/07): env CRAFT_COMPETITION, vuoto di default
+    (cerca in tutti i campionati). Se valorizzato con una delle sigle comode in
+    CRAFT_COMPETITION_CHOICES (mls, k-league, jupiler-pro-league, eredivisie, ligue-1,
+    bundesliga, j-league, liga-spagnola) o con lo slug Sorare diretto, filtra lato server con
+    l'argomento "inActiveCompetitions" di anyCards/cards.
+  - CRAFT_MIN_PRICE_EUR ora e' 0.50 di default (prima 1).
   a) probe_creation_fields(): prova la lista di candidati (timestamp di creazione + il debole
      segnale "pack") su anyCard(CRAFT_PROBE_CARD_SLUG), con inline fragment dove serve, e logga
      OK/ERRORE per ciascuno -- il primo timestamp funzionante viene usato per la finestra ore.
@@ -59,8 +58,8 @@ import track
 
 # --- Configurazione ---
 MAX_RUN_SECONDS = float(os.environ.get('CRAFT_MAX_RUN_SECONDS', '500'))
-CRAFT_WINDOW_HOURS = float(os.environ.get('CRAFT_WINDOW_HOURS', '6'))
-CRAFT_MIN_PRICE_EUR = float(os.environ.get('CRAFT_MIN_PRICE_EUR', '1'))
+CRAFT_WINDOW_HOURS = float(os.environ.get('CRAFT_WINDOW_HOURS', '10'))
+CRAFT_MIN_PRICE_EUR = float(os.environ.get('CRAFT_MIN_PRICE_EUR', '0.50'))
 CRAFT_MAX_PRICE_EUR = float(os.environ.get('CRAFT_MAX_PRICE_EUR', '20'))
 # Carta di prova SICURAMENTE creata (dell'utente) per la scoperta dei campi schema.
 CRAFT_PROBE_CARD_SLUG = os.environ.get('CRAFT_PROBE_CARD_SLUG', 'heung-min-son-2026-limited-364')
@@ -107,20 +106,28 @@ CREATION_TYPE_CANDIDATES = [
     ('pack', '... on Card { pack { id } }'),
 ]
 
-# Campionati su cui restringere la ricerca (slug reali di Competition, quelli usati anche in
-# active_competitions/algoliaFilters -- es. "mlspa" per la MLS, "k-league-1" per la K League 1).
-# Configurabile via env, separato da virgola.
-CRAFT_COMPETITIONS = [
-    s.strip() for s in os.environ.get('CRAFT_COMPETITIONS', 'mlspa,k-league-1').split(',')
-    if s.strip()
-]
-# Frammento di filtro da inserire dentro anyCards(...): restringe sia ai campionati sopra sia
-# alle carte in season (query-level, non serve piu' solo il controllo Python a valle -- che
-# comunque teniamo come doppia sicurezza in find_recently_created_card).
-_CRAFT_LEAGUE_FILTER = (
-    'inSeasonEligible: true, inActiveCompetitions: [' +
-    ', '.join(f'"{c}"' for c in CRAFT_COMPETITIONS) + ']'
-)
+# Campo singolo opzionale per restringere la ricerca a UN campionato specifico (se vuoto,
+# cerca in tutti come prima). Le chiavi qui sotto sono le sigle "comode" da usare nel workflow
+# (dropdown), mappate ai veri slug di Competition su Sorare (confermati dallo schema/dai dati
+# di so5Competitions visti in produzione). Si puo' anche passare direttamente lo slug Sorare,
+# se preferisci, invece della sigla comoda: viene usato cosi' com'e' se non e' tra le chiavi.
+CRAFT_COMPETITION_CHOICES = {
+    'mls': 'mlspa',
+    'k-league': 'k-league-1',
+    'jupiler-pro-league': 'jupiler-pro-league',
+    'eredivisie': 'eredivisie',
+    'ligue-1': 'ligue-1-fr',
+    'bundesliga': 'bundesliga-de',
+    'j-league': 'j1-league',
+    'liga-spagnola': 'laliga-es',
+}
+_raw_competition = os.environ.get('CRAFT_COMPETITION', '').strip().lower()
+CRAFT_COMPETITION_SLUG = (CRAFT_COMPETITION_CHOICES.get(_raw_competition, _raw_competition)
+                          if _raw_competition else None)
+# Frammento da appendere dentro anyCards(...)/cards(...): vuoto se nessun campionato scelto
+# (cerca ovunque, comportamento di default), altrimenti filtra lato server su quel campionato.
+_CRAFT_LEAGUE_FILTER = (f', inActiveCompetitions: ["{CRAFT_COMPETITION_SLUG}"]'
+                        if CRAFT_COMPETITION_SLUG else '')
 
 _creation_ts_field = None       # None = non ancora scoperto, '' = nessuno funziona
 _creation_ts_fragment = None    # frammento query corrispondente al campo scoperto
@@ -199,7 +206,7 @@ PLAYER_CARDS_QUERY_CANDIDATES = [
     ("anyPlayer.anyCards", """
      query PlayerCards($slug: String!) {
        anyPlayer(slug: $slug) {
-         anyCards(rarities: [limited], first: 40, %s) {
+         anyCards(rarities: [limited], first: 40%s) {
            nodes {
              slug
              inSeasonEligible
@@ -215,7 +222,7 @@ PLAYER_CARDS_QUERY_CANDIDATES = [
     ("anyPlayer.cards", """
      query PlayerCards($slug: String!) {
        anyPlayer(slug: $slug) {
-         cards(rarities: [limited], first: 40, %s) {
+         cards(rarities: [limited], first: 40%s) {
            nodes {
              slug
              inSeasonEligible
@@ -232,7 +239,7 @@ PLAYER_CARDS_QUERY_CANDIDATES = [
      query PlayerCards($slug: String!) {
        football {
          player(slug: $slug) {
-           cards(rarities: [limited], first: 40, %s) {
+           cards(rarities: [limited], first: 40%s) {
              nodes {
                slug
                inSeasonEligible
@@ -422,9 +429,10 @@ def handle_event(offer, eth_rate, stats):
 
 
 def run_scanner():
-    log(f"avvio -- fascia {CRAFT_MIN_PRICE_EUR:.0f}-{CRAFT_MAX_PRICE_EUR:.0f}EUR, finestra "
+    log(f"avvio -- fascia {CRAFT_MIN_PRICE_EUR:.2f}-{CRAFT_MAX_PRICE_EUR:.0f}EUR, finestra "
         f"creazione {CRAFT_WINDOW_HOURS:.0f}h, durata max {MAX_RUN_SECONDS:.0f}s, blacklist "
-        f"{len(CRAFT_BLACKLIST_MANAGERS)} manager, campionati {CRAFT_COMPETITIONS}")
+        f"{len(CRAFT_BLACKLIST_MANAGERS)} manager, campionato: "
+        f"{CRAFT_COMPETITION_SLUG or 'tutti'}")
     if not probe_creation_fields():
         return
     eth_rate = track.get_eth_rate()
