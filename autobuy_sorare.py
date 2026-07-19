@@ -415,10 +415,69 @@ def prepare_accept_offer(offer_id):
         if not auths:
             log("[prepare accept] nessuna authorization restituita")
             return None
-        return auths[0].get('request')
+        # Restituiamo fingerprint + request (con __typename incluso) -- servono ENTRAMBI a
+        # sign_authorization_via_node/signAuthorizationRequest quando si attivera' la firma
+        # automatica (opzione 1, non ancora collegata a nulla qui). Oggi 'fingerprint' non
+        # viene ancora usato da nessuna parte del bot.
+        auth = auths[0]
+        request = dict(auth.get('request') or {})
+        request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
+        return {'fingerprint': auth.get('fingerprint'), 'request': request}
     except Exception as e:
         log(f"[prepare accept] eccezione: {e}")
         return None
+
+
+def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
+    """FASE 2 SECONDA META' (opzione 1, NON ANCORA ATTIVATA da nessuna parte del bot --
+    questa funzione esiste ma non e' chiamata in evaluate_event/main; e' il "cablaggio
+    pronto" per quando si decidera' di passare all'acquisto davvero automatico).
+
+    Richiama sorare-sign/decrypt_and_sign.js (Node.js) via subprocess, passandogli via
+    stdin un JSON con: password del wallet, i tre campi restituiti da
+    FetchEncryptedPrivateKey (encrypted_private_key/iv/salt), e l'intero oggetto
+    authorization_request (incluso __typename) restituito da prepare_accept_offer.
+
+    Lo script Node decripta la chiave privata (PBKDF2 + AES-GCM, stesso algoritmo usato
+    dal sito sorare.com) e poi chiama @sorare/crypto.signAuthorizationRequest per
+    ottenere la signature -- funzione ufficiale confermata nel repo pubblico
+    github.com/sorare/api/examples/authorizations.js.
+
+    Ritorna la stringa signature (da usare in approvals[0].mangopayWalletTransferApproval)
+    oppure None se qualcosa fallisce (password sbagliata, script non trovato, dipendenze
+    npm non installate, ecc.) -- logga sempre il motivo."""
+    import subprocess
+    payload = json.dumps({
+        'password': password,
+        'encryptedPrivateKey': encrypted_private_key,
+        'iv': iv,
+        'salt': salt,
+        'authorizationRequest': authorization_request,
+    })
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
+    try:
+        result = subprocess.run(
+            ['node', script_path],
+            input=payload,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except Exception as e:
+        log(f"[firma Node] eccezione lanciando node: {e}")
+        return None
+    if result.returncode != 0:
+        log(f"[firma Node] script terminato con errore (codice {result.returncode}): {result.stderr.strip()}")
+        return None
+    try:
+        output = json.loads(result.stdout.strip())
+    except json.JSONDecodeError:
+        log(f"[firma Node] output non JSON valido: {result.stdout!r}")
+        return None
+    if 'error' in output:
+        log(f"[firma Node] errore riportato dallo script: {output['error']}")
+        return None
+    return output.get('signature')
 
 
 def send_would_have_bought_alert(player_name, player_slug, price_eur, second_price, margin_percent,
@@ -518,7 +577,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     if offer_id:
         prepared = prepare_accept_offer(offer_id)
         if prepared:
-            log(f"{player_name}: offerta prenotata lato server (nonce={prepared.get('nonce')})")
+            nonce = (prepared.get('request') or {}).get('nonce')
+            log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
         else:
             log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
 
