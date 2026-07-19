@@ -220,7 +220,6 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
             sport
             sportSeason { name }
             inSeasonEligible
-            coverageStatus
             anyPlayer { activeClub { domesticLeague { slug } } }
           }
         }
@@ -284,8 +283,6 @@ def get_bucket_prices(player_slug, eth_rate):
                 continue
             if c.get('sport') != 'FOOTBALL':
                 continue
-            if c.get('coverageStatus') == 'NOT_COVERED':
-                continue  # carta in un club non coperto da SO5, punti non conteggiati
             match = c
             break
         if not match:
@@ -769,8 +766,6 @@ def run_listener(eth_rate):
                 continue
             if not card.get('inSeasonEligible'):
                 continue  # SOLO in season
-            if card.get('coverageStatus') == 'NOT_COVERED':
-                continue  # club non coperto da SO5, punti non conteggiati -- inutile giocarla
 
             player = card.get('anyPlayer') or {}
             player_slug = player.get('slug')
