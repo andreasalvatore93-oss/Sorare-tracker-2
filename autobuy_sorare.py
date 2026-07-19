@@ -137,8 +137,8 @@ AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione, se non si verifica prima un caso
 # valido (il bot si ferma comunque al primo caso trovato).
-LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '3000'))
-LISTEN_SECONDS = min(3600, LISTEN_SECONDS)  # tetto massimo 1h, indipendentemente dall'input
+LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
+LISTEN_SECONDS = min(18000, LISTEN_SECONDS)  # tetto massimo 5h, indipendentemente dall'input
 
 # FIX 19/07 (richiesta esplicita utente): per QUESTI 2 campionati il confronto in_season
 # resta quello attuale (SOLO in_season, nessun classic unito) -- per tutti gli altri
@@ -982,24 +982,28 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
         return False, 'eccezione', str(e)
 
 
-def execute_live_purchase(offer_id, prepared):
+def execute_live_purchase(offer_id, prepared, key_data_prefetched=None):
     """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
     AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
     ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
     altrimenti -- MAI retry, MAI tentativi alternativi, un solo tentativo secco. Ogni
     step logga il proprio esito (successo o fallimento) per poter capire SUBITO dai log
-    quale step specifico e' fallito, senza dover dedurlo dal messaggio finale."""
+    quale step specifico e' fallito, senza dover dedurlo dal messaggio finale.
+    key_data_prefetched (FIX 19/07, ottimizzazione velocita'): se la chiave cifrata e'
+    gia' stata recuperata IN PARALLELO con prepare_accept_offer (vedi evaluate_event),
+    la riusiamo qui invece di rifare la stessa query GraphQL una seconda volta."""
     log(f"[acquisto live] avvio -- offer_id={offer_id}")
 
     if not SORARE_WALLET_PASSWORD:
         log("[acquisto live] STOP: SORARE_WALLET_PASSWORD non impostata")
         return False, "SORARE_WALLET_PASSWORD non impostata"
 
-    key_data = fetch_encrypted_private_key()
+    key_data = key_data_prefetched if key_data_prefetched is not None else fetch_encrypted_private_key()
     if not key_data:
         log("[acquisto live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
         return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
-    log("[acquisto live] step 1/3 OK: chiave cifrata recuperata")
+    log("[acquisto live] step 1/3 OK: chiave cifrata recuperata"
+        + (" (in parallelo con prepare)" if key_data_prefetched is not None else ""))
 
     fingerprint = prepared.get('fingerprint')
     request = prepared.get('request') or {}
@@ -1234,15 +1238,41 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # PLAYER_SLUGS), controllata all'inizio di questa funzione, PRIMA di spendere
     # qualunque query di rete -- unico meccanismo attivo per questo problema.
 
-    # FASE 2 (prima meta'): prova a "prenotare" l'offerta lato server PRIMA di notificare,
-    # cosi' quando l'utente apre il link ed e' pronto a confermare la finestra di rischio
-    # (altri manager che comprano nel frattempo) e' gia' ridotta. Non firma nulla, non
-    # completa l'acquisto -- solo prepareAcceptOffer, reversibile e senza side-effect
-    # sul saldo. Se fallisce per qualunque motivo, si prosegue comunque con la notifica
-    # normale (questo passaggio e' un extra, mai un requisito per notificare).
+    # FIX 19/07 (ottimizzazione velocita', richiesta esplicita utente dopo caso
+    # sniperato con errore unknown_fingerprint): prepare_accept_offer() e
+    # fetch_encrypted_private_key() sono operazioni INDIPENDENTI tra loro (una prenota
+    # l'offerta lato server, l'altra recupera la chiave cifrata del wallet -- non una
+    # dipende dall'altra) ma prima venivano fatte in sequenza (prima prepare, POI dentro
+    # execute_live_purchase la fetch), raddoppiando inutilmente il tempo totale della
+    # finestra critica in cui un altro manager puo' sniperare la carta. Ora, quando
+    # AUTOBUY_LIVE_MODE e' attivo, le lanciamo IN PARALLELO su due thread e aspettiamo
+    # solo la piu' lenta delle due -- dimezza (circa) il tempo prima di poter firmare e
+    # completare l'acquisto. In modalita' diagnostica (non live) il comportamento resta
+    # sequenziale come prima (nessun bisogno di parallelizzare se non si compra
+    # davvero).
     prepared = None
+    key_data_prefetched = None
     if offer_id:
-        prepared = prepare_accept_offer(offer_id)
+        if AUTOBUY_LIVE_MODE:
+            results = {}
+
+            def _run_prepare():
+                results['prepared'] = prepare_accept_offer(offer_id)
+
+            def _run_fetch_key():
+                results['key_data'] = fetch_encrypted_private_key()
+
+            t_prepare = threading.Thread(target=_run_prepare)
+            t_fetch = threading.Thread(target=_run_fetch_key)
+            t_prepare.start()
+            t_fetch.start()
+            t_prepare.join()
+            t_fetch.join()
+            prepared = results.get('prepared')
+            key_data_prefetched = results.get('key_data')
+        else:
+            prepared = prepare_accept_offer(offer_id)
+
         if prepared:
             nonce = (prepared.get('request') or {}).get('nonce')
             log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
@@ -1256,7 +1286,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     purchase_error = None
     if AUTOBUY_LIVE_MODE and offer_id and prepared:
         try:
-            purchase_completed, purchase_error = execute_live_purchase(offer_id, prepared)
+            purchase_completed, purchase_error = execute_live_purchase(
+                offer_id, prepared, key_data_prefetched)
         except Exception as e:
             # Ultima rete di sicurezza: qualunque eccezione imprevista qui (bug non
             # anticipato in uno degli step) NON deve far crashare l'intero bot ne'
