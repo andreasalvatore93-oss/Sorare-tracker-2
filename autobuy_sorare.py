@@ -65,15 +65,15 @@ if _extra_blacklisted_players.strip():
 # Fascia di prezzo dell'ANNUNCIO che scatena la valutazione: default 1-5EUR, ma regolabile
 # fino a un tetto piu' alto (es. 20EUR) durante i test.
 AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1'))
-AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '5'))
+AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
 
 # Margine minimo richiesto tra il prezzo minimo attuale e il secondo prezzo minimo attuale
 # (stesso bucket in_season), es. 0.15 = 15%.
-AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.15'))
+AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'))
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione, se non si verifica prima un caso
 # valido (il bot si ferma comunque al primo caso trovato).
-LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '250'))
+LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '900'))
 
 # FIX 19/07 (richiesta esplicita utente): per QUESTI 2 campionati il confronto in_season
 # resta quello attuale (SOLO in_season, nessun classic unito) -- per tutti gli altri
@@ -86,7 +86,7 @@ EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 # Quanti casi "lo avrei acquistato" notificare prima di fermarsi definitivamente (1-10).
 # Utile per la fase di test manuale: si lascia girare finche' non arrivano N notifiche,
 # senza dover riavviare il workflow a mano ogni volta.
-AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '1'))
+AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '5'))
 AUTOBUY_TARGET_MATCHES = max(1, min(10, AUTOBUY_TARGET_MATCHES))
 
 # Diagnostica: se attiva, logga info aggiuntive sul confronto in_season/classic per ogni
