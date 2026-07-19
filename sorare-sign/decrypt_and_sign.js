@@ -83,7 +83,7 @@ async function decryptPrivateKey({ password, encryptedPrivateKey, iv, salt }) {
     console.error(`[debug] plainBuf non decodificabile come UTF-8: ${e.message}`);
   }
 
-  const bytes2 = new Uint8Array(plainBuf);
+  const bytes2 = new Uint8Array(plainBuf).slice(0, 32);
   const hex = Array.from(bytes2).map(b => b.toString(16).padStart(2, '0')).join('');
   return '0x' + hex;
 }
