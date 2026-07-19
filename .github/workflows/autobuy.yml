@@ -34,6 +34,10 @@ on:
         description: "Controlla anche gli annunci CLASSIC (tutti i campionati, confronto sul minimo assoluto classic+in_season), di default spento"
         required: false
         default: "no"
+      min_recent_transactions:
+        description: "Transazioni minime (di qualunque tipo) del giocatore negli ultimi 7 giorni per non scartare il caso -- protezione mercato troppo sottile"
+        required: false
+        default: "3"
 permissions:
   contents: write
 # Nessuna concorrenza con track.py: workflow e job completamente separati, nessuna
@@ -113,6 +117,7 @@ jobs:
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'no' }}
+          MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
         run: |
           set -o pipefail
           # Il workflow espone la percentuale in modo leggibile (es. "15" = 15%), lo script
