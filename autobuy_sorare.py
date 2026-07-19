@@ -220,6 +220,69 @@ def record_player_purchase(player_slug):
     _save_purchase_log(purchase_log)
     log(f"[purchase log] registrato acquisto di {player_slug}, cooldown {PLAYER_COOLDOWN_HOURS}h")
 
+
+# --- Cache "mercato troppo sottile" (richiesta esplicita utente, 19/07) ---
+# Ottimizzazione velocita': se un giocatore e' gia' stato scartato dal controllo
+# liquidita' (count_recent_transactions, vedi piu' sotto), rifare la stessa query
+# GraphQL ogni volta che ricompare e' inutile -- il numero di transazioni recenti non
+# cambia abbastanza in fretta da giustificare una riverifica immediata. Cache separata dal
+# purchase log (scopo diverso: qui non e' un acquisto, e' solo un giocatore da ri-provare
+# piu' avanti), persistita su file JSON per lo stesso motivo del purchase log (il
+# workflow riparte da zero ad ogni esecuzione). Se la finestra scade, il giocatore torna
+# ad essere valutato normalmente (nuova query, nuovo esito possibile).
+THIN_MARKET_CACHE_PATH = os.environ.get('THIN_MARKET_CACHE_PATH', 'autobuy_thin_market_cache.json')
+THIN_MARKET_SKIP_DAYS = int(os.environ.get('THIN_MARKET_SKIP_DAYS', '3'))
+
+
+def _load_thin_market_cache():
+    """Ritorna {player_slug: iso_timestamp_ultimo_scarto}. File mancante o corrotto ->
+    dizionario vuoto (fail-safe: un file assente/corrotto non deve mai bloccare una
+    valutazione, al massimo si rifa' la query GraphQL di troppo)."""
+    try:
+        with open(THIN_MARKET_CACHE_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            return data
+        return {}
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        log(f"[liquidita' cache] errore lettura {THIN_MARKET_CACHE_PATH}, ignorato: {e}")
+        return {}
+
+
+def _save_thin_market_cache(cache_data):
+    try:
+        with open(THIN_MARKET_CACHE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(cache_data, f, indent=2, sort_keys=True)
+    except Exception as e:
+        log(f"[liquidita' cache] errore scrittura {THIN_MARKET_CACHE_PATH}: {e}")
+
+
+def is_player_in_thin_market_cache(player_slug):
+    """True se player_slug e' stato scartato per mercato troppo sottile negli ultimi
+    THIN_MARKET_SKIP_DAYS giorni -- in tal caso saltiamo del tutto count_recent_
+    transactions (nessuna query GraphQL), velocizzando l'analisi sui casi ripetuti."""
+    cache = _load_thin_market_cache()
+    last_skip_iso = cache.get(player_slug)
+    if not last_skip_iso:
+        return False
+    try:
+        last_skip = datetime.datetime.fromisoformat(last_skip_iso)
+    except ValueError:
+        return False
+    elapsed_days = (datetime.datetime.now(datetime.timezone.utc) - last_skip).total_seconds() / 86400
+    return elapsed_days < THIN_MARKET_SKIP_DAYS
+
+
+def record_thin_market_skip(player_slug):
+    """Registra che player_slug e' stato scartato per mercato troppo sottile ORA, cosi'
+    i prossimi eventi su di lui (entro THIN_MARKET_SKIP_DAYS giorni) saltano subito senza
+    rifare la query GraphQL."""
+    cache = _load_thin_market_cache()
+    cache[player_slug] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    _save_thin_market_cache(cache)
+
 _FIAT_RATE_CACHE = {}
 
 
@@ -880,16 +943,30 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # rende rischioso fidarsi di un margine che sembra un affare (es. svendita a raffica
     # dopo un infortunio). Se la query fallisce (None), NON blocchiamo l'acquisto solo
     # per questo -- stessa filosofia fail-safe del coverage check.
+    # Ottimizzazione velocita' (richiesta esplicita utente, 19/07): se questo giocatore
+    # e' gia' stato scartato per mercato troppo sottile negli ultimi THIN_MARKET_SKIP_DAYS
+    # giorni, saltiamo DEL TUTTO la query GraphQL (compreso lo storico transazioni) --
+    # il numero di transazioni recenti non cambia abbastanza in fretta da giustificare
+    # una riverifica immediata ogni volta che il giocatore ricompare.
+    if player_slug and is_player_in_thin_market_cache(player_slug):
+        log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile negli "
+            f"ultimi {THIN_MARKET_SKIP_DAYS} giorni, salto la riverifica")
+        return False
+
     count_7d, count_30d = count_recent_transactions(player_slug)
     if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
             f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
+        if player_slug:
+            record_thin_market_skip(player_slug)
         return False
     if count_30d is not None and count_30d < MIN_TRANSACTIONS_30D:
         log(f"{player_name}: scarto -- solo {count_30d} transazioni negli ultimi "
             f"{TRANSACTIONS_WINDOW_30D_DAYS} giorni (minimo richiesto "
             f"{MIN_TRANSACTIONS_30D}), mercato troppo sottile")
+        if player_slug:
+            record_thin_market_skip(player_slug)
         return False
 
     if is_in_season:
