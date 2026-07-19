@@ -46,15 +46,42 @@ BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
 
 # Giocatori da IGNORARE completamente in questo bot (workaround manuale al posto del
 # controllo coverageStatus, che non e' utilizzabile via GraphQL -- vedi note progetto).
-# L'utente aggiunge qui lo slug del giocatore preso dall'URL della pagina giocatore, es.
-# https://sorare.com/it/football/players/aoto-nanamure -> slug 'aoto-nanamure'. Qualsiasi
-# evento su un giocatore in questa lista viene scartato PRIMA di qualunque altro controllo
-# (prezzo, margine, ecc.), quindi non genera mai una notifica ne' una prenotazione.
-# Configurabile anche da workflow tramite la variabile d'ambiente BLACKLISTED_PLAYER_SLUGS
-# (slug separati da virgola), che si somma a questa lista hardcoded senza sostituirla.
-BLACKLISTED_PLAYER_SLUGS = {
-    'aoto-nanamure',
-}
+# Lista letta da un file DEDICATO a questo bot (sorare_autobuy_blacklist.txt, nella root
+# del repo, un player_slug per riga, righe vuote o che iniziano con '#' ignorate) --
+# scelto cosi' (invece che hardcoded nel .py) per poterla vedere/editare direttamente su
+# GitHub, senza dover lanciare il workflow ne' modificare il codice Python. File separato
+# da qualunque blacklist usata da track.py/crafted_card_scanner.py: tocca SOLO questo
+# bot. L'utente aggiunge una riga con lo slug del giocatore preso dall'URL della pagina
+# giocatore, es. https://sorare.com/it/football/players/aoto-nanamure -> riga
+# 'aoto-nanamure'. Qualsiasi evento su un giocatore in questa lista viene scartato PRIMA
+# di qualunque altro controllo (prezzo, margine, ecc.), quindi non genera mai una
+# notifica ne' una prenotazione. Resta anche configurabile via env var
+# BLACKLISTED_PLAYER_SLUGS (slug separati da virgola, utile per un'aggiunta rapida da
+# workflow senza toccare il file), che si SOMMA al contenuto del file senza sostituirlo.
+BLACKLIST_FILE_PATH = os.environ.get('BLACKLIST_FILE_PATH', 'sorare_autobuy_blacklist.txt')
+
+
+def _load_player_blacklist_file():
+    """Legge BLACKLIST_FILE_PATH riga per riga. File mancante o illeggibile -> set vuoto
+    (fail-safe: un file assente/corrotto non deve bloccare l'esecuzione del bot)."""
+    try:
+        with open(BLACKLIST_FILE_PATH, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        return set()
+    except Exception as e:
+        log(f"[blacklist giocatori] errore lettura {BLACKLIST_FILE_PATH}, ignorato: {e}")
+        return set()
+    slugs = set()
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        slugs.add(line.lower())
+    return slugs
+
+
+BLACKLISTED_PLAYER_SLUGS = _load_player_blacklist_file()
 _extra_blacklisted_players = os.environ.get('BLACKLISTED_PLAYER_SLUGS', '')
 if _extra_blacklisted_players.strip():
     BLACKLISTED_PLAYER_SLUGS |= {
@@ -93,6 +120,17 @@ AUTOBUY_TARGET_MATCHES = max(1, min(10, AUTOBUY_TARGET_MATCHES))
 # giocatore valutato (lega rilevata, quanti annunci classic trovati, ecc.) -- utile solo
 # per verificare che la nuova logica scatti davvero come previsto, di default spenta.
 AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+
+# Modalita' aggiuntiva (richiesta esplicita utente, 19/07): se attiva, il bot valuta
+# ANCHE gli annunci CLASSIC (non solo in_season come nella modalita' base), per TUTTI i
+# campionati senza eccezioni (a differenza della logica in_season, qui MLS/K League non
+# sono esclusi -- e' un controllo separato e piu' semplice). Per un annuncio classic, il
+# confronto e' contro il minimo ASSOLUTO tra classic+in_season uniti (un unico mercato,
+# stesso criterio gia' usato per in_season quando la lega non e' esclusa) -- se
+# l'annuncio classic risulta il minimo assoluto con margine sufficiente sul secondo,
+# notifica. Di default spenta per non cambiare il comportamento esistente durante i test
+# in corso.
+CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 
 # --- Protezione "no ri-acquisto stesso giocatore entro 24h" (per fase 2, automazione
 # completa) ---
@@ -656,9 +694,12 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
 
 
 def send_would_have_bought_alert(player_name, player_slug, price_eur, second_price, margin_percent,
-                                  card_slug, excluded_league, prepared=None):
+                                  card_slug, excluded_league, prepared=None, is_in_season=True):
     link = build_card_link(player_slug, card_slug)
-    categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
+    if not is_in_season:
+        categoria = "CLASSIC (modalita' check_classic, confronto su tutti i campionati)"
+    else:
+        categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
     prenotazione = (
         "\u2705 Offerta prenotata lato server (piu' veloce da confermare)\n"
         if prepared else
@@ -679,18 +720,35 @@ def send_would_have_bought_alert(player_name, player_slug, price_eur, second_pri
 
 
 def send_startup_msg():
+    classic_msg = "\nModalita' CLASSIC attiva (tutti i campionati)" if CHECK_CLASSIC else ""
     send_telegram_msg(
         f"\U0001F916 <b>AutoBuy Sorare avviato</b> (solo diagnostica, nessun acquisto reale)\n"
         f"Fascia prezzo: {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR\n"
         f"Margine richiesto: {AUTOBUY_MARGIN_FRACTION:.0%}\n"
-        f"Ascolto per {LISTEN_SECONDS}s o fino al primo caso valido."
+        f"Ascolto per {LISTEN_SECONDS}s o fino al primo caso valido.{classic_msg}"
+    )
+
+
+def send_end_msg(matches_found, target_reached):
+    esito = (
+        f"\u2705 Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati"
+        if target_reached else
+        f"\u23F1 Tempo scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati"
+    )
+    send_telegram_msg(
+        f"\U0001F916 <b>AutoBuy Sorare terminato</b>\n"
+        f"{esito}"
     )
 
 
 def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
-                    offer_id=None, seller_slug=None):
+                    offer_id=None, seller_slug=None, is_in_season=True):
     """Ritorna True se questo evento ha portato a un caso valido (avrebbe acquistato),
-    False altrimenti -- usato dal listener per decidere se fermarsi."""
+    False altrimenti -- usato dal listener per decidere se fermarsi.
+    is_in_season=False + CHECK_CLASSIC attivo: modalita' aggiuntiva (19/07) che valuta
+    annunci CLASSIC per TUTTI i campionati senza eccezioni, confrontando contro il minimo
+    ASSOLUTO tra classic+in_season uniti (niente distinzione di lega esclusa, quella
+    logica resta solo per gli annunci in_season -- vedi get_in_season_prices)."""
     if player_slug and player_slug.lower() in BLACKLISTED_PLAYER_SLUGS:
         log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
         return False
@@ -703,11 +761,22 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
         return False
 
-    prices, excluded_league = get_in_season_prices(player_slug, eth_rate, league_slug)
-    if AUTOBUY_DIAGNOSTIC:
-        modalita = "SOLO in_season (lega esclusa)" if excluded_league else "in_season + classic uniti"
-        log(f"[diagnostica lega] {player_name}: league_slug={league_slug!r} -> {modalita}, "
-            f"{len(prices)} annunci totali nel confronto")
+    if is_in_season:
+        prices, excluded_league = get_in_season_prices(player_slug, eth_rate, league_slug)
+        if AUTOBUY_DIAGNOSTIC:
+            modalita = "SOLO in_season (lega esclusa)" if excluded_league else "in_season + classic uniti"
+            log(f"[diagnostica lega] {player_name}: league_slug={league_slug!r} -> {modalita}, "
+                f"{len(prices)} annunci totali nel confronto")
+    else:
+        # Annuncio CLASSIC con CHECK_CLASSIC attivo: minimo assoluto tra i due bucket,
+        # SEMPRE, per qualunque campionato -- nessuna eccezione MLS/K League qui.
+        buckets = get_bucket_prices(player_slug, eth_rate)
+        prices = buckets['in_season'] + buckets['classic']
+        prices.sort(key=lambda p: p[0])
+        excluded_league = False
+        if AUTOBUY_DIAGNOSTIC:
+            log(f"[check classic] {player_name}: {len(prices)} annunci totali "
+                f"(in_season {len(buckets['in_season'])} + classic {len(buckets['classic'])})")
     if not prices:
         return False
 
@@ -796,7 +865,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # protezione anti-riacquisto entro 24h.
 
     send_would_have_bought_alert(player_name, player_slug, true_min_price, second_min_price,
-                                  margin_percent, card_slug, excluded_league, prepared)
+                                  margin_percent, card_slug, excluded_league, prepared, is_in_season)
     return True
 
 
@@ -911,8 +980,9 @@ def run_listener(eth_rate):
                 continue
             if card.get('sport') != 'FOOTBALL':
                 continue
-            if not card.get('inSeasonEligible'):
-                continue  # SOLO in season
+            is_in_season = bool(card.get('inSeasonEligible'))
+            if not is_in_season and not CHECK_CLASSIC:
+                continue  # modalita' base: SOLO in season
 
             player = card.get('anyPlayer') or {}
             player_slug = player.get('slug')
@@ -924,7 +994,7 @@ def run_listener(eth_rate):
 
             stats["processed"] += 1
             found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
-                                    league_slug, offer_id, seller_slug)
+                                    league_slug, offer_id, seller_slug, is_in_season)
             if found:
                 stats["matches_found"] += 1
                 log(f"Casi trovati finora: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
@@ -969,7 +1039,9 @@ def main():
         f"{sorted(BLACKLISTED_PLAYER_SLUGS)}")
     send_startup_msg()
     matches_found = run_listener(eth_rate)
-    if matches_found >= AUTOBUY_TARGET_MATCHES:
+    target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
+    send_end_msg(matches_found, target_reached)
+    if target_reached:
         log(f"Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati e "
             f"notificati -- esecuzione terminata.")
     else:
