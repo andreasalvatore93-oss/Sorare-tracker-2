@@ -122,6 +122,7 @@ def test_signature(authorization_request, fingerprint):
 
     script_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
+    log(f"[debug] encryptedPrivateKey len={len(key_data['encryptedPrivateKey'])} iv len={len(key_data['iv'])} salt len={len(key_data['salt'])}")
     log(f"Chiamo {script_path}...")
     try:
         result = subprocess.run(
@@ -136,6 +137,8 @@ def test_signature(authorization_request, fingerprint):
         return
 
     if result.returncode != 0:
+        log(f"[debug] stdout={result.stdout!r}")
+        log(f"[debug] stderr={result.stderr!r}")
         log(f"Script terminato con codice {result.returncode}, stderr: {result.stderr.strip()}")
 
     try:
