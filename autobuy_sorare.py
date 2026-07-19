@@ -330,9 +330,19 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate):
     # piu' economici sullo stesso giocatore) -- criterio esplicito: valutiamo solo se la
     # carta appena spuntata E' il minimo attuale sul mercato in_season.
     if true_min_card_slug != card_slug:
-        log(f"{player_name}: scarto -- annuncio a {price_eur:.2f}EUR non e' il minimo attuale "
-            f"in_season (minimo vero: {true_min_price:.2f}EUR)")
-        return False
+        if price_eur < true_min_price:
+            # Fallback (no retry, no attese -- critico per lo sniping): l'evento WebSocket
+            # e' piu' fresco della query di rilettura prezzi, che puo' non aver ancora
+            # propagato l'ultimo annuncio. Se il prezzo dell'evento e' comunque il piu'
+            # basso in assoluto, ci fidiamo dell'evento invece di scartare.
+            log(f"{player_name}: minimo query non aggiornato ({true_min_price:.2f}EUR), "
+                f"ma evento a {price_eur:.2f}EUR e' piu' basso -- procedo con l'evento")
+            true_min_price, true_min_card_slug = price_eur, card_slug
+            prices = [(price_eur, card_slug)] + [p for p in prices if p[1] != card_slug]
+        else:
+            log(f"{player_name}: scarto -- annuncio a {price_eur:.2f}EUR non e' il minimo attuale "
+                f"in_season (minimo vero: {true_min_price:.2f}EUR)")
+            return False
 
     if len(prices) < 2:
         log(f"{player_name}: scarto -- nessun secondo annuncio in_season per confrontare il margine")
