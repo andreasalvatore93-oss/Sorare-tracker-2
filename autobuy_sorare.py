@@ -335,10 +335,101 @@ def build_card_link(player_slug, card_slug):
     return f"{base_link}?card={card_slug}" if card_slug else base_link
 
 
+EXCHANGE_RATE_QUERY = """
+query ExchangeRateQuery {
+  config {
+    exchangeRate { id }
+  }
+}
+"""
+
+
+def get_exchange_rate_id():
+    """Recupera l'id del tasso di cambio corrente (serve a PrepareAcceptOfferMutation),
+    stessa query ExchangeRateQuery vista nel flusso reale di acquisto in browser."""
+    try:
+        data = graphql_query(EXCHANGE_RATE_QUERY)
+        return (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
+    except Exception as e:
+        log(f"[prepare accept] errore lettura tasso di cambio: {e}")
+        return None
+
+
+PREPARE_ACCEPT_OFFER_MUTATION = """
+mutation PrepareAcceptOfferMutation($input: prepareAcceptOfferInput!) {
+  prepareAcceptOffer(input: $input) {
+    authorizations {
+      fingerprint
+      id
+      request {
+        ... on MangopayWalletTransferAuthorizationRequest {
+          currency
+          fiatAmount
+          mangopayWalletId
+          nonce
+          operationHash
+        }
+      }
+    }
+    errors { message }
+    primaryOffer { id }
+  }
+}
+"""
+
+
+def prepare_accept_offer(offer_id):
+    """FASE 2 (prima meta'): 'prenota'/valida l'offerta lato server chiamando la stessa
+    PrepareAcceptOfferMutation usata dal sito quando l'utente clicca 'Acquista', PRIMA
+    ancora che l'utente clicchi -- riduce la finestra in cui un altro manager potrebbe
+    comprare la carta nel frattempo. NON firma nulla (nessuna chiave privata coinvolta):
+    restituisce solo l'operationHash/nonce che servirebbero alla firma, dati utili da
+    includere nella notifica per velocizzare la conferma manuale. Ritorna il dict
+    'authorizations[0].request' (o None se la chiamata fallisce) -- il click finale
+    dell'utente sul sito resta INVARIATO e necessario (fase 2 = opzione "conferma manuale",
+    vedi nota progetto)."""
+    exchange_rate_id = get_exchange_rate_id()
+    if not exchange_rate_id:
+        return None
+    variables = {
+        "input": {
+            "offerId": offer_id,
+            "attemptReference": None,
+            "settlementInfo": {
+                "currency": "EUR",
+                "exchangeRateId": exchange_rate_id,
+                "paymentMethod": "WALLET",
+                "platform": "WEB",
+                "useAvailableCredits": False,
+            },
+        }
+    }
+    try:
+        data = graphql_query(PREPARE_ACCEPT_OFFER_MUTATION, variables)
+        payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
+        errors = payload.get('errors') or []
+        if errors:
+            log(f"[prepare accept] errori da Sorare: {errors}")
+            return None
+        auths = payload.get('authorizations') or []
+        if not auths:
+            log("[prepare accept] nessuna authorization restituita")
+            return None
+        return auths[0].get('request')
+    except Exception as e:
+        log(f"[prepare accept] eccezione: {e}")
+        return None
+
+
 def send_would_have_bought_alert(player_name, player_slug, price_eur, second_price, margin_percent,
-                                  card_slug, excluded_league):
+                                  card_slug, excluded_league, prepared=None):
     link = build_card_link(player_slug, card_slug)
     categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
+    prenotazione = (
+        "\u2705 Offerta prenotata lato server (piu' veloce da confermare)\n"
+        if prepared else
+        "\u26A0\uFE0F Prenotazione lato server non riuscita, apri e conferma normalmente\n"
+    )
     msg_text = (
         f"\U0001F916\U0001F4B0 <b>AutoBuy Sorare -- LO AVREI ACQUISTATO</b>\n\n"
         f"Giocatore: {player_name}\n"
@@ -346,6 +437,7 @@ def send_would_have_bought_alert(player_name, player_slug, price_eur, second_pri
         f"Prezzo minimo attuale: {price_eur:.2f}EUR\n"
         f"Secondo prezzo attuale: {second_price:.2f}EUR (margine {margin_percent:.1%}, "
         f"soglia richiesta {AUTOBUY_MARGIN_FRACTION:.0%})\n\n"
+        f"{prenotazione}"
         f"\u26A0\uFE0F Fase di test: nessun acquisto reale eseguito, controlla a mano.\n\n"
         f"\U0001F449 <b><a href='{link}'>APRI SU SORARE</a></b> \U0001F448"
     )
@@ -361,7 +453,8 @@ def send_startup_msg():
     )
 
 
-def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None):
+def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
+                    offer_id=None):
     """Ritorna True se questo evento ha portato a un caso valido (avrebbe acquistato),
     False altrimenti -- usato dal listener per decidere se fermarsi."""
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
@@ -414,8 +507,23 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
+
+    # FASE 2 (prima meta'): prova a "prenotare" l'offerta lato server PRIMA di notificare,
+    # cosi' quando l'utente apre il link ed e' pronto a confermare la finestra di rischio
+    # (altri manager che comprano nel frattempo) e' gia' ridotta. Non firma nulla, non
+    # completa l'acquisto -- solo prepareAcceptOffer, reversibile e senza side-effect
+    # sul saldo. Se fallisce per qualunque motivo, si prosegue comunque con la notifica
+    # normale (questo passaggio e' un extra, mai un requisito per notificare).
+    prepared = None
+    if offer_id:
+        prepared = prepare_accept_offer(offer_id)
+        if prepared:
+            log(f"{player_name}: offerta prenotata lato server (nonce={prepared.get('nonce')})")
+        else:
+            log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
+
     send_would_have_bought_alert(player_name, player_slug, true_min_price, second_min_price,
-                                  margin_percent, card_slug, excluded_league)
+                                  margin_percent, card_slug, excluded_league, prepared)
     return True
 
 
@@ -542,7 +650,8 @@ def run_listener(eth_rate):
                 continue
 
             stats["processed"] += 1
-            found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug)
+            found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
+                                    league_slug, offer_id)
             if found:
                 stats["found_match"] = True
                 ws.close()
