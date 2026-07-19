@@ -30,6 +30,10 @@ on:
         description: "Slug giocatori da ignorare del tutto (separati da virgola), es. aoto-nanamure -- si aggiunge alla lista gia' hardcoded nello script"
         required: false
         default: ""
+      check_classic:
+        description: "Controlla anche gli annunci CLASSIC (tutti i campionati, confronto sul minimo assoluto classic+in_season), di default spento"
+        required: false
+        default: "no"
 permissions:
   contents: write
 # Nessuna concorrenza con track.py: workflow e job completamente separati, nessuna
@@ -70,6 +74,7 @@ jobs:
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '5' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
+          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'no' }}
         run: |
           set -o pipefail
           # Il workflow espone la percentuale in modo leggibile (es. "15" = 15%), lo script
