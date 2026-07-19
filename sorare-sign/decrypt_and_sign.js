@@ -68,14 +68,23 @@ async function decryptPrivateKey({ password, encryptedPrivateKey, iv, salt }) {
     aesKey,
     ciphertext
   );
-  // FIX 19/07 (caso reale, errore "invalid byte sequence" in micro-starknet/hexToBytes
-  // durante un test dal vivo): il buffer decriptato NON e' testo UTF-8 -- contiene byte
-  // binari grezzi non stampabili (confermato: 61 byte, spazzatura se decodificati come
-  // testo). La libreria di firma (micro-starknet, dentro @sorare/crypto) si aspetta una
-  // stringa esadecimale con prefisso "0x", non testo decodificato -- convertiamo i byte
-  // grezzi in hex invece di usare TextDecoder.
   const bytes = new Uint8Array(plainBuf);
-  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  const hexDebug = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  // DEBUG TEMPORANEO (19/07): stampiamo la struttura grezza per capire il vero formato
+  // prima di decidere come convertirla -- 61 byte non e' la lunghezza standard di una
+  // chiave Starkware (32 byte), quindi il buffer probabilmente contiene altro (JSON
+  // wrapper, prefisso, ecc.) e non va trattato ne' come UTF-8 diretto ne' come hex grezzo
+  // dell'intera chiave senza capire la struttura reale.
+  console.error(`[debug] plainBuf length: ${bytes.length} bytes`);
+  console.error(`[debug] plainBuf as hex: ${hexDebug}`);
+  try {
+    console.error(`[debug] plainBuf as UTF-8 (JSON.stringify per escape sicuro): ${JSON.stringify(new TextDecoder().decode(plainBuf))}`);
+  } catch (e) {
+    console.error(`[debug] plainBuf non decodificabile come UTF-8: ${e.message}`);
+  }
+
+  const bytes2 = new Uint8Array(plainBuf);
+  const hex = Array.from(bytes2).map(b => b.toString(16).padStart(2, '0')).join('');
   return '0x' + hex;
 }
 
