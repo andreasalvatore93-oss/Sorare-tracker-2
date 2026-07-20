@@ -1014,24 +1014,44 @@ def validate_live_offers_schema():
     # ritentiamo con un secondo giocatore di prova: se ANCHE quello da' un errore che
     # non sia un semplice NOT_FOUND specifico del giocatore, allora e' probabilmente
     # un problema reale di schema/enum e scatta il fallback.
+    # FIX 21/07 SERA: il probe originale mandava l'argomento $seasonEligibility mai
+    # confermato via introspection -- la query rispondeva SEMPRE senza errori GraphQL
+    # (anche se rotta), quindi questo self-check dava sempre esito "OK" pur non
+    # provando nulla di reale, ed e' la causa per cui il bug e' passato inosservato
+    # fino a quando ha bloccato TUTTI i casi in produzione. Il probe ora controlla,
+    # oltre all'assenza di errori GraphQL, anche che la risposta contenga davvero il
+    # campo nuovo (card.inSeasonEligible) su almeno un nodo -- solo cosi' sappiamo che
+    # lo schema accetta la query nella forma attesa, non solo che non ha dato errore.
     season_probe_players = ["kylian-mbappe", "erling-haaland", "jude-bellingham"]
     season_check_ok = False
     last_probe_errors = None
     for season_probe_slug in season_probe_players:
-        probe_data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON,
-                                    {"p": season_probe_slug, "seasonEligibility": "IN_SEASON"})
-        if not probe_data.get('errors'):
+        probe_data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON, {"p": season_probe_slug})
+        if probe_data.get('errors'):
+            last_probe_errors = probe_data['errors']
+            log(f"[self-check] query di liquidita' per stagione fallita su {season_probe_slug} "
+                f"({last_probe_errors}), provo un altro giocatore di prova...")
+            continue
+        probe_nodes = (((probe_data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
+        if not probe_nodes:
+            last_probe_errors = "nessun nodo restituito (giocatore senza transazioni? riprovo con un altro)"
+            log(f"[self-check] query di liquidita' per stagione su {season_probe_slug}: "
+                f"nessun nodo restituito, provo un altro giocatore di prova...")
+            continue
+        has_season_field = any('card' in n and n['card'] is not None and 'inSeasonEligible' in n['card']
+                                for n in probe_nodes)
+        if has_season_field:
             season_check_ok = True
-            log(f"[self-check] Query di liquidita' per stagione (seasonEligibility) "
-                f"validata correttamente (su {season_probe_slug}).")
+            log(f"[self-check] Query di liquidita' per stagione (card.inSeasonEligible) "
+                f"validata correttamente (su {season_probe_slug}, {len(probe_nodes)} nodi).")
             break
-        last_probe_errors = probe_data['errors']
-        log(f"[self-check] query di liquidita' per stagione fallita su {season_probe_slug} "
-            f"({last_probe_errors}), provo un altro giocatore di prova...")
+        last_probe_errors = "risposta priva del campo card.inSeasonEligible sui nodi restituiti"
+        log(f"[self-check] query di liquidita' per stagione su {season_probe_slug}: "
+            f"{last_probe_errors}, provo un altro giocatore di prova...")
 
     if not season_check_ok:
         msg = (f"[self-check] ATTENZIONE: query di liquidita' per stagione "
-               f"(RECENT_TRANSACTIONS_QUERY_BY_SEASON, seasonEligibility=IN_SEASON) fallita "
+               f"(RECENT_TRANSACTIONS_QUERY_BY_SEASON, campo card.inSeasonEligible) fallita "
                f"su tutti i {len(season_probe_players)} giocatori di prova, ultimo errore: "
                f"{last_probe_errors}. Il controllo di liquidita' user' AUTOMATICAMENTE il "
                f"fallback meno preciso (in_season+classic mescolate) per tutta la run -- non "
@@ -1129,20 +1149,23 @@ query RecentTransactionsQuery($p: String!) {
 # un giocatore con market in_season vivace ma classic pressoche' morto (o viceversa)
 # passava comunque la soglia minima grazie alle transazioni dell'ALTRA stagione -- il
 # controllo di liquidita' non stava proteggendo la stagione che stavamo davvero per
-# comprare/offrire. Query alternativa che filtra per stagione tramite l'argomento
-# seasonEligibility (esiste su anyPlayer.tokenPrices, campo confermato nello schema
-# GraphQL ufficiale -- api.sorare.com/graphql/schema -- ma i valori esatti dell'enum
-# SeasonEligibility non sono verificabili senza introspection, quindi IN_SEASON/CLASSIC
-# sono la scelta piu' plausibile per coerenza col resto dello schema (es. il campo
-# "seasonality": "IN_SEASON" visto dal vivo su So5Leaderboard) ma vanno confermati dal
-# self-check all'avvio (validate_live_offers_schema). Se questa query fallisce, il bot
-# NON blocca l'avvio per questo -- ripiega automaticamente sulla query combinata di
-# prima (comportamento precedente, imperfetto ma funzionante) con un avviso loggato UNA
-# sola volta, invece di rifare il tentativo fallito ad ogni singolo giocatore."""
+# comprare/offrire.
+#
+# FIX 21/07 SERA (causa reale degli scarti a 0 transazioni di questa sera): il primo
+# tentativo filtrava lato server con un argomento $seasonEligibility: SeasonEligibility!
+# indovinato per analogia, mai confermato via introspection -- restituiva sempre zero
+# nodi SENZA generare errori GraphQL, quindi il self-check e il fallback automatico non
+# si accorgevano del problema. Query riscritta senza quell'argomento: prende tutti i
+# tokenPrices col campo booleano card.inSeasonEligible (stesso campo gia' confermato
+# funzionante altrove nel file), e il filtro per stagione lo fa
+# _count_transactions_from_nodes lato Python (season_filter=is_in_season). Se questa
+# query fallisce comunque, il bot NON blocca l'avvio per questo -- ripiega
+# automaticamente sulla query combinata di prima (comportamento precedente, imperfetto
+# ma funzionante) con un avviso loggato UNA sola volta."""
 RECENT_TRANSACTIONS_QUERY_BY_SEASON = """
-query RecentTransactionsBySeasonQuery($p: String!, $seasonEligibility: SeasonEligibility!) {
+query RecentTransactionsBySeasonQuery($p: String!) {
   anyPlayer(slug: $p) {
-    tokenPrices(rarity: limited, seasonEligibility: $seasonEligibility) {
+    tokenPrices(rarity: limited) {
       nodes {
         date
         deal {
@@ -1150,6 +1173,9 @@ query RecentTransactionsBySeasonQuery($p: String!, $seasonEligibility: SeasonEli
           ... on TokenOffer {
             type
           }
+        }
+        card {
+          inSeasonEligible
         }
       }
     }
@@ -1175,15 +1201,24 @@ MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '5'))
 TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
 
-def _count_transactions_from_nodes(nodes):
+def _count_transactions_from_nodes(nodes, season_filter=None):
     """Fattorizzata da count_recent_transactions: conta le transazioni valide (short/long
-    window) da una lista di nodi tokenPrices, qualunque sia la query che li ha prodotti."""
+    window) da una lista di nodi tokenPrices, qualunque sia la query che li ha prodotti.
+
+    season_filter: se non None (True=in_season, False=classic), scarta i nodi il cui
+    campo card.inSeasonEligible non corrisponde -- usato solo dalla query per stagione
+    (RECENT_TRANSACTIONS_QUERY_BY_SEASON, che porta quel campo); la query combinata di
+    fallback non ha quel campo nei nodi quindi li passa tutti (season_filter=None)."""
     now = datetime.datetime.now(datetime.timezone.utc)
     cutoff_short = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
     cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
     count_short = 0
     count_long = 0
     for n in nodes:
+        if season_filter is not None:
+            card = n.get('card') or {}
+            if bool(card.get('inSeasonEligible')) != season_filter:
+                continue
         deal = n.get('deal') or {}
         deal_typename = deal.get('__typename')
         is_countable = bool(deal.get('type')) or deal_typename in ('TokenAuction', 'TokenPrimaryOffer')
@@ -1209,29 +1244,36 @@ def count_recent_transactions(player_slug, is_in_season=True):
     FIX 21/07 (bug reale: offerta su carta CLASSIC coreana con 1 sola transazione/7gg
     passata perche' il conteggio mescolava in_season+classic): filtra per la STESSA
     stagione della carta che si sta valutando (is_in_season), tramite
-    RECENT_TRANSACTIONS_QUERY_BY_SEASON. Se quella query fallisce (enum/campo non
-    valido, verificare self-check all'avvio), ripiega sulla vecchia query combinata
-    (RECENT_TRANSACTIONS_QUERY, in_season+classic insieme) con un log di avviso --
-    meno preciso ma comunque una protezione, invece di bloccare tutto.
+    RECENT_TRANSACTIONS_QUERY_BY_SEASON.
+
+    FIX 21/07 SERA: la versione precedente filtrava lato server con un argomento/enum
+    mai confermato via introspection, che restituiva sistematicamente zero nodi senza
+    generare errori GraphQL (per questo il bot mostrava 0 transazioni per TUTTI). Ora la
+    query non filtra piu' lato server: prende tutti i tokenPrices col campo booleano
+    card.inSeasonEligible (stesso campo gia' verificato funzionante altrove nel file), e
+    il filtro per stagione lo fa _count_transactions_from_nodes lato Python.
+
+    Se la query per stagione fallisce (errore GraphQL o eccezione), ripiega sulla
+    vecchia query combinata (RECENT_TRANSACTIONS_QUERY, in_season+classic insieme,
+    nessun filtro di stagione possibile) con un log di avviso -- meno preciso ma
+    comunque una protezione, invece di bloccare tutto.
 
     Ritorna (None, None) se anche il fallback fallisce. Fail-safe: se la query fallisce,
     il chiamante NON deve bloccare l'acquisto solo per questo -- vedi commento nella
     chiamata in evaluate_event."""
     if not _season_aware_liquidity_broken[0]:
         try:
-            season_value = "IN_SEASON" if is_in_season else "CLASSIC"
-            data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON,
-                                  {"p": player_slug, "seasonEligibility": season_value})
+            data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON, {"p": player_slug})
             if data.get('errors'):
                 _season_aware_liquidity_broken[0] = True
                 log(f"[liquidita'] ATTENZIONE: query di liquidita' per stagione fallita "
                     f"({data['errors']}) -- ripiego sulla query combinata (in_season+classic "
                     f"mescolate) per TUTTO il resto della run, meno precisa ma funzionante. "
-                    f"Controlla RECENT_TRANSACTIONS_QUERY_BY_SEASON/i valori dell'enum "
-                    f"SeasonEligibility.")
+                    f"Controlla RECENT_TRANSACTIONS_QUERY_BY_SEASON/il campo "
+                    f"card.inSeasonEligible su tokenPrices.")
             else:
                 nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
-                return _count_transactions_from_nodes(nodes)
+                return _count_transactions_from_nodes(nodes, season_filter=is_in_season)
         except Exception as e:
             _season_aware_liquidity_broken[0] = True
             log(f"[liquidita'] ATTENZIONE: eccezione nella query di liquidita' per stagione "
