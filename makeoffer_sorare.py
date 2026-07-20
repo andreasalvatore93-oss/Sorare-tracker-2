@@ -933,12 +933,20 @@ def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur):
     if not exchange_rate_id:
         log("[prepare offer] exchange_rate_id non ottenuto, impossibile procedere")
         return None
+    # FIX BUG CRITICO (20/07): confermato dal vivo che il campo 'amount' restituito
+    # dal server dentro l'authorization request (quello REALMENTE firmato ed
+    # eseguito, vedi execute_live_offer) e' in CENTESIMI interi, non in euro con
+    # decimali. Mandando "6.0" EUR il server rispondeva amount=6 (troncando i
+    # decimali), e quell'intero veniva poi eseguito come 6 CENTESIMI = 0.06EUR
+    # (caso reale Alex Roldan, offerta 6.00EUR eseguita a 0.06EUR, poi annullata
+    # manualmente dall'utente). Ora inviamo l'importo gia' in centesimi interi.
+    amount_cents = int(round(offer_amount_eur * 100))
     variables = {
         "input": {
             "sendAssetIds": [],
             "receiveAssetIds": [card_asset_id],
             "receiverSlug": receiver_slug,
-            "sendAmount": {"amount": str(round(offer_amount_eur, 2)), "currency": "EUR"},
+            "sendAmount": {"amount": str(amount_cents), "currency": "EUR"},
             "receiveAmount": {"amount": "0", "currency": "EUR"},
             "settlementCurrencies": ["EUR"],
         }
@@ -1087,13 +1095,16 @@ def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerpr
     dal vivo (19/07, caso reale David Alaba/satonio, offerta di test inviata con
     successo). Fail-safe assoluto: qualunque errore ritorna (False, categoria, msg), MAI
     un'eccezione non gestita, MAI un retry automatico."""
+    # FIX BUG CRITICO (20/07): stesso fix di prepare_offer, per coerenza -- vedi
+    # commento dettagliato li'. sendAmount va in centesimi interi.
+    amount_cents = int(round(offer_amount_eur * 100))
     variables = {
         "input": {
             "dealId": deal_id,
             "sendAssetIds": [],
             "receiveAssetIds": [card_asset_id],
             "receiverSlug": receiver_slug,
-            "sendAmount": {"amount": str(round(offer_amount_eur, 2)), "currency": "EUR"},
+            "sendAmount": {"amount": str(amount_cents), "currency": "EUR"},
             "duration": OFFER_DURATION_SECONDS,
             "migrationData": None,
             "approvals": [{
