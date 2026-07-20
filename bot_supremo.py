@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import time
 import datetime
 import threading
@@ -131,6 +132,14 @@ AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
 
+# Pausa random periodica (20/07, richiesta esplicita utente: "non martellare Sorare di
+# richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_SECONDS di
+# attivita' continua, il bot si ferma per un tempo casuale tra RANDOM_PAUSE_MIN_SECONDS
+# e RANDOM_PAUSE_MAX_SECONDS prima di riprendere.
+RANDOM_PAUSE_INTERVAL_SECONDS = int(os.environ.get('RANDOM_PAUSE_INTERVAL_SECONDS', '180'))
+RANDOM_PAUSE_MIN_SECONDS = float(os.environ.get('RANDOM_PAUSE_MIN_SECONDS', '1'))
+RANDOM_PAUSE_MAX_SECONDS = float(os.environ.get('RANDOM_PAUSE_MAX_SECONDS', '10'))
+
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
 AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '5'))
@@ -222,7 +231,7 @@ def record_player_offer(player_slug):
 # principio della blacklist unita: se un ramo scarta un giocatore per liquidita', l'altro
 # non deve rifare la stessa query).
 THIN_MARKET_CACHE_PATH = os.environ.get('THIN_MARKET_CACHE_PATH', 'bot_supremo_thin_market_cache.json')
-THIN_MARKET_SKIP_DAYS = int(os.environ.get('THIN_MARKET_SKIP_DAYS', '3'))
+THIN_MARKET_SKIP_HOURS = float(os.environ.get('THIN_MARKET_SKIP_HOURS', '2'))
 
 
 def is_player_in_thin_market_cache(player_slug):
@@ -234,8 +243,8 @@ def is_player_in_thin_market_cache(player_slug):
         last_skip = datetime.datetime.fromisoformat(last_skip_iso)
     except ValueError:
         return False
-    elapsed_days = (datetime.datetime.now(datetime.timezone.utc) - last_skip).total_seconds() / 86400
-    return elapsed_days < THIN_MARKET_SKIP_DAYS
+    elapsed_hours = (datetime.datetime.now(datetime.timezone.utc) - last_skip).total_seconds() / 3600
+    return elapsed_hours < THIN_MARKET_SKIP_HOURS
 
 
 def record_thin_market_skip(player_slug):
@@ -1574,6 +1583,38 @@ def _is_insufficient_funds_error(error_message):
     return '[fondi_insufficienti]' in error_message
 
 
+def _is_invalid_signature_error(error_message):
+    """Rileva se un messaggio di errore indica una firma non valida ('invalid Mangopay
+    wallet transfer signature') -- errore visto dal vivo il 20/07 solo nel ramo
+    MakeOffer, causa non ancora confermata. Serve per attivare la diagnostica dedicata
+    in send_invalid_signature_diagnostic_alert (vedi sotto)."""
+    if not error_message:
+        return False
+    return 'invalid mangopay wallet transfer signature' in error_message.lower()
+
+
+def send_invalid_signature_diagnostic_alert(player_name, seller_slug, offer_amount_eur):
+    """Notifica diagnostica DEDICATA (20/07, richiesta esplicita utente) per il caso
+    'invalid Mangopay wallet transfer signature' nel ramo MakeOffer -- NON confermiamo
+    la causa (e' solo un'ipotesi dell'utente, non un fatto accertato): potrebbe essere
+    che il venditore/manager abbia bloccato il nostro account dalle offerte dirette
+    (Sorare lo permette, pur consentendo la vendita diretta allo stesso account), oppure
+    un problema di firma/cache lato bot. La notifica elenca il fatto osservato (verso
+    quale manager e' fallita) senza affermare la causa, cosi' l'utente puo' verificare
+    manualmente se accumula ripetutamente sullo stesso manager (indizio di blocco)."""
+    send_telegram_msg(
+        f"\U0001F50D <b>Bot Supremo -- DIAGNOSTICA: firma non valida (MakeOffer)</b>\n\n"
+        f"Giocatore: {player_name}\n"
+        f"Venditore/manager: {seller_slug}\n"
+        f"Offerta tentata: {offer_amount_eur:.2f}EUR\n\n"
+        f"Causa non confermata -- possibili ipotesi: questo manager potrebbe averti "
+        f"bloccato dalle offerte dirette (Sorare lo permette anche se accetta la "
+        f"vendita diretta allo stesso account), oppure un problema di firma/cache. "
+        f"Se questo errore si ripete SEMPRE con lo stesso manager, e' un indizio "
+        f"a favore dell'ipotesi del blocco."
+    )
+
+
 def send_insufficient_funds_alert(player_name, ramo):
     send_telegram_msg(
         f"\U0001F6D1 <b>Bot Supremo -- FONDI INSUFFICIENTI, ESECUZIONE FERMATA</b>\n\n"
@@ -1634,8 +1675,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return False
 
     if player_slug and is_player_in_thin_market_cache(player_slug):
-        log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile negli "
-            f"ultimi {THIN_MARKET_SKIP_DAYS} giorni, salto la riverifica")
+        log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile nelle "
+            f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
         return False
 
     count_7d, count_30d = count_recent_transactions(player_slug)
@@ -1832,6 +1873,11 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
                     f"nessun tentativo successivo avrebbe senso")
                 INSUFFICIENT_FUNDS_STOP[0] = True
                 send_insufficient_funds_alert(player_name, "MakeOffer")
+            elif _is_invalid_signature_error(offer_error):
+                log(f"{player_name}: FIRMA NON VALIDA rilevata verso il manager "
+                    f"'{seller_slug}' -- invio notifica diagnostica (causa non "
+                    f"confermata, vedi Telegram)")
+                send_invalid_signature_diagnostic_alert(player_name, seller_slug, offer_amount_eur)
     elif MAKEOFFER_LIVE_MODE and not prepared:
         offer_error = "prenotazione (prepareOffer) non riuscita, offerta automatica saltata"
         log(f"{player_name}: {offer_error}")
@@ -1878,6 +1924,23 @@ def run_listener(eth_rate):
 
     stats = {"received": 0, "processed": 0, "matches_found": 0}
     seen_offer_status = set()
+
+    # --- Pausa random periodica (20/07, richiesta esplicita utente: "non martellare
+    # Sorare di richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_
+    # SECONDS (default 180s = 3 minuti) di attivita', il bot si ferma per un tempo
+    # casuale tra RANDOM_PAUSE_MIN_SECONDS e RANDOM_PAUSE_MAX_SECONDS (default 1-10s)
+    # prima di riprendere a valutare eventi. Il timer parte dall'avvio dell'ascolto,
+    # non resetta ad ogni evento -- e' un ritmo di fondo, non legato al volume di
+    # eventi ricevuti.
+    pause_state = {"last_pause_at": time.monotonic()}
+
+    def maybe_random_pause():
+        now = time.monotonic()
+        if now - pause_state["last_pause_at"] >= RANDOM_PAUSE_INTERVAL_SECONDS:
+            pause_seconds = random.uniform(RANDOM_PAUSE_MIN_SECONDS, RANDOM_PAUSE_MAX_SECONDS)
+            log(f"[pausa random] fermo {pause_seconds:.1f}s (ritmo di fondo anti-martellamento)")
+            time.sleep(pause_seconds)
+            pause_state["last_pause_at"] = time.monotonic()
 
     def on_open(ws):
         log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
@@ -1969,6 +2032,7 @@ def run_listener(eth_rate):
             stats["processed"] += 1
             found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
                                     league_slug, offer_id, seller_slug, is_in_season)
+            maybe_random_pause()
             if INSUFFICIENT_FUNDS_STOP[0]:
                 log("STOP: fondi insufficienti rilevati, chiudo la connessione -- "
                     "nessun tentativo successivo avrebbe senso")
