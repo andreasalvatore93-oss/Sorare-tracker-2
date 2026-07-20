@@ -939,7 +939,6 @@ def prepare_accept_offer(offer_id):
         "input": {
             "offerId": offer_id,
             "attemptReference": None,
-            "proposerSettlementCurrency": "EUR",
             "settlementInfo": {
                 "currency": "EUR",
                 "exchangeRateId": exchange_rate_id,
