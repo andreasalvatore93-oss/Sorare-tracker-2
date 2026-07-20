@@ -908,6 +908,12 @@ def get_bucket_prices(player_slug, eth_rate):
     venditore blacklistato -- vedi nota in fetch_all_live_offers ed evaluate_event."""
     nodes = fetch_all_live_offers(player_slug)
     raw = {'in_season': [], 'classic': []}
+    # FIX 21/07 (richiesta esplicita utente: il log per-carta era troppo ridondante --
+    # un giocatore con tanti annunci scartati per lo stesso motivo produceva decine di
+    # righe identiche). Contiamo gli scarti per motivo e logghiamo UNA riga di riepilogo
+    # per giocatore/chiamata invece di una riga per ogni singola carta.
+    skipped_coverage = []
+    skipped_zero_avg = []
     for node in nodes:
         if node.get('status') != 'opened':
             continue
@@ -922,9 +928,7 @@ def get_bucket_prices(player_slug, eth_rate):
             if c.get('sport') != 'FOOTBALL':
                 continue
             if c.get('coverageStatus') == 'NOT_COVERED':
-                log(f"[scarto coverage] {player_slug}: carta {c.get('slug')} (venditore "
-                    f"{seller_slug}) esclusa dal confronto -- coverageStatus=NOT_COVERED "
-                    f"(squadra non coperta da SO5)")
+                skipped_coverage.append(c.get('slug'))
                 continue  # carta in una squadra non coperta da SO5 (es. finita in un
                           # campionato che Sorare non copre), punti non conteggiati --
                           # richiesta esplicita utente 21/07, non va considerata
@@ -933,9 +937,7 @@ def get_bucket_prices(player_slug, eth_rate):
             last_ten_avg = player_c.get('lastTenPlayedAvgScore')
             last_forty_avg = player_c.get('lastFortyAvgScore')
             if last_ten_avg == 0.0 or last_forty_avg == 0.0:
-                log(f"[scarto media 0] {player_slug}: carta {c.get('slug')} (venditore "
-                    f"{seller_slug}) esclusa dal confronto -- media ultime 10 giocate="
-                    f"{last_ten_avg}, media ultime 40={last_forty_avg}")
+                skipped_zero_avg.append(c.get('slug'))
                 continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
                           # filtro/motivazione di coverageStatus, richiesta utente 21/07
             match = c
@@ -947,6 +949,14 @@ def get_bucket_prices(player_slug, eth_rate):
             continue
         bucket = 'in_season' if match.get('inSeasonEligible') else 'classic'
         raw[bucket].append((price, match.get('slug'), seller_slug))
+    if skipped_coverage:
+        log(f"[scarto coverage] {player_slug}: {len(skipped_coverage)} carta/e esclusa/e dal "
+            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5): "
+            f"{', '.join(skipped_coverage)}")
+    if skipped_zero_avg:
+        log(f"[scarto media 0] {player_slug}: {len(skipped_zero_avg)} carta/e esclusa/e dal "
+            f"confronto -- media 0 nelle ultime 10 giocate e/o nelle ultime 40: "
+            f"{', '.join(skipped_zero_avg)}")
     for key in ('in_season', 'classic'):
         raw[key].sort(key=lambda p: p[0])
     return raw
