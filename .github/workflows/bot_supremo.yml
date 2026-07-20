@@ -1,0 +1,236 @@
+name: Bot Supremo Sorare (AutoBuy + MakeOffer fusi)
+on:
+  workflow_dispatch:
+    inputs:
+      min_price_eur:
+        description: "Prezzo minimo carta da valutare (EUR)"
+        required: false
+        default: "1"
+      max_price_eur:
+        description: "Prezzo massimo carta da valutare (EUR)"
+        required: false
+        default: "30"
+      makeoffer_margin_percent:
+        description: "Margine MINIMO per il ramo MakeOffer (offerta scontata), in % (es. 10 = 10%)"
+        required: false
+        default: "10"
+      makeoffer_max_margin_percent:
+        description: "Margine MASSIMO per il ramo MakeOffer -- oltre questa soglia interviene AutoBuy"
+        required: false
+        default: "19"
+      autobuy_margin_percent:
+        description: "Margine MINIMO per il ramo AutoBuy (accetta offerta esistente), in % -- deve essere >= makeoffer_max_margin_percent"
+        required: false
+        default: "20"
+      listen_seconds:
+        description: "Secondi di ascolto massimi, max 18000 (5h)"
+        required: false
+        default: "18000"
+      target_matches:
+        description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-10)"
+        required: false
+        default: "5"
+      autobuy_diagnostic:
+        description: "Log extra sul confronto in_season/classic per lega, di default spento"
+        required: false
+        default: "no"
+      blacklisted_player_slugs:
+        description: "Slug giocatori da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
+        required: false
+        default: ""
+      check_classic:
+        description: "Controlla anche gli annunci CLASSIC (tutti i campionati)"
+        required: false
+        default: "si"
+      min_recent_transactions:
+        description: "Transazioni minime (7gg) per non scartare il caso -- protezione mercato sottile"
+        required: false
+        default: "3"
+      min_transactions_30d:
+        description: "Transazioni minime (30gg) -- secondo layer di protezione liquidita'"
+        required: false
+        default: "5"
+      blacklisted_manager_slugs:
+        description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
+        required: false
+        default: ""
+      autobuy_live_mode:
+        description: "'si' = ACQUISTO REALE AUTOMATICO (ramo AutoBuy). 'no' = solo diagnostica."
+        required: false
+        default: "si"
+      makeoffer_live_mode:
+        description: "'si' = OFFERTE REALI AUTOMATICHE (ramo MakeOffer). 'no' = solo diagnostica."
+        required: false
+        default: "si"
+      offer_discount_percent:
+        description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
+        required: false
+        default: "20"
+      offer_duration_days:
+        description: "Durata dell'offerta MakeOffer in giorni interi, 1-7"
+        required: false
+        default: "1"
+      max_pending_offers:
+        description: "Tetto massimo di offerte MakeOffer pendenti create in questa esecuzione"
+        required: false
+        default: "10"
+permissions:
+  contents: write
+concurrency:
+  group: sorare-bot-supremo
+  cancel-in-progress: false
+jobs:
+  bot-supremo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install sorare-sign dependencies
+        run: |
+          cd sorare-sign
+          npm install
+      - run: pip install requests websocket-client curl_cffi playwright
+      - run: playwright install --with-deps chromium
+      - name: Aggiungi giocatori alla blacklist permanente unita (se specificati)
+        # Scrive sempre nel file MakeOffer (sorare_makeoffer_blacklist.txt) -- letto
+        # comunque INSIEME al file AutoBuy da bot_supremo.py, quindi l'effetto e'
+        # identico per entrambi i rami. Un solo punto di scrittura invece di due
+        # step separati come nei workflow originali.
+        env:
+          BLACKLISTED_PLAYER_SLUGS_INPUT: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
+        run: |
+          if [ -z "$BLACKLISTED_PLAYER_SLUGS_INPUT" ]; then
+            echo "Nessuno slug da aggiungere alla blacklist permanente."
+          else
+            touch sorare_makeoffer_blacklist.txt
+            IFS=',' read -ra SLUGS <<< "$BLACKLISTED_PLAYER_SLUGS_INPUT"
+            added_any=0
+            for raw_slug in "${SLUGS[@]}"; do
+              slug=$(echo "$raw_slug" | xargs | tr '[:upper:]' '[:lower:]')
+              if [ -z "$slug" ]; then
+                continue
+              fi
+              if grep -qxF "$slug" sorare_makeoffer_blacklist.txt 2>/dev/null; then
+                echo "Gia' presente in blacklist: $slug"
+              else
+                echo "$slug" >> sorare_makeoffer_blacklist.txt
+                echo "Aggiunto alla blacklist: $slug"
+                added_any=1
+              fi
+            done
+            if [ "$added_any" = "1" ]; then
+              git config user.name "bot-supremo"
+              git config user.email "bot-supremo@users.noreply.github.com"
+              git add sorare_makeoffer_blacklist.txt
+              git commit -m "Bot Supremo: aggiunta giocatori alla blacklist da workflow_dispatch"
+              git push
+            fi
+          fi
+      - name: Aggiungi manager alla blacklist permanente unita (se specificati)
+        env:
+          BLACKLISTED_MANAGER_SLUGS_INPUT: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
+        run: |
+          if [ -z "$BLACKLISTED_MANAGER_SLUGS_INPUT" ]; then
+            echo "Nessuno slug manager da aggiungere alla blacklist permanente."
+          else
+            touch sorare_makeoffer_manager_blacklist.txt
+            IFS=',' read -ra SLUGS <<< "$BLACKLISTED_MANAGER_SLUGS_INPUT"
+            added_any=0
+            for raw_slug in "${SLUGS[@]}"; do
+              slug=$(echo "$raw_slug" | xargs | tr '[:upper:]' '[:lower:]')
+              if [ -z "$slug" ]; then
+                continue
+              fi
+              if grep -qxF "$slug" sorare_makeoffer_manager_blacklist.txt 2>/dev/null; then
+                echo "Gia' presente in blacklist manager: $slug"
+              else
+                echo "$slug" >> sorare_makeoffer_manager_blacklist.txt
+                echo "Aggiunto alla blacklist manager: $slug"
+                added_any=1
+              fi
+            done
+            if [ "$added_any" = "1" ]; then
+              git config user.name "bot-supremo"
+              git config user.email "bot-supremo@users.noreply.github.com"
+              git add sorare_makeoffer_manager_blacklist.txt
+              git commit -m "Bot Supremo: aggiunta manager alla blacklist da workflow_dispatch"
+              git push
+            fi
+          fi
+      - name: Run Bot Supremo
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+          AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
+          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
+          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '10' }}
+          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '19' }}
+          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '20' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
+          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '5' }}
+          AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
+          BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
+          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
+          MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
+          MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '5' }}
+          BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
+          AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'si' }}
+          MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
+          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '20' }}
+          OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
+          MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '10' }}
+        run: |
+          set -o pipefail
+          export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export MAKEOFFER_MAX_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MAX_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export AUTOBUY_MARGIN_FRACTION=$(awk -v p="$AUTOBUY_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export OFFER_DISCOUNT_FRACTION=$(awk -v p="$OFFER_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          python bot_supremo.py
+      - name: Commit registro acquisti AutoBuy (protezione anti-riacquisto 24h)
+        run: |
+          if [ -z "$(git status --porcelain -- autobuy_purchases.json)" ]; then
+            echo "Nessuna modifica al registro acquisti, niente da committare."
+          else
+            git config user.name "bot-supremo"
+            git config user.email "bot-supremo@users.noreply.github.com"
+            git add autobuy_purchases.json
+            git commit -m "Bot Supremo: aggiorna registro acquisti AutoBuy (protezione 24h)"
+            git push
+          fi
+      - name: Commit registro offerte MakeOffer (protezione anti-duplicati 24h)
+        run: |
+          if [ -z "$(git status --porcelain -- makeoffer_cooldown.json)" ]; then
+            echo "Nessuna modifica al registro offerte, niente da committare."
+          else
+            git config user.name "bot-supremo"
+            git config user.email "bot-supremo@users.noreply.github.com"
+            git add makeoffer_cooldown.json
+            git commit -m "Bot Supremo: aggiorna registro offerte MakeOffer (protezione 24h)"
+            git push
+          fi
+      - name: Commit cache mercato sottile unificata
+        run: |
+          if [ -z "$(git status --porcelain -- bot_supremo_thin_market_cache.json)" ]; then
+            echo "Nessuna modifica alla cache mercato sottile, niente da committare."
+          else
+            git config user.name "bot-supremo"
+            git config user.email "bot-supremo@users.noreply.github.com"
+            git add bot_supremo_thin_market_cache.json
+            git commit -m "Bot Supremo: aggiorna cache mercato sottile"
+            git push
+          fi
