@@ -146,6 +146,14 @@ OFFER_DURATION_SECONDS = OFFER_DURATION_DAYS * 86400
 MAX_PENDING_OFFERS = int(os.environ.get('MAX_PENDING_OFFERS', '10'))
 pending_offers_count = [0]  # contatore in-memory per run, richiesto da create_direct_offer
 
+# --- Stop automatico su fondi insufficienti (20/07, richiesta esplicita utente) ---
+# Se un tentativo di acquisto/offerta reale fallisce per mancanza di fondi, non ha
+# senso continuare l'esecuzione: ogni tentativo successivo fallirebbe allo stesso modo,
+# quindi il bot si ferma subito (chiude la connessione WebSocket) invece di continuare a
+# girare a vuoto per ore, e manda una notifica Telegram esplicita e diversa dalle
+# normali notifiche di caso trovato/fallito.
+INSUFFICIENT_FUNDS_STOP = [False]
+
 # --- Protezione "no ri-acquisto/ri-offerta stesso giocatore entro 24h" -- DUE registri
 # separati (uno per ramo, stesso comportamento dei bot originali), ma consultati
 # INSIEME in lettura (is_player_in_cooldown) cosi' un ramo non ripropone/ricompra un
@@ -1515,6 +1523,26 @@ def send_makeoffer_alert(player_name, player_slug, price_eur, second_price, marg
     send_telegram_msg(msg_text)
 
 
+def _is_insufficient_funds_error(error_message):
+    """Rileva se un messaggio di errore (gia' formattato da execute_live_purchase/
+    execute_live_offer, es. 'AcceptOfferMutation fallita [fondi_insufficienti]: ...')
+    indica fondi insufficienti -- la categoria e' gia' classificata a monte da
+    classify_prepare_accept_error/classify_prepare_offer_error, qui controlliamo solo
+    che compaia nel messaggio finale."""
+    if not error_message:
+        return False
+    return '[fondi_insufficienti]' in error_message
+
+
+def send_insufficient_funds_alert(player_name, ramo):
+    send_telegram_msg(
+        f"\U0001F6D1 <b>Bot Supremo -- FONDI INSUFFICIENTI, ESECUZIONE FERMATA</b>\n\n"
+        f"Rilevato durante il tentativo su {player_name} (ramo {ramo}).\n"
+        f"Il bot si e' fermato subito invece di continuare a tentare a vuoto -- "
+        f"ricarica il wallet prima di rilanciare."
+    )
+
+
 def send_startup_msg():
     classic_msg = "\nModalita' CLASSIC attiva (tutti i campionati)" if CHECK_CLASSIC else ""
     autobuy_stato = "ATTIVO" if AUTOBUY_LIVE_MODE else "solo diagnostica"
@@ -1550,6 +1578,9 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
       MakeOffer (crea offerta scontata)
     Ritorna True se questo evento ha portato a un caso valido (di QUALSIASI ramo),
     False altrimenti -- usato dal listener per decidere se fermarsi."""
+    if INSUFFICIENT_FUNDS_STOP[0]:
+        return False  # bot gia' fermato per fondi insufficienti, non valutare altro
+
     if player_slug and player_slug.lower() in BLACKLISTED_PLAYER_SLUGS:
         log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
         return False
@@ -1673,6 +1704,11 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
                 record_player_purchase(player_slug)
         else:
             log(f"{player_name}: acquisto automatico fallito -- {purchase_error}")
+            if _is_insufficient_funds_error(purchase_error):
+                log(f"{player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot, "
+                    f"nessun tentativo successivo avrebbe senso")
+                INSUFFICIENT_FUNDS_STOP[0] = True
+                send_insufficient_funds_alert(player_name, "AutoBuy")
     elif AUTOBUY_LIVE_MODE and offer_id and not prepared:
         purchase_error = "prenotazione (prepareAcceptOffer) non riuscita, acquisto automatico saltato"
         log(f"{player_name}: {purchase_error}")
@@ -1751,6 +1787,11 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
             pending_offers_count[0] += 1
         else:
             log(f"{player_name}: offerta automatica fallita -- {offer_error}")
+            if _is_insufficient_funds_error(offer_error):
+                log(f"{player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot, "
+                    f"nessun tentativo successivo avrebbe senso")
+                INSUFFICIENT_FUNDS_STOP[0] = True
+                send_insufficient_funds_alert(player_name, "MakeOffer")
     elif MAKEOFFER_LIVE_MODE and not prepared:
         offer_error = "prenotazione (prepareOffer) non riuscita, offerta automatica saltata"
         log(f"{player_name}: {offer_error}")
@@ -1888,6 +1929,11 @@ def run_listener(eth_rate):
             stats["processed"] += 1
             found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
                                     league_slug, offer_id, seller_slug, is_in_season)
+            if INSUFFICIENT_FUNDS_STOP[0]:
+                log("STOP: fondi insufficienti rilevati, chiudo la connessione -- "
+                    "nessun tentativo successivo avrebbe senso")
+                ws.close()
+                return
             if found:
                 stats["matches_found"] += 1
                 log(f"Casi trovati finora: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
