@@ -99,8 +99,115 @@ _LEGACY_JSON_DA_MIGRARE = {
 }
 
 
+_LISTA_NERA_INTESTAZIONI = {
+    'manager': (
+        "MANAGER BLACKLISTATI -- da questi manager non compriamo carte ne' facciamo "
+        "offerte, ma le loro carte contano comunque nel calcolo del prezzo minimo di "
+        "mercato (non vengono escluse dal conteggio, solo dagli acquisti/offerte)."
+    ),
+    'giocatore': (
+        "GIOCATORI BLACKLISTATI -- questi giocatori vengono ignorati sia per gli "
+        "acquisti diretti (AutoBuy) sia per le offerte (MakeOffer)."
+    ),
+    'cooldown_acquisto': (
+        "COOLDOWN ACQUISTI/OFFERTE -- giocatori appena comprati o a cui abbiamo appena "
+        "fatto un'offerta: ignorati per il tempo indicato, per non ricomprare/riproporre "
+        "subito lo stesso giocatore."
+    ),
+    'thin_market': (
+        "THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni "
+        "recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare "
+        "di comprare/offrire su un mercato poco liquido."
+    ),
+}
+_LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market')
+
+
+def _durata_a_leggibile(delta_secondi):
+    """Converte un numero di secondi in una stringa leggibile in italiano, es.
+    '5 giorni', '1 giorno', '3 ore', '20 minuti'. Arrotonda per eccesso all'unita'
+    piu' grande sensata, cosi' il file resta leggibile senza troppi decimali."""
+    if delta_secondi <= 0:
+        return "scaduto"
+    giorni = delta_secondi / 86400
+    if giorni >= 1:
+        giorni_interi = max(1, round(giorni))
+        return f"{giorni_interi} giorno" if giorni_interi == 1 else f"{giorni_interi} giorni"
+    ore = delta_secondi / 3600
+    if ore >= 1:
+        ore_intere = max(1, round(ore))
+        return f"{ore_intere} ora" if ore_intere == 1 else f"{ore_intere} ore"
+    minuti = max(1, round(delta_secondi / 60))
+    return f"{minuti} minuto" if minuti == 1 else f"{minuti} minuti"
+
+
+def _leggibile_a_secondi(testo):
+    """Converte una stringa italiana ('7 giorni', '24 ore', '30 minuti') in secondi.
+    Accetta anche forme abbreviate (7g, 24h, 30m) per chi preferisce scrivere veloce.
+    Ritorna None se non riconosciuta."""
+    testo = testo.strip().lower()
+    parts = testo.split()
+    if len(parts) == 2:
+        numero_str, unita = parts
+    elif len(parts) == 1 and len(testo) > 1 and testo[-1] in ('g', 'h', 'm'):
+        numero_str, unita = testo[:-1], testo[-1]
+    else:
+        return None
+    try:
+        numero = float(numero_str)
+    except ValueError:
+        return None
+    if unita.startswith('giorn') or unita == 'g':
+        return numero * 86400
+    if unita.startswith('or') or unita == 'h':
+        return numero * 3600
+    if unita.startswith('minut') or unita == 'm':
+        return numero * 60
+    return None
+
+
+def _lista_nera_migra_vecchio_formato_riga_se_serve():
+    """Il primo formato del file unico (righe 'tipo,slug,scadenza_iso' senza sezioni)
+    e' stato sostituito da questo formato a sezioni con durata leggibile. Se il file
+    esiste ma e' ancora nel vecchio formato (nessuna intestazione '## tipo' trovata,
+    ma righe con 3 campi separati da virgola), lo convertiamo automaticamente UNA
+    TANTUM preservando tutte le scadenze gia' presenti."""
+    try:
+        with open(LISTA_NERA_PATH, 'r', encoding='utf-8') as f:
+            raw_lines = f.readlines()
+    except FileNotFoundError:
+        return
+    ha_sezioni = any(l.strip().startswith('## ') for l in raw_lines)
+    if ha_sezioni:
+        return  # gia' nel nuovo formato
+    righe_vecchie = []
+    for raw in raw_lines:
+        stripped = raw.strip()
+        if not stripped or stripped.startswith('#'):
+            continue
+        parts = [p.strip() for p in stripped.split(',')]
+        if len(parts) != 3:
+            continue
+        tipo, slug, scadenza_str = parts
+        tipo = tipo.lower()
+        if tipo not in _LISTA_NERA_TIPI_VALIDI:
+            continue
+        try:
+            scadenza = datetime.datetime.fromisoformat(scadenza_str)
+            if scadenza.tzinfo is None:
+                scadenza = scadenza.replace(tzinfo=datetime.timezone.utc)
+        except ValueError:
+            continue
+        righe_vecchie.append({'tipo': tipo, 'slug': slug.lower(), 'scadenza': scadenza})
+    if righe_vecchie:
+        _lista_nera_scrivi_righe(righe_vecchie)
+        print(f"[lista nera] convertite {len(righe_vecchie)} righe dal vecchio formato "
+              f"(tipo,slug,scadenza_iso) al nuovo formato a sezioni leggibili.", flush=True)
+
+
 def _lista_nera_leggi_righe():
-    """Legge tutte le righe valide dal file unico. Ritorna lista di dict
+    """Legge tutte le righe valide dal file unico (nuovo formato a sezioni:
+    slug,durata_leggibile sotto un'intestazione '## tipo'). Ritorna lista di dict
     {tipo, slug, scadenza (datetime)}. Righe malformate vengono ignorate con log."""
     righe = []
     try:
@@ -108,41 +215,77 @@ def _lista_nera_leggi_righe():
             raw_lines = f.readlines()
     except FileNotFoundError:
         return righe
+    ora = datetime.datetime.now(datetime.timezone.utc)
+    tipo_corrente = None
     for n, raw in enumerate(raw_lines, start=1):
-        raw = raw.strip()
-        if not raw or raw.startswith('#'):
+        raw = raw.rstrip('\n')
+        stripped = raw.strip()
+        if not stripped:
             continue
-        parts = [p.strip() for p in raw.split(',')]
-        if len(parts) != 3:
-            log(f"[lista nera] riga {n} malformata (attesi 3 campi), ignorata: {raw!r}")
+        if stripped.startswith('## '):
+            candidato = stripped[3:].strip().lower()
+            if candidato in _LISTA_NERA_TIPI_VALIDI:
+                tipo_corrente = candidato
             continue
-        tipo, slug, scadenza_str = parts
-        tipo = tipo.lower()
+        if stripped.startswith('#'):
+            continue  # commento/descrizione, non una riga dati
+        if tipo_corrente is None:
+            log(f"[lista nera] riga {n} fuori da qualunque sezione, ignorata: {raw!r}")
+            continue
+        parts = [p.strip() for p in stripped.split(',')]
+        if len(parts) != 2:
+            log(f"[lista nera] riga {n} malformata (attesi 2 campi slug,durata), ignorata: {raw!r}")
+            continue
+        slug, durata_str = parts
         slug = slug.lower()
-        if tipo not in _LISTA_NERA_TIPI_VALIDI:
-            log(f"[lista nera] riga {n} tipo sconosciuto {tipo!r}, ignorata: {raw!r}")
+        secondi = _leggibire_wrapper(durata_str, n, raw)
+        if secondi is None:
             continue
-        try:
-            scadenza = datetime.datetime.fromisoformat(scadenza_str)
-            if scadenza.tzinfo is None:
-                scadenza = scadenza.replace(tzinfo=datetime.timezone.utc)
-        except ValueError:
-            log(f"[lista nera] riga {n} scadenza non valida, ignorata: {raw!r}")
-            continue
-        righe.append({'tipo': tipo, 'slug': slug, 'scadenza': scadenza})
+        righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi)})
     return righe
 
 
+def _leggibire_wrapper(durata_str, n, raw):
+    secondi = _leggibile_a_secondi(durata_str)
+    if secondi is None:
+        log(f"[lista nera] riga {n} durata non riconosciuta ('{durata_str}'), ignorata: {raw!r}")
+    return secondi
+
+
 def _lista_nera_scrivi_righe(righe):
-    """Riscrive il file unico ordinato per tipo poi slug, con commento di intestazione."""
-    righe_ordinate = sorted(righe, key=lambda r: (r['tipo'], r['slug']))
+    """Riscrive il file unico in sezioni per tipo (ordine fisso, thin_market per
+    ultimo perche' e' la sezione piu' numerosa), ognuna con intestazione descrittiva.
+    La durata scritta e' SEMPRE il tempo RIMANENTE alla scadenza (ricalcolato ogni
+    volta), non la durata originale -- cosi' l'utente vede sempre quanto manca."""
+    ora = datetime.datetime.now(datetime.timezone.utc)
+    dedup = {}
+    for r in righe:
+        if r['scadenza'] <= ora:
+            continue  # non riscriviamo righe gia' scadute
+        chiave = (r['tipo'], r['slug'])
+        if chiave not in dedup or r['scadenza'] > dedup[chiave]['scadenza']:
+            dedup[chiave] = r
+    per_tipo = {t: [] for t in _LISTA_NERA_TIPI_VALIDI}
+    for r in dedup.values():
+        per_tipo[r['tipo']].append(r)
+
     with open(LISTA_NERA_PATH, 'w', encoding='utf-8') as f:
-        f.write("# Lista nera del Bot Supremo -- formato: tipo,slug,scadenza_iso\n")
-        f.write("# Tipi validi: manager, giocatore, thin_market, cooldown_acquisto\n")
-        f.write("# Scadenza modificabile a mano: basta cambiare la data ISO su una riga.\n")
-        f.write("# Righe scadute vengono ignorate in lettura ma NON cancellate automaticamente.\n")
-        for r in righe_ordinate:
-            f.write(f"{r['tipo']},{r['slug']},{r['scadenza'].isoformat()}\n")
+        f.write("# LISTA NERA DEL BOT SUPREMO\n")
+        f.write("# Ogni riga: slug,durata (es. 'clem777,5 giorni'). La durata e' il tempo\n")
+        f.write("# rimanente, aggiornato automaticamente ogni volta che il bot riscrive questo\n")
+        f.write("# file -- puoi modificarla a mano in qualunque momento (es. '3 ore', '10 giorni',\n")
+        f.write("# '30 minuti') per accorciare o allungare il blocco. Per rimuovere un blocco,\n")
+        f.write("# cancella semplicemente la riga.\n\n")
+        for tipo in _LISTA_NERA_ORDINE_SEZIONI:
+            righe_tipo = sorted(per_tipo[tipo], key=lambda r: r['slug'])
+            f.write(f"## {tipo}\n")
+            f.write(f"# {_LISTA_NERA_INTESTAZIONI[tipo]}\n")
+            if not righe_tipo:
+                f.write("# (vuoto)\n")
+            for r in righe_tipo:
+                delta = (r['scadenza'] - ora).total_seconds()
+                f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
+            f.write("\n")
 
 
 def _lista_nera_upsert(tipo, slug, giorni_da_ora):
@@ -239,6 +382,7 @@ def _migra_vecchi_file_una_tantum():
           f"Puoi ora eliminare dal repo i vecchi file elencati sopra.", flush=True)
 
 
+_lista_nera_migra_vecchio_formato_riga_se_serve()
 _migra_vecchi_file_una_tantum()
 
 
