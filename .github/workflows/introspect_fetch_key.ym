@@ -1,0 +1,22 @@
+name: Introspection Schema (fetchEncryptedPrivateKeyInput, sola lettura)
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  introspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: Introspection schema (sola lettura, nessun rischio)
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+        run: python introspect_fetch_key.py
