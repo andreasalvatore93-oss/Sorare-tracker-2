@@ -6,7 +6,7 @@ import threading
 
 import requests
 import websocket  # pip install websocket-client
-
+from playwright.sync_api import sync_playwright
 # FIX 20/07 (tentativo dopo 6 ipotesi esaurite su unknown_fingerprint): usiamo curl_cffi
 # al posto di requests per le chiamate GraphQL sensibili -- curl_cffi imita fedelmente
 # l'impronta TLS/JA3 di Chrome, mentre requests ha una firma TLS riconoscibile come
