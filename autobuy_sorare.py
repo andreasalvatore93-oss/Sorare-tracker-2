@@ -7,6 +7,20 @@ import threading
 import requests
 import websocket  # pip install websocket-client
 
+# FIX 20/07 (tentativo dopo 6 ipotesi esaurite su unknown_fingerprint): usiamo curl_cffi
+# al posto di requests per le chiamate GraphQL sensibili -- curl_cffi imita fedelmente
+# l'impronta TLS/JA3 di Chrome, mentre requests ha una firma TLS riconoscibile come
+# "libreria Python", indipendentemente dagli header HTTP che mandiamo (che sono gia'
+# corretti, verificato). Molti sistemi anti-bot controllano l'impronta TLS a livello di
+# handshake, non solo gli header applicativi -- ipotesi non ancora testata. Fallback
+# automatico a requests normale se curl_cffi non e' installato (nessuna regressione se
+# l'ipotesi risultasse sbagliata o la libreria non installabile).
+try:
+    from curl_cffi import requests as curl_requests
+    _HAS_CURL_CFFI = True
+except ImportError:
+    _HAS_CURL_CFFI = False
+
 # =====================================================================================
 # AUTOBUY SORARE -- FASE 1 (SOLO DIAGNOSTICA, NESSUN ACQUISTO REALE)
 # =====================================================================================
@@ -430,7 +444,11 @@ def graphql_query(query, variables=None, max_retries=3):
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(max_retries):
         _graphql_throttle()
-        r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+        if _HAS_CURL_CFFI:
+            r = curl_requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15,
+                                    impersonate="chrome")
+        else:
+            r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             wait_seconds = min((2 ** attempt) * 2, 8.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
@@ -1614,6 +1632,7 @@ def main():
     log(f"Tasso ETH/EUR: {eth_rate}")
     modalita = "\u26A0\uFE0F ACQUISTO REALE AUTOMATICO ATTIVO \u26A0\uFE0F" if AUTOBUY_LIVE_MODE else "solo diagnostica, nessun acquisto reale"
     log(f"AutoBuy Sorare -- MODALITA': {modalita}")
+    log(f"[network] curl_cffi (impronta TLS Chrome) {'ATTIVO' if _HAS_CURL_CFFI else 'NON DISPONIBILE, uso requests standard'}")
     log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
         f"margine richiesto {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: "
         f"{AUTOBUY_TARGET_MATCHES}")
