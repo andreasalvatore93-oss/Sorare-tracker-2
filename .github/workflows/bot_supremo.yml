@@ -18,6 +18,10 @@ on:
         description: "Margine MASSIMO per il ramo MakeOffer -- oltre questa soglia interviene AutoBuy"
         required: false
         default: "19"
+      offer_discount_percent:
+        description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
+        required: false
+        default: "20"
       autobuy_margin_percent:
         description: "Margine MINIMO per il ramo AutoBuy (accetta offerta esistente), in % -- deve essere >= makeoffer_max_margin_percent"
         required: false
@@ -27,7 +31,7 @@ on:
         required: false
         default: "18000"
       target_matches:
-        description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-10)"
+        description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-20)"
         required: false
         default: "5"
       autobuy_diagnostic:
@@ -39,7 +43,7 @@ on:
         required: false
         default: ""
       check_classic:
-        description: "Controlla anche gli annunci CLASSIC (tutti i campionati)"
+        description: "Controlla anche gli annunci CLASSIC (tutti i campionati) -- vale per ENTRAMBI i rami, AutoBuy e MakeOffer, un solo interruttore condiviso"
         required: false
         default: "si"
       min_recent_transactions:
@@ -62,10 +66,6 @@ on:
         description: "'si' = OFFERTE REALI AUTOMATICHE (ramo MakeOffer). 'no' = solo diagnostica."
         required: false
         default: "si"
-      offer_discount_percent:
-        description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
-        required: false
-        default: "20"
       offer_duration_days:
         description: "Durata dell'offerta MakeOffer in giorni interi, 1-7"
         required: false
@@ -73,7 +73,7 @@ on:
       max_pending_offers:
         description: "Tetto massimo di offerte MakeOffer pendenti create in questa esecuzione"
         required: false
-        default: "10"
+        default: "20"
 permissions:
   contents: write
 concurrency:
@@ -193,7 +193,7 @@ jobs:
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
           OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '20' }}
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
-          MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '10' }}
+          MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '20' }}
         run: |
           set -o pipefail
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
