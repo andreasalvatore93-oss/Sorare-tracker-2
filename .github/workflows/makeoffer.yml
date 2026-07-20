@@ -13,7 +13,11 @@ on:
       margin_percent:
         description: "Margine minimo richiesto sul secondo prezzo attuale, in % (es. 15 = 15%)"
         required: false
-        default: "20"
+        default: "10"
+      max_margin_percent:
+        description: "Margine MASSIMO oltre il quale MakeOffer scarta il caso (lo lascia ad AutoBuy) -- utile quando i due bot girano insieme, per evitare offerte pendenti sulla stessa carta che AutoBuy comprerebbe direttamente"
+        required: false
+        default: "19"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 3600 (1h) -- il bot si ferma comunque prima se raggiunge target_matches"
         required: false
@@ -31,9 +35,9 @@ on:
         required: false
         default: ""
       check_classic:
-        description: "Controlla anche gli annunci CLASSIC (tutti i campionati, confronto sul minimo assoluto classic+in_season), di default spento"
+        description: "Controlla anche gli annunci CLASSIC (tutti i campionati, confronto sul minimo assoluto classic+in_season)"
         required: false
-        default: "no"
+        default: "si"
       min_recent_transactions:
         description: "Transazioni minime (di qualunque tipo) del giocatore negli ultimi 7 giorni per non scartare il caso -- protezione mercato troppo sottile"
         required: false
@@ -47,13 +51,13 @@ on:
         required: false
         default: ""
       live_mode:
-        description: "'si' = OFFERTE REALI AUTOMATICHE (invia offerte vere dal wallet). Default 'no' = solo diagnostica, nessuna offerta."
+        description: "'si' = OFFERTE REALI AUTOMATICHE (invia offerte vere dal wallet). 'no' = solo diagnostica, nessuna offerta."
         required: false
-        default: "no"
+        default: "si"
       offer_discount_percent:
-        description: "Sconto ULTERIORE da applicare al minimo trovato per calcolare il prezzo dell'offerta, in % (es. 10 = offri il 10% sotto al minimo)"
+        description: "Sconto ULTERIORE da applicare al minimo trovato per calcolare il prezzo dell'offerta, in % (es. 20 = offri il 20% sotto al minimo)"
         required: false
-        default: "10"
+        default: "20"
       offer_duration_days:
         description: "Durata dell'offerta in giorni interi, 1-7 (Sorare non accetta valori intermedi)"
         required: false
@@ -173,18 +177,19 @@ jobs:
           PYTHONUNBUFFERED: "1"
           MAKEOFFER_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
           MAKEOFFER_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
-          MARGIN_PERCENT_INPUT: ${{ github.event.inputs.margin_percent || '20' }}
+          MARGIN_PERCENT_INPUT: ${{ github.event.inputs.margin_percent || '10' }}
+          MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.max_margin_percent || '19' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '3000' }}
           MAKEOFFER_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '5' }}
           MAKEOFFER_DIAGNOSTIC: ${{ github.event.inputs.makeoffer_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
-          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'no' }}
-          MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.live_mode || 'no' }}
+          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
+          MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.live_mode || 'si' }}
           SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
           MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '5' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
-          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '10' }}
+          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '20' }}
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '10' }}
         run: |
@@ -192,6 +197,7 @@ jobs:
           # Il workflow espone le percentuali in modo leggibile (es. "15" = 15%), lo
           # script Python vuole invece la frazione (0.15) -- conversione fatta qui.
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export MAKEOFFER_MAX_MARGIN_FRACTION=$(awk -v p="$MAX_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
           export OFFER_DISCOUNT_FRACTION=$(awk -v p="$OFFER_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
           python makeoffer_sorare.py
       - name: Commit registro offerte (protezione anti-duplicati 24h)
