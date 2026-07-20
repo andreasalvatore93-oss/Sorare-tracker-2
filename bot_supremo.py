@@ -57,66 +57,240 @@ WS_URL = "wss://ws.sorare.com/cable"
 BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
 
 
-def _load_slug_list_file(file_path, label):
+# =====================================================================================
+# LISTA NERA DEL BOT SUPREMO -- file unico (richiesta esplicita utente 21/07)
+# =====================================================================================
+# Sostituisce TUTTI i vecchi file separati (sorare_blacklist.txt, sorare_manager_
+# blacklist.txt, i legacy autobuy/makeoffer, autobuy_purchases.json, makeoffer_cooldown.
+# json, bot_supremo_thin_market_cache.json) con un solo file di testo a righe, editabile
+# a mano su GitHub, con 4 tipi di riga:
+#   manager,<slug>,<scadenza_iso>
+#   giocatore,<slug>,<scadenza_iso>
+#   thin_market,<slug>,<scadenza_iso>
+#   cooldown_acquisto,<slug>,<scadenza_iso>
+# La scadenza e' editabile a mano riga per riga: basta cambiare la data ISO. Una riga
+# con scadenza nel passato viene ignorata in lettura ma NON cancellata automaticamente
+# (resta li' finche' non la si toglie a mano o finche' il bot non la rinnova scrivendo
+# una nuova scadenza per lo stesso slug/tipo).
+LISTA_NERA_PATH = os.environ.get('LISTA_NERA_PATH', 'sorare_lista_nera.txt')
+
+# Durate di default (giorni), usate quando il bot AGGIUNGE una riga per conto suo
+# (es. dal workflow_dispatch, o registrando un acquisto/offerta/thin-market skip).
+# Tutte modificabili qui O a mano nel file cambiando la scadenza di ogni riga.
+MANAGER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('MANAGER_BLACKLIST_DEFAULT_DAYS', '7'))
+PLAYER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_DAYS', '7'))
+THIN_MARKET_DEFAULT_DAYS = float(os.environ.get('THIN_MARKET_DEFAULT_DAYS', '1'))
+COOLDOWN_ACQUISTO_DEFAULT_DAYS = float(os.environ.get('COOLDOWN_ACQUISTO_DEFAULT_DAYS', '1'))
+
+_LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto')
+
+# Vecchi file, letti SOLO per la migrazione automatica una tantum (prima run dopo
+# l'aggiornamento). Una volta migrati in sorare_lista_nera.txt possono essere eliminati
+# dal repo -- vedi messaggio di log a fine migrazione.
+_LEGACY_FILES_DA_MIGRARE = {
+    'manager': ['sorare_manager_blacklist.txt', 'sorare_autobuy_manager_blacklist.txt',
+                'sorare_makeoffer_manager_blacklist.txt'],
+    'giocatore': ['sorare_blacklist.txt', 'sorare_autobuy_blacklist.txt',
+                  'sorare_makeoffer_blacklist.txt'],
+}
+_LEGACY_JSON_DA_MIGRARE = {
+    'cooldown_acquisto': ['autobuy_purchases.json', 'makeoffer_cooldown.json'],
+    'thin_market': ['bot_supremo_thin_market_cache.json'],
+}
+
+
+def _lista_nera_leggi_righe():
+    """Legge tutte le righe valide dal file unico. Ritorna lista di dict
+    {tipo, slug, scadenza (datetime)}. Righe malformate vengono ignorate con log."""
+    righe = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+        with open(LISTA_NERA_PATH, 'r', encoding='utf-8') as f:
+            raw_lines = f.readlines()
     except FileNotFoundError:
-        return set()
-    except Exception as e:
-        log(f"[{label}] errore lettura {file_path}, ignorato: {e}")
-        return set()
-    slugs = set()
-    for line in lines:
-        line = line.strip()
-        if not line or line.startswith('#'):
+        return righe
+    for n, raw in enumerate(raw_lines, start=1):
+        raw = raw.strip()
+        if not raw or raw.startswith('#'):
             continue
-        slugs.add(line.lower())
-    return slugs
+        parts = [p.strip() for p in raw.split(',')]
+        if len(parts) != 3:
+            log(f"[lista nera] riga {n} malformata (attesi 3 campi), ignorata: {raw!r}")
+            continue
+        tipo, slug, scadenza_str = parts
+        tipo = tipo.lower()
+        slug = slug.lower()
+        if tipo not in _LISTA_NERA_TIPI_VALIDI:
+            log(f"[lista nera] riga {n} tipo sconosciuto {tipo!r}, ignorata: {raw!r}")
+            continue
+        try:
+            scadenza = datetime.datetime.fromisoformat(scadenza_str)
+            if scadenza.tzinfo is None:
+                scadenza = scadenza.replace(tzinfo=datetime.timezone.utc)
+        except ValueError:
+            log(f"[lista nera] riga {n} scadenza non valida, ignorata: {raw!r}")
+            continue
+        righe.append({'tipo': tipo, 'slug': slug, 'scadenza': scadenza})
+    return righe
 
 
-# --- Blacklist GIOCATORI: UN SOLO FILE condiviso (richiesta esplicita utente 20/07,
-# per non dover aprire due file separati per aggiornarla a mano). Se esistono ancora i
-# vecchi file separati (sorare_autobuy_blacklist.txt/sorare_makeoffer_blacklist.txt) da
-# quando i due bot erano separati, vengono letti ANCHE quelli per compatibilita' e
-# uniti al nuovo file unico -- cosi' nessuno slug gia' presente va perso nella
-# transizione.
-BLACKLIST_FILE_PATH = os.environ.get('BLACKLIST_FILE_PATH', 'sorare_blacklist.txt')
-_LEGACY_AUTOBUY_BLACKLIST_FILE_PATH = os.environ.get(
-    'AUTOBUY_BLACKLIST_FILE_PATH', 'sorare_autobuy_blacklist.txt')
-_LEGACY_MAKEOFFER_BLACKLIST_FILE_PATH = os.environ.get(
-    'MAKEOFFER_BLACKLIST_FILE_PATH', 'sorare_makeoffer_blacklist.txt')
-BLACKLISTED_PLAYER_SLUGS = (
-    _load_slug_list_file(BLACKLIST_FILE_PATH, 'blacklist giocatori') |
-    _load_slug_list_file(_LEGACY_AUTOBUY_BLACKLIST_FILE_PATH, 'blacklist giocatori (legacy autobuy)') |
-    _load_slug_list_file(_LEGACY_MAKEOFFER_BLACKLIST_FILE_PATH, 'blacklist giocatori (legacy makeoffer)')
-)
-_extra_blacklisted_players = os.environ.get('BLACKLISTED_PLAYER_SLUGS', '')
-if _extra_blacklisted_players.strip():
-    BLACKLISTED_PLAYER_SLUGS |= {
-        s.strip().lower() for s in _extra_blacklisted_players.split(',') if s.strip()
-    }
+def _lista_nera_scrivi_righe(righe):
+    """Riscrive il file unico ordinato per tipo poi slug, con commento di intestazione."""
+    righe_ordinate = sorted(righe, key=lambda r: (r['tipo'], r['slug']))
+    with open(LISTA_NERA_PATH, 'w', encoding='utf-8') as f:
+        f.write("# Lista nera del Bot Supremo -- formato: tipo,slug,scadenza_iso\n")
+        f.write("# Tipi validi: manager, giocatore, thin_market, cooldown_acquisto\n")
+        f.write("# Scadenza modificabile a mano: basta cambiare la data ISO su una riga.\n")
+        f.write("# Righe scadute vengono ignorate in lettura ma NON cancellate automaticamente.\n")
+        for r in righe_ordinate:
+            f.write(f"{r['tipo']},{r['slug']},{r['scadenza'].isoformat()}\n")
 
-# --- Blacklist MANAGER: stesso principio, un solo file condiviso + lettura dei vecchi
-# file separati per compatibilita' durante la transizione.
-MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
-    'MANAGER_BLACKLIST_FILE_PATH', 'sorare_manager_blacklist.txt')
-_LEGACY_AUTOBUY_MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
-    'AUTOBUY_MANAGER_BLACKLIST_FILE_PATH', 'sorare_autobuy_manager_blacklist.txt')
-_LEGACY_MAKEOFFER_MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
-    'MAKEOFFER_MANAGER_BLACKLIST_FILE_PATH', 'sorare_makeoffer_manager_blacklist.txt')
-BLACKLISTED_MANAGER_SLUGS = (
-    _load_slug_list_file(MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager') |
-    _load_slug_list_file(_LEGACY_AUTOBUY_MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager (legacy autobuy)') |
-    _load_slug_list_file(_LEGACY_MAKEOFFER_MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager (legacy makeoffer)')
-)
-_extra_blacklisted_managers = os.environ.get('BLACKLISTED_MANAGER_SLUGS', '')
-if _extra_blacklisted_managers.strip():
-    BLACKLISTED_MANAGER_SLUGS |= {
-        s.strip().lower() for s in _extra_blacklisted_managers.split(',') if s.strip()
-    }
+
+def _lista_nera_upsert(tipo, slug, giorni_da_ora):
+    """Aggiunge o rinnova una riga (tipo, slug) con nuova scadenza = ora + giorni_da_ora.
+    Se la riga esiste gia', la sostituisce (rinnovo); altrimenti la aggiunge."""
+    slug = slug.lower()
+    righe = _lista_nera_leggi_righe()
+    scadenza = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=giorni_da_ora)
+    trovata = False
+    for r in righe:
+        if r['tipo'] == tipo and r['slug'] == slug:
+            r['scadenza'] = scadenza
+            trovata = True
+            break
+    if not trovata:
+        righe.append({'tipo': tipo, 'slug': slug, 'scadenza': scadenza})
+    _lista_nera_scrivi_righe(righe)
+
+
+def _lista_nera_attiva(tipo, slug):
+    """True se (tipo, slug) e' presente con scadenza non ancora passata."""
+    slug = (slug or '').lower()
+    if not slug:
+        return False
+    ora = datetime.datetime.now(datetime.timezone.utc)
+    for r in _lista_nera_leggi_righe():
+        if r['tipo'] == tipo and r['slug'] == slug and r['scadenza'] > ora:
+            return True
+    return False
+
+
+def _migra_vecchi_file_una_tantum():
+    """Migrazione automatica una tantum: se sorare_lista_nera.txt non esiste ancora,
+    legge tutti i vecchi file separati e popola il nuovo file unico. Blacklist
+    manager/giocatore migrate con scadenza 7 giorni da ora (default). Cooldown
+    acquisto/thin_market migrati preservando la data originale + la loro durata
+    default (cosi' un giocatore comprato ieri non riparte da zero oggi)."""
+    if os.path.exists(LISTA_NERA_PATH):
+        return  # gia' migrato in una run precedente, non rifare
+    righe = []
+    ora = datetime.datetime.now(datetime.timezone.utc)
+    migrate_da = []
+
+    for tipo, file_paths in _LEGACY_FILES_DA_MIGRARE.items():
+        giorni_default = (MANAGER_BLACKLIST_DEFAULT_DAYS if tipo == 'manager'
+                          else PLAYER_BLACKLIST_DEFAULT_DAYS)
+        for fp in file_paths:
+            try:
+                with open(fp, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+            except FileNotFoundError:
+                continue
+            migrate_da.append(fp)
+            for line in lines:
+                slug = line.strip().lower()
+                if not slug or slug.startswith('#'):
+                    continue
+                righe.append({'tipo': tipo, 'slug': slug,
+                              'scadenza': ora + datetime.timedelta(days=giorni_default)})
+
+    for tipo, file_paths in _LEGACY_JSON_DA_MIGRARE.items():
+        giorni_default = (THIN_MARKET_DEFAULT_DAYS if tipo == 'thin_market'
+                          else COOLDOWN_ACQUISTO_DEFAULT_DAYS)
+        for fp in file_paths:
+            try:
+                with open(fp, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            migrate_da.append(fp)
+            for slug, last_iso in data.items():
+                try:
+                    last_dt = datetime.datetime.fromisoformat(last_iso)
+                    if last_dt.tzinfo is None:
+                        last_dt = last_dt.replace(tzinfo=datetime.timezone.utc)
+                except (ValueError, TypeError):
+                    last_dt = ora
+                righe.append({'tipo': tipo, 'slug': slug.lower(),
+                              'scadenza': last_dt + datetime.timedelta(days=giorni_default)})
+
+    if not righe and not migrate_da:
+        # Nessun vecchio file trovato: crea comunque il file vuoto con intestazione,
+        # cosi' l'utente puo' iniziare ad editarlo a mano.
+        _lista_nera_scrivi_righe([])
+        print("[lista nera] nessun vecchio file trovato, creato sorare_lista_nera.txt vuoto",
+              flush=True)
+        return
+
+    _lista_nera_scrivi_righe(righe)
+    print(f"[lista nera] MIGRAZIONE completata da {len(migrate_da)} vecchi file "
+          f"({', '.join(migrate_da)}) -> {len(righe)} righe in {LISTA_NERA_PATH}. "
+          f"Puoi ora eliminare dal repo i vecchi file elencati sopra.", flush=True)
+
+
+_migra_vecchi_file_una_tantum()
+
+
+class _SetTipoLive:
+    """Wrapper minimale per mantenere l'API 'set' (operatore 'in', len(), sorted())
+    usata nel resto del codice per BLACKLISTED_PLAYER_SLUGS/BLACKLISTED_MANAGER_SLUGS,
+    ma leggendo SEMPRE dal vivo dal file unico -- cosi' una modifica al file a mano
+    (o un aggiornamento da un altro ramo durante la stessa run) e' vista subito,
+    senza dover ricaricare/riavviare il bot."""
+
+    def __init__(self, tipo):
+        self._tipo = tipo
+
+    def _slugs_attivi(self):
+        ora = datetime.datetime.now(datetime.timezone.utc)
+        return {r['slug'] for r in _lista_nera_leggi_righe()
+                if r['tipo'] == self._tipo and r['scadenza'] > ora}
+
+    def __contains__(self, slug):
+        return _lista_nera_attiva(self._tipo, slug or '')
+
+    def __iter__(self):
+        return iter(self._slugs_attivi())
+
+    def __len__(self):
+        return len(self._slugs_attivi())
+
+
+# Stessa blacklist manager storica di track.py (venditori solo ETH o esplicitamente
+# esclusi dall'utente) -- questa resta hardcoded, non fa parte della lista nera editabile.
+BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
+
+BLACKLISTED_PLAYER_SLUGS = _SetTipoLive('giocatore')
+BLACKLISTED_MANAGER_SLUGS = _SetTipoLive('manager')
 # Alias per compatibilita' col nome usato nel codice AutoBuy originale.
 BLACKLISTED_AUTOBUY_MANAGER_SLUGS = BLACKLISTED_MANAGER_SLUGS
+
+# Blacklist extra passate da workflow_dispatch (input singola run, oltre al file):
+# vengono scritte anche loro nel file unico, cosi' restano visibili/editabili li'.
+_extra_blacklisted_players = os.environ.get('BLACKLISTED_PLAYER_SLUGS', '')
+if _extra_blacklisted_players.strip():
+    for _s in _extra_blacklisted_players.split(','):
+        _s = _s.strip().lower()
+        if _s:
+            _lista_nera_upsert('giocatore', _s, PLAYER_BLACKLIST_DEFAULT_DAYS)
+
+_extra_blacklisted_managers = os.environ.get('BLACKLISTED_MANAGER_SLUGS', '')
+if _extra_blacklisted_managers.strip():
+    for _s in _extra_blacklisted_managers.split(','):
+        _s = _s.strip().lower()
+        if _s:
+            _lista_nera_upsert('manager', _s, MANAGER_BLACKLIST_DEFAULT_DAYS)
 
 # --- Parametri regolabili ---
 AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1'))
@@ -142,7 +316,7 @@ RANDOM_PAUSE_MAX_SECONDS = float(os.environ.get('RANDOM_PAUSE_MAX_SECONDS', '10'
 
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
-AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '5'))
+AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '20'))
 AUTOBUY_TARGET_MATCHES = max(1, min(20, AUTOBUY_TARGET_MATCHES))
 
 AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
@@ -163,95 +337,40 @@ pending_offers_count = [0]  # contatore in-memory per run, richiesto da create_d
 # normali notifiche di caso trovato/fallito.
 INSUFFICIENT_FUNDS_STOP = [False]
 
-# --- Protezione "no ri-acquisto/ri-offerta stesso giocatore entro 24h" -- DUE registri
-# separati (uno per ramo, stesso comportamento dei bot originali), ma consultati
-# INSIEME in lettura (is_player_in_cooldown) cosi' un ramo non ripropone/ricompra un
-# giocatore appena gestito dall'altro ramo.
-PURCHASE_LOG_PATH = os.environ.get('PURCHASE_LOG_PATH', 'autobuy_purchases.json')
-OFFER_LOG_PATH = os.environ.get('OFFER_LOG_PATH', 'makeoffer_cooldown.json')
-PLAYER_COOLDOWN_HOURS = 24
-
-
-def _load_json_log(path):
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        if isinstance(data, dict):
-            return data
-        return {}
-    except FileNotFoundError:
-        return {}
-    except Exception as e:
-        log(f"[log] errore lettura {path}, ignorato: {e}")
-        return {}
-
-
-def _save_json_log(path, log_data):
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(log_data, f, indent=2, sort_keys=True)
-    except Exception as e:
-        log(f"[log] errore scrittura {path}: {e}")
+# --- Protezione "no ri-acquisto/ri-offerta stesso giocatore entro N giorni" -- ora un
+# unico tipo di riga nella lista nera (cooldown_acquisto), condiviso tra i due rami cosi'
+# uno non ripropone/ricompra un giocatore appena gestito dall'altro.
+PLAYER_COOLDOWN_HOURS = 24  # mantenuto per compatibilita' log/commenti esistenti
 
 
 def is_player_in_cooldown(player_slug):
-    """True se player_slug e' in cooldown per QUALSIASI dei due rami (acquisto o
-    offerta) -- unico registro consultato in lettura per evitare che un ramo ricompri/
-    riproponga un giocatore appena gestito dall'altro ramo."""
-    for path in (PURCHASE_LOG_PATH, OFFER_LOG_PATH):
-        log_data = _load_json_log(path)
-        last_iso = log_data.get(player_slug)
-        if not last_iso:
-            continue
-        try:
-            last_dt = datetime.datetime.fromisoformat(last_iso)
-        except ValueError:
-            continue
-        elapsed_hours = (datetime.datetime.now(datetime.timezone.utc) - last_dt).total_seconds() / 3600
-        if elapsed_hours < PLAYER_COOLDOWN_HOURS:
-            return True
-    return False
+    return _lista_nera_attiva('cooldown_acquisto', player_slug)
 
 
 def record_player_purchase(player_slug):
-    log_data = _load_json_log(PURCHASE_LOG_PATH)
-    log_data[player_slug] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    _save_json_log(PURCHASE_LOG_PATH, log_data)
-    log(f"[purchase log] registrato acquisto di {player_slug}, cooldown {PLAYER_COOLDOWN_HOURS}h")
+    _lista_nera_upsert('cooldown_acquisto', player_slug, COOLDOWN_ACQUISTO_DEFAULT_DAYS)
+    log(f"[lista nera] registrato acquisto di {player_slug}, cooldown "
+        f"{COOLDOWN_ACQUISTO_DEFAULT_DAYS:.1f}gg")
 
 
 def record_player_offer(player_slug):
-    log_data = _load_json_log(OFFER_LOG_PATH)
-    log_data[player_slug] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    _save_json_log(OFFER_LOG_PATH, log_data)
-    log(f"[offer log] registrata offerta a {player_slug}, cooldown {PLAYER_COOLDOWN_HOURS}h")
+    _lista_nera_upsert('cooldown_acquisto', player_slug, COOLDOWN_ACQUISTO_DEFAULT_DAYS)
+    log(f"[lista nera] registrata offerta a {player_slug}, cooldown "
+        f"{COOLDOWN_ACQUISTO_DEFAULT_DAYS:.1f}gg")
 
 
-# --- Cache "mercato troppo sottile" -- un solo file condiviso tra i due rami (stesso
-# principio della blacklist unita: se un ramo scarta un giocatore per liquidita', l'altro
-# non deve rifare la stessa query).
-THIN_MARKET_CACHE_PATH = os.environ.get('THIN_MARKET_CACHE_PATH', 'bot_supremo_thin_market_cache.json')
-THIN_MARKET_SKIP_HOURS = float(os.environ.get('THIN_MARKET_SKIP_HOURS', '2'))
+# --- Cache "mercato troppo sottile" -- ora tipo di riga 'thin_market' nella lista nera
+# unica (stesso principio della blacklist unita: se un ramo scarta un giocatore per
+# liquidita', l'altro non deve rifare la stessa query).
+THIN_MARKET_SKIP_HOURS = THIN_MARKET_DEFAULT_DAYS * 24  # mantenuto per compatibilita' log
 
 
 def is_player_in_thin_market_cache(player_slug):
-    cache = _load_json_log(THIN_MARKET_CACHE_PATH)
-    last_skip_iso = cache.get(player_slug)
-    if not last_skip_iso:
-        return False
-    try:
-        last_skip = datetime.datetime.fromisoformat(last_skip_iso)
-    except ValueError:
-        return False
-    elapsed_hours = (datetime.datetime.now(datetime.timezone.utc) - last_skip).total_seconds() / 3600
-    return elapsed_hours < THIN_MARKET_SKIP_HOURS
+    return _lista_nera_attiva('thin_market', player_slug)
 
 
 def record_thin_market_skip(player_slug):
-    cache = _load_json_log(THIN_MARKET_CACHE_PATH)
-    cache[player_slug] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    _save_json_log(THIN_MARKET_CACHE_PATH, cache)
-
+    _lista_nera_upsert('thin_market', player_slug, THIN_MARKET_DEFAULT_DAYS)
 
 _FIAT_RATE_CACHE = {}
 
@@ -259,6 +378,8 @@ _FIAT_RATE_CACHE = {}
 def log(message):
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{ts}] {message}", flush=True)
+
+
 def get_eth_rate():
     try:
         r = requests.get(
