@@ -75,7 +75,8 @@ jobs:
         run: |
           cd sorare-sign
           npm install
-      - run: pip install requests websocket-client curl_cffi
+      - run: - run: pip install requests websocket-client curl_cffi playwright
+      - run: playwright install --with-deps chromium
       - name: Aggiungi giocatori alla blacklist permanente (se specificati)
         # Se l'utente ha compilato l'input blacklisted_player_slugs, questi slug vengono
         # scritti nel file sorare_autobuy_blacklist.txt (nella root del repo, unica fonte
