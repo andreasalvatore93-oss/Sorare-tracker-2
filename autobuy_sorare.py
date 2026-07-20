@@ -7,6 +7,7 @@ import threading
 import requests
 import websocket  # pip install websocket-client
 from playwright.sync_api import sync_playwright
+
 # FIX 20/07 (tentativo dopo 6 ipotesi esaurite su unknown_fingerprint): usiamo curl_cffi
 # al posto di requests per le chiamate GraphQL sensibili -- curl_cffi imita fedelmente
 # l'impronta TLS/JA3 di Chrome, mentre requests ha una firma TLS riconoscibile come
@@ -408,6 +409,115 @@ def _graphql_throttle():
         if wait > 0:
             time.sleep(wait)
         _graphql_last_call_ts[0] = time.time()
+
+
+# FIX 20/07 (decima ipotesi, dopo che tutte le altre 9 sono fallite su unknown_fingerprint):
+# usare un vero browser Chrome headless (Playwright) per le tre chiamate GraphQL
+# CRITICHE dell'acquisto (prepareAcceptOffer, fetchEncryptedPrivateKey, acceptOffer),
+# invece di curl_cffi. Il resto del bot (ricerca carte, prezzi, liquidita') continua a
+# usare curl_cffi via graphql_query() come prima, senza modifiche.
+_playwright_instance = None
+_playwright_browser = None
+_playwright_page = None
+
+
+def get_browser_page():
+    """Apre un browser Chrome invisibile (headless) con i cookie di sessione
+    gia' pronti, cosi' sembra un utente vero gia' loggato. Riusa lo stesso
+    browser per tutta la run (non lo riapre ogni volta)."""
+    global _playwright_instance, _playwright_browser, _playwright_page
+    if _playwright_page is not None:
+        return _playwright_page
+
+    _playwright_instance = sync_playwright().start()
+    _playwright_browser = _playwright_instance.chromium.launch(headless=True)
+    context = _playwright_browser.new_context(
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                    '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
+    )
+
+    # Inietta i cookie di Sorare (stessa stringa che usiamo gia' in COOKIES)
+    # trasformandoli nel formato che Playwright vuole (lista di dict)
+    cookie_pairs = []
+    if COOKIES:
+        for pair in COOKIES.split(';'):
+            pair = pair.strip()
+            if '=' not in pair:
+                continue
+            name, value = pair.split('=', 1)
+            cookie_pairs.append({
+                'name': name.strip(),
+                'value': value.strip(),
+                'domain': '.sorare.com',
+                'path': '/',
+            })
+    if cookie_pairs:
+        context.add_cookies(cookie_pairs)
+
+    page = context.new_page()
+    page.goto('https://sorare.com/', wait_until='domcontentloaded', timeout=30000)
+
+    _playwright_page = page
+    return page
+
+
+def close_browser():
+    """Chiude il browser alla fine (importante per non lasciare processi
+    appesi e sprecare tempo del workflow GitHub Actions)."""
+    global _playwright_instance, _playwright_browser, _playwright_page
+    try:
+        if _playwright_browser:
+            _playwright_browser.close()
+        if _playwright_instance:
+            _playwright_instance.stop()
+    except Exception as e:
+        log(f"[playwright] errore chiudendo il browser: {e}")
+    _playwright_instance = None
+    _playwright_browser = None
+    _playwright_page = None
+
+
+def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
+    """Fa una chiamata GraphQL usando fetch() DENTRO un vero browser Chrome
+    (non con curl_cffi/requests) -- cosi' la richiesta esce con l'impronta
+    autentica del browser (TLS, JS engine, eventuali controlli antibot lato
+    client), impossibile da imitare fino in fondo con librerie Python.
+    Usata SOLO per le tre chiamate critiche dell'acquisto (prepareAcceptOffer,
+    fetchEncryptedPrivateKey, acceptOffer) -- ipotesi 20/07 per unknown_fingerprint."""
+    page = get_browser_page()
+    payload = {"query": query, "variables": variables or {}}
+
+    js_code = """
+    async ([url, payload, csrfToken]) => {
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'x-csrf-token': csrfToken,
+                },
+                credentials: 'include',
+                body: JSON.stringify(payload),
+            });
+            const text = await resp.text();
+            return { status: resp.status, body: text };
+        } catch (e) {
+            return { status: 0, body: JSON.stringify({error: String(e)}) };
+        }
+    }
+    """
+
+    try:
+        result = page.evaluate(
+            js_code,
+            [GRAPHQL_URL, payload, CSRF_TOKEN],
+        )
+        body_text = result.get('body', '')
+        return json.loads(body_text)
+    except Exception as e:
+        log(f"[playwright graphql] eccezione: {e}")
+        return {"errors": [{"message": f"playwright_exception: {e}"}]}
 
 
 def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
@@ -829,6 +939,7 @@ def prepare_accept_offer(offer_id):
         "input": {
             "offerId": offer_id,
             "attemptReference": None,
+            "proposerSettlementCurrency": "EUR",
             "settlementInfo": {
                 "currency": "EUR",
                 "exchangeRateId": exchange_rate_id,
@@ -839,7 +950,7 @@ def prepare_accept_offer(offer_id):
         }
     }
     try:
-        data = graphql_query(PREPARE_ACCEPT_OFFER_MUTATION, variables)
+        data = graphql_query_via_browser(PREPARE_ACCEPT_OFFER_MUTATION, variables)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -1004,8 +1115,7 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
         extra_headers['authorization-id'] = authorization_id
 
     try:
-        data = graphql_query(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}},
-                              extra_headers=extra_headers or None)
+        data = graphql_query_via_browser(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
         if data.get('errors'):
             log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
             log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
@@ -1069,7 +1179,7 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
         "sport": "FOOTBALL",
     }
     try:
-        data = graphql_query(ACCEPT_OFFER_MUTATION, variables)
+        data = graphql_query_via_browser(ACCEPT_OFFER_MUTATION, variables)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('acceptOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -1580,15 +1690,18 @@ def main():
     log(f"Manager in blacklist AutoBuy ({len(BLACKLISTED_AUTOBUY_MANAGER_SLUGS)}): "
         f"{sorted(BLACKLISTED_AUTOBUY_MANAGER_SLUGS)}")
     send_startup_msg()
-    matches_found = run_listener(eth_rate)
-    target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
-    send_end_msg(matches_found, target_reached)
-    if target_reached:
-        log(f"Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati e "
-            f"notificati -- esecuzione terminata.")
-    else:
-        log(f"Tempo di ascolto scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi "
-            f"trovati -- esecuzione terminata.")
+    try:
+        matches_found = run_listener(eth_rate)
+        target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
+        send_end_msg(matches_found, target_reached)
+        if target_reached:
+            log(f"Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati e "
+                f"notificati -- esecuzione terminata.")
+        else:
+            log(f"Tempo di ascolto scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi "
+                f"trovati -- esecuzione terminata.")
+    finally:
+        close_browser()
 
 
 if __name__ == "__main__":
