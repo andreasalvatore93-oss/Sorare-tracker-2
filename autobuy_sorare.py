@@ -78,7 +78,7 @@ TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 # SORARE_WALLET_PASSWORD) e chiama AcceptOfferMutation. Fail-safe assoluto in ogni punto
 # del flusso: qualunque errore (prenotazione, chiave cifrata, firma, accept) ferma SOLO
 # quel tentativo, notifica l'errore esatto, non fa mai retry ne' tentativi alternativi.
-AUTOBUY_LIVE_MODE = os.environ.get('AUTOBUY_LIVE_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+AUTOBUY_LIVE_MODE = os.environ.get('AUTOBUY_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
 # FIX 20/07 (dodicesima ipotesi): header device_fingerprint visto in una richiesta
 # reale del browser -- MAI inviato finora dal bot, diverso dal fingerprint restituito
@@ -206,7 +206,7 @@ AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() 
 # l'annuncio classic risulta il minimo assoluto con margine sufficiente sul secondo,
 # notifica. Di default spenta per non cambiare il comportamento esistente durante i test
 # in corso.
-CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
 # --- Protezione "no ri-acquisto stesso giocatore entro 24h" (per fase 2, automazione
 # completa) ---
