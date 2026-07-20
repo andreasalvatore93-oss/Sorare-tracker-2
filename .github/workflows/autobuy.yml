@@ -185,8 +185,12 @@ jobs:
         # cambia mai e questo step non fa nulla di visibile. Committato qui (non tramite
         # git nello script Python) per tenere la logica di persistenza fuori dal codice
         # dello scanner.
+        # FIX 20/07 (stesso bug del commit cache mercato sottile): "git diff --quiet"
+        # non rileva un file MAI tracciato prima, quindi la primissima volta che
+        # record_player_purchase() crea questo file, il commit non partiva mai --
+        # sostituito con "git status --porcelain" (rileva sia nuovi che modificati).
         run: |
-          if git diff --quiet -- autobuy_purchases.json 2>/dev/null; then
+          if [ -z "$(git status --porcelain -- autobuy_purchases.json)" ]; then
             echo "Nessuna modifica al purchase log, niente da committare."
           else
             git config user.name "autobuy-bot"
@@ -201,8 +205,16 @@ jobs:
         # record_thin_market_skip in autobuy_sorare.py. Committato qui perche' la cache
         # funzioni davvero tra esecuzioni diverse (il workflow riparte da zero ad ogni
         # run).
+        # FIX 20/07 (bug trovato: il file non compariva MAI nel repo): "git diff
+        # --quiet -- <file>" su un file MAI tracciato prima (la primissima volta che
+        # Python lo crea) non lo rileva come modifica -- git non ha ancora quel path
+        # nell'indice, quindi non c'e' "diff" da mostrare, e lo step concludeva sempre
+        # "nessuna modifica" anche quando il file esisteva per la prima volta. Sostituito
+        # con "git status --porcelain", che rileva SIA file non tracciati (nuovi) SIA
+        # file modificati, coprendo correttamente sia la primissima creazione sia gli
+        # aggiornamenti successivi.
         run: |
-          if git diff --quiet -- autobuy_thin_market_cache.json 2>/dev/null; then
+          if [ -z "$(git status --porcelain -- autobuy_thin_market_cache.json)" ]; then
             echo "Nessuna modifica alla cache mercato sottile, niente da committare."
           else
             git config user.name "autobuy-bot"
