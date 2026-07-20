@@ -48,7 +48,26 @@ except ImportError:
 # =====================================================================================
 
 COOKIES = os.environ.get('SORARE_COOKIE')
-CSRF_TOKEN = os.environ.get('SORARE_CSRF')
+
+
+def _extract_csrf_from_cookie(cookie_string):
+    """FIX 20/07 (confermato dall'utente con screenshot: il CSRF token cambia ad
+    OGNI refresh della pagina, per design -- un valore statico in SORARE_CSRF
+    diventa obsoleto quasi subito e causa 401 'You should log in'). Il cookie
+    stesso contiene un campo 'csrftoken=...' che coincide esattamente con
+    l'header x-csrf-token mandato nella stessa richiesta -- lo estraiamo da li'
+    ogni volta che il cookie viene aggiornato, invece di tenere un secret CSRF
+    separato che scade subito. Fallback su SORARE_CSRF se il cookie non lo contiene."""
+    if not cookie_string:
+        return None
+    for pair in cookie_string.split(';'):
+        pair = pair.strip()
+        if pair.startswith('csrftoken='):
+            return pair.split('=', 1)[1].strip()
+    return None
+
+
+CSRF_TOKEN = _extract_csrf_from_cookie(COOKIES) or os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
@@ -1719,6 +1738,8 @@ def main():
     modalita = "\u26A0\uFE0F ACQUISTO REALE AUTOMATICO ATTIVO \u26A0\uFE0F" if AUTOBUY_LIVE_MODE else "solo diagnostica, nessun acquisto reale"
     log(f"AutoBuy Sorare -- MODALITA': {modalita}")
     log(f"[network] curl_cffi (impronta TLS Chrome) {'ATTIVO' if _HAS_CURL_CFFI else 'NON DISPONIBILE, uso requests standard'}")
+    csrf_source = "estratto dal cookie (csrftoken=...)" if _extract_csrf_from_cookie(COOKIES) else "da secret SORARE_CSRF (fallback)"
+    log(f"[auth] CSRF token in uso: {csrf_source}, valore: {(CSRF_TOKEN or '')[:20]}...")
     log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
         f"margine richiesto {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: "
         f"{AUTOBUY_TARGET_MATCHES}")
