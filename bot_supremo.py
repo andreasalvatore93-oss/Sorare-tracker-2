@@ -716,9 +716,9 @@ query RecentTransactionsQuery($p: String!) {
 # una finestra piu' lunga (30gg) come controllo incrociato. ENTRAMBE le condizioni devono
 # essere soddisfatte perche' il giocatore passi (basta che UNA delle due fallisca per
 # scartare il caso).
-MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '3'))
+MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '5'))
 RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '7'))
-MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '5'))
+MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '7'))
 TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
 
@@ -777,12 +777,30 @@ query ExchangeRateQuery {
 """
 
 
+_exchange_rate_id_cache = {}
+
+
 def get_exchange_rate_id():
-    """Recupera l'id del tasso di cambio corrente (serve a PrepareAcceptOfferMutation),
-    stessa query ExchangeRateQuery vista nel flusso reale di acquisto in browser."""
+    """Recupera l'id del tasso di cambio corrente (serve a PrepareAcceptOfferMutation/
+    PrepareOfferMutation), stessa query ExchangeRateQuery vista nel flusso reale di
+    acquisto in browser.
+    OTTIMIZZAZIONE VELOCITA' (20/07, richiesta esplicita utente -- ogni millisecondo
+    conta nello sniping): CACHATO in memoria per l'intera durata del run, stesso
+    principio gia' usato per fetch_encrypted_private_key. Il tasso di cambio (qui
+    sempre EUR, la valuta di acquisto/offerta e' sempre EUR) non cambia abbastanza in
+    fretta da giustificare una query di rete separata ad OGNI singolo tentativo --
+    prima query del run la recupera, tutte le successive riusano lo stesso valore
+    senza contattare di nuovo il server. Elimina una chiamata di rete intera dal
+    percorso critico di ogni acquisto/offerta.
+    """
+    if 'id' in _exchange_rate_id_cache:
+        return _exchange_rate_id_cache['id']
     try:
         data = graphql_query(EXCHANGE_RATE_QUERY)
-        return (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
+        rate_id = (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
+        if rate_id:
+            _exchange_rate_id_cache['id'] = rate_id
+        return rate_id
     except Exception as e:
         log(f"[prepare accept] errore lettura tasso di cambio: {e}")
         return None
@@ -845,6 +863,17 @@ def classify_prepare_accept_error(root_errors, payload_errors):
     return 'sconosciuto', all_errors
 
 
+# FIX BUG CRITICO (20/07): durante la fusione dei due bot, la funzione di
+# classificazione errori del ramo MakeOffer (classify_prepare_offer_error) e' stata
+# accorpata in classify_prepare_accept_error, ma create_direct_offer/prepare_offer
+# continuavano a chiamare il vecchio nome -- causava NameError ad OGNI offerta live
+# reale (visto dal vivo: caso Sean Johnson e Leandro Paredes, quest'ultimo sniperato
+# nel frattempo perche' l'offerta non e' mai partita a causa di questo crash). La
+# logica di classificazione e' identica per entrambi i rami (stessi messaggi
+# GraphQL/categorie), quindi alias diretto, nessuna duplicazione.
+classify_prepare_offer_error = classify_prepare_accept_error
+
+
 def prepare_accept_offer(offer_id):
     """FASE 2 (prima meta'): 'prenota'/valida l'offerta lato server chiamando la stessa
     PrepareAcceptOfferMutation usata dal sito quando l'utente clicca 'Acquista', PRIMA
@@ -859,7 +888,6 @@ def prepare_accept_offer(offer_id):
     if not exchange_rate_id:
         log("[prepare accept] exchange_rate_id non ottenuto, impossibile procedere")
         return None
-    log(f"[prepare accept] exchange_rate_id={exchange_rate_id}")
     variables = {
         "input": {
             "offerId": offer_id,
@@ -884,9 +912,6 @@ def prepare_accept_offer(offer_id):
             log(f"[prepare accept] fallita, categoria='{category}', errori={all_errors}")
             return None
 
-        log(f"[prepare accept] risposta grezza: {json.dumps(data)[:1500]}")
-        primary_offer = payload.get('primaryOffer') or {}
-        log(f"[prepare accept] primaryOffer={primary_offer}")
         auths = payload.get('authorizations') or []
         if not auths:
             log("[prepare accept] nessuna authorization restituita, categoria='sconosciuto'")
@@ -916,31 +941,45 @@ def prepare_accept_offer(offer_id):
 
 
 def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
-    """FASE 2 SECONDA META' (opzione 1, NON ANCORA ATTIVATA da nessuna parte del bot --
-    questa funzione esiste ma non e' chiamata in evaluate_event/main; e' il "cablaggio
-    pronto" per quando si decidera' di passare all'acquisto davvero automatico).
-
-    Richiama sorare-sign/decrypt_and_sign.js (Node.js) via subprocess, passandogli via
+    """Richiama sorare-sign/decrypt_and_sign.js (Node.js) via subprocess, passandogli via
     stdin un JSON con: password del wallet, i tre campi restituiti da
     FetchEncryptedPrivateKey (encrypted_private_key/iv/salt), e l'intero oggetto
-    authorization_request (incluso __typename) restituito da prepare_accept_offer.
+    authorization_request (incluso __typename) restituito da prepare_accept_offer/
+    prepare_offer.
 
     Lo script Node decripta la chiave privata (PBKDF2 + AES-GCM, stesso algoritmo usato
     dal sito sorare.com) e poi chiama @sorare/crypto.signAuthorizationRequest per
-    ottenere la signature -- funzione ufficiale confermata nel repo pubblico
-    github.com/sorare/api/examples/authorizations.js.
+    ottenere la signature.
+
+    OTTIMIZZAZIONE VELOCITA' (20/07, richiesta esplicita utente -- ogni millisecondo
+    conta nello sniping): la chiave privata decriptata e' SEMPRE la stessa per tutta la
+    sessione (stessa password/encrypted_private_key/iv/salt, gia' cachati a monte in
+    _encrypted_key_cache) -- rifare il decrypt PBKDF2(50000 iterazioni)+AES-GCM ad OGNI
+    singolo acquisto/offerta e' uno spreco puro. Dalla SECONDA chiamata in poi nella
+    stessa sessione, saltiamo il decrypt passando direttamente la chiave gia' in chiaro
+    allo script Node (campo 'decryptedPrivateKey'), che la usa subito per firmare senza
+    ricalcolare nulla. Il processo Node viene comunque riavviato ad ogni chiamata (lo
+    spawn stesso NON e' eliminato, solo il lavoro di decrypt al suo interno) -- un
+    processo Node persistente sarebbe il passo successivo ma e' un cambiamento piu'
+    invasivo, non fatto qui.
 
     Ritorna la stringa signature (da usare in approvals[0].mangopayWalletTransferApproval)
     oppure None se qualcosa fallisce (password sbagliata, script non trovato, dipendenze
     npm non installate, ecc.) -- logga sempre il motivo."""
     import subprocess
-    payload = json.dumps({
-        'password': password,
-        'encryptedPrivateKey': encrypted_private_key,
-        'iv': iv,
-        'salt': salt,
-        'authorizationRequest': authorization_request,
-    })
+    if 'decrypted_private_key' in _decrypted_key_cache:
+        payload = json.dumps({
+            'decryptedPrivateKey': _decrypted_key_cache['decrypted_private_key'],
+            'authorizationRequest': authorization_request,
+        })
+    else:
+        payload = json.dumps({
+            'password': password,
+            'encryptedPrivateKey': encrypted_private_key,
+            'iv': iv,
+            'salt': salt,
+            'authorizationRequest': authorization_request,
+        })
     script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
     try:
         result = subprocess.run(
@@ -964,6 +1003,10 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
     if 'error' in output:
         log(f"[firma Node] errore riportato dallo script: {output['error']}")
         return None
+    # Se lo script ha restituito la chiave decriptata (prima chiamata della sessione),
+    # la mettiamo in cache per le chiamate successive.
+    if output.get('decryptedPrivateKey'):
+        _decrypted_key_cache['decrypted_private_key'] = output['decryptedPrivateKey']
     return output.get('signature')
 
 
@@ -1012,6 +1055,13 @@ mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
 # la chiave viene recuperata dal server SOLO alla prima chiamata della sessione/run,
 # poi riusata per tutti gli acquisti successivi.
 _encrypted_key_cache = {}
+
+# Cache separata per la chiave privata GIA' DECRIPTATA (in chiaro, esadecimale) --
+# diversa da _encrypted_key_cache sopra (quella tiene encryptedPrivateKey/iv/salt
+# ancora cifrati, cosi' come arrivano dal server). Popolata da sign_authorization_via_node
+# dopo il primo decrypt riuscito della sessione, poi riusata per saltare PBKDF2+AES-GCM
+# nelle chiamate successive (vedi commento dettagliato in sign_authorization_via_node).
+_decrypted_key_cache = {}
 
 
 def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_id=None):
@@ -1265,16 +1315,6 @@ def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur):
                 f"diverso dal lordo inviato ({amount_cents}) -- probabile netto "
                 f"post-fee 5% venditore. Sovrascrivo con il lordo prima di firmare.")
         request['amount'] = amount_cents
-        # DIAGNOSTICA BUG 0.06EUR (20/07): logghiamo il valore GREZZO di amount
-        # restituito dal server dentro l'authorization request -- questo e' il valore
-        # che viene poi FIRMATO ed effettivamente autorizzato/eseguito, non
-        # offer_amount_eur che passiamo di nuovo (solo dichiarativo) in
-        # create_direct_offer. Se qui compare "600" per un'offerta di 6.00EUR
-        # inviata, il campo e' in CENTESIMI e va convertito prima di firmare;
-        # se compare "6" o "6.0", il bug e' altrove.
-        log(f"[prepare offer] DIAGNOSTICA amount grezzo restituito dal server: "
-            f"{server_amount!r} (offerta inviata in sendAmount: "
-            f"{round(offer_amount_eur, 2)!r} EUR) -- request completa: {request}")
         return {'fingerprint': auth.get('fingerprint'), 'request': request,
                 'exchange_rate_id': exchange_rate_id}
     except Exception as e:
