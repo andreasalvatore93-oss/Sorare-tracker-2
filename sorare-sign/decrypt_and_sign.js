@@ -90,6 +90,32 @@ async function main() {
     process.exit(1);
   }
 
+  // OTTIMIZZAZIONE VELOCITA' (20/07, richiesta esplicita utente -- ogni millisecondo
+  // conta nello sniping): se il payload contiene gia' 'decryptedPrivateKey' (esadecimale,
+  // formato "0x..."), SALTIAMO il decrypt PBKDF2(50000 iterazioni)+AES-GCM -- che e'
+  // identico ad ogni chiamata nella stessa sessione (stessa password/encryptedPrivateKey/
+  // iv/salt, gia' cachati lato Python in _encrypted_key_cache) -- e firmiamo direttamente
+  // con la chiave gia' in chiaro. Il chiamante Python decide quando puo' saltare il
+  // decrypt (prima chiamata della sessione: decrypt completo come sempre; chiamate
+  // successive: riusa la chiave gia' decriptata la prima volta).
+  if (params.decryptedPrivateKey) {
+    if (!sorareCrypto || typeof sorareCrypto.signAuthorizationRequest !== 'function') {
+      console.log(JSON.stringify({
+        error: '@sorare/crypto non e\' installato o non espone signAuthorizationRequest -- verificare "npm install @sorare/crypto" e la versione installata'
+      }));
+      process.exit(1);
+    }
+    try {
+      const signature = sorareCrypto.signAuthorizationRequest(
+        params.decryptedPrivateKey, params.authorizationRequest);
+      console.log(JSON.stringify({ signature }));
+    } catch (e) {
+      console.log(JSON.stringify({ error: `firma fallita: ${e.message}` }));
+      process.exit(1);
+    }
+    return;
+  }
+
   const { password, encryptedPrivateKey, iv, salt, authorizationRequest } = params;
   if (!password || !encryptedPrivateKey || !iv || !salt || !authorizationRequest) {
     console.log(JSON.stringify({ error: 'parametri mancanti (servono password, encryptedPrivateKey, iv, salt, authorizationRequest)' }));
@@ -115,7 +141,12 @@ async function main() {
 
   try {
     const signature = sorareCrypto.signAuthorizationRequest(privateKey, authorizationRequest);
-    console.log(JSON.stringify({ signature }));
+    // OTTIMIZZAZIONE VELOCITA' (20/07): restituiamo ANCHE la chiave decriptata (in
+    // chiaro, esadecimale) insieme alla firma -- il chiamante Python la salva in cache
+    // e la riusa nelle chiamate successive della stessa sessione (vedi ramo
+    // 'decryptedPrivateKey' sopra), saltando il decrypt PBKDF2+AES-GCM dalla seconda
+    // chiamata in poi.
+    console.log(JSON.stringify({ signature, decryptedPrivateKey: privateKey }));
   } catch (e) {
     console.log(JSON.stringify({ error: `firma fallita: ${e.message}` }));
     process.exit(1);
