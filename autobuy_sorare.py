@@ -1748,6 +1748,16 @@ def main():
         f"{sorted(BLACKLISTED_PLAYER_SLUGS)}")
     log(f"Manager in blacklist AutoBuy ({len(BLACKLISTED_AUTOBUY_MANAGER_SLUGS)}): "
         f"{sorted(BLACKLISTED_AUTOBUY_MANAGER_SLUGS)}")
+    # FIX 20/07 (ottimizzazione velocita' sniping): se live_mode e' attivo, apriamo il
+    # browser Playwright e facciamo la navigazione di riscaldamento SUBITO qui, PRIMA
+    # di metterci in ascolto -- non piu' al momento dell'acquisto. Il costo (apertura
+    # Chromium + home + pagina mercato, diversi secondi) viene pagato in anticipo,
+    # mentre il bot sta comunque aspettando il primo evento valido -- non piu' nel
+    # momento critico in cui la carta potrebbe sparire da un istante all'altro.
+    if AUTOBUY_LIVE_MODE:
+        log("[playwright] pre-apertura browser all'avvio (ottimizzazione velocita')...")
+        get_browser_page()
+        log("[playwright] browser pronto e riscaldato, in attesa di occasioni")
     send_startup_msg()
     try:
         matches_found = run_listener(eth_rate)
