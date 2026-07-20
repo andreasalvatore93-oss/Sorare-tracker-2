@@ -897,13 +897,32 @@ mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
 }
 """
 
+# FIX 20/07 (scoperta chiave, confermata dal vivo su un acquisto reale completato con
+# successo): il flusso REALE del browser va DIRETTAMENTE da PrepareAcceptOfferMutation
+# ad AcceptOfferMutation -- fetchEncryptedPrivateKey non compare MAI nel network
+# catturato durante un acquisto vero, nemmeno subito dopo aver inserito la password nel
+# popup "Sblocca il tuo wallet" (0 richieste GraphQL in quel momento). La chiave e'
+# quindi probabilmente decriptata/tenuta in memoria LOCALE dal browser per tutta la
+# sessione, non richiesta al server ad ogni singolo acquisto. Il bot invece la
+# richiamava ad ogni tentativo -- comportamento anomalo rispetto al pattern reale,
+# sospettato causa di "unknown_fingerprint". Fix: cache in-memory a livello di modulo,
+# la chiave viene recuperata dal server SOLO alla prima chiamata della sessione/run,
+# poi riusata per tutti gli acquisti successivi.
+_encrypted_key_cache = {}
+
 
 def fetch_encrypted_private_key():
     """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
     (nome/struttura CONFERMATI dal vivo il 19/07 catturando via DevTools la vera
     richiesta che il sito manda durante un'offerta reale -- NON e' una query su
     currentUser.sorarePrivateKey, quella torna sempre null). Ritorna il dict
-    {encryptedPrivateKey, iv, salt} o None se fallisce per qualunque motivo."""
+    {encryptedPrivateKey, iv, salt} o None se fallisce per qualunque motivo.
+    CACHATA in memoria (vedi nota sopra): la query GraphQL viene fatta solo la prima
+    volta per l'intera esecuzione del bot, le chiamate successive riusano lo stesso
+    risultato senza contattare di nuovo il server."""
+    if 'key_data' in _encrypted_key_cache:
+        return _encrypted_key_cache['key_data']
+
     try:
         data = graphql_query(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
         if data.get('errors'):
@@ -918,6 +937,9 @@ def fetch_encrypted_private_key():
         if not key_data:
             log("[chiave cifrata] sorarePrivateKey assente nella risposta")
             return None
+        log("[chiave cifrata] recuperata dal server e messa in cache per il resto della run "
+            "(non verra' richiesta di nuovo finche' il bot non riparte)")
+        _encrypted_key_cache['key_data'] = key_data
         return key_data
     except Exception as e:
         log(f"[chiave cifrata] eccezione: {e}")
