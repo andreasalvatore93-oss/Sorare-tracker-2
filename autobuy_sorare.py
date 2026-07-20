@@ -1198,7 +1198,6 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
 ACCEPT_OFFER_MUTATION = """
 mutation AcceptOfferMutation($input: acceptOfferInput!, $sport: Sport) {
   acceptOffer(input: $input, sport: $sport) {
-    offer { id }
     errors { message }
   }
 }
@@ -1243,10 +1242,13 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
             category, all_errors = classify_prepare_accept_error(root_errors, payload_errors)
             log(f"[accept offer] fallita, categoria='{category}', errori={all_errors}")
             return False, category, str(all_errors)
-        if not payload.get('offer'):
-            log(f"[accept offer] risposta senza 'offer', esito incerto: {json.dumps(data)[:1000]}")
-            return False, 'esito_incerto', "risposta senza 'offer'"
-        log(f"[accept offer] successo, offer id={payload.get('offer', {}).get('id')}")
+        # FIX 20/07: il campo 'offer' non esiste piu' nello schema acceptOfferPayload
+        # (errore "Field 'offer' doesn't exist" osservato dal vivo) -- probabilmente
+        # Sorare ha cambiato la struttura del payload di risposta. Senza introspection
+        # disponibile (disabilitata su Sorare) non possiamo vedere il nome esatto del
+        # campo sostitutivo -- determiniamo il successo SOLO dall'assenza di errori
+        # (root_errors/payload_errors), gia' verificata sopra.
+        log("[accept offer] successo (nessun errore restituito dal server)")
         return True, None, None
     except Exception as e:
         log(f"[accept offer] eccezione: {e}")
