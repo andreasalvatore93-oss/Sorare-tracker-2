@@ -31,9 +31,9 @@ on:
         required: false
         default: ""
       check_classic:
-        description: "Controlla anche gli annunci CLASSIC (tutti i campionati, confronto sul minimo assoluto classic+in_season), di default spento"
+        description: "Controlla anche gli annunci CLASSIC (tutti i campionati, confronto sul minimo assoluto classic+in_season)"
         required: false
-        default: "no"
+        default: "si"
       min_recent_transactions:
         description: "Transazioni minime (di qualunque tipo) del giocatore negli ultimi 7 giorni per non scartare il caso -- protezione mercato troppo sottile"
         required: false
@@ -47,9 +47,9 @@ on:
         required: false
         default: ""
       live_mode:
-        description: "'si' = ACQUISTO REALE AUTOMATICO (spende soldi veri dal wallet). Default 'no' = solo diagnostica, nessun acquisto."
+        description: "'si' = ACQUISTO REALE AUTOMATICO (spende soldi veri dal wallet). 'no' = solo diagnostica, nessun acquisto."
         required: false
-        default: "no"
+        default: "si"
 permissions:
   contents: write
 # Nessuna concorrenza con track.py: workflow e job completamente separati, nessuna
@@ -163,8 +163,8 @@ jobs:
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '5' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
-          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'no' }}
-          AUTOBUY_LIVE_MODE: ${{ github.event.inputs.live_mode || 'no' }}
+          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
+          AUTOBUY_LIVE_MODE: ${{ github.event.inputs.live_mode || 'si' }}
           SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
           SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
           SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
