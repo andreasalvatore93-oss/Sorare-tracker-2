@@ -64,7 +64,7 @@ TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 # SORARE_WALLET_PASSWORD) e chiama AcceptOfferMutation. Fail-safe assoluto in ogni punto
 # del flusso: qualunque errore (prenotazione, chiave cifrata, firma, accept) ferma SOLO
 # quel tentativo, notifica l'errore esatto, non fa mai retry ne' tentativi alternativi.
-MAKEOFFER_LIVE_MODE = os.environ.get('MAKEOFFER_LIVE_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+MAKEOFFER_LIVE_MODE = os.environ.get('MAKEOFFER_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
@@ -153,7 +153,22 @@ MAKEOFFER_MAX_PRICE_EUR = float(os.environ.get('MAKEOFFER_MAX_PRICE_EUR', '30'))
 
 # Margine minimo richiesto tra il prezzo minimo attuale e il secondo prezzo minimo attuale
 # (stesso bucket in_season), es. 0.15 = 15%.
-MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.20'))
+MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.10'))
+
+# FIX 20/07 (richiesta esplicita utente, scenario "i due bot girano insieme"): se il
+# margine di un caso supera questa soglia, MakeOffer SCARTA il caso invece di offrire --
+# l'idea e' che un margine cosi' alto verra' comunque intercettato e acquistato
+# direttamente da autobuy_sorare.py (che ha una soglia minima piu' alta, es. 20%), quindi
+# non ha senso che MakeOffer crei un'offerta separata sulla stessa carta: se AutoBuy la
+# compra per primo, l'offerta di MakeOffer resterebbe pendente e inutile sulla carta
+# (ormai di proprieta' dell'utente); se invece MakeOffer offrisse per primo, l'utente
+# non potrebbe piu' accettare direttamente l'annuncio originale con AutoBuy finche' non
+# ritira l'offerta a mano (vincolo di Sorare: non si puo' accettare un'offerta esistente
+# su una carta su cui si ha gia' un'offerta diretta pendente). Il tetto va impostato
+# UN PO' SOTTO la soglia minima di AutoBuy (es. 19% se AutoBuy parte da 20%) per lasciare
+# un margine di sicurezza e coprire solo la fascia "buona ma non eccezionale" che
+# AutoBuy lascerebbe comunque perdere.
+MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.19'))
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione, se non si verifica prima un caso
 # valido (il bot si ferma comunque al primo caso trovato).
@@ -188,7 +203,7 @@ MAKEOFFER_DIAGNOSTIC = os.environ.get('MAKEOFFER_DIAGNOSTIC', 'no').strip().lowe
 # l'annuncio classic risulta il minimo assoluto con margine sufficiente sul secondo,
 # notifica. Di default spenta per non cambiare il comportamento esistente durante i test
 # in corso.
-CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
 # --- Protezione "no ri-acquisto stesso giocatore entro 24h" (per fase 2, automazione
 # completa) ---
@@ -821,7 +836,7 @@ def count_recent_transactions(player_slug):
 # minimo, con una percentuale di sconto separata e configurabile (non lo stesso
 # MAKEOFFER_MARGIN_FRACTION usato per decidere se il caso e' valido -- quello resta il
 # filtro di ricerca, questo e' quanto scontare in piu' sull'offerta stessa).
-OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.10'))
+OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'))
 
 # Durata dell'offerta in giorni (Sorare accetta solo valori interi 1-7, vedi campo
 # 'duration' in secondi nella mutation CreateDirectOfferMutation -- 1 giorno = 86400s).
@@ -1383,9 +1398,15 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     margin_percent = (second_min_price - true_min_price) / second_min_price
     log(f"{player_name}: minimo {true_min_price:.2f}EUR, secondo {second_min_price:.2f}EUR, "
-        f"margine {margin_percent:.1%} (soglia {MAKEOFFER_MARGIN_FRACTION:.0%})")
+        f"margine {margin_percent:.1%} (soglia {MAKEOFFER_MARGIN_FRACTION:.0%}-{MAKEOFFER_MAX_MARGIN_FRACTION:.0%})")
 
     if margin_percent < MAKEOFFER_MARGIN_FRACTION:
+        return False
+
+    if margin_percent > MAKEOFFER_MAX_MARGIN_FRACTION:
+        log(f"{player_name}: scarto -- margine {margin_percent:.1%} supera il tetto "
+            f"{MAKEOFFER_MAX_MARGIN_FRACTION:.0%}, probabile che AutoBuy lo intercetti "
+            f"direttamente (evita offerte pendenti inutili/bloccanti sulla stessa carta)")
         return False
 
     log(f"MAKEOFFER: {player_name} -- TROVATO AFFARE ({true_min_price:.2f}EUR, "
