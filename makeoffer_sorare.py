@@ -961,6 +961,16 @@ def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur):
         auth = auths[0]
         request = dict(auth.get('request') or {})
         request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
+        # DIAGNOSTICA BUG 0.06EUR (20/07): logghiamo il valore GREZZO di amount
+        # restituito dal server dentro l'authorization request -- questo e' il valore
+        # che viene poi FIRMATO ed effettivamente autorizzato/eseguito, non
+        # offer_amount_eur che passiamo di nuovo (solo dichiarativo) in
+        # create_direct_offer. Se qui compare "600" per un'offerta di 6.00EUR
+        # inviata, il campo e' in CENTESIMI e va convertito prima di firmare;
+        # se compare "6" o "6.0", il bug e' altrove.
+        log(f"[prepare offer] DIAGNOSTICA amount grezzo restituito dal server: "
+            f"{request.get('amount')!r} (offerta inviata in sendAmount: "
+            f"{round(offer_amount_eur, 2)!r} EUR) -- request completa: {request}")
         return {'fingerprint': auth.get('fingerprint'), 'request': request,
                 'exchange_rate_id': exchange_rate_id}
     except Exception as e:
