@@ -850,12 +850,14 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
             sport
             sportSeason { name }
             inSeasonEligible
-            coverageStatus
+            ... on Card {
+              coverageStatus
+            }
             anyPlayer {
               activeClub { domesticLeague { slug } }
               lastTenSo5Appearances
-              lastTenPlayedSo5AverageScore
-              lastFortySo5AverageScore
+              lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+              lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
             }
           }
         }
@@ -925,8 +927,8 @@ def get_bucket_prices(player_slug, eth_rate):
                           # richiesta esplicita utente 21/07, non va considerata
                           # nemmeno per il calcolo del minimo/margine
             player_c = c.get('anyPlayer') or {}
-            if player_c.get('lastTenPlayedSo5AverageScore') == 0.0 or \
-                    player_c.get('lastFortySo5AverageScore') == 0.0:
+            if player_c.get('lastTenPlayedAvgScore') == 0.0 or \
+                    player_c.get('lastFortyAvgScore') == 0.0:
                 continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
                           # filtro/motivazione di coverageStatus, richiesta utente 21/07
             match = c
