@@ -943,6 +943,31 @@ def get_bucket_prices(player_slug, eth_rate):
     return raw
 
 
+def validate_live_offers_schema():
+    """Self-check di avvio (FIX diagnostica 'bot piantato'): fa UNA query di prova con
+    LIVE_OFFERS_QUERY (gli stessi campi SO5/coverageStatus usati per ogni valutazione)
+    su un giocatore reale e molto scambiato, cosi' se un campo dello schema (es.
+    coverageStatus, lastTenSo5Appearances, ecc.) e' invalido o e' cambiato lato Sorare,
+    lo scopriamo SUBITO con un errore chiaro invece di scoprirlo dopo ore di ascolto
+    a vuoto (fetch_all_live_offers fallisce silenziosamente per OGNI evento e
+    evaluate_event scarta tutto con 'if not prices: return False', senza che il bot
+    sembri fare nulla di sbagliato nei log)."""
+    probe_slug = "kylian-mbappe"
+    data = graphql_query(LIVE_OFFERS_QUERY, {"slug": probe_slug, "n": 1, "cursor": None})
+    if data.get('errors'):
+        msg = (f"[SELF-CHECK FALLITO] La query LIVE_OFFERS_QUERY (campi SO5/coverageStatus) "
+               f"ritorna errore GraphQL su un giocatore di prova ({probe_slug}): {data['errors']}. "
+               f"Questo significa che OGNI valutazione durante l'ascolto fallirebbe silenziosamente "
+               f"(nessun caso verrebbe mai trovato, ma il bot sembrerebbe girare normalmente). "
+               f"Controlla i nomi dei campi coverageStatus/lastTenSo5Appearances/"
+               f"lastTenPlayedSo5AverageScore/lastFortySo5AverageScore nello schema Sorare.")
+        log(msg)
+        send_telegram_msg(f"BOT SUPREMO -- ERRORE CRITICO ALL'AVVIO\n\n{msg}")
+        return False
+    log("[self-check] Schema LIVE_OFFERS_QUERY (coverageStatus/SO5) validato correttamente.")
+    return True
+
+
 def is_asia_americas_excluded_league(league_slug):
     """I 2 campionati (MLS, K League) per cui il confronto con il classic va escluso --
     restano solo con la logica in_season pura gia' in produzione. J League ESCLUSA da questo
@@ -2287,75 +2312,87 @@ def run_listener(eth_rate):
             log(f"ERRORE GraphQL nella subscription: {payload['errors']}")
             return
 
-        stats["received"] += 1
-        offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
-        if not offer:
-            return
-
-        offer_id = offer.get('id') or ''
-        if not offer_id.startswith('SingleSaleOffer:'):
-            return
-
-        offer_status = offer.get('status')
-        dedup_key = (offer_id, offer_status)
-        if dedup_key in seen_offer_status:
-            return
-        seen_offer_status.add(dedup_key)
-
-        if offer_status != 'opened':
-            return
-
-        seller_slug = ((offer.get('sender') or {}).get('slug') or '').lower()
-        if seller_slug in BLACKLISTED_SELLER_SLUGS:
-            return
-        if seller_slug in BLACKLISTED_MANAGER_SLUGS:
-            return
-
-        sender_side = offer.get('senderSide') or {}
-        receiver_side = offer.get('receiverSide') or {}
-        if receiver_side.get('anyCards'):
-            return  # scambio carta-per-carta
-
-        price_eur = eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
-        if price_eur is None:
-            return
-
-        sender_cards = sender_side.get('anyCards') or []
-        if len(sender_cards) > 1:
-            return  # bundle multi-carta, prezzo per-carta non ricavabile
-
-        for card in sender_cards:
-            if card.get('rarityTyped') != 'limited':
-                continue
-            if card.get('sport') != 'FOOTBALL':
-                continue
-
-            player = card.get('anyPlayer') or {}
-            player_slug = player.get('slug')
-            player_name = player.get('displayName', player_slug)
-            card_slug = card.get('slug')
-
-            is_in_season = bool(card.get('inSeasonEligible'))
-            if not is_in_season and not CHECK_CLASSIC:
-                continue  # modalita' base: SOLO in season
-            league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
-            if not player_slug:
-                continue
-
-            stats["processed"] += 1
-            found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
-                                    league_slug, offer_id, seller_slug, is_in_season)
-            maybe_random_pause()
-            if INSUFFICIENT_FUNDS_STOP[0]:
-                log("STOP: fondi insufficienti rilevati, chiudo la connessione -- "
-                    "nessun tentativo successivo avrebbe senso")
-                ws.close()
+        # FIX diagnostica 'bot piantato': tutto il corpo di valutazione dell'evento e'
+        # ora dentro un try/except generale. Prima, un'eccezione imprevista in un
+        # qualunque punto (evaluate_event, playwright, parsing di un campo mancante,
+        # ecc.) usciva dal callback on_message senza essere loggata da noi -- a seconda
+        # della versione di websocket-client questo puo' interrompere silenziosamente
+        # il thread che legge dal socket, dando l'impressione che il bot sia
+        # "piantato" dopo la connessione, senza nessun log ne' su Telegram ne' in
+        # console che lo spieghi.
+        try:
+            stats["received"] += 1
+            offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
+            if not offer:
                 return
-            if found:
-                stats["matches_found"] += 1
-                log(f"Casi trovati finora: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
-                if stats["matches_found"] >= AUTOBUY_TARGET_MATCHES:
+
+            offer_id = offer.get('id') or ''
+            if not offer_id.startswith('SingleSaleOffer:'):
+                return
+
+            offer_status = offer.get('status')
+            dedup_key = (offer_id, offer_status)
+            if dedup_key in seen_offer_status:
+                return
+            seen_offer_status.add(dedup_key)
+
+            if offer_status != 'opened':
+                return
+
+            seller_slug = ((offer.get('sender') or {}).get('slug') or '').lower()
+            if seller_slug in BLACKLISTED_SELLER_SLUGS:
+                return
+            if seller_slug in BLACKLISTED_MANAGER_SLUGS:
+                return
+
+            sender_side = offer.get('senderSide') or {}
+            receiver_side = offer.get('receiverSide') or {}
+            if receiver_side.get('anyCards'):
+                return  # scambio carta-per-carta
+
+            price_eur = eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
+            if price_eur is None:
+                return
+
+            sender_cards = sender_side.get('anyCards') or []
+            if len(sender_cards) > 1:
+                return  # bundle multi-carta, prezzo per-carta non ricavabile
+
+            for card in sender_cards:
+                if card.get('rarityTyped') != 'limited':
+                    continue
+                if card.get('sport') != 'FOOTBALL':
+                    continue
+
+                player = card.get('anyPlayer') or {}
+                player_slug = player.get('slug')
+                player_name = player.get('displayName', player_slug)
+                card_slug = card.get('slug')
+
+                is_in_season = bool(card.get('inSeasonEligible'))
+                if not is_in_season and not CHECK_CLASSIC:
+                    continue  # modalita' base: SOLO in season
+                league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
+                if not player_slug:
+                    continue
+
+                stats["processed"] += 1
+                found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
+                                        league_slug, offer_id, seller_slug, is_in_season)
+                maybe_random_pause()
+                if INSUFFICIENT_FUNDS_STOP[0]:
+                    log("STOP: fondi insufficienti rilevati, chiudo la connessione -- "
+                        "nessun tentativo successivo avrebbe senso")
                     ws.close()
+                    return
+                if found:
+                    stats["matches_found"] += 1
+                    log(f"Casi trovati finora: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
+                    if stats["matches_found"] >= AUTOBUY_TARGET_MATCHES:
+                        ws.close()
+        except Exception as e:
+            log(f"[ERRORE in on_message] eccezione non gestita durante la valutazione "
+                f"di un evento, la salto e continuo ad ascoltare: {e}")
 
     def on_error(ws, error):
         log(f"Errore WebSocket: {error}")
@@ -2404,6 +2441,10 @@ def main():
         log("[playwright] pre-apertura browser all'avvio (ottimizzazione velocita')...")
         get_browser_page()
         log("[playwright] browser pronto e riscaldato, in attesa di occasioni")
+    if not validate_live_offers_schema():
+        log("STOP: self-check dello schema GraphQL fallito, esco senza avviare l'ascolto "
+            "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
+        return
     send_startup_msg()
     try:
         matches_found = run_listener(eth_rate)
