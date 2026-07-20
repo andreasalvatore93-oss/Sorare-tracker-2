@@ -61,6 +61,10 @@ TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 # quel tentativo, notifica l'errore esatto, non fa mai retry ne' tentativi alternativi.
 AUTOBUY_LIVE_MODE = os.environ.get('AUTOBUY_LIVE_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
+# FIX 20/07 (dodicesima ipotesi): header device_fingerprint visto in una richiesta
+# reale del browser -- MAI inviato finora dal bot, diverso dal fingerprint restituito
+# da prepareAcceptOffer (quello e' fisso/di operazione, questo sembra di device/sessione)
+SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
@@ -507,15 +511,19 @@ def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
     payload = {"query": query, "variables": variables or {}}
 
     js_code = """
-    async ([url, payload, csrfToken]) => {
+    async ([url, payload, csrfToken, deviceFingerprint]) => {
         try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'x-csrf-token': csrfToken,
+            };
+            if (deviceFingerprint) {
+                headers['device_fingerprint'] = deviceFingerprint;
+            }
             const resp = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'x-csrf-token': csrfToken,
-                },
+                headers: headers,
                 credentials: 'include',
                 body: JSON.stringify(payload),
             });
@@ -530,7 +538,7 @@ def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
     try:
         result = page.evaluate(
             js_code,
-            [GRAPHQL_URL, payload, CSRF_TOKEN],
+            [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
         )
         body_text = result.get('body', '')
         return json.loads(body_text)
@@ -570,6 +578,8 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site',
     }
+    if SORARE_DEVICE_FINGERPRINT:
+        headers['device_fingerprint'] = SORARE_DEVICE_FINGERPRINT
     if extra_headers and isinstance(extra_headers, dict):
         headers.update(extra_headers)
     payload = {"query": query, "variables": variables or {}}
