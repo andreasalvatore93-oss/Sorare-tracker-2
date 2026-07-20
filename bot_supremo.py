@@ -473,6 +473,11 @@ OFFER_DURATION_SECONDS = OFFER_DURATION_DAYS * 86400
 MAX_PENDING_OFFERS = int(os.environ.get('MAX_PENDING_OFFERS', '10'))
 pending_offers_count = [0]  # contatore in-memory per run, richiesto da create_direct_offer
 
+# Set in-memory (per-run, non persistito) dei giocatori gia' scritti in blacklist per
+# copertura/media punti zero -- evita upsert ripetuti (lettura+riscrittura file) sullo
+# stesso slug se ricompare piu' volte nello stesso scan, senza rallentare il flusso.
+_gia_blacklistati_coverage_o_media_zero = set()
+
 # --- Stop automatico su fondi insufficienti (20/07, richiesta esplicita utente) ---
 # Se un tentativo di acquisto/offerta reale fallisce per mancanza di fondi, non ha
 # senso continuare l'esecuzione: ogni tentativo successivo fallirebbe allo stesso modo,
@@ -845,7 +850,13 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
             sport
             sportSeason { name }
             inSeasonEligible
-            anyPlayer { activeClub { domesticLeague { slug } } }
+            coverageStatus
+            anyPlayer {
+              activeClub { domesticLeague { slug } }
+              lastTenSo5Appearances
+              lastTenPlayedSo5AverageScore
+              lastFortySo5AverageScore
+            }
           }
         }
       }
@@ -908,6 +919,16 @@ def get_bucket_prices(player_slug, eth_rate):
                 continue
             if c.get('sport') != 'FOOTBALL':
                 continue
+            if c.get('coverageStatus') == 'NOT_COVERED':
+                continue  # carta in una squadra non coperta da SO5 (es. finita in un
+                          # campionato che Sorare non copre), punti non conteggiati --
+                          # richiesta esplicita utente 21/07, non va considerata
+                          # nemmeno per il calcolo del minimo/margine
+            player_c = c.get('anyPlayer') or {}
+            if player_c.get('lastTenPlayedSo5AverageScore') == 0.0 or \
+                    player_c.get('lastFortySo5AverageScore') == 0.0:
+                continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
+                          # filtro/motivazione di coverageStatus, richiesta utente 21/07
             match = c
             break
         if not match:
@@ -1170,14 +1191,18 @@ def prepare_accept_offer(offer_id):
     ancora che l'utente clicchi -- riduce la finestra in cui un altro manager potrebbe
     comprare la carta nel frattempo. NON firma nulla (nessuna chiave privata coinvolta):
     restituisce solo l'operationHash/nonce che servirebbero alla firma, dati utili da
-    includere nella notifica per velocizzare la conferma manuale. Ritorna il dict
-    'authorizations[0].request' (o None se la chiamata fallisce) -- il click finale
+    includere nella notifica per velocizzare la conferma manuale. Ritorna la tupla
+    (dict 'authorizations[0].request', categoria_errore) -- il dict e' None se la
+    chiamata fallisce, e categoria_errore e' valorizzata SOLO in quel caso (es.
+    'valuta_non_supportata' per annunci in ETH/crypto, non gestibili dall'acquisto
+    automatico) cosi' il chiamante puo' distinguere questo caso da un fallimento
+    generico invece di loggare sempre lo stesso messaggio. Il click finale
     dell'utente sul sito resta INVARIATO e necessario (fase 2 = opzione "conferma manuale",
     vedi nota progetto)."""
     exchange_rate_id = get_exchange_rate_id()
     if not exchange_rate_id:
         log("[prepare accept] exchange_rate_id non ottenuto, impossibile procedere")
-        return None
+        return None, None
     variables = {
         "input": {
             "offerId": offer_id,
@@ -1200,12 +1225,12 @@ def prepare_accept_offer(offer_id):
         if root_errors or payload_errors:
             category, all_errors = classify_prepare_accept_error(root_errors, payload_errors)
             log(f"[prepare accept] fallita, categoria='{category}', errori={all_errors}")
-            return None
+            return None, category
 
         auths = payload.get('authorizations') or []
         if not auths:
             log("[prepare accept] nessuna authorization restituita, categoria='sconosciuto'")
-            return None
+            return None, 'sconosciuto'
         # Restituiamo fingerprint + request (con __typename incluso) -- servono ENTRAMBI a
         # sign_authorization_via_node/signAuthorizationRequest quando si attivera' la firma
         # automatica (opzione 1, non ancora collegata a nulla qui). Oggi 'fingerprint' non
@@ -1224,10 +1249,10 @@ def prepare_accept_offer(offer_id):
         # chiamata -- e' l'ipotesi piu' plausibile di identificatore reale da correlare
         # con fetchEncryptedPrivateKey.
         return {'fingerprint': auth.get('fingerprint'), 'request': request,
-                'exchange_rate_id': exchange_rate_id, 'authorization_id': auth.get('id')}
+                'exchange_rate_id': exchange_rate_id, 'authorization_id': auth.get('id')}, None
     except Exception as e:
         log(f"[prepare accept] eccezione: {e}")
-        return None
+        return None, 'sconosciuto'
 
 
 def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
@@ -2047,10 +2072,14 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
 
     prepared = None
     if offer_id:
-        prepared = prepare_accept_offer(offer_id)
+        prepared, prepare_category = prepare_accept_offer(offer_id)
         if prepared:
             nonce = (prepared.get('request') or {}).get('nonce')
             log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
+        elif prepare_category == 'valuta_non_supportata':
+            log(f"{player_name}: prenotazione non riuscita -- annuncio in valuta "
+                f"crypto/ETH non gestibile dall'acquisto automatico (stesso motivo "
+                f"per cui MakeOffer scarterebbe un annuncio solo-ETH)")
         else:
             log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
 
@@ -2182,9 +2211,17 @@ subscription OnTokenOfferUpdated {
         slug
         rarityTyped
         sport
-        anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
+        anyPlayer {
+          slug
+          displayName
+          activeClub { domesticLeague { slug } }
+          lastTenSo5Appearances
+          lastTenPlayedSo5AverageScore
+          lastFortySo5AverageScore
+        }
         sportSeason { name }
         inSeasonEligible
+        coverageStatus
       }
     }
     receiverSide {
@@ -2300,14 +2337,35 @@ def run_listener(eth_rate):
                 continue
             if card.get('sport') != 'FOOTBALL':
                 continue
-            is_in_season = bool(card.get('inSeasonEligible'))
-            if not is_in_season and not CHECK_CLASSIC:
-                continue  # modalita' base: SOLO in season
 
             player = card.get('anyPlayer') or {}
             player_slug = player.get('slug')
             player_name = player.get('displayName', player_slug)
             card_slug = card.get('slug')
+
+            if card.get('coverageStatus') == 'NOT_COVERED':
+                log(f"{player_name}: scarto -- carta in una squadra non coperta da "
+                    f"SO5, punti non conteggiati, aggiunto alla blacklist giocatore "
+                    f"365 giorni")
+                if player_slug and player_slug not in _gia_blacklistati_coverage_o_media_zero:
+                    _lista_nera_upsert('giocatore', player_slug, 365)
+                    _gia_blacklistati_coverage_o_media_zero.add(player_slug)
+                continue
+
+            last10_avg = player.get('lastTenPlayedSo5AverageScore')
+            last40_avg = player.get('lastFortySo5AverageScore')
+            if last10_avg == 0.0 or last40_avg == 0.0:
+                log(f"{player_name}: scarto -- media punti 0 nelle ultime 10 o nelle "
+                    f"ultime 40 partite (probabile giocatore non coperto/inattivo), "
+                    f"aggiunto alla blacklist giocatore 365 giorni")
+                if player_slug and player_slug not in _gia_blacklistati_coverage_o_media_zero:
+                    _lista_nera_upsert('giocatore', player_slug, 365)
+                    _gia_blacklistati_coverage_o_media_zero.add(player_slug)
+                continue
+
+            is_in_season = bool(card.get('inSeasonEligible'))
+            if not is_in_season and not CHECK_CLASSIC:
+                continue  # modalita' base: SOLO in season
             league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
             if not player_slug:
                 continue
