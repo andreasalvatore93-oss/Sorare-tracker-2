@@ -77,9 +77,9 @@ LISTA_NERA_PATH = os.environ.get('LISTA_NERA_PATH', 'sorare_lista_nera.txt')
 # Durate di default (giorni), usate quando il bot AGGIUNGE una riga per conto suo
 # (es. dal workflow_dispatch, o registrando un acquisto/offerta/thin-market skip).
 # Tutte modificabili qui O a mano nel file cambiando la scadenza di ogni riga.
-MANAGER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('MANAGER_BLACKLIST_DEFAULT_DAYS', '7'))
-PLAYER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_DAYS', '7'))
-THIN_MARKET_DEFAULT_DAYS = float(os.environ.get('THIN_MARKET_DEFAULT_DAYS', '1'))
+MANAGER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('MANAGER_BLACKLIST_DEFAULT_DAYS', '365'))
+PLAYER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_DAYS', '3'))
+THIN_MARKET_DEFAULT_DAYS = float(os.environ.get('THIN_MARKET_DEFAULT_DAYS', '2'))
 COOLDOWN_ACQUISTO_DEFAULT_DAYS = float(os.environ.get('COOLDOWN_ACQUISTO_DEFAULT_DAYS', '1'))
 
 _LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto')
@@ -487,19 +487,35 @@ INSUFFICIENT_FUNDS_STOP = [False]
 PLAYER_COOLDOWN_HOURS = 24  # mantenuto per compatibilita' log/commenti esistenti
 
 
-def is_player_in_cooldown(player_slug):
-    return _lista_nera_attiva('cooldown_acquisto', player_slug)
+def _slug_cooldown(player_slug, is_in_season):
+    """Chiave usata SOLO per il cooldown acquisto/offerta: suffissa lo slug con
+    '-inseason' o '-classic' cosi' lo stesso giocatore, se esiste sia come carta
+    in_season che come classic, ha DUE cooldown indipendenti -- comprare/offrire
+    sulla versione in_season non blocca piu' la versione classic dello stesso
+    giocatore per 24h (richiesta esplicita utente 21/07). Le altre sezioni della
+    lista nera (blacklist manager/giocatore, thin_market) NON usano questo suffisso,
+    restano sullo slug puro."""
+    suffisso = 'inseason' if is_in_season else 'classic'
+    return f"{player_slug}-{suffisso}"
 
 
-def record_player_purchase(player_slug):
-    _lista_nera_upsert('cooldown_acquisto', player_slug, COOLDOWN_ACQUISTO_DEFAULT_DAYS)
-    log(f"[lista nera] registrato acquisto di {player_slug}, cooldown "
+def is_player_in_cooldown(player_slug, is_in_season=True):
+    return _lista_nera_attiva('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season))
+
+
+def record_player_purchase(player_slug, is_in_season=True):
+    _lista_nera_upsert('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season),
+                        COOLDOWN_ACQUISTO_DEFAULT_DAYS)
+    log(f"[lista nera] registrato acquisto di {player_slug} "
+        f"({'in_season' if is_in_season else 'classic'}), cooldown "
         f"{COOLDOWN_ACQUISTO_DEFAULT_DAYS:.1f}gg")
 
 
-def record_player_offer(player_slug):
-    _lista_nera_upsert('cooldown_acquisto', player_slug, COOLDOWN_ACQUISTO_DEFAULT_DAYS)
-    log(f"[lista nera] registrata offerta a {player_slug}, cooldown "
+def record_player_offer(player_slug, is_in_season=True):
+    _lista_nera_upsert('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season),
+                        COOLDOWN_ACQUISTO_DEFAULT_DAYS)
+    log(f"[lista nera] registrata offerta a {player_slug} "
+        f"({'in_season' if is_in_season else 'classic'}), cooldown "
         f"{COOLDOWN_ACQUISTO_DEFAULT_DAYS:.1f}gg")
 
 
@@ -1574,21 +1590,23 @@ def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur):
         auth = auths[0]
         request = dict(auth.get('request') or {})
         request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
-        # FIX FEE 5% VENDITORE (20/07, confermato dall'utente): Sorare applica una
-        # commissione del 5% SUL VENDITORE (chi vende incassa il 95%), NON su chi fa
-        # l'offerta. Pero' il campo 'amount' che il server restituisce qui dentro
-        # l'authorization request e' gia' il NETTO scontato (es. 342 invece di 360
-        # per un'offerta di 3.60EUR) -- se firmassimo quel valore cosi' com'e',
-        # rischiamo di autorizzare/eseguire l'offerta per l'importo scontato invece
-        # che per quello dichiarato all'utente. FIX: sovrascriviamo qui 'amount' con
-        # il valore LORDO che avevamo gia' inviato in sendAmount (amount_cents),
-        # cosi' la firma avviene sempre sull'importo pieno voluto dall'utente.
+        # FIX 21/07 (sospetta causa di 'invalid Mangopay wallet transfer signature'):
+        # in precedenza qui si sovrascriveva 'amount' col valore lordo (amount_cents)
+        # quando il server ne restituiva uno diverso (es. 152 invece di 160, probabile
+        # netto post-fee 5% venditore) -- ma il server verifica la firma contro IL SUO
+        # 'amount' originale, non contro un valore che gli rimandiamo indietro
+        # modificato. Sovrascriverlo rompeva la firma. L'importo che l'utente paga
+        # resta comunque quello giusto: e' gia' fissato da sendAmount/amount_cents
+        # inviato SOPRA nella richiesta PrepareOfferMutation (il buyer paga sempre
+        # l'importo dichiarato, il venditore incassa il 95% -- confermato
+        # dall'utente). Qui firmiamo l'amount ESATTO restituito dal server, senza
+        # toccarlo, cosi' la firma corrisponde a quello che lui stesso verifica.
         server_amount = request.get('amount')
         if server_amount is not None and int(server_amount) != amount_cents:
-            log(f"[prepare offer] ATTENZIONE: amount del server ({server_amount}) "
+            log(f"[prepare offer] diagnostica: amount del server ({server_amount}) "
                 f"diverso dal lordo inviato ({amount_cents}) -- probabile netto "
-                f"post-fee 5% venditore. Sovrascrivo con il lordo prima di firmare.")
-        request['amount'] = amount_cents
+                f"post-fee 5% venditore. NON lo sovrascrivo piu', firmo il valore "
+                f"esatto del server (fix 21/07 per invalid signature).")
         return {'fingerprint': auth.get('fingerprint'), 'request': request,
                 'exchange_rate_id': exchange_rate_id}
     except Exception as e:
@@ -1931,9 +1949,9 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
         return False
 
-    if player_slug and is_player_in_cooldown(player_slug):
-        log(f"{player_name}: scarto -- gia' acquistato/offerto nelle ultime "
-            f"{PLAYER_COOLDOWN_HOURS}h (protezione anti-svendita/infortunio)")
+    if player_slug and is_player_in_cooldown(player_slug, is_in_season):
+        log(f"{player_name}: scarto -- gia' acquistato/offerto ({'in_season' if is_in_season else 'classic'}) "
+            f"nelle ultime {PLAYER_COOLDOWN_HOURS}h (protezione anti-svendita/infortunio)")
         return False
 
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
@@ -2047,7 +2065,7 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
         if purchase_completed:
             log(f"{player_name}: ACQUISTO COMPLETATO CON SUCCESSO")
             if player_slug:
-                record_player_purchase(player_slug)
+                record_player_purchase(player_slug, is_in_season)
         else:
             log(f"{player_name}: acquisto automatico fallito -- {purchase_error}")
             if _is_insufficient_funds_error(purchase_error):
@@ -2129,7 +2147,7 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
         if offer_sent:
             log(f"{player_name}: OFFERTA INVIATA CON SUCCESSO")
             if player_slug:
-                record_player_offer(player_slug)
+                record_player_offer(player_slug, is_in_season)
             pending_offers_count[0] += 1
         else:
             log(f"{player_name}: offerta automatica fallita -- {offer_error}")
