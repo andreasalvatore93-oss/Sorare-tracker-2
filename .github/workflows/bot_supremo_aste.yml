@@ -1,0 +1,92 @@
+name: Bot Supremo Aste
+
+on:
+  workflow_dispatch:
+    inputs:
+      auction_discount_percent:
+        description: "Sconto sotto il minimo di mercato per calcolare il tetto del bid, in % (es. 25 = 25%)"
+        required: false
+        default: "25"
+      last_auction_reference_window_hours:
+        description: "Finestra in ore entro cui un'asta CONCLUSA vale ancora come riferimento di prezzo"
+        required: false
+        default: "24"
+      auction_cooldown_hours:
+        description: "Ore minime tra due bid reali sullo stesso giocatore"
+        required: false
+        default: "12"
+      listen_seconds:
+        description: "Secondi di ascolto massimi, max 18000 (5h)"
+        required: false
+        default: "18000"
+      auction_live_mode:
+        description: "'si' = BID REALI ATTIVI (non ritirabili). 'no' = solo diagnostica, nessun bid reale."
+        required: false
+        default: "no"
+      auction_diagnostic:
+        description: "Log extra di diagnostica, di default spento"
+        required: false
+        default: "no"
+      blacklisted_player_slugs:
+        description: "Slug giocatori da aggiungere PERMANENTEMENTE alla blacklist aste (separati da virgola)"
+        required: false
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: sorare-bot-supremo-aste
+  cancel-in-progress: false
+jobs:
+  bot-supremo-aste:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install sorare-sign dependencies
+        run: |
+          cd sorare-sign
+          npm install
+      - run: pip install requests websocket-client curl_cffi playwright
+      - run: playwright install --with-deps chromium
+      - name: Run Bot Supremo Aste
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
+          AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
+          AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+          AUCTION_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.auction_discount_percent || '25' }}
+          LAST_AUCTION_REFERENCE_WINDOW_HOURS: ${{ github.event.inputs.last_auction_reference_window_hours || '24' }}
+          AUCTION_COOLDOWN_HOURS: ${{ github.event.inputs.auction_cooldown_hours || '12' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
+          AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'no' }}
+          AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
+          BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
+        run: |
+          set -o pipefail
+          export AUCTION_DISCOUNT_FRACTION=$(awk -v p="$AUCTION_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          python bot_supremo_aste.py
+      - name: Commit lista nera aste (cooldown bid + blacklist manuale)
+        if: always()
+        run: |
+          if [ -z "$(git status --porcelain -- sorare_lista_nera_aste.txt)" ]; then
+            echo "Nessuna modifica alla lista nera aste, niente da committare."
+          else
+            git config user.name "bot-supremo-aste"
+            git config user.email "bot-supremo-aste@users.noreply.github.com"
+            git add sorare_lista_nera_aste.txt
+            git commit -m "Bot Supremo Aste: aggiorna lista nera (cooldown bid)"
+            git push
+          fi
