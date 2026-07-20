@@ -1204,21 +1204,13 @@ TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS'
 def _count_transactions_from_nodes(nodes, season_filter=None):
     """Fattorizzata da count_recent_transactions: conta le transazioni valide (short/long
     window) da una lista di nodi tokenPrices, qualunque sia la query che li ha prodotti.
-
-    season_filter: se non None (True=in_season, False=classic), scarta i nodi il cui
-    campo card.inSeasonEligible non corrisponde -- usato solo dalla query per stagione
-    (RECENT_TRANSACTIONS_QUERY_BY_SEASON, che porta quel campo); la query combinata di
-    fallback non ha quel campo nei nodi quindi li passa tutti (season_filter=None)."""
+    season_filter non usato per ora (rimane per compatibilita' futura)."""
     now = datetime.datetime.now(datetime.timezone.utc)
     cutoff_short = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
     cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
     count_short = 0
     count_long = 0
     for n in nodes:
-        if season_filter is not None:
-            card = n.get('card') or {}
-            if bool(card.get('inSeasonEligible')) != season_filter:
-                continue
         deal = n.get('deal') or {}
         deal_typename = deal.get('__typename')
         is_countable = bool(deal.get('type')) or deal_typename in ('TokenAuction', 'TokenPrimaryOffer')
@@ -1241,43 +1233,25 @@ def count_recent_transactions(player_slug, is_in_season=True):
     vendita diretta, offerta diretta, asta, ecc.) di player_slug rispettivamente negli
     ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni.
 
-    FIX 21/07 (bug reale: offerta su carta CLASSIC coreana con 1 sola transazione/7gg
-    passata perche' il conteggio mescolava in_season+classic): filtra per la STESSA
-    stagione della carta che si sta valutando (is_in_season), tramite
-    RECENT_TRANSACTIONS_QUERY_BY_SEASON.
+    NOTA 21/07 SERA: il tentativo di filtrare per stagione usando card.inSeasonEligible
+    ha mostrato che lo schema della subscription e della query di liquidita' divergono
+    sul come/dove il campo viene settato -- il filtro causava sempre 0 nodi sui casi reali.
+    Per ora ripiega SEMPRE sulla query combinata (in_season+classic mescolate insieme),
+    che e' meno precisa ma funzionante e al 100%. Un giorno quando lo schema sara' piu'
+    stabile o confermato, si puo' ritornare a tentare il filtro per stagione.
 
-    FIX 21/07 SERA: la versione precedente filtrava lato server con un argomento/enum
-    mai confermato via introspection, che restituiva sistematicamente zero nodi senza
-    generare errori GraphQL (per questo il bot mostrava 0 transazioni per TUTTI). Ora la
-    query non filtra piu' lato server: prende tutti i tokenPrices col campo booleano
-    card.inSeasonEligible (stesso campo gia' verificato funzionante altrove nel file), e
-    il filtro per stagione lo fa _count_transactions_from_nodes lato Python.
-
-    Se la query per stagione fallisce (errore GraphQL o eccezione), ripiega sulla
-    vecchia query combinata (RECENT_TRANSACTIONS_QUERY, in_season+classic insieme,
-    nessun filtro di stagione possibile) con un log di avviso -- meno preciso ma
-    comunque una protezione, invece di bloccare tutto.
-
-    Ritorna (None, None) se anche il fallback fallisce. Fail-safe: se la query fallisce,
-    il chiamante NON deve bloccare l'acquisto solo per questo -- vedi commento nella
-    chiamata in evaluate_event."""
-    if not _season_aware_liquidity_broken[0]:
-        try:
-            data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON, {"p": player_slug})
-            if data.get('errors'):
-                _season_aware_liquidity_broken[0] = True
-                log(f"[liquidita'] ATTENZIONE: query di liquidita' per stagione fallita "
-                    f"({data['errors']}) -- ripiego sulla query combinata (in_season+classic "
-                    f"mescolate) per TUTTO il resto della run, meno precisa ma funzionante. "
-                    f"Controlla RECENT_TRANSACTIONS_QUERY_BY_SEASON/il campo "
-                    f"card.inSeasonEligible su tokenPrices.")
-            else:
-                nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
-                return _count_transactions_from_nodes(nodes, season_filter=is_in_season)
-        except Exception as e:
-            _season_aware_liquidity_broken[0] = True
-            log(f"[liquidita'] ATTENZIONE: eccezione nella query di liquidita' per stagione "
-                f"({e}) -- ripiego sulla query combinata per tutto il resto della run.")
+    Ritorna (None, None) se la query fallisce. Fail-safe: se la query fallisce,
+    il chiamante NON deve bloccare l'acquisto solo per questo."""
+    try:
+        data = graphql_query(RECENT_TRANSACTIONS_QUERY, {"p": player_slug})
+        if data.get('errors'):
+            log(f"[liquidita'] errore GraphQL per {player_slug}: {data['errors']}")
+            return None, None
+        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
+    except Exception as e:
+        log(f"[liquidita'] eccezione per {player_slug}: {e}")
+        return None, None
+    return _count_transactions_from_nodes(nodes, season_filter=None)
 
     # Fallback: vecchio comportamento (in_season + classic mescolate insieme).
     try:
