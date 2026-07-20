@@ -424,7 +424,15 @@ _playwright_page = None
 def get_browser_page():
     """Apre un browser Chrome invisibile (headless) con i cookie di sessione
     gia' pronti, cosi' sembra un utente vero gia' loggato. Riusa lo stesso
-    browser per tutta la run (non lo riapre ogni volta)."""
+    browser per tutta la run (non lo riapre ogni volta).
+    FIX 20/07 (undicesima ipotesi, dopo che Playwright puro non ha risolto
+    unknown_fingerprint): oltre a sembrare un browser vero, proviamo a fargli
+    NAVIGARE un po' prima della chiamata critica -- non solo la home, ma
+    anche una pagina di mercato reale, con piccole pause. Ipotesi: un
+    eventuale fingerprint di device/sessione generato da JS potrebbe
+    richiedere che il browser abbia gia' 'vissuto' un minimo di navigazione
+    reale (localStorage/IndexedDB popolati) prima che il server lo consideri
+    legittimo."""
     global _playwright_instance, _playwright_browser, _playwright_page
     if _playwright_page is not None:
         return _playwright_page
@@ -455,7 +463,18 @@ def get_browser_page():
         context.add_cookies(cookie_pairs)
 
     page = context.new_page()
-    page.goto('https://sorare.com/', wait_until='domcontentloaded', timeout=30000)
+
+    # Navigazione "riscaldamento" (undicesima ipotesi): home -> pausa -> pagina
+    # di mercato reale -> pausa, prima di essere pronti per la chiamata critica.
+    try:
+        log("[playwright] navigazione di riscaldamento: home page...")
+        page.goto('https://sorare.com/', wait_until='networkidle', timeout=30000)
+        time.sleep(2)
+        log("[playwright] navigazione di riscaldamento: pagina di mercato...")
+        page.goto('https://sorare.com/football/market', wait_until='networkidle', timeout=30000)
+        time.sleep(2)
+    except Exception as e:
+        log(f"[playwright] navigazione di riscaldamento fallita parzialmente (non bloccante): {e}")
 
     _playwright_page = page
     return page
