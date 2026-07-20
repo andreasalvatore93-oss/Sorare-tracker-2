@@ -15,6 +15,21 @@ try:
 except ImportError:
     _HAS_CURL_CFFI = False
 
+# OTTIMIZZAZIONE VELOCITA' (21/07, richiesta esplicita utente -- "altri modi per
+# renderlo piu' veloce"): prima ogni chiamata GraphQL usava curl_requests.post()/
+# requests.post() a livello di modulo, che aprono una connessione NUOVA (handshake
+# TCP + TLS da zero) ad OGNI singola chiamata verso api.sorare.com. Con una Session
+# persistente (stessa identica interfaccia .post(), stessi header/payload/timeout --
+# nessun cambio di comportamento) la connessione resta aperta (keep-alive) e viene
+# RIUSATA tra una chiamata e l'altra: l'handshake TLS (spesso 50-150ms) si paga una
+# volta sola invece che ad ogni singola query/mutation. Impatta OGNI chiamata
+# GraphQL della run (ricerca prezzi, liquidita', tassi di cambio), non solo il
+# momento dell'acquisto.
+if _HAS_CURL_CFFI:
+    _http_session = curl_requests.Session(impersonate="chrome")
+else:
+    _http_session = requests.Session()
+
 # =====================================================================================
 # BOT SUPREMO -- fusione di AutoBuy + MakeOffer in un unico scanner/bot (20/07)
 # =====================================================================================
@@ -819,10 +834,9 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
     for attempt in range(max_retries):
         _graphql_throttle()
         if _HAS_CURL_CFFI:
-            r = curl_requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15,
-                                    impersonate="chrome")
+            r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         else:
-            r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+            r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             wait_seconds = min((2 ** attempt) * 2, 8.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
@@ -984,6 +998,27 @@ def validate_live_offers_schema():
         send_telegram_msg(f"BOT SUPREMO -- ERRORE CRITICO ALL'AVVIO\n\n{msg}")
         return False
     log("[self-check] Schema LIVE_OFFERS_QUERY (coverageStatus/SO5) validato correttamente.")
+
+    # FIX 21/07 (bug reale: offerta su carta classic con liquidita' insufficiente non
+    # bloccata): testiamo qui anche la query di liquidita' per stagione, PRIMA di
+    # scoprirlo a meta' run. Non blocchiamo l'avvio se fallisce (c'e' gia' un fallback
+    # automatico sicuro in count_recent_transactions), ma un avviso subito e' meglio di
+    # scoprirlo tra centinaia di righe di log dopo ore.
+    probe_data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON,
+                                {"p": probe_slug, "seasonEligibility": "IN_SEASON"})
+    if probe_data.get('errors'):
+        msg = (f"[self-check] ATTENZIONE: query di liquidita' per stagione "
+               f"(RECENT_TRANSACTIONS_QUERY_BY_SEASON, seasonEligibility=IN_SEASON) fallisce "
+               f"su {probe_slug}: {probe_data['errors']}. Il controllo di liquidita' user' "
+               f"AUTOMATICAMENTE il fallback meno preciso (in_season+classic mescolate) per "
+               f"tutta la run -- non blocca l'avvio, ma il filtro sara' meno accurato per le "
+               f"carte classic finche' non si sistema questa query.")
+        log(msg)
+        send_telegram_msg(f"BOT SUPREMO -- AVVISO ALL'AVVIO\n\n{msg}")
+        _season_aware_liquidity_broken[0] = True
+    else:
+        log("[self-check] Query di liquidita' per stagione (seasonEligibility) validata correttamente.")
+
     return True
 
 
@@ -1065,6 +1100,47 @@ query RecentTransactionsQuery($p: String!) {
 }
 """
 
+# FIX 21/07 (bug reale segnalato dall'utente: offerta fatta su una carta CLASSIC coreana
+# con una sola transazione negli ultimi 7 giorni, che avrebbe dovuto essere scartata dal
+# controllo di liquidita'): RECENT_TRANSACTIONS_QUERY sopra conta le transazioni di
+# QUALUNQUE tipo di carta del giocatore (in_season + classic mescolate insieme), quindi
+# un giocatore con market in_season vivace ma classic pressoche' morto (o viceversa)
+# passava comunque la soglia minima grazie alle transazioni dell'ALTRA stagione -- il
+# controllo di liquidita' non stava proteggendo la stagione che stavamo davvero per
+# comprare/offrire. Query alternativa che filtra per stagione tramite l'argomento
+# seasonEligibility (esiste su anyPlayer.tokenPrices, campo confermato nello schema
+# GraphQL ufficiale -- api.sorare.com/graphql/schema -- ma i valori esatti dell'enum
+# SeasonEligibility non sono verificabili senza introspection, quindi IN_SEASON/CLASSIC
+# sono la scelta piu' plausibile per coerenza col resto dello schema (es. il campo
+# "seasonality": "IN_SEASON" visto dal vivo su So5Leaderboard) ma vanno confermati dal
+# self-check all'avvio (validate_live_offers_schema). Se questa query fallisce, il bot
+# NON blocca l'avvio per questo -- ripiega automaticamente sulla query combinata di
+# prima (comportamento precedente, imperfetto ma funzionante) con un avviso loggato UNA
+# sola volta, invece di rifare il tentativo fallito ad ogni singolo giocatore."""
+RECENT_TRANSACTIONS_QUERY_BY_SEASON = """
+query RecentTransactionsBySeasonQuery($p: String!, $seasonEligibility: SeasonEligibility!) {
+  anyPlayer(slug: $p) {
+    tokenPrices(rarity: limited, seasonEligibility: $seasonEligibility) {
+      nodes {
+        date
+        deal {
+          __typename
+          ... on TokenOffer {
+            type
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+# Diventa True alla prima volta che RECENT_TRANSACTIONS_QUERY_BY_SEASON fallisce --
+# da quel momento in poi count_recent_transactions ripiega direttamente sulla query
+# combinata SENZA ritentare quella per stagione ad ogni giocatore (eviterebbe solo
+# di sprecare una query che sappiamo gia' rotta, non cambia la correttezza).
+_season_aware_liquidity_broken = [False]
+
 # Doppio layer di protezione liquidita' (richiesta esplicita utente, 19/07): la finestra
 # breve (7gg) da sola potrebbe far passare un giocatore con un breve picco isolato di
 # transazioni ma comunque poco liquido nel complesso -- aggiunta una seconda soglia su
@@ -1077,25 +1153,9 @@ MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '5'))
 TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
 
-def count_recent_transactions(player_slug):
-    """Ritorna una tupla (count_7d, count_30d): numero di transazioni (di qualunque tipo --
-    vendita diretta, offerta diretta, asta, ecc.) di player_slug rispettivamente negli
-    ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni (in
-    un'unica query/passata sui dati, TRANSACTIONS_WINDOW_30D_DAYS include sempre l'altra
-    finestra essendo piu' lunga). Ritorna (None, None) se la query fallisce per qualunque
-    motivo. Fail-safe: se la query fallisce, il chiamante NON deve bloccare l'acquisto
-    solo per questo (stessa filosofia di get_card_coverage_status) -- vedi commento nella
-    chiamata in evaluate_event."""
-    try:
-        data = graphql_query(RECENT_TRANSACTIONS_QUERY, {"p": player_slug})
-        if data.get('errors'):
-            log(f"[liquidita'] errore GraphQL per {player_slug}: {data['errors']}")
-            return None, None
-        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
-    except Exception as e:
-        log(f"[liquidita'] eccezione per {player_slug}: {e}")
-        return None, None
-
+def _count_transactions_from_nodes(nodes):
+    """Fattorizzata da count_recent_transactions: conta le transazioni valide (short/long
+    window) da una lista di nodi tokenPrices, qualunque sia la query che li ha prodotti."""
     now = datetime.datetime.now(datetime.timezone.utc)
     cutoff_short = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
     cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
@@ -1103,14 +1163,10 @@ def count_recent_transactions(player_slug):
     count_long = 0
     for n in nodes:
         deal = n.get('deal') or {}
-        # FIX 19/07 (caso reale, errore GraphQL osservato dal vivo): sia TokenAuction che
-        # TokenPrimaryOffer NON hanno un campo 'type' (solo TokenOffer ce l'ha) -- entrambi
-        # sono comunque transazioni valide da contare, li riconosciamo dal __typename
-        # invece che dal campo 'type' (assente in entrambi i casi).
         deal_typename = deal.get('__typename')
         is_countable = bool(deal.get('type')) or deal_typename in ('TokenAuction', 'TokenPrimaryOffer')
         if not is_countable:
-            continue  # nodo senza tipo riconoscibile, non contabile con certezza
+            continue
         date_str = n.get('date') or ''
         try:
             dt = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00'))
@@ -1121,6 +1177,55 @@ def count_recent_transactions(player_slug):
             if dt >= cutoff_short:
                 count_short += 1
     return count_short, count_long
+
+
+def count_recent_transactions(player_slug, is_in_season=True):
+    """Ritorna una tupla (count_7d, count_30d): numero di transazioni (di qualunque tipo --
+    vendita diretta, offerta diretta, asta, ecc.) di player_slug rispettivamente negli
+    ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni.
+
+    FIX 21/07 (bug reale: offerta su carta CLASSIC coreana con 1 sola transazione/7gg
+    passata perche' il conteggio mescolava in_season+classic): filtra per la STESSA
+    stagione della carta che si sta valutando (is_in_season), tramite
+    RECENT_TRANSACTIONS_QUERY_BY_SEASON. Se quella query fallisce (enum/campo non
+    valido, verificare self-check all'avvio), ripiega sulla vecchia query combinata
+    (RECENT_TRANSACTIONS_QUERY, in_season+classic insieme) con un log di avviso --
+    meno preciso ma comunque una protezione, invece di bloccare tutto.
+
+    Ritorna (None, None) se anche il fallback fallisce. Fail-safe: se la query fallisce,
+    il chiamante NON deve bloccare l'acquisto solo per questo -- vedi commento nella
+    chiamata in evaluate_event."""
+    if not _season_aware_liquidity_broken[0]:
+        try:
+            season_value = "IN_SEASON" if is_in_season else "CLASSIC"
+            data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON,
+                                  {"p": player_slug, "seasonEligibility": season_value})
+            if data.get('errors'):
+                _season_aware_liquidity_broken[0] = True
+                log(f"[liquidita'] ATTENZIONE: query di liquidita' per stagione fallita "
+                    f"({data['errors']}) -- ripiego sulla query combinata (in_season+classic "
+                    f"mescolate) per TUTTO il resto della run, meno precisa ma funzionante. "
+                    f"Controlla RECENT_TRANSACTIONS_QUERY_BY_SEASON/i valori dell'enum "
+                    f"SeasonEligibility.")
+            else:
+                nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
+                return _count_transactions_from_nodes(nodes)
+        except Exception as e:
+            _season_aware_liquidity_broken[0] = True
+            log(f"[liquidita'] ATTENZIONE: eccezione nella query di liquidita' per stagione "
+                f"({e}) -- ripiego sulla query combinata per tutto il resto della run.")
+
+    # Fallback: vecchio comportamento (in_season + classic mescolate insieme).
+    try:
+        data = graphql_query(RECENT_TRANSACTIONS_QUERY, {"p": player_slug})
+        if data.get('errors'):
+            log(f"[liquidita'] errore GraphQL per {player_slug}: {data['errors']}")
+            return None, None
+        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
+    except Exception as e:
+        log(f"[liquidita'] eccezione per {player_slug}: {e}")
+        return None, None
+    return _count_transactions_from_nodes(nodes)
 
 
 EXCHANGE_RATE_QUERY = """
@@ -2146,7 +2251,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
         return False
 
-    count_7d, count_30d = count_recent_transactions(player_slug)
+    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season)
     if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
