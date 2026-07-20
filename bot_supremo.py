@@ -1004,20 +1004,42 @@ def validate_live_offers_schema():
     # scoprirlo a meta' run. Non blocchiamo l'avvio se fallisce (c'e' gia' un fallback
     # automatico sicuro in count_recent_transactions), ma un avviso subito e' meglio di
     # scoprirlo tra centinaia di righe di log dopo ore.
-    probe_data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON,
-                                {"p": probe_slug, "seasonEligibility": "IN_SEASON"})
-    if probe_data.get('errors'):
+    # FIX 21/07 (v2): 'kylian-mbappe' da solo ha dato 'Player not found' su questo
+    # specifico percorso (anyPlayer(slug:)) pur essendo uno slug valido e gia' usato
+    # con successo su LIVE_OFFERS_QUERY poco sopra (root diverso, tokens.
+    # liveSingleSaleOffers) -- probabile una particolarita' di questo giocatore/root
+    # (es. post-trasferimento) piu' che un problema della query in se', dato che lo
+    # stesso identico pattern anyPlayer(slug){tokenPrices{...}} e' gia' in produzione
+    # nel vecchio notificatore aste. Prima di concludere che la query e' rotta,
+    # ritentiamo con un secondo giocatore di prova: se ANCHE quello da' un errore che
+    # non sia un semplice NOT_FOUND specifico del giocatore, allora e' probabilmente
+    # un problema reale di schema/enum e scatta il fallback.
+    season_probe_players = ["kylian-mbappe", "erling-haaland", "jude-bellingham"]
+    season_check_ok = False
+    last_probe_errors = None
+    for season_probe_slug in season_probe_players:
+        probe_data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON,
+                                    {"p": season_probe_slug, "seasonEligibility": "IN_SEASON"})
+        if not probe_data.get('errors'):
+            season_check_ok = True
+            log(f"[self-check] Query di liquidita' per stagione (seasonEligibility) "
+                f"validata correttamente (su {season_probe_slug}).")
+            break
+        last_probe_errors = probe_data['errors']
+        log(f"[self-check] query di liquidita' per stagione fallita su {season_probe_slug} "
+            f"({last_probe_errors}), provo un altro giocatore di prova...")
+
+    if not season_check_ok:
         msg = (f"[self-check] ATTENZIONE: query di liquidita' per stagione "
-               f"(RECENT_TRANSACTIONS_QUERY_BY_SEASON, seasonEligibility=IN_SEASON) fallisce "
-               f"su {probe_slug}: {probe_data['errors']}. Il controllo di liquidita' user' "
-               f"AUTOMATICAMENTE il fallback meno preciso (in_season+classic mescolate) per "
-               f"tutta la run -- non blocca l'avvio, ma il filtro sara' meno accurato per le "
-               f"carte classic finche' non si sistema questa query.")
+               f"(RECENT_TRANSACTIONS_QUERY_BY_SEASON, seasonEligibility=IN_SEASON) fallita "
+               f"su tutti i {len(season_probe_players)} giocatori di prova, ultimo errore: "
+               f"{last_probe_errors}. Il controllo di liquidita' user' AUTOMATICAMENTE il "
+               f"fallback meno preciso (in_season+classic mescolate) per tutta la run -- non "
+               f"blocca l'avvio, ma il filtro sara' meno accurato per le carte classic finche' "
+               f"non si sistema questa query.")
         log(msg)
         send_telegram_msg(f"BOT SUPREMO -- AVVISO ALL'AVVIO\n\n{msg}")
         _season_aware_liquidity_broken[0] = True
-    else:
-        log("[self-check] Query di liquidita' per stagione (seasonEligibility) validata correttamente.")
 
     return True
 
