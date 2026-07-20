@@ -1196,8 +1196,8 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
 
 
 ACCEPT_OFFER_MUTATION = """
-mutation AcceptOfferMutation($input: acceptOfferInput!, $sport: Sport) {
-  acceptOffer(input: $input, sport: $sport) {
+mutation AcceptOfferMutation($input: acceptOfferInput!) {
+  acceptOffer(input: $input) {
     errors { message }
   }
 }
@@ -1231,7 +1231,6 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
                 "useAvailableCredits": False,
             },
         },
-        "sport": "FOOTBALL",
     }
     try:
         data = graphql_query_via_browser(ACCEPT_OFFER_MUTATION, variables)
