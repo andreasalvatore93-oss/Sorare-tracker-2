@@ -165,6 +165,8 @@ jobs:
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'no' }}
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.live_mode || 'no' }}
           SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
           MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '5' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
