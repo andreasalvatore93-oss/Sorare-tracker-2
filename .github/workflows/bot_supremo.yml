@@ -99,18 +99,16 @@ jobs:
           npm install
       - run: pip install requests websocket-client curl_cffi playwright
       - run: playwright install --with-deps chromium
-      - name: Aggiungi giocatori alla blacklist permanente unita (se specificati)
-        # Scrive sempre nel file MakeOffer (sorare_makeoffer_blacklist.txt) -- letto
-        # comunque INSIEME al file AutoBuy da bot_supremo.py, quindi l'effetto e'
-        # identico per entrambi i rami. Un solo punto di scrittura invece di due
-        # step separati come nei workflow originali.
+      - name: Aggiungi giocatori alla blacklist permanente unica (se specificati)
+        # Un solo file condiviso (sorare_blacklist.txt) -- niente piu' file separati
+        # per fascia, tutto in un unico posto da aprire/modificare a mano su GitHub.
         env:
           BLACKLISTED_PLAYER_SLUGS_INPUT: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
         run: |
           if [ -z "$BLACKLISTED_PLAYER_SLUGS_INPUT" ]; then
             echo "Nessuno slug da aggiungere alla blacklist permanente."
           else
-            touch sorare_makeoffer_blacklist.txt
+            touch sorare_blacklist.txt
             IFS=',' read -ra SLUGS <<< "$BLACKLISTED_PLAYER_SLUGS_INPUT"
             added_any=0
             for raw_slug in "${SLUGS[@]}"; do
@@ -118,10 +116,10 @@ jobs:
               if [ -z "$slug" ]; then
                 continue
               fi
-              if grep -qxF "$slug" sorare_makeoffer_blacklist.txt 2>/dev/null; then
+              if grep -qxF "$slug" sorare_blacklist.txt 2>/dev/null; then
                 echo "Gia' presente in blacklist: $slug"
               else
-                echo "$slug" >> sorare_makeoffer_blacklist.txt
+                echo "$slug" >> sorare_blacklist.txt
                 echo "Aggiunto alla blacklist: $slug"
                 added_any=1
               fi
@@ -129,19 +127,19 @@ jobs:
             if [ "$added_any" = "1" ]; then
               git config user.name "bot-supremo"
               git config user.email "bot-supremo@users.noreply.github.com"
-              git add sorare_makeoffer_blacklist.txt
+              git add sorare_blacklist.txt
               git commit -m "Bot Supremo: aggiunta giocatori alla blacklist da workflow_dispatch"
               git push
             fi
           fi
-      - name: Aggiungi manager alla blacklist permanente unita (se specificati)
+      - name: Aggiungi manager alla blacklist permanente unica (se specificati)
         env:
           BLACKLISTED_MANAGER_SLUGS_INPUT: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
         run: |
           if [ -z "$BLACKLISTED_MANAGER_SLUGS_INPUT" ]; then
             echo "Nessuno slug manager da aggiungere alla blacklist permanente."
           else
-            touch sorare_makeoffer_manager_blacklist.txt
+            touch sorare_manager_blacklist.txt
             IFS=',' read -ra SLUGS <<< "$BLACKLISTED_MANAGER_SLUGS_INPUT"
             added_any=0
             for raw_slug in "${SLUGS[@]}"; do
@@ -149,10 +147,10 @@ jobs:
               if [ -z "$slug" ]; then
                 continue
               fi
-              if grep -qxF "$slug" sorare_makeoffer_manager_blacklist.txt 2>/dev/null; then
+              if grep -qxF "$slug" sorare_manager_blacklist.txt 2>/dev/null; then
                 echo "Gia' presente in blacklist manager: $slug"
               else
-                echo "$slug" >> sorare_makeoffer_manager_blacklist.txt
+                echo "$slug" >> sorare_manager_blacklist.txt
                 echo "Aggiunto alla blacklist manager: $slug"
                 added_any=1
               fi
@@ -160,7 +158,7 @@ jobs:
             if [ "$added_any" = "1" ]; then
               git config user.name "bot-supremo"
               git config user.email "bot-supremo@users.noreply.github.com"
-              git add sorare_makeoffer_manager_blacklist.txt
+              git add sorare_manager_blacklist.txt
               git commit -m "Bot Supremo: aggiunta manager alla blacklist da workflow_dispatch"
               git push
             fi
