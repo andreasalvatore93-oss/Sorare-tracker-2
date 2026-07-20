@@ -982,28 +982,29 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
         return False, 'eccezione', str(e)
 
 
-def execute_live_purchase(offer_id, prepared, key_data_prefetched=None):
+def execute_live_purchase(offer_id, prepared):
     """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
     AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
     ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
     altrimenti -- MAI retry, MAI tentativi alternativi, un solo tentativo secco. Ogni
     step logga il proprio esito (successo o fallimento) per poter capire SUBITO dai log
     quale step specifico e' fallito, senza dover dedurlo dal messaggio finale.
-    key_data_prefetched (FIX 19/07, ottimizzazione velocita'): se la chiave cifrata e'
-    gia' stata recuperata IN PARALLELO con prepare_accept_offer (vedi evaluate_event),
-    la riusiamo qui invece di rifare la stessa query GraphQL una seconda volta."""
+    IMPORTANTE (20/07): fetch_encrypted_private_key() va chiamata SOLO ora, DOPO che
+    prepare_accept_offer() e' gia' stata completata con successo (vedi nota in
+    evaluate_event) -- un tentativo di parallelizzare le due chiamate ha causato
+    "unknown_fingerprint" in 3 test su 3 dal vivo, il fingerprint deve esistere
+    lato server prima che questa chiamata possa risolversi."""
     log(f"[acquisto live] avvio -- offer_id={offer_id}")
 
     if not SORARE_WALLET_PASSWORD:
         log("[acquisto live] STOP: SORARE_WALLET_PASSWORD non impostata")
         return False, "SORARE_WALLET_PASSWORD non impostata"
 
-    key_data = key_data_prefetched if key_data_prefetched is not None else fetch_encrypted_private_key()
+    key_data = fetch_encrypted_private_key()
     if not key_data:
         log("[acquisto live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
         return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
-    log("[acquisto live] step 1/3 OK: chiave cifrata recuperata"
-        + (" (in parallelo con prepare)" if key_data_prefetched is not None else ""))
+    log("[acquisto live] step 1/3 OK: chiave cifrata recuperata")
 
     fingerprint = prepared.get('fingerprint')
     request = prepared.get('request') or {}
@@ -1238,40 +1239,20 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # PLAYER_SLUGS), controllata all'inizio di questa funzione, PRIMA di spendere
     # qualunque query di rete -- unico meccanismo attivo per questo problema.
 
-    # FIX 19/07 (ottimizzazione velocita', richiesta esplicita utente dopo caso
-    # sniperato con errore unknown_fingerprint): prepare_accept_offer() e
-    # fetch_encrypted_private_key() sono operazioni INDIPENDENTI tra loro (una prenota
-    # l'offerta lato server, l'altra recupera la chiave cifrata del wallet -- non una
-    # dipende dall'altra) ma prima venivano fatte in sequenza (prima prepare, POI dentro
-    # execute_live_purchase la fetch), raddoppiando inutilmente il tempo totale della
-    # finestra critica in cui un altro manager puo' sniperare la carta. Ora, quando
-    # AUTOBUY_LIVE_MODE e' attivo, le lanciamo IN PARALLELO su due thread e aspettiamo
-    # solo la piu' lenta delle due -- dimezza (circa) il tempo prima di poter firmare e
-    # completare l'acquisto. In modalita' diagnostica (non live) il comportamento resta
-    # sequenziale come prima (nessun bisogno di parallelizzare se non si compra
-    # davvero).
+    # FIX 20/07 (REGRESSIONE TROVATA E CORRETTA): il tentativo precedente di
+    # parallelizzare prepare_accept_offer() e fetch_encrypted_private_key() per
+    # velocizzare l'acquisto ha introdotto un bug reale -- 3 casi su 3 in test dal vivo
+    # hanno dato "unknown_fingerprint" con il log dell'errore che compariva PRIMA ancora
+    # che la risposta di prepare_accept_offer fosse arrivata/loggata. fetchEncryptedPrivateKey
+    # non riceve alcun fingerprint come parametro (chiamata con input vuoto), quindi
+    # l'unica spiegazione coerente e' che il fingerprint debba esistere ED essere
+    # REGISTRATO lato server PRIMA che la chiamata a fetchEncryptedPrivateKey possa
+    # risolversi correttamente -- la sequenzialita' non era pigrizia del codice
+    # originale, era un requisito reale del flusso. RIPRISTINATA la sequenza originale
+    # (prima prepare, poi fetch, sempre in questo ordine, mai in parallelo).
     prepared = None
-    key_data_prefetched = None
     if offer_id:
-        if AUTOBUY_LIVE_MODE:
-            results = {}
-
-            def _run_prepare():
-                results['prepared'] = prepare_accept_offer(offer_id)
-
-            def _run_fetch_key():
-                results['key_data'] = fetch_encrypted_private_key()
-
-            t_prepare = threading.Thread(target=_run_prepare)
-            t_fetch = threading.Thread(target=_run_fetch_key)
-            t_prepare.start()
-            t_fetch.start()
-            t_prepare.join()
-            t_fetch.join()
-            prepared = results.get('prepared')
-            key_data_prefetched = results.get('key_data')
-        else:
-            prepared = prepare_accept_offer(offer_id)
+        prepared = prepare_accept_offer(offer_id)
 
         if prepared:
             nonce = (prepared.get('request') or {}).get('nonce')
@@ -1287,7 +1268,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     if AUTOBUY_LIVE_MODE and offer_id and prepared:
         try:
             purchase_completed, purchase_error = execute_live_purchase(
-                offer_id, prepared, key_data_prefetched)
+                offer_id, prepared)
         except Exception as e:
             # Ultima rete di sicurezza: qualunque eccezione imprevista qui (bug non
             # anticipato in uno degli step) NON deve far crashare l'intero bot ne'
