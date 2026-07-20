@@ -195,15 +195,13 @@ jobs:
           export OFFER_DISCOUNT_FRACTION=$(awk -v p="$OFFER_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
           python makeoffer_sorare.py
       - name: Commit registro offerte (protezione anti-duplicati 24h)
-        # Solo per fase 2 (automazione completa, non ancora attiva): il file
-        # makeoffer_cooldown.json viene scritto da record_player_purchase() SOLO dopo un
-        # acquisto reale completato, quindi in fase 1 (diagnostica) questo file non
-        # cambia mai e questo step non fa nulla di visibile. Committato qui (non tramite
-        # git nello script Python) per tenere la logica di persistenza fuori dal codice
-        # dello scanner.
+        # FIX 20/07 (stesso bug trovato in autobuy.yml): "git diff --quiet" non rileva
+        # un file MAI tracciato da git prima -- la primissima volta che
+        # record_player_offer() crea makeoffer_cooldown.json, il commit non partiva
+        # mai. Sostituito con "git status --porcelain" (rileva sia nuovi che modificati).
         run: |
-          if git diff --quiet -- makeoffer_cooldown.json 2>/dev/null; then
-            echo "Nessuna modifica al purchase log, niente da committare."
+          if [ -z "$(git status --porcelain -- makeoffer_cooldown.json)" ]; then
+            echo "Nessuna modifica al registro offerte, niente da committare."
           else
             git config user.name "makeoffer-bot"
             git config user.email "makeoffer-bot@users.noreply.github.com"
@@ -212,13 +210,10 @@ jobs:
             git push
           fi
       - name: Commit cache mercato sottile (velocizza analisi futura)
-        # A differenza del purchase log, questo file SI aggiorna gia' in fase 1 (ogni
-        # volta che un giocatore viene scartato per liquidita' insufficiente) -- vedi
-        # record_thin_market_skip in makeoffer_sorare.py. Committato qui perche' la cache
-        # funzioni davvero tra esecuzioni diverse (il workflow riparte da zero ad ogni
-        # run).
+        # FIX 20/07 (stesso bug): "git diff --quiet" non rileva un file mai tracciato --
+        # sostituito con "git status --porcelain".
         run: |
-          if git diff --quiet -- makeoffer_thin_market_cache.json 2>/dev/null; then
+          if [ -z "$(git status --porcelain -- makeoffer_thin_market_cache.json)" ]; then
             echo "Nessuna modifica alla cache mercato sottile, niente da committare."
           else
             git config user.name "makeoffer-bot"
