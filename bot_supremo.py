@@ -2211,17 +2211,9 @@ subscription OnTokenOfferUpdated {
         slug
         rarityTyped
         sport
-        anyPlayer {
-          slug
-          displayName
-          activeClub { domesticLeague { slug } }
-          lastTenSo5Appearances
-          lastTenPlayedSo5AverageScore
-          lastFortySo5AverageScore
-        }
+        anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
         sportSeason { name }
         inSeasonEligible
-        coverageStatus
       }
     }
     receiverSide {
@@ -2342,26 +2334,6 @@ def run_listener(eth_rate):
             player_slug = player.get('slug')
             player_name = player.get('displayName', player_slug)
             card_slug = card.get('slug')
-
-            if card.get('coverageStatus') == 'NOT_COVERED':
-                log(f"{player_name}: scarto -- carta in una squadra non coperta da "
-                    f"SO5, punti non conteggiati, aggiunto alla blacklist giocatore "
-                    f"365 giorni")
-                if player_slug and player_slug not in _gia_blacklistati_coverage_o_media_zero:
-                    _lista_nera_upsert('giocatore', player_slug, 365)
-                    _gia_blacklistati_coverage_o_media_zero.add(player_slug)
-                continue
-
-            last10_avg = player.get('lastTenPlayedSo5AverageScore')
-            last40_avg = player.get('lastFortySo5AverageScore')
-            if last10_avg == 0.0 or last40_avg == 0.0:
-                log(f"{player_name}: scarto -- media punti 0 nelle ultime 10 o nelle "
-                    f"ultime 40 partite (probabile giocatore non coperto/inattivo), "
-                    f"aggiunto alla blacklist giocatore 365 giorni")
-                if player_slug and player_slug not in _gia_blacklistati_coverage_o_media_zero:
-                    _lista_nera_upsert('giocatore', player_slug, 365)
-                    _gia_blacklistati_coverage_o_media_zero.add(player_slug)
-                continue
 
             is_in_season = bool(card.get('inSeasonEligible'))
             if not is_in_season and not CHECK_CLASSIC:
