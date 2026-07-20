@@ -800,10 +800,15 @@ mutation PrepareBid($input: prepareBidInput!) {
 }
 """
 
+# FIX 21/07 (confermato con una cattura REALE e RIUSCITA di una BidWithWalletMutation
+# dal vivo, mandata dall'utente): il campo root della mutation e' "bid", NON "tokenBid"
+# come avevo scritto prima -- e' l'opposto di quello che avevo assunto per analogia con
+# acceptOffer/prepareAcceptOffer. Il payload restituisce "tokenBid { id }" (con
+# quest'ordine dei nomi, si', e' un po' confusionario ma e' quello confermato dal vivo).
 BID_MUTATION = """
-mutation Bid($input: bidInput!) {
-  tokenBid(input: $input) {
-    bid { id }
+mutation BidWithWalletMutation($input: bidInput!) {
+  bid(input: $input) {
+    tokenBid { id }
     errors { message }
   }
 }
@@ -817,7 +822,13 @@ def prepare_bid(auction_id, amount_cents, exchange_rate_id):
     esempi ETH, ma per i pagamenti in EUR/WALLET (stessa valuta usata ovunque nel bot
     buyer, confermato dall'utente per le aste) il pattern osservato in prepareAcceptOffer/
     prepareOffer e' sempre un intero in CENTESIMI di EUR -- qui amount_cents e' gia'
-    l'intero in centesimi, coerente con quel pattern."""
+    l'intero in centesimi, coerente con quel pattern (CONFERMATO dal vivo il 21/07: una
+    cattura reale di BidWithWalletMutation mostra esattamente amount="2476" per un bid
+    di 24.76EUR).
+    FIX 21/07 (v2, stessa cattura reale): settlementInfo nella mutation vera include
+    ANCHE platform e useAvailableCredits, non solo currency/paymentMethod/exchangeRateId
+    -- stessi due campi gia' usati in prepare_accept_offer/prepare_offer nel bot buyer,
+    mancavano qui."""
     variables = {
         "input": {
             "auctionId": auction_id,
@@ -826,6 +837,8 @@ def prepare_bid(auction_id, amount_cents, exchange_rate_id):
                 "currency": "EUR",
                 "paymentMethod": "WALLET",
                 "exchangeRateId": exchange_rate_id,
+                "platform": "WEB",
+                "useAvailableCredits": False,
             },
         }
     }
@@ -849,9 +862,12 @@ def prepare_bid(auction_id, amount_cents, exchange_rate_id):
 
 
 def execute_bid(auction_id, amount_cents, exchange_rate_id, approvals):
-    """FASE 2: chiama davvero la mutation bid (tokenBid) con le approvals firmate.
-    Fail-safe assoluto -- un solo tentativo, mai retry (un bid non e' ritirabile)."""
-    deal_id = os.urandom(8).hex()
+    """FASE 2: chiama davvero la mutation bid con le approvals firmate. Fail-safe
+    assoluto -- un solo tentativo, mai retry (un bid non e' ritirabile).
+    FIX 21/07 (cattura reale di un bid vero e riuscito): niente clientMutationId
+    nell'input reale osservato -- rimosso (non presente nella richiesta reale che ha
+    funzionato). settlementInfo con platform/useAvailableCredits, stesso fix di
+    prepare_bid sopra."""
     variables = {
         "input": {
             "approvals": approvals,
@@ -861,20 +877,21 @@ def execute_bid(auction_id, amount_cents, exchange_rate_id, approvals):
                 "currency": "EUR",
                 "paymentMethod": "WALLET",
                 "exchangeRateId": exchange_rate_id,
+                "platform": "WEB",
+                "useAvailableCredits": False,
             },
-            "clientMutationId": deal_id,
         }
     }
     try:
         data = graphql_query_via_browser(BID_MUTATION, variables)
         root_errors = data.get('errors')
-        payload = (data.get('data') or {}).get('tokenBid') or {}
+        payload = (data.get('data') or {}).get('bid') or {}
         payload_errors = payload.get('errors') or []
         if root_errors or payload_errors:
             category, all_errors = classify_bid_error(root_errors, payload_errors)
             log(f"[bid] fallito, categoria='{category}', errori={all_errors}")
             return False, category, str(all_errors)
-        bid_id = (payload.get('bid') or {}).get('id')
+        bid_id = (payload.get('tokenBid') or {}).get('id')
         log(f"[bid] successo, bid id={bid_id}")
         return True, None, None
     except Exception as e:
