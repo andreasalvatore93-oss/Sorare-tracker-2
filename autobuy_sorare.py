@@ -1008,11 +1008,13 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
                               extra_headers=extra_headers or None)
         if data.get('errors'):
             log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
+            log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
             return None
         payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
         payload_errors = payload.get('errors') or []
         if payload_errors:
             log(f"[chiave cifrata] errore payload: {payload_errors}")
+            log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
             return None
         key_data = payload.get('sorarePrivateKey')
         if not key_data:
