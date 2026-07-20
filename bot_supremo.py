@@ -922,13 +922,20 @@ def get_bucket_prices(player_slug, eth_rate):
             if c.get('sport') != 'FOOTBALL':
                 continue
             if c.get('coverageStatus') == 'NOT_COVERED':
+                log(f"[scarto coverage] {player_slug}: carta {c.get('slug')} (venditore "
+                    f"{seller_slug}) esclusa dal confronto -- coverageStatus=NOT_COVERED "
+                    f"(squadra non coperta da SO5)")
                 continue  # carta in una squadra non coperta da SO5 (es. finita in un
                           # campionato che Sorare non copre), punti non conteggiati --
                           # richiesta esplicita utente 21/07, non va considerata
                           # nemmeno per il calcolo del minimo/margine
             player_c = c.get('anyPlayer') or {}
-            if player_c.get('lastTenPlayedAvgScore') == 0.0 or \
-                    player_c.get('lastFortyAvgScore') == 0.0:
+            last_ten_avg = player_c.get('lastTenPlayedAvgScore')
+            last_forty_avg = player_c.get('lastFortyAvgScore')
+            if last_ten_avg == 0.0 or last_forty_avg == 0.0:
+                log(f"[scarto media 0] {player_slug}: carta {c.get('slug')} (venditore "
+                    f"{seller_slug}) esclusa dal confronto -- media ultime 10 giocate="
+                    f"{last_ten_avg}, media ultime 40={last_forty_avg}")
                 continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
                           # filtro/motivazione di coverageStatus, richiesta utente 21/07
             match = c
@@ -1282,65 +1289,180 @@ def prepare_accept_offer(offer_id):
         return None, 'sconosciuto'
 
 
+import subprocess
+import queue
+import collections
+
+# OTTIMIZZAZIONE VELOCITA' SNIPING (21/07, richiesta esplicita utente): il processo
+# Node per la firma non viene piu' avviato da zero ad OGNI acquisto/offerta -- resta
+# vivo per tutta la run e riceve richieste ripetute via un protocollo a righe
+# (NDJSON) su stdin/stdout, vedi sorare-sign/decrypt_and_sign.js. Avviare Node e
+# caricare @sorare/crypto costa tipicamente qualche centinaio di millisecondi:
+# prima veniva pagato ad ogni singolo tentativo, ora si paga UNA SOLA VOLTA
+# (idealmente gia' durante il warm-up all'avvio, vedi main()). Un thread separato
+# legge le risposte dallo stdout del processo cosi' il chiamante puo' aspettarle
+# con un timeout vero (niente rischio di restare bloccati per sempre se il
+# processo Node si pianta senza rispondere).
+_node_process = None
+_node_process_lock = threading.Lock()
+_node_stdout_queue = None
+_node_stderr_tail = collections.deque(maxlen=20)
+
+
+def _node_stdout_reader(proc, q):
+    """Gira in un thread dedicato per tutta la vita del processo Node: legge una
+    riga alla volta dal suo stdout e la mette in coda. Quando lo stdout si chiude
+    (processo terminato/crashato), mette None in coda cosi' chi e' in attesa lo sa
+    subito invece di restare appeso fino al timeout."""
+    try:
+        for line in proc.stdout:
+            q.put(line)
+    except Exception:
+        pass
+    q.put(None)
+
+
+def _node_stderr_reader(proc, tail):
+    """Thread dedicato per lo stderr del processo Node: lo teniamo solo per
+    diagnostica (ultime righe, utili nei log se una richiesta fallisce o il
+    processo muore), non blocca mai nessuno."""
+    try:
+        for line in proc.stderr:
+            tail.append(line.rstrip('\n'))
+    except Exception:
+        pass
+
+
+def _ensure_node_sign_process():
+    """Ritorna il processo Node persistente per la firma, avviandolo (o
+    riavviandolo se e' morto) se necessario. Chiamata sempre sotto
+    _node_process_lock dal chiamante."""
+    global _node_process, _node_stdout_queue
+    if _node_process is not None and _node_process.poll() is None:
+        return _node_process
+
+    if _node_process is not None:
+        log(f"[firma Node] il processo persistente precedente non e' piu' attivo "
+            f"(codice uscita {_node_process.poll()}), lo riavvio -- ultime righe stderr: "
+            f"{list(_node_stderr_tail)}")
+
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
+    log("[firma Node] avvio processo Node persistente per la firma "
+        "(una tantum/riavvio, poi resta vivo e riusato per tutta la run)...")
+    proc = subprocess.Popen(
+        ['node', script_path],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, bufsize=1,  # line-buffered, essenziale per il protocollo a righe
+    )
+    q = queue.Queue()
+    threading.Thread(target=_node_stdout_reader, args=(proc, q), daemon=True).start()
+    threading.Thread(target=_node_stderr_reader, args=(proc, _node_stderr_tail), daemon=True).start()
+    _node_process = proc
+    _node_stdout_queue = q
+    return proc
+
+
+def close_node_sign_process():
+    """Chiude il processo Node persistente a fine run (chiamata da close_browser/
+    finally in main()), stesso principio di pulizia gia' applicato al browser
+    Playwright -- non lasciare processi appesi al termine del workflow."""
+    global _node_process
+    with _node_process_lock:
+        if _node_process is not None:
+            try:
+                if _node_process.poll() is None:
+                    _node_process.stdin.close()
+                    _node_process.wait(timeout=5)
+            except Exception as e:
+                log(f"[firma Node] errore chiudendo il processo persistente: {e}")
+                try:
+                    _node_process.kill()
+                except Exception:
+                    pass
+            _node_process = None
+
+
 def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
-    """Richiama sorare-sign/decrypt_and_sign.js (Node.js) via subprocess, passandogli via
-    stdin un JSON con: password del wallet, i tre campi restituiti da
-    FetchEncryptedPrivateKey (encrypted_private_key/iv/salt), e l'intero oggetto
-    authorization_request (incluso __typename) restituito da prepare_accept_offer/
-    prepare_offer.
+    """Invia una richiesta di firma al processo Node PERSISTENTE (vedi
+    _ensure_node_sign_process sopra) tramite il protocollo a righe di
+    sorare-sign/decrypt_and_sign.js: una riga JSON in stdin, una riga JSON in
+    risposta da stdout, timeout vero via thread separato.
 
     Lo script Node decripta la chiave privata (PBKDF2 + AES-GCM, stesso algoritmo usato
     dal sito sorare.com) e poi chiama @sorare/crypto.signAuthorizationRequest per
     ottenere la signature.
 
-    OTTIMIZZAZIONE VELOCITA' (20/07, richiesta esplicita utente -- ogni millisecondo
-    conta nello sniping): la chiave privata decriptata e' SEMPRE la stessa per tutta la
-    sessione (stessa password/encrypted_private_key/iv/salt, gia' cachati a monte in
-    _encrypted_key_cache) -- rifare il decrypt PBKDF2(50000 iterazioni)+AES-GCM ad OGNI
-    singolo acquisto/offerta e' uno spreco puro. Dalla SECONDA chiamata in poi nella
-    stessa sessione, saltiamo il decrypt passando direttamente la chiave gia' in chiaro
-    allo script Node (campo 'decryptedPrivateKey'), che la usa subito per firmare senza
-    ricalcolare nulla. Il processo Node viene comunque riavviato ad ogni chiamata (lo
-    spawn stesso NON e' eliminato, solo il lavoro di decrypt al suo interno) -- un
-    processo Node persistente sarebbe il passo successivo ma e' un cambiamento piu'
-    invasivo, non fatto qui.
+    OTTIMIZZAZIONE VELOCITA' (20/07 + 21/07, richiesta esplicita utente -- ogni
+    millisecondo conta nello sniping): la chiave privata decriptata e' SEMPRE la
+    stessa per tutta la sessione (stessa password/encrypted_private_key/iv/salt,
+    gia' cachati a monte in _encrypted_key_cache) -- rifare il decrypt PBKDF2(50000
+    iterazioni)+AES-GCM ad OGNI singolo acquisto/offerta e' uno spreco puro. Dalla
+    SECONDA chiamata in poi nella stessa sessione, saltiamo il decrypt passando
+    direttamente la chiave gia' in chiaro allo script Node (campo
+    'decryptedPrivateKey'). IN PIU' (21/07): il processo Node stesso non viene piu'
+    riavviato ad ogni chiamata -- resta vivo per tutta la run, eliminando anche il
+    costo fisso di avvio Node + caricamento di @sorare/crypto da ogni singolo
+    tentativo (prima pagato sempre, ora pagato una volta sola).
 
     Ritorna la stringa signature (da usare in approvals[0].mangopayWalletTransferApproval)
     oppure None se qualcosa fallisce (password sbagliata, script non trovato, dipendenze
-    npm non installate, ecc.) -- logga sempre il motivo."""
-    import subprocess
+    npm non installate, timeout, processo morto, ecc.) -- logga sempre il motivo."""
+    global _node_process
     if 'decrypted_private_key' in _decrypted_key_cache:
-        payload = json.dumps({
+        payload = {
             'decryptedPrivateKey': _decrypted_key_cache['decrypted_private_key'],
             'authorizationRequest': authorization_request,
-        })
+        }
     else:
-        payload = json.dumps({
+        payload = {
             'password': password,
             'encryptedPrivateKey': encrypted_private_key,
             'iv': iv,
             'salt': salt,
             'authorizationRequest': authorization_request,
-        })
-    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
+        }
+    line = json.dumps(payload)
+
+    with _node_process_lock:
+        try:
+            proc = _ensure_node_sign_process()
+            q = _node_stdout_queue
+            proc.stdin.write(line + '\n')
+            proc.stdin.flush()
+        except Exception as e:
+            log(f"[firma Node] eccezione scrivendo la richiesta al processo persistente "
+                f"(lo forzo a ripartire al prossimo tentativo): {e}")
+            try:
+                if _node_process is not None:
+                    _node_process.kill()
+            except Exception:
+                pass
+            _node_process = None
+            return None
+
+        try:
+            raw = q.get(timeout=30)
+        except queue.Empty:
+            log("[firma Node] timeout (30s) in attesa della risposta dal processo "
+                "persistente -- lo forzo a ripartire al prossimo tentativo")
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            _node_process = None
+            return None
+
+        if raw is None:
+            log(f"[firma Node] il processo persistente e' terminato mentre aspettavo "
+                f"la risposta (ultime righe stderr: {list(_node_stderr_tail)}) -- "
+                f"ripartira' al prossimo tentativo")
+            _node_process = None
+            return None
+
     try:
-        result = subprocess.run(
-            ['node', script_path],
-            input=payload,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-    except Exception as e:
-        log(f"[firma Node] eccezione lanciando node: {e}")
-        return None
-    if result.returncode != 0:
-        log(f"[firma Node] script terminato con errore (codice {result.returncode}): {result.stderr.strip()}")
-        return None
-    try:
-        output = json.loads(result.stdout.strip())
+        output = json.loads(raw.strip())
     except json.JSONDecodeError:
-        log(f"[firma Node] output non JSON valido: {result.stdout!r}")
+        log(f"[firma Node] risposta non JSON valida: {raw!r}")
         return None
     if 'error' in output:
         log(f"[firma Node] errore riportato dallo script: {output['error']}")
@@ -2443,6 +2565,47 @@ def main():
         log("[playwright] pre-apertura browser all'avvio (ottimizzazione velocita')...")
         get_browser_page()
         log("[playwright] browser pronto e riscaldato, in attesa di occasioni")
+
+        # OTTIMIZZAZIONE VELOCITA' SNIPING: exchange_rate_id e la chiave cifrata del
+        # wallet sono entrambe cachate in memoria per tutta la run (vedi
+        # get_exchange_rate_id/fetch_encrypted_private_key) -- ma finora la CACHE
+        # veniva popolata solo al PRIMO acquisto/offerta reale, cioe' proprio nel
+        # momento in cui ogni millisecondo conta per battere altri bot sullo stesso
+        # annuncio. Le pre-carichiamo qui, all'avvio (stesso principio del warm-up
+        # del browser sopra), cosi' quando arriva il primo evento buono queste due
+        # chiamate di rete sono gia' state fatte e la pipeline di acquisto/offerta
+        # parte direttamente dal passo di firma, senza aspettarle. Nessuna modifica
+        # alla logica di acquisto/decisione -- solo l'ordine in cui il lavoro
+        # (comunque necessario) viene svolto.
+        log("[precarico velocita'] recupero anticipato exchange_rate_id e chiave "
+            "cifrata del wallet...")
+        pre_rate_id = get_exchange_rate_id()
+        if pre_rate_id:
+            log(f"[precarico velocita'] exchange_rate_id gia' in cache: {pre_rate_id}")
+        else:
+            log("[precarico velocita'] ATTENZIONE: precarico exchange_rate_id fallito, "
+                "verra' ritentato al primo acquisto/offerta reale (nessun problema "
+                "bloccante, solo un millisecondo in piu' sulla prima occasione)")
+        if SORARE_WALLET_PASSWORD:
+            pre_key = fetch_encrypted_private_key()
+            if pre_key:
+                log("[precarico velocita'] chiave cifrata del wallet gia' in cache")
+            else:
+                log("[precarico velocita'] ATTENZIONE: precarico chiave cifrata fallito, "
+                    "verra' ritentato al primo acquisto/offerta reale")
+            # OTTIMIZZAZIONE VELOCITA' (21/07): avviamo qui anche il processo Node
+            # persistente per la firma (sorare-sign/decrypt_and_sign.js), invece di
+            # lasciare che parta al primo acquisto/offerta reale -- l'avvio di Node
+            # e il caricamento di @sorare/crypto costano qualche centinaio di
+            # millisecondi, e non vogliamo pagarli proprio mentre stiamo
+            # competendo con altri bot sullo stesso annuncio.
+            with _node_process_lock:
+                _ensure_node_sign_process()
+            log("[precarico velocita'] processo Node persistente per la firma avviato "
+                "e pronto (restera' vivo per tutta la run)")
+        else:
+            log("[precarico velocita'] SORARE_WALLET_PASSWORD non impostata, salto il "
+                "precarico della chiave cifrata e del processo Node di firma")
     if not validate_live_offers_schema():
         log("STOP: self-check dello schema GraphQL fallito, esco senza avviare l'ascolto "
             "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
@@ -2460,6 +2623,7 @@ def main():
                 f"trovati -- esecuzione terminata.")
     finally:
         close_browser()
+        close_node_sign_process()
 
 
 if __name__ == "__main__":
