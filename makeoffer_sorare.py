@@ -1454,13 +1454,22 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"({len(existing_offers)} offerta/e attiva/e), non ne faccio una seconda")
         return False
 
-    # Skip se il venditore non accetta EUR (richiesta esplicita utente: "offerte solo
-    # in euro, se venditore non accetta euro... skippare"). E' raro (prezzo fisso per
-    # alcune carte) ma va controllato.
+    # Skip SOLO se il venditore accetta esclusivamente cripto (WEI/ETH) e nessuna
+    # valuta fiat -- e' l'UNICO blocco reale confermato dall'utente (20/07, caso Kim
+    # Kyeong-Min, settlementCurrencies=['WEI']): in quel caso il wallet del venditore
+    # non ha cash EUR abilitato, l'offerta diretta in EUR viene rifiutata.
+    # FIX 20/07 (bug precedente): NON scartare piu' solo perche' 'EUR' non compare
+    # nell'elenco (es. GBP) -- l'utente ha confermato dal vivo (screenshot Joseph
+    # Paintsil/Cameron Fury) che un'offerta DIRETTA in EUR e' comunque proponibile
+    # anche quando l'ANNUNCIO DI VENDITA a prezzo fisso e' in GBP: settlementCurrencies
+    # qui riflette la valuta dell'annuncio di vendita (liveSingleSaleOffer), non un
+    # blocco sulle offerte dirette (canale separato). Scartiamo quindi solo se
+    # l'insieme delle valute e' un sottoinsieme non vuoto di {WEI, ETH} (nessuna fiat).
     sale_offer = card_details.get('liveSingleSaleOffer') or {}
     settlement_currencies = sale_offer.get('settlementCurrencies') or []
-    if settlement_currencies and 'EUR' not in settlement_currencies:
-        log(f"{player_name}: scarto -- venditore non accetta EUR "
+    crypto_only_currencies = {'WEI', 'ETH'}
+    if settlement_currencies and set(settlement_currencies).issubset(crypto_only_currencies):
+        log(f"{player_name}: scarto -- venditore accetta solo cripto, niente fiat "
             f"(valute accettate: {settlement_currencies})")
         return False
 
