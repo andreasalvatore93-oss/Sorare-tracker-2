@@ -410,7 +410,7 @@ def _graphql_throttle():
         _graphql_last_call_ts[0] = time.time()
 
 
-def graphql_query(query, variables=None, max_retries=3):
+def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
     """Versione semplificata (stessa base di track.py) del client GraphQL con backoff sui
     429 -- niente rilevamento "ban a tempo fisso" qui, il volume di query di questo bot e'
     molto piu' basso (esecuzioni brevi, manuali).
@@ -441,6 +441,8 @@ def graphql_query(query, variables=None, max_retries=3):
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site',
     }
+    if extra_headers and isinstance(extra_headers, dict):
+        headers.update(extra_headers)
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(max_retries):
         _graphql_throttle()
@@ -977,52 +979,6 @@ mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
 _encrypted_key_cache = {}
 
 
-def _try_fetch_key_with_field(field_name, field_value):
-    """Prova fetchEncryptedPrivateKey passando un campo extra nell'input (es.
-    authorizationId o fingerprint) -- ipotesi 20/07 non ancora confermata. Ritorna
-    (key_data, schema_error) dove schema_error=True significa "il campo non esiste
-    nello schema, il chiamante deve ripiegare sulla chiamata standard senza questo
-    campo" (fail-safe: non consideriamo questo un errore bloccante, solo un'ipotesi
-    da scartare silenziosamente se sbagliata)."""
-    mutation = f"""
-mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {{
-  fetchEncryptedPrivateKey(input: $input) {{
-    errors {{ message }}
-    sorarePrivateKey {{
-      encryptedPrivateKey
-      iv
-      salt
-    }}
-  }}
-}}
-"""
-    try:
-        data = graphql_query(mutation, {"input": {field_name: field_value}})
-        root_errors = data.get('errors') or []
-        combined_text = ' '.join(str(e.get('message', '')) for e in root_errors).lower()
-        if root_errors and ('not defined' in combined_text or "doesn't exist" in combined_text
-                             or 'unknown argument' in combined_text or 'unknown field' in combined_text):
-            log(f"[chiave cifrata] campo '{field_name}' non esiste nello schema input, "
-                f"ipotesi scartata -- ripiego sulla chiamata standard")
-            return None, True
-        if root_errors:
-            log(f"[chiave cifrata] errore GraphQL (con {field_name}): {root_errors}")
-            return None, False
-        payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
-        payload_errors = payload.get('errors') or []
-        if payload_errors:
-            log(f"[chiave cifrata] errore payload (con {field_name}): {payload_errors}")
-            return None, False
-        key_data = payload.get('sorarePrivateKey')
-        if not key_data:
-            return None, False
-        log(f"[chiave cifrata] SUCCESSO passando '{field_name}' -- ipotesi confermata!")
-        return key_data, False
-    except Exception as e:
-        log(f"[chiave cifrata] eccezione tentando '{field_name}': {e}")
-        return None, False
-
-
 def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_id=None):
     """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
     (nome/struttura CONFERMATI dal vivo il 19/07 catturando via DevTools la vera
@@ -1032,43 +988,24 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
     CACHATA in memoria (vedi nota sopra): la query GraphQL viene fatta solo la prima
     volta per l'intera esecuzione del bot, le chiamate successive riusano lo stesso
     risultato senza contattare di nuovo il server.
-    FIX 20/07 (tre tentativi in ordine): prova authorizationId, poi fingerprint, poi
-    offerId come possibile campo extra nell'input (ipotesi: il server si aspetta di
-    correlare la richiesta a un identificatore specifico) -- se lo schema rifiuta il
-    campo, ripiega automaticamente sul tentativo successivo, infine sulla chiamata
-    standard con input vuoto."""
+    FIX 20/07 (nona ipotesi -- body-based scartato in precedenza, schema rifiuta
+    authorizationId/fingerprint/offerId come campi dell'input): proviamo stavolta a
+    passare fingerprint/authorizationId come HEADER HTTP della richiesta invece che nel
+    body GraphQL -- variante concettualmente diversa, mai testata finora."""
     if 'key_data' in _encrypted_key_cache:
         return _encrypted_key_cache['key_data']
 
-    # Tentativo 1: authorizationId (solo se fornito e non gia' scartato come invalido)
-    if authorization_id and not _encrypted_key_cache.get('authorization_id_invalid'):
-        key_data, schema_error = _try_fetch_key_with_field('authorizationId', authorization_id)
-        if key_data:
-            _encrypted_key_cache['key_data'] = key_data
-            return key_data
-        if schema_error:
-            _encrypted_key_cache['authorization_id_invalid'] = True
-
-    # Tentativo 2: fingerprint (solo se fornito e non gia' scartato come invalido)
-    if fingerprint and not _encrypted_key_cache.get('fingerprint_field_invalid'):
-        key_data, schema_error = _try_fetch_key_with_field('fingerprint', fingerprint)
-        if key_data:
-            _encrypted_key_cache['key_data'] = key_data
-            return key_data
-        if schema_error:
-            _encrypted_key_cache['fingerprint_field_invalid'] = True
-
-    # Tentativo 3: offerId (solo se fornito e non gia' scartato come invalido)
-    if offer_id and not _encrypted_key_cache.get('offer_id_field_invalid'):
-        key_data, schema_error = _try_fetch_key_with_field('offerId', offer_id)
-        if key_data:
-            _encrypted_key_cache['key_data'] = key_data
-            return key_data
-        if schema_error:
-            _encrypted_key_cache['offer_id_field_invalid'] = True
+    extra_headers = {}
+    if fingerprint:
+        extra_headers['fingerprint'] = fingerprint
+        extra_headers['Fingerprint'] = fingerprint
+        extra_headers['x-fingerprint'] = fingerprint
+    if authorization_id:
+        extra_headers['authorization-id'] = authorization_id
 
     try:
-        data = graphql_query(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
+        data = graphql_query(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}},
+                              extra_headers=extra_headers or None)
         if data.get('errors'):
             log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
             return None
