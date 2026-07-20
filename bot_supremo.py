@@ -74,18 +74,21 @@ def _load_slug_list_file(file_path, label):
     return slugs
 
 
-# --- Blacklist GIOCATORI: due file separati (uno per fascia, come nei bot originali),
-# ma UNITI IN LETTURA -- risolve la race condition trovata il 20/07 (caso Hugo Cuypers:
-# in blacklist manuale per un bot ma valutato dall'altro, perche' i due bot separati
-# leggevano ciascuno solo il proprio file). Ora un solo processo legge entrambi, quindi
-# un giocatore blacklistato per QUALSIASI fascia viene scartato per entrambe.
-AUTOBUY_BLACKLIST_FILE_PATH = os.environ.get(
+# --- Blacklist GIOCATORI: UN SOLO FILE condiviso (richiesta esplicita utente 20/07,
+# per non dover aprire due file separati per aggiornarla a mano). Se esistono ancora i
+# vecchi file separati (sorare_autobuy_blacklist.txt/sorare_makeoffer_blacklist.txt) da
+# quando i due bot erano separati, vengono letti ANCHE quelli per compatibilita' e
+# uniti al nuovo file unico -- cosi' nessuno slug gia' presente va perso nella
+# transizione.
+BLACKLIST_FILE_PATH = os.environ.get('BLACKLIST_FILE_PATH', 'sorare_blacklist.txt')
+_LEGACY_AUTOBUY_BLACKLIST_FILE_PATH = os.environ.get(
     'AUTOBUY_BLACKLIST_FILE_PATH', 'sorare_autobuy_blacklist.txt')
-MAKEOFFER_BLACKLIST_FILE_PATH = os.environ.get(
+_LEGACY_MAKEOFFER_BLACKLIST_FILE_PATH = os.environ.get(
     'MAKEOFFER_BLACKLIST_FILE_PATH', 'sorare_makeoffer_blacklist.txt')
 BLACKLISTED_PLAYER_SLUGS = (
-    _load_slug_list_file(AUTOBUY_BLACKLIST_FILE_PATH, 'blacklist giocatori autobuy') |
-    _load_slug_list_file(MAKEOFFER_BLACKLIST_FILE_PATH, 'blacklist giocatori makeoffer')
+    _load_slug_list_file(BLACKLIST_FILE_PATH, 'blacklist giocatori') |
+    _load_slug_list_file(_LEGACY_AUTOBUY_BLACKLIST_FILE_PATH, 'blacklist giocatori (legacy autobuy)') |
+    _load_slug_list_file(_LEGACY_MAKEOFFER_BLACKLIST_FILE_PATH, 'blacklist giocatori (legacy makeoffer)')
 )
 _extra_blacklisted_players = os.environ.get('BLACKLISTED_PLAYER_SLUGS', '')
 if _extra_blacklisted_players.strip():
@@ -93,14 +96,18 @@ if _extra_blacklisted_players.strip():
         s.strip().lower() for s in _extra_blacklisted_players.split(',') if s.strip()
     }
 
-# --- Blacklist MANAGER: stesso principio, due file separati uniti in lettura.
-AUTOBUY_MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
+# --- Blacklist MANAGER: stesso principio, un solo file condiviso + lettura dei vecchi
+# file separati per compatibilita' durante la transizione.
+MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
+    'MANAGER_BLACKLIST_FILE_PATH', 'sorare_manager_blacklist.txt')
+_LEGACY_AUTOBUY_MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
     'AUTOBUY_MANAGER_BLACKLIST_FILE_PATH', 'sorare_autobuy_manager_blacklist.txt')
-MAKEOFFER_MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
+_LEGACY_MAKEOFFER_MANAGER_BLACKLIST_FILE_PATH = os.environ.get(
     'MAKEOFFER_MANAGER_BLACKLIST_FILE_PATH', 'sorare_makeoffer_manager_blacklist.txt')
 BLACKLISTED_MANAGER_SLUGS = (
-    _load_slug_list_file(AUTOBUY_MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager autobuy') |
-    _load_slug_list_file(MAKEOFFER_MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager makeoffer')
+    _load_slug_list_file(MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager') |
+    _load_slug_list_file(_LEGACY_AUTOBUY_MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager (legacy autobuy)') |
+    _load_slug_list_file(_LEGACY_MAKEOFFER_MANAGER_BLACKLIST_FILE_PATH, 'blacklist manager (legacy makeoffer)')
 )
 _extra_blacklisted_managers = os.environ.get('BLACKLISTED_MANAGER_SLUGS', '')
 if _extra_blacklisted_managers.strip():
