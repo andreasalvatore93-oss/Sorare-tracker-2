@@ -399,12 +399,33 @@ def _graphql_throttle():
 def graphql_query(query, variables=None, max_retries=3):
     """Versione semplificata (stessa base di track.py) del client GraphQL con backoff sui
     429 -- niente rilevamento "ban a tempo fisso" qui, il volume di query di questo bot e'
-    molto piu' basso (esecuzioni brevi, manuali)."""
+    molto piu' basso (esecuzioni brevi, manuali).
+    FIX 20/07 (ipotesi unknown_fingerprint): aggiunti header custom mancanti, confermati
+    dal vivo ispezionando una richiesta reale di PrepareAcceptOfferMutation dal browser
+    (sorare-client, sorare-version, sorare-build, sec-fetch-*, accept-language, origin,
+    referer) -- il bot prima mandava SOLO Content-Type/Cookie/x-csrf-token/User-Agent,
+    mancavano tutti questi header che identificano la richiesta come proveniente da un
+    client Web legittimo. sorare-version/sorare-build sono valori specifici di un
+    deployment del sito (cambiano ad ogni release) -- usiamo gli ultimi visti dal vivo
+    come default ragionevole, ma potrebbero invecchiare: se il problema persiste,
+    andrebbero riletti da una richiesta fresca del browser."""
     headers = {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Cookie': COOKIES,
         'x-csrf-token': CSRF_TOKEN,
-        'User-Agent': 'Mozilla/5.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                       '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+        'Origin': 'https://sorare.com',
+        'Referer': 'https://sorare.com/',
+        'Accept-Language': 'it',
+        'sorare-client': 'Web',
+        'sorare-version': os.environ.get('SORARE_VERSION', '20260717144535'),
+        'sorare-build': os.environ.get(
+            'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
     }
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(max_retries):
