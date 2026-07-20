@@ -846,8 +846,15 @@ def prepare_accept_offer(offer_id):
         # FIX 19/07 (velocizzazione sniping): esponiamo anche exchange_rate_id gia'
         # ottenuto qui, cosi' execute_live_purchase puo' riusarlo invece di rifare la
         # stessa query GraphQL una seconda volta -- ogni millisecondo conta nello sniping.
+        # FIX 20/07 (nuovo tentativo unknown_fingerprint): espongo anche l'id completo
+        # dell'authorization ("TokenService::Core::MangopayWalletTransferAuthorization:
+        # UUID"), diverso dal fingerprint (che e' sempre lo stesso valore fisso in ogni
+        # test, confermato anche nel caso riuscito -- probabilmente identifica il TIPO
+        # di authorization, non l'istanza specifica). L'id invece cambia sempre, ad ogni
+        # chiamata -- e' l'ipotesi piu' plausibile di identificatore reale da correlare
+        # con fetchEncryptedPrivateKey.
         return {'fingerprint': auth.get('fingerprint'), 'request': request,
-                'exchange_rate_id': exchange_rate_id}
+                'exchange_rate_id': exchange_rate_id, 'authorization_id': auth.get('id')}
     except Exception as e:
         log(f"[prepare accept] eccezione: {e}")
         return None
@@ -918,6 +925,26 @@ mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
 }
 """
 
+# FIX 20/07 (nuovo tentativo, dopo che cache+header non hanno risolto unknown_fingerprint):
+# proviamo a passare l'id completo dell'authorization (o il fingerprint) come possibile
+# parametro atteso da fetchEncryptedPrivateKey -- finora chiamata sempre con input
+# completamente vuoto. Se il campo non esiste nello schema, GraphQL rispondera' con un
+# errore esplicito del tipo "Field 'xxx' is not defined" (stesso pattern gia' visto con
+# coverageStatus), in tal caso ripieghiamo silenziosamente sulla chiamata con input vuoto
+# (comportamento precedente, per non introdurre una regressione se l'ipotesi e' sbagliata).
+FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION = """
+mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
+  fetchEncryptedPrivateKey(input: $input) {
+    errors { message }
+    sorarePrivateKey {
+      encryptedPrivateKey
+      iv
+      salt
+    }
+  }
+}
+"""
+
 # FIX 20/07 (scoperta chiave, confermata dal vivo su un acquisto reale completato con
 # successo): il flusso REALE del browser va DIRETTAMENTE da PrepareAcceptOfferMutation
 # ad AcceptOfferMutation -- fetchEncryptedPrivateKey non compare MAI nel network
@@ -932,7 +959,53 @@ mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
 _encrypted_key_cache = {}
 
 
-def fetch_encrypted_private_key():
+def _try_fetch_key_with_field(field_name, field_value):
+    """Prova fetchEncryptedPrivateKey passando un campo extra nell'input (es.
+    authorizationId o fingerprint) -- ipotesi 20/07 non ancora confermata. Ritorna
+    (key_data, schema_error) dove schema_error=True significa "il campo non esiste
+    nello schema, il chiamante deve ripiegare sulla chiamata standard senza questo
+    campo" (fail-safe: non consideriamo questo un errore bloccante, solo un'ipotesi
+    da scartare silenziosamente se sbagliata)."""
+    mutation = f"""
+mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {{
+  fetchEncryptedPrivateKey(input: $input) {{
+    errors {{ message }}
+    sorarePrivateKey {{
+      encryptedPrivateKey
+      iv
+      salt
+    }}
+  }}
+}}
+"""
+    try:
+        data = graphql_query(mutation, {"input": {field_name: field_value}})
+        root_errors = data.get('errors') or []
+        combined_text = ' '.join(str(e.get('message', '')) for e in root_errors).lower()
+        if root_errors and ('not defined' in combined_text or "doesn't exist" in combined_text
+                             or 'unknown argument' in combined_text or 'unknown field' in combined_text):
+            log(f"[chiave cifrata] campo '{field_name}' non esiste nello schema input, "
+                f"ipotesi scartata -- ripiego sulla chiamata standard")
+            return None, True
+        if root_errors:
+            log(f"[chiave cifrata] errore GraphQL (con {field_name}): {root_errors}")
+            return None, False
+        payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
+        payload_errors = payload.get('errors') or []
+        if payload_errors:
+            log(f"[chiave cifrata] errore payload (con {field_name}): {payload_errors}")
+            return None, False
+        key_data = payload.get('sorarePrivateKey')
+        if not key_data:
+            return None, False
+        log(f"[chiave cifrata] SUCCESSO passando '{field_name}' -- ipotesi confermata!")
+        return key_data, False
+    except Exception as e:
+        log(f"[chiave cifrata] eccezione tentando '{field_name}': {e}")
+        return None, False
+
+
+def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_id=None):
     """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
     (nome/struttura CONFERMATI dal vivo il 19/07 catturando via DevTools la vera
     richiesta che il sito manda durante un'offerta reale -- NON e' una query su
@@ -940,9 +1013,41 @@ def fetch_encrypted_private_key():
     {encryptedPrivateKey, iv, salt} o None se fallisce per qualunque motivo.
     CACHATA in memoria (vedi nota sopra): la query GraphQL viene fatta solo la prima
     volta per l'intera esecuzione del bot, le chiamate successive riusano lo stesso
-    risultato senza contattare di nuovo il server."""
+    risultato senza contattare di nuovo il server.
+    FIX 20/07 (tre tentativi in ordine): prova authorizationId, poi fingerprint, poi
+    offerId come possibile campo extra nell'input (ipotesi: il server si aspetta di
+    correlare la richiesta a un identificatore specifico) -- se lo schema rifiuta il
+    campo, ripiega automaticamente sul tentativo successivo, infine sulla chiamata
+    standard con input vuoto."""
     if 'key_data' in _encrypted_key_cache:
         return _encrypted_key_cache['key_data']
+
+    # Tentativo 1: authorizationId (solo se fornito e non gia' scartato come invalido)
+    if authorization_id and not _encrypted_key_cache.get('authorization_id_invalid'):
+        key_data, schema_error = _try_fetch_key_with_field('authorizationId', authorization_id)
+        if key_data:
+            _encrypted_key_cache['key_data'] = key_data
+            return key_data
+        if schema_error:
+            _encrypted_key_cache['authorization_id_invalid'] = True
+
+    # Tentativo 2: fingerprint (solo se fornito e non gia' scartato come invalido)
+    if fingerprint and not _encrypted_key_cache.get('fingerprint_field_invalid'):
+        key_data, schema_error = _try_fetch_key_with_field('fingerprint', fingerprint)
+        if key_data:
+            _encrypted_key_cache['key_data'] = key_data
+            return key_data
+        if schema_error:
+            _encrypted_key_cache['fingerprint_field_invalid'] = True
+
+    # Tentativo 3: offerId (solo se fornito e non gia' scartato come invalido)
+    if offer_id and not _encrypted_key_cache.get('offer_id_field_invalid'):
+        key_data, schema_error = _try_fetch_key_with_field('offerId', offer_id)
+        if key_data:
+            _encrypted_key_cache['key_data'] = key_data
+            return key_data
+        if schema_error:
+            _encrypted_key_cache['offer_id_field_invalid'] = True
 
     try:
         data = graphql_query(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
@@ -1043,15 +1148,17 @@ def execute_live_purchase(offer_id, prepared):
         log("[acquisto live] STOP: SORARE_WALLET_PASSWORD non impostata")
         return False, "SORARE_WALLET_PASSWORD non impostata"
 
-    key_data = fetch_encrypted_private_key()
+    fingerprint = prepared.get('fingerprint')
+    request = prepared.get('request') or {}
+    nonce = request.get('nonce')
+    authorization_id = prepared.get('authorization_id')
+
+    key_data = fetch_encrypted_private_key(
+        authorization_id=authorization_id, fingerprint=fingerprint, offer_id=offer_id)
     if not key_data:
         log("[acquisto live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
         return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
     log("[acquisto live] step 1/3 OK: chiave cifrata recuperata")
-
-    fingerprint = prepared.get('fingerprint')
-    request = prepared.get('request') or {}
-    nonce = request.get('nonce')
 
     signature = sign_authorization_via_node(
         SORARE_WALLET_PASSWORD,
