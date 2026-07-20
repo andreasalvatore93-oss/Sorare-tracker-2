@@ -1,0 +1,229 @@
+name: MakeOffer Sorare (offerte automatiche)
+on:
+  workflow_dispatch:
+    inputs:
+      min_price_eur:
+        description: "Prezzo minimo carta da valutare (EUR)"
+        required: false
+        default: "1"
+      max_price_eur:
+        description: "Prezzo massimo carta da valutare (EUR)"
+        required: false
+        default: "30"
+      margin_percent:
+        description: "Margine minimo richiesto sul secondo prezzo attuale, in % (es. 15 = 15%)"
+        required: false
+        default: "20"
+      listen_seconds:
+        description: "Secondi di ascolto massimi, max 3600 (1h) -- il bot si ferma comunque prima se raggiunge target_matches"
+        required: false
+        default: "3000"
+      target_matches:
+        description: "Quanti casi 'lo avrei acquistato' notificare prima di fermarsi (1-10)"
+        required: false
+        default: "5"
+      makeoffer_diagnostic:
+        description: "Log extra sul confronto in_season/classic per lega (per verificare gli slug MLS/K League/J League), di default spento"
+        required: false
+        default: "no"
+      blacklisted_player_slugs:
+        description: "Slug giocatori da aggiungere PERMANENTEMENTE alla blacklist (separati da virgola), es. aoto-nanamure -- vengono salvati nel file sorare_makeoffer_blacklist.txt e restano attivi anche nelle prossime run"
+        required: false
+        default: ""
+      check_classic:
+        description: "Controlla anche gli annunci CLASSIC (tutti i campionati, confronto sul minimo assoluto classic+in_season), di default spento"
+        required: false
+        default: "no"
+      min_recent_transactions:
+        description: "Transazioni minime (di qualunque tipo) del giocatore negli ultimi 7 giorni per non scartare il caso -- protezione mercato troppo sottile"
+        required: false
+        default: "3"
+      min_transactions_30d:
+        description: "Transazioni minime (di qualunque tipo) del giocatore negli ultimi 30 giorni per non scartare il caso -- secondo layer, oltre alla soglia sui 7 giorni"
+        required: false
+        default: "5"
+      blacklisted_manager_slugs:
+        description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist SOLO per questo bot (separati da virgola), es. nomeutente -- vengono salvati in sorare_makeoffer_manager_blacklist.txt"
+        required: false
+        default: ""
+      live_mode:
+        description: "'si' = OFFERTE REALI AUTOMATICHE (invia offerte vere dal wallet). Default 'no' = solo diagnostica, nessuna offerta."
+        required: false
+        default: "no"
+      offer_discount_percent:
+        description: "Sconto ULTERIORE da applicare al minimo trovato per calcolare il prezzo dell'offerta, in % (es. 10 = offri il 10% sotto al minimo)"
+        required: false
+        default: "10"
+      offer_duration_days:
+        description: "Durata dell'offerta in giorni interi, 1-7 (Sorare non accetta valori intermedi)"
+        required: false
+        default: "1"
+      max_pending_offers:
+        description: "Tetto massimo di offerte pendenti create in questa esecuzione, prima di fermarsi"
+        required: false
+        default: "10"
+permissions:
+  contents: write
+# Nessuna concorrenza con track.py: workflow e job completamente separati, nessuna
+# scrittura su tracker.db, quindi nessun conflitto possibile tra i due bot.
+concurrency:
+  group: sorare-makeoffer
+  cancel-in-progress: false
+jobs:
+  makeoffer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install sorare-sign dependencies
+        run: |
+          cd sorare-sign
+          npm install
+      - run: pip install requests websocket-client curl_cffi playwright
+      - run: playwright install --with-deps chromium
+      - name: Aggiungi giocatori alla blacklist permanente (se specificati)
+        # Se l'utente ha compilato l'input blacklisted_player_slugs, questi slug vengono
+        # scritti nel file sorare_makeoffer_blacklist.txt (nella root del repo, unica fonte
+        # di verita' persistente per questo bot) e committati -- cosi' l'esclusione resta
+        # attiva anche nelle esecuzioni future, senza dover ricompilare l'input ogni volta
+        # ne' modificare il file a mano su GitHub. Gli slug vengono comunque passati anche
+        # come env var BLACKLISTED_PLAYER_SLUGS allo step successivo, quindi valgono GIA'
+        # per questa run anche se il commit dovesse fallire per qualche motivo.
+        env:
+          BLACKLISTED_PLAYER_SLUGS_INPUT: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
+        run: |
+          if [ -z "$BLACKLISTED_PLAYER_SLUGS_INPUT" ]; then
+            echo "Nessuno slug da aggiungere alla blacklist permanente."
+          else
+            touch sorare_makeoffer_blacklist.txt
+            IFS=',' read -ra SLUGS <<< "$BLACKLISTED_PLAYER_SLUGS_INPUT"
+            added_any=0
+            for raw_slug in "${SLUGS[@]}"; do
+              slug=$(echo "$raw_slug" | xargs | tr '[:upper:]' '[:lower:]')
+              if [ -z "$slug" ]; then
+                continue
+              fi
+              if grep -qxF "$slug" sorare_makeoffer_blacklist.txt 2>/dev/null; then
+                echo "Gia' presente in blacklist: $slug"
+              else
+                echo "$slug" >> sorare_makeoffer_blacklist.txt
+                echo "Aggiunto alla blacklist: $slug"
+                added_any=1
+              fi
+            done
+            if [ "$added_any" = "1" ]; then
+              git config user.name "makeoffer-bot"
+              git config user.email "makeoffer-bot@users.noreply.github.com"
+              git add sorare_makeoffer_blacklist.txt
+              git commit -m "MakeOffer: aggiunta giocatori alla blacklist da workflow_dispatch"
+              git push
+            fi
+          fi
+      - name: Aggiungi manager alla blacklist permanente (se specificati)
+        # Stesso meccanismo dello step precedente, ma per la blacklist MANAGER dedicata
+        # a questo bot (sorare_makeoffer_manager_blacklist.txt) -- valida solo per
+        # makeoffer_sorare.py, non tocca BLACKLISTED_SELLER_SLUGS ne' track.py.
+        env:
+          BLACKLISTED_MANAGER_SLUGS_INPUT: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
+        run: |
+          if [ -z "$BLACKLISTED_MANAGER_SLUGS_INPUT" ]; then
+            echo "Nessuno slug manager da aggiungere alla blacklist permanente."
+          else
+            touch sorare_makeoffer_manager_blacklist.txt
+            IFS=',' read -ra SLUGS <<< "$BLACKLISTED_MANAGER_SLUGS_INPUT"
+            added_any=0
+            for raw_slug in "${SLUGS[@]}"; do
+              slug=$(echo "$raw_slug" | xargs | tr '[:upper:]' '[:lower:]')
+              if [ -z "$slug" ]; then
+                continue
+              fi
+              if grep -qxF "$slug" sorare_makeoffer_manager_blacklist.txt 2>/dev/null; then
+                echo "Gia' presente in blacklist manager: $slug"
+              else
+                echo "$slug" >> sorare_makeoffer_manager_blacklist.txt
+                echo "Aggiunto alla blacklist manager: $slug"
+                added_any=1
+              fi
+            done
+            if [ "$added_any" = "1" ]; then
+              git config user.name "makeoffer-bot"
+              git config user.email "makeoffer-bot@users.noreply.github.com"
+              git add sorare_makeoffer_manager_blacklist.txt
+              git commit -m "MakeOffer: aggiunta manager alla blacklist da workflow_dispatch"
+              git push
+            fi
+          fi
+      - name: Run MakeOffer
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+          MAKEOFFER_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
+          MAKEOFFER_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
+          MARGIN_PERCENT_INPUT: ${{ github.event.inputs.margin_percent || '20' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '3000' }}
+          MAKEOFFER_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '5' }}
+          MAKEOFFER_DIAGNOSTIC: ${{ github.event.inputs.makeoffer_diagnostic || 'no' }}
+          BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
+          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'no' }}
+          MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.live_mode || 'no' }}
+          SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
+          MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
+          MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '5' }}
+          BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
+          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '10' }}
+          OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
+          MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '10' }}
+        run: |
+          set -o pipefail
+          # Il workflow espone le percentuali in modo leggibile (es. "15" = 15%), lo
+          # script Python vuole invece la frazione (0.15) -- conversione fatta qui.
+          export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export OFFER_DISCOUNT_FRACTION=$(awk -v p="$OFFER_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          python makeoffer_sorare.py
+      - name: Commit registro offerte (protezione anti-duplicati 24h)
+        # Solo per fase 2 (automazione completa, non ancora attiva): il file
+        # makeoffer_cooldown.json viene scritto da record_player_purchase() SOLO dopo un
+        # acquisto reale completato, quindi in fase 1 (diagnostica) questo file non
+        # cambia mai e questo step non fa nulla di visibile. Committato qui (non tramite
+        # git nello script Python) per tenere la logica di persistenza fuori dal codice
+        # dello scanner.
+        run: |
+          if git diff --quiet -- makeoffer_cooldown.json 2>/dev/null; then
+            echo "Nessuna modifica al purchase log, niente da committare."
+          else
+            git config user.name "makeoffer-bot"
+            git config user.email "makeoffer-bot@users.noreply.github.com"
+            git add makeoffer_cooldown.json
+            git commit -m "MakeOffer: aggiorna registro offerte (protezione 24h)"
+            git push
+          fi
+      - name: Commit cache mercato sottile (velocizza analisi futura)
+        # A differenza del purchase log, questo file SI aggiorna gia' in fase 1 (ogni
+        # volta che un giocatore viene scartato per liquidita' insufficiente) -- vedi
+        # record_thin_market_skip in makeoffer_sorare.py. Committato qui perche' la cache
+        # funzioni davvero tra esecuzioni diverse (il workflow riparte da zero ad ogni
+        # run).
+        run: |
+          if git diff --quiet -- makeoffer_thin_market_cache.json 2>/dev/null; then
+            echo "Nessuna modifica alla cache mercato sottile, niente da committare."
+          else
+            git config user.name "makeoffer-bot"
+            git config user.email "makeoffer-bot@users.noreply.github.com"
+            git add makeoffer_thin_market_cache.json
+            git commit -m "MakeOffer: aggiorna cache mercato sottile"
+            git push
+          fi
