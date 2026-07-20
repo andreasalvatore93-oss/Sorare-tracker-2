@@ -465,18 +465,27 @@ def get_browser_page():
             })
     if cookie_pairs:
         context.add_cookies(cookie_pairs)
+        log(f"[playwright] iniettati {len(cookie_pairs)} cookie nel context "
+            f"(diagnostica: {[c['name'] for c in cookie_pairs][:5]}...)")
+    else:
+        log("[playwright] ATTENZIONE: nessun cookie iniettato (COOKIES vuoto o malformato)")
 
     page = context.new_page()
 
     # Navigazione "riscaldamento" (undicesima ipotesi): home -> pausa -> pagina
     # di mercato reale -> pausa, prima di essere pronti per la chiamata critica.
+    # FIX 20/07: networkidle andava SEMPRE in timeout (30s) su GitHub Actions --
+    # probabilmente risorse di terze parti (analytics/tracking) che non
+    # completano mai il caricamento in un ambiente headless/datacenter.
+    # Passato a domcontentloaded, molto piu' affidabile e comunque sufficiente
+    # per far eseguire eventuali script di fingerprinting nella pagina.
     try:
         log("[playwright] navigazione di riscaldamento: home page...")
-        page.goto('https://sorare.com/', wait_until='networkidle', timeout=30000)
-        time.sleep(2)
+        page.goto('https://sorare.com/', wait_until='domcontentloaded', timeout=20000)
+        time.sleep(3)
         log("[playwright] navigazione di riscaldamento: pagina di mercato...")
-        page.goto('https://sorare.com/football/market', wait_until='networkidle', timeout=30000)
-        time.sleep(2)
+        page.goto('https://sorare.com/football/market', wait_until='domcontentloaded', timeout=20000)
+        time.sleep(3)
     except Exception as e:
         log(f"[playwright] navigazione di riscaldamento fallita parzialmente (non bloccante): {e}")
 
