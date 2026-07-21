@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T21:30:26.056404Z
-**Run totali:** 14
+**Data analisi:** 2026-07-21T21:32:27.796362Z
+**Run totali:** 15
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.76 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.4%)
+- **Prezzo medio MLS:** 9.67 EUR
+- **Trend mercato:** ➡️ STABLE (-0.9%)
 - **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.4%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**➡️ TREND GLOBALE: STABLE (-0.9%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
 Prezzo: **42.98 EUR** | Media: **58.99 EUR** | Sconto: **-27.1%**
@@ -87,7 +87,7 @@ Carte trovate: 4 | Prezzo medio: 19.42 EUR | Volatilità (σ): 35.39
 Carte trovate: 2 | Prezzo medio: 4.36 EUR | Volatilità (σ): 2.11
 
 **Orlando City SC**
-Carte trovate: 2 | Prezzo medio: 11.45 EUR | Volatilità (σ): 7.83
+Carte trovate: 3 | Prezzo medio: 8.21 EUR | Volatilità (σ): 7.89
 
 **Nashville SC**
 Carte trovate: 2 | Prezzo medio: 2.31 EUR | Volatilità (σ): 1.88
