@@ -334,7 +334,7 @@ LEAGUE_WHITELIST_SLUGS = load_league_whitelist()
 
 
 # --- Parametri regolabili ---
-AUCTION_DISCOUNT_FRACTION = float(os.environ.get('AUCTION_DISCOUNT_FRACTION', '0.35'))
+AUCTION_DISCOUNT_FRACTION = float(os.environ.get('AUCTION_DISCOUNT_FRACTION', '0.27'))
 LAST_AUCTION_REFERENCE_WINDOW_HOURS = float(os.environ.get('LAST_AUCTION_REFERENCE_WINDOW_HOURS', '24'))
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
@@ -361,17 +361,16 @@ MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
 #  1) WebSocket tokenAuctionWasUpdated (gia' esistente) -- tempo reale, ma scatta solo
 #     sui CAMBIAMENTI di un'asta (nuovo bid, o -- da verificare dal vivo, vedi log
 #     [WS-POSSIBILE-APERTURA] -- apertura).
-#  2) Safety poll: UNA volta sola all'avvio, le AUCTION_SAFETY_POLL_SIZE aste live piu'
-#     recenti per creazione (liveAuctions(last:N)) -- cattura le aste gia' aperte con 0
+#  2) Safety poll: UNA volta sola all'avvio, TUTTE le aste live disponibili su Sorare
+#     (paginato, vedi fetch_live_auctions_page) -- cattura le aste gia' aperte con 0
 #     bid prima che il bot si mettesse in ascolto.
 #  3) Ending-soon poll: ogni ENDING_SOON_POLL_INTERVAL_SECONDS secondi per tutta la
-#     durata dell'ascolto, UNA pagina da ENDING_SOON_POLL_SIZE aste (stessa query,
-#     nessuna paginazione multipla -- scelta esplicita dell'utente per restare leggeri
-#     sulle richieste API), filtrata SUBITO per whitelist campionati e poi ordinata per
-#     scadenza piu' vicina, tenendo le prime ENDING_SOON_MAX_RESULTS.
-AUCTION_SAFETY_POLL_SIZE = int(os.environ.get('AUCTION_SAFETY_POLL_SIZE', '50'))
+#     durata dell'ascolto, scandaglia di nuovo TUTTE le aste live disponibili (FIX 21/07,
+#     richiesta esplicita utente: prima si fermava a 50 aste globali, e aste whitelist
+#     valide come Evander/Carles Gil restavano invisibili perche' fuori da quella finestra
+#     ristretta), filtrata SUBITO per whitelist campionati e poi ordinata per scadenza
+#     piu' vicina, tenendo le prime ENDING_SOON_MAX_RESULTS.
 ENDING_SOON_POLL_INTERVAL_SECONDS = float(os.environ.get('ENDING_SOON_POLL_INTERVAL_SECONDS', '120'))
-ENDING_SOON_POLL_SIZE = int(os.environ.get('ENDING_SOON_POLL_SIZE', '50'))
 ENDING_SOON_MAX_RESULTS = int(os.environ.get('ENDING_SOON_MAX_RESULTS', '40'))
 
 # Ritardo prima della riverifica live pre-bid (stesso principio/stesso default del
@@ -1260,13 +1259,15 @@ def validate_auction_schema():
     data3 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 1})
     if data3.get('errors'):
         msg = (f"[SELF-CHECK FALLITO] Query liveAuctions (usata da safety poll ed "
-               f"ending-soon poll) fallisce: {data3['errors']}. Il bot potra' comunque "
-               f"contare sul solo WebSocket in tempo reale -- niente cattura delle aste "
-               f"gia' aperte a 0 bid ne' scansione periodica delle aste in scadenza.")
+               f"ending-soon poll, include bidsCount) fallisce: {data3['errors']}. Il bot "
+               f"potra' comunque contare sul solo WebSocket in tempo reale -- niente "
+               f"cattura delle aste gia' aperte a 0 bid ne' scansione periodica delle "
+               f"aste in scadenza.")
         log(msg)
         send_telegram_msg(f"BOT SUPREMO ASTE -- AVVISO ALL'AVVIO\n\n{msg}")
     else:
-        log("[self-check] Query liveAuctions (safety poll + ending-soon poll) validata.")
+        log("[self-check] Query liveAuctions (safety poll + ending-soon poll, "
+            "bidsCount incluso) validata.")
 
     data2 = graphql_query(LAST_TRANSACTIONS_QUERY, {"p": probe_slug})
     if data2.get('errors'):
@@ -1300,6 +1301,7 @@ subscription OnTokenAuctionUpdated {
     endDate
     open
     cancelled
+    bidsCount
     anyCards {
       slug
       rarityTyped
@@ -1334,9 +1336,10 @@ query GetAuctionById($id: String!) {
 # aspetta), solo su liveAuctions invece che sull'evento websocket -- cosi' un'asta presa
 # da un poll e un'asta presa dal WS sono indistinguibili per evaluate_auction.
 LIVE_AUCTIONS_QUERY = """
-query ListLiveAuctions($n: Int!) {
+query ListLiveAuctions($n: Int!, $cursor: String) {
   tokens {
-    liveAuctions(last: $n) {
+    liveAuctions(last: $n, before: $cursor) {
+      pageInfo { hasPreviousPage startCursor }
       nodes {
         id
         currentPrice
@@ -1344,6 +1347,7 @@ query ListLiveAuctions($n: Int!) {
         endDate
         open
         cancelled
+        bidsCount
         anyCards {
           slug
           rarityTyped
@@ -1362,20 +1366,46 @@ query ListLiveAuctions($n: Int!) {
 """
 
 
+LIVE_AUCTIONS_MAX_PAGES = int(os.environ.get('LIVE_AUCTIONS_MAX_PAGES', '40'))
+
+
 def fetch_live_auctions_page(n):
-    """Una sola pagina (nessuna paginazione a cursore) delle N aste live piu' recenti
-    per creazione. Usata sia dal safety poll (una volta, N grande) sia dall'ending-soon
-    poll (ripetuto, N piccolo -- scelta esplicita dell'utente per restare leggeri sulle
-    richieste API)."""
-    try:
-        data = graphql_query(LIVE_AUCTIONS_QUERY, {"n": n})
+    """RINOMINATA in sostanza -- ora pagina attraverso TUTTE le aste live disponibili
+    (richiesta esplicita utente 21/07, dopo aver scoperto che Evander e Carles Gil,
+    entrambe aste whitelist a 0 bid su giocatori di valore, non venivano mai viste
+    perche' non rientravano nella finestra delle 50 aste piu' recenti su TUTTO Sorare,
+    non filtrate per lega). Stessa tecnica di paginazione a cursore gia' validata su
+    liveSingleSaleOffers (fetch_all_live_offers) -- prima pagina before=None, poi si
+    avanza con pageInfo.startCursor finche' hasPreviousPage e' vero o si raggiunge
+    LIVE_AUCTIONS_MAX_PAGES (tetto di sicurezza per non restare bloccati se il totale
+    di aste live crescesse enormemente -- 40 pagine x 50 = 2000 aste, ben oltre il
+    totale osservato finora su Sorare).
+    'n' resta il nome storico del parametro ma ora e' la dimensione di OGNI pagina
+    (sempre 50), non piu' il totale massimo recuperato."""
+    all_nodes = []
+    cursor = None
+    pages_fetched = 0
+    for _ in range(LIVE_AUCTIONS_MAX_PAGES):
+        try:
+            data = graphql_query(LIVE_AUCTIONS_QUERY, {"n": n, "cursor": cursor})
+        except Exception as e:
+            log(f"[liveAuctions] eccezione pagina {pages_fetched + 1}: {e}")
+            break
         if data.get('errors'):
-            log(f"[liveAuctions] errore: {data['errors']}")
-            return []
-        return (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {}).get('nodes') or []
-    except Exception as e:
-        log(f"[liveAuctions] eccezione: {e}")
-        return []
+            log(f"[liveAuctions] errore pagina {pages_fetched + 1}: {data['errors']}")
+            break
+        conn = (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {})
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        pages_fetched += 1
+        page_info = conn.get('pageInfo') or {}
+        if not page_info.get('hasPreviousPage'):
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            break
+    log(f"[liveAuctions] {pages_fetched} pagine scansionate, {len(all_nodes)} aste totali")
+    return all_nodes
 
 
 def _seconds_until_end(end_date_str):
@@ -1419,10 +1449,24 @@ def process_incoming_auction(auction, eth_rate, state, source):
     condivisa, log diagnostico apertura asta, poi delega a evaluate_auction. Cosi' la
     logica di dedup/valutazione resta scritta una volta sola."""
     if TEST_ONLY_ZERO_BID:
-        current_price = auction.get('currentPrice')
-        min_next_bid = auction.get('minNextBid')
-        if current_price is None or min_next_bid is None or current_price != min_next_bid:
-            return  # non e' un'asta a 0 bid -- scartata silenziosamente, modalita' test
+        # FIX 21/07 (richiesta esplicita utente, dopo cattura reale dal frontend Sorare):
+        # bidsCount e' il campo ESATTO che Sorare stesso usa per indicare "zero offerte"
+        # (confermato dal vivo: bidsCount=0 su Evander/Carles Gil, entrambe aste
+        # autentiche a 0 bid; bidsCount=3 su un'asta con bid reali, GU SUNG YUN).
+        # Sostituisce l'euristica precedente (currentPrice==minNextBid) che era solo un
+        # segnale indiretto -- bidsCount e' il dato diretto, quando disponibile.
+        bids_count = auction.get('bidsCount')
+        if bids_count is not None:
+            if bids_count != 0:
+                return  # asta con bid reali gia' presenti -- scartata, modalita' test
+        else:
+            # Fallback se bidsCount non e' arrivato per qualche motivo (es. self-check
+            # fallito su questo campo) -- torna all'euristica precedente invece di non
+            # filtrare nulla.
+            current_price = auction.get('currentPrice')
+            min_next_bid = auction.get('minNextBid')
+            if current_price is None or min_next_bid is None or current_price != min_next_bid:
+                return
 
     auction_id = auction.get('id') or ''
     dedup_key = (auction_id, auction.get('currentPrice'), auction.get('minNextBid'), auction.get('endDate'))
@@ -1465,10 +1509,11 @@ def process_incoming_auction(auction, eth_rate, state, source):
 
 def run_safety_poll(eth_rate, state):
     """Scansione UNA TANTUM prima di aprire il WS: cattura le aste gia' aperte (incluse
-    quelle a 0 bid) prima dell'avvio del bot."""
-    log(f"[SAFETY] scansione di avvio: controllo le {AUCTION_SAFETY_POLL_SIZE} aste live "
-        f"piu' recenti...")
-    auctions = fetch_live_auctions_page(AUCTION_SAFETY_POLL_SIZE)
+    quelle a 0 bid) prima dell'avvio del bot. FIX 21/07 (richiesta esplicita utente,
+    caso reale Evander/Carles Gil mai rilevati): ora scandaglia TUTTE le aste live
+    disponibili (paginato), non solo le 50 piu' recenti su tutto Sorare."""
+    log("[SAFETY] scansione di avvio: controllo TUTTE le aste live disponibili...")
+    auctions = fetch_live_auctions_page(50)
     log(f"[SAFETY] {len(auctions)} aste trovate, valutazione in corso...")
     for auction in auctions:
         process_incoming_auction(auction, eth_rate, state, source='SAFETY')
@@ -1476,17 +1521,17 @@ def run_safety_poll(eth_rate, state):
 
 
 def run_ending_soon_loop(eth_rate, state, stop_event):
-    """Thread di background: ogni ENDING_SOON_POLL_INTERVAL_SECONDS, UNA pagina da
-    ENDING_SOON_POLL_SIZE aste, filtro whitelist SUBITO (richiesta esplicita utente),
-    poi le ENDING_SOON_MAX_RESULTS piu' vicine alla scadenza vengono valutate."""
+    """Thread di background: ogni ENDING_SOON_POLL_INTERVAL_SECONDS, scandaglia TUTTE
+    le aste live disponibili (paginato -- stesso fix del safety poll), filtro whitelist
+    SUBITO, poi le ENDING_SOON_MAX_RESULTS piu' vicine alla scadenza vengono valutate."""
     while not stop_event.wait(ENDING_SOON_POLL_INTERVAL_SECONDS):
         try:
-            page = fetch_live_auctions_page(ENDING_SOON_POLL_SIZE)
+            page = fetch_live_auctions_page(50)
             whitelisted = [a for a in page if (_auction_league_slug(a) in LEAGUE_WHITELIST_SLUGS)]
             whitelisted.sort(key=lambda a: (_seconds_until_end(a.get('endDate')) is None,
                                              _seconds_until_end(a.get('endDate'))))
             selected = whitelisted[:ENDING_SOON_MAX_RESULTS]
-            log(f"[ENDING-SOON] pagina di {len(page)} aste, {len(whitelisted)} in whitelist, "
+            log(f"[ENDING-SOON] {len(page)} aste totali scandagliate, {len(whitelisted)} in whitelist, "
                 f"valuto le {len(selected)} piu' vicine alla scadenza...")
             for auction in selected:
                 process_incoming_auction(auction, eth_rate, state, source='ENDING-SOON')
@@ -1685,15 +1730,19 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
         stats['skip_minnextbid_illeggibile'] = stats.get('skip_minnextbid_illeggibile', 0) + 1
         return False
 
+    if bid_ceiling < min_next_bid_eur:
+        # Richiesta esplicita utente (fase "tutte le aste" dopo il filtro 0-bid): per le
+        # aste scartate per tetto insufficiente, log ridotto al solo link -- niente
+        # righe di dettaglio (riferimento/tetto/minNextBid), per rendere il log leggibile
+        # con volumi alti. Le aste che INVECE superano il tetto (occasioni vere) restano
+        # con il log completo come prima, invariato.
+        log(f"[{source}] {player_name}: link={build_card_link(player_slug, card_slug)}")
+        stats['skip_tetto_insufficiente'] = stats.get('skip_tetto_insufficiente', 0) + 1
+        return False
+
     log(f"[{source}] {player_name}: riferimento {reference_price:.2f}EUR ({reference_source}), "
         f"tetto bid {bid_ceiling:.2f}EUR (max per asta {MAX_BID_PER_AUCTION_EUR:.2f}EUR), "
         f"minNextBid attuale {min_next_bid_eur:.2f}EUR, link={build_card_link(player_slug, card_slug)}")
-
-    if bid_ceiling < min_next_bid_eur:
-        log(f"[{source}] {player_name}: scarto -- il tetto bid ({bid_ceiling:.2f}EUR) e' "
-            f"sotto minNextBid attuale ({min_next_bid_eur:.2f}EUR), non biddo")
-        stats['skip_tetto_insufficiente'] = stats.get('skip_tetto_insufficiente', 0) + 1
-        return False
 
     seconds_left = None
     end_date = auction.get('endDate')
@@ -1866,9 +1915,9 @@ def main():
         f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h")
     log(f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h")
     log(f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
-    log(f"Safety poll all'avvio: {AUCTION_SAFETY_POLL_SIZE} aste")
-    log(f"Ending-soon poll: ogni {ENDING_SOON_POLL_INTERVAL_SECONDS:.0f}s, "
-        f"{ENDING_SOON_POLL_SIZE} aste per pagina, max {ENDING_SOON_MAX_RESULTS} valutate")
+    log("Safety poll all'avvio: TUTTE le aste live disponibili (paginato)")
+    log(f"Ending-soon poll: ogni {ENDING_SOON_POLL_INTERVAL_SECONDS:.0f}s su TUTTE le aste "
+        f"live disponibili, max {ENDING_SOON_MAX_RESULTS} valutate")
     log(f"Log verbosi per-fase (AUCTION_DIAGNOSTIC): "
         f"{'ATTIVI' if AUCTION_DIAGNOSTIC else 'spenti'}")
     log(f"Modalita' TEST solo aste a 0 bid (TEST_ONLY_ZERO_BID): "
