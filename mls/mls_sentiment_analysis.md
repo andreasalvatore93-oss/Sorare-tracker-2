@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T22:50:29.311474Z
-**Run totali:** 19
+**Data analisi:** 2026-07-21T22:52:30.934596Z
+**Run totali:** 20
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.17 EUR
-- **Trend mercato:** ➡️ STABLE (-1.0%)
-- **Sentiment:** 🟨 Quasi Fermo
+- **Prezzo medio MLS:** 9.02 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.7%)
+- **Sentiment:** 🟡 Leggero Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-1.0%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📉 TREND GLOBALE: DESCENDING (-1.7%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
 Prezzo: **42.98 EUR** | Media: **58.99 EUR** | Sconto: **-27.1%**
@@ -66,13 +66,13 @@ Carte trovate: 4 | Prezzo medio: 4.65 EUR | Volatilità (σ): 4.69
 Carte trovate: 5 | Prezzo medio: 5.42 EUR | Volatilità (σ): 7.46
 
 **Columbus Crew**
-Carte trovate: 3 | Prezzo medio: 5.73 EUR | Volatilità (σ): 5.19
+Carte trovate: 4 | Prezzo medio: 4.72 EUR | Volatilità (σ): 4.69
 
 **Charlotte FC**
 Carte trovate: 7 | Prezzo medio: 10.55 EUR | Volatilità (σ): 10.23
 
 **St. Louis City SC**
-Carte trovate: 5 | Prezzo medio: 5.36 EUR | Volatilità (σ): 2.45
+Carte trovate: 6 | Prezzo medio: 4.77 EUR | Volatilità (σ): 2.62
 
 **Chicago Fire FC**
 Carte trovate: 7 | Prezzo medio: 12.33 EUR | Volatilità (σ): 15.22
