@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T11:39:17.816585Z
-**Run totali:** 5
+**Data analisi:** 2026-07-21T11:42:28.894760Z
+**Run totali:** 6
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 3.84 EUR
+- **Prezzo medio MLS:** 4.31 EUR
 - **Trend mercato:** ➡️ STABLE (+0.1%)
 
 ## 💡 CONSIGLI INTELLIGENTI
@@ -40,16 +40,16 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 10. Ryan Schewe (Sporting Kansas City ) — **0.0%** vs media (0.67 EUR vs 0.67 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Erik Thommy (LA Galaxy) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
-2. Malik Henry (Toronto FC) — **+0.0%** vs media (0.85 EUR vs 0.85 EUR)
-3. Cole Bassett (Portland Timbers) — **+0.0%** vs media (10.00 EUR vs 10.00 EUR)
-4. Jackson Ragen (Seattle Sounders FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
-5. Andy Najar (Nashville SC) — **+0.0%** vs media (6.59 EUR vs 6.59 EUR)
-6. Victor Olatunji (Real Salt Lake) — **+0.0%** vs media (0.57 EUR vs 0.57 EUR)
-7. Ender Echenique (FC Cincinnati) — **+0.0%** vs media (2.20 EUR vs 2.20 EUR)
-8. Brendan McSorley (St. Louis City SC) — **+0.0%** vs media (1.03 EUR vs 1.03 EUR)
-9. Marcel Hartel (St. Louis City SC) — **+0.0%** vs media (9.20 EUR vs 9.20 EUR)
-10. Eduard Löwen (St. Louis City SC) — **+0.0%** vs media (8.58 EUR vs 8.58 EUR)
+1. Andrés Reyes (San Diego FC) — **+0.0%** vs media (3.00 EUR vs 3.00 EUR)
+2. Kye Rowles (DC United) — **+0.0%** vs media (1.01 EUR vs 1.01 EUR)
+3. Mathieu Choinière (Los Angeles FC) — **+0.0%** vs media (1.30 EUR vs 1.30 EUR)
+4. JT Marcinkowski (LA Galaxy) — **+0.0%** vs media (6.40 EUR vs 6.40 EUR)
+5. Erik Thommy (LA Galaxy) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
+6. Malik Henry (Toronto FC) — **+0.0%** vs media (0.85 EUR vs 0.85 EUR)
+7. Cole Bassett (Portland Timbers) — **+0.0%** vs media (10.00 EUR vs 10.00 EUR)
+8. Jackson Ragen (Seattle Sounders FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
+9. Hany Mukhtar (Nashville SC) — **+0.0%** vs media (25.37 EUR vs 25.37 EUR)
+10. Andy Najar (Nashville SC) — **+0.0%** vs media (6.59 EUR vs 6.59 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Inter Miami CF**
@@ -83,10 +83,10 @@ Carte trovate: 3 | Prezzo medio: 6.27 EUR | Volatilità (σ): 4.55
 Carte trovate: 1 | Prezzo medio: 2.20 EUR | Volatilità (σ): 0.00
 
 **Real Salt Lake**
-Carte trovate: 1 | Prezzo medio: 0.57 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 0.83 EUR | Volatilità (σ): 0.37
 
 **Nashville SC**
-Carte trovate: 1 | Prezzo medio: 6.59 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 15.98 EUR | Volatilità (σ): 13.28
 
 **Seattle Sounders FC**
 Carte trovate: 1 | Prezzo medio: 15.00 EUR | Volatilità (σ): 0.00
@@ -98,5 +98,14 @@ Carte trovate: 1 | Prezzo medio: 10.00 EUR | Volatilità (σ): 0.00
 Carte trovate: 1 | Prezzo medio: 0.85 EUR | Volatilità (σ): 0.00
 
 **LA Galaxy**
-Carte trovate: 1 | Prezzo medio: 0.90 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 3.65 EUR | Volatilità (σ): 3.89
+
+**Los Angeles FC**
+Carte trovate: 1 | Prezzo medio: 1.30 EUR | Volatilità (σ): 0.00
+
+**DC United**
+Carte trovate: 1 | Prezzo medio: 1.01 EUR | Volatilità (σ): 0.00
+
+**San Diego FC**
+Carte trovate: 1 | Prezzo medio: 3.00 EUR | Volatilità (σ): 0.00
 
