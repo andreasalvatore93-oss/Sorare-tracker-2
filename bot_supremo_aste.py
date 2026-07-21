@@ -333,7 +333,7 @@ LEAGUE_WHITELIST_SLUGS = load_league_whitelist()
 
 
 # --- Parametri regolabili ---
-AUCTION_DISCOUNT_FRACTION = float(os.environ.get('AUCTION_DISCOUNT_FRACTION', '0.25'))
+AUCTION_DISCOUNT_FRACTION = float(os.environ.get('AUCTION_DISCOUNT_FRACTION', '0.35'))
 LAST_AUCTION_REFERENCE_WINDOW_HOURS = float(os.environ.get('LAST_AUCTION_REFERENCE_WINDOW_HOURS', '24'))
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
@@ -1059,7 +1059,7 @@ def send_telegram_msg(message):
 
 
 def build_card_link(player_slug, card_slug):
-    return f"https://sorare.com/it/football/players/{player_slug}/{card_slug}"
+    return f"https://sorare.com/it/football/players/{player_slug}?card={card_slug}"
 
 
 # =====================================================================================
