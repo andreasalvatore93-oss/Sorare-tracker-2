@@ -359,16 +359,21 @@ MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
 # FIX 21/07 v3 (richiesta esplicita utente, WebSocket rimosso): CICLO CONTINUO a TRE
 # fasi, ciascuna della durata di CYCLE_PHASE_SECONDS, separate da pause fisse di
 # CYCLE_PAUSE_SECONDS (anche dopo l'ultima fase, prima di ricominciare dalla prima):
+# FIX 21/07 v4 (richiesta esplicita utente, "altrimenti vengo sommerso da notifiche"):
+# MAX_AUCTIONS_PER_PHASE limita quante aste vengono VALUTATE (quindi eventualmente
+# notificate) per ciascuna fase, non solo in FASE 3 -- prima valeva solo li', ora vale
+# ovunque, stesso tetto uniforme per NUOVE/ZEROBID/SCADENZA.
 #   FASE 1 "NUOVE": scan completo whitelist, valuta SOLO le aste con id MAI visto
-#     prima in questa run -- cattura le aperture appena immesse sul mercato. UNA sola
-#     scansione, poi il bot resta fermo per il resto della finestra di
-#     CYCLE_PHASE_SECONDS (se la scansione ha impiegato meno tempo del previsto).
+#     prima in questa run -- cattura le aperture appena immesse sul mercato. Se sono
+#     piu' di MAX_AUCTIONS_PER_PHASE, valuta solo le prime, il resto rimane "non ancora
+#     vista" e viene ripreso al ciclo successivo.
 #   pausa CYCLE_PAUSE_SECONDS
 #   FASE 2 "ZEROBID": stessa scansione completa, valuta SOLO le aste con bidsCount==0
-#     (nuove o vecchie che siano, non solo quelle appena viste in FASE 1).
+#     (nuove o vecchie che siano, non solo quelle appena viste in FASE 1), tetto
+#     MAX_AUCTIONS_PER_PHASE.
 #   pausa CYCLE_PAUSE_SECONDS
 #   FASE 3 "SCADENZA": stessa scansione completa, ordinata per scadenza piu' vicina,
-#     valutate solo le prime ENDING_SOON_TOP_N (default 5).
+#     valutate solo le prime MAX_AUCTIONS_PER_PHASE.
 #   pausa CYCLE_PAUSE_SECONDS
 #   ricomincia da FASE 1. E' del tutto normale (e atteso) che le stesse aste in
 #   scadenza ricompaiano identiche a fine ciclo in FASE 3 -- la dedup (vedi
@@ -376,7 +381,8 @@ MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
 #   currentPrice/minNextBid sono identici a un evento gia' notificato.
 CYCLE_PHASE_SECONDS = float(os.environ.get('CYCLE_PHASE_SECONDS', '20'))
 CYCLE_PAUSE_SECONDS = float(os.environ.get('CYCLE_PAUSE_SECONDS', '20'))
-ENDING_SOON_TOP_N = int(os.environ.get('ENDING_SOON_TOP_N', '5'))
+MAX_AUCTIONS_PER_PHASE = int(os.environ.get('MAX_AUCTIONS_PER_PHASE', '5'))
+
 
 # Ritardo prima della riverifica live pre-bid (il backend di Sorare a volte non e'
 # ancora "consistente" se riletto a distanza di meno di un secondo dalla scansione che
@@ -1351,7 +1357,7 @@ query ListLiveAuctions($n: Int!, $cursor: String) {
 """
 
 
-LIVE_AUCTIONS_MAX_PAGES = int(os.environ.get('LIVE_AUCTIONS_MAX_PAGES', '40'))
+LIVE_AUCTIONS_MAX_PAGES = int(os.environ.get('LIVE_AUCTIONS_MAX_PAGES', '200'))
 
 
 def fetch_live_auctions_page(n):
@@ -1363,21 +1369,29 @@ def fetch_live_auctions_page(n):
     liveSingleSaleOffers (fetch_all_live_offers) -- prima pagina before=None, poi si
     avanza con pageInfo.startCursor finche' hasPreviousPage e' vero o si raggiunge
     LIVE_AUCTIONS_MAX_PAGES (tetto di sicurezza per non restare bloccati se il totale
-    di aste live crescesse enormemente -- 40 pagine x 50 = 2000 aste, ben oltre il
-    totale osservato finora su Sorare).
+    di aste live crescesse enormemente).
+    FIX 21/07 v3 (caso reale osservato: mercato con 2000+ aste live su TUTTO Sorare, il
+    vecchio tetto di 40 pagine/2000 aste veniva raggiunto ARTIFICIALMENTE -- non era la
+    fine naturale della paginazione, quindi aste whitelist oltre quella soglia
+    restavano invisibili): tetto alzato a 200 pagine (10000 aste), e il log ora dice
+    ESPLICITAMENTE se lo stop e' dovuto al tetto (possibile dato incompleto) o alla
+    fine naturale della paginazione (dato completo).
     'n' resta il nome storico del parametro ma ora e' la dimensione di OGNI pagina
     (sempre 50), non piu' il totale massimo recuperato."""
     all_nodes = []
     cursor = None
     pages_fetched = 0
+    hit_page_cap = True
     for _ in range(LIVE_AUCTIONS_MAX_PAGES):
         try:
             data = graphql_query(LIVE_AUCTIONS_QUERY, {"n": n, "cursor": cursor})
         except Exception as e:
             log(f"[liveAuctions] eccezione pagina {pages_fetched + 1}: {e}")
+            hit_page_cap = False
             break
         if data.get('errors'):
             log(f"[liveAuctions] errore pagina {pages_fetched + 1}: {data['errors']}")
+            hit_page_cap = False
             break
         conn = (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {})
         nodes = conn.get('nodes') or []
@@ -1385,11 +1399,20 @@ def fetch_live_auctions_page(n):
         pages_fetched += 1
         page_info = conn.get('pageInfo') or {}
         if not page_info.get('hasPreviousPage'):
+            hit_page_cap = False
             break
         cursor = page_info.get('startCursor')
         if not cursor:
+            hit_page_cap = False
             break
-    log(f"[liveAuctions] {pages_fetched} pagine scansionate, {len(all_nodes)} aste totali")
+    if hit_page_cap:
+        log(f"[liveAuctions] ATTENZIONE -- tetto di {LIVE_AUCTIONS_MAX_PAGES} pagine "
+            f"raggiunto ({len(all_nodes)} aste), la paginazione NON era finita: possibili "
+            f"aste oltre questo punto non incluse in questa scansione. Se capita spesso, "
+            f"alzare LIVE_AUCTIONS_MAX_PAGES.")
+    else:
+        log(f"[liveAuctions] {pages_fetched} pagine scansionate, {len(all_nodes)} aste "
+            f"totali (paginazione completata)")
     return all_nodes
 
 
@@ -1507,39 +1530,45 @@ def _fetch_whitelisted_live_auctions():
 
 
 def run_new_auctions_phase(eth_rate, state):
-    """FASE 1 "NUOVE" (FIX 21/07 v3, richiesta esplicita utente): scan completo
+    """FASE 1 "NUOVE" (FIX 21/07 v3/v4, richiesta esplicita utente): scan completo
     whitelist, valuta SOLO le aste con id MAI visto prima in questa run -- cattura le
-    aperture appena immesse sul mercato."""
+    aperture appena immesse sul mercato. Tetto MAX_AUCTIONS_PER_PHASE per non sommergere
+    di notifiche -- le eventuali eccedenti restano "non ancora viste" e vengono riprese
+    al ciclo successivo (known_auction_ids NON viene marcato per quelle scartate)."""
     page, whitelisted = _fetch_whitelisted_live_auctions()
     nuove = [a for a in whitelisted if (a.get('id') or '') not in state.known_auction_ids]
+    selected = nuove[:MAX_AUCTIONS_PER_PHASE]
+    troncato = f" (tetto {MAX_AUCTIONS_PER_PHASE}, le altre riprese al prossimo ciclo)" if len(nuove) > len(selected) else ""
     log(f"[NUOVE] {len(page)} aste totali scandagliate, {len(whitelisted)} in whitelist, "
-        f"{len(nuove)} mai viste prima in questa run -- valuto solo queste")
-    for auction in nuove:
+        f"{len(nuove)} mai viste prima in questa run -- valuto {len(selected)}{troncato}")
+    for auction in selected:
         process_incoming_auction(auction, eth_rate, state, source='NUOVE')
 
 
 def run_zero_bid_phase(eth_rate, state):
-    """FASE 2 "ZEROBID" (FIX 21/07 v3): scan completo whitelist, valuta SOLO le aste
+    """FASE 2 "ZEROBID" (FIX 21/07 v3/v4): scan completo whitelist, valuta SOLO le aste
     con bidsCount==0 -- nuove o vecchie che siano, non solo quelle appena viste in
-    FASE 1."""
+    FASE 1. Tetto MAX_AUCTIONS_PER_PHASE per non sommergere di notifiche."""
     page, whitelisted = _fetch_whitelisted_live_auctions()
     zero_bid = [a for a in whitelisted if a.get('bidsCount') == 0]
+    selected = zero_bid[:MAX_AUCTIONS_PER_PHASE]
+    troncato = f" (tetto {MAX_AUCTIONS_PER_PHASE}, le altre riprese al prossimo ciclo)" if len(zero_bid) > len(selected) else ""
     log(f"[ZEROBID] {len(page)} aste totali scandagliate, {len(whitelisted)} in whitelist, "
-        f"{len(zero_bid)} a 0 bid -- valuto solo queste")
-    for auction in zero_bid:
+        f"{len(zero_bid)} a 0 bid -- valuto {len(selected)}{troncato}")
+    for auction in selected:
         process_incoming_auction(auction, eth_rate, state, source='ZEROBID')
 
 
 def run_ending_soon_phase(eth_rate, state):
-    """FASE 3 "SCADENZA" (FIX 21/07 v3): scan completo whitelist, ordinata per
-    scadenza piu' vicina, valutate solo le prime ENDING_SOON_TOP_N (default 5). E'
+    """FASE 3 "SCADENZA" (FIX 21/07 v3/v4): scan completo whitelist, ordinata per
+    scadenza piu' vicina, valutate solo le prime MAX_AUCTIONS_PER_PHASE (default 5). E'
     normale/atteso che le stesse aste ricompaiano identiche da un ciclo all'altro se
     nessuno ha rilanciato -- la dedup in process_incoming_auction evita la doppia
     notifica in quel caso."""
     _, whitelisted = _fetch_whitelisted_live_auctions()
     whitelisted.sort(key=lambda a: (_seconds_until_end(a.get('endDate')) is None,
                                      _seconds_until_end(a.get('endDate'))))
-    selected = whitelisted[:ENDING_SOON_TOP_N]
+    selected = whitelisted[:MAX_AUCTIONS_PER_PHASE]
     log(f"[SCADENZA] {len(whitelisted)} in whitelist, valuto le {len(selected)} piu' "
         f"vicine alla scadenza...")
     for auction in selected:
@@ -1895,9 +1924,11 @@ def main():
     log(f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h")
     log(f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
     log(f"Ciclo di tracking (WebSocket rimosso, solo scansioni GraphQL): "
-        f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s) -> pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
-        f"FASE ZEROBID ({CYCLE_PHASE_SECONDS:.0f}s) -> pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
-        f"FASE SCADENZA top {ENDING_SOON_TOP_N} ({CYCLE_PHASE_SECONDS:.0f}s) -> "
+        f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s, max {MAX_AUCTIONS_PER_PHASE} aste) -> "
+        f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
+        f"FASE ZEROBID ({CYCLE_PHASE_SECONDS:.0f}s, max {MAX_AUCTIONS_PER_PHASE} aste) -> "
+        f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
+        f"FASE SCADENZA ({CYCLE_PHASE_SECONDS:.0f}s, max {MAX_AUCTIONS_PER_PHASE} aste) -> "
         f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> ricomincia")
     log(f"Log verbosi per-fase (AUCTION_DIAGNOSTIC): "
         f"{'ATTIVI' if AUCTION_DIAGNOSTIC else 'spenti'}")
