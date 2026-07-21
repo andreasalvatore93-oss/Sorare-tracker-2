@@ -177,10 +177,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!) {
 
 def fetch_min_in_season_price(player_slug, eth_rate):
     """Query diretta: cerca tra TUTTI gli annunci live aperti di un giocatore
-    (classic + in_season) e restituisce il minimo prezzo SOLO tra quelli in_season.
-    Usata come trigger veloce quando vediamo passare una carta classic dello stesso
-    giocatore sul WebSocket -- ci permette di acquisire un dato in_season anche se
-    in quel momento nessuno lo sta vendendo attivamente in_season sul mercato."""
+    (classic + in_season) e restituisce il minimo prezzo SOLO tra quelli in_season."""
     data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": 50})
     if data.get('errors'):
         return None
@@ -302,7 +299,7 @@ def run_listener(eth_rate, data, listen_seconds):
     last_triggered = {}  # player_slug -> timestamp ultima query trigger (anti rate-limit)
     TRIGGER_COOLDOWN_SECONDS = 20
     
-    def register_price(player_slug, player_name, player, price_eur, source):
+    def register_price(player_slug, player_name, player, price_eur, source='live'):
         """Registra un prezzo in_season nella struttura dati. source = 'live' o 'trigger'."""
         team_slug = ''
         for ts, tn in MLS_TEAMS.items():
@@ -423,13 +420,9 @@ def run_listener(eth_rate, data, listen_seconds):
                         continue
                     last_triggered[player_slug] = now
                     
-                    log(f"[Evento classic] {player_name} (slug: {player_slug}) classic visto sul mercato — cerco minimo in_season...")
                     trigger_price = fetch_min_in_season_price(player_slug, eth_rate)
                     if trigger_price is not None:
-                        log(f"[Trigger da classic] {player_name} — registro minimo in_season: {trigger_price:.2f} EUR")
                         register_price(player_slug, player_name, player, trigger_price, source='trigger')
-                    else:
-                        log(f"[Trigger da classic] {player_name} — nessun annuncio in_season attualmente disponibile")
                     continue
                 
                 stats["processed"] += 1
