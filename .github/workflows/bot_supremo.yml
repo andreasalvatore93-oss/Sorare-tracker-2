@@ -30,6 +30,10 @@ on:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
         default: "18000"
+      commit_interval_seconds:
+        description: "Ogni quanti secondi il bot fa commit+push della lista nera DURANTE la run (protezione da interruzioni) -- default 300 = 5 minuti"
+        required: false
+        default: "300"
       target_matches:
         description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-20)"
         required: false
@@ -124,6 +128,7 @@ jobs:
           MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '27' }}
           AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '28' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
+          COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '3' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
@@ -155,5 +160,6 @@ jobs:
             git config user.email "bot-supremo@users.noreply.github.com"
             git add sorare_lista_nera.txt
             git commit -m "Bot Supremo: aggiorna lista nera unica"
+            git pull --rebase --autostash origin main
             git push
           fi
