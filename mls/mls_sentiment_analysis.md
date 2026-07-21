@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T14:34:55.540255Z
-**Run totali:** 25
+**Data analisi:** 2026-07-21T14:36:58.880685Z
+**Run totali:** 26
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.74 EUR
+- **Prezzo medio MLS:** 7.04 EUR
 - **Trend mercato:** ➡️ STABLE (+0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
@@ -32,12 +32,12 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 2. Martín Ojeda (Orlando City SC) — **-25.2%** vs media (20.21 EUR vs 27.00 EUR)
 3. Keisuke Kurokawa (DC United) — **-22.7%** vs media (1.70 EUR vs 2.20 EUR)
 4. Mathieu Choinière (Los Angeles FC) — **-21.0%** vs media (1.30 EUR vs 1.65 EUR)
-5. Julián Aude (LA Galaxy) — **-16.7%** vs media (1.10 EUR vs 1.32 EUR)
-6. Jonathan Bond (Houston Dynamo FC) — **-16.2%** vs media (9.30 EUR vs 11.10 EUR)
-7. Dániel Gazdag (Columbus Crew) — **-14.2%** vs media (1.00 EUR vs 1.17 EUR)
-8. Nicholas Simmonds (FC Dallas) — **-14.0%** vs media (0.95 EUR vs 1.10 EUR)
-9. Hany Mukhtar (Nashville SC) — **-13.2%** vs media (19.45 EUR vs 22.41 EUR)
-10. Nəriman Axundzadə (Columbus Crew) — **-10.5%** vs media (0.74 EUR vs 0.83 EUR)
+5. Nicolás Fernández-Mercau (New York City FC) — **-20.0%** vs media (24.38 EUR vs 30.47 EUR)
+6. Julián Aude (LA Galaxy) — **-16.7%** vs media (1.10 EUR vs 1.32 EUR)
+7. Jonathan Bond (Houston Dynamo FC) — **-16.2%** vs media (9.30 EUR vs 11.10 EUR)
+8. Dániel Gazdag (Columbus Crew) — **-14.2%** vs media (1.00 EUR vs 1.17 EUR)
+9. Nicholas Simmonds (FC Dallas) — **-14.0%** vs media (0.95 EUR vs 1.10 EUR)
+10. Hany Mukhtar (Nashville SC) — **-13.2%** vs media (19.45 EUR vs 22.41 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Maximiliano Moralez (New York City FC) — **+0.0%** vs media (1.04 EUR vs 1.04 EUR)
@@ -80,10 +80,10 @@ Carte trovate: 4 | Prezzo medio: 5.35 EUR | Volatilità (σ): 5.44
 Carte trovate: 10 | Prezzo medio: 4.01 EUR | Volatilità (σ): 2.85
 
 **FC Cincinnati**
-Carte trovate: 3 | Prezzo medio: 2.10 EUR | Volatilità (σ): 1.15
+Carte trovate: 4 | Prezzo medio: 3.82 EUR | Volatilità (σ): 3.58
 
 **Real Salt Lake**
-Carte trovate: 9 | Prezzo medio: 4.92 EUR | Volatilità (σ): 4.67
+Carte trovate: 9 | Prezzo medio: 4.90 EUR | Volatilità (σ): 4.63
 
 **Nashville SC**
 Carte trovate: 4 | Prezzo medio: 13.72 EUR | Volatilità (σ): 9.86
@@ -92,7 +92,7 @@ Carte trovate: 4 | Prezzo medio: 13.72 EUR | Volatilità (σ): 9.86
 Carte trovate: 8 | Prezzo medio: 9.17 EUR | Volatilità (σ): 7.14
 
 **Portland Timbers**
-Carte trovate: 3 | Prezzo medio: 12.27 EUR | Volatilità (σ): 7.36
+Carte trovate: 4 | Prezzo medio: 10.13 EUR | Volatilità (σ): 7.38
 
 **Toronto FC**
 Carte trovate: 2 | Prezzo medio: 0.86 EUR | Volatilità (σ): 0.02
@@ -101,13 +101,13 @@ Carte trovate: 2 | Prezzo medio: 0.86 EUR | Volatilità (σ): 0.02
 Carte trovate: 7 | Prezzo medio: 2.81 EUR | Volatilità (σ): 3.16
 
 **Los Angeles FC**
-Carte trovate: 8 | Prezzo medio: 2.90 EUR | Volatilità (σ): 2.11
+Carte trovate: 8 | Prezzo medio: 2.89 EUR | Volatilità (σ): 2.12
 
 **DC United**
 Carte trovate: 4 | Prezzo medio: 1.72 EUR | Volatilità (σ): 0.51
 
 **San Diego FC**
-Carte trovate: 6 | Prezzo medio: 8.54 EUR | Volatilità (σ): 14.54
+Carte trovate: 7 | Prezzo medio: 9.46 EUR | Volatilità (σ): 13.50
 
 **Austin FC**
 Carte trovate: 6 | Prezzo medio: 1.53 EUR | Volatilità (σ): 1.22
@@ -116,7 +116,7 @@ Carte trovate: 6 | Prezzo medio: 1.53 EUR | Volatilità (σ): 1.22
 Carte trovate: 4 | Prezzo medio: 16.36 EUR | Volatilità (σ): 17.73
 
 **Orlando City SC**
-Carte trovate: 3 | Prezzo medio: 9.16 EUR | Volatilità (σ): 9.85
+Carte trovate: 4 | Prezzo medio: 7.31 EUR | Volatilità (σ): 8.85
 
 **FC Dallas**
 Carte trovate: 1 | Prezzo medio: 0.95 EUR | Volatilità (σ): 0.00
@@ -128,7 +128,7 @@ Carte trovate: 3 | Prezzo medio: 7.03 EUR | Volatilità (σ): 6.99
 Carte trovate: 3 | Prezzo medio: 4.49 EUR | Volatilità (σ): 3.58
 
 **Minnesota United**
-Carte trovate: 4 | Prezzo medio: 1.58 EUR | Volatilità (σ): 1.49
+Carte trovate: 5 | Prezzo medio: 2.44 EUR | Volatilità (σ): 2.30
 
 **Houston Dynamo FC**
 Carte trovate: 2 | Prezzo medio: 5.29 EUR | Volatilità (σ): 5.67
