@@ -647,7 +647,7 @@ def generate_html_chart(data):
                     'count': len(players),
                 }
     
-    html_content = f"""<!DOCTYPE html>
+    html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -655,37 +655,37 @@ def generate_html_chart(data):
     <title>MLS Sentiment Analysis Chart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
-        body {{
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             margin: 0;
             padding: 20px;
             background: #f5f5f5;
-        }}
-        .container {{
+        }
+        .container {
             max-width: 1400px;
             margin: 0 auto;
-        }}
-        h1 {{
+        }
+        h1 {
             text-align: center;
             color: #333;
             margin-bottom: 30px;
-        }}
-        .chart-wrapper {{
+        }
+        .chart-wrapper {
             background: white;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }}
-        .chart-title {{
+        }
+        .chart-title {
             font-size: 16px;
             font-weight: 600;
             color: #333;
             margin-bottom: 15px;
-        }}
-        canvas {{
+        }
+        canvas {
             max-height: 300px;
-        }}
+        }
     </style>
 </head>
 <body>
@@ -704,70 +704,70 @@ def generate_html_chart(data):
     </div>
     
     <script>
-        const teamsData = {teams_data_json};
+        const teamsData = __TEAMS_DATA_JSON__;
         
         // Team average prices
         const teamLabels = Object.keys(teamsData).sort();
         const teamAvgs = teamLabels.map(t => teamsData[t].avg.toFixed(2));
         
         const ctx1 = document.getElementById('teamChart').getContext('2d');
-        new Chart(ctx1, {{
+        new Chart(ctx1, {
             type: 'bar',
-            data: {{
+            data: {
                 labels: teamLabels,
-                datasets: [{{
+                datasets: [{
                     label: 'Average Price (EUR)',
                     data: teamAvgs,
                     backgroundColor: '#4A90E2',
                     borderColor: '#2E5C8A',
                     borderWidth: 1,
-                }}]
-            }},
-            options: {{
+                }]
+            },
+            options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {{
-                    legend: {{display: false}},
-                }},
-                scales: {{
-                    y: {{beginAtZero: true}},
-                }},
-            }},
-        }});
+                plugins: {
+                    legend: {display: false},
+                },
+                scales: {
+                    y: {beginAtZero: true},
+                },
+            },
+        });
         
         // Cards found per team
         const teamCounts = teamLabels.map(t => teamsData[t].count);
         
         const ctx2 = document.getElementById('countChart').getContext('2d');
-        new Chart(ctx2, {{
+        new Chart(ctx2, {
             type: 'bar',
-            data: {{
+            data: {
                 labels: teamLabels,
-                datasets: [{{
+                datasets: [{
                     label: 'Cards Found',
                     data: teamCounts,
                     backgroundColor: '#7ED321',
                     borderColor: '#4A8A0E',
                     borderWidth: 1,
-                }}]
-            }},
-            options: {{
+                }]
+            },
+            options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {{
-                    legend: {{display: false}},
-                }},
-                scales: {{
-                    y: {{beginAtZero: true}},
-                }},
-            }},
-        }});
+                plugins: {
+                    legend: {display: false},
+                },
+                scales: {
+                    y: {beginAtZero: true},
+                },
+            },
+        });
     </script>
 </body>
 </html>
 """
     
-    html_content = html_content.replace('{teams_data_json}', json.dumps(teams_data))
+    html_content = html_content.replace('__TEAMS_DATA_JSON__', json.dumps(teams_data))
     
     with open(HTML_FILE, 'w', encoding='utf-8') as f:
         f.write(html_content)
