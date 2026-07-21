@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T19:13:09.468653Z
-**Run totali:** 35
+**Data analisi:** 2026-07-21T19:16:11.024051Z
+**Run totali:** 36
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.08 EUR
-- **Trend mercato:** ➡️ STABLE (-0.1%)
+- **Prezzo medio MLS:** 7.09 EUR
+- **Trend mercato:** ➡️ STABLE (+0.1%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.1%)**
+**➡️ TREND GLOBALE: STABLE (+0.1%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Maximiliano Falcón (Inter Miami CF)**
@@ -35,8 +35,8 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 5. Keisuke Kurokawa (DC United) — **-22.7%** vs media (1.70 EUR vs 2.20 EUR)
 6. Kelvin Yeboah (Minnesota United) — **-22.4%** vs media (2.37 EUR vs 3.06 EUR)
 7. Mathieu Choinière (Los Angeles FC) — **-21.0%** vs media (1.30 EUR vs 1.65 EUR)
-8. Nicolás Fernández-Mercau (New York City FC) — **-19.6%** vs media (23.16 EUR vs 28.80 EUR)
-9. Carles Gil (New England Revolution) — **-18.9%** vs media (58.50 EUR vs 72.09 EUR)
+8. Carles Gil (New England Revolution) — **-18.9%** vs media (58.50 EUR vs 72.09 EUR)
+9. Nicolás Fernández-Mercau (New York City FC) — **-17.8%** vs media (23.00 EUR vs 27.97 EUR)
 10. Julián Aude (LA Galaxy) — **-16.7%** vs media (1.10 EUR vs 1.32 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
@@ -48,8 +48,8 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 6. Lucas Herrington (Colorado Rapids) — **+0.0%** vs media (4.73 EUR vs 4.73 EUR)
 7. Hamzat-Basit Ojediran (Colorado Rapids) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
 8. Jackson Travis (Colorado Rapids) — **+0.0%** vs media (0.99 EUR vs 0.99 EUR)
-9. Nathan Harriel (Philadelphia Union) — **+0.0%** vs media (4.90 EUR vs 4.90 EUR)
-10. Jovan Lukić (Philadelphia Union) — **+0.0%** vs media (2.88 EUR vs 2.88 EUR)
+9. Indiana Vassilev (Philadelphia Union) — **+0.0%** vs media (0.80 EUR vs 0.80 EUR)
+10. Nathan Harriel (Philadelphia Union) — **+0.0%** vs media (4.90 EUR vs 4.90 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Inter Miami CF**
@@ -65,7 +65,7 @@ Carte trovate: 5 | Prezzo medio: 13.25 EUR | Volatilità (σ): 25.32
 Carte trovate: 13 | Prezzo medio: 2.35 EUR | Volatilità (σ): 2.36
 
 **Sporting Kansas City **
-Carte trovate: 4 | Prezzo medio: 1.13 EUR | Volatilità (σ): 0.65
+Carte trovate: 5 | Prezzo medio: 2.00 EUR | Volatilità (σ): 2.03
 
 **Vancouver Whitecaps FC**
 Carte trovate: 7 | Prezzo medio: 7.30 EUR | Volatilità (σ): 5.92
@@ -86,7 +86,7 @@ Carte trovate: 5 | Prezzo medio: 3.35 EUR | Volatilità (σ): 3.28
 Carte trovate: 10 | Prezzo medio: 4.47 EUR | Volatilità (σ): 4.58
 
 **Nashville SC**
-Carte trovate: 6 | Prezzo medio: 9.43 EUR | Volatilità (σ): 10.07
+Carte trovate: 7 | Prezzo medio: 8.60 EUR | Volatilità (σ): 9.45
 
 **Seattle Sounders FC**
 Carte trovate: 8 | Prezzo medio: 9.17 EUR | Volatilità (σ): 7.14
@@ -134,11 +134,11 @@ Carte trovate: 7 | Prezzo medio: 3.02 EUR | Volatilità (σ): 2.99
 Carte trovate: 4 | Prezzo medio: 3.25 EUR | Volatilità (σ): 4.04
 
 **Philadelphia Union**
-Carte trovate: 4 | Prezzo medio: 3.64 EUR | Volatilità (σ): 1.76
+Carte trovate: 5 | Prezzo medio: 3.07 EUR | Volatilità (σ): 1.98
 
 **Colorado Rapids**
 Carte trovate: 6 | Prezzo medio: 3.58 EUR | Volatilità (σ): 3.52
 
 **New York City FC**
-Carte trovate: 4 | Prezzo medio: 9.75 EUR | Volatilità (σ): 10.48
+Carte trovate: 4 | Prezzo medio: 9.71 EUR | Volatilità (σ): 10.42
 
