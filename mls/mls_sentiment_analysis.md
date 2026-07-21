@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T09:39:45.376621Z
-**Run totali:** 6
+**Data analisi:** 2026-07-21T09:41:28.501772Z
+**Run totali:** 7
 
 📊 **[Apri i grafici interattivi](https://andreasalvatore93-oss.github.io/Sorare-tracker-2/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.74 EUR
-- **Trend mercato:** ➡️ STABLE (+0.0%)
+- **Prezzo medio MLS:** 5.80 EUR
+- **Trend mercato:** ➡️ STABLE (+0.1%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.0%)**
+**➡️ TREND GLOBALE: STABLE (+0.1%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 MOD. OPPORTUNITÀ — Philip Zinckernagel (Atlanta United)**
@@ -40,18 +40,18 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 10. Nathan Byrne (Atlanta United) — **0.0%** vs media (2.15 EUR vs 2.15 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Micael (Atlanta United) — **+0.0%** vs media (4.00 EUR vs 4.00 EUR)
-2. Logan Farrington (Atlanta United) — **+0.0%** vs media (3.71 EUR vs 3.71 EUR)
-3. Ronald Donkor (Atlanta United) — **+0.0%** vs media (1.98 EUR vs 1.98 EUR)
-4. Julio Ortiz (Atlanta United) — **+0.0%** vs media (0.80 EUR vs 0.80 EUR)
-5. Malik Henry (Atlanta United) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
-6. Jordan Morris (Atlanta United) — **+0.0%** vs media (1.50 EUR vs 1.50 EUR)
-7. Victor Loturi (Atlanta United) — **+0.0%** vs media (1.20 EUR vs 1.20 EUR)
-8. Noah Allen (Atlanta United) — **+0.0%** vs media (1.30 EUR vs 1.30 EUR)
-9. Thomas Guillier (Atlanta United) — **+0.0%** vs media (6.00 EUR vs 6.00 EUR)
-10. Alhassan Yusuf (Atlanta United) — **+0.0%** vs media (4.64 EUR vs 4.64 EUR)
+1. Pep Biel (Atlanta United) — **+0.0%** vs media (9.99 EUR vs 9.99 EUR)
+2. Maxime Crépeau (Atlanta United) — **+0.0%** vs media (5.50 EUR vs 5.50 EUR)
+3. Josh Sargent (Atlanta United) — **+0.0%** vs media (3.52 EUR vs 3.52 EUR)
+4. Micael (Atlanta United) — **+0.0%** vs media (4.00 EUR vs 4.00 EUR)
+5. Logan Farrington (Atlanta United) — **+0.0%** vs media (3.71 EUR vs 3.71 EUR)
+6. Ronald Donkor (Atlanta United) — **+0.0%** vs media (1.98 EUR vs 1.98 EUR)
+7. Julio Ortiz (Atlanta United) — **+0.0%** vs media (0.80 EUR vs 0.80 EUR)
+8. Malik Henry (Atlanta United) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
+9. Jordan Morris (Atlanta United) — **+0.0%** vs media (1.50 EUR vs 1.50 EUR)
+10. Victor Loturi (Atlanta United) — **+0.0%** vs media (1.20 EUR vs 1.20 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Atlanta United**
-Carte trovate: 25 | Prezzo medio: 4.22 EUR | Volatilità (σ): 8.24
+Carte trovate: 28 | Prezzo medio: 4.45 EUR | Volatilità (σ): 7.85
 
