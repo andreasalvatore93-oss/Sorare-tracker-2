@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T14:24:43.702729Z
-**Run totali:** 20
+**Data analisi:** 2026-07-21T14:26:45.640944Z
+**Run totali:** 21
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.96 EUR
+- **Prezzo medio MLS:** 7.00 EUR
 - **Trend mercato:** ➡️ STABLE (+0.1%)
 
 ## 💡 CONSIGLI INTELLIGENTI
@@ -32,12 +32,12 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 2. Julián Aude (LA Galaxy) — **-16.7%** vs media (1.10 EUR vs 1.32 EUR)
 3. Dániel Gazdag (Columbus Crew) — **-14.2%** vs media (1.00 EUR vs 1.17 EUR)
 4. Nicholas Simmonds (FC Dallas) — **-14.0%** vs media (0.95 EUR vs 1.10 EUR)
-5. Nəriman Axundzadə (Columbus Crew) — **-10.5%** vs media (0.74 EUR vs 0.83 EUR)
-6. Daniel Edelman (St. Louis City SC) — **-10.2%** vs media (3.45 EUR vs 3.84 EUR)
-7. Wyatt Meyer (Sporting Kansas City ) — **-7.1%** vs media (1.30 EUR vs 1.40 EUR)
-8. Marcel Hartel (St. Louis City SC) — **-2.3%** vs media (8.78 EUR vs 8.99 EUR)
-9. Timo Baumgartl (St. Louis City SC) — **-2.2%** vs media (4.30 EUR vs 4.39 EUR)
-10. Max Arfsten (Columbus Crew) — **-1.4%** vs media (4.37 EUR vs 4.43 EUR)
+5. Hany Mukhtar (Nashville SC) — **-13.2%** vs media (19.45 EUR vs 22.41 EUR)
+6. Nəriman Axundzadə (Columbus Crew) — **-10.5%** vs media (0.74 EUR vs 0.83 EUR)
+7. Daniel Edelman (St. Louis City SC) — **-10.2%** vs media (3.45 EUR vs 3.84 EUR)
+8. Wyatt Meyer (Sporting Kansas City ) — **-7.1%** vs media (1.30 EUR vs 1.40 EUR)
+9. Marcel Hartel (St. Louis City SC) — **-2.9%** vs media (8.78 EUR vs 9.04 EUR)
+10. Timo Baumgartl (St. Louis City SC) — **-2.2%** vs media (4.30 EUR vs 4.39 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Hamzat-Basit Ojediran (Colorado Rapids) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
@@ -62,13 +62,13 @@ Carte trovate: 4 | Prezzo medio: 1.28 EUR | Volatilità (σ): 0.90
 Carte trovate: 4 | Prezzo medio: 21.10 EUR | Volatilità (σ): 38.47
 
 **Columbus Crew**
-Carte trovate: 9 | Prezzo medio: 1.90 EUR | Volatilità (σ): 1.43
+Carte trovate: 10 | Prezzo medio: 1.99 EUR | Volatilità (σ): 1.38
 
 **Sporting Kansas City **
 Carte trovate: 4 | Prezzo medio: 1.14 EUR | Volatilità (σ): 0.65
 
 **Vancouver Whitecaps FC**
-Carte trovate: 3 | Prezzo medio: 8.28 EUR | Volatilità (σ): 8.24
+Carte trovate: 4 | Prezzo medio: 7.84 EUR | Volatilità (σ): 6.79
 
 **Charlotte FC**
 Carte trovate: 4 | Prezzo medio: 4.26 EUR | Volatilità (σ): 4.86
@@ -77,7 +77,7 @@ Carte trovate: 4 | Prezzo medio: 4.26 EUR | Volatilità (σ): 4.86
 Carte trovate: 4 | Prezzo medio: 5.35 EUR | Volatilità (σ): 5.44
 
 **St. Louis City SC**
-Carte trovate: 8 | Prezzo medio: 4.19 EUR | Volatilità (σ): 3.15
+Carte trovate: 9 | Prezzo medio: 3.97 EUR | Volatilità (σ): 3.02
 
 **FC Cincinnati**
 Carte trovate: 3 | Prezzo medio: 2.10 EUR | Volatilità (σ): 1.15
@@ -86,7 +86,7 @@ Carte trovate: 3 | Prezzo medio: 2.10 EUR | Volatilità (σ): 1.15
 Carte trovate: 7 | Prezzo medio: 4.44 EUR | Volatilità (σ): 4.65
 
 **Nashville SC**
-Carte trovate: 4 | Prezzo medio: 15.20 EUR | Volatilità (σ): 11.34
+Carte trovate: 4 | Prezzo medio: 13.72 EUR | Volatilità (σ): 9.86
 
 **Seattle Sounders FC**
 Carte trovate: 7 | Prezzo medio: 10.37 EUR | Volatilità (σ): 6.78
