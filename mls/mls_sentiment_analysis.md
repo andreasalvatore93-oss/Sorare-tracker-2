@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T11:48:54.291235Z
-**Run totali:** 10
+**Data analisi:** 2026-07-21T14:02:37.201301Z
+**Run totali:** 11
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.09 EUR
+- **Prezzo medio MLS:** 4.95 EUR
 - **Trend mercato:** ➡️ STABLE (+0.1%)
 
 ## 💡 CONSIGLI INTELLIGENTI
@@ -45,11 +45,11 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 3. Myrto Uzuni (Austin FC) — **+0.0%** vs media (1.20 EUR vs 1.20 EUR)
 4. Ilie Sánchez (Austin FC) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
 5. Andrés Reyes (San Diego FC) — **+0.0%** vs media (3.00 EUR vs 3.00 EUR)
-6. Kye Rowles (DC United) — **+0.0%** vs media (1.01 EUR vs 1.01 EUR)
-7. JT Marcinkowski (LA Galaxy) — **+0.0%** vs media (6.40 EUR vs 6.40 EUR)
-8. Erik Thommy (LA Galaxy) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
-9. Malik Henry (Toronto FC) — **+0.0%** vs media (0.85 EUR vs 0.85 EUR)
-10. Cole Bassett (Portland Timbers) — **+0.0%** vs media (10.00 EUR vs 10.00 EUR)
+6. Tai Baribo (DC United) — **+0.0%** vs media (1.98 EUR vs 1.98 EUR)
+7. Kye Rowles (DC United) — **+0.0%** vs media (1.01 EUR vs 1.01 EUR)
+8. JT Marcinkowski (LA Galaxy) — **+0.0%** vs media (6.40 EUR vs 6.40 EUR)
+9. Erik Thommy (LA Galaxy) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
+10. Malik Henry (Toronto FC) — **+0.0%** vs media (0.85 EUR vs 0.85 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Inter Miami CF**
@@ -74,7 +74,7 @@ Carte trovate: 1 | Prezzo medio: 5.76 EUR | Volatilità (σ): 0.00
 Carte trovate: 1 | Prezzo medio: 0.78 EUR | Volatilità (σ): 0.00
 
 **CF Montreal**
-Carte trovate: 3 | Prezzo medio: 6.50 EUR | Volatilità (σ): 6.03
+Carte trovate: 4 | Prezzo medio: 5.35 EUR | Volatilità (σ): 5.44
 
 **St. Louis City SC**
 Carte trovate: 3 | Prezzo medio: 6.27 EUR | Volatilità (σ): 4.55
@@ -104,7 +104,7 @@ Carte trovate: 2 | Prezzo medio: 3.65 EUR | Volatilità (σ): 3.89
 Carte trovate: 1 | Prezzo medio: 1.30 EUR | Volatilità (σ): 0.00
 
 **DC United**
-Carte trovate: 1 | Prezzo medio: 1.01 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 1.50 EUR | Volatilità (σ): 0.68
 
 **San Diego FC**
 Carte trovate: 1 | Prezzo medio: 3.00 EUR | Volatilità (σ): 0.00
