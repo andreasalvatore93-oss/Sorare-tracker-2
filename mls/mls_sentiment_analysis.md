@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T19:16:11.024051Z
-**Run totali:** 36
+**Data analisi:** 2026-07-21T19:19:12.438877Z
+**Run totali:** 37
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.09 EUR
-- **Trend mercato:** ➡️ STABLE (+0.1%)
+- **Prezzo medio MLS:** 7.13 EUR
+- **Trend mercato:** ➡️ STABLE (+0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.1%)**
+**➡️ TREND GLOBALE: STABLE (+0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Maximiliano Falcón (Inter Miami CF)**
@@ -68,7 +68,7 @@ Carte trovate: 13 | Prezzo medio: 2.35 EUR | Volatilità (σ): 2.36
 Carte trovate: 5 | Prezzo medio: 2.00 EUR | Volatilità (σ): 2.03
 
 **Vancouver Whitecaps FC**
-Carte trovate: 7 | Prezzo medio: 7.30 EUR | Volatilità (σ): 5.92
+Carte trovate: 8 | Prezzo medio: 7.13 EUR | Volatilità (σ): 5.50
 
 **Charlotte FC**
 Carte trovate: 8 | Prezzo medio: 6.01 EUR | Volatilità (σ): 5.86
@@ -86,7 +86,7 @@ Carte trovate: 5 | Prezzo medio: 3.35 EUR | Volatilità (σ): 3.28
 Carte trovate: 10 | Prezzo medio: 4.47 EUR | Volatilità (σ): 4.58
 
 **Nashville SC**
-Carte trovate: 7 | Prezzo medio: 8.60 EUR | Volatilità (σ): 9.45
+Carte trovate: 7 | Prezzo medio: 8.52 EUR | Volatilità (σ): 9.28
 
 **Seattle Sounders FC**
 Carte trovate: 8 | Prezzo medio: 9.17 EUR | Volatilità (σ): 7.14
@@ -110,7 +110,7 @@ Carte trovate: 5 | Prezzo medio: 1.80 EUR | Volatilità (σ): 0.48
 Carte trovate: 8 | Prezzo medio: 8.38 EUR | Volatilità (σ): 12.87
 
 **Austin FC**
-Carte trovate: 6 | Prezzo medio: 1.53 EUR | Volatilità (σ): 1.22
+Carte trovate: 7 | Prezzo medio: 1.50 EUR | Volatilità (σ): 1.12
 
 **Chicago Fire FC**
 Carte trovate: 6 | Prezzo medio: 11.34 EUR | Volatilità (σ): 15.79
