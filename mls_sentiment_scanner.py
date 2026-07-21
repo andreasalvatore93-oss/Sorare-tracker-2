@@ -29,8 +29,8 @@ MARKDOWN_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_analysis.md')
 HTML_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_chart.html')
 COOKIES = os.environ.get('SORARE_COOKIE')
 
-# Default listen duration: 10 minutes (600 seconds)
-LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '600'))
+# Default listen duration: 60 minutes (3600 seconds)
+LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '3600'))
 INSUFFICIENT_FUNDS_STOP = [False]
 
 # MLS Teams (all 28)
