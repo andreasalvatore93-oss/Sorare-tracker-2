@@ -1,12 +1,14 @@
 import json
 import os
-import random
+import re
 import time
 import datetime
 import threading
+import subprocess
+import queue
+import collections
 
 import requests
-import websocket  # pip install websocket-client
 from playwright.sync_api import sync_playwright
 
 try:
@@ -15,29 +17,37 @@ try:
 except ImportError:
     _HAS_CURL_CFFI = False
 
-# OTTIMIZZAZIONE VELOCITA' (21/07, richiesta esplicita utente -- "altri modi per
-# renderlo piu' veloce"): prima ogni chiamata GraphQL usava curl_requests.post()/
-# requests.post() a livello di modulo, che aprono una connessione NUOVA (handshake
-# TCP + TLS da zero) ad OGNI singola chiamata verso api.sorare.com. Con una Session
-# persistente (stessa identica interfaccia .post(), stessi header/payload/timeout --
-# nessun cambio di comportamento) la connessione resta aperta (keep-alive) e viene
-# RIUSATA tra una chiamata e l'altra: l'handshake TLS (spesso 50-150ms) si paga una
-# volta sola invece che ad ogni singola query/mutation. Impatta OGNI chiamata
-# GraphQL della run (ricerca prezzi, liquidita', tassi di cambio), non solo il
-# momento dell'acquisto.
-if _HAS_CURL_CFFI:
-    _http_session = curl_requests.Session(impersonate="chrome")
-else:
-    _http_session = requests.Session()
-
 # =====================================================================================
-# BOT SUPREMO -- fusione di AutoBuy + MakeOffer in un unico scanner/bot (20/07)
+# BOT SUPREMO ASTE (21/07, RISCRITTO 21/07 v3) -- sniper per le aste inglesi di Sorare.
 # =====================================================================================
-# Un solo scan di mercato per evento: se il margine e' nella fascia MAKEOFFER_MARGIN_
-# FRACTION-MAKEOFFER_MAX_MARGIN_FRACTION -> crea un'offerta scontata (ramo MakeOffer);
-# se e' >= AUTOBUY_MARGIN_FRACTION -> accetta direttamente l'offerta (ramo AutoBuy).
-# Elimina il doppio scan/doppia richiesta e la race condition tra i due bot separati
-# (blacklist ora lette insieme da entrambi i file, vedi sotto).
+# FIX 21/07 v3 (richiesta esplicita utente): rimosso il WebSocket in tempo reale --
+# il bot ora funziona SOLO a scansioni GraphQL, organizzate in un ciclo continuo a 3
+# fasi (vedi run_tracking_cycle piu' sotto). Quando trova un'asta che soddisfa i
+# criteri, piazza DAVVERO un bid (se AUCTION_LIVE_MODE='si') usando la mutation
+# ufficiale documentata da Sorare stessa (github.com/sorare/api): prepareBid -> firma
+# -> bid (mutation tokenBid). Stessa infrastruttura di firma gia' pronta e testata nel
+# bot buyer (bot_supremo.py): processo Node persistente per la firma, cache
+# exchange_rate_id, sessione HTTP persistente, throttle GraphQL, browser Playwright
+# per le chiamate critiche (anti-fingerprint).
+#
+# Riferimento prezzo ("minimo di mercato") per decidere quanto offrire:
+#   riferimento = min(minimo LIVE di vendita diretta in_season, prezzo dell'ultima asta
+#                      CONCLUSA per quel giocatore SOLO se conclusa nelle ultime 24h)
+#   tra i due disponibili -- se nessuno dei due e' disponibile, l'asta viene scartata.
+# Bid = tetto pieno (riferimento * (1 - sconto), default sconto 25%), MAI un rilancio
+# automatico: bid secco, se il minNextBid attuale e' gia' sopra il nostro tetto si scarta
+# senza biddare. Su Sorare il bid e' un vero e proprio "proxy bid" (stile eBay): puntare
+# 100 su un'asta ferma a 20 significa pagare il minimo necessario per restare in testa FINO
+# a 100, non pagare 100 secchi -- quindi biddare il tetto pieno e' sicuro ed e' la scelta
+# esplicita dell'utente (21/07).
+#
+# Le aste Sorare valgono SOLO per carte Limited in_season (le classic non vengono mai
+# messe all'asta, confermato dall'utente) -- nessun filtro rarita'/stagione aggiuntivo
+# necessario oltre a quello implicito.
+#
+# Whitelist campionati (file esterno campionati_aste_whitelist.json): si bidda SOLO sui
+# campionati elencati li' dentro (default: MLS e K League). Whitelist statica, nessuna
+# scadenza automatica -- resta com'e' finche' l'utente non la modifica a mano.
 # =====================================================================================
 
 COOKIES = os.environ.get('SORARE_COOKIE')
@@ -45,7 +55,8 @@ COOKIES = os.environ.get('SORARE_COOKIE')
 
 def _extract_csrf_from_cookie(cookie_string):
     """Il CSRF token cambia ad ogni refresh pagina -- estratto dal cookie stesso
-    (campo csrftoken=...) invece di un secret statico che scadrebbe subito."""
+    (campo csrftoken=...) invece di un secret statico che scadrebbe subito. Identico
+    al bot buyer."""
     if not cookie_string:
         return None
     for pair in cookie_string.split(';'):
@@ -56,112 +67,59 @@ def _extract_csrf_from_cookie(cookie_string):
 
 
 CSRF_TOKEN = _extract_csrf_from_cookie(COOKIES) or os.environ.get('SORARE_CSRF')
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
+TELEGRAM_TOKEN = os.environ.get('AUCTION_TELEGRAM_TOKEN', '').strip()
+TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 
-AUTOBUY_LIVE_MODE = os.environ.get('AUTOBUY_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
-MAKEOFFER_LIVE_MODE = os.environ.get('MAKEOFFER_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+AUCTION_LIVE_MODE = os.environ.get('AUCTION_LIVE_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
 SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
-WS_URL = "wss://ws.sorare.com/cable"
 
-# Stessa blacklist manager storica di track.py (venditori solo ETH o esplicitamente
-# esclusi dall'utente).
-BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
+# OTTIMIZZAZIONE VELOCITA' (stessa identica ottimizzazione validata nel bot buyer):
+# Session persistente invece di post() a livello di modulo -- la connessione TCP/TLS
+# resta aperta e viene riusata tra una chiamata e l'altra invece di rinegoziare
+# l'handshake ad ogni singola query GraphQL.
+if _HAS_CURL_CFFI:
+    _http_session = curl_requests.Session(impersonate="chrome")
+else:
+    _http_session = requests.Session()
+
+
+def log(message):
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{ts}] {message}", flush=True)
 
 
 # =====================================================================================
-# LISTA NERA DEL BOT SUPREMO -- file unico (richiesta esplicita utente 21/07)
+# LISTA NERA ASTE -- file separato e indipendente da quello del bot buyer (richiesta
+# esplicita utente 21/07: "il bot aste e' indipendente, usa solo il suo file separato").
+# Stesso identico formato/meccanismo del file del buyer (sezioni '## tipo', righe
+# 'slug,durata_leggibile'), solo con due sole sezioni: blacklist manuale giocatori e
+# cooldown bid (12h di default, un bid reale per giocatore al massimo ogni tot ore).
 # =====================================================================================
-# Sostituisce TUTTI i vecchi file separati (sorare_blacklist.txt, sorare_manager_
-# blacklist.txt, i legacy autobuy/makeoffer, autobuy_purchases.json, makeoffer_cooldown.
-# json, bot_supremo_thin_market_cache.json) con un solo file di testo a righe, editabile
-# a mano su GitHub, con 4 tipi di riga:
-#   manager,<slug>,<scadenza_iso>
-#   giocatore,<slug>,<scadenza_iso>
-#   thin_market,<slug>,<scadenza_iso>
-#   cooldown_acquisto,<slug>,<scadenza_iso>
-# La scadenza e' editabile a mano riga per riga: basta cambiare la data ISO. Una riga
-# con scadenza nel passato viene ignorata in lettura ma NON cancellata automaticamente
-# (resta li' finche' non la si toglie a mano o finche' il bot non la rinnova scrivendo
-# una nuova scadenza per lo stesso slug/tipo).
-LISTA_NERA_PATH = os.environ.get('LISTA_NERA_PATH', 'sorare_lista_nera.txt')
-# Cache in memoria per _lista_nera_leggi_righe (ottimizzazione velocita' 21/07) --
-# None finche' non e' stata fatta la prima lettura, poi lista di dict finche' non
-# viene invalidata da _lista_nera_scrivi_righe dopo ogni scrittura.
-_lista_nera_cache = None
-
-# Durate di default (giorni), usate quando il bot AGGIUNGE una riga per conto suo
-# (es. dal workflow_dispatch, o registrando un acquisto/offerta/thin-market skip).
-# Tutte modificabili qui O a mano nel file cambiando la scadenza di ogni riga.
-MANAGER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('MANAGER_BLACKLIST_DEFAULT_DAYS', '365'))
-PLAYER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_DAYS', '3'))
-# FIX 21/07: durata SEPARATA (365gg) per la blacklist AUTOMATICA quando un giocatore
-# viene scartato per coverageStatus=NOT_COVERED o media punti 0 -- diversa dalla
-# blacklist manuale/da workflow (PLAYER_BLACKLIST_DEFAULT_DAYS, 3gg), perche' un
-# giocatore con questi problemi resta problematico a lungo, non solo per pochi giorni.
-PLAYER_BLACKLIST_DEFAULT_365_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_365_DAYS', '365'))
-THIN_MARKET_DEFAULT_DAYS = float(os.environ.get('THIN_MARKET_DEFAULT_DAYS', '2'))
-COOLDOWN_ACQUISTO_DEFAULT_DAYS = float(os.environ.get('COOLDOWN_ACQUISTO_DEFAULT_DAYS', '1'))
-# FIX 21/07 (richiesta esplicita utente): durata default per la blacklist CAMPIONATI --
-# 15 giorni, rinnovabile/modificabile a mano nel file come tutte le altre sezioni.
-LEAGUE_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_BLACKLIST_DEFAULT_DAYS', '15'))
-
-_LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto', 'campionato')
-
-# Vecchi file, letti SOLO per la migrazione automatica una tantum (prima run dopo
-# l'aggiornamento). Una volta migrati in sorare_lista_nera.txt possono essere eliminati
-# dal repo -- vedi messaggio di log a fine migrazione.
-_LEGACY_FILES_DA_MIGRARE = {
-    'manager': ['sorare_manager_blacklist.txt', 'sorare_autobuy_manager_blacklist.txt',
-                'sorare_makeoffer_manager_blacklist.txt'],
-    'giocatore': ['sorare_blacklist.txt', 'sorare_autobuy_blacklist.txt',
-                  'sorare_makeoffer_blacklist.txt'],
-}
-_LEGACY_JSON_DA_MIGRARE = {
-    'cooldown_acquisto': ['autobuy_purchases.json', 'makeoffer_cooldown.json'],
-    'thin_market': ['bot_supremo_thin_market_cache.json'],
-}
-
-
-_LISTA_NERA_INTESTAZIONI = {
-    'manager': (
-        "MANAGER BLACKLISTATI -- da questi manager non compriamo carte ne' facciamo "
-        "offerte, ma le loro carte contano comunque nel calcolo del prezzo minimo di "
-        "mercato (non vengono escluse dal conteggio, solo dagli acquisti/offerte)."
-    ),
+LISTA_NERA_ASTE_PATH = os.environ.get('LISTA_NERA_ASTE_PATH', 'sorare_lista_nera_aste.txt')
+_LISTA_NERA_ASTE_TIPI_VALIDI = ('giocatore', 'cooldown_bid')
+_LISTA_NERA_ASTE_ORDINE_SEZIONI = ('giocatore', 'cooldown_bid')
+_LISTA_NERA_ASTE_INTESTAZIONI = {
     'giocatore': (
-        "GIOCATORI BLACKLISTATI -- questi giocatori vengono ignorati sia per gli "
-        "acquisti diretti (AutoBuy) sia per le offerte (MakeOffer)."
+        "GIOCATORI BLACKLISTATI -- niente bid su questi giocatori, in nessun caso."
     ),
-    'cooldown_acquisto': (
-        "COOLDOWN ACQUISTI/OFFERTE -- giocatori appena comprati o a cui abbiamo appena "
-        "fatto un'offerta: ignorati per il tempo indicato, per non ricomprare/riproporre "
-        "subito lo stesso giocatore."
-    ),
-    'thin_market': (
-        "THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni "
-        "recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare "
-        "di comprare/offrire su un mercato poco liquido."
-    ),
-    'campionato': (
-        "CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), "
-        "SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla "
-        "con le altre. Ogni carta di un giocatore attivo in uno di questi campionati "
-        "viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato "
-        "PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default "
-        "15 giorni, rinnovabile o modificabile a mano come le altre sezioni."
+    'cooldown_bid': (
+        "COOLDOWN BID -- giocatori su cui abbiamo gia' piazzato un bid reale: ignorati "
+        "per il tempo indicato, per non biddare piu' di una volta sullo stesso "
+        "giocatore troppo ravvicinatamente."
     ),
 }
-_LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market', 'campionato')
+
+PLAYER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_DAYS', '3'))
+AUCTION_COOLDOWN_HOURS = float(os.environ.get('AUCTION_COOLDOWN_HOURS', '12'))
+AUCTION_COOLDOWN_DAYS = AUCTION_COOLDOWN_HOURS / 24
 
 
 def _durata_a_leggibile(delta_secondi):
-    """Converte un numero di secondi in una stringa leggibile in italiano, es.
-    '5 giorni', '1 giorno', '3 ore', '20 minuti'. Arrotonda per eccesso all'unita'
-    piu' grande sensata, cosi' il file resta leggibile senza troppi decimali."""
+    """Converte un numero di secondi in una stringa leggibile in italiano -- identica
+    alla funzione gemella nel bot buyer, per coerenza tra i due file."""
     if delta_secondi <= 0:
         return "scaduto"
     giorni = delta_secondi / 86400
@@ -177,9 +135,9 @@ def _durata_a_leggibile(delta_secondi):
 
 
 def _leggibile_a_secondi(testo):
-    """Converte una stringa italiana ('7 giorni', '24 ore', '30 minuti') in secondi.
-    Accetta anche forme abbreviate (7g, 24h, 30m) per chi preferisce scrivere veloce.
-    Ritorna None se non riconosciuta."""
+    """Converte una stringa italiana ('7 giorni', '12 ore', '30 minuti') in secondi.
+    Accetta anche forme abbreviate (7g, 12h, 30m). Identica alla funzione gemella nel
+    bot buyer."""
     testo = testo.strip().lower()
     parts = testo.split()
     if len(parts) == 2:
@@ -201,71 +159,12 @@ def _leggibile_a_secondi(testo):
     return None
 
 
-def _lista_nera_migra_vecchio_formato_riga_se_serve():
-    """Il primo formato del file unico (righe 'tipo,slug,scadenza_iso' senza sezioni)
-    e' stato sostituito da questo formato a sezioni con durata leggibile. Se il file
-    esiste ma e' ancora nel vecchio formato (nessuna intestazione '## tipo' trovata,
-    ma righe con 3 campi separati da virgola), lo convertiamo automaticamente UNA
-    TANTUM preservando tutte le scadenze gia' presenti."""
-    try:
-        with open(LISTA_NERA_PATH, 'r', encoding='utf-8') as f:
-            raw_lines = f.readlines()
-    except FileNotFoundError:
-        return
-    ha_sezioni = any(l.strip().startswith('## ') for l in raw_lines)
-    if ha_sezioni:
-        return  # gia' nel nuovo formato
-    righe_vecchie = []
-    for raw in raw_lines:
-        stripped = raw.strip()
-        if not stripped or stripped.startswith('#'):
-            continue
-        parts = [p.strip() for p in stripped.split(',')]
-        if len(parts) != 3:
-            continue
-        tipo, slug, scadenza_str = parts
-        tipo = tipo.lower()
-        if tipo not in _LISTA_NERA_TIPI_VALIDI:
-            continue
-        try:
-            scadenza = datetime.datetime.fromisoformat(scadenza_str)
-            if scadenza.tzinfo is None:
-                scadenza = scadenza.replace(tzinfo=datetime.timezone.utc)
-        except ValueError:
-            continue
-        righe_vecchie.append({'tipo': tipo, 'slug': slug.lower(), 'scadenza': scadenza})
-    if righe_vecchie:
-        _lista_nera_scrivi_righe(righe_vecchie)
-        print(f"[lista nera] convertite {len(righe_vecchie)} righe dal vecchio formato "
-              f"(tipo,slug,scadenza_iso) al nuovo formato a sezioni leggibili.", flush=True)
-
-
-def _lista_nera_leggi_righe():
-    """Legge tutte le righe valide dal file unico (nuovo formato a sezioni:
-    slug,durata_leggibile sotto un'intestazione '## tipo'). Ritorna lista di dict
-    {tipo, slug, scadenza (datetime)}. Righe malformate vengono ignorate con log.
-
-    OTTIMIZZAZIONE VELOCITA' (21/07, richiesta esplicita utente -- "trova qualcosa
-    da ottimizzare senza rischiare di rompere niente"): CACHATA in memoria per tutta
-    la run. Questa funzione viene chiamata per OGNI singolo evento del mercato
-    valutato (is_player_in_cooldown + is_player_in_thin_market_cache, dentro
-    evaluate_event) -- con centinaia di eventi al minuto, prima del fix questo
-    significava altrettante aperture+letture+parsing dell'intero file da disco,
-    anche quando il contenuto non era affatto cambiato dall'ultima lettura. La
-    cache viene invalidata automaticamente da _lista_nera_scrivi_righe (unico punto
-    che modifica il file), quindi resta sempre sincronizzata con lo stato vero --
-    zero rischio di leggere dati stantii. NON tocca la logica di
-    acquisto/firma/Playwright, solo il path di lettura di questo file."""
-    global _lista_nera_cache
-    if _lista_nera_cache is not None:
-        return _lista_nera_cache
-
+def _lista_nera_aste_leggi_righe():
     righe = []
     try:
-        with open(LISTA_NERA_PATH, 'r', encoding='utf-8') as f:
+        with open(LISTA_NERA_ASTE_PATH, 'r', encoding='utf-8') as f:
             raw_lines = f.readlines()
     except FileNotFoundError:
-        _lista_nera_cache = righe
         return righe
     ora = datetime.datetime.now(datetime.timezone.utc)
     tipo_corrente = None
@@ -276,82 +175,65 @@ def _lista_nera_leggi_righe():
             continue
         if stripped.startswith('## '):
             candidato = stripped[3:].strip().lower()
-            if candidato in _LISTA_NERA_TIPI_VALIDI:
+            if candidato in _LISTA_NERA_ASTE_TIPI_VALIDI:
                 tipo_corrente = candidato
             continue
         if stripped.startswith('#'):
-            continue  # commento/descrizione, non una riga dati
+            continue
         if tipo_corrente is None:
-            log(f"[lista nera] riga {n} fuori da qualunque sezione, ignorata: {raw!r}")
+            log(f"[lista nera aste] riga {n} fuori da qualunque sezione, ignorata: {raw!r}")
             continue
         parts = [p.strip() for p in stripped.split(',')]
         if len(parts) != 2:
-            log(f"[lista nera] riga {n} malformata (attesi 2 campi slug,durata), ignorata: {raw!r}")
+            log(f"[lista nera aste] riga {n} malformata (attesi 2 campi slug,durata), ignorata: {raw!r}")
             continue
         slug, durata_str = parts
         slug = slug.lower()
-        secondi = _leggibire_wrapper(durata_str, n, raw)
+        secondi = _leggibile_a_secondi(durata_str)
         if secondi is None:
+            log(f"[lista nera aste] riga {n} durata non riconosciuta ('{durata_str}'), ignorata: {raw!r}")
             continue
         righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi)})
-    _lista_nera_cache = righe
     return righe
 
 
-def _leggibire_wrapper(durata_str, n, raw):
-    secondi = _leggibile_a_secondi(durata_str)
-    if secondi is None:
-        log(f"[lista nera] riga {n} durata non riconosciuta ('{durata_str}'), ignorata: {raw!r}")
-    return secondi
-
-
-def _lista_nera_scrivi_righe(righe):
-    """Riscrive il file unico in sezioni per tipo (ordine fisso, thin_market per
-    ultimo perche' e' la sezione piu' numerosa), ognuna con intestazione descrittiva.
-    La durata scritta e' SEMPRE il tempo RIMANENTE alla scadenza (ricalcolato ogni
-    volta), non la durata originale -- cosi' l'utente vede sempre quanto manca.
-    Invalida la cache di lettura (vedi _lista_nera_leggi_righe) dopo la scrittura,
-    cosi' la prossima lettura riflette sempre lo stato vero del file."""
-    global _lista_nera_cache
+def _lista_nera_aste_scrivi_righe(righe):
     ora = datetime.datetime.now(datetime.timezone.utc)
     dedup = {}
     for r in righe:
         if r['scadenza'] <= ora:
-            continue  # non riscriviamo righe gia' scadute
+            continue
         chiave = (r['tipo'], r['slug'])
         if chiave not in dedup or r['scadenza'] > dedup[chiave]['scadenza']:
             dedup[chiave] = r
-    per_tipo = {t: [] for t in _LISTA_NERA_TIPI_VALIDI}
+    per_tipo = {t: [] for t in _LISTA_NERA_ASTE_TIPI_VALIDI}
     for r in dedup.values():
         per_tipo[r['tipo']].append(r)
 
-    with open(LISTA_NERA_PATH, 'w', encoding='utf-8') as f:
-        f.write("# LISTA NERA DEL BOT SUPREMO\n")
-        f.write("# Ogni riga: slug,durata (es. 'clem777,5 giorni'). La durata e' il tempo\n")
+    with open(LISTA_NERA_ASTE_PATH, 'w', encoding='utf-8') as f:
+        f.write("# LISTA NERA DEL BOT SUPREMO ASTE\n")
+        f.write("# Ogni riga: slug,durata (es. 'kang-in-lee,10 ore'). La durata e' il tempo\n")
         f.write("# rimanente, aggiornato automaticamente ogni volta che il bot riscrive questo\n")
         f.write("# file -- puoi modificarla a mano in qualunque momento (es. '3 ore', '10 giorni',\n")
         f.write("# '30 minuti') per accorciare o allungare il blocco. Per rimuovere un blocco,\n")
-        f.write("# cancella semplicemente la riga.\n\n")
-        for tipo in _LISTA_NERA_ORDINE_SEZIONI:
+        f.write("# cancella semplicemente la riga.\n")
+        f.write("# NOTA: file indipendente dalla lista nera del bot buyer (sorare_lista_nera.txt)\n")
+        f.write("# -- questo bot non la legge e non ci scrive.\n\n")
+        for tipo in _LISTA_NERA_ASTE_ORDINE_SEZIONI:
             righe_tipo = sorted(per_tipo[tipo], key=lambda r: r['slug'])
             f.write(f"## {tipo}\n")
-            f.write(f"# {_LISTA_NERA_INTESTAZIONI[tipo]}\n")
+            f.write(f"# {_LISTA_NERA_ASTE_INTESTAZIONI[tipo]}\n")
             if not righe_tipo:
                 f.write("# (vuoto)\n")
             for r in righe_tipo:
                 delta = (r['scadenza'] - ora).total_seconds()
                 f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
             f.write("\n")
-    # Invalida la cache: la prossima chiamata a _lista_nera_leggi_righe ricarichera'
-    # dal file appena scritto, cosi' resta sempre sincronizzata con lo stato vero.
-    _lista_nera_cache = None
 
 
-def _lista_nera_upsert(tipo, slug, giorni_da_ora):
-    """Aggiunge o rinnova una riga (tipo, slug) con nuova scadenza = ora + giorni_da_ora.
-    Se la riga esiste gia', la sostituisce (rinnovo); altrimenti la aggiunge."""
+def _lista_nera_aste_upsert(tipo, slug, giorni_da_ora):
     slug = slug.lower()
-    righe = _lista_nera_leggi_righe()
+    righe = _lista_nera_aste_leggi_righe()
     scadenza = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=giorni_da_ora)
     trovata = False
     for r in righe:
@@ -361,107 +243,34 @@ def _lista_nera_upsert(tipo, slug, giorni_da_ora):
             break
     if not trovata:
         righe.append({'tipo': tipo, 'slug': slug, 'scadenza': scadenza})
-    _lista_nera_scrivi_righe(righe)
+    _lista_nera_aste_scrivi_righe(righe)
 
 
-def _lista_nera_attiva(tipo, slug):
-    """True se (tipo, slug) e' presente con scadenza non ancora passata."""
+def _lista_nera_aste_attiva(tipo, slug):
     slug = (slug or '').lower()
     if not slug:
         return False
     ora = datetime.datetime.now(datetime.timezone.utc)
-    for r in _lista_nera_leggi_righe():
+    for r in _lista_nera_aste_leggi_righe():
         if r['tipo'] == tipo and r['slug'] == slug and r['scadenza'] > ora:
             return True
     return False
 
 
-def _migra_vecchi_file_una_tantum():
-    """Migrazione automatica una tantum: se sorare_lista_nera.txt non esiste ancora,
-    legge tutti i vecchi file separati e popola il nuovo file unico. Blacklist
-    manager/giocatore migrate con scadenza 7 giorni da ora (default). Cooldown
-    acquisto/thin_market migrati preservando la data originale + la loro durata
-    default (cosi' un giocatore comprato ieri non riparte da zero oggi)."""
-    if os.path.exists(LISTA_NERA_PATH):
-        return  # gia' migrato in una run precedente, non rifare
-    righe = []
-    ora = datetime.datetime.now(datetime.timezone.utc)
-    migrate_da = []
-
-    for tipo, file_paths in _LEGACY_FILES_DA_MIGRARE.items():
-        giorni_default = (MANAGER_BLACKLIST_DEFAULT_DAYS if tipo == 'manager'
-                          else PLAYER_BLACKLIST_DEFAULT_DAYS)
-        for fp in file_paths:
-            try:
-                with open(fp, 'r', encoding='utf-8') as f:
-                    lines = f.readlines()
-            except FileNotFoundError:
-                continue
-            migrate_da.append(fp)
-            for line in lines:
-                slug = line.strip().lower()
-                if not slug or slug.startswith('#'):
-                    continue
-                righe.append({'tipo': tipo, 'slug': slug,
-                              'scadenza': ora + datetime.timedelta(days=giorni_default)})
-
-    for tipo, file_paths in _LEGACY_JSON_DA_MIGRARE.items():
-        giorni_default = (THIN_MARKET_DEFAULT_DAYS if tipo == 'thin_market'
-                          else COOLDOWN_ACQUISTO_DEFAULT_DAYS)
-        for fp in file_paths:
-            try:
-                with open(fp, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
-                continue
-            if not isinstance(data, dict):
-                continue
-            migrate_da.append(fp)
-            for slug, last_iso in data.items():
-                try:
-                    last_dt = datetime.datetime.fromisoformat(last_iso)
-                    if last_dt.tzinfo is None:
-                        last_dt = last_dt.replace(tzinfo=datetime.timezone.utc)
-                except (ValueError, TypeError):
-                    last_dt = ora
-                righe.append({'tipo': tipo, 'slug': slug.lower(),
-                              'scadenza': last_dt + datetime.timedelta(days=giorni_default)})
-
-    if not righe and not migrate_da:
-        # Nessun vecchio file trovato: crea comunque il file vuoto con intestazione,
-        # cosi' l'utente puo' iniziare ad editarlo a mano.
-        _lista_nera_scrivi_righe([])
-        print("[lista nera] nessun vecchio file trovato, creato sorare_lista_nera.txt vuoto",
-              flush=True)
-        return
-
-    _lista_nera_scrivi_righe(righe)
-    print(f"[lista nera] MIGRAZIONE completata da {len(migrate_da)} vecchi file "
-          f"({', '.join(migrate_da)}) -> {len(righe)} righe in {LISTA_NERA_PATH}. "
-          f"Puoi ora eliminare dal repo i vecchi file elencati sopra.", flush=True)
-
-
-_lista_nera_migra_vecchio_formato_riga_se_serve()
-_migra_vecchi_file_una_tantum()
-
-
-class _SetTipoLive:
-    """Wrapper minimale per mantenere l'API 'set' (operatore 'in', len(), sorted())
-    usata nel resto del codice per BLACKLISTED_PLAYER_SLUGS/BLACKLISTED_MANAGER_SLUGS,
-    ma leggendo SEMPRE dal vivo dal file unico -- cosi' una modifica al file a mano
-    (o un aggiornamento da un altro ramo durante la stessa run) e' vista subito,
-    senza dover ricaricare/riavviare il bot."""
+class _SetTipoLiveAste:
+    """Stesso wrapper del bot buyer: legge sempre dal vivo dal file, cosi' una modifica
+    a mano (o un aggiornamento da un altro processo) e' vista subito."""
 
     def __init__(self, tipo):
         self._tipo = tipo
 
     def _slugs_attivi(self):
         ora = datetime.datetime.now(datetime.timezone.utc)
-        return {r['slug'] for r in _lista_nera_leggi_righe()
+        return {r['slug'] for r in _lista_nera_aste_leggi_righe()
                 if r['tipo'] == self._tipo and r['scadenza'] > ora}
 
     def __contains__(self, slug):
-        return _lista_nera_attiva(self._tipo, slug or '')
+        return _lista_nera_aste_attiva(self._tipo, slug or '')
 
     def __iter__(self):
         return iter(self._slugs_attivi())
@@ -470,170 +279,713 @@ class _SetTipoLive:
         return len(self._slugs_attivi())
 
 
-# Stessa blacklist manager storica di track.py (venditori solo ETH o esplicitamente
-# esclusi dall'utente) -- questa resta hardcoded, non fa parte della lista nera editabile.
-BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
+BLACKLISTED_PLAYER_SLUGS_ASTE = _SetTipoLiveAste('giocatore')
 
-BLACKLISTED_PLAYER_SLUGS = _SetTipoLive('giocatore')
-BLACKLISTED_MANAGER_SLUGS = _SetTipoLive('manager')
-BLACKLISTED_LEAGUE_SLUGS = _SetTipoLive('campionato')
-# Alias per compatibilita' col nome usato nel codice AutoBuy originale.
-BLACKLISTED_AUTOBUY_MANAGER_SLUGS = BLACKLISTED_MANAGER_SLUGS
-
-# Blacklist extra passate da workflow_dispatch (input singola run, oltre al file):
-# vengono scritte anche loro nel file unico, cosi' restano visibili/editabili li'.
 _extra_blacklisted_players = os.environ.get('BLACKLISTED_PLAYER_SLUGS', '')
 if _extra_blacklisted_players.strip():
     for _s in _extra_blacklisted_players.split(','):
         _s = _s.strip().lower()
         if _s:
-            _lista_nera_upsert('giocatore', _s, PLAYER_BLACKLIST_DEFAULT_DAYS)
+            _lista_nera_aste_upsert('giocatore', _s, PLAYER_BLACKLIST_DEFAULT_DAYS)
 
-_extra_blacklisted_managers = os.environ.get('BLACKLISTED_MANAGER_SLUGS', '')
-if _extra_blacklisted_managers.strip():
-    for _s in _extra_blacklisted_managers.split(','):
-        _s = _s.strip().lower()
-        if _s:
-            _lista_nera_upsert('manager', _s, MANAGER_BLACKLIST_DEFAULT_DAYS)
 
-# FIX 21/07 (richiesta esplicita utente): stesso pattern per campionati -- lo
-# slug del primo campionato da blacklistare (es. 'premiership-gb-sct', il
-# campionato scozzese) viene passato da workflow_dispatch e scritto nella
-# sezione '## campionato' del file unico, editabile a mano in seguito come
-# tutte le altre sezioni.
-_extra_blacklisted_leagues = os.environ.get('BLACKLISTED_LEAGUE_SLUGS', '')
-if _extra_blacklisted_leagues.strip():
-    for _s in _extra_blacklisted_leagues.split(','):
-        _s = _s.strip().lower()
-        if _s:
-            _lista_nera_upsert('campionato', _s, LEAGUE_BLACKLIST_DEFAULT_DAYS)
+def is_player_in_bid_cooldown(player_slug):
+    return _lista_nera_aste_attiva('cooldown_bid', player_slug)
 
-# Log verboso opzionale per il filtro campionati (richiesta esplicita utente per il
-# primo test) -- se attivo, logga OGNI carta scartata per campionato blacklistato con
-# dettagli; se spento (default), il filtro funziona comunque ma resta silenzioso per
-# non riempire i log di rumore una volta che il comportamento e' stato verificato.
-LEAGUE_BLACKLIST_VERBOSE_LOG = os.environ.get('LEAGUE_BLACKLIST_VERBOSE_LOG', 'no').strip().lower() in ('si', 'true', '1', 'yes')
+
+def record_player_bid(player_slug):
+    _lista_nera_aste_upsert('cooldown_bid', player_slug, AUCTION_COOLDOWN_DAYS)
+    log(f"[lista nera aste] registrato bid reale su {player_slug}, cooldown {AUCTION_COOLDOWN_HOURS:.0f}h")
+
+
+# =====================================================================================
+# WHITELIST CAMPIONATI -- file esterno campionati_aste_whitelist.json. Si bidda SOLO sui
+# campionati elencati (whitelist statica, nessuna scadenza automatica -- richiesta
+# esplicita utente 21/07). Se il campionato di un'asta e' sconosciuto/mancante, l'asta
+# viene esclusa (comportamento di sicurezza -- in pratica capita raramente, dato che
+# Sorare mette all'asta solo carte di giocatori con una squadra attiva).
+# =====================================================================================
+LEAGUE_WHITELIST_PATH = os.environ.get('LEAGUE_WHITELIST_PATH', 'campionati_aste_whitelist.json')
+
+
+def load_league_whitelist():
+    try:
+        with open(LEAGUE_WHITELIST_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        leagues = data.get('leagues') or []
+        slugs = {l['slug'].strip().lower() for l in leagues if l.get('slug')}
+        if not slugs:
+            log(f"[whitelist campionati] ATTENZIONE: '{LEAGUE_WHITELIST_PATH}' letto ma nessuno "
+                f"slug valido trovato -- NESSUNA asta verra' considerata finche' non lo sistemi.")
+        return slugs
+    except FileNotFoundError:
+        log(f"[whitelist campionati] ATTENZIONE: file '{LEAGUE_WHITELIST_PATH}' non trovato -- "
+            f"NESSUNA asta verra' considerata finche' non lo crei.")
+        return set()
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        log(f"[whitelist campionati] ATTENZIONE: '{LEAGUE_WHITELIST_PATH}' malformato ({e}) -- "
+            f"NESSUNA asta verra' considerata finche' non lo sistemi.")
+        return set()
+
+
+LEAGUE_WHITELIST_SLUGS = load_league_whitelist()
+
 
 # --- Parametri regolabili ---
-AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1'))
-AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
-
-# Due soglie SEPARATE per fascia, nessuna sovrapponibile per costruzione:
-# MAKEOFFER_MARGIN_FRACTION <= margine < MAKEOFFER_MAX_MARGIN_FRACTION -> ramo MakeOffer
-# margine >= AUTOBUY_MARGIN_FRACTION -> ramo AutoBuy (deve essere >= al tetto MakeOffer)
-MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.10'))
-MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.19'))
-AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'))
-
+AUCTION_DISCOUNT_FRACTION = float(os.environ.get('AUCTION_DISCOUNT_FRACTION', '0.27'))
+LAST_AUCTION_REFERENCE_WINDOW_HOURS = float(os.environ.get('LAST_AUCTION_REFERENCE_WINDOW_HOURS', '24'))
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
+AUCTION_DIAGNOSTIC = os.environ.get('AUCTION_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 
-# Pausa random periodica (20/07, richiesta esplicita utente: "non martellare Sorare di
-# richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_SECONDS di
-# attivita' continua, il bot si ferma per un tempo casuale tra RANDOM_PAUSE_MIN_SECONDS
-# e RANDOM_PAUSE_MAX_SECONDS prima di riprendere.
-RANDOM_PAUSE_INTERVAL_SECONDS = int(os.environ.get('RANDOM_PAUSE_INTERVAL_SECONDS', '180'))
-RANDOM_PAUSE_MIN_SECONDS = float(os.environ.get('RANDOM_PAUSE_MIN_SECONDS', '1'))
-RANDOM_PAUSE_MAX_SECONDS = float(os.environ.get('RANDOM_PAUSE_MAX_SECONDS', '10'))
+# FIX 21/07 (richiesta esplicita utente, test mirato): quando attivo, SOLO le aste con
+# currentPrice == minNextBid (nessun bid mai piazzato) vengono valutate -- tutte le altre
+# scartate silenziosamente PRIMA di qualunque log/query, cosi' nei log resta solo il
+# segnale che interessa per capire se/quando il bot intercetta aste a 0 bid. Si applica
+# a tutte e 3 le fonti (WS/SAFETY/ENDING-SOON) tramite process_incoming_auction. Non
+# tocca whitelist/cooldown/calcolo bid, che restano identici per le aste che passano
+# questo filtro.
+TEST_ONLY_ZERO_BID = os.environ.get('TEST_ONLY_ZERO_BID', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 
-EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
+# FIX 21/07 (richiesta esplicita utente): tetto massimo assoluto che il bot puo' mai
+# offrire su UNA SINGOLA asta, indipendentemente da quanto alto risulti il calcolo
+# (riferimento * (1-sconto)). Protezione contro riferimenti di mercato anomali (es. un
+# singolo annuncio fuori mercato che alza il "minimo live" per errore/manipolazione).
+MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
 
-AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '20'))
-AUTOBUY_TARGET_MATCHES = max(1, min(20, AUTOBUY_TARGET_MATCHES))
+# FIX 21/07 (richiesta esplicita utente, "voglio ascoltare anche aste a 0 bid gia'
+# aperte, aperture in tempo reale, e le aste in scadenza"): due fonti di aste che
+# alimenta lo STESSO motore di valutazione (evaluate_auction).
+# FIX 21/07 v5 (richiesta esplicita utente, "trova un modo per non perderti nessuna
+# asta rilevante, senza appesantire, senza troppe notifiche"): rimosso il tetto di
+# valutazione dalle fasi NUOVE e ZEROBID -- sono le due fasi che garantiscono la
+# COPERTURA completa della whitelist, un tetto li' significava accumulare un arretrato
+# che poteva far perdere aste vere (bid altrui nel frattempo, o scadenza prima del
+# turno). SCADENZA_TOP_N resta invece un tetto voluto SOLO per la fase SCADENZA, che e'
+# un "ultima chance" per le aste piu' urgenti, non il meccanismo di copertura primario.
+# Per evitare il "delirio di notifiche" anche quando MOLTE aste sono appetibili insieme,
+# le notifiche Telegram non partono piu' una per asta: si accorpano in UN SOLO messaggio
+# per fase (vedi flush_phase_alerts), quindi al massimo 3 messaggi per ciclo completo,
+# indipendentemente da quante occasioni vengono trovate.
+#   FASE 1 "NUOVE": scan completo whitelist, valuta TUTTE le aste con id MAI visto
+#     prima in questa run -- cattura le aperture appena immesse sul mercato, nessuna
+#     esclusa.
+#   pausa CYCLE_PAUSE_SECONDS
+#   FASE 2 "ZEROBID": stessa scansione completa, valuta TUTTE le aste con bidsCount==0
+#     (nuove o vecchie che siano, non solo quelle appena viste in FASE 1).
+#   pausa CYCLE_PAUSE_SECONDS
+#   FASE 3 "SCADENZA": stessa scansione completa, ordinata per scadenza piu' vicina,
+#     valutate solo le prime SCADENZA_TOP_N (default 5) -- qui il tetto e' voluto.
+#   pausa CYCLE_PAUSE_SECONDS
+#   ricomincia da FASE 1. E' del tutto normale (e atteso) che le stesse aste in
+#   scadenza ricompaiano identiche a fine ciclo in FASE 3 -- la dedup (vedi
+#   process_incoming_auction) impedisce comunque una doppia notifica quando
+#   currentPrice/minNextBid sono identici a un evento gia' notificato.
+CYCLE_PHASE_SECONDS = float(os.environ.get('CYCLE_PHASE_SECONDS', '20'))
+CYCLE_PAUSE_SECONDS = float(os.environ.get('CYCLE_PAUSE_SECONDS', '20'))
+SCADENZA_TOP_N = int(os.environ.get('SCADENZA_TOP_N', '5'))
 
-AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
-CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
-# Parametri MakeOffer (ramo offerta scontata)
-OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'))
-OFFER_DURATION_DAYS = max(1, min(7, int(os.environ.get('OFFER_DURATION_DAYS', '1'))))
-OFFER_DURATION_SECONDS = OFFER_DURATION_DAYS * 86400
-MAX_PENDING_OFFERS = int(os.environ.get('MAX_PENDING_OFFERS', '10'))
-pending_offers_count = [0]  # contatore in-memory per run, richiesto da create_direct_offer
+# Ritardo prima della riverifica live pre-bid (il backend di Sorare a volte non e'
+# ancora "consistente" se riletto a distanza di meno di un secondo dalla scansione che
+# ha segnalato l'occasione).
+AUCTION_RECHECK_DELAY_SECONDS = float(os.environ.get('AUCTION_RECHECK_DELAY_SECONDS', '3'))
 
-# Set in-memory (per-run, non persistito) dei giocatori gia' scritti in blacklist per
-# copertura/media punti zero -- evita upsert ripetuti (lettura+riscrittura file) sullo
-# stesso slug se ricompare piu' volte nello stesso scan, senza rallentare il flusso.
-_gia_blacklistati_coverage_o_media_zero = set()
-
-# --- Stop automatico su fondi insufficienti (20/07, richiesta esplicita utente) ---
-# Se un tentativo di acquisto/offerta reale fallisce per mancanza di fondi, non ha
-# senso continuare l'esecuzione: ogni tentativo successivo fallirebbe allo stesso modo,
-# quindi il bot si ferma subito (chiude la connessione WebSocket) invece di continuare a
-# girare a vuoto per ore, e manda una notifica Telegram esplicita e diversa dalle
-# normali notifiche di caso trovato/fallito.
+# --- Stop automatico su fondi insufficienti (stesso principio del bot buyer): un bid
+# reale fallito per mancanza di fondi rende inutile continuare, ogni tentativo
+# successivo fallirebbe uguale -- ci si ferma subito invece di continuare a vuoto.
 INSUFFICIENT_FUNDS_STOP = [False]
 
-# --- Protezione "no ri-acquisto/ri-offerta stesso giocatore entro N giorni" -- ora un
-# unico tipo di riga nella lista nera (cooldown_acquisto), condiviso tra i due rami cosi'
-# uno non ripropone/ricompra un giocatore appena gestito dall'altro.
-PLAYER_COOLDOWN_HOURS = 24  # mantenuto per compatibilita' log/commenti esistenti
+
+# =====================================================================================
+# GraphQL: throttle, sessione persistente, browser Playwright per le chiamate critiche
+# (prepareBid/bid) -- infrastruttura IDENTICA a quella gia' validata nel bot buyer.
+# =====================================================================================
+GRAPHQL_MIN_INTERVAL_SECONDS = 0.35
+_graphql_last_call_ts = [0.0]
+_graphql_throttle_lock = threading.Lock()
 
 
-def _slug_cooldown(player_slug, is_in_season):
-    """Chiave usata SOLO per il cooldown acquisto/offerta: suffissa lo slug con
-    '-inseason' o '-classic' cosi' lo stesso giocatore, se esiste sia come carta
-    in_season che come classic, ha DUE cooldown indipendenti -- comprare/offrire
-    sulla versione in_season non blocca piu' la versione classic dello stesso
-    giocatore per 24h (richiesta esplicita utente 21/07). Le altre sezioni della
-    lista nera (blacklist manager/giocatore, thin_market) NON usano questo suffisso,
-    restano sullo slug puro."""
-    suffisso = 'inseason' if is_in_season else 'classic'
-    return f"{player_slug}-{suffisso}"
+def _graphql_throttle():
+    with _graphql_throttle_lock:
+        now = time.time()
+        wait = GRAPHQL_MIN_INTERVAL_SECONDS - (now - _graphql_last_call_ts[0])
+        if wait > 0:
+            time.sleep(wait)
+        _graphql_last_call_ts[0] = time.time()
 
 
-def is_player_in_cooldown(player_slug, is_in_season=True):
-    return _lista_nera_attiva('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season))
+def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Cookie': COOKIES,
+        'x-csrf-token': CSRF_TOKEN,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                       '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+        'Origin': 'https://sorare.com',
+        'Referer': 'https://sorare.com/',
+        'Accept-Language': 'it',
+        'sorare-client': 'Web',
+        'sorare-version': os.environ.get('SORARE_VERSION', '20260717144535'),
+        'sorare-build': os.environ.get(
+            'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+    }
+    if SORARE_DEVICE_FINGERPRINT:
+        headers['device_fingerprint'] = SORARE_DEVICE_FINGERPRINT
+    if extra_headers and isinstance(extra_headers, dict):
+        headers.update(extra_headers)
+    payload = {"query": query, "variables": variables or {}}
+    for attempt in range(max_retries):
+        _graphql_throttle()
+        r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+        if r.status_code == 429:
+            wait_seconds = min((2 ** attempt) * 2, 8.0)
+            log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
+                f"attendo {wait_seconds:.1f}s...")
+            time.sleep(wait_seconds)
+            continue
+        return r.json()
+    return {"errors": [{"message": "rate_limited_max_retries_exceeded"}]}
 
 
-def record_player_purchase(player_slug, is_in_season=True):
-    _lista_nera_upsert('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season),
-                        COOLDOWN_ACQUISTO_DEFAULT_DAYS)
-    log(f"[lista nera] registrato acquisto di {player_slug} "
-        f"({'in_season' if is_in_season else 'classic'}), cooldown "
-        f"{COOLDOWN_ACQUISTO_DEFAULT_DAYS:.1f}gg")
+_playwright_instance = None
+_playwright_browser = None
+_playwright_page = None
 
 
-def record_player_offer(player_slug, is_in_season=True):
-    _lista_nera_upsert('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season),
-                        COOLDOWN_ACQUISTO_DEFAULT_DAYS)
-    log(f"[lista nera] registrata offerta a {player_slug} "
-        f"({'in_season' if is_in_season else 'classic'}), cooldown "
-        f"{COOLDOWN_ACQUISTO_DEFAULT_DAYS:.1f}gg")
+def get_browser_page():
+    """Apre un browser Chrome invisibile con i cookie di sessione gia' pronti -- stessa
+    identica funzione del bot buyer (impronta browser vera per le chiamate critiche)."""
+    global _playwright_instance, _playwright_browser, _playwright_page
+    if _playwright_page is not None:
+        return _playwright_page
+
+    _playwright_instance = sync_playwright().start()
+    _playwright_browser = _playwright_instance.chromium.launch(headless=True)
+    context = _playwright_browser.new_context(
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                    '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
+    )
+    cookie_pairs = []
+    if COOKIES:
+        for pair in COOKIES.split(';'):
+            pair = pair.strip()
+            if '=' not in pair:
+                continue
+            name, value = pair.split('=', 1)
+            cookie_pairs.append({
+                'name': name.strip(), 'value': value.strip(),
+                'domain': '.sorare.com', 'path': '/',
+            })
+    if cookie_pairs:
+        context.add_cookies(cookie_pairs)
+        log(f"[playwright] iniettati {len(cookie_pairs)} cookie nel context")
+    else:
+        log("[playwright] ATTENZIONE: nessun cookie iniettato (COOKIES vuoto o malformato)")
+
+    page = context.new_page()
+    try:
+        log("[playwright] navigazione di riscaldamento: home page...")
+        page.goto('https://sorare.com/', wait_until='domcontentloaded', timeout=20000)
+        time.sleep(3)
+        log("[playwright] navigazione di riscaldamento: pagina di mercato...")
+        page.goto('https://sorare.com/football/market', wait_until='domcontentloaded', timeout=20000)
+        time.sleep(3)
+    except Exception as e:
+        log(f"[playwright] navigazione di riscaldamento fallita parzialmente (non bloccante): {e}")
+
+    _playwright_page = page
+    return page
 
 
-# --- Cache "mercato troppo sottile" -- ora tipo di riga 'thin_market' nella lista nera
-# unica (stesso principio della blacklist unita: se un ramo scarta un giocatore per
-# liquidita', l'altro non deve rifare la stessa query).
-THIN_MARKET_SKIP_HOURS = THIN_MARKET_DEFAULT_DAYS * 24  # mantenuto per compatibilita' log
+def close_browser():
+    global _playwright_instance, _playwright_browser, _playwright_page
+    try:
+        if _playwright_browser:
+            _playwright_browser.close()
+        if _playwright_instance:
+            _playwright_instance.stop()
+    except Exception as e:
+        log(f"[playwright] errore chiudendo il browser: {e}")
+    _playwright_instance = None
+    _playwright_browser = None
+    _playwright_page = None
 
 
-def is_player_in_thin_market_cache(player_slug, is_in_season=True):
-    """FIX 21/07 (bug segnalato dall'utente: classic thin market bloccava anche
-    l'in_season dello stesso giocatore, che aveva liquidita' normale): stesso
-    principio gia' applicato al cooldown acquisto -- suffisso -inseason/-classic
-    sullo slug, cosi' le due stagioni sono tracciate separatamente e una classic
-    sottile non blocca piu' la ricerca sull'in_season (e viceversa)."""
-    return _lista_nera_attiva('thin_market', _slug_cooldown(player_slug, is_in_season))
+def graphql_query_via_browser(query, variables=None):
+    """Chiamata GraphQL fatta DENTRO un vero browser Chrome (fetch()) invece che con
+    curl_cffi/requests -- stessa tecnica del bot buyer, usata SOLO per le chiamate
+    critiche del bid (prepareBid, bid) per l'impronta anti-fingerprint."""
+    page = get_browser_page()
+    payload = {"query": query, "variables": variables or {}}
+    js_code = """
+    async ([url, payload, csrfToken, deviceFingerprint]) => {
+        try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'x-csrf-token': csrfToken,
+            };
+            if (deviceFingerprint) {
+                headers['device_fingerprint'] = deviceFingerprint;
+            }
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: headers,
+                credentials: 'include',
+                body: JSON.stringify(payload),
+            });
+            const text = await resp.text();
+            return { status: resp.status, body: text };
+        } catch (e) {
+            return { status: 0, body: JSON.stringify({error: String(e)}) };
+        }
+    }
+    """
+    try:
+        result = page.evaluate(js_code, [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT])
+        body_text = result.get('body', '')
+        return json.loads(body_text)
+    except Exception as e:
+        log(f"[playwright graphql] eccezione: {e}")
+        return {"errors": [{"message": f"playwright_exception: {e}"}]}
 
 
-def record_thin_market_skip(player_slug, is_in_season=True):
-    _lista_nera_upsert('thin_market', _slug_cooldown(player_slug, is_in_season), THIN_MARKET_DEFAULT_DAYS)
+# =====================================================================================
+# Processo Node persistente per la firma -- infrastruttura IDENTICA a quella del bot
+# buyer (stesso sorare-sign/decrypt_and_sign.js, stesso protocollo a righe NDJSON).
+# =====================================================================================
+_node_process = None
+_node_process_lock = threading.Lock()
+_node_stdout_queue = None
+_node_stderr_tail = collections.deque(maxlen=20)
+_decrypted_key_cache = {}
+_encrypted_key_cache = {}
+_exchange_rate_id_cache = {}
 
+
+def _node_stdout_reader(proc, q):
+    try:
+        for line in proc.stdout:
+            q.put(line)
+    except Exception:
+        pass
+    q.put(None)
+
+
+def _node_stderr_reader(proc, tail):
+    try:
+        for line in proc.stderr:
+            tail.append(line.rstrip('\n'))
+    except Exception:
+        pass
+
+
+def _ensure_node_sign_process():
+    global _node_process, _node_stdout_queue
+    if _node_process is not None and _node_process.poll() is None:
+        return _node_process
+    if _node_process is not None:
+        log(f"[firma Node] il processo persistente precedente non e' piu' attivo "
+            f"(codice uscita {_node_process.poll()}), lo riavvio -- ultime righe stderr: "
+            f"{list(_node_stderr_tail)}")
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
+    log("[firma Node] avvio processo Node persistente per la firma...")
+    proc = subprocess.Popen(
+        ['node', script_path],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, bufsize=1,
+    )
+    q = queue.Queue()
+    threading.Thread(target=_node_stdout_reader, args=(proc, q), daemon=True).start()
+    threading.Thread(target=_node_stderr_reader, args=(proc, _node_stderr_tail), daemon=True).start()
+    _node_process = proc
+    _node_stdout_queue = q
+    return proc
+
+
+def close_node_sign_process():
+    global _node_process
+    with _node_process_lock:
+        if _node_process is not None:
+            try:
+                if _node_process.poll() is None:
+                    _node_process.stdin.close()
+                    _node_process.wait(timeout=5)
+            except Exception as e:
+                log(f"[firma Node] errore chiudendo il processo persistente: {e}")
+                try:
+                    _node_process.kill()
+                except Exception:
+                    pass
+            _node_process = None
+
+
+def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
+    """Firma UNA authorization request tramite il processo Node persistente. Identica
+    al bot buyer -- vedi commenti li' per il dettaglio del protocollo/ottimizzazioni."""
+    global _node_process
+    if 'decrypted_private_key' in _decrypted_key_cache:
+        payload = {
+            'decryptedPrivateKey': _decrypted_key_cache['decrypted_private_key'],
+            'authorizationRequest': authorization_request,
+        }
+    else:
+        payload = {
+            'password': password, 'encryptedPrivateKey': encrypted_private_key,
+            'iv': iv, 'salt': salt, 'authorizationRequest': authorization_request,
+        }
+    line = json.dumps(payload)
+
+    with _node_process_lock:
+        try:
+            proc = _ensure_node_sign_process()
+            q = _node_stdout_queue
+            proc.stdin.write(line + '\n')
+            proc.stdin.flush()
+        except Exception as e:
+            log(f"[firma Node] eccezione scrivendo la richiesta: {e}")
+            try:
+                if _node_process is not None:
+                    _node_process.kill()
+            except Exception:
+                pass
+            _node_process = None
+            return None
+
+        try:
+            raw = q.get(timeout=30)
+        except queue.Empty:
+            log("[firma Node] timeout (30s) in attesa della risposta")
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            _node_process = None
+            return None
+
+        if raw is None:
+            log(f"[firma Node] il processo e' terminato mentre aspettavo la risposta "
+                f"(ultime righe stderr: {list(_node_stderr_tail)})")
+            _node_process = None
+            return None
+
+    try:
+        output = json.loads(raw.strip())
+    except json.JSONDecodeError:
+        log(f"[firma Node] risposta non JSON valida: {raw!r}")
+        return None
+    if 'error' in output:
+        log(f"[firma Node] errore riportato dallo script: {output['error']}")
+        return None
+    if output.get('decryptedPrivateKey'):
+        _decrypted_key_cache['decrypted_private_key'] = output['decryptedPrivateKey']
+    return output.get('signature')
+
+
+def sign_all_authorizations(authorizations):
+    """Firma OGNI authorization request restituita da prepareBid (di solito una sola,
+    come per prepareAcceptOffer nel bot buyer, ma la documentazione ufficiale Sorare
+    mostra buildApprovals mappare su un ARRAY -- gestiamo quindi N authorization, non
+    diamo per scontato che sia sempre esattamente una). Ritorna la lista di dict
+    {fingerprint, signature} pronta per il campo 'approvals' della mutation bid, oppure
+    None se anche una sola firma fallisce (fail-safe: un bid con firme parziali non
+    avrebbe senso, meglio non tentarlo)."""
+    key_data = fetch_encrypted_private_key()
+    if not key_data:
+        log("[firma bid] STOP: chiave cifrata non recuperata")
+        return None
+    approvals = []
+    for auth in authorizations:
+        fingerprint = auth.get('fingerprint')
+        request = dict(auth.get('request') or {})
+        request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
+        signature = sign_authorization_via_node(
+            SORARE_WALLET_PASSWORD, key_data.get('encryptedPrivateKey'),
+            key_data.get('iv'), key_data.get('salt'), request,
+        )
+        if not signature:
+            log(f"[firma bid] STOP: firma fallita per authorization fingerprint={fingerprint}")
+            return None
+        approvals.append({
+            'fingerprint': fingerprint,
+            'mangopayWalletTransferApproval': {
+                'nonce': request.get('nonce'), 'signature': signature,
+            },
+        })
+    return approvals
+
+
+FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION = """
+mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
+  fetchEncryptedPrivateKey(input: $input) {
+    errors { message }
+    sorarePrivateKey {
+      encryptedPrivateKey
+      iv
+      salt
+    }
+  }
+}
+"""
+
+
+def fetch_encrypted_private_key():
+    """Identica al bot buyer -- cachata in memoria per l'intera run."""
+    if 'key_data' in _encrypted_key_cache:
+        return _encrypted_key_cache['key_data']
+    try:
+        data = graphql_query_via_browser(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
+        if data.get('errors'):
+            log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
+            return None
+        payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
+        payload_errors = payload.get('errors') or []
+        if payload_errors:
+            log(f"[chiave cifrata] errore payload: {payload_errors}")
+            return None
+        key_data = payload.get('sorarePrivateKey')
+        if not key_data:
+            log("[chiave cifrata] sorarePrivateKey assente nella risposta")
+            return None
+        log("[chiave cifrata] recuperata dal server e messa in cache per il resto della run")
+        _encrypted_key_cache['key_data'] = key_data
+        return key_data
+    except Exception as e:
+        log(f"[chiave cifrata] eccezione: {e}")
+        return None
+
+
+EXCHANGE_RATE_QUERY = """
+query ExchangeRateQuery {
+  config {
+    exchangeRate { id }
+  }
+}
+"""
+
+
+def get_exchange_rate_id():
+    """Identica al bot buyer -- cachata in memoria per l'intera run."""
+    if 'id' in _exchange_rate_id_cache:
+        return _exchange_rate_id_cache['id']
+    try:
+        data = graphql_query(EXCHANGE_RATE_QUERY)
+        rate_id = (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
+        if rate_id:
+            _exchange_rate_id_cache['id'] = rate_id
+        return rate_id
+    except Exception as e:
+        log(f"[exchange rate] errore: {e}")
+        return None
+
+
+def classify_bid_error(root_errors, payload_errors):
+    """Classifica gli errori di prepareBid/bid in categorie note -- stessa filosofia
+    identica a classify_prepare_accept_error nel bot buyer: ogni categoria = STOP, mai
+    retry automatico (un bid, una volta sola, mai ritirabile)."""
+    all_errors = list(root_errors or []) + list(payload_errors or [])
+    if not all_errors:
+        return 'nessun_errore', all_errors
+    combined_text = ' '.join(
+        str(e.get('message', '')) + ' ' + str(e.get('extensions', {}).get('code', ''))
+        for e in all_errors if isinstance(e, dict)
+    ).lower()
+    if any(kw in combined_text for kw in
+           ('insufficient', 'not_enough', 'balance', 'fondi', 'saldo')):
+        return 'fondi_insufficienti', all_errors
+    if any(kw in combined_text for kw in
+           ('currency', 'payment_method', 'unsupported', 'valuta')):
+        return 'valuta_non_supportata', all_errors
+    if any(kw in combined_text for kw in
+           ('not_found', 'expired', 'already', 'closed', 'cancelled', 'unavailable', 'not_available')):
+        return 'asta_non_disponibile', all_errors
+    if any(kw in combined_text for kw in ('outbid', 'too_low', 'min_next_bid', 'higher')):
+        return 'bid_troppo_basso', all_errors
+    return 'sconosciuto', all_errors
+
+
+def _is_insufficient_funds_error(error_message):
+    if not error_message:
+        return False
+    return 'fondi_insufficienti' in str(error_message).lower()
+
+
+# NOTA (21/07): mutation confermate dalla documentazione ufficiale Sorare
+# (github.com/sorare/api, sezione "Bidding on auction") -- non sono state scoperte per
+# tentativi, sono quelle documentate. Restano comunque da VALIDARE dal vivo in modalita'
+# diagnostica prima del primo bid reale, come qualunque altra integrazione con un'API
+# che non espone introspection: se qualcosa non torna (nome di campo cambiato,
+# struttura leggermente diversa), il primo errore GraphQL incontrato in AUCTION_LIVE_MODE
+# lo dira' chiaramente nei log, e va corretto qui.
+PREPARE_BID_MUTATION = """
+mutation PrepareBid($input: prepareBidInput!) {
+  prepareBid(input: $input) {
+    authorizations {
+      fingerprint
+      request {
+        ... on MangopayWalletTransferAuthorizationRequest {
+          currency
+          fiatAmount
+          mangopayWalletId
+          nonce
+          operationHash
+        }
+      }
+    }
+    errors { message }
+  }
+}
+"""
+
+# FIX 21/07 (confermato con una cattura REALE e RIUSCITA di una BidWithWalletMutation
+# dal vivo, mandata dall'utente): il campo root della mutation e' "bid", NON "tokenBid"
+# come avevo scritto prima -- e' l'opposto di quello che avevo assunto per analogia con
+# acceptOffer/prepareAcceptOffer. Il payload restituisce "tokenBid { id }" (con
+# quest'ordine dei nomi, si', e' un po' confusionario ma e' quello confermato dal vivo).
+BID_MUTATION = """
+mutation BidWithWalletMutation($input: bidInput!) {
+  bid(input: $input) {
+    tokenBid { id }
+    errors { message }
+  }
+}
+"""
+
+
+def prepare_bid(auction_id, amount_cents, exchange_rate_id):
+    """FASE 1: prepara il bid lato server (PrepareBid), ottiene le authorization da
+    firmare. Stesso schema a due fasi di prepare_accept_offer nel bot buyer.
+    NOTA: 'amount' nella documentazione ufficiale Sorare e' un intero in WEI per gli
+    esempi ETH, ma per i pagamenti in EUR/WALLET (stessa valuta usata ovunque nel bot
+    buyer, confermato dall'utente per le aste) il pattern osservato in prepareAcceptOffer/
+    prepareOffer e' sempre un intero in CENTESIMI di EUR -- qui amount_cents e' gia'
+    l'intero in centesimi, coerente con quel pattern (CONFERMATO dal vivo il 21/07: una
+    cattura reale di BidWithWalletMutation mostra esattamente amount="2476" per un bid
+    di 24.76EUR).
+    FIX 21/07 (v2, stessa cattura reale): settlementInfo nella mutation vera include
+    ANCHE platform e useAvailableCredits, non solo currency/paymentMethod/exchangeRateId
+    -- stessi due campi gia' usati in prepare_accept_offer/prepare_offer nel bot buyer,
+    mancavano qui."""
+    variables = {
+        "input": {
+            "auctionId": auction_id,
+            "amount": str(amount_cents),
+            "settlementInfo": {
+                "currency": "EUR",
+                "paymentMethod": "WALLET",
+                "exchangeRateId": exchange_rate_id,
+                "platform": "WEB",
+                "useAvailableCredits": False,
+            },
+        }
+    }
+    try:
+        data = graphql_query_via_browser(PREPARE_BID_MUTATION, variables)
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('prepareBid') or {}
+        payload_errors = payload.get('errors') or []
+        if root_errors or payload_errors:
+            category, all_errors = classify_bid_error(root_errors, payload_errors)
+            log(f"[prepare bid] fallita, categoria='{category}', errori={all_errors}")
+            return None, category
+        auths = payload.get('authorizations') or []
+        if not auths:
+            log("[prepare bid] nessuna authorization restituita")
+            return None, 'sconosciuto'
+        return auths, None
+    except Exception as e:
+        log(f"[prepare bid] eccezione: {e}")
+        return None, 'sconosciuto'
+
+
+def execute_bid(auction_id, amount_cents, exchange_rate_id, approvals):
+    """FASE 2: chiama davvero la mutation bid con le approvals firmate. Fail-safe
+    assoluto -- un solo tentativo, mai retry (un bid non e' ritirabile).
+    FIX 21/07 (cattura reale di un bid vero e riuscito): niente clientMutationId
+    nell'input reale osservato -- rimosso (non presente nella richiesta reale che ha
+    funzionato). settlementInfo con platform/useAvailableCredits, stesso fix di
+    prepare_bid sopra."""
+    variables = {
+        "input": {
+            "approvals": approvals,
+            "auctionId": auction_id,
+            "amount": str(amount_cents),
+            "settlementInfo": {
+                "currency": "EUR",
+                "paymentMethod": "WALLET",
+                "exchangeRateId": exchange_rate_id,
+                "platform": "WEB",
+                "useAvailableCredits": False,
+            },
+        }
+    }
+    try:
+        data = graphql_query_via_browser(BID_MUTATION, variables)
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('bid') or {}
+        payload_errors = payload.get('errors') or []
+        if root_errors or payload_errors:
+            category, all_errors = classify_bid_error(root_errors, payload_errors)
+            log(f"[bid] fallito, categoria='{category}', errori={all_errors}")
+            return False, category, str(all_errors)
+        bid_id = (payload.get('tokenBid') or {}).get('id')
+        log(f"[bid] successo, bid id={bid_id}")
+        return True, None, None
+    except Exception as e:
+        log(f"[bid] eccezione: {e}")
+        return False, 'eccezione', str(e)
+
+
+def execute_live_bid(auction_id, amount_eur):
+    """Orchestrazione completa (attiva SOLO se AUCTION_LIVE_MODE='si'): exchange rate
+    -> prepareBid -> firma di tutte le authorization -> bid. Fail-safe assoluto, un
+    solo tentativo secco -- un bid non e' ritirabile."""
+    log(f"[bid live] avvio -- auction_id={auction_id}, importo={amount_eur:.2f}EUR")
+    if not SORARE_WALLET_PASSWORD:
+        log("[bid live] STOP: SORARE_WALLET_PASSWORD non impostata")
+        return False, "SORARE_WALLET_PASSWORD non impostata"
+
+    exchange_rate_id = get_exchange_rate_id()
+    if not exchange_rate_id:
+        log("[bid live] STOP: exchange_rate_id non disponibile")
+        return False, "exchange_rate_id non disponibile"
+
+    amount_cents = int(round(amount_eur * 100))
+
+    authorizations, prepare_category = prepare_bid(auction_id, amount_cents, exchange_rate_id)
+    if not authorizations:
+        return False, f"prepareBid fallita [{prepare_category}]"
+    log(f"[bid live] step 1/3 OK: prepareBid ha restituito {len(authorizations)} "
+        f"authorization da firmare")
+
+    approvals = sign_all_authorizations(authorizations)
+    if not approvals:
+        return False, "firma fallita (vedi log [firma bid]/[firma Node] per il dettaglio)"
+    log(f"[bid live] step 2/3 OK: {len(approvals)} authorization firmate")
+
+    success, category, error = execute_bid(auction_id, amount_cents, exchange_rate_id, approvals)
+    if not success:
+        return False, f"bid mutation fallita [{category}]: {error}"
+    log("[bid live] step 3/3 OK: bid piazzato con successo")
+    return True, None
+
+
+# =====================================================================================
+# Prezzi -- multi-valuta (EUR/ETH/USD/GBP/SOL), identico al bot buyer/al notificatore
+# aste esistente.
+# =====================================================================================
 _FIAT_RATE_CACHE = {}
-
-
-def log(message):
-    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{ts}] {message}", flush=True)
 
 
 def get_eth_rate():
     try:
         r = requests.get(
-            "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur",
-            timeout=5
-        )
+            "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur", timeout=5)
         return float(r.json()['ethereum']['eur'])
     except Exception:
         return 3000.0
@@ -668,9 +1020,7 @@ def get_sol_eur_rate():
         return _FIAT_RATE_CACHE['sol']
     try:
         r = requests.get(
-            "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur",
-            timeout=5
-        )
+            "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur", timeout=5)
         rate = float(r.json()['solana']['eur'])
     except Exception:
         rate = 150.0
@@ -678,18 +1028,22 @@ def get_sol_eur_rate():
     return rate
 
 
+def wei_to_eur(wei_value, eth_rate):
+    if wei_value is None:
+        return None
+    try:
+        return float(wei_value) / 1e18 * eth_rate
+    except (TypeError, ValueError):
+        return None
+
+
 def eur_price_from_amounts(amounts, eth_rate):
-    """Identica alla versione in track.py: legge il prezzo di un annuncio in qualunque
-    valuta Sorare accetti (EUR/ETH/USD/GBP/SOL) e lo converte sempre in EUR."""
     if not amounts:
         return None
     if amounts.get('eurCents') is not None:
         return amounts['eurCents'] / 100
     if amounts.get('wei') is not None:
-        try:
-            return float(amounts['wei']) / 1e18 * eth_rate
-        except (TypeError, ValueError):
-            return None
+        return wei_to_eur(amounts['wei'], eth_rate)
     if amounts.get('usdCents') is not None:
         try:
             return amounts['usdCents'] / 100 * get_usd_eur_rate()
@@ -708,245 +1062,70 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
-GRAPHQL_MIN_INTERVAL_SECONDS_FAST = 0.05
-GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = 0.35
-GRAPHQL_429_COOLDOWN_SECONDS = 30.0
-_graphql_throttle_lock = threading.Lock()
-_graphql_last_call_ts = [0.0]
-_graphql_last_429_ts = [0.0]
-
-
-def _graphql_throttle():
-    with _graphql_throttle_lock:
-        now = time.time()
-        recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
-        min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
-        wait = min_interval - (now - _graphql_last_call_ts[0])
-        if wait > 0:
-            time.sleep(wait)
-        _graphql_last_call_ts[0] = time.time()
-
-
-# FIX 20/07 (decima ipotesi, dopo che tutte le altre 9 sono fallite su unknown_fingerprint):
-# usare un vero browser Chrome headless (Playwright) per le tre chiamate GraphQL
-# CRITICHE dell'acquisto (prepareAcceptOffer, fetchEncryptedPrivateKey, acceptOffer),
-# invece di curl_cffi. Il resto del bot (ricerca carte, prezzi, liquidita') continua a
-# usare curl_cffi via graphql_query() come prima, senza modifiche.
-_playwright_instance = None
-_playwright_browser = None
-_playwright_page = None
-
-
-def get_browser_page():
-    """Apre un browser Chrome invisibile (headless) con i cookie di sessione
-    gia' pronti, cosi' sembra un utente vero gia' loggato. Riusa lo stesso
-    browser per tutta la run (non lo riapre ogni volta).
-    FIX 20/07 (undicesima ipotesi, dopo che Playwright puro non ha risolto
-    unknown_fingerprint): oltre a sembrare un browser vero, proviamo a fargli
-    NAVIGARE un po' prima della chiamata critica -- non solo la home, ma
-    anche una pagina di mercato reale, con piccole pause. Ipotesi: un
-    eventuale fingerprint di device/sessione generato da JS potrebbe
-    richiedere che il browser abbia gia' 'vissuto' un minimo di navigazione
-    reale (localStorage/IndexedDB popolati) prima che il server lo consideri
-    legittimo."""
-    global _playwright_instance, _playwright_browser, _playwright_page
-    if _playwright_page is not None:
-        return _playwright_page
-
-    _playwright_instance = sync_playwright().start()
-    _playwright_browser = _playwright_instance.chromium.launch(headless=True)
-    context = _playwright_browser.new_context(
-        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                    '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
-    )
-
-    # Inietta i cookie di Sorare (stessa stringa che usiamo gia' in COOKIES)
-    # trasformandoli nel formato che Playwright vuole (lista di dict)
-    cookie_pairs = []
-    if COOKIES:
-        for pair in COOKIES.split(';'):
-            pair = pair.strip()
-            if '=' not in pair:
-                continue
-            name, value = pair.split('=', 1)
-            cookie_pairs.append({
-                'name': name.strip(),
-                'value': value.strip(),
-                'domain': '.sorare.com',
-                'path': '/',
-            })
-    if cookie_pairs:
-        context.add_cookies(cookie_pairs)
-        log(f"[playwright] iniettati {len(cookie_pairs)} cookie nel context "
-            f"(diagnostica: {[c['name'] for c in cookie_pairs][:5]}...)")
-    else:
-        log("[playwright] ATTENZIONE: nessun cookie iniettato (COOKIES vuoto o malformato)")
-
-    page = context.new_page()
-
-    # Navigazione "riscaldamento" (undicesima ipotesi): home -> pausa -> pagina
-    # di mercato reale -> pausa, prima di essere pronti per la chiamata critica.
-    # FIX 20/07: networkidle andava SEMPRE in timeout (30s) su GitHub Actions --
-    # probabilmente risorse di terze parti (analytics/tracking) che non
-    # completano mai il caricamento in un ambiente headless/datacenter.
-    # Passato a domcontentloaded, molto piu' affidabile e comunque sufficiente
-    # per far eseguire eventuali script di fingerprinting nella pagina.
+def send_telegram_msg(message):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML'}
     try:
-        log("[playwright] navigazione di riscaldamento: home page...")
-        page.goto('https://sorare.com/', wait_until='domcontentloaded', timeout=20000)
-        time.sleep(3)
-        log("[playwright] navigazione di riscaldamento: pagina di mercato...")
-        page.goto('https://sorare.com/football/market', wait_until='domcontentloaded', timeout=20000)
-        time.sleep(3)
+        r = requests.post(url, json=payload, timeout=10)
+        if not r.ok:
+            log(f"Errore invio Telegram (HTTP {r.status_code}): {r.text[:500]}")
+            # FIX (caso reale: testo dinamico con '<'/'>' non previsti, es. "asta conclusa
+            # <24h", ha rotto il parsing HTML e fatto fallire l'intero invio): se l'errore
+            # e' proprio di parsing entita', ritento UNA volta senza parse_mode, cosi' il
+            # messaggio arriva comunque (senza grassetto) invece di andare perso del tutto.
+            if r.status_code == 400 and 'parse entities' in r.text.lower():
+                payload_plain = {'chat_id': TELEGRAM_CHAT_ID, 'text': message}
+                r2 = requests.post(url, json=payload_plain, timeout=10)
+                if not r2.ok:
+                    log(f"Errore invio Telegram (ritento senza HTML, HTTP {r2.status_code}): {r2.text[:500]}")
     except Exception as e:
-        log(f"[playwright] navigazione di riscaldamento fallita parzialmente (non bloccante): {e}")
-
-    _playwright_page = page
-    return page
+        log(f"Errore invio Telegram: {e}")
 
 
-def close_browser():
-    """Chiude il browser alla fine (importante per non lasciare processi
-    appesi e sprecare tempo del workflow GitHub Actions)."""
-    global _playwright_instance, _playwright_browser, _playwright_page
-    try:
-        if _playwright_browser:
-            _playwright_browser.close()
-        if _playwright_instance:
-            _playwright_instance.stop()
-    except Exception as e:
-        log(f"[playwright] errore chiudendo il browser: {e}")
-    _playwright_instance = None
-    _playwright_browser = None
-    _playwright_page = None
+def build_card_link(player_slug, card_slug, serial_number=None):
+    """FIX 21/07, REVISIONATO 21/07 dopo nuovo caso reale (Ryan Porteous): l'euristica
+    "+1 sempre" (basata su 3 casi osservati dove il serial nello slug era sempre uno in
+    meno di quello vero) NON regge in generale -- su Porteous lo scarto era di 2, non di
+    1, a conferma che affidarsi al pattern dello slug e' intrinsecamente inaffidabile.
+
+    Fix definitivo: la query ora richiede anche il campo serialNumber (Int), verificato
+    dal self-check di avvio (validate_auction_schema, sulla query liveAuctions) --
+    quando disponibile e' quello il valore giusto da usare per costruire il link, il
+    numero di serie non va piu' indovinato dallo slug in nessun modo.
+
+    Fallback (solo se per qualche motivo serial_number non arriva, es. errore API): usa
+    lo slug cosi' com'e', SENZA alcuna correzione euristica -- meglio un link
+    potenzialmente col serial originale (a volte sbagliato di un numero non prevedibile)
+    che uno "corretto" con un'euristica ormai nota per essere inaffidabile."""
+    corrected_slug = card_slug
+    if serial_number is not None:
+        m = re.search(r'^(.*-)(\d+)$', card_slug)
+        if m:
+            prefix, _old_serial = m.groups()
+            corrected_slug = f"{prefix}{int(serial_number)}"
+    return f"https://sorare.com/it/football/players/{player_slug}?card={corrected_slug}"
 
 
-def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
-    """Fa una chiamata GraphQL usando fetch() DENTRO un vero browser Chrome
-    (non con curl_cffi/requests) -- cosi' la richiesta esce con l'impronta
-    autentica del browser (TLS, JS engine, eventuali controlli antibot lato
-    client), impossibile da imitare fino in fondo con librerie Python.
-    Usata SOLO per le tre chiamate critiche dell'acquisto (prepareAcceptOffer,
-    fetchEncryptedPrivateKey, acceptOffer) -- ipotesi 20/07 per unknown_fingerprint."""
-    page = get_browser_page()
-    payload = {"query": query, "variables": variables or {}}
-
-    js_code = """
-    async ([url, payload, csrfToken, deviceFingerprint]) => {
-        try {
-            const headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'x-csrf-token': csrfToken,
-            };
-            if (deviceFingerprint) {
-                headers['device_fingerprint'] = deviceFingerprint;
-            }
-            const resp = await fetch(url, {
-                method: 'POST',
-                headers: headers,
-                credentials: 'include',
-                body: JSON.stringify(payload),
-            });
-            const text = await resp.text();
-            return { status: resp.status, body: text };
-        } catch (e) {
-            return { status: 0, body: JSON.stringify({error: String(e)}) };
-        }
-    }
-    """
-
-    try:
-        result = page.evaluate(
-            js_code,
-            [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
-        )
-        body_text = result.get('body', '')
-        return json.loads(body_text)
-    except Exception as e:
-        log(f"[playwright graphql] eccezione: {e}")
-        return {"errors": [{"message": f"playwright_exception: {e}"}]}
-
-
-def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
-    """Versione semplificata (stessa base di track.py) del client GraphQL con backoff sui
-    429 -- niente rilevamento "ban a tempo fisso" qui, il volume di query di questo bot e'
-    molto piu' basso (esecuzioni brevi, manuali).
-    FIX 20/07 (ipotesi unknown_fingerprint): aggiunti header custom mancanti, confermati
-    dal vivo ispezionando una richiesta reale di PrepareAcceptOfferMutation dal browser
-    (sorare-client, sorare-version, sorare-build, sec-fetch-*, accept-language, origin,
-    referer) -- il bot prima mandava SOLO Content-Type/Cookie/x-csrf-token/User-Agent,
-    mancavano tutti questi header che identificano la richiesta come proveniente da un
-    client Web legittimo. sorare-version/sorare-build sono valori specifici di un
-    deployment del sito (cambiano ad ogni release) -- usiamo gli ultimi visti dal vivo
-    come default ragionevole, ma potrebbero invecchiare: se il problema persiste,
-    andrebbero riletti da una richiesta fresca del browser."""
-    headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Cookie': COOKIES,
-        'x-csrf-token': CSRF_TOKEN,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                       '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
-        'Origin': 'https://sorare.com',
-        'Referer': 'https://sorare.com/',
-        'Accept-Language': 'it',
-        'sorare-client': 'Web',
-        'sorare-version': os.environ.get('SORARE_VERSION', '20260717144535'),
-        'sorare-build': os.environ.get(
-            'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-site',
-    }
-    if SORARE_DEVICE_FINGERPRINT:
-        headers['device_fingerprint'] = SORARE_DEVICE_FINGERPRINT
-    if extra_headers and isinstance(extra_headers, dict):
-        headers.update(extra_headers)
-    payload = {"query": query, "variables": variables or {}}
-    for attempt in range(max_retries):
-        _graphql_throttle()
-        if _HAS_CURL_CFFI:
-            r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
-        else:
-            r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
-        if r.status_code == 429:
-            _graphql_last_429_ts[0] = time.time()
-            wait_seconds = min((2 ** attempt) * 2, 8.0)
-            log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
-                f"attendo {wait_seconds:.1f}s...")
-            time.sleep(wait_seconds)
-            continue
-        return r.json()
-    return {"errors": [{"message": "rate_limited_max_retries_exceeded"}]}
-
-
+# =====================================================================================
+# Riferimento di mercato: minimo LIVE di vendita diretta in_season + ultima asta
+# conclusa nelle ultime 24h (se piu' bassa, vince lei). Vedi note di design in cima al
+# file.
+# =====================================================================================
 LIVE_OFFERS_QUERY = """
 query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
   tokens {
     liveSingleSaleOffers(playerSlug: $slug, last: $n, before: $cursor) {
-      totalCount
       pageInfo { hasPreviousPage startCursor }
       nodes {
         status
-        sender { ... on User { slug } }
-        receiverSide { amounts { eurCents wei usdCents gbpCents lamport } anyCards { slug } }
+        receiverSide { amounts { eurCents wei usdCents gbpCents lamport } }
         senderSide {
           anyCards {
-            slug
             rarityTyped
             sport
-            sportSeason { name }
             inSeasonEligible
-            ... on Card {
-              coverageStatus
-            }
-            anyPlayer {
-              activeClub { domesticLeague { slug } }
-              lastTenSo5Appearances
-              lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
-              lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
-            }
           }
         }
       }
@@ -960,21 +1139,12 @@ MAX_PAGES = 20
 
 
 def fetch_all_live_offers(player_slug):
-    """Identica alla versione in track.py: pagina TUTTI gli annunci live di un giocatore
-    (il server tronca a ~50 per richiesta). FIX 19/07 (richiesta esplicita utente, caso
-    Julien Celestine): i venditori blacklistati (es. Clem777) NON vengono piu' esclusi qui
-    -- le loro carte contano comunque per il vero minimo/secondo prezzo di mercato, altrimenti
-    il margine calcolato risulta gonfiato (visto dal vivo: un annuncio intermedio di Clem777
-    veniva "saltato", facendo sembrare il margine piu' alto di quanto fosse in realta').
-    L'esclusione dei blacklistati resta, ma solo al momento di DECIDERE se acquistare (vedi
-    evaluate_event): se il vero minimo risulta di un venditore blacklistato, il bot scarta il
-    caso invece di comprare da lui."""
     all_nodes = []
     cursor = None
     for _ in range(MAX_PAGES):
         data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": PAGE_SIZE, "cursor": cursor})
         if data.get('errors'):
-            log(f"[paginazione annunci live] errore per {player_slug}: {data['errors']}")
+            log(f"[annunci live] errore per {player_slug}: {data['errors']}")
             break
         conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
         nodes = conn.get('nodes') or []
@@ -988,1905 +1158,873 @@ def fetch_all_live_offers(player_slug):
     return all_nodes
 
 
-def get_bucket_prices(player_slug, eth_rate):
-    """Legge TUTTI gli annunci live in_season/classic del giocatore in un solo fetch, come
-    get_bucket_prices in track.py. Restituisce {'in_season': [(prezzo, card_slug, seller_slug), ...],
-    'classic': [(prezzo, card_slug, seller_slug), ...]}, entrambe ordinate per prezzo crescente.
-    seller_slug incluso (FIX 19/07) per poter distinguere, a valle, se il vero minimo e' di un
-    venditore blacklistato -- vedi nota in fetch_all_live_offers ed evaluate_event."""
-    nodes = fetch_all_live_offers(player_slug)
-    raw = {'in_season': [], 'classic': []}
-    # FIX 21/07 (richiesta esplicita utente: il log per-carta era troppo ridondante --
-    # un giocatore con tanti annunci scartati per lo stesso motivo produceva decine di
-    # righe identiche). Contiamo gli scarti per motivo e logghiamo UNA riga di riepilogo
-    # per giocatore/chiamata invece di una riga per ogni singola carta.
-    skipped_coverage = []
-    skipped_zero_avg = []
-    for node in nodes:
-        if node.get('status') != 'opened':
-            continue
-        if (node.get('receiverSide') or {}).get('anyCards'):
-            continue  # scambio carta-per-carta, non una vendita in denaro
-        seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
-        cards = (node.get('senderSide') or {}).get('anyCards') or []
-        match = None
-        for c in cards:
-            if c.get('rarityTyped') != 'limited':
-                continue
-            if c.get('sport') != 'FOOTBALL':
-                continue
-            if c.get('coverageStatus') == 'NOT_COVERED':
-                skipped_coverage.append(c.get('slug'))
-                # FIX 21/07 (correzione): oltre a scartare la carta per questo confronto,
-                # blacklista il giocatore permanentemente (365gg) -- non solo per questa
-                # run, richiesta esplicita utente. Set in-memory evita upsert ripetuti
-                # (lettura+riscrittura file) se lo stesso slug ricompare piu' volte
-                # nello stesso scan.
-                if player_slug not in _gia_blacklistati_coverage_o_media_zero:
-                    _lista_nera_upsert('giocatore', player_slug, PLAYER_BLACKLIST_DEFAULT_365_DAYS)
-                    _gia_blacklistati_coverage_o_media_zero.add(player_slug)
-                    log(f"[lista nera] {player_slug} blacklistato 365gg -- carta non coperta "
-                        f"da SO5 (coverageStatus=NOT_COVERED)")
-                continue  # carta in una squadra non coperta da SO5 (es. finita in un
-                          # campionato che Sorare non copre), punti non conteggiati --
-                          # richiesta esplicita utente 21/07, non va considerata
-                          # nemmeno per il calcolo del minimo/margine
-            player_c = c.get('anyPlayer') or {}
-            last_ten_avg = player_c.get('lastTenPlayedAvgScore')
-            last_forty_avg = player_c.get('lastFortyAvgScore')
-            if last_ten_avg == 0.0 or last_forty_avg == 0.0:
-                skipped_zero_avg.append(c.get('slug'))
-                # FIX 21/07 (correzione): stessa blacklist automatica 365gg, media punti
-                # zero nelle ultime 10 O nelle ultime 40 (OR, non AND).
-                if player_slug not in _gia_blacklistati_coverage_o_media_zero:
-                    _lista_nera_upsert('giocatore', player_slug, PLAYER_BLACKLIST_DEFAULT_365_DAYS)
-                    _gia_blacklistati_coverage_o_media_zero.add(player_slug)
-                    log(f"[lista nera] {player_slug} blacklistato 365gg -- media punti 0 "
-                        f"nelle ultime 10 e/o nelle ultime 40 giocate")
-                continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
-                          # filtro/motivazione di coverageStatus, richiesta utente 21/07
-            match = c
-            break
-        if not match:
-            continue
-        price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
-        if price is None:
-            continue
-        bucket = 'in_season' if match.get('inSeasonEligible') else 'classic'
-        raw[bucket].append((price, match.get('slug'), seller_slug))
-    if skipped_coverage:
-        log(f"[scarto coverage] {player_slug}: {len(skipped_coverage)} carta/e esclusa/e dal "
-            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5): "
-            f"{', '.join(skipped_coverage)}")
-    if skipped_zero_avg:
-        log(f"[scarto media 0] {player_slug}: {len(skipped_zero_avg)} carta/e esclusa/e dal "
-            f"confronto -- media 0 nelle ultime 10 giocate e/o nelle ultime 40: "
-            f"{', '.join(skipped_zero_avg)}")
-    for key in ('in_season', 'classic'):
-        raw[key].sort(key=lambda p: p[0])
-    return raw
-
-
-def validate_live_offers_schema():
-    """Self-check di avvio (FIX diagnostica 'bot piantato'): fa UNA query di prova con
-    LIVE_OFFERS_QUERY (gli stessi campi SO5/coverageStatus usati per ogni valutazione)
-    su un giocatore reale e molto scambiato, cosi' se un campo dello schema (es.
-    coverageStatus, lastTenSo5Appearances, ecc.) e' invalido o e' cambiato lato Sorare,
-    lo scopriamo SUBITO con un errore chiaro invece di scoprirlo dopo ore di ascolto
-    a vuoto (fetch_all_live_offers fallisce silenziosamente per OGNI evento e
-    evaluate_event scarta tutto con 'if not prices: return False', senza che il bot
-    sembri fare nulla di sbagliato nei log)."""
-    probe_slug = "kylian-mbappe"
-    data = graphql_query(LIVE_OFFERS_QUERY, {"slug": probe_slug, "n": 1, "cursor": None})
-    if data.get('errors'):
-        msg = (f"[SELF-CHECK FALLITO] La query LIVE_OFFERS_QUERY (campi SO5/coverageStatus) "
-               f"ritorna errore GraphQL su un giocatore di prova ({probe_slug}): {data['errors']}. "
-               f"Questo significa che OGNI valutazione durante l'ascolto fallirebbe silenziosamente "
-               f"(nessun caso verrebbe mai trovato, ma il bot sembrerebbe girare normalmente). "
-               f"Controlla i nomi dei campi coverageStatus/lastTenSo5Appearances/"
-               f"lastTenPlayedSo5AverageScore/lastFortySo5AverageScore nello schema Sorare.")
-        log(msg)
-        send_telegram_msg(f"BOT SUPREMO -- ERRORE CRITICO ALL'AVVIO\n\n{msg}")
-        return False
-    log("[self-check] Schema LIVE_OFFERS_QUERY (coverageStatus/SO5) validato correttamente.")
-
-    return True
-
-
-def is_asia_americas_excluded_league(league_slug):
-    """I 2 campionati (MLS, K League) per cui il confronto con il classic va escluso --
-    restano solo con la logica in_season pura gia' in produzione. J League ESCLUSA da questo
-    filtro su decisione dell'utente (19/07): per J League vale la logica normale in_season+
-    classic come tutti gli altri campionati. Vedi nota nell'area di memoria del progetto:
-    motivazione non tecnica, richiesta esplicita dell'utente. Se league_slug e' None/
-    sconosciuto (es. giocatore attualmente senza squadra), NON viene considerato escluso --
-    si applica comunque in_season+classic, comportamento di default corretto e verificato."""
-    return league_slug in EXCLUDED_LEAGUE_SLUGS
-
-
-def get_in_season_prices(player_slug, eth_rate, league_slug):
-    """Restituisce (prices_da_confrontare, is_excluded_league) dove prices_da_confrontare
-    e' una lista (prezzo, card_slug) ordinata crescente:
-    - Per MLS/K League/J League (is_excluded_league=True): SOLO in_season, comportamento
-      identico a prima del confronto con classic (nessuna modifica di logica per questi 3).
-    - Per tutti gli altri campionati: in_season + classic UNITI in un'unica lista ordinata,
-      trattando il classic come "un ulteriore annuncio in_season" ai fini del vero minimo/
-      secondo prezzo -- criterio esplicito richiesto dall'utente."""
-    buckets = get_bucket_prices(player_slug, eth_rate)
-    excluded = is_asia_americas_excluded_league(league_slug)
-    if excluded:
-        return buckets['in_season'], True
-    combined = buckets['in_season'] + buckets['classic']
-    combined.sort(key=lambda p: p[0])
-    if AUTOBUY_DIAGNOSTIC and buckets['classic']:
-        log(f"[diagnostica lega] player={player_slug} league_slug={league_slug!r} -- "
-            f"unito in_season ({len(buckets['in_season'])} annunci) con classic "
-            f"({len(buckets['classic'])} annunci) per il confronto sul vero minimo")
-    return combined, False
-
-
-def send_telegram_msg(message):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        return
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML'}
+def get_live_min_direct_sale_in_season(player_slug, eth_rate):
+    """Minimo REALE attualmente in vendita diretta, SOLO carte Limited in_season
+    (inSeasonEligible=True) -- riferimento di mercato per il calcolo del bid. Ritorna
+    None se non c'e' nessun annuncio in vendita diretta in_season per quel giocatore."""
     try:
-        r = requests.post(url, json=payload, timeout=10)
-        if not r.ok:
-            log(f"Errore invio Telegram (HTTP {r.status_code}): {r.text[:500]}")
+        nodes = fetch_all_live_offers(player_slug)
+        prices = []
+        for node in nodes:
+            if node.get('status') != 'opened':
+                continue
+            cards = (node.get('senderSide') or {}).get('anyCards') or []
+            match = False
+            for c in cards:
+                if c.get('rarityTyped') != 'limited':
+                    continue
+                if c.get('sport') != 'FOOTBALL':
+                    continue
+                if not c.get('inSeasonEligible'):
+                    continue
+                match = True
+                break
+            if not match:
+                continue
+            price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
+            if price is None:
+                continue
+            prices.append(price)
+        if not prices:
+            return None
+        return min(prices)
     except Exception as e:
-        log(f"Errore invio Telegram: {e}")
+        if AUCTION_DIAGNOSTIC:
+            log(f"[vendita diretta live] eccezione per {player_slug}: {e}")
+        return None
 
 
-def build_card_link(player_slug, card_slug):
-    base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
-    return f"{base_link}?card={card_slug}" if card_slug else base_link
-
-
-# --- Protezione "liquidita' minima del giocatore" (richiesta esplicita utente, 19/07) ---
-# Motivazione: se un giocatore ha pochissime transazioni recenti, un annuncio "affare" puo'
-# essere frutto di un evento anomalo (es. infortunio, con manager che svendono a raffica le
-# poche carte rimaste) piuttosto che un vero errore di prezzo su un mercato liquido -- meglio
-# ignorare il caso piuttosto che rischiare di comprare su un mercato cosi' sottile. Query
-# riusata da track.py (funzione fetch_player_recent_direct_buys, gia' confermata funzionante
-# dal vivo): tokens.tokenPrices(playerSlug, rarity: limited) con deal.type -- a differenza di
-# track.py (che filtra SOLO deal.type == 'SINGLE_SALE_OFFER' per isolare lo sniping), qui
-# contiamo QUALSIASI transazione (deal.type presente, qualunque valore: SINGLE_SALE_OFFER,
-# SINGLE_BUY_OFFER, DIRECT_OFFER, aste, ecc. -- richiesta esplicita "di qualunque tipo incluso
-# le aste, offerta diretta, scambio"), perche' qui l'obiettivo e' misurare la liquidita'
-# generale del giocatore, non isolare un tipo di transazione specifico.
-RECENT_TRANSACTIONS_QUERY = """
-query RecentTransactionsQuery($p: String!) {
+# NOTA IMPORTANTE (21/07): query costruita unendo due varianti gia' viste funzionare
+# separatamente altrove (tokens.tokenPrices con deal.__typename nel bot buyer, per
+# distinguere un'asta conclusa da altre transazioni; amounts+date nel vecchio
+# notificatore aste, per il prezzo). Non e' stata ancora verificata dal vivo con
+# ENTRAMBI i gruppi di campi insieme nella stessa chiamata -- se il server la rifiuta,
+# il primo errore GraphQL nei log lo dira' chiaramente (vedi validate_auction_schema
+# piu' sotto, che la testa gia' all'avvio prima di iniziare ad ascoltare). Le aste
+# valgono solo per carte Limited in_season (confermato dall'utente: "per le classic non
+# esistono aste"), quindi ogni transazione di tipo TokenAuction qui e' automaticamente
+# in_season -- nessun filtro stagione aggiuntivo necessario.
+LAST_TRANSACTIONS_QUERY = """
+query LastTransactionsQuery($p: String!) {
   tokens {
     tokenPrices(playerSlug: $p, rarity: limited) {
       date
+      amounts { eurCents wei usdCents gbpCents lamport }
       deal {
         __typename
-        ... on TokenOffer {
-          type
-        }
       }
     }
   }
 }
 """
 
-# FIX 21/07 (bug reale segnalato dall'utente: offerta fatta su una carta CLASSIC coreana
-# con una sola transazione negli ultimi 7 giorni, che avrebbe dovuto essere scartata dal
-# controllo di liquidita'): RECENT_TRANSACTIONS_QUERY sopra conta le transazioni di
-# QUALUNQUE tipo di carta del giocatore (in_season + classic mescolate insieme), quindi
-# un giocatore con market in_season vivace ma classic pressoche' morto (o viceversa)
-# passava comunque la soglia minima grazie alle transazioni dell'ALTRA stagione -- il
-# controllo di liquidita' non stava proteggendo la stagione che stavamo davvero per
-# comprare/offrire.
-#
-# FIX 21/07 SERA (causa reale degli scarti a 0 transazioni di questa sera): il primo
-# tentativo filtrava lato server con un argomento $seasonEligibility: SeasonEligibility!
-# indovinato per analogia, mai confermato via introspection -- restituiva sempre zero
-# nodi SENZA generare errori GraphQL, quindi il self-check e il fallback automatico non
-# si accorgevano del problema. Query riscritta senza quell'argomento: prende tutti i
-# tokenPrices col campo booleano card.inSeasonEligible (stesso campo gia' confermato
-# funzionante altrove nel file), e il filtro per stagione lo fa
-# _count_transactions_from_nodes lato Python (season_filter=is_in_season). Se questa
-# query fallisce comunque, il bot NON blocca l'avvio per questo -- ripiega
-# automaticamente sulla query combinata di prima (comportamento precedente, imperfetto
-# ma funzionante) con un avviso loggato UNA sola volta."""
-RECENT_TRANSACTIONS_QUERY_BY_SEASON = """
-query RecentTransactionsBySeasonQuery($p: String!) {
-  anyPlayer(slug: $p) {
-    tokenPrices(rarity: limited) {
-      nodes {
-        date
-        deal {
-          __typename
-          ... on TokenOffer {
-            type
-          }
-        }
-        card {
-          inSeasonEligible
-        }
-      }
-    }
-  }
-}
-"""
 
-# Doppio layer di protezione liquidita' (richiesta esplicita utente, 19/07): la finestra
-# breve (7gg) da sola potrebbe far passare un giocatore con un breve picco isolato di
-# transazioni ma comunque poco liquido nel complesso -- aggiunta una seconda soglia su
-# una finestra piu' lunga (30gg) come controllo incrociato. ENTRAMBE le condizioni devono
-# essere soddisfatte perche' il giocatore passi (basta che UNA delle due fallisca per
-# scartare il caso).
-MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '4'))
-RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '7'))
-MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '5'))
-TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
+def get_last_concluded_auction_price(player_slug, eth_rate):
+    """Prezzo dell'ultima asta CONCLUSA per questo giocatore, SOLO se conclusa entro
+    LAST_AUCTION_REFERENCE_WINDOW_HOURS (default 24h) -- altrimenti None (riferimento
+    troppo vecchio, ignorato, richiesta esplicita utente 21/07)."""
+    try:
+        data = graphql_query(LAST_TRANSACTIONS_QUERY, {"p": player_slug})
+        if data.get('errors'):
+            # FIX 21/07 v5 (richiesta esplicita utente, "il log e' troppo pesante"):
+            # questo errore e' FREQUENTE e NORMALE (tanti giocatori, specie in leghe di
+            # nicchia, non hanno alcuna transazione registrata) -- non blocca nulla, il
+            # bot ricade sul minimo live. Log spostato dietro AUCTION_DIAGNOSTIC.
+            if AUCTION_DIAGNOSTIC:
+                log(f"[ultima asta] errore GraphQL per {player_slug}: {data['errors']}")
+            return None
+        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
+    except Exception as e:
+        if AUCTION_DIAGNOSTIC:
+            log(f"[ultima asta] eccezione per {player_slug}: {e}")
+        return None
 
-
-def _count_transactions_from_nodes(nodes, season_filter=None):
-    """Fattorizzata da count_recent_transactions: conta le transazioni valide (short/long
-    window) da una lista di nodi tokenPrices, qualunque sia la query che li ha prodotti.
-
-    season_filter: se non None (True=in_season, False=classic), scarta i nodi il cui
-    campo card.inSeasonEligible non corrisponde -- usato solo dalla query per stagione
-    (RECENT_TRANSACTIONS_QUERY_BY_SEASON, che porta quel campo); la query combinata di
-    fallback non ha quel campo nei nodi quindi li passa tutti (season_filter=None)."""
     now = datetime.datetime.now(datetime.timezone.utc)
-    cutoff_short = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
-    cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
-    count_short = 0
-    count_long = 0
+    cutoff = now - datetime.timedelta(hours=LAST_AUCTION_REFERENCE_WINDOW_HOURS)
+    best_date = None
+    best_price = None
     for n in nodes:
-        if season_filter is not None:
-            card = n.get('card') or {}
-            if bool(card.get('inSeasonEligible')) != season_filter:
-                continue
         deal = n.get('deal') or {}
-        deal_typename = deal.get('__typename')
-        is_countable = bool(deal.get('type')) or deal_typename in ('TokenAuction', 'TokenPrimaryOffer')
-        if not is_countable:
+        if deal.get('__typename') != 'TokenAuction':
             continue
         date_str = n.get('date') or ''
         try:
             dt = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         except (ValueError, AttributeError):
             continue
-        if dt >= cutoff_long:
-            count_long += 1
-            if dt >= cutoff_short:
-                count_short += 1
-    return count_short, count_long
+        if dt < cutoff:
+            continue
+        if best_date is None or dt > best_date:
+            price = eur_price_from_amounts(n.get('amounts'), eth_rate)
+            if price is not None:
+                best_date = dt
+                best_price = price
+    return best_price
 
 
-def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
-    """Ritorna una tupla (count_7d, count_30d): numero di transazioni di player_slug
-    negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni.
+def validate_auction_schema():
+    """Self-check di avvio (stesso principio gia' validato nel bot buyer): prova le due
+    query di riferimento (annunci live in_season + ultime transazioni con deal+amounts)
+    su un giocatore reale PRIMA di iniziare il ciclo di tracking, cosi' un problema di schema si
+    scopre in pochi secondi invece che dopo ore di ascolto a vuoto."""
+    probe_slug = "kylian-mbappe"
+    ok = True
 
-    FIX 21/07 SERA (v2, richiesta esplicita utente): il tentativo precedente filtrava
-    per stagione (is_in_season) su OGNI campionato, usando una query separata verso il
-    server (RECENT_TRANSACTIONS_QUERY_BY_SEASON) che interroga di nuovo tutte le
-    transazioni del giocatore. Il problema: quel filtro veniva applicato SEMPRE, anche
-    per i campionati "normali" dove classic+in_season vanno gia' considerati insieme
-    (vedi is_asia_americas_excluded_league) -- risultato: per un giocatore con market
-    in_season vivace ma prevalentemente classic (o viceversa), il filtro scartava
-    erroneamente le transazioni "giuste" con lo stesso identico bug che il primo fix
-    voleva risolvere, solo ribaltato.
+    data = graphql_query(LIVE_OFFERS_QUERY, {"slug": probe_slug, "n": 1, "cursor": None})
+    if data.get('errors'):
+        msg = (f"[SELF-CHECK FALLITO] Query annunci live (inSeasonEligible) fallisce su "
+               f"{probe_slug}: {data['errors']}")
+        log(msg)
+        send_telegram_msg(f"BOT SUPREMO ASTE -- ERRORE ALL'AVVIO\n\n{msg}")
+        ok = False
+    else:
+        log("[self-check] Query annunci live (vendita diretta in_season) validata.")
 
-    FIX CORRETTO: il filtro per stagione (season_filter) viene applicato SOLO per
-    MLS/K-League (is_asia_americas_excluded_league(league_slug)==True) -- le uniche 2
-    leghe per cui il confronto classic/in_season e' ESCLUSO per design (vedi
-    get_in_season_prices). Per tutti gli altri campionati, si conta come sempre
-    TUTTE le transazioni (in_season+classic mescolate), perche' li' la logica del
-    resto del bot considera comunque le due stagioni insieme per il calcolo del
-    minimo/margine -- ha senso che anche la liquidita' segua la stessa logica.
+    data3 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 1})
+    if data3.get('errors'):
+        # FIX 21/07 v3 (WebSocket rimosso): questa query ora e' l'UNICA fonte di dati
+        # per tutte e 3 le fasi del ciclo (NUOVE/ZEROBID/SCADENZA) -- un suo fallimento
+        # non e' piu' un avviso, blocca l'avvio (prima poteva contare sul WS come
+        # fallback, ora non piu').
+        msg = (f"[SELF-CHECK FALLITO] Query liveAuctions (usata da TUTTE le fasi del "
+               f"ciclo di tracking, include bidsCount) fallisce: {data3['errors']}. "
+               f"Senza questa query il bot non ha alcuna fonte di dati -- blocco l'avvio.")
+        log(msg)
+        send_telegram_msg(f"BOT SUPREMO ASTE -- ERRORE ALL'AVVIO\n\n{msg}")
+        ok = False
+    else:
+        log("[self-check] Query liveAuctions (usata da tutte e 3 le fasi del ciclo, "
+            "bidsCount incluso) validata.")
 
-    Ritorna (None, None) se la query fallisce. Fail-safe: il chiamante NON deve
-    bloccare l'acquisto solo per questo."""
-    excluded_league = is_asia_americas_excluded_league(league_slug)
+    data2 = graphql_query(LAST_TRANSACTIONS_QUERY, {"p": probe_slug})
+    if data2.get('errors'):
+        msg = (f"[SELF-CHECK FALLITO] Query ultime transazioni (deal.__typename + amounts "
+               f"insieme) fallisce su {probe_slug}: {data2['errors']}. Il riferimento "
+               f"'ultima asta conclusa nelle 24h' NON funzionera' finche' non si sistema "
+               f"questa query -- il bot puo' comunque continuare usando SOLO il minimo "
+               f"live come riferimento, ma e' meno preciso di quanto pensato.")
+        log(msg)
+        send_telegram_msg(f"BOT SUPREMO ASTE -- AVVISO ALL'AVVIO\n\n{msg}")
+        # NON blocchiamo l'avvio per questo -- il minimo live da solo resta un
+        # riferimento valido, solo meno completo. Il blocco vero scatta solo se
+        # ANCHE gli annunci live falliscono (vedi sopra).
+    else:
+        log("[self-check] Query ultime transazioni (asta conclusa + prezzo) validata.")
 
-    if excluded_league:
-        # Solo per MLS/K-League: serve sapere la stagione ESATTA della carta, quindi
-        # usiamo la query con campo card.inSeasonEligible e filtriamo lato Python.
+    return ok
+
+
+# =====================================================================================
+# Query per lo scan periodico (usate da tutte e 3 le fasi del ciclo di tracking) --
+# arricchite con inSeasonEligible e domesticLeague (serve alla whitelist campionati) e
+# serialNumber (serve al link carta corretto, vedi build_card_link).
+# =====================================================================================
+AUCTION_BY_ID_QUERY = """
+query GetAuctionById($id: String!) {
+  tokens {
+    auction(id: $id) {
+      id
+      currentPrice
+      minNextBid
+      endDate
+      open
+      cancelled
+    }
+  }
+}
+"""
+
+LIVE_AUCTIONS_QUERY = """
+query ListLiveAuctions($n: Int!, $cursor: String) {
+  tokens {
+    liveAuctions(last: $n, before: $cursor) {
+      pageInfo { hasPreviousPage startCursor }
+      nodes {
+        id
+        currentPrice
+        minNextBid
+        endDate
+        open
+        cancelled
+        bidsCount
+        anyCards {
+          slug
+          serialNumber
+          rarityTyped
+          sport
+          inSeasonEligible
+          anyPlayer {
+            slug
+            displayName
+            activeClub { domesticLeague { slug } }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+LIVE_AUCTIONS_MAX_PAGES = int(os.environ.get('LIVE_AUCTIONS_MAX_PAGES', '200'))
+
+
+def fetch_live_auctions_page(n):
+    """RINOMINATA in sostanza -- ora pagina attraverso TUTTE le aste live disponibili
+    (richiesta esplicita utente 21/07, dopo aver scoperto che Evander e Carles Gil,
+    entrambe aste whitelist a 0 bid su giocatori di valore, non venivano mai viste
+    perche' non rientravano nella finestra delle 50 aste piu' recenti su TUTTO Sorare,
+    non filtrate per lega). Stessa tecnica di paginazione a cursore gia' validata su
+    liveSingleSaleOffers (fetch_all_live_offers) -- prima pagina before=None, poi si
+    avanza con pageInfo.startCursor finche' hasPreviousPage e' vero o si raggiunge
+    LIVE_AUCTIONS_MAX_PAGES (tetto di sicurezza per non restare bloccati se il totale
+    di aste live crescesse enormemente).
+    FIX 21/07 v3 (caso reale osservato: mercato con 2000+ aste live su TUTTO Sorare, il
+    vecchio tetto di 40 pagine/2000 aste veniva raggiunto ARTIFICIALMENTE -- non era la
+    fine naturale della paginazione, quindi aste whitelist oltre quella soglia
+    restavano invisibili): tetto alzato a 200 pagine (10000 aste), e il log ora dice
+    ESPLICITAMENTE se lo stop e' dovuto al tetto (possibile dato incompleto) o alla
+    fine naturale della paginazione (dato completo).
+    'n' resta il nome storico del parametro ma ora e' la dimensione di OGNI pagina
+    (sempre 50), non piu' il totale massimo recuperato."""
+    all_nodes = []
+    cursor = None
+    pages_fetched = 0
+    hit_page_cap = True
+    for _ in range(LIVE_AUCTIONS_MAX_PAGES):
         try:
-            data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON, {"p": player_slug})
-            if data.get('errors'):
-                log(f"[liquidita'] ATTENZIONE: query di liquidita' per stagione fallita "
-                    f"per {player_slug} ({data['errors']}) -- ripiego sulla query "
-                    f"combinata (in_season+classic mescolate) per questo giocatore.")
-            else:
-                nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
-                return _count_transactions_from_nodes(nodes, season_filter=is_in_season)
+            data = graphql_query(LIVE_AUCTIONS_QUERY, {"n": n, "cursor": cursor})
         except Exception as e:
-            log(f"[liquidita'] ATTENZIONE: eccezione nella query di liquidita' per "
-                f"stagione per {player_slug} ({e}) -- ripiego sulla query combinata.")
-
-    # Tutti gli altri campionati (o fallback su errore/eccezione per MLS/K-League):
-    # conta TUTTE le transazioni (in_season+classic mescolate), coerente col resto
-    # della logica di calcolo minimo/margine per questi campionati.
-    try:
-        data = graphql_query(RECENT_TRANSACTIONS_QUERY, {"p": player_slug})
+            log(f"[liveAuctions] eccezione pagina {pages_fetched + 1}: {e}")
+            hit_page_cap = False
+            break
         if data.get('errors'):
-            log(f"[liquidita'] errore GraphQL per {player_slug}: {data['errors']}")
-            return None, None
-        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
-    except Exception as e:
-        log(f"[liquidita'] eccezione per {player_slug}: {e}")
-        return None, None
-    return _count_transactions_from_nodes(nodes)
-
-
-EXCHANGE_RATE_QUERY = """
-query ExchangeRateQuery {
-  config {
-    exchangeRate { id }
-  }
-}
-"""
-
-
-def get_exchange_rate_id():
-    """Recupera l'id del tasso di cambio corrente (serve a PrepareAcceptOfferMutation/
-    PrepareOfferMutation), stessa query ExchangeRateQuery vista nel flusso reale di
-    acquisto in browser.
-    OTTIMIZZAZIONE VELOCITA' (20/07, richiesta esplicita utente -- ogni millisecondo
-    conta nello sniping): CACHATO in memoria per l'intera durata del run, stesso
-    principio gia' usato per fetch_encrypted_private_key. Il tasso di cambio (qui
-    sempre EUR, la valuta di acquisto/offerta e' sempre EUR) non cambia abbastanza in
-    fretta da giustificare una query di rete separata ad OGNI singolo tentativo --
-    prima query del run la recupera, tutte le successive riusano lo stesso valore
-    senza contattare di nuovo il server. Elimina una chiamata di rete intera dal
-    percorso critico di ogni acquisto/offerta.
-    """
-    try:
-        data = graphql_query(EXCHANGE_RATE_QUERY)
-        rate_id = (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
-        return rate_id
-    except Exception as e:
-        log(f"[prepare accept] errore lettura tasso di cambio: {e}")
-        return None
-
-PREPARE_ACCEPT_OFFER_MUTATION = """
-mutation PrepareAcceptOfferMutation($input: prepareAcceptOfferInput!) {
-  prepareAcceptOffer(input: $input) {
-    authorizations {
-      fingerprint
-      id
-      request {
-        ... on MangopayWalletTransferAuthorizationRequest {
-          currency
-          amount
-          mangopayWalletId
-          nonce
-          operationHash
-        }
-      }
-    }
-    errors { message }
-    primaryOffer { id }
-  }
-}
-"""
-
-
-def classify_prepare_accept_error(root_errors, payload_errors):
-    """Classifica gli errori di PrepareAcceptOfferMutation/AcceptOfferMutation in categorie
-    note, per poter loggare/notificare in modo chiaro E per dare a fase 2 (automazione
-    completa) un segnale univoco su cosa e' successo. Finche' non osserviamo dal vivo i
-    messaggi esatti per fondi insufficienti / valuta non supportata / offerta scaduta,
-    questa funzione e' VOLUTAMENTE conservativa: qualunque errore non riconosciuto finisce
-    in 'sconosciuto', mai in una categoria che potrebbe indurre un retry o un tentativo
-    alternativo automatico. Principio fisso per fase 2: ogni categoria = STOP, mai retry.
-    Ritorna (category, raw_errors) dove category e' una delle stringhe:
-    'fondi_insufficienti', 'valuta_non_supportata', 'offerta_non_disponibile',
-    'nessun_errore', 'sconosciuto'."""
-    all_errors = list(root_errors or []) + list(payload_errors or [])
-    if not all_errors:
-        return 'nessun_errore', all_errors
-
-    combined_text = ' '.join(
-        str(e.get('message', '')) + ' ' + str(e.get('extensions', {}).get('code', ''))
-        for e in all_errors if isinstance(e, dict)
-    ).lower()
-
-    # Parole chiave PROVVISORIE (da confermare/affinare al primo caso reale osservato) --
-    # non togliamo mai un errore dalla categoria 'sconosciuto' solo per somiglianza vaga.
-    if any(kw in combined_text for kw in
-           ('insufficient', 'not_enough', 'balance', 'fondi', 'saldo')):
-        return 'fondi_insufficienti', all_errors
-    if any(kw in combined_text for kw in
-           ('currency', 'payment_method', 'unsupported', 'valuta')):
-        return 'valuta_non_supportata', all_errors
-    if any(kw in combined_text for kw in
-           ('not_found', 'expired', 'already', 'sold', 'unavailable', 'not_available')):
-        return 'offerta_non_disponibile', all_errors
-
-    return 'sconosciuto', all_errors
-
-
-# FIX BUG CRITICO (20/07): durante la fusione dei due bot, la funzione di
-# classificazione errori del ramo MakeOffer (classify_prepare_offer_error) e' stata
-# accorpata in classify_prepare_accept_error, ma create_direct_offer/prepare_offer
-# continuavano a chiamare il vecchio nome -- causava NameError ad OGNI offerta live
-# reale (visto dal vivo: caso Sean Johnson e Leandro Paredes, quest'ultimo sniperato
-# nel frattempo perche' l'offerta non e' mai partita a causa di questo crash). La
-# logica di classificazione e' identica per entrambi i rami (stessi messaggi
-# GraphQL/categorie), quindi alias diretto, nessuna duplicazione.
-classify_prepare_offer_error = classify_prepare_accept_error
-
-
-def prepare_accept_offer(offer_id):
-    """FASE 2 (prima meta'): 'prenota'/valida l'offerta lato server chiamando la stessa
-    PrepareAcceptOfferMutation usata dal sito quando l'utente clicca 'Acquista', PRIMA
-    ancora che l'utente clicchi -- riduce la finestra in cui un altro manager potrebbe
-    comprare la carta nel frattempo. NON firma nulla (nessuna chiave privata coinvolta):
-    restituisce solo l'operationHash/nonce che servirebbero alla firma, dati utili da
-    includere nella notifica per velocizzare la conferma manuale. Ritorna la tupla
-    (dict 'authorizations[0].request', categoria_errore) -- il dict e' None se la
-    chiamata fallisce, e categoria_errore e' valorizzata SOLO in quel caso (es.
-    'valuta_non_supportata' per annunci in ETH/crypto, non gestibili dall'acquisto
-    automatico) cosi' il chiamante puo' distinguere questo caso da un fallimento
-    generico invece di loggare sempre lo stesso messaggio. Il click finale
-    dell'utente sul sito resta INVARIATO e necessario (fase 2 = opzione "conferma manuale",
-    vedi nota progetto)."""
-    exchange_rate_id = get_exchange_rate_id()
-    if not exchange_rate_id:
-        log("[prepare accept] exchange_rate_id non ottenuto, impossibile procedere")
-        return None, None
-    variables = {
-        "input": {
-            "offerId": offer_id,
-            "attemptReference": None,
-            "settlementInfo": {
-                "currency": "EUR",
-                "exchangeRateId": exchange_rate_id,
-                "paymentMethod": "WALLET",
-                "platform": "WEB",
-                "useAvailableCredits": False,
-            },
-        }
-    }
-    try:
-        data = graphql_query_via_browser(PREPARE_ACCEPT_OFFER_MUTATION, variables)
-        root_errors = data.get('errors')
-        payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
-        payload_errors = payload.get('errors') or []
-
-        if root_errors or payload_errors:
-            category, all_errors = classify_prepare_accept_error(root_errors, payload_errors)
-            log(f"[prepare accept] fallita, categoria='{category}', errori={all_errors}")
-            return None, category
-
-        auths = payload.get('authorizations') or []
-        if not auths:
-            log("[prepare accept] nessuna authorization restituita, categoria='sconosciuto'")
-            return None, 'sconosciuto'
-        # Restituiamo fingerprint + request (con __typename incluso) -- servono ENTRAMBI a
-        # sign_authorization_via_node/signAuthorizationRequest quando si attivera' la firma
-        # automatica (opzione 1, non ancora collegata a nulla qui). Oggi 'fingerprint' non
-        # viene ancora usato da nessuna parte del bot.
-        auth = auths[0]
-        request = dict(auth.get('request') or {})
-        request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
-        # FIX 19/07 (velocizzazione sniping): esponiamo anche exchange_rate_id gia'
-        # ottenuto qui, cosi' execute_live_purchase puo' riusarlo invece di rifare la
-        # stessa query GraphQL una seconda volta -- ogni millisecondo conta nello sniping.
-        # FIX 20/07 (nuovo tentativo unknown_fingerprint): espongo anche l'id completo
-        # dell'authorization ("TokenService::Core::MangopayWalletTransferAuthorization:
-        # UUID"), diverso dal fingerprint (che e' sempre lo stesso valore fisso in ogni
-        # test, confermato anche nel caso riuscito -- probabilmente identifica il TIPO
-        # di authorization, non l'istanza specifica). L'id invece cambia sempre, ad ogni
-        # chiamata -- e' l'ipotesi piu' plausibile di identificatore reale da correlare
-        # con fetchEncryptedPrivateKey.
-        return {'fingerprint': auth.get('fingerprint'), 'request': request,
-                'exchange_rate_id': exchange_rate_id, 'authorization_id': auth.get('id')}, None
-    except Exception as e:
-        log(f"[prepare accept] eccezione: {e}")
-        return None, 'sconosciuto'
-
-
-import subprocess
-import queue
-import collections
-
-# OTTIMIZZAZIONE VELOCITA' SNIPING (21/07, richiesta esplicita utente): il processo
-# Node per la firma non viene piu' avviato da zero ad OGNI acquisto/offerta -- resta
-# vivo per tutta la run e riceve richieste ripetute via un protocollo a righe
-# (NDJSON) su stdin/stdout, vedi sorare-sign/decrypt_and_sign.js. Avviare Node e
-# caricare @sorare/crypto costa tipicamente qualche centinaio di millisecondi:
-# prima veniva pagato ad ogni singolo tentativo, ora si paga UNA SOLA VOLTA
-# (idealmente gia' durante il warm-up all'avvio, vedi main()). Un thread separato
-# legge le risposte dallo stdout del processo cosi' il chiamante puo' aspettarle
-# con un timeout vero (niente rischio di restare bloccati per sempre se il
-# processo Node si pianta senza rispondere).
-_node_process = None
-_node_process_lock = threading.Lock()
-_node_stdout_queue = None
-_node_stderr_tail = collections.deque(maxlen=20)
-
-
-def _node_stdout_reader(proc, q):
-    """Gira in un thread dedicato per tutta la vita del processo Node: legge una
-    riga alla volta dal suo stdout e la mette in coda. Quando lo stdout si chiude
-    (processo terminato/crashato), mette None in coda cosi' chi e' in attesa lo sa
-    subito invece di restare appeso fino al timeout."""
-    try:
-        for line in proc.stdout:
-            q.put(line)
-    except Exception:
-        pass
-    q.put(None)
-
-
-def _node_stderr_reader(proc, tail):
-    """Thread dedicato per lo stderr del processo Node: lo teniamo solo per
-    diagnostica (ultime righe, utili nei log se una richiesta fallisce o il
-    processo muore), non blocca mai nessuno."""
-    try:
-        for line in proc.stderr:
-            tail.append(line.rstrip('\n'))
-    except Exception:
-        pass
-
-
-def _ensure_node_sign_process():
-    """Ritorna il processo Node persistente per la firma, avviandolo (o
-    riavviandolo se e' morto) se necessario. Chiamata sempre sotto
-    _node_process_lock dal chiamante."""
-    global _node_process, _node_stdout_queue
-    if _node_process is not None and _node_process.poll() is None:
-        return _node_process
-
-    if _node_process is not None:
-        log(f"[firma Node] il processo persistente precedente non e' piu' attivo "
-            f"(codice uscita {_node_process.poll()}), lo riavvio -- ultime righe stderr: "
-            f"{list(_node_stderr_tail)}")
-
-    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
-    log("[firma Node] avvio processo Node persistente per la firma "
-        "(una tantum/riavvio, poi resta vivo e riusato per tutta la run)...")
-    proc = subprocess.Popen(
-        ['node', script_path],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        text=True, bufsize=1,  # line-buffered, essenziale per il protocollo a righe
-    )
-    q = queue.Queue()
-    threading.Thread(target=_node_stdout_reader, args=(proc, q), daemon=True).start()
-    threading.Thread(target=_node_stderr_reader, args=(proc, _node_stderr_tail), daemon=True).start()
-    _node_process = proc
-    _node_stdout_queue = q
-    return proc
-
-
-def close_node_sign_process():
-    """Chiude il processo Node persistente a fine run (chiamata da close_browser/
-    finally in main()), stesso principio di pulizia gia' applicato al browser
-    Playwright -- non lasciare processi appesi al termine del workflow."""
-    global _node_process
-    with _node_process_lock:
-        if _node_process is not None:
-            try:
-                if _node_process.poll() is None:
-                    _node_process.stdin.close()
-                    _node_process.wait(timeout=5)
-            except Exception as e:
-                log(f"[firma Node] errore chiudendo il processo persistente: {e}")
-                try:
-                    _node_process.kill()
-                except Exception:
-                    pass
-            _node_process = None
-
-
-def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
-    """Invia una richiesta di firma al processo Node PERSISTENTE (vedi
-    _ensure_node_sign_process sopra) tramite il protocollo a righe di
-    sorare-sign/decrypt_and_sign.js: una riga JSON in stdin, una riga JSON in
-    risposta da stdout, timeout vero via thread separato.
-
-    Lo script Node decripta la chiave privata (PBKDF2 + AES-GCM, stesso algoritmo usato
-    dal sito sorare.com) e poi chiama @sorare/crypto.signAuthorizationRequest per
-    ottenere la signature.
-
-    OTTIMIZZAZIONE VELOCITA' (20/07 + 21/07, richiesta esplicita utente -- ogni
-    millisecondo conta nello sniping): la chiave privata decriptata e' SEMPRE la
-    stessa per tutta la sessione (stessa password/encrypted_private_key/iv/salt,
-    gia' cachati a monte in _encrypted_key_cache) -- rifare il decrypt PBKDF2(50000
-    iterazioni)+AES-GCM ad OGNI singolo acquisto/offerta e' uno spreco puro. Dalla
-    SECONDA chiamata in poi nella stessa sessione, saltiamo il decrypt passando
-    direttamente la chiave gia' in chiaro allo script Node (campo
-    'decryptedPrivateKey'). IN PIU' (21/07): il processo Node stesso non viene piu'
-    riavviato ad ogni chiamata -- resta vivo per tutta la run, eliminando anche il
-    costo fisso di avvio Node + caricamento di @sorare/crypto da ogni singolo
-    tentativo (prima pagato sempre, ora pagato una volta sola).
-
-    Ritorna la stringa signature (da usare in approvals[0].mangopayWalletTransferApproval)
-    oppure None se qualcosa fallisce (password sbagliata, script non trovato, dipendenze
-    npm non installate, timeout, processo morto, ecc.) -- logga sempre il motivo."""
-    global _node_process
-    if 'decrypted_private_key' in _decrypted_key_cache:
-        payload = {
-            'decryptedPrivateKey': _decrypted_key_cache['decrypted_private_key'],
-            'authorizationRequest': authorization_request,
-        }
+            log(f"[liveAuctions] errore pagina {pages_fetched + 1}: {data['errors']}")
+            hit_page_cap = False
+            break
+        conn = (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {})
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        pages_fetched += 1
+        page_info = conn.get('pageInfo') or {}
+        if not page_info.get('hasPreviousPage'):
+            hit_page_cap = False
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            hit_page_cap = False
+            break
+    if hit_page_cap:
+        log(f"[liveAuctions] ATTENZIONE -- tetto di {LIVE_AUCTIONS_MAX_PAGES} pagine "
+            f"raggiunto ({len(all_nodes)} aste), la paginazione NON era finita: possibili "
+            f"aste oltre questo punto non incluse in questa scansione. Se capita spesso, "
+            f"alzare LIVE_AUCTIONS_MAX_PAGES.")
     else:
-        payload = {
-            'password': password,
-            'encryptedPrivateKey': encrypted_private_key,
-            'iv': iv,
-            'salt': salt,
-            'authorizationRequest': authorization_request,
-        }
-    line = json.dumps(payload)
+        log(f"[liveAuctions] {pages_fetched} pagine scansionate, {len(all_nodes)} aste "
+            f"totali (paginazione completata)")
+    return all_nodes
 
-    with _node_process_lock:
-        try:
-            proc = _ensure_node_sign_process()
-            q = _node_stdout_queue
-            proc.stdin.write(line + '\n')
-            proc.stdin.flush()
-        except Exception as e:
-            log(f"[firma Node] eccezione scrivendo la richiesta al processo persistente "
-                f"(lo forzo a ripartire al prossimo tentativo): {e}")
-            try:
-                if _node_process is not None:
-                    _node_process.kill()
-            except Exception:
-                pass
-            _node_process = None
-            return None
 
-        try:
-            raw = q.get(timeout=30)
-        except queue.Empty:
-            log("[firma Node] timeout (30s) in attesa della risposta dal processo "
-                "persistente -- lo forzo a ripartire al prossimo tentativo")
-            try:
-                proc.kill()
-            except Exception:
-                pass
-            _node_process = None
-            return None
-
-        if raw is None:
-            log(f"[firma Node] il processo persistente e' terminato mentre aspettavo "
-                f"la risposta (ultime righe stderr: {list(_node_stderr_tail)}) -- "
-                f"ripartira' al prossimo tentativo")
-            _node_process = None
-            return None
-
-    try:
-        output = json.loads(raw.strip())
-    except json.JSONDecodeError:
-        log(f"[firma Node] risposta non JSON valida: {raw!r}")
+def _seconds_until_end(end_date_str):
+    if not end_date_str:
         return None
-    if 'error' in output:
-        log(f"[firma Node] errore riportato dallo script: {output['error']}")
-        return None
-    # Se lo script ha restituito la chiave decriptata (prima chiamata della sessione),
-    # la mettiamo in cache per le chiamate successive.
-    if output.get('decryptedPrivateKey'):
-        _decrypted_key_cache['decrypted_private_key'] = output['decryptedPrivateKey']
-    return output.get('signature')
-
-
-FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION = """
-mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
-  fetchEncryptedPrivateKey(input: $input) {
-    errors { message }
-    sorarePrivateKey {
-      encryptedPrivateKey
-      iv
-      salt
-    }
-  }
-}
-"""
-
-# FIX 20/07 (nuovo tentativo, dopo che cache+header non hanno risolto unknown_fingerprint):
-# proviamo a passare l'id completo dell'authorization (o il fingerprint) come possibile
-# parametro atteso da fetchEncryptedPrivateKey -- finora chiamata sempre con input
-# completamente vuoto. Se il campo non esiste nello schema, GraphQL rispondera' con un
-# errore esplicito del tipo "Field 'xxx' is not defined" (stesso pattern gia' visto con
-# coverageStatus), in tal caso ripieghiamo silenziosamente sulla chiamata con input vuoto
-# (comportamento precedente, per non introdurre una regressione se l'ipotesi e' sbagliata).
-FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION = """
-mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
-  fetchEncryptedPrivateKey(input: $input) {
-    errors { message }
-    sorarePrivateKey {
-      encryptedPrivateKey
-      iv
-      salt
-    }
-  }
-}
-"""
-
-# FIX 20/07 (scoperta chiave, confermata dal vivo su un acquisto reale completato con
-# successo): il flusso REALE del browser va DIRETTAMENTE da PrepareAcceptOfferMutation
-# ad AcceptOfferMutation -- fetchEncryptedPrivateKey non compare MAI nel network
-# catturato durante un acquisto vero, nemmeno subito dopo aver inserito la password nel
-# popup "Sblocca il tuo wallet" (0 richieste GraphQL in quel momento). La chiave e'
-# quindi probabilmente decriptata/tenuta in memoria LOCALE dal browser per tutta la
-# sessione, non richiesta al server ad ogni singolo acquisto. Il bot invece la
-# richiamava ad ogni tentativo -- comportamento anomalo rispetto al pattern reale,
-# sospettato causa di "unknown_fingerprint". Fix: cache in-memory a livello di modulo,
-# la chiave viene recuperata dal server SOLO alla prima chiamata della sessione/run,
-# poi riusata per tutti gli acquisti successivi.
-_encrypted_key_cache = {}
-
-# Cache separata per la chiave privata GIA' DECRIPTATA (in chiaro, esadecimale) --
-# diversa da _encrypted_key_cache sopra (quella tiene encryptedPrivateKey/iv/salt
-# ancora cifrati, cosi' come arrivano dal server). Popolata da sign_authorization_via_node
-# dopo il primo decrypt riuscito della sessione, poi riusata per saltare PBKDF2+AES-GCM
-# nelle chiamate successive (vedi commento dettagliato in sign_authorization_via_node).
-_decrypted_key_cache = {}
-
-
-def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_id=None):
-    """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
-    (nome/struttura CONFERMATI dal vivo il 19/07 catturando via DevTools la vera
-    richiesta che il sito manda durante un'offerta reale -- NON e' una query su
-    currentUser.sorarePrivateKey, quella torna sempre null). Ritorna il dict
-    {encryptedPrivateKey, iv, salt} o None se fallisce per qualunque motivo.
-    CACHATA in memoria (vedi nota sopra): la query GraphQL viene fatta solo la prima
-    volta per l'intera esecuzione del bot, le chiamate successive riusano lo stesso
-    risultato senza contattare di nuovo il server.
-    FIX 20/07 (nona ipotesi -- body-based scartato in precedenza, schema rifiuta
-    authorizationId/fingerprint/offerId come campi dell'input): proviamo stavolta a
-    passare fingerprint/authorizationId come HEADER HTTP della richiesta invece che nel
-    body GraphQL -- variante concettualmente diversa, mai testata finora."""
-    if 'key_data' in _encrypted_key_cache:
-        return _encrypted_key_cache['key_data']
-
-    extra_headers = {}
-    if fingerprint:
-        extra_headers['fingerprint'] = fingerprint
-        extra_headers['Fingerprint'] = fingerprint
-        extra_headers['x-fingerprint'] = fingerprint
-    if authorization_id:
-        extra_headers['authorization-id'] = authorization_id
-
     try:
-        data = graphql_query_via_browser(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
-        if data.get('errors'):
-            log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
-            log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
-            return None
-        payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
-        payload_errors = payload.get('errors') or []
-        if payload_errors:
-            log(f"[chiave cifrata] errore payload: {payload_errors}")
-            log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
-            return None
-        key_data = payload.get('sorarePrivateKey')
-        if not key_data:
-            log("[chiave cifrata] sorarePrivateKey assente nella risposta")
-            return None
-        log("[chiave cifrata] recuperata dal server e messa in cache per il resto della run "
-            "(non verra' richiesta di nuovo finche' il bot non riparte)")
-        _encrypted_key_cache['key_data'] = key_data
-        return key_data
-    except Exception as e:
-        log(f"[chiave cifrata] eccezione: {e}")
+        end_dt = datetime.datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+        return (end_dt - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+    except (ValueError, TypeError):
         return None
 
 
-ACCEPT_OFFER_MUTATION = """
-mutation AcceptOfferMutation($input: acceptOfferInput!) {
-  acceptOffer(input: $input) {
-    errors { message }
-  }
-}
-"""
+def _auction_league_slug(auction):
+    """Stessa identica estrazione lega gia' usata dentro evaluate_auction -- fattorizzata
+    qui per poter filtrare whitelist PRIMA di passare le aste a evaluate_auction (richiesta
+    esplicita utente: filtro whitelist applicato subito, non dopo)."""
+    cards = auction.get('anyCards') or []
+    for c in cards:
+        if c.get('rarityTyped') != 'limited' or c.get('sport') != 'FOOTBALL' or not c.get('inSeasonEligible'):
+            continue
+        player = c.get('anyPlayer') or {}
+        return ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug', '').lower()
+    return None
 
 
-def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
-    """Ultimo passo del flusso di acquisto reale: completa DAVVERO l'operazione.
-    Fail-safe assoluto -- qualunque errore ritorna (False, categoria, messaggio_errore),
-    MAI un'eccezione non gestita, MAI un retry automatico. La categoria riusa
-    classify_prepare_accept_error (stessa logica gia' usata per prepare_accept_offer:
-    fondi_insufficienti/valuta_non_supportata/offerta_non_disponibile/sconosciuto) cosi'
-    l'utente capisce SUBITO dal log/notifica il tipo di problema, senza dover decifrare
-    il messaggio GraphQL grezzo."""
-    variables = {
-        "input": {
-            "offerId": offer_id,
-            "migrationData": None,
-            "approvals": [{
-                "fingerprint": fingerprint,
-                "mangopayWalletTransferApproval": {
-                    "nonce": nonce,
-                    "signature": signature,
-                },
-            }],
-            "settlementInfo": {
-                "currency": "EUR",
-                "exchangeRateId": exchange_rate_id,
-                "paymentMethod": "WALLET",
-                "platform": "WEB",
-                "useAvailableCredits": False,
-            },
-        },
-    }
-    try:
-        data = graphql_query_via_browser(ACCEPT_OFFER_MUTATION, variables)
-        root_errors = data.get('errors')
-        payload = (data.get('data') or {}).get('acceptOffer') or {}
-        payload_errors = payload.get('errors') or []
-        if root_errors or payload_errors:
-            category, all_errors = classify_prepare_accept_error(root_errors, payload_errors)
-            log(f"[accept offer] fallita, categoria='{category}', errori={all_errors}")
-            return False, category, str(all_errors)
-        # FIX 20/07: il campo 'offer' non esiste piu' nello schema acceptOfferPayload
-        # (errore "Field 'offer' doesn't exist" osservato dal vivo) -- probabilmente
-        # Sorare ha cambiato la struttura del payload di risposta. Senza introspection
-        # disponibile (disabilitata su Sorare) non possiamo vedere il nome esatto del
-        # campo sostitutivo -- determiniamo il successo SOLO dall'assenza di errori
-        # (root_errors/payload_errors), gia' verificata sopra.
-        log("[accept offer] successo (nessun errore restituito dal server)")
-        return True, None, None
-    except Exception as e:
-        log(f"[accept offer] eccezione: {e}")
-        return False, 'eccezione', str(e)
+class _SharedListenerState:
+    """Stato condiviso tra le 3 fasi del ciclo di tracking (FIX 21/07 v3: ora un ciclo
+    sequenziale in un solo thread, il lock resta comunque per sicurezza) -- seen_events
+    per la dedup notifiche, known_auction_ids per riconoscere le aste "nuove" in FASE 1,
+    stats per i contatori, pending_alerts per accumulare le occasioni trovate in UNA
+    fase e mandarle come UN SOLO messaggio Telegram a fine fase (FIX 21/07 v5, richiesta
+    esplicita utente: "senza troppe notifiche" -- anche se in una fase sono TUTTE
+    appetibili, arriva un solo messaggio consolidato, mai uno a testa)."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.seen_events = set()
+        self.known_auction_ids = set()
+        self.stats = {}
+        self.pending_alerts = []
 
 
-def execute_live_purchase(offer_id, prepared):
-    """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
-    AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
-    ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
-    altrimenti -- MAI retry, MAI tentativi alternativi, un solo tentativo secco. Ogni
-    step logga il proprio esito (successo o fallimento) per poter capire SUBITO dai log
-    quale step specifico e' fallito, senza dover dedurlo dal messaggio finale.
-    IMPORTANTE (20/07): fetch_encrypted_private_key() va chiamata SOLO ora, DOPO che
-    prepare_accept_offer() e' gia' stata completata con successo (vedi nota in
-    evaluate_event) -- un tentativo di parallelizzare le due chiamate ha causato
-    "unknown_fingerprint" in 3 test su 3 dal vivo, il fingerprint deve esistere
-    lato server prima che questa chiamata possa risolversi."""
-    log(f"[acquisto live] avvio -- offer_id={offer_id}")
+def process_incoming_auction(auction, eth_rate, state, source):
+    """Punto di ingresso UNICO per tutte e 3 le fasi del ciclo (NUOVE/ZEROBID/SCADENZA)
+    -- dedup condivisa, log di rilevamento, poi delega a evaluate_auction. Cosi' la
+    logica di dedup/valutazione resta scritta una volta sola.
 
-    if not SORARE_WALLET_PASSWORD:
-        log("[acquisto live] STOP: SORARE_WALLET_PASSWORD non impostata")
-        return False, "SORARE_WALLET_PASSWORD non impostata"
-
-    fingerprint = prepared.get('fingerprint')
-    request = prepared.get('request') or {}
-    nonce = request.get('nonce')
-    authorization_id = prepared.get('authorization_id')
-
-    key_data = fetch_encrypted_private_key(
-        authorization_id=authorization_id, fingerprint=fingerprint, offer_id=offer_id)
-    if not key_data:
-        log("[acquisto live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
-        return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
-    log("[acquisto live] step 1/3 OK: chiave cifrata recuperata")
-
-    signature = sign_authorization_via_node(
-        SORARE_WALLET_PASSWORD,
-        key_data.get('encryptedPrivateKey'),
-        key_data.get('iv'),
-        key_data.get('salt'),
-        request,
-    )
-    if not signature:
-        log("[acquisto live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
-        return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
-    log("[acquisto live] step 2/3 OK: firma generata")
-
-    # FIX 19/07 (velocizzazione sniping): riusiamo l'exchange_rate_id gia' ottenuto da
-    # prepare_accept_offer invece di rifare la stessa query GraphQL una seconda volta --
-    # una chiamata di rete in meno nel percorso critico dell'acquisto.
-    exchange_rate_id = prepared.get('exchange_rate_id')
-    if not exchange_rate_id:
-        log("[acquisto live] STOP: exchange_rate_id non disponibile da prepared")
-        return False, "exchange_rate_id non disponibile"
-
-    success, category, error = accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id)
-    if not success:
-        log(f"[acquisto live] STOP: step 3/3 fallito, categoria='{category}'")
-        return False, f"AcceptOfferMutation fallita [{category}]: {error}"
-    log("[acquisto live] step 3/3 OK: acquisto completato")
-    return True, None
-
-
-PREPARE_OFFER_MUTATION = """
-mutation PrepareOfferMutation($input: prepareOfferInput!) {
-  prepareOffer(input: $input) {
-    authorizations {
-      fingerprint
-      id
-      request {
-        ... on MangopayWalletTransferAuthorizationRequest {
-          currency
-          amount
-          mangopayWalletId
-          nonce
-          operationHash
-        }
-      }
-    }
-    errors { message }
-  }
-}
-"""
-
-
-def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur):
-    """Prenota/valida la creazione di un'offerta diretta lato server -- mutation
-    confermata dal vivo (19/07, catturata via DevTools mentre l'utente faceva un'offerta
-    reale su una carta di test). NON invia ancora l'offerta: restituisce
-    {fingerprint, request, exchange_rate_id} da usare per firmare e poi chiamare
-    create_direct_offer. card_asset_id e' l'assetId ESADECIMALE della carta (campo
-    'assetId' della carta, es. "0x0400...", NON lo slug) -- confermato nel payload reale
-    catturato (receiveAssetIds contiene l'assetId, non lo slug)."""
-    exchange_rate_id = get_exchange_rate_id()
-    if not exchange_rate_id:
-        log("[prepare offer] exchange_rate_id non ottenuto, impossibile procedere")
-        return None
-    # FIX BUG CRITICO (20/07): confermato dal vivo che il campo 'amount' restituito
-    # dal server dentro l'authorization request (quello REALMENTE firmato ed
-    # eseguito, vedi execute_live_offer) e' in CENTESIMI interi, non in euro con
-    # decimali. Mandando "6.0" EUR il server rispondeva amount=6 (troncando i
-    # decimali), e quell'intero veniva poi eseguito come 6 CENTESIMI = 0.06EUR
-    # (caso reale Alex Roldan, offerta 6.00EUR eseguita a 0.06EUR, poi annullata
-    # manualmente dall'utente). Ora inviamo l'importo gia' in centesimi interi.
-    amount_cents = int(round(offer_amount_eur * 100))
-    variables = {
-        "input": {
-            "sendAssetIds": [],
-            "receiveAssetIds": [card_asset_id],
-            "receiverSlug": receiver_slug,
-            "sendAmount": {"amount": str(amount_cents), "currency": "EUR"},
-            "receiveAmount": {"amount": "0", "currency": "EUR"},
-            "settlementCurrencies": ["EUR"],
-        }
-    }
-    try:
-        data = graphql_query_via_browser(PREPARE_OFFER_MUTATION, variables)
-        root_errors = data.get('errors')
-        payload = (data.get('data') or {}).get('prepareOffer') or {}
-        payload_errors = payload.get('errors') or []
-
-        if root_errors or payload_errors:
-            category, all_errors = classify_prepare_offer_error(root_errors, payload_errors)
-            log(f"[prepare offer] fallita, categoria='{category}', errori={all_errors}")
-            return None
-
-        auths = payload.get('authorizations') or []
-        if not auths:
-            log("[prepare offer] nessuna authorization restituita")
-            return None
-        auth = auths[0]
-        request = dict(auth.get('request') or {})
-        request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
-        # FIX 21/07 (sospetta causa di 'invalid Mangopay wallet transfer signature'):
-        # in precedenza qui si sovrascriveva 'amount' col valore lordo (amount_cents)
-        # quando il server ne restituiva uno diverso (es. 152 invece di 160, probabile
-        # netto post-fee 5% venditore) -- ma il server verifica la firma contro IL SUO
-        # 'amount' originale, non contro un valore che gli rimandiamo indietro
-        # modificato. Sovrascriverlo rompeva la firma. L'importo che l'utente paga
-        # resta comunque quello giusto: e' gia' fissato da sendAmount/amount_cents
-        # inviato SOPRA nella richiesta PrepareOfferMutation (il buyer paga sempre
-        # l'importo dichiarato, il venditore incassa il 95% -- confermato
-        # dall'utente). Qui firmiamo l'amount ESATTO restituito dal server, senza
-        # toccarlo, cosi' la firma corrisponde a quello che lui stesso verifica.
-        server_amount = request.get('amount')
-        if server_amount is not None and int(server_amount) != amount_cents:
-            log(f"[prepare offer] diagnostica: amount del server ({server_amount}) "
-                f"diverso dal lordo inviato ({amount_cents}) -- probabile netto "
-                f"post-fee 5% venditore. NON lo sovrascrivo piu', firmo il valore "
-                f"esatto del server (fix 21/07 per invalid signature).")
-        return {'fingerprint': auth.get('fingerprint'), 'request': request,
-                'exchange_rate_id': exchange_rate_id}
-    except Exception as e:
-        log(f"[prepare offer] eccezione: {e}")
-        return None
-
-
-
-CREATE_DIRECT_OFFER_MUTATION = """
-mutation CreateDirectOfferMutation($input: createDirectOfferInput!) {
-  createDirectOffer(input: $input) {
-    errors { message }
-    tokenOffer {
-      id
-      senderSide {
-        amounts { eurCents }
-      }
-    }
-  }
-}
-"""
-
-
-import uuid
-
-
-def generate_deal_id():
-    """dealId CONFERMATO (20/07, verifica dal vivo) essere un UUID v4 generato
-    CLIENT-SIDE (dal browser), NON restituito da PrepareOfferMutation (verificato che
-    la risposta contiene solo authorizations+errors, mai un dealId). Lunghezza del
-    dealId reale osservato (39 cifre decimali) coincide esattamente con un UUID v4
-    convertito in intero. Lo stesso valore generato qui va riusato IDENTICO sia nella
-    prepare (se mai richiesto in futuro) sia nella create_direct_offer finale."""
-    return str(uuid.uuid4().int)
-
-
-def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature, deal_id):
-    """Ultimo passo: invia DAVVERO l'offerta diretta al venditore -- mutation confermata
-    dal vivo (19/07, caso reale David Alaba/satonio, offerta di test inviata con
-    successo). Fail-safe assoluto: qualunque errore ritorna (False, categoria, msg), MAI
-    un'eccezione non gestita, MAI un retry automatico."""
-    # FIX BUG CRITICO (20/07): stesso fix di prepare_offer, per coerenza -- vedi
-    # commento dettagliato li'. sendAmount va in centesimi interi.
-    amount_cents = int(round(offer_amount_eur * 100))
-    variables = {
-        "input": {
-            "dealId": deal_id,
-            "sendAssetIds": [],
-            "receiveAssetIds": [card_asset_id],
-            "receiverSlug": receiver_slug,
-            "sendAmount": {"amount": str(amount_cents), "currency": "EUR"},
-            "duration": OFFER_DURATION_SECONDS,
-            "migrationData": None,
-            "approvals": [{
-                "fingerprint": fingerprint,
-                "mangopayWalletTransferApproval": {
-                    "nonce": nonce,
-                    "signature": signature,
-                },
-            }],
-        }
-    }
-    try:
-        data = graphql_query_via_browser(CREATE_DIRECT_OFFER_MUTATION, variables)
-        root_errors = data.get('errors')
-        payload = (data.get('data') or {}).get('createDirectOffer') or {}
-        payload_errors = payload.get('errors') or []
-        if root_errors or payload_errors:
-            category, all_errors = classify_prepare_offer_error(root_errors, payload_errors)
-            log(f"[create offer] fallita, categoria='{category}', errori={all_errors}")
-            return False, category, str(all_errors)
-        token_offer = payload.get('tokenOffer')
-        if not token_offer:
-            # FIX 20/07 (prudenza, stesso pattern gia' visto su acceptOffer -- il
-            # campo 'offer' e' scomparso dallo schema di acceptOfferPayload, quindi e'
-            # plausibile che anche 'tokenOffer' possa mancare qui senza che sia un
-            # vero fallimento): se NON ci sono errori, trattiamo comunque come
-            # successo, solo con un log di avviso.
-            log(f"[create offer] risposta senza 'tokenOffer' ma NESSUN errore -- "
-                f"probabile successo (schema Sorare potrebbe non restituire piu' "
-                f"questo campo, vedi caso analogo 'offer' in acceptOffer): "
-                f"{json.dumps(data)[:500]}")
-            return True, None, None
-        log(f"[create offer] successo, offer id={token_offer.get('id')}")
-        return True, None, None
-    except Exception as e:
-        log(f"[create offer] eccezione: {e}")
-        return False, 'eccezione', str(e)
-
-
-def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared):
-    """Orchestrazione completa (attiva SOLO se MAKEOFFER_LIVE_MODE e' 'si'): chiave
-    cifrata -> firma -> create_direct_offer. Fail-safe assoluto: MAI retry, un solo
-    tentativo secco. Logga ogni step con OK/STOP esplicito."""
-    log(f"[offerta live] avvio -- carta={card_asset_id}, venditore={receiver_slug}, "
-        f"offerta={offer_amount_eur:.2f}EUR")
-
-    if not SORARE_WALLET_PASSWORD:
-        log("[offerta live] STOP: SORARE_WALLET_PASSWORD non impostata")
-        return False, "SORARE_WALLET_PASSWORD non impostata"
-
-    key_data = fetch_encrypted_private_key()
-    if not key_data:
-        log("[offerta live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
-        return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
-    log("[offerta live] step 1/3 OK: chiave cifrata recuperata")
-
-    fingerprint = prepared.get('fingerprint')
-    request = prepared.get('request') or {}
-    nonce = request.get('nonce')
-
-    signature = sign_authorization_via_node(
-        SORARE_WALLET_PASSWORD,
-        key_data.get('encryptedPrivateKey'),
-        key_data.get('iv'),
-        key_data.get('salt'),
-        request,
-    )
-    if not signature:
-        log("[offerta live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
-        return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
-    log("[offerta live] step 2/3 OK: firma generata")
-
-    deal_id = generate_deal_id()
-    success, category, error = create_direct_offer(
-        card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature, deal_id)
-    if not success:
-        log(f"[offerta live] STOP: step 3/3 fallito, categoria='{category}'")
-        return False, f"CreateDirectOfferMutation fallita [{category}]: {error}"
-    log("[offerta live] step 3/3 OK: offerta inviata")
-    return True, None
-
-CARD_OFFER_DETAILS_QUERY = """
-query CardOfferDetailsQuery($slug: String!) {
-  anyCard(slug: $slug) {
-    slug
-    assetId
-    liveSingleBuyOffers {
-      id
-      sender { ... on User { slug } }
-    }
-    liveSingleSaleOffer {
-      settlementCurrencies
-    }
-  }
-}
-"""
-
-
-def get_card_offer_details(card_slug):
-    """Recupera assetId (necessario per creare l'offerta), le eventuali offerte
-    pendenti gia' presenti su questa carta (liveSingleBuyOffers, per lo skip "gia' ho
-    un'offerta pendente" richiesto esplicitamente dall'utente), e le valute accettate
-    dal venditore (settlementCurrencies, per lo skip "se non accetta EUR" richiesto
-    esplicitamente). Fail-safe: se la query fallisce, ritorna None e il chiamante deve
-    SALTARE il caso (senza assetId non si puo' fare l'offerta comunque)."""
-    try:
-        data = graphql_query(CARD_OFFER_DETAILS_QUERY, {"slug": card_slug})
-        if data.get('errors'):
-            log(f"[dettagli carta] errore per {card_slug}: {data['errors']}")
-            return None
-        card = (data.get('data') or {}).get('anyCard')
-        if not card:
-            return None
-        return card
-    except Exception as e:
-        log(f"[dettagli carta] eccezione per {card_slug}: {e}")
-        return None
-
-def send_autobuy_alert(player_name, player_slug, price_eur, second_price, margin_percent,
-                        card_slug, excluded_league, prepared=None, is_in_season=True,
-                        live_mode=False, purchase_completed=False, purchase_error=None):
-    link = build_card_link(player_slug, card_slug)
-    if not is_in_season:
-        categoria = "CLASSIC (modalita' check_classic, confronto su tutti i campionati)"
-    else:
-        categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
-    prenotazione = (
-        "\u2705 Offerta prenotata lato server (piu' veloce da confermare)\n"
-        if prepared else
-        "\u26A0\uFE0F Prenotazione lato server non riuscita, apri e conferma normalmente\n"
-    )
-    if live_mode:
-        if purchase_completed:
-            titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (AutoBuy) -- ACQUISTATO IN AUTOMATICO</b>"
-            esito = "\u2705 <b>Acquisto completato con successo, nessuna azione richiesta.</b>\n\n"
+    FIX 21/07 v3 (richiesta esplicita utente: "non notificare mai due volte la stessa
+    asta, solo se prezzo/minNextBid sono identici a un evento gia' notificato"): dedup
+    key = (auction_id, currentPrice, minNextBid) -- SENZA endDate (a differenza della
+    versione precedente), cosi' un'asta che ricompare identica in una fase successiva
+    o in un ciclo successivo (es. le stesse aste in scadenza a fine ciclo) viene
+    riconosciuta come gia' vista e non rielaborata ne' rinotificata. Se invece
+    currentPrice o minNextBid cambiano (nuovo bid altrui nel frattempo), la chiave e'
+    diversa e l'asta viene rivalutata/rinotificata normalmente -- e' un'informazione
+    nuova, non un duplicato."""
+    if TEST_ONLY_ZERO_BID:
+        # FIX 21/07 (richiesta esplicita utente, dopo cattura reale dal frontend Sorare):
+        # bidsCount e' il campo ESATTO che Sorare stesso usa per indicare "zero offerte"
+        # (confermato dal vivo: bidsCount=0 su Evander/Carles Gil, entrambe aste
+        # autentiche a 0 bid; bidsCount=3 su un'asta con bid reali, GU SUNG YUN).
+        # Sostituisce l'euristica precedente (currentPrice==minNextBid) che era solo un
+        # segnale indiretto -- bidsCount e' il dato diretto, quando disponibile.
+        bids_count = auction.get('bidsCount')
+        if bids_count is not None:
+            if bids_count != 0:
+                return  # asta con bid reali gia' presenti -- scartata, modalita' test
         else:
-            titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (AutoBuy) -- ACQUISTO AUTOMATICO FALLITO</b>"
-            esito = (f"\u274C <b>Acquisto automatico NON riuscito</b>: {purchase_error}\n"
-                      f"Apri e valuta se confermare a mano.\n\n")
-    else:
-        titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (AutoBuy) -- LO AVREI ACQUISTATO</b>"
-        esito = "\u26A0\uFE0F Fase di test: nessun acquisto reale eseguito, controlla a mano.\n\n"
-    msg_text = (
-        f"{titolo}\n\n"
-        f"Giocatore: {player_name}\n"
-        f"Categoria: {categoria}\n"
-        f"Prezzo minimo attuale: {price_eur:.2f}EUR\n"
-        f"Secondo prezzo attuale: {second_price:.2f}EUR (margine {margin_percent:.1%}, "
-        f"soglia richiesta {AUTOBUY_MARGIN_FRACTION:.0%})\n\n"
-        f"{prenotazione}"
-        f"{esito}"
-        f"\U0001F449 <b><a href='{link}'>APRI SU SORARE</a></b> \U0001F448"
-    )
-    send_telegram_msg(msg_text)
+            # Fallback se bidsCount non e' arrivato per qualche motivo (es. self-check
+            # fallito su questo campo) -- torna all'euristica precedente invece di non
+            # filtrare nulla.
+            current_price = auction.get('currentPrice')
+            min_next_bid = auction.get('minNextBid')
+            if current_price is None or min_next_bid is None or current_price != min_next_bid:
+                return
+
+    auction_id = auction.get('id') or ''
+    dedup_key = (auction_id, auction.get('currentPrice'), auction.get('minNextBid'))
+    with state.lock:
+        if dedup_key in state.seen_events:
+            if AUCTION_DIAGNOSTIC:
+                log(f"[{source}] [GIA-VISTA] id={auction_id}, prezzo/minNextBid invariati "
+                    f"rispetto a un evento gia' notificato -- skip, nessuna doppia notifica")
+            return
+        state.seen_events.add(dedup_key)
+        state.known_auction_ids.add(auction_id)
+        state.stats[f'source_{source.lower()}'] = state.stats.get(f'source_{source.lower()}', 0) + 1
+
+    # FIX 21/07 v5 (richiesta esplicita utente, "il log e' troppo pesante, troppe
+    # scritte"): questo log per-asta ora e' SOLO in diagnostica (era sempre attivo dalla
+    # v2) -- di default il ciclo mostra solo il riepilogo di fase e le vere occasioni
+    # trovate, non piu' una riga per ogni singola asta scandagliata.
+    if AUCTION_DIAGNOSTIC:
+        cards = auction.get('anyCards') or []
+        candidates = [(c.get('anyPlayer', {}).get('slug'), c.get('anyPlayer', {}).get('displayName'),
+                       c.get('slug'), c.get('serialNumber'))
+                      for c in cards if c.get('anyPlayer', {}).get('slug') and c.get('slug')]
+        if candidates:
+            p_slug, p_name, c_slug, c_serial = candidates[0]
+            detect_link = build_card_link(p_slug, c_slug, c_serial)
+            ambiguo = f" [ATTENZIONE: {len(candidates)} carte candidate, uso la prima]" if len(candidates) > 1 else ""
+            log(f"[{source}] [RILEVATA] {p_name or p_slug}, bidsCount={auction.get('bidsCount')}, "
+                f"currentPrice={auction.get('currentPrice')}, minNextBid={auction.get('minNextBid')}, "
+                f"endDate={auction.get('endDate')}, link={detect_link}{ambiguo}")
+
+    try:
+        evaluate_auction(auction, eth_rate, state, source=source)
+    except Exception as e:
+        log(f"[{source}] Errore nel processare un'asta: {e}")
 
 
-def send_makeoffer_alert(player_name, player_slug, price_eur, second_price, margin_percent,
-                          card_slug, excluded_league, prepared=None, is_in_season=True,
-                          live_mode=False, purchase_completed=False, purchase_error=None,
-                          offer_amount_eur=None):
-    link = build_card_link(player_slug, card_slug)
-    if not is_in_season:
-        categoria = "CLASSIC (modalita' check_classic, confronto su tutti i campionati)"
-    else:
-        categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
-    prenotazione = (
-        "\u2705 Offerta prenotata lato server (piu' veloce da confermare)\n"
-        if prepared else
-        "\u26A0\uFE0F Prenotazione lato server non riuscita, apri e conferma normalmente\n"
+def _fetch_whitelisted_live_auctions():
+    """Scansione completa (paginata) di TUTTE le aste live disponibili, filtrata SUBITO
+    per whitelist campionati -- base comune per tutte e 3 le fasi del ciclo."""
+    page = fetch_live_auctions_page(50)
+    whitelisted = [a for a in page if (_auction_league_slug(a) in LEAGUE_WHITELIST_SLUGS)]
+    return page, whitelisted
+
+
+def run_new_auctions_phase(eth_rate, state):
+    """FASE 1 "NUOVE" (FIX 21/07 v5, richiesta esplicita utente: "non perdersi nessuna
+    asta rilevante"): scan completo whitelist, valuta TUTTE le aste con id MAI visto
+    prima in questa run -- nessun tetto, cattura ogni apertura appena immessa sul
+    mercato, senza accumulare arretrato. Le notifiche di questa fase vengono comunque
+    accorpate in UN SOLO messaggio Telegram a fine fase (vedi flush_phase_alerts)."""
+    page, whitelisted = _fetch_whitelisted_live_auctions()
+    nuove = [a for a in whitelisted if (a.get('id') or '') not in state.known_auction_ids]
+    log(f"[NUOVE] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
+        f"{len(nuove)} mai viste prima -- valuto tutte")
+    for auction in nuove:
+        process_incoming_auction(auction, eth_rate, state, source='NUOVE')
+    flush_phase_alerts('NUOVE', state)
+
+
+def run_zero_bid_phase(eth_rate, state):
+    """FASE 2 "ZEROBID" (FIX 21/07 v5): scan completo whitelist, valuta TUTTE le aste
+    con bidsCount==0 -- nuove o vecchie che siano, nessun tetto (stesso motivo di FASE
+    1: non perdere occasioni). Notifiche accorpate in UN SOLO messaggio a fine fase."""
+    page, whitelisted = _fetch_whitelisted_live_auctions()
+    zero_bid = [a for a in whitelisted if a.get('bidsCount') == 0]
+    log(f"[ZEROBID] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
+        f"{len(zero_bid)} a 0 bid -- valuto tutte")
+    for auction in zero_bid:
+        process_incoming_auction(auction, eth_rate, state, source='ZEROBID')
+    flush_phase_alerts('ZEROBID', state)
+
+
+def run_ending_soon_phase(eth_rate, state):
+    """FASE 3 "SCADENZA" (FIX 21/07 v5): unica fase che resta CAPPATA (SCADENZA_TOP_N,
+    default 5) -- a differenza di NUOVE/ZEROBID, qui il tetto e' voluto: e' un
+    ulteriore "ultima chance" per le aste piu' urgenti, non il meccanismo primario di
+    copertura (quello lo fanno NUOVE+ZEROBID, entrambe senza tetto). E' normale/atteso
+    che le stesse aste ricompaiano identiche da un ciclo all'altro se nessuno ha
+    rilanciato -- la dedup in process_incoming_auction evita la doppia notifica."""
+    _, whitelisted = _fetch_whitelisted_live_auctions()
+    whitelisted.sort(key=lambda a: (_seconds_until_end(a.get('endDate')) is None,
+                                     _seconds_until_end(a.get('endDate'))))
+    selected = whitelisted[:SCADENZA_TOP_N]
+    log(f"[SCADENZA] {len(whitelisted)} in whitelist, valuto le {len(selected)} piu' "
+        f"vicine alla scadenza...")
+    for auction in selected:
+        process_incoming_auction(auction, eth_rate, state, source='SCADENZA')
+    flush_phase_alerts('SCADENZA', state)
+
+
+def _run_timed_phase(phase_name, phase_fn, eth_rate, state):
+    """Esegue UNA scansione della fase (FIX 21/07 v3, richiesta esplicita utente: "una
+    scansione sola, poi aspetta fino a fine dei 20s"), poi ritorna quanti secondi
+    restano per completare la finestra CYCLE_PHASE_SECONDS -- il chiamante attende
+    quel resto prima di passare alla pausa tra le fasi."""
+    start = time.monotonic()
+    try:
+        phase_fn(eth_rate, state)
+    except Exception as e:
+        log(f"[{phase_name}] errore nella scansione: {e}")
+    elapsed = time.monotonic() - start
+    remaining = CYCLE_PHASE_SECONDS - elapsed
+    if remaining <= 0:
+        log(f"[{phase_name}] scansione durata {elapsed:.1f}s (>= finestra di "
+            f"{CYCLE_PHASE_SECONDS:.0f}s) -- nessuna attesa aggiuntiva")
+        return 0.0
+    return remaining
+
+
+def run_tracking_cycle(eth_rate, state, stop_event):
+    """FIX 21/07 v3 (richiesta esplicita utente, WebSocket rimosso): ciclo continuo a
+    TRE fasi -- NUOVE -> pausa -> ZEROBID -> pausa -> SCADENZA -> pausa -> ricomincia
+    da NUOVE, per tutta la durata dell'ascolto."""
+    fasi = (
+        ('NUOVE', run_new_auctions_phase),
+        ('ZEROBID', run_zero_bid_phase),
+        ('SCADENZA', run_ending_soon_phase),
     )
-    offer_line = f"Offerta calcolata: {offer_amount_eur:.2f}EUR\n" if offer_amount_eur is not None else ""
-    if live_mode:
-        if purchase_completed:
-            titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer) -- OFFERTA INVIATA IN AUTOMATICO</b>"
-            esito = "\u2705 <b>Offerta inviata con successo, in attesa che il venditore risponda.</b>\n\n"
+    while not stop_event.is_set():
+        for phase_name, phase_fn in fasi:
+            remaining = _run_timed_phase(phase_name, phase_fn, eth_rate, state)
+            if INSUFFICIENT_FUNDS_STOP[0]:
+                log("STOP: fondi insufficienti rilevati, fermo il ciclo di tracking")
+                stop_event.set()
+                break
+            if remaining > 0 and stop_event.wait(remaining):
+                break
+            if stop_event.wait(CYCLE_PAUSE_SECONDS):
+                break
         else:
-            titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer) -- OFFERTA AUTOMATICA FALLITA</b>"
-            esito = (f"\u274C <b>Offerta automatica NON inviata</b>: {purchase_error}\n"
-                      f"Apri e valuta se fare l'offerta a mano.\n\n")
-    else:
-        titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer) -- FAREI UN'OFFERTA</b>"
-        esito = "\u26A0\uFE0F Fase di test: nessuna offerta reale inviata, controlla a mano.\n\n"
-    msg_text = (
-        f"{titolo}\n\n"
-        f"Giocatore: {player_name}\n"
-        f"Categoria: {categoria}\n"
-        f"Prezzo minimo attuale: {price_eur:.2f}EUR\n"
-        f"Secondo prezzo attuale: {second_price:.2f}EUR (margine {margin_percent:.1%}, "
-        f"soglia richiesta {MAKEOFFER_MARGIN_FRACTION:.0%})\n"
-        f"{offer_line}\n"
-        f"{prenotazione}"
-        f"{esito}"
-        f"\U0001F449 <b><a href='{link}'>APRI SU SORARE</a></b> \U0001F448"
-    )
-    send_telegram_msg(msg_text)
+            continue
+        break
+    log("[ciclo tracking] terminato.")
 
 
-def _is_insufficient_funds_error(error_message):
-    """Rileva se un messaggio di errore (gia' formattato da execute_live_purchase/
-    execute_live_offer, es. 'AcceptOfferMutation fallita [fondi_insufficienti]: ...')
-    indica fondi insufficienti -- la categoria e' gia' classificata a monte da
-    classify_prepare_accept_error/classify_prepare_offer_error, qui controlliamo solo
-    che compaia nel messaggio finale."""
-    if not error_message:
-        return False
-    return '[fondi_insufficienti]' in error_message
-
-
-def _is_invalid_signature_error(error_message):
-    """Rileva se un messaggio di errore indica una firma non valida ('invalid Mangopay
-    wallet transfer signature') -- errore visto dal vivo il 20/07 solo nel ramo
-    MakeOffer, causa non ancora confermata. Serve per attivare la diagnostica dedicata
-    in send_invalid_signature_diagnostic_alert (vedi sotto)."""
-    if not error_message:
-        return False
-    return 'invalid mangopay wallet transfer signature' in error_message.lower()
-
-
-def send_invalid_signature_diagnostic_alert(player_name, seller_slug, offer_amount_eur):
-    """Notifica diagnostica DEDICATA (20/07, richiesta esplicita utente) per il caso
-    'invalid Mangopay wallet transfer signature' nel ramo MakeOffer -- NON confermiamo
-    la causa (e' solo un'ipotesi dell'utente, non un fatto accertato): potrebbe essere
-    che il venditore/manager abbia bloccato il nostro account dalle offerte dirette
-    (Sorare lo permette, pur consentendo la vendita diretta allo stesso account), oppure
-    un problema di firma/cache lato bot. La notifica elenca il fatto osservato (verso
-    quale manager e' fallita) senza affermare la causa, cosi' l'utente puo' verificare
-    manualmente se accumula ripetutamente sullo stesso manager (indizio di blocco)."""
-    send_telegram_msg(
-        f"\U0001F50D <b>Bot Supremo -- DIAGNOSTICA: firma non valida (MakeOffer)</b>\n\n"
-        f"Giocatore: {player_name}\n"
-        f"Venditore/manager: {seller_slug}\n"
-        f"Offerta tentata: {offer_amount_eur:.2f}EUR\n\n"
-        f"Causa non confermata -- possibili ipotesi: questo manager potrebbe averti "
-        f"bloccato dalle offerte dirette (Sorare lo permette anche se accetta la "
-        f"vendita diretta allo stesso account), oppure un problema di firma/cache. "
-        f"Se questo errore si ripete SEMPRE con lo stesso manager, e' un indizio "
-        f"a favore dell'ipotesi del blocco."
-    )
-
-
-def send_insufficient_funds_alert(player_name, ramo):
-    send_telegram_msg(
-        f"\U0001F6D1 <b>Bot Supremo -- FONDI INSUFFICIENTI, ESECUZIONE FERMATA</b>\n\n"
-        f"Rilevato durante il tentativo su {player_name} (ramo {ramo}).\n"
-        f"Il bot si e' fermato subito invece di continuare a tentare a vuoto -- "
-        f"ricarica il wallet prima di rilanciare."
-    )
+def get_auction_live_state(auction_id):
+    """Rilegge lo stato REALE e aggiornato di un'asta -- usata come riverifica di
+    sicurezza subito prima di un bid reale (un bid non e' ritirabile). Identica in
+    spirito alla funzione gemella nel notificatore aste esistente."""
+    bare_id = auction_id.split(':', 1)[1] if ':' in auction_id else auction_id
+    try:
+        data = graphql_query(AUCTION_BY_ID_QUERY, {"id": bare_id})
+        if data.get('errors'):
+            log(f"[riverifica live asta] errore GraphQL per {auction_id}: {data['errors']}")
+            return None
+        auction_data = ((data.get('data') or {}).get('tokens') or {}).get('auction')
+        return auction_data
+    except Exception as e:
+        log(f"[riverifica live asta] eccezione per {auction_id}: {e}")
+        return None
 
 
 def send_startup_msg():
-    classic_msg = "\nModalita' CLASSIC attiva (tutti i campionati)" if CHECK_CLASSIC else ""
-    autobuy_stato = "ATTIVO" if AUTOBUY_LIVE_MODE else "solo diagnostica"
-    makeoffer_stato = "ATTIVO" if MAKEOFFER_LIVE_MODE else "solo diagnostica"
+    modalita = "BID REALI ATTIVI" if AUCTION_LIVE_MODE else "solo diagnostica (nessun bid reale)"
+    leagues = ', '.join(sorted(LEAGUE_WHITELIST_SLUGS)) or "NESSUNO (whitelist vuota!)"
     send_telegram_msg(
-        f"\U0001F916 <b>Bot Supremo avviato</b>\n"
-        f"AutoBuy: margine >= {AUTOBUY_MARGIN_FRACTION:.0%} ({autobuy_stato})\n"
-        f"MakeOffer: margine {MAKEOFFER_MARGIN_FRACTION:.0%}-{MAKEOFFER_MAX_MARGIN_FRACTION:.0%} ({makeoffer_stato})\n"
-        f"Fascia prezzo: {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR\n"
-        f"Ascolto per {LISTEN_SECONDS}s o fino a {AUTOBUY_TARGET_MATCHES} casi trovati.{classic_msg}"
+        f"\U0001F3C6 <b>Bot Supremo Aste avviato</b>\n"
+        f"Modalita': {modalita}\n"
+        f"Sconto target: {AUCTION_DISCOUNT_FRACTION:.0%} sotto il minimo di mercato\n"
+        f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR\n"
+        f"Campionati inclusi: {leagues}\n"
+        f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h\n"
+        f"Ascolto fino a {LISTEN_SECONDS}s"
     )
 
 
-def send_end_msg(matches_found, target_reached):
-    esito = (
-        f"\u2705 Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati"
-        if target_reached else
-        f"\u23F1 Tempo scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati"
-    )
+def send_end_msg(stats):
+    total_bid = stats.get('bid_placed', 0) + stats.get('bid_simulated', 0)
+    skip_keys = sorted(k for k in stats if k.startswith('skip_'))
+    breakdown = ', '.join(f"{k[5:]}={stats[k]}" for k in skip_keys) or "nessuno"
     send_telegram_msg(
-        f"\U0001F916 <b>Bot Supremo terminato</b>\n"
-        f"{esito}"
+        f"\U0001F3C1 <b>Bot Supremo Aste terminato</b>\n"
+        f"Eventi processati: {stats.get('processed', 0)}\n"
+        f"Bid {'reali' if AUCTION_LIVE_MODE else 'simulati'}: {total_bid}\n"
+        f"Scarti: {breakdown}"
     )
 
 
-def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
-                    offer_id=None, seller_slug=None, is_in_season=True):
-    """Valutazione UNICA condivisa (un solo scan di mercato per evento, niente doppio
-    lavoro tra i due bot separati). Dopo il calcolo del margine, biforca:
-    - margine >= AUTOBUY_MARGIN_FRACTION -> ramo AutoBuy (accetta offerta esistente)
-    - MAKEOFFER_MARGIN_FRACTION <= margine < AUTOBUY_MARGIN_FRACTION (tetto MakeOffer
-      MAKEOFFER_MAX_MARGIN_FRACTION incluso in questo range per costruzione) -> ramo
-      MakeOffer (crea offerta scontata)
-    Ritorna True se questo evento ha portato a un caso valido (di QUALSIASI ramo),
-    False altrimenti -- usato dal listener per decidere se fermarsi."""
+def send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
+                    bid_ceiling, min_next_bid, live_mode, bid_completed=None, bid_error=None,
+                    seconds_left=None, card_serial_number=None):
+    """FIX 21/07 v5 (richiesta esplicita utente, "senza troppe notifiche"): NON invia
+    piu' il messaggio Telegram direttamente -- ritorna il testo composto, che il
+    chiamante accoda a state.pending_alerts. L'invio vero avviene UNA volta a fine
+    fase, in flush_phase_alerts, accorpando tutte le occasioni trovate in quella fase
+    in un solo messaggio."""
+    link = build_card_link(player_slug, card_slug, card_serial_number)
+    intestazione = "\U0001F3AF <b>ASTA -- BID PIAZZATO</b>" if (live_mode and bid_completed) else \
+        ("\u274C <b>ASTA -- BID FALLITO</b>" if (live_mode and bid_completed is False) else
+         "\U0001F4CB <b>ASTA -- AVREI BIDDATO (diagnostica)</b>")
+    righe = [
+        intestazione,
+        f"\U0001F464 {player_name}",
+        f"\U0001F4B0 Riferimento mercato: {reference_price:.2f}EUR ({reference_source})",
+        f"\U0001F3AF Tetto bid: {bid_ceiling:.2f}EUR ({AUCTION_DISCOUNT_FRACTION:.0%} sotto)",
+        f"\U0001F4CA minNextBid attuale: {min_next_bid:.2f}EUR",
+    ]
+    if seconds_left is not None:
+        ore = seconds_left / 3600
+        righe.append(f"\u23F0 Tempo residuo asta: {ore:.1f}h")
+    if live_mode and bid_completed is False:
+        righe.append(f"Motivo: {bid_error}")
+    righe.append(link)
+    return '\n'.join(righe)
+
+
+def flush_phase_alerts(phase_name, state):
+    """FIX 21/07 v5: invia UN SOLO messaggio Telegram con TUTTE le occasioni accumulate
+    in state.pending_alerts durante questa fase, poi svuota la lista. Se la fase non ha
+    trovato nulla, non manda nessun messaggio (silenzio, non spam)."""
+    if not state.pending_alerts:
+        return
+    n = len(state.pending_alerts)
+    parola = "occasione trovata" if n == 1 else "occasioni trovate"
+    intestazione = f"\U0001F4CB <b>FASE {phase_name}</b> -- {n} {parola}"
+    corpo = '\n\n\u2500\u2500\u2500\u2500\u2500\n\n'.join(state.pending_alerts)
+    send_telegram_msg(f"{intestazione}\n\n{corpo}")
+    state.pending_alerts.clear()
+
+
+def send_insufficient_funds_alert(player_name):
+    send_telegram_msg(
+        f"\U0001F6D1 <b>BOT SUPREMO ASTE -- FONDI INSUFFICIENTI</b>\n"
+        f"Rilevato durante il bid su {player_name}. Bot fermato: nessun tentativo "
+        f"successivo avrebbe senso."
+    )
+
+
+def evaluate_auction(auction, eth_rate, state, source='WS'):
+    """Valutazione completa di un'asta: filtri -> riferimento di mercato -> calcolo bid
+    -> (diagnostica o bid reale). Ritorna True se e' stato un caso valido (bid piazzato
+    o simulato), False se scartata per qualunque motivo.
+    'source' indica solo da dove e' arrivata l'asta (WS/SAFETY/ENDING-SOON) -- usato per
+    taggare i log, nessun impatto sulla logica di valutazione (richiesta esplicita utente:
+    stesso motore per tutte e 3 le fonti)."""
+
+    def vlog(message):
+        """Log verboso per-fase, SOLO se AUCTION_DIAGNOSTIC e' attivo (richiesta esplicita
+        utente, fase di test) -- su file di log, mai su Telegram (che resta minimale)."""
+        if AUCTION_DIAGNOSTIC:
+            log(f"[{source}] [diagnostica] {message}")
+
+    stats = state.stats  # alias, resto della funzione invariato
+
     if INSUFFICIENT_FUNDS_STOP[0]:
-        return False  # bot gia' fermato per fondi insufficienti, non valutare altro
-
-    if player_slug and player_slug.lower() in BLACKLISTED_PLAYER_SLUGS:
-        log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
         return False
 
-    # FIX 21/07 (richiesta esplicita utente): filtro campionato, controllato IL PIU'
-    # PRESTO POSSIBILE (subito dopo i check istantanei in RAM, prima di qualunque I/O
-    # su file/rete) per risparmiare secondi preziosi su carte che verranno comunque
-    # ignorate -- niente query di liquidita', niente fetch prezzi, niente altro lavoro
-    # sprecato su un campionato che non vogliamo toccare.
-    if league_slug and league_slug.lower() in BLACKLISTED_LEAGUE_SLUGS:
-        if LEAGUE_BLACKLIST_VERBOSE_LOG:
-            log(f"{player_name}: scarto -- campionato blacklistato ({league_slug})")
+    auction_id = auction.get('id') or ''
+    if not auction_id.startswith('EnglishAuction:'):
         return False
 
-    if player_slug and is_player_in_cooldown(player_slug, is_in_season):
-        log(f"{player_name}: scarto -- gia' acquistato/offerto ({'in_season' if is_in_season else 'classic'}) "
-            f"nelle ultime {PLAYER_COOLDOWN_HOURS}h (protezione anti-svendita/infortunio)")
+    cards = auction.get('anyCards') or []
+    qualifying = []
+    for c in cards:
+        if c.get('rarityTyped') != 'limited':
+            continue
+        if c.get('sport') != 'FOOTBALL':
+            continue
+        if not c.get('inSeasonEligible'):
+            continue  # le aste valgono solo per in_season -- carta classic, ignorata
+        qualifying.append(c)
+    if not qualifying:
+        return False
+    match = qualifying[0]
+
+    # FIX 21/07 (caso reale, Lorenzo Dellavalle: anyCards conteneva DUE carte limited
+    # in_season -287 e -288, il codice prendeva sempre la prima -- link mostrato NON
+    # corrispondeva alla carta realmente in asta). NOTA: da questa modifica il link viene
+    # generato con serial+1 (vedi build_card_link) basandosi sul pattern osservato su 3
+    # casi reali -- non e' un campo GraphQL verificato, quindi il warning resta comunque
+    # utile per un controllo manuale finche' il pattern non e' confermato su piu' casi.
+    if len(qualifying) > 1:
+        all_slugs = ', '.join(c.get('slug', '?') for c in qualifying)
+        log(f"[{source}] ATTENZIONE -- {len(qualifying)} carte candidate per questa asta "
+            f"(anyCards ambiguo): {all_slugs}. Uso la prima ({match.get('slug')}) con "
+            f"correzione +1 sul link (euristica, non campo verificato) -- verificare a "
+            f"mano finche' il pattern non e' confermato su piu' casi.")
+
+    card_slug = match.get('slug')
+    card_serial_number = match.get('serialNumber')
+    player = match.get('anyPlayer') or {}
+    player_slug = player.get('slug')
+    player_name = player.get('displayName', player_slug)
+    league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
+    if not player_slug:
         return False
 
-    if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
+    if not league_slug or league_slug.lower() not in LEAGUE_WHITELIST_SLUGS:
+        stats['skip_campionato'] = stats.get('skip_campionato', 0) + 1
         return False
 
-    if player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
-        log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile nelle "
-            f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
+    vlog(f"{player_name}: campionato '{league_slug}' in whitelist, proseguo")
+
+    if player_slug in BLACKLISTED_PLAYER_SLUGS_ASTE:
+        log(f"[{source}] {player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
+        stats['skip_blacklist'] = stats.get('skip_blacklist', 0) + 1
         return False
 
-    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season, league_slug)
-    if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
-        log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
-            f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
-            f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
-        if player_slug:
-            record_thin_market_skip(player_slug, is_in_season)
-        return False
-    if count_30d is not None and count_30d < MIN_TRANSACTIONS_30D:
-        log(f"{player_name}: scarto -- solo {count_30d} transazioni negli ultimi "
-            f"{TRANSACTIONS_WINDOW_30D_DAYS} giorni (minimo richiesto "
-            f"{MIN_TRANSACTIONS_30D}), mercato troppo sottile")
-        if player_slug:
-            record_thin_market_skip(player_slug, is_in_season)
+    if is_player_in_bid_cooldown(player_slug):
+        log(f"[{source}] {player_name}: scarto -- gia' biddato nelle ultime "
+            f"{AUCTION_COOLDOWN_HOURS:.0f}h")
+        stats['skip_cooldown'] = stats.get('skip_cooldown', 0) + 1
         return False
 
-    if is_in_season:
-        prices, excluded_league = get_in_season_prices(player_slug, eth_rate, league_slug)
-        if AUTOBUY_DIAGNOSTIC:
-            modalita = "SOLO in_season (lega esclusa)" if excluded_league else "in_season + classic uniti"
-            log(f"[diagnostica lega] {player_name}: league_slug={league_slug!r} -> {modalita}, "
-                f"{len(prices)} annunci totali nel confronto")
-    else:
-        buckets = get_bucket_prices(player_slug, eth_rate)
-        prices = buckets['in_season'] + buckets['classic']
-        prices.sort(key=lambda p: p[0])
-        excluded_league = False
-        if AUTOBUY_DIAGNOSTIC:
-            log(f"[check classic] {player_name}: {len(prices)} annunci totali "
-                f"(in_season {len(buckets['in_season'])} + classic {len(buckets['classic'])})")
-    if not prices:
+    stats['processed'] = stats.get('processed', 0) + 1
+
+    vlog(f"{player_name}: verifica del minimo di vendita diretta live in corso...")
+    live_min = get_live_min_direct_sale_in_season(player_slug, eth_rate)
+    vlog(f"{player_name}: minimo vendita diretta live = "
+         f"{'%.2fEUR' % live_min if live_min is not None else 'nessuno trovato'}")
+
+    vlog(f"{player_name}: verifica ultima asta conclusa (finestra "
+         f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h) in corso...")
+    last_auction = get_last_concluded_auction_price(player_slug, eth_rate)
+    vlog(f"{player_name}: ultima asta conclusa recente = "
+         f"{'%.2fEUR' % last_auction if last_auction is not None else 'nessuna trovata'}")
+
+    candidati = [(p, s) for p, s in
+                 ((live_min, 'minimo live vendita diretta'), (last_auction, 'ultima asta conclusa entro 24h'))
+                 if p is not None]
+    if not candidati:
+        log(f"[{source}] {player_name}: scarto -- nessun riferimento di mercato "
+            f"disponibile (ne' vendita diretta live ne' asta conclusa nelle ultime "
+            f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h)")
+        stats['skip_nessun_riferimento'] = stats.get('skip_nessun_riferimento', 0) + 1
         return False
 
-    true_min_price, true_min_card_slug, true_min_seller_slug = prices[0]
+    reference_price, reference_source = min(candidati, key=lambda t: t[0])
+    if len(candidati) == 2:
+        log(f"[{source}] {player_name}: riferimenti trovati -- live={live_min:.2f}EUR, "
+            f"ultima asta={last_auction:.2f}EUR -- uso il piu' basso ({reference_source})")
 
-    if true_min_card_slug != card_slug:
-        if price_eur < true_min_price:
-            log(f"{player_name}: minimo query non aggiornato ({true_min_price:.2f}EUR), "
-                f"ma evento a {price_eur:.2f}EUR e' piu' basso -- procedo con l'evento")
-            true_min_price, true_min_card_slug, true_min_seller_slug = price_eur, card_slug, seller_slug
-            prices = [(price_eur, card_slug, seller_slug)] + [p for p in prices if p[1] != card_slug]
-        else:
-            categoria = "in_season" if excluded_league else "in_season/classic"
-            log(f"{player_name}: scarto -- annuncio a {price_eur:.2f}EUR non e' il minimo attuale "
-                f"{categoria} (minimo vero: {true_min_price:.2f}EUR)")
-            return False
+    vlog(f"{player_name}: calcolo tetto bid -- riferimento {reference_price:.2f}EUR, "
+         f"sconto {AUCTION_DISCOUNT_FRACTION:.0%}")
+    bid_ceiling_calcolato = reference_price * (1 - AUCTION_DISCOUNT_FRACTION)
+    bid_ceiling = min(bid_ceiling_calcolato, MAX_BID_PER_AUCTION_EUR)
+    if bid_ceiling < bid_ceiling_calcolato:
+        vlog(f"{player_name}: tetto calcolato {bid_ceiling_calcolato:.2f}EUR limitato al "
+             f"massimo per asta di {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
 
-    if true_min_seller_slug in BLACKLISTED_SELLER_SLUGS or \
-            true_min_seller_slug in BLACKLISTED_MANAGER_SLUGS:
-        log(f"{player_name}: scarto -- il minimo attuale ({true_min_price:.2f}EUR) e' di un "
-            f"venditore blacklistato ({true_min_seller_slug}), non acquistabile")
+    min_next_bid_wei = auction.get('minNextBid')
+    min_next_bid_eur = wei_to_eur(min_next_bid_wei, eth_rate)
+    if min_next_bid_eur is None:
+        log(f"[{source}] {player_name}: scarto -- minNextBid non leggibile")
+        stats['skip_minnextbid_illeggibile'] = stats.get('skip_minnextbid_illeggibile', 0) + 1
         return False
 
-    if len(prices) < 2:
-        log(f"{player_name}: scarto -- nessun secondo annuncio per confrontare il margine")
+    if bid_ceiling < min_next_bid_eur:
+        # FIX 21/07 v5 (richiesta esplicita utente, "il log e' troppo pesante"): questo
+        # e' lo scarto PIU' FREQUENTE in assoluto (la maggior parte delle aste non e'
+        # abbastanza sotto prezzo) -- di default nessun log per-asta, solo il contatore
+        # aggregato (visibile nel riepilogo di fine run). Il dettaglio resta disponibile
+        # con AUCTION_DIAGNOSTIC=si.
+        if AUCTION_DIAGNOSTIC:
+            log(f"[{source}] {player_name}: scarto -- tetto insufficiente, "
+                f"link={build_card_link(player_slug, card_slug, card_serial_number)}")
+        stats['skip_tetto_insufficiente'] = stats.get('skip_tetto_insufficiente', 0) + 1
         return False
 
-    second_min_price, _, _ = prices[1]
-    if second_min_price <= 0:
-        return False
+    log(f"[{source}] {player_name}: riferimento {reference_price:.2f}EUR ({reference_source}), "
+        f"tetto bid {bid_ceiling:.2f}EUR (max per asta {MAX_BID_PER_AUCTION_EUR:.2f}EUR), "
+        f"minNextBid attuale {min_next_bid_eur:.2f}EUR, "
+        f"link={build_card_link(player_slug, card_slug, card_serial_number)}")
 
-    margin_percent = (second_min_price - true_min_price) / second_min_price
-    log(f"{player_name}: minimo {true_min_price:.2f}EUR, secondo {second_min_price:.2f}EUR, "
-        f"margine {margin_percent:.1%} (soglie MakeOffer {MAKEOFFER_MARGIN_FRACTION:.0%}-"
-        f"{MAKEOFFER_MAX_MARGIN_FRACTION:.0%}, AutoBuy >= {AUTOBUY_MARGIN_FRACTION:.0%})")
-
-    # --- ROUTER: nessuna sovrapposizione per costruzione ---
-    if margin_percent >= AUTOBUY_MARGIN_FRACTION:
-        return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
-                                       margin_percent, card_slug, excluded_league, is_in_season,
-                                       offer_id)
-    if MAKEOFFER_MARGIN_FRACTION <= margin_percent <= MAKEOFFER_MAX_MARGIN_FRACTION:
-        return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
-                                         margin_percent, card_slug, excluded_league, is_in_season,
-                                         seller_slug)
-    return False
-
-
-def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
-                            margin_percent, card_slug, excluded_league, is_in_season, offer_id):
-    log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
-        f"margine {margin_percent:.1%})")
-
-    prepared = None
-    if offer_id:
-        prepared, prepare_category = prepare_accept_offer(offer_id)
-        if prepared:
-            nonce = (prepared.get('request') or {}).get('nonce')
-            log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
-        elif prepare_category == 'valuta_non_supportata':
-            log(f"{player_name}: prenotazione non riuscita -- annuncio in valuta "
-                f"crypto/ETH non gestibile dall'acquisto automatico (stesso motivo "
-                f"per cui MakeOffer scarterebbe un annuncio solo-ETH)")
-        else:
-            log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
-
-    purchase_completed = False
-    purchase_error = None
-    if AUTOBUY_LIVE_MODE and offer_id and prepared:
+    seconds_left = None
+    end_date = auction.get('endDate')
+    if end_date:
         try:
-            purchase_completed, purchase_error = execute_live_purchase(offer_id, prepared)
-        except Exception as e:
-            purchase_error = f"eccezione imprevista: {e}"
-            log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
-        if purchase_completed:
-            log(f"{player_name}: ACQUISTO COMPLETATO CON SUCCESSO")
-            if player_slug:
-                record_player_purchase(player_slug, is_in_season)
-        else:
-            log(f"{player_name}: acquisto automatico fallito -- {purchase_error}")
-            if _is_insufficient_funds_error(purchase_error):
-                log(f"{player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot, "
-                    f"nessun tentativo successivo avrebbe senso")
-                INSUFFICIENT_FUNDS_STOP[0] = True
-                send_insufficient_funds_alert(player_name, "AutoBuy")
-    elif AUTOBUY_LIVE_MODE and offer_id and not prepared:
-        purchase_error = "prenotazione (prepareAcceptOffer) non riuscita, acquisto automatico saltato"
-        log(f"{player_name}: {purchase_error}")
+            end_dt = datetime.datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            seconds_left = (end_dt - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+        except (ValueError, TypeError):
+            pass
 
-    send_autobuy_alert(player_name, player_slug, true_min_price, second_min_price,
-                        margin_percent, card_slug, excluded_league, prepared, is_in_season,
-                        live_mode=AUTOBUY_LIVE_MODE, purchase_completed=purchase_completed,
-                        purchase_error=purchase_error)
-    return True
+    if not AUCTION_LIVE_MODE:
+        log(f"[{source}] {player_name}: [DIAGNOSTICA] avrei biddato {bid_ceiling:.2f}EUR "
+            f"su questa asta")
+        alert_text = send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
+                                     bid_ceiling, min_next_bid_eur, live_mode=False, seconds_left=seconds_left,
+                                     card_serial_number=card_serial_number)
+        state.pending_alerts.append(alert_text)
+        stats['bid_simulated'] = stats.get('bid_simulated', 0) + 1
+        return True
 
-
-def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
-                              margin_percent, card_slug, excluded_league, is_in_season, seller_slug):
-    log(f"MAKEOFFER: {player_name} -- TROVATO AFFARE ({true_min_price:.2f}EUR, "
-        f"margine {margin_percent:.1%}) -- valuto se fare un'offerta")
-
-    card_details = get_card_offer_details(card_slug)
-    if not card_details:
-        log(f"{player_name}: scarto -- impossibile recuperare i dettagli della carta "
-            f"({card_slug}), niente assetId disponibile")
+    # --- Modalita' live: riverifica di sicurezza prima del bid reale (non ritirabile) ---
+    time.sleep(AUCTION_RECHECK_DELAY_SECONDS)
+    fresh = get_auction_live_state(auction_id)
+    if fresh is None:
+        log(f"[{source}] {player_name}: scarto -- riverifica live fallita o asta non piu' "
+            f"trovata, non biddo su dati non confermati")
+        stats['skip_riverifica_fallita'] = stats.get('skip_riverifica_fallita', 0) + 1
+        return False
+    if not fresh.get('open') or fresh.get('cancelled'):
+        log(f"[{source}] {player_name}: scarto -- asta non piu' aperta alla riverifica")
+        stats['skip_asta_chiusa'] = stats.get('skip_asta_chiusa', 0) + 1
+        return False
+    fresh_min_next_bid_eur = wei_to_eur(fresh.get('minNextBid'), eth_rate)
+    if fresh_min_next_bid_eur is not None and fresh_min_next_bid_eur > bid_ceiling:
+        log(f"[{source}] {player_name}: scarto -- minNextBid salito sopra il tetto durante "
+            f"la riverifica ({fresh_min_next_bid_eur:.2f}EUR > {bid_ceiling:.2f}EUR)")
+        stats['skip_superato_in_riverifica'] = stats.get('skip_superato_in_riverifica', 0) + 1
         return False
 
-    card_asset_id = card_details.get('assetId')
-    if not card_asset_id:
-        log(f"{player_name}: scarto -- assetId assente per {card_slug}")
-        return False
-
-    existing_offers = card_details.get('liveSingleBuyOffers') or []
-    if existing_offers:
-        log(f"{player_name}: scarto -- offerta gia' pendente su questa carta "
-            f"({len(existing_offers)} offerta/e attiva/e), non ne faccio una seconda")
-        return False
-
-    sale_offer = card_details.get('liveSingleSaleOffer') or {}
-    settlement_currencies = sale_offer.get('settlementCurrencies') or []
-    crypto_only_currencies = {'WEI', 'ETH'}
-    if settlement_currencies and set(settlement_currencies).issubset(crypto_only_currencies):
-        log(f"{player_name}: scarto -- venditore accetta solo cripto, niente fiat "
-            f"(valute accettate: {settlement_currencies})")
-        return False
-
-    if pending_offers_count[0] >= MAX_PENDING_OFFERS:
-        log(f"{player_name}: scarto -- gia' raggiunto il tetto di {MAX_PENDING_OFFERS} "
-            f"offerte pendenti in questa esecuzione")
-        return False
-
-    offer_amount_eur = round(true_min_price * (1 - OFFER_DISCOUNT_FRACTION), 2)
-    if offer_amount_eur <= 0:
-        log(f"{player_name}: scarto -- offerta calcolata non positiva ({offer_amount_eur}EUR)")
-        return False
-
-    log(f"{player_name}: offerta calcolata: {offer_amount_eur:.2f}EUR "
-        f"(minimo {true_min_price:.2f}EUR - sconto {OFFER_DISCOUNT_FRACTION:.0%}), "
-        f"durata {OFFER_DURATION_DAYS} giorni")
-
-    prepared = prepare_offer(card_asset_id, seller_slug, offer_amount_eur)
-    if prepared:
-        nonce = (prepared.get('request') or {}).get('nonce')
-        log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
+    bid_completed, bid_error = execute_live_bid(auction_id, bid_ceiling)
+    if bid_completed:
+        log(f"[{source}] {player_name}: BID PIAZZATO CON SUCCESSO ({bid_ceiling:.2f}EUR)")
+        record_player_bid(player_slug)
+        stats['bid_placed'] = stats.get('bid_placed', 0) + 1
     else:
-        log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
+        log(f"[{source}] {player_name}: bid reale fallito -- {bid_error}")
+        if _is_insufficient_funds_error(bid_error):
+            log(f"[{source}] {player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot")
+            INSUFFICIENT_FUNDS_STOP[0] = True
+            send_insufficient_funds_alert(player_name)
+        stats['bid_failed'] = stats.get('bid_failed', 0) + 1
 
-    offer_sent = False
-    offer_error = None
-    if MAKEOFFER_LIVE_MODE and prepared:
-        try:
-            offer_sent, offer_error = execute_live_offer(
-                card_asset_id, seller_slug, offer_amount_eur, prepared)
-        except Exception as e:
-            offer_error = f"eccezione imprevista: {e}"
-            log(f"{player_name}: ECCEZIONE IMPREVISTA durante offerta live -- {e}")
-        if offer_sent:
-            log(f"{player_name}: OFFERTA INVIATA CON SUCCESSO")
-            if player_slug:
-                record_player_offer(player_slug, is_in_season)
-            pending_offers_count[0] += 1
-        else:
-            log(f"{player_name}: offerta automatica fallita -- {offer_error}")
-            if _is_insufficient_funds_error(offer_error):
-                log(f"{player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot, "
-                    f"nessun tentativo successivo avrebbe senso")
-                INSUFFICIENT_FUNDS_STOP[0] = True
-                send_insufficient_funds_alert(player_name, "MakeOffer")
-            elif _is_invalid_signature_error(offer_error):
-                log(f"{player_name}: FIRMA NON VALIDA rilevata verso il manager "
-                    f"'{seller_slug}' -- invio notifica diagnostica (causa non "
-                    f"confermata, vedi Telegram)")
-                send_invalid_signature_diagnostic_alert(player_name, seller_slug, offer_amount_eur)
-    elif MAKEOFFER_LIVE_MODE and not prepared:
-        offer_error = "prenotazione (prepareOffer) non riuscita, offerta automatica saltata"
-        log(f"{player_name}: {offer_error}")
-
-    send_makeoffer_alert(player_name, player_slug, true_min_price, second_min_price,
-                          margin_percent, card_slug, excluded_league, prepared, is_in_season,
-                          live_mode=MAKEOFFER_LIVE_MODE, purchase_completed=offer_sent,
-                          purchase_error=offer_error, offer_amount_eur=offer_amount_eur)
-    return True
-SUBSCRIPTION_QUERY = """
-subscription OnTokenOfferUpdated {
-  tokenOfferWasUpdated {
-    id
-    status
-    sender { ... on User { slug } }
-    senderSide {
-      amounts { eurCents wei usdCents gbpCents lamport }
-      anyCards {
-        slug
-        rarityTyped
-        sport
-        anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
-        sportSeason { name }
-        inSeasonEligible
-      }
-    }
-    receiverSide {
-      amounts { eurCents wei usdCents gbpCents lamport }
-      anyCards { slug }
-    }
-  }
-}
-"""
+    alert_text = send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
+                                 bid_ceiling, min_next_bid_eur, live_mode=True,
+                                 bid_completed=bid_completed, bid_error=bid_error, seconds_left=seconds_left,
+                                 card_serial_number=card_serial_number)
+    state.pending_alerts.append(alert_text)
+    return bool(bid_completed)
 
 
 def run_listener(eth_rate):
-    identifier = json.dumps({"channel": "GraphqlChannel"})
-    subscription_payload = {
-        "query": SUBSCRIPTION_QUERY,
-        "variables": {},
-        "operationName": "OnTokenOfferUpdated",
-        "action": "execute",
-    }
+    state = _SharedListenerState()
+    stats = state.stats  # stesso dict, solo un alias piu' corto per il resto della funzione
 
-    stats = {"received": 0, "processed": 0, "matches_found": 0}
-    seen_offer_status = set()
-
-    # --- Pausa random periodica (20/07, richiesta esplicita utente: "non martellare
-    # Sorare di richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_
-    # SECONDS (default 180s = 3 minuti) di attivita', il bot si ferma per un tempo
-    # casuale tra RANDOM_PAUSE_MIN_SECONDS e RANDOM_PAUSE_MAX_SECONDS (default 1-10s)
-    # prima di riprendere a valutare eventi. Il timer parte dall'avvio dell'ascolto,
-    # non resetta ad ogni evento -- e' un ritmo di fondo, non legato al volume di
-    # eventi ricevuti.
-    pause_state = {"last_pause_at": time.monotonic()}
-
-    def maybe_random_pause():
-        now = time.monotonic()
-        if now - pause_state["last_pause_at"] >= RANDOM_PAUSE_INTERVAL_SECONDS:
-            pause_seconds = random.uniform(RANDOM_PAUSE_MIN_SECONDS, RANDOM_PAUSE_MAX_SECONDS)
-            log(f"[pausa random] fermo {pause_seconds:.1f}s (ritmo di fondo anti-martellamento)")
-            time.sleep(pause_seconds)
-            pause_state["last_pause_at"] = time.monotonic()
-
-    def on_open(ws):
-        log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
-        ws.send(json.dumps({"command": "subscribe", "identifier": identifier}))
-        time.sleep(1)
-        ws.send(json.dumps({
-            "command": "message",
-            "identifier": identifier,
-            "data": json.dumps(subscription_payload),
-        }))
-
-    def on_message(ws, raw_message):
-        try:
-            message = json.loads(raw_message)
-        except json.JSONDecodeError:
-            return
-
-        msg_type = message.get('type')
-        if msg_type in ('welcome', 'ping'):
-            return
-        if msg_type == 'confirm_subscription':
-            log("Sottoscrizione confermata, in ascolto...")
-            return
-        if msg_type == 'reject_subscription':
-            log(f"ERRORE: sottoscrizione rifiutata: {message}")
-            return
-
-        payload = message.get('message')
-        if not payload:
-            return
-        if payload.get('errors'):
-            log(f"ERRORE GraphQL nella subscription: {payload['errors']}")
-            return
-
-        # FIX diagnostica 'bot piantato': tutto il corpo di valutazione dell'evento e'
-        # ora dentro un try/except generale. Prima, un'eccezione imprevista in un
-        # qualunque punto (evaluate_event, playwright, parsing di un campo mancante,
-        # ecc.) usciva dal callback on_message senza essere loggata da noi -- a seconda
-        # della versione di websocket-client questo puo' interrompere silenziosamente
-        # il thread che legge dal socket, dando l'impressione che il bot sia
-        # "piantato" dopo la connessione, senza nessun log ne' su Telegram ne' in
-        # console che lo spieghi.
-        try:
-            stats["received"] += 1
-            offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
-            if not offer:
-                return
-
-            offer_id = offer.get('id') or ''
-            if not offer_id.startswith('SingleSaleOffer:'):
-                return
-
-            offer_status = offer.get('status')
-            dedup_key = (offer_id, offer_status)
-            if dedup_key in seen_offer_status:
-                return
-            seen_offer_status.add(dedup_key)
-
-            if offer_status != 'opened':
-                return
-
-            seller_slug = ((offer.get('sender') or {}).get('slug') or '').lower()
-            if seller_slug in BLACKLISTED_SELLER_SLUGS:
-                return
-            if seller_slug in BLACKLISTED_MANAGER_SLUGS:
-                return
-
-            sender_side = offer.get('senderSide') or {}
-            receiver_side = offer.get('receiverSide') or {}
-            if receiver_side.get('anyCards'):
-                return  # scambio carta-per-carta
-
-            price_eur = eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
-            if price_eur is None:
-                return
-
-            sender_cards = sender_side.get('anyCards') or []
-            if len(sender_cards) > 1:
-                return  # bundle multi-carta, prezzo per-carta non ricavabile
-
-            for card in sender_cards:
-                if card.get('rarityTyped') != 'limited':
-                    continue
-                if card.get('sport') != 'FOOTBALL':
-                    continue
-
-                player = card.get('anyPlayer') or {}
-                player_slug = player.get('slug')
-                player_name = player.get('displayName', player_slug)
-                card_slug = card.get('slug')
-
-                is_in_season = bool(card.get('inSeasonEligible'))
-                if not is_in_season and not CHECK_CLASSIC:
-                    continue  # modalita' base: SOLO in season
-                league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
-                if not player_slug:
-                    continue
-
-                stats["processed"] += 1
-                found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
-                                        league_slug, offer_id, seller_slug, is_in_season)
-                maybe_random_pause()
-                if INSUFFICIENT_FUNDS_STOP[0]:
-                    log("STOP: fondi insufficienti rilevati, chiudo la connessione -- "
-                        "nessun tentativo successivo avrebbe senso")
-                    ws.close()
-                    return
-                if found:
-                    stats["matches_found"] += 1
-                    log(f"Casi trovati finora: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
-                    if stats["matches_found"] >= AUTOBUY_TARGET_MATCHES:
-                        ws.close()
-        except Exception as e:
-            log(f"[ERRORE in on_message] eccezione non gestita durante la valutazione "
-                f"di un evento, la salto e continuo ad ascoltare: {e}")
-
-    def on_error(ws, error):
-        log(f"Errore WebSocket: {error}")
-
-    def on_close(ws, close_status_code, close_message):
-        log(f"Connessione chiusa (codice {close_status_code}). Eventi ricevuti: "
-            f"{stats['received']}, carte in season elaborate: {stats['processed']}, "
-            f"casi validi trovati: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
-
-    ws = websocket.WebSocketApp(
-        WS_URL,
-        header=[f"Cookie: {COOKIES}"] if COOKIES else [],
-        on_open=on_open,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close,
-    )
-
-    timer = threading.Timer(LISTEN_SECONDS, ws.close)
+    # Il timer ferma il ciclo dopo LISTEN_SECONDS, esattamente come faceva prima con la
+    # chiusura del WebSocket.
+    stop_event = threading.Event()
+    timer = threading.Timer(LISTEN_SECONDS, stop_event.set)
     timer.daemon = True
     timer.start()
 
-    ws.run_forever(ping_interval=60, ping_timeout=45)
-    timer.cancel()
-
-    return stats["matches_found"]
-
-
-# COMMIT PERIODICO LISTA NERA (21/07, richiesta esplicita utente -- "evitare che
-# un'interruzione della run perda blacklist/cooldown accumulati"): il file
-# sorare_lista_nera.txt viene gia' scritto su disco ad ogni upsert (vedi
-# _lista_nera_scrivi_righe), ma restava solo LOCALE fino al commit finale del
-# workflow -- se la run si interrompeva a meta' (timeout, cancellazione manuale,
-# crash), tutto cio' che il bot aveva imparato in quella sessione (nuovi cooldown,
-# nuove blacklist automatiche 365gg) andava perso. Un thread separato, parallelo
-# al listener WebSocket (che resta l'UNICA cosa che deve restare vivo/continuo --
-# niente piu' restart a chunk come per MLS Sentiment, qui romperebbe la sessione
-# live), fa git add/commit/push ogni COMMIT_INTERVAL_SECONDS (default 300s = 5
-# minuti) SOLO se il file e' effettivamente cambiato dall'ultimo commit.
-COMMIT_INTERVAL_SECONDS = int(os.environ.get('COMMIT_INTERVAL_SECONDS', '300'))
-_stop_periodic_commit = threading.Event()
-
-
-def _commit_lista_nera_se_serve():
-    """Un solo tentativo di commit+push, non bloccante per il resto del bot in
-    caso di errore (rete, conflitto git, ecc.) -- logga e continua, la prossima
-    esecuzione periodica ritentera' comunque."""
     try:
-        status = subprocess.run(
-            ['git', 'status', '--porcelain', '--', LISTA_NERA_PATH],
-            capture_output=True, text=True, timeout=30
-        )
-        if not status.stdout.strip():
-            return  # nessuna modifica, niente da committare
-        subprocess.run(['git', 'config', 'user.name', 'bot-supremo'], timeout=30)
-        subprocess.run(['git', 'config', 'user.email',
-                         'bot-supremo@users.noreply.github.com'], timeout=30)
-        subprocess.run(['git', 'add', LISTA_NERA_PATH], timeout=30)
-        commit = subprocess.run(
-            ['git', 'commit', '-m', 'Bot Supremo: commit periodico lista nera (run in corso)'],
-            capture_output=True, text=True, timeout=30
-        )
-        if commit.returncode != 0:
-            log(f"[commit periodico] nulla da committare o commit fallito: {commit.stdout.strip()} {commit.stderr.strip()}")
-            return
-        pull = subprocess.run(
-            ['git', 'pull', '--rebase', '--autostash', 'origin', 'main'],
-            capture_output=True, text=True, timeout=60
-        )
-        if pull.returncode != 0:
-            log(f"[commit periodico] git pull --rebase fallito, salto il push di questo giro: {pull.stderr.strip()}")
-            return
-        push = subprocess.run(['git', 'push'], capture_output=True, text=True, timeout=60)
-        if push.returncode == 0:
-            log("[commit periodico] lista nera committata e pushata con successo (run ancora in corso)")
-        else:
-            log(f"[commit periodico] push fallito: {push.stderr.strip()}")
-    except Exception as e:
-        log(f"[commit periodico] eccezione non bloccante, ritento al prossimo giro: {e}")
+        run_tracking_cycle(eth_rate, state, stop_event)
+    finally:
+        timer.cancel()
 
-
-def _periodic_commit_loop():
-    while not _stop_periodic_commit.wait(COMMIT_INTERVAL_SECONDS):
-        _commit_lista_nera_se_serve()
+    log(f"Ciclo terminato. Eventi processati: {stats.get('processed', 0)}")
+    total_bid = stats.get('bid_placed', 0) + stats.get('bid_simulated', 0)
+    skip_keys = sorted(k for k in stats if k.startswith('skip_'))
+    breakdown = ', '.join(f"{k[5:]}={stats[k]}" for k in skip_keys) or "nessuno"
+    source_keys = sorted(k for k in stats if k.startswith('source_'))
+    source_breakdown = ', '.join(f"{k[7:]}={stats[k]}" for k in source_keys) or "nessuno"
+    log(f"[riepilogo] bid {'reali' if AUCTION_LIVE_MODE else 'simulati'}: {total_bid}, "
+        f"bid falliti: {stats.get('bid_failed', 0)}, scarti: {breakdown}")
+    log(f"[riepilogo] aste valutate per fase: {source_breakdown}")
+    return stats
 
 
 def main():
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
-    autobuy_modalita = "ACQUISTO REALE ATTIVO" if AUTOBUY_LIVE_MODE else "solo diagnostica"
-    makeoffer_modalita = "OFFERTE REALI ATTIVE" if MAKEOFFER_LIVE_MODE else "solo diagnostica"
-    log(f"Bot Supremo -- AutoBuy: {autobuy_modalita} | MakeOffer: {makeoffer_modalita}")
-    log(f"[network] curl_cffi (impronta TLS Chrome) {'ATTIVO' if _HAS_CURL_CFFI else 'NON DISPONIBILE, uso requests standard'}")
-    csrf_source = "estratto dal cookie (csrftoken=...)" if _extract_csrf_from_cookie(COOKIES) else "da secret SORARE_CSRF (fallback)"
-    log(f"[auth] CSRF token in uso: {csrf_source}, valore: {(CSRF_TOKEN or '')[:20]}...")
-    log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
-        f"MakeOffer {MAKEOFFER_MARGIN_FRACTION:.0%}-{MAKEOFFER_MAX_MARGIN_FRACTION:.0%}, "
-        f"AutoBuy >= {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: {AUTOBUY_TARGET_MATCHES}")
-    log(f"Giocatori in blacklist unita ({len(BLACKLISTED_PLAYER_SLUGS)}): "
-        f"{sorted(BLACKLISTED_PLAYER_SLUGS)}")
-    log(f"Manager in blacklist unita ({len(BLACKLISTED_MANAGER_SLUGS)}): "
-        f"{sorted(BLACKLISTED_MANAGER_SLUGS)}")
-    if AUTOBUY_LIVE_MODE or MAKEOFFER_LIVE_MODE:
+    modalita = "BID REALI ATTIVI" if AUCTION_LIVE_MODE else "solo diagnostica (nessun bid reale)"
+    log(f"Bot Supremo Aste -- {modalita}")
+    log(f"[network] curl_cffi (impronta TLS Chrome) "
+        f"{'ATTIVO' if _HAS_CURL_CFFI else 'NON DISPONIBILE, uso requests standard'}")
+    log(f"Sconto target: {AUCTION_DISCOUNT_FRACTION:.0%} sotto il riferimento di mercato")
+    log(f"Finestra riferimento 'ultima asta conclusa': "
+        f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h")
+    log(f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h")
+    log(f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
+    log(f"Ciclo di tracking (WebSocket rimosso, solo scansioni GraphQL): "
+        f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s, valuta TUTTE) -> "
+        f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
+        f"FASE ZEROBID ({CYCLE_PHASE_SECONDS:.0f}s, valuta TUTTE) -> "
+        f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
+        f"FASE SCADENZA ({CYCLE_PHASE_SECONDS:.0f}s, top {SCADENZA_TOP_N}) -> "
+        f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> ricomincia. Notifiche Telegram accorpate "
+        f"in UN messaggio per fase (mai una a testa).")
+    log(f"Log verbosi per-fase (AUCTION_DIAGNOSTIC): "
+        f"{'ATTIVI' if AUCTION_DIAGNOSTIC else 'spenti'}")
+    log(f"Modalita' TEST solo aste a 0 bid (TEST_ONLY_ZERO_BID): "
+        f"{'ATTIVA -- tutte le altre aste vengono scartate silenziosamente' if TEST_ONLY_ZERO_BID else 'spenta'}")
+    log(f"Campionati inclusi nella whitelist ({len(LEAGUE_WHITELIST_SLUGS)}): "
+        f"{sorted(LEAGUE_WHITELIST_SLUGS)}")
+    log(f"Giocatori in blacklist ({len(BLACKLISTED_PLAYER_SLUGS_ASTE)}): "
+        f"{sorted(BLACKLISTED_PLAYER_SLUGS_ASTE)}")
+
+    if not LEAGUE_WHITELIST_SLUGS:
+        log("STOP: whitelist campionati vuota o illeggibile -- nessuna asta verrebbe mai "
+            "considerata, non ha senso avviare l'ascolto. Controlla "
+            f"{LEAGUE_WHITELIST_PATH}.")
+        send_telegram_msg(
+            "BOT SUPREMO ASTE -- STOP: whitelist campionati vuota o illeggibile, "
+            f"controlla {LEAGUE_WHITELIST_PATH}.")
+        return
+
+    if AUCTION_LIVE_MODE:
         log("[playwright] pre-apertura browser all'avvio (ottimizzazione velocita')...")
         get_browser_page()
-        log("[playwright] browser pronto e riscaldato, in attesa di occasioni")
-
-        # OTTIMIZZAZIONE VELOCITA' SNIPING: exchange_rate_id e la chiave cifrata del
-        # wallet sono entrambe cachate in memoria per tutta la run (vedi
-        # get_exchange_rate_id/fetch_encrypted_private_key) -- ma finora la CACHE
-        # veniva popolata solo al PRIMO acquisto/offerta reale, cioe' proprio nel
-        # momento in cui ogni millisecondo conta per battere altri bot sullo stesso
-        # annuncio. Le pre-carichiamo qui, all'avvio (stesso principio del warm-up
-        # del browser sopra), cosi' quando arriva il primo evento buono queste due
-        # chiamate di rete sono gia' state fatte e la pipeline di acquisto/offerta
-        # parte direttamente dal passo di firma, senza aspettarle. Nessuna modifica
-        # alla logica di acquisto/decisione -- solo l'ordine in cui il lavoro
-        # (comunque necessario) viene svolto.
-        log("[precarico velocita'] recupero anticipato chiave cifrata del wallet...")
-        # NOTA 21/07: exchange_rate_id NON viene piu' precaricato/cachato -- causava
-        # 'exchange rate has expired' riusando lo stesso id gia' consumato su piu'
-        # acquisti. Ora richiesto fresco ad ogni prepare_accept_offer.
+        log("[playwright] browser pronto e riscaldato")
+        log("[precarico velocita'] recupero anticipato exchange_rate_id e chiave "
+            "cifrata del wallet...")
+        pre_rate_id = get_exchange_rate_id()
+        if pre_rate_id:
+            log(f"[precarico velocita'] exchange_rate_id gia' in cache: {pre_rate_id}")
+        else:
+            log("[precarico velocita'] ATTENZIONE: precarico exchange_rate_id fallito, "
+                "verra' ritentato al primo bid reale")
         if SORARE_WALLET_PASSWORD:
             pre_key = fetch_encrypted_private_key()
             if pre_key:
                 log("[precarico velocita'] chiave cifrata del wallet gia' in cache")
             else:
                 log("[precarico velocita'] ATTENZIONE: precarico chiave cifrata fallito, "
-                    "verra' ritentato al primo acquisto/offerta reale")
-            # OTTIMIZZAZIONE VELOCITA' (21/07): avviamo qui anche il processo Node
-            # persistente per la firma (sorare-sign/decrypt_and_sign.js), invece di
-            # lasciare che parta al primo acquisto/offerta reale -- l'avvio di Node
-            # e il caricamento di @sorare/crypto costano qualche centinaio di
-            # millisecondi, e non vogliamo pagarli proprio mentre stiamo
-            # competendo con altri bot sullo stesso annuncio.
+                    "verra' ritentato al primo bid reale")
             with _node_process_lock:
                 _ensure_node_sign_process()
-            log("[precarico velocita'] processo Node persistente per la firma avviato "
-                "e pronto (restera' vivo per tutta la run)")
+            log("[precarico velocita'] processo Node persistente per la firma avviato")
         else:
-            log("[precarico velocita'] SORARE_WALLET_PASSWORD non impostata, salto il "
-                "precarico della chiave cifrata e del processo Node di firma")
-    if not validate_live_offers_schema():
-        log("STOP: self-check dello schema GraphQL fallito, esco senza avviare l'ascolto "
-            "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
+            log("[precarico velocita'] SORARE_WALLET_PASSWORD non impostata -- ATTENZIONE: "
+                "AUCTION_LIVE_MODE e' attivo ma nessun bid reale sara' possibile senza "
+                "password wallet")
+
+    if not validate_auction_schema():
+        log("STOP: self-check dello schema GraphQL fallito sulla query essenziale "
+            "(annunci live in_season) -- esco senza avviare l'ascolto.")
         return
+
     send_startup_msg()
-    commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
-    commit_thread.start()
-    log(f"[commit periodico] thread avviato, commit+push lista nera ogni "
-        f"{COMMIT_INTERVAL_SECONDS}s se ci sono modifiche")
     try:
-        matches_found = run_listener(eth_rate)
-        target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
-        send_end_msg(matches_found, target_reached)
-        if target_reached:
-            log(f"Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati e "
-                f"notificati -- esecuzione terminata.")
-        else:
-            log(f"Tempo di ascolto scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi "
-                f"trovati -- esecuzione terminata.")
+        stats = run_listener(eth_rate)
+        send_end_msg(stats)
+        log("Ascolto terminato.")
     finally:
-        _stop_periodic_commit.set()
-        _commit_lista_nera_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
         close_browser()
         close_node_sign_process()
 
