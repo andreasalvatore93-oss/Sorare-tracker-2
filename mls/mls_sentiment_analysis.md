@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T14:41:02.774757Z
-**Run totali:** 28
+**Data analisi:** 2026-07-21T14:43:04.915510Z
+**Run totali:** 29
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.17 EUR
+- **Prezzo medio MLS:** 7.37 EUR
 - **Trend mercato:** ➡️ STABLE (-0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
@@ -31,13 +31,13 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 1. Maximiliano Falcón (Inter Miami CF) — **-42.9%** vs media (1.40 EUR vs 2.45 EUR)
 2. Martín Ojeda (Orlando City SC) — **-25.2%** vs media (20.21 EUR vs 27.00 EUR)
 3. Keisuke Kurokawa (DC United) — **-22.7%** vs media (1.70 EUR vs 2.20 EUR)
-4. Mathieu Choinière (Los Angeles FC) — **-21.0%** vs media (1.30 EUR vs 1.65 EUR)
-5. Nicolás Fernández-Mercau (New York City FC) — **-18.5%** vs media (24.38 EUR vs 29.93 EUR)
-6. Julián Aude (LA Galaxy) — **-16.7%** vs media (1.10 EUR vs 1.32 EUR)
-7. Jonathan Bond (Houston Dynamo FC) — **-16.2%** vs media (9.30 EUR vs 11.10 EUR)
-8. Dániel Gazdag (Columbus Crew) — **-14.2%** vs media (1.00 EUR vs 1.17 EUR)
-9. Nicholas Simmonds (FC Dallas) — **-14.0%** vs media (0.95 EUR vs 1.10 EUR)
-10. Hany Mukhtar (Nashville SC) — **-13.2%** vs media (19.45 EUR vs 22.41 EUR)
+4. Kelvin Yeboah (Minnesota United) — **-22.4%** vs media (2.37 EUR vs 3.06 EUR)
+5. Mathieu Choinière (Los Angeles FC) — **-21.0%** vs media (1.30 EUR vs 1.65 EUR)
+6. Carles Gil (New England Revolution) — **-18.9%** vs media (58.50 EUR vs 72.09 EUR)
+7. Nicolás Fernández-Mercau (New York City FC) — **-18.5%** vs media (24.38 EUR vs 29.93 EUR)
+8. Julián Aude (LA Galaxy) — **-16.7%** vs media (1.10 EUR vs 1.32 EUR)
+9. Jonathan Bond (Houston Dynamo FC) — **-16.2%** vs media (9.30 EUR vs 11.10 EUR)
+10. Dániel Gazdag (Columbus Crew) — **-14.2%** vs media (1.00 EUR vs 1.17 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Maximiliano Moralez (New York City FC) — **+0.0%** vs media (1.04 EUR vs 1.04 EUR)
@@ -59,7 +59,7 @@ Carte trovate: 7 | Prezzo medio: 12.67 EUR | Volatilità (σ): 21.09
 Carte trovate: 5 | Prezzo medio: 1.59 EUR | Volatilità (σ): 1.05
 
 **New England Revolution**
-Carte trovate: 5 | Prezzo medio: 17.31 EUR | Volatilità (σ): 34.38
+Carte trovate: 5 | Prezzo medio: 13.25 EUR | Volatilità (σ): 25.32
 
 **Columbus Crew**
 Carte trovate: 13 | Prezzo medio: 2.36 EUR | Volatilità (σ): 2.36
@@ -98,7 +98,7 @@ Carte trovate: 4 | Prezzo medio: 10.13 EUR | Volatilità (σ): 7.38
 Carte trovate: 2 | Prezzo medio: 0.86 EUR | Volatilità (σ): 0.02
 
 **LA Galaxy**
-Carte trovate: 8 | Prezzo medio: 3.52 EUR | Volatilità (σ): 3.54
+Carte trovate: 9 | Prezzo medio: 3.30 EUR | Volatilità (σ): 3.38
 
 **Los Angeles FC**
 Carte trovate: 9 | Prezzo medio: 5.43 EUR | Volatilità (σ): 7.89
@@ -128,7 +128,7 @@ Carte trovate: 3 | Prezzo medio: 7.03 EUR | Volatilità (σ): 6.99
 Carte trovate: 3 | Prezzo medio: 4.49 EUR | Volatilità (σ): 3.58
 
 **Minnesota United**
-Carte trovate: 6 | Prezzo medio: 3.44 EUR | Volatilità (σ): 3.20
+Carte trovate: 6 | Prezzo medio: 3.21 EUR | Volatilità (σ): 3.23
 
 **Houston Dynamo FC**
 Carte trovate: 3 | Prezzo medio: 4.07 EUR | Volatilità (σ): 4.54
