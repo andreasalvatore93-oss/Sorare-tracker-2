@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T21:20:18.231731Z
-**Run totali:** 9
+**Data analisi:** 2026-07-21T21:22:19.857404Z
+**Run totali:** 10
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.66 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.1%)
-- **Sentiment:** 🟨 Quasi Fermo
+- **Prezzo medio MLS:** 10.17 EUR
+- **Trend mercato:** 📈 STRONG_ASCENDING (+5.3%)
+- **Sentiment:** 💚 Forte Rialzo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.1%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**📈 TREND GLOBALE: STRONG_ASCENDING (+5.3%)**
+I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
 Prezzo: **42.98 EUR** | Media: **58.99 EUR** | Sconto: **-27.1%**
@@ -33,24 +33,24 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 2. Thomas Guillier (CF Montreal) — **-10.0%** vs media (7.59 EUR vs 8.43 EUR)
 3. Fallou Fall (St. Louis City SC) — **-7.7%** vs media (4.78 EUR vs 5.18 EUR)
 4. Kristijan Kahlina (Charlotte FC) — **-1.1%** vs media (16.00 EUR vs 16.18 EUR)
-5. Paxten Aaronson (Colorado Rapids) — **-0.8%** vs media (9.78 EUR vs 9.85 EUR)
-6. Mbekezeli Mbokazi (Chicago Fire FC) — **-0.1%** vs media (11.45 EUR vs 11.46 EUR)
-7. Micael (Inter Miami CF) — **-0.1%** vs media (4.00 EUR vs 4.00 EUR)
-8. Albert Rusnák (Seattle Sounders FC) — **0.0%** vs media (12.34 EUR vs 12.34 EUR)
-9. Yéimar Gómez Andrade (Seattle Sounders FC) — **0.0%** vs media (3.71 EUR vs 3.71 EUR)
-10. Ryan Raposo (Los Angeles FC) — **0.0%** vs media (1.80 EUR vs 1.80 EUR)
+5. Evander (FC Cincinnati) — **-1.0%** vs media (72.50 EUR vs 73.25 EUR)
+6. Paxten Aaronson (Colorado Rapids) — **-0.8%** vs media (9.78 EUR vs 9.85 EUR)
+7. Mbekezeli Mbokazi (Chicago Fire FC) — **-0.1%** vs media (11.45 EUR vs 11.46 EUR)
+8. Micael (Inter Miami CF) — **-0.1%** vs media (4.00 EUR vs 4.00 EUR)
+9. Albert Rusnák (Seattle Sounders FC) — **0.0%** vs media (12.34 EUR vs 12.34 EUR)
+10. Yéimar Gómez Andrade (Seattle Sounders FC) — **0.0%** vs media (3.71 EUR vs 3.71 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Nicolás Fernández-Mercau (New York City FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
-2. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
-3. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
-4. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
-5. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
-6. Carles Gil (New England Revolution) — **+0.0%** vs media (58.50 EUR vs 58.50 EUR)
-7. Lucas Hoyos (Atlanta United) — **+0.0%** vs media (2.85 EUR vs 2.85 EUR)
-8. Ethan Horvath (New York Red Bulls) — **+0.0%** vs media (7.58 EUR vs 7.58 EUR)
-9. Mohammed Sofo (New York Red Bulls) — **+0.0%** vs media (0.84 EUR vs 0.84 EUR)
-10. Adri Mehmeti (New York Red Bulls) — **+0.0%** vs media (4.35 EUR vs 4.35 EUR)
+1. Benjamín Kuščević (Toronto FC) — **+0.0%** vs media (0.77 EUR vs 0.77 EUR)
+2. Nicolás Fernández-Mercau (New York City FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
+3. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
+4. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
+5. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
+6. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
+7. Carles Gil (New England Revolution) — **+0.0%** vs media (58.50 EUR vs 58.50 EUR)
+8. Lucas Hoyos (Atlanta United) — **+0.0%** vs media (2.85 EUR vs 2.85 EUR)
+9. Ethan Horvath (New York Red Bulls) — **+0.0%** vs media (7.58 EUR vs 7.58 EUR)
+10. Mohammed Sofo (New York Red Bulls) — **+0.0%** vs media (0.84 EUR vs 0.84 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -75,13 +75,13 @@ Carte trovate: 6 | Prezzo medio: 11.77 EUR | Volatilità (σ): 10.64
 Carte trovate: 5 | Prezzo medio: 5.36 EUR | Volatilità (σ): 2.45
 
 **Chicago Fire FC**
-Carte trovate: 5 | Prezzo medio: 15.68 EUR | Volatilità (σ): 17.14
+Carte trovate: 6 | Prezzo medio: 14.22 EUR | Volatilità (σ): 15.74
 
 **Inter Miami CF**
 Carte trovate: 4 | Prezzo medio: 8.20 EUR | Volatilità (σ): 7.19
 
 **FC Cincinnati**
-Carte trovate: 4 | Prezzo medio: 19.80 EUR | Volatilità (σ): 36.14
+Carte trovate: 4 | Prezzo medio: 19.42 EUR | Volatilità (σ): 35.39
 
 **Minnesota United**
 Carte trovate: 2 | Prezzo medio: 4.36 EUR | Volatilità (σ): 2.11
@@ -96,7 +96,7 @@ Carte trovate: 2 | Prezzo medio: 2.31 EUR | Volatilità (σ): 1.88
 Carte trovate: 2 | Prezzo medio: 3.75 EUR | Volatilità (σ): 4.46
 
 **San Diego FC**
-Carte trovate: 1 | Prezzo medio: 0.98 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 0.89 EUR | Volatilità (σ): 0.13
 
 **Vancouver Whitecaps FC**
 Carte trovate: 4 | Prezzo medio: 7.14 EUR | Volatilità (σ): 9.34
@@ -130,4 +130,7 @@ Carte trovate: 1 | Prezzo medio: 7.59 EUR | Volatilità (σ): 0.00
 
 **New York City FC**
 Carte trovate: 1 | Prezzo medio: 15.00 EUR | Volatilità (σ): 0.00
+
+**Toronto FC**
+Carte trovate: 1 | Prezzo medio: 0.77 EUR | Volatilità (σ): 0.00
 
