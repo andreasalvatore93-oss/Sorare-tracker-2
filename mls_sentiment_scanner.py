@@ -143,28 +143,24 @@ subscription OnTokenOfferUpdated {
 
 
 def get_eth_rate():
-    """Ottiene il tasso ETH/EUR corrente."""
-    query = """
-    query GetExchangeRate {
-      exchangeRates(first: 1) {
-        edges {
-          node {
-            id
-            rate
-          }
-        }
-      }
-    }
-    """
-    data = graphql_query(query)
+    """Ottiene il tasso ETH/EUR corrente da API pubblica."""
     try:
-        edges = (data.get('data') or {}).get('exchangeRates', {}).get('edges', [])
-        if edges:
-            rate_str = edges[0].get('node', {}).get('rate', '0')
-            return float(rate_str)
-    except (ValueError, TypeError, KeyError):
-        pass
-    return None
+        # Prova API CoinGecko (libera, no API key)
+        response = requests.get(
+            'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur',
+            timeout=5
+        )
+        response.raise_for_status()
+        data = response.json()
+        eth_eur = data.get('ethereum', {}).get('eur')
+        if eth_eur:
+            return float(eth_eur)
+    except Exception as e:
+        log(f"[ETH Rate API] Errore CoinGecko: {e}")
+    
+    # Fallback: tasso medio storico approssimativo
+    log("[ETH Rate] Usando fallback 1700 EUR/ETH")
+    return 1700
 
 
 def load_sentiment_data():
@@ -229,7 +225,7 @@ def run_listener(eth_rate, data, listen_seconds):
     }
     
     stats = {"received": 0, "processed": 0, "prices_found": 0}
-    start_time = time.time()
+    ws_container = [None]  # Contenitore per WebSocket (per chiuderlo dal timer)
     
     def on_open(ws):
         log("Connesso al WebSocket Sorare, sottoscrizione in corso...")
@@ -260,6 +256,11 @@ def run_listener(eth_rate, data, listen_seconds):
                 return
             
             stats["received"] += 1
+            
+            # DEBUG: log raw structure
+            if stats["received"] <= 5:
+                log(f"[DEBUG] Evento #{stats['received']}: {json.dumps(payload)[:200]}...")
+            
             offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
             if not offer or offer.get('status') != 'opened':
                 return
@@ -327,10 +328,6 @@ def run_listener(eth_rate, data, listen_seconds):
         
         except Exception as e:
             log(f"[Errore in on_message] {e}")
-        
-        # Check timeout
-        if time.time() - start_time > listen_seconds:
-            ws.close()
     
     def on_error(ws, error):
         log(f"Errore WebSocket: {error}")
@@ -338,6 +335,17 @@ def run_listener(eth_rate, data, listen_seconds):
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa. Events ricevuti: {stats['received']}, "
             f"prezzi trovati: {stats['prices_found']}")
+    
+    def close_ws_after_timeout():
+        """Chiude il WebSocket dopo listen_seconds."""
+        time.sleep(listen_seconds)
+        if ws_container[0]:
+            log(f"[Timeout] Chiusura WebSocket dopo {listen_seconds} secondi")
+            ws_container[0].close()
+    
+    # Avvia thread di timeout
+    timeout_thread = threading.Thread(target=close_ws_after_timeout, daemon=True)
+    timeout_thread.start()
     
     ws = websocket.WebSocketApp(
         WS_URL,
@@ -347,6 +355,7 @@ def run_listener(eth_rate, data, listen_seconds):
         on_close=on_close,
     )
     
+    ws_container[0] = ws
     ws.run_forever(ping_interval=30)
     return data
 
