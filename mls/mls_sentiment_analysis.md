@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T22:52:30.934596Z
-**Run totali:** 20
+**Data analisi:** 2026-07-21T22:54:32.445788Z
+**Run totali:** 21
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.02 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.7%)
-- **Sentiment:** 🟡 Leggero Calo
+- **Prezzo medio MLS:** 9.26 EUR
+- **Trend mercato:** 📈 ASCENDING (+2.7%)
+- **Sentiment:** 🟢 In Crescita
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.7%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**📈 TREND GLOBALE: ASCENDING (+2.7%)**
+I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
 Prezzo: **42.98 EUR** | Media: **58.99 EUR** | Sconto: **-27.1%**
@@ -47,14 +47,14 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 4. Benjamín Kuščević (Toronto FC) — **+0.0%** vs media (0.77 EUR vs 0.77 EUR)
 5. Andrew Baiera (New York City FC) — **+0.0%** vs media (0.65 EUR vs 0.65 EUR)
 6. Nicolás Fernández-Mercau (New York City FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
-7. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
-8. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
-9. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
-10. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
+7. Guilherme (Houston Dynamo FC) — **+0.0%** vs media (48.50 EUR vs 48.50 EUR)
+8. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
+9. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
+10. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
-Carte trovate: 2 | Prezzo medio: 8.03 EUR | Volatilità (σ): 6.10
+Carte trovate: 3 | Prezzo medio: 5.78 EUR | Volatilità (σ): 5.80
 
 **Los Angeles FC**
 Carte trovate: 3 | Prezzo medio: 10.41 EUR | Volatilità (σ): 10.43
@@ -87,7 +87,7 @@ Carte trovate: 5 | Prezzo medio: 15.92 EUR | Volatilità (σ): 31.64
 Carte trovate: 2 | Prezzo medio: 4.36 EUR | Volatilità (σ): 2.11
 
 **Orlando City SC**
-Carte trovate: 3 | Prezzo medio: 8.21 EUR | Volatilità (σ): 7.89
+Carte trovate: 4 | Prezzo medio: 6.68 EUR | Volatilità (σ): 7.13
 
 **Nashville SC**
 Carte trovate: 3 | Prezzo medio: 2.30 EUR | Volatilità (σ): 1.33
@@ -123,7 +123,7 @@ Carte trovate: 2 | Prezzo medio: 30.85 EUR | Volatilità (σ): 39.10
 Carte trovate: 2 | Prezzo medio: 0.96 EUR | Volatilità (σ): 0.41
 
 **Houston Dynamo FC**
-Carte trovate: 1 | Prezzo medio: 2.00 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 25.25 EUR | Volatilità (σ): 32.88
 
 **CF Montreal**
 Carte trovate: 1 | Prezzo medio: 7.59 EUR | Volatilità (σ): 0.00
