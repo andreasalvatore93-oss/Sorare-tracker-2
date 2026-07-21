@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T15:34:31.887870Z
-**Run totali:** 31
+**Data analisi:** 2026-07-21T18:24:35.544817Z
+**Run totali:** 32
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.49 EUR
-- **Trend mercato:** ➡️ STABLE (-0.1%)
+- **Prezzo medio MLS:** 7.38 EUR
+- **Trend mercato:** ➡️ STABLE (-0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.1%)**
+**➡️ TREND GLOBALE: STABLE (-0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Maximiliano Falcón (Inter Miami CF)**
@@ -68,7 +68,7 @@ Carte trovate: 13 | Prezzo medio: 2.36 EUR | Volatilità (σ): 2.36
 Carte trovate: 4 | Prezzo medio: 1.13 EUR | Volatilità (σ): 0.65
 
 **Vancouver Whitecaps FC**
-Carte trovate: 6 | Prezzo medio: 8.28 EUR | Volatilità (σ): 5.83
+Carte trovate: 7 | Prezzo medio: 7.30 EUR | Volatilità (σ): 5.92
 
 **Charlotte FC**
 Carte trovate: 8 | Prezzo medio: 6.02 EUR | Volatilità (σ): 5.85
@@ -92,7 +92,7 @@ Carte trovate: 4 | Prezzo medio: 13.72 EUR | Volatilità (σ): 9.86
 Carte trovate: 8 | Prezzo medio: 9.17 EUR | Volatilità (σ): 7.14
 
 **Portland Timbers**
-Carte trovate: 4 | Prezzo medio: 10.13 EUR | Volatilità (σ): 7.38
+Carte trovate: 5 | Prezzo medio: 8.72 EUR | Volatilità (σ): 7.12
 
 **Toronto FC**
 Carte trovate: 2 | Prezzo medio: 0.86 EUR | Volatilità (σ): 0.02
@@ -107,13 +107,13 @@ Carte trovate: 9 | Prezzo medio: 5.43 EUR | Volatilità (σ): 7.89
 Carte trovate: 4 | Prezzo medio: 1.72 EUR | Volatilità (σ): 0.51
 
 **San Diego FC**
-Carte trovate: 7 | Prezzo medio: 9.46 EUR | Volatilità (σ): 13.50
+Carte trovate: 8 | Prezzo medio: 8.38 EUR | Volatilità (σ): 12.87
 
 **Austin FC**
 Carte trovate: 6 | Prezzo medio: 1.53 EUR | Volatilità (σ): 1.22
 
 **Chicago Fire FC**
-Carte trovate: 4 | Prezzo medio: 16.36 EUR | Volatilità (σ): 17.73
+Carte trovate: 5 | Prezzo medio: 13.39 EUR | Volatilità (σ): 16.73
 
 **Orlando City SC**
 Carte trovate: 4 | Prezzo medio: 7.31 EUR | Volatilità (σ): 8.85
