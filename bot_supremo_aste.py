@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import re
 import time
 import datetime
 import threading
@@ -1077,7 +1078,18 @@ def send_telegram_msg(message):
 
 
 def build_card_link(player_slug, card_slug):
-    return f"https://sorare.com/it/football/players/{player_slug}?card={card_slug}"
+    """FIX 21/07 (pattern osservato su 3 casi reali dall'utente: Lorenzo Dellavalle
+    -287/-288, Damario McIntosh -222/-223, e un terzo caso -- in tutti e tre anyCards
+    restituiva il serial SBAGLIATO, sempre esattamente uno in meno di quello realmente
+    in asta): il seriale finale dello slug carta viene incrementato di 1 di default per
+    generare il link. Se il pattern smette di valere (link +1 che non esiste/404), va
+    rivalutato -- non e' un campo GraphQL verificato, e' un'euristica su dati osservati."""
+    corrected_slug = card_slug
+    m = re.search(r'^(.*-)(\d+)$', card_slug)
+    if m:
+        prefix, serial = m.groups()
+        corrected_slug = f"{prefix}{int(serial) + 1}"
+    return f"https://sorare.com/it/football/players/{player_slug}?card={corrected_slug}"
 
 
 # =====================================================================================
@@ -1430,15 +1442,16 @@ def process_incoming_auction(auction, eth_rate, state, source):
     # altri motivi. Solo un controllo manuale (guardando Sorare nello stesso momento)
     # puo' confermare quale dei due casi sia.
     if source == 'WS' and is_first_sighting and AUCTION_DIAGNOSTIC:
-        link_hint = ""
         cards = auction.get('anyCards') or []
-        for c in cards:
-            player = c.get('anyPlayer') or {}
-            p_slug = player.get('slug')
-            c_slug = c.get('slug')
-            if p_slug and c_slug:
-                link_hint = f", link={build_card_link(p_slug, c_slug)}"
-                break
+        candidates = [(c.get('anyPlayer', {}).get('slug'), c.get('slug')) for c in cards
+                      if c.get('anyPlayer', {}).get('slug') and c.get('slug')]
+        link_hint = ""
+        if len(candidates) > 1:
+            slugs = ', '.join(c_slug for _, c_slug in candidates)
+            link_hint = f", ATTENZIONE link ambiguo ({len(candidates)} carte candidate: {slugs})"
+        if candidates:
+            p_slug, c_slug = candidates[0]
+            link_hint += f", link={build_card_link(p_slug, c_slug)}"
         log(f"[WS-POSSIBILE-APERTURA] primo avvistamento in questa run, id={auction_id}, "
             f"currentPrice={auction.get('currentPrice')}, minNextBid={auction.get('minNextBid')}, "
             f"endDate={auction.get('endDate')}{link_hint} -- verifica a mano se corrisponde a "
@@ -1578,7 +1591,7 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
         return False
 
     cards = auction.get('anyCards') or []
-    match = None
+    qualifying = []
     for c in cards:
         if c.get('rarityTyped') != 'limited':
             continue
@@ -1586,10 +1599,23 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
             continue
         if not c.get('inSeasonEligible'):
             continue  # le aste valgono solo per in_season -- carta classic, ignorata
-        match = c
-        break
-    if not match:
+        qualifying.append(c)
+    if not qualifying:
         return False
+    match = qualifying[0]
+
+    # FIX 21/07 (caso reale, Lorenzo Dellavalle: anyCards conteneva DUE carte limited
+    # in_season -287 e -288, il codice prendeva sempre la prima -- link mostrato NON
+    # corrispondeva alla carta realmente in asta). NOTA: da questa modifica il link viene
+    # generato con serial+1 (vedi build_card_link) basandosi sul pattern osservato su 3
+    # casi reali -- non e' un campo GraphQL verificato, quindi il warning resta comunque
+    # utile per un controllo manuale finche' il pattern non e' confermato su piu' casi.
+    if len(qualifying) > 1:
+        all_slugs = ', '.join(c.get('slug', '?') for c in qualifying)
+        log(f"[{source}] ATTENZIONE -- {len(qualifying)} carte candidate per questa asta "
+            f"(anyCards ambiguo): {all_slugs}. Uso la prima ({match.get('slug')}) con "
+            f"correzione +1 sul link (euristica, non campo verificato) -- verificare a "
+            f"mano finche' il pattern non e' confermato su piu' casi.")
 
     card_slug = match.get('slug')
     player = match.get('anyPlayer') or {}
