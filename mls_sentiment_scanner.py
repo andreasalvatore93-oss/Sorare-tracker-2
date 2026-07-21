@@ -658,8 +658,9 @@ def generate_markdown(data, recommendations, movers):
     md_content.append(f"**Data analisi:** {run_date}\n")
     md_content.append(f"**Run totali:** {data['metadata'].get('total_runs', 0)}\n\n")
     
-    chart_pages_url = "https://andreasalvatore93-oss.github.io/Sorare-tracker-2/mls/mls_sentiment_chart.html"
-    md_content.append(f"📊 **[Apri i grafici interattivi]({chart_pages_url})**\n\n")
+    raw_html_url = "https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html"
+    chart_preview_url = f"https://htmlpreview.github.io/?{raw_html_url}"
+    md_content.append(f"📊 **[Apri i grafici interattivi]({chart_preview_url})**\n\n")
     
     # Riepilogo globale
     md_content.append("## 📈 RIEPILOGO GLOBALE\n")
@@ -1133,7 +1134,8 @@ def main():
         # Output URL finale
         repo_url = "https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main"
         html_url = f"{repo_url}/mls/mls_sentiment_chart.html"
-        log(f"\n📊 Chart URL: {html_url}\n")
+        preview_url = f"https://htmlpreview.github.io/?{html_url}"
+        log(f"\n📊 Chart URL (renderizzato): {preview_url}\n")
     
     log("=" * 80)
     log("MLS SENTIMENT ANALYSIS SCANNER - COMPLETATO")
