@@ -1406,10 +1406,19 @@ def process_incoming_auction(auction, eth_rate, state, source):
     # altri motivi. Solo un controllo manuale (guardando Sorare nello stesso momento)
     # puo' confermare quale dei due casi sia.
     if source == 'WS' and is_first_sighting:
+        link_hint = ""
+        cards = auction.get('anyCards') or []
+        for c in cards:
+            player = c.get('anyPlayer') or {}
+            p_slug = player.get('slug')
+            c_slug = c.get('slug')
+            if p_slug and c_slug:
+                link_hint = f", link={build_card_link(p_slug, c_slug)}"
+                break
         log(f"[WS-POSSIBILE-APERTURA] primo avvistamento in questa run, id={auction_id}, "
             f"currentPrice={auction.get('currentPrice')}, minNextBid={auction.get('minNextBid')}, "
-            f"endDate={auction.get('endDate')} -- verifica a mano se corrisponde a un'asta "
-            f"appena aperta su Sorare in questo momento")
+            f"endDate={auction.get('endDate')}{link_hint} -- verifica a mano se corrisponde a "
+            f"un'asta appena aperta su Sorare in questo momento")
 
     try:
         evaluate_auction(auction, eth_rate, state.stats, source=source)
@@ -1630,7 +1639,7 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
 
     log(f"[{source}] {player_name}: riferimento {reference_price:.2f}EUR ({reference_source}), "
         f"tetto bid {bid_ceiling:.2f}EUR (max per asta {MAX_BID_PER_AUCTION_EUR:.2f}EUR), "
-        f"minNextBid attuale {min_next_bid_eur:.2f}EUR")
+        f"minNextBid attuale {min_next_bid_eur:.2f}EUR, link={build_card_link(player_slug, card_slug)}")
 
     if bid_ceiling < min_next_bid_eur:
         log(f"[{source}] {player_name}: scarto -- il tetto bid ({bid_ceiling:.2f}EUR) e' "
