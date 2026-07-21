@@ -58,6 +58,14 @@ on:
         description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
         required: false
         default: ""
+      blacklisted_league_slugs:
+        description: "Slug CAMPIONATI da aggiungere alla blacklist unita (separati da virgola, es. premiership-gb-sct) -- carte di questi campionati vengono ignorate completamente, default 15gg rinnovabile"
+        required: false
+        default: ""
+      league_blacklist_verbose_log:
+        description: "'si' = log dettagliato per OGNI carta scartata per campionato blacklistato (utile per il primo test). 'no' = filtro silenzioso."
+        required: false
+        default: "no"
       autobuy_live_mode:
         description: "'si' = ACQUISTO REALE AUTOMATICO (ramo AutoBuy). 'no' = solo diagnostica."
         required: false
@@ -123,6 +131,8 @@ jobs:
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '4' }}
           MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '5' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
+          BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
+          LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'si' }}
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
           OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '20' }}
