@@ -42,12 +42,12 @@ jobs:
       - name: Commit JSON sentiment analysis
         if: always()
         run: |
-          if [ -z "$(git status --porcelain -- mls/mls_sentiment_analysis.json)" ]; then
-            echo "Nessuna modifica al JSON sentiment, niente da committare."
+          if [ -z "$(git status --porcelain -- mls/)" ]; then
+            echo "Nessuna modifica ai file sentiment, niente da committare."
           else
             git config user.name "mls-sentiment-scanner"
             git config user.email "mls-sentiment-scanner@users.noreply.github.com"
-            git add mls/mls_sentiment_analysis.json mls/mls_sentiment_analysis.md mls/mls_sentiment_chart.html
+            git add mls/
             git commit -m "MLS Sentiment: aggiorna analisi"
             git push
           fi
