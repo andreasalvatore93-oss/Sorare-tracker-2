@@ -608,12 +608,17 @@ def record_player_offer(player_slug, is_in_season=True):
 THIN_MARKET_SKIP_HOURS = THIN_MARKET_DEFAULT_DAYS * 24  # mantenuto per compatibilita' log
 
 
-def is_player_in_thin_market_cache(player_slug):
-    return _lista_nera_attiva('thin_market', player_slug)
+def is_player_in_thin_market_cache(player_slug, is_in_season=True):
+    """FIX 21/07 (bug segnalato dall'utente: classic thin market bloccava anche
+    l'in_season dello stesso giocatore, che aveva liquidita' normale): stesso
+    principio gia' applicato al cooldown acquisto -- suffisso -inseason/-classic
+    sullo slug, cosi' le due stagioni sono tracciate separatamente e una classic
+    sottile non blocca piu' la ricerca sull'in_season (e viceversa)."""
+    return _lista_nera_attiva('thin_market', _slug_cooldown(player_slug, is_in_season))
 
 
-def record_thin_market_skip(player_slug):
-    _lista_nera_upsert('thin_market', player_slug, THIN_MARKET_DEFAULT_DAYS)
+def record_thin_market_skip(player_slug, is_in_season=True):
+    _lista_nera_upsert('thin_market', _slug_cooldown(player_slug, is_in_season), THIN_MARKET_DEFAULT_DAYS)
 
 _FIAT_RATE_CACHE = {}
 
@@ -2333,7 +2338,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
         return False
 
-    if player_slug and is_player_in_thin_market_cache(player_slug):
+    if player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
         log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile nelle "
             f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
         return False
@@ -2344,14 +2349,14 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
             f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
         if player_slug:
-            record_thin_market_skip(player_slug)
+            record_thin_market_skip(player_slug, is_in_season)
         return False
     if count_30d is not None and count_30d < MIN_TRANSACTIONS_30D:
         log(f"{player_name}: scarto -- solo {count_30d} transazioni negli ultimi "
             f"{TRANSACTIONS_WINDOW_30D_DAYS} giorni (minimo richiesto "
             f"{MIN_TRANSACTIONS_30D}), mercato troppo sottile")
         if player_slug:
-            record_thin_market_skip(player_slug)
+            record_thin_market_skip(player_slug, is_in_season)
         return False
 
     if is_in_season:
