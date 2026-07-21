@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import re
 import time
 import datetime
@@ -10,7 +9,6 @@ import queue
 import collections
 
 import requests
-import websocket  # pip install websocket-client
 from playwright.sync_api import sync_playwright
 
 try:
@@ -20,16 +18,17 @@ except ImportError:
     _HAS_CURL_CFFI = False
 
 # =====================================================================================
-# BOT SUPREMO ASTE (21/07) -- sniper per le aste inglesi di Sorare.
+# BOT SUPREMO ASTE (21/07, RISCRITTO 21/07 v3) -- sniper per le aste inglesi di Sorare.
 # =====================================================================================
-# Ascolta l'evento websocket tokenAuctionWasUpdated (stesso canale gia' validato dal
-# notificatore aste esistente, auctions_ws_listener.py), ma a differenza di quello NON si
-# limita a notificare: quando trova un'asta che soddisfa i criteri, piazza DAVVERO un bid
-# (se AUCTION_LIVE_MODE='si') usando la mutation ufficiale documentata da Sorare stessa
-# (github.com/sorare/api): prepareBid -> firma -> bid (mutation tokenBid). Stessa
-# infrastruttura di firma gia' pronta e testata nel bot buyer (bot_supremo.py): processo
-# Node persistente per la firma, cache exchange_rate_id, sessione HTTP persistente,
-# throttle GraphQL, browser Playwright per le chiamate critiche (anti-fingerprint).
+# FIX 21/07 v3 (richiesta esplicita utente): rimosso il WebSocket in tempo reale --
+# il bot ora funziona SOLO a scansioni GraphQL, organizzate in un ciclo continuo a 3
+# fasi (vedi run_tracking_cycle piu' sotto). Quando trova un'asta che soddisfa i
+# criteri, piazza DAVVERO un bid (se AUCTION_LIVE_MODE='si') usando la mutation
+# ufficiale documentata da Sorare stessa (github.com/sorare/api): prepareBid -> firma
+# -> bid (mutation tokenBid). Stessa infrastruttura di firma gia' pronta e testata nel
+# bot buyer (bot_supremo.py): processo Node persistente per la firma, cache
+# exchange_rate_id, sessione HTTP persistente, throttle GraphQL, browser Playwright
+# per le chiamate critiche (anti-fingerprint).
 #
 # Riferimento prezzo ("minimo di mercato") per decidere quanto offrire:
 #   riferimento = min(minimo LIVE di vendita diretta in_season, prezzo dell'ultima asta
@@ -76,7 +75,6 @@ SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
 SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
-WS_URL = "wss://ws.sorare.com/cable"
 
 # OTTIMIZZAZIONE VELOCITA' (stessa identica ottimizzazione validata nel bot buyer):
 # Session persistente invece di post() a livello di modulo -- la connessione TCP/TLS
@@ -357,35 +355,33 @@ MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
 
 # FIX 21/07 (richiesta esplicita utente, "voglio ascoltare anche aste a 0 bid gia'
 # aperte, aperture in tempo reale, e le aste in scadenza"): due fonti di aste che
-# alimentano lo STESSO motore di valutazione (evaluate_auction) --
-#  1) WebSocket tokenAuctionWasUpdated (gia' esistente) -- tempo reale, ma scatta solo
-#     sui CAMBIAMENTI di un'asta (nuovo bid, o -- da verificare dal vivo -- apertura).
-#  2) Ciclo di tracking a due fasi (vedi sotto) -- scan completo whitelist + top
-#     scadenza, alternati con pause fisse, per tutta la durata dell'ascolto.
-# FIX 21/07 v2 (richiesta esplicita utente): sostituito il modello "safety poll una
-# tantum + ending-soon poll ogni 120s in thread separato" con un CICLO CONTINUO a due
-# fasi, alternate con una pausa fissa tra l'una e l'altra:
-#   FASE 1 (scan completo): TUTTE le aste live disponibili (paginato), filtrate whitelist
-#     SUBITO, valutate TUTTE -- cattura aperture nuove, aste a 0 bid, e tutto il resto
-#     in whitelist, senza alcun limite di quantita'.
+# alimenta lo STESSO motore di valutazione (evaluate_auction).
+# FIX 21/07 v3 (richiesta esplicita utente, WebSocket rimosso): CICLO CONTINUO a TRE
+# fasi, ciascuna della durata di CYCLE_PHASE_SECONDS, separate da pause fisse di
+# CYCLE_PAUSE_SECONDS (anche dopo l'ultima fase, prima di ricominciare dalla prima):
+#   FASE 1 "NUOVE": scan completo whitelist, valuta SOLO le aste con id MAI visto
+#     prima in questa run -- cattura le aperture appena immesse sul mercato. UNA sola
+#     scansione, poi il bot resta fermo per il resto della finestra di
+#     CYCLE_PHASE_SECONDS (se la scansione ha impiegato meno tempo del previsto).
 #   pausa CYCLE_PAUSE_SECONDS
-#   FASE 2 (top scadenza): stessa scansione, ordinata per scadenza piu' vicina, valutate
-#     solo le prime ENDING_SOON_TOP_N.
+#   FASE 2 "ZEROBID": stessa scansione completa, valuta SOLO le aste con bidsCount==0
+#     (nuove o vecchie che siano, non solo quelle appena viste in FASE 1).
 #   pausa CYCLE_PAUSE_SECONDS
-#   ricomincia da FASE 1, per tutta la durata dell'ascolto (in un thread separato dal
-#   WebSocket, che continua a girare in parallelo per gli eventi in tempo reale).
+#   FASE 3 "SCADENZA": stessa scansione completa, ordinata per scadenza piu' vicina,
+#     valutate solo le prime ENDING_SOON_TOP_N (default 5).
+#   pausa CYCLE_PAUSE_SECONDS
+#   ricomincia da FASE 1. E' del tutto normale (e atteso) che le stesse aste in
+#   scadenza ricompaiano identiche a fine ciclo in FASE 3 -- la dedup (vedi
+#   process_incoming_auction) impedisce comunque una doppia notifica quando
+#   currentPrice/minNextBid sono identici a un evento gia' notificato.
+CYCLE_PHASE_SECONDS = float(os.environ.get('CYCLE_PHASE_SECONDS', '20'))
 CYCLE_PAUSE_SECONDS = float(os.environ.get('CYCLE_PAUSE_SECONDS', '20'))
-ENDING_SOON_TOP_N = int(os.environ.get('ENDING_SOON_TOP_N', '10'))
+ENDING_SOON_TOP_N = int(os.environ.get('ENDING_SOON_TOP_N', '5'))
 
-# Ritardo prima della riverifica live pre-bid (stesso principio/stesso default del
-# vecchio notificatore aste: il backend di Sorare a volte non e' ancora "consistente"
-# se riletto a distanza di meno di un secondo dall'evento WS che l'ha segnalato).
+# Ritardo prima della riverifica live pre-bid (il backend di Sorare a volte non e'
+# ancora "consistente" se riletto a distanza di meno di un secondo dalla scansione che
+# ha segnalato l'occasione).
 AUCTION_RECHECK_DELAY_SECONDS = float(os.environ.get('AUCTION_RECHECK_DELAY_SECONDS', '3'))
-
-# Stessa pausa random periodica "anti-martellamento" gia' presente nel bot buyer.
-RANDOM_PAUSE_INTERVAL_SECONDS = int(os.environ.get('RANDOM_PAUSE_INTERVAL_SECONDS', '180'))
-RANDOM_PAUSE_MIN_SECONDS = float(os.environ.get('RANDOM_PAUSE_MIN_SECONDS', '1'))
-RANDOM_PAUSE_MAX_SECONDS = float(os.environ.get('RANDOM_PAUSE_MAX_SECONDS', '10'))
 
 # --- Stop automatico su fondi insufficienti (stesso principio del bot buyer): un bid
 # reale fallito per mancanza di fondi rende inutile continuare, ogni tentativo
@@ -1254,7 +1250,7 @@ def get_last_concluded_auction_price(player_slug, eth_rate):
 def validate_auction_schema():
     """Self-check di avvio (stesso principio gia' validato nel bot buyer): prova le due
     query di riferimento (annunci live in_season + ultime transazioni con deal+amounts)
-    su un giocatore reale PRIMA di aprire il websocket, cosi' un problema di schema si
+    su un giocatore reale PRIMA di iniziare il ciclo di tracking, cosi' un problema di schema si
     scopre in pochi secondi invece che dopo ore di ascolto a vuoto."""
     probe_slug = "kylian-mbappe"
     ok = True
@@ -1271,15 +1267,18 @@ def validate_auction_schema():
 
     data3 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 1})
     if data3.get('errors'):
-        msg = (f"[SELF-CHECK FALLITO] Query liveAuctions (usata da safety poll ed "
-               f"ending-soon poll, include bidsCount) fallisce: {data3['errors']}. Il bot "
-               f"potra' comunque contare sul solo WebSocket in tempo reale -- niente "
-               f"cattura delle aste gia' aperte a 0 bid ne' scansione periodica delle "
-               f"aste in scadenza.")
+        # FIX 21/07 v3 (WebSocket rimosso): questa query ora e' l'UNICA fonte di dati
+        # per tutte e 3 le fasi del ciclo (NUOVE/ZEROBID/SCADENZA) -- un suo fallimento
+        # non e' piu' un avviso, blocca l'avvio (prima poteva contare sul WS come
+        # fallback, ora non piu').
+        msg = (f"[SELF-CHECK FALLITO] Query liveAuctions (usata da TUTTE le fasi del "
+               f"ciclo di tracking, include bidsCount) fallisce: {data3['errors']}. "
+               f"Senza questa query il bot non ha alcuna fonte di dati -- blocco l'avvio.")
         log(msg)
-        send_telegram_msg(f"BOT SUPREMO ASTE -- AVVISO ALL'AVVIO\n\n{msg}")
+        send_telegram_msg(f"BOT SUPREMO ASTE -- ERRORE ALL'AVVIO\n\n{msg}")
+        ok = False
     else:
-        log("[self-check] Query liveAuctions (safety poll + ending-soon poll, "
+        log("[self-check] Query liveAuctions (usata da tutte e 3 le fasi del ciclo, "
             "bidsCount incluso) validata.")
 
     data2 = graphql_query(LAST_TRANSACTIONS_QUERY, {"p": probe_slug})
@@ -1301,36 +1300,10 @@ def validate_auction_schema():
 
 
 # =====================================================================================
-# Ascolto WebSocket -- stesso canale/stesso schema di sottoscrizione del notificatore
-# aste esistente, arricchito con inSeasonEligible e domesticLeague (serve alla whitelist
-# campionati, non presente nella query originale).
+# Query per lo scan periodico (usate da tutte e 3 le fasi del ciclo di tracking) --
+# arricchite con inSeasonEligible e domesticLeague (serve alla whitelist campionati) e
+# serialNumber (serve al link carta corretto, vedi build_card_link).
 # =====================================================================================
-SUBSCRIPTION_QUERY = """
-subscription OnTokenAuctionUpdated {
-  tokenAuctionWasUpdated {
-    id
-    currentPrice
-    minNextBid
-    endDate
-    open
-    cancelled
-    bidsCount
-    anyCards {
-      slug
-      serialNumber
-      rarityTyped
-      sport
-      inSeasonEligible
-      anyPlayer {
-        slug
-        displayName
-        activeClub { domesticLeague { slug } }
-      }
-    }
-  }
-}
-"""
-
 AUCTION_BY_ID_QUERY = """
 query GetAuctionById($id: String!) {
   tokens {
@@ -1346,9 +1319,6 @@ query GetAuctionById($id: String!) {
 }
 """
 
-# Stessa forma esatta di SUBSCRIPTION_QUERY sopra (stessi campi che evaluate_auction si
-# aspetta), solo su liveAuctions invece che sull'evento websocket -- cosi' un'asta presa
-# da un poll e un'asta presa dal WS sono indistinguibili per evaluate_auction.
 LIVE_AUCTIONS_QUERY = """
 query ListLiveAuctions($n: Int!, $cursor: String) {
   tokens {
@@ -1447,10 +1417,10 @@ def _auction_league_slug(auction):
 
 
 class _SharedListenerState:
-    """Stato condiviso tra il thread WS (on_message, eseguito nel thread che chiama
-    ws.run_forever) e il thread di background dell'ending-soon poll -- un solo lock per
-    tutte le strutture condivise (seen_events per la dedup, known_auction_ids per il log
-    diagnostico apertura asta, stats per i contatori)."""
+    """Stato condiviso tra le 3 fasi del ciclo di tracking (FIX 21/07 v3: ora un ciclo
+    sequenziale in un solo thread, il lock resta comunque per sicurezza) -- seen_events
+    per la dedup notifiche, known_auction_ids per riconoscere le aste "nuove" in FASE 1,
+    stats per i contatori."""
 
     def __init__(self):
         self.lock = threading.Lock()
@@ -1460,9 +1430,19 @@ class _SharedListenerState:
 
 
 def process_incoming_auction(auction, eth_rate, state, source):
-    """Punto di ingresso UNICO per tutte e 3 le fonti (WS/SAFETY/ENDING-SOON) -- dedup
-    condivisa, log diagnostico apertura asta, poi delega a evaluate_auction. Cosi' la
-    logica di dedup/valutazione resta scritta una volta sola."""
+    """Punto di ingresso UNICO per tutte e 3 le fasi del ciclo (NUOVE/ZEROBID/SCADENZA)
+    -- dedup condivisa, log di rilevamento, poi delega a evaluate_auction. Cosi' la
+    logica di dedup/valutazione resta scritta una volta sola.
+
+    FIX 21/07 v3 (richiesta esplicita utente: "non notificare mai due volte la stessa
+    asta, solo se prezzo/minNextBid sono identici a un evento gia' notificato"): dedup
+    key = (auction_id, currentPrice, minNextBid) -- SENZA endDate (a differenza della
+    versione precedente), cosi' un'asta che ricompare identica in una fase successiva
+    o in un ciclo successivo (es. le stesse aste in scadenza a fine ciclo) viene
+    riconosciuta come gia' vista e non rielaborata ne' rinotificata. Se invece
+    currentPrice o minNextBid cambiano (nuovo bid altrui nel frattempo), la chiave e'
+    diversa e l'asta viene rivalutata/rinotificata normalmente -- e' un'informazione
+    nuova, non un duplicato."""
     if TEST_ONLY_ZERO_BID:
         # FIX 21/07 (richiesta esplicita utente, dopo cattura reale dal frontend Sorare):
         # bidsCount e' il campo ESATTO che Sorare stesso usa per indicare "zero offerte"
@@ -1484,9 +1464,12 @@ def process_incoming_auction(auction, eth_rate, state, source):
                 return
 
     auction_id = auction.get('id') or ''
-    dedup_key = (auction_id, auction.get('currentPrice'), auction.get('minNextBid'), auction.get('endDate'))
+    dedup_key = (auction_id, auction.get('currentPrice'), auction.get('minNextBid'))
     with state.lock:
         if dedup_key in state.seen_events:
+            if AUCTION_DIAGNOSTIC:
+                log(f"[{source}] [GIA-VISTA] id={auction_id}, prezzo/minNextBid invariati "
+                    f"rispetto a un evento gia' notificato -- skip, nessuna doppia notifica")
             return
         state.seen_events.add(dedup_key)
         state.known_auction_ids.add(auction_id)
@@ -1494,7 +1477,7 @@ def process_incoming_auction(auction, eth_rate, state, source):
 
     # FIX 21/07 v2 (richiesta esplicita utente: "log verboso con link alla carta
     # rilevata, cosi' sono sicuro che stai facendo bene"): SEMPRE attivo (non solo con
-    # AUCTION_DIAGNOSTIC), per OGNI fonte (WS/SCAN/ENDING-SOON) -- una riga per ogni
+    # AUCTION_DIAGNOSTIC), per OGNI fase (NUOVE/ZEROBID/SCADENZA) -- una riga per ogni
     # asta unica rilevata, con link carta e i dati grezzi principali, per poter
     # verificare a occhio cosa il ciclo sta effettivamente tracciando.
     cards = auction.get('anyCards') or []
@@ -1515,51 +1498,96 @@ def process_incoming_auction(auction, eth_rate, state, source):
         log(f"[{source}] Errore nel processare un'asta: {e}")
 
 
-def run_full_whitelist_scan(eth_rate, state):
-    """FASE 1 del ciclo (FIX 21/07 v2, richiesta esplicita utente): scandaglia TUTTE le
-    aste live disponibili (paginato), filtra whitelist campionati SUBITO, valuta TUTTE
-    quelle whitelist -- nessun limite di quantita'. Cattura aperture nuove, aste a 0
-    bid, e ogni altra asta whitelist presente sul mercato in questo momento."""
+def _fetch_whitelisted_live_auctions():
+    """Scansione completa (paginata) di TUTTE le aste live disponibili, filtrata SUBITO
+    per whitelist campionati -- base comune per tutte e 3 le fasi del ciclo."""
     page = fetch_live_auctions_page(50)
     whitelisted = [a for a in page if (_auction_league_slug(a) in LEAGUE_WHITELIST_SLUGS)]
-    log(f"[SCAN-COMPLETO] {len(page)} aste totali scandagliate, {len(whitelisted)} in "
-        f"whitelist -- valuto tutte")
-    for auction in whitelisted:
-        process_incoming_auction(auction, eth_rate, state, source='SCAN')
+    return page, whitelisted
 
 
-def run_ending_soon_top_n(eth_rate, state):
-    """FASE 2 del ciclo (FIX 21/07 v2): stessa scansione completa, ordinata per
-    scadenza piu' vicina, valutate solo le prime ENDING_SOON_TOP_N (default 10)."""
-    page = fetch_live_auctions_page(50)
-    whitelisted = [a for a in page if (_auction_league_slug(a) in LEAGUE_WHITELIST_SLUGS)]
+def run_new_auctions_phase(eth_rate, state):
+    """FASE 1 "NUOVE" (FIX 21/07 v3, richiesta esplicita utente): scan completo
+    whitelist, valuta SOLO le aste con id MAI visto prima in questa run -- cattura le
+    aperture appena immesse sul mercato."""
+    page, whitelisted = _fetch_whitelisted_live_auctions()
+    nuove = [a for a in whitelisted if (a.get('id') or '') not in state.known_auction_ids]
+    log(f"[NUOVE] {len(page)} aste totali scandagliate, {len(whitelisted)} in whitelist, "
+        f"{len(nuove)} mai viste prima in questa run -- valuto solo queste")
+    for auction in nuove:
+        process_incoming_auction(auction, eth_rate, state, source='NUOVE')
+
+
+def run_zero_bid_phase(eth_rate, state):
+    """FASE 2 "ZEROBID" (FIX 21/07 v3): scan completo whitelist, valuta SOLO le aste
+    con bidsCount==0 -- nuove o vecchie che siano, non solo quelle appena viste in
+    FASE 1."""
+    page, whitelisted = _fetch_whitelisted_live_auctions()
+    zero_bid = [a for a in whitelisted if a.get('bidsCount') == 0]
+    log(f"[ZEROBID] {len(page)} aste totali scandagliate, {len(whitelisted)} in whitelist, "
+        f"{len(zero_bid)} a 0 bid -- valuto solo queste")
+    for auction in zero_bid:
+        process_incoming_auction(auction, eth_rate, state, source='ZEROBID')
+
+
+def run_ending_soon_phase(eth_rate, state):
+    """FASE 3 "SCADENZA" (FIX 21/07 v3): scan completo whitelist, ordinata per
+    scadenza piu' vicina, valutate solo le prime ENDING_SOON_TOP_N (default 5). E'
+    normale/atteso che le stesse aste ricompaiano identiche da un ciclo all'altro se
+    nessuno ha rilanciato -- la dedup in process_incoming_auction evita la doppia
+    notifica in quel caso."""
+    _, whitelisted = _fetch_whitelisted_live_auctions()
     whitelisted.sort(key=lambda a: (_seconds_until_end(a.get('endDate')) is None,
                                      _seconds_until_end(a.get('endDate'))))
     selected = whitelisted[:ENDING_SOON_TOP_N]
-    log(f"[TOP-SCADENZA] {len(whitelisted)} in whitelist, valuto le {len(selected)} "
-        f"piu' vicine alla scadenza...")
+    log(f"[SCADENZA] {len(whitelisted)} in whitelist, valuto le {len(selected)} piu' "
+        f"vicine alla scadenza...")
     for auction in selected:
-        process_incoming_auction(auction, eth_rate, state, source='ENDING-SOON')
+        process_incoming_auction(auction, eth_rate, state, source='SCADENZA')
+
+
+def _run_timed_phase(phase_name, phase_fn, eth_rate, state):
+    """Esegue UNA scansione della fase (FIX 21/07 v3, richiesta esplicita utente: "una
+    scansione sola, poi aspetta fino a fine dei 20s"), poi ritorna quanti secondi
+    restano per completare la finestra CYCLE_PHASE_SECONDS -- il chiamante attende
+    quel resto prima di passare alla pausa tra le fasi."""
+    start = time.monotonic()
+    try:
+        phase_fn(eth_rate, state)
+    except Exception as e:
+        log(f"[{phase_name}] errore nella scansione: {e}")
+    elapsed = time.monotonic() - start
+    remaining = CYCLE_PHASE_SECONDS - elapsed
+    if remaining <= 0:
+        log(f"[{phase_name}] scansione durata {elapsed:.1f}s (>= finestra di "
+            f"{CYCLE_PHASE_SECONDS:.0f}s) -- nessuna attesa aggiuntiva")
+        return 0.0
+    return remaining
 
 
 def run_tracking_cycle(eth_rate, state, stop_event):
-    """FIX 21/07 v2 (richiesta esplicita utente): ciclo continuo a due fasi, in un
-    thread separato dal WebSocket -- FASE 1 (scan completo whitelist) -> pausa
-    CYCLE_PAUSE_SECONDS -> FASE 2 (top ENDING_SOON_TOP_N in scadenza) -> pausa
-    CYCLE_PAUSE_SECONDS -> ricomincia, per tutta la durata dell'ascolto."""
+    """FIX 21/07 v3 (richiesta esplicita utente, WebSocket rimosso): ciclo continuo a
+    TRE fasi -- NUOVE -> pausa -> ZEROBID -> pausa -> SCADENZA -> pausa -> ricomincia
+    da NUOVE, per tutta la durata dell'ascolto."""
+    fasi = (
+        ('NUOVE', run_new_auctions_phase),
+        ('ZEROBID', run_zero_bid_phase),
+        ('SCADENZA', run_ending_soon_phase),
+    )
     while not stop_event.is_set():
-        try:
-            run_full_whitelist_scan(eth_rate, state)
-        except Exception as e:
-            log(f"[SCAN-COMPLETO] errore nel ciclo: {e}")
-        if stop_event.wait(CYCLE_PAUSE_SECONDS):
-            break
-        try:
-            run_ending_soon_top_n(eth_rate, state)
-        except Exception as e:
-            log(f"[TOP-SCADENZA] errore nel ciclo: {e}")
-        if stop_event.wait(CYCLE_PAUSE_SECONDS):
-            break
+        for phase_name, phase_fn in fasi:
+            remaining = _run_timed_phase(phase_name, phase_fn, eth_rate, state)
+            if INSUFFICIENT_FUNDS_STOP[0]:
+                log("STOP: fondi insufficienti rilevati, fermo il ciclo di tracking")
+                stop_event.set()
+                break
+            if remaining > 0 and stop_event.wait(remaining):
+                break
+            if stop_event.wait(CYCLE_PAUSE_SECONDS):
+                break
+        else:
+            continue
+        break
     log("[ciclo tracking] terminato.")
 
 
@@ -1827,105 +1855,30 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
 
 
 def run_listener(eth_rate):
-    identifier = json.dumps({"channel": "GraphqlChannel"})
-    subscription_payload = {
-        "query": SUBSCRIPTION_QUERY, "variables": {},
-        "operationName": "OnTokenAuctionUpdated", "action": "execute",
-    }
     state = _SharedListenerState()
     stats = state.stats  # stesso dict, solo un alias piu' corto per il resto della funzione
 
-    # Scansione iniziale completa (fase 1), PRIMA di aprire il WS -- cattura tutto cio'
-    # che e' gia' sul mercato in whitelist, incluse aperture recenti e aste a 0 bid.
-    run_full_whitelist_scan(eth_rate, state)
-
-    # Ciclo di tracking continuo in un thread separato, per tutta la durata
-    # dell'ascolto -- scan completo whitelist / pausa / top scadenza / pausa / ricomincia.
-    tracking_stop = threading.Event()
-    tracking_thread = threading.Thread(
-        target=run_tracking_cycle, args=(eth_rate, state, tracking_stop), daemon=True)
-    tracking_thread.start()
-
-    pause_state = {"last_pause_at": time.monotonic()}
-
-    def maybe_random_pause():
-        now = time.monotonic()
-        if now - pause_state["last_pause_at"] >= RANDOM_PAUSE_INTERVAL_SECONDS:
-            pause_seconds = random.uniform(RANDOM_PAUSE_MIN_SECONDS, RANDOM_PAUSE_MAX_SECONDS)
-            log(f"[pausa random] fermo {pause_seconds:.1f}s (ritmo di fondo anti-martellamento)")
-            time.sleep(pause_seconds)
-            pause_state["last_pause_at"] = time.monotonic()
-
-    def on_open(ws):
-        log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
-        ws.send(json.dumps({"command": "subscribe", "identifier": identifier}))
-        time.sleep(1)
-        ws.send(json.dumps({
-            "command": "message", "identifier": identifier,
-            "data": json.dumps(subscription_payload),
-        }))
-
-    def on_message(ws, raw_message):
-        try:
-            message = json.loads(raw_message)
-        except json.JSONDecodeError:
-            return
-        msg_type = message.get('type')
-        if msg_type in ('welcome', 'ping'):
-            return
-        if msg_type == 'confirm_subscription':
-            log("Sottoscrizione confermata, in ascolto...")
-            return
-        if msg_type == 'reject_subscription':
-            log(f"ERRORE: sottoscrizione rifiutata: {message}")
-            return
-        payload = message.get('message')
-        if not payload:
-            return
-        if payload.get('errors'):
-            log(f"ERRORE GraphQL nella subscription: {payload['errors']}")
-            return
-
-        try:
-            auction = (payload.get('result', {}).get('data', {}) or {}).get('tokenAuctionWasUpdated')
-            if not auction:
-                return
-            process_incoming_auction(auction, eth_rate, state, source='WS')
-            maybe_random_pause()
-            if INSUFFICIENT_FUNDS_STOP[0]:
-                log("STOP: fondi insufficienti rilevati, chiudo la connessione")
-                ws.close()
-                return
-        except Exception as e:
-            log(f"[ERRORE in on_message] eccezione non gestita durante la valutazione "
-                f"di un evento, la salto e continuo ad ascoltare: {e}")
-
-    def on_error(ws, error):
-        log(f"Errore WebSocket: {error}")
-
-    def on_close(ws, close_status_code, close_message):
-        log(f"Connessione chiusa (codice {close_status_code}). Eventi processati: "
-            f"{stats.get('processed', 0)}")
-        total_bid = stats.get('bid_placed', 0) + stats.get('bid_simulated', 0)
-        skip_keys = sorted(k for k in stats if k.startswith('skip_'))
-        breakdown = ', '.join(f"{k[5:]}={stats[k]}" for k in skip_keys) or "nessuno"
-        source_keys = sorted(k for k in stats if k.startswith('source_'))
-        source_breakdown = ', '.join(f"{k[7:]}={stats[k]}" for k in source_keys) or "nessuno"
-        log(f"[riepilogo] bid {'reali' if AUCTION_LIVE_MODE else 'simulati'}: {total_bid}, "
-            f"bid falliti: {stats.get('bid_failed', 0)}, scarti: {breakdown}")
-        log(f"[riepilogo] aste valutate per fonte: {source_breakdown}")
-
-    ws = websocket.WebSocketApp(
-        WS_URL, header=[f"Cookie: {COOKIES}"] if COOKIES else [],
-        on_open=on_open, on_message=on_message, on_error=on_error, on_close=on_close,
-    )
-    timer = threading.Timer(LISTEN_SECONDS, ws.close)
+    # Il timer ferma il ciclo dopo LISTEN_SECONDS, esattamente come faceva prima con la
+    # chiusura del WebSocket.
+    stop_event = threading.Event()
+    timer = threading.Timer(LISTEN_SECONDS, stop_event.set)
     timer.daemon = True
     timer.start()
-    ws.run_forever(ping_interval=60, ping_timeout=45)
-    timer.cancel()
-    tracking_stop.set()
-    tracking_thread.join(timeout=5)
+
+    try:
+        run_tracking_cycle(eth_rate, state, stop_event)
+    finally:
+        timer.cancel()
+
+    log(f"Ciclo terminato. Eventi processati: {stats.get('processed', 0)}")
+    total_bid = stats.get('bid_placed', 0) + stats.get('bid_simulated', 0)
+    skip_keys = sorted(k for k in stats if k.startswith('skip_'))
+    breakdown = ', '.join(f"{k[5:]}={stats[k]}" for k in skip_keys) or "nessuno"
+    source_keys = sorted(k for k in stats if k.startswith('source_'))
+    source_breakdown = ', '.join(f"{k[7:]}={stats[k]}" for k in source_keys) or "nessuno"
+    log(f"[riepilogo] bid {'reali' if AUCTION_LIVE_MODE else 'simulati'}: {total_bid}, "
+        f"bid falliti: {stats.get('bid_failed', 0)}, scarti: {breakdown}")
+    log(f"[riepilogo] aste valutate per fase: {source_breakdown}")
     return stats
 
 
@@ -1941,9 +1894,11 @@ def main():
         f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h")
     log(f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h")
     log(f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
-    log("Ciclo di tracking: FASE 1 scan completo whitelist (tutte, incluse 0 bid e "
-        f"appena aperte) -> pausa {CYCLE_PAUSE_SECONDS:.0f}s -> FASE 2 top "
-        f"{ENDING_SOON_TOP_N} in scadenza -> pausa {CYCLE_PAUSE_SECONDS:.0f}s -> ricomincia")
+    log(f"Ciclo di tracking (WebSocket rimosso, solo scansioni GraphQL): "
+        f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s) -> pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
+        f"FASE ZEROBID ({CYCLE_PHASE_SECONDS:.0f}s) -> pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
+        f"FASE SCADENZA top {ENDING_SOON_TOP_N} ({CYCLE_PHASE_SECONDS:.0f}s) -> "
+        f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> ricomincia")
     log(f"Log verbosi per-fase (AUCTION_DIAGNOSTIC): "
         f"{'ATTIVI' if AUCTION_DIAGNOSTIC else 'spenti'}")
     log(f"Modalita' TEST solo aste a 0 bid (TEST_ONLY_ZERO_BID): "
