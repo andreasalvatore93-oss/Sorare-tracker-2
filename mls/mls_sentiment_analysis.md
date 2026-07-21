@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T22:48:26.886496Z
-**Run totali:** 18
+**Data analisi:** 2026-07-21T22:50:29.311474Z
+**Run totali:** 19
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.26 EUR
-- **Trend mercato:** ➡️ STABLE (-0.9%)
+- **Prezzo medio MLS:** 9.17 EUR
+- **Trend mercato:** ➡️ STABLE (-1.0%)
 - **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.9%)**
+**➡️ TREND GLOBALE: STABLE (-1.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
@@ -42,15 +42,15 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Daniel Baran (FC Dallas) — **+0.0%** vs media (0.81 EUR vs 0.81 EUR)
-2. Sean Nealis (DC United) — **+0.0%** vs media (0.49 EUR vs 0.49 EUR)
-3. Benjamín Kuščević (Toronto FC) — **+0.0%** vs media (0.77 EUR vs 0.77 EUR)
-4. Andrew Baiera (New York City FC) — **+0.0%** vs media (0.65 EUR vs 0.65 EUR)
-5. Nicolás Fernández-Mercau (New York City FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
-6. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
-7. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
-8. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
-9. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
-10. Carles Gil (New England Revolution) — **+0.0%** vs media (58.50 EUR vs 58.50 EUR)
+2. Jared Stroud (DC United) — **+0.0%** vs media (0.79 EUR vs 0.79 EUR)
+3. Sean Nealis (DC United) — **+0.0%** vs media (0.49 EUR vs 0.49 EUR)
+4. Benjamín Kuščević (Toronto FC) — **+0.0%** vs media (0.77 EUR vs 0.77 EUR)
+5. Andrew Baiera (New York City FC) — **+0.0%** vs media (0.65 EUR vs 0.65 EUR)
+6. Nicolás Fernández-Mercau (New York City FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
+7. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
+8. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
+9. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
+10. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -135,7 +135,7 @@ Carte trovate: 2 | Prezzo medio: 7.83 EUR | Volatilità (σ): 10.15
 Carte trovate: 1 | Prezzo medio: 0.77 EUR | Volatilità (σ): 0.00
 
 **DC United**
-Carte trovate: 1 | Prezzo medio: 0.49 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 0.64 EUR | Volatilità (σ): 0.21
 
 **FC Dallas**
 Carte trovate: 1 | Prezzo medio: 0.81 EUR | Volatilità (σ): 0.00
