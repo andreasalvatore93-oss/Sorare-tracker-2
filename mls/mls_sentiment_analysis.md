@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T09:57:12.636953Z
-**Run totali:** 9
+**Data analisi:** 2026-07-21T10:00:02.961959Z
+**Run totali:** 10
 
 📊 **[Apri i grafici interattivi](https://andreasalvatore93-oss.github.io/Sorare-tracker-2/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.47 EUR
+- **Prezzo medio MLS:** 6.43 EUR
 - **Trend mercato:** ➡️ STABLE (+0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
@@ -40,18 +40,18 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 10. Mohamed Farsi (Atlanta United) — **0.0%** vs media (1.50 EUR vs 1.50 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Adrián Marín (Atlanta United) — **+0.0%** vs media (2.38 EUR vs 2.38 EUR)
-2. Stijn Spierings (Atlanta United) — **+0.0%** vs media (3.05 EUR vs 3.05 EUR)
-3. Manu Duah (Atlanta United) — **+0.0%** vs media (9.06 EUR vs 9.06 EUR)
-4. Paxten Aaronson (Atlanta United) — **+0.0%** vs media (11.00 EUR vs 11.00 EUR)
-5. Dániel Sallói (Atlanta United) — **+0.0%** vs media (4.55 EUR vs 4.55 EUR)
-6. Christopher Mcvey (Atlanta United) — **+0.0%** vs media (10.49 EUR vs 10.49 EUR)
-7. Emil Forsberg (Atlanta United) — **+0.0%** vs media (2.34 EUR vs 2.34 EUR)
-8. Marcus Ingvartsen (Atlanta United) — **+0.0%** vs media (4.07 EUR vs 4.07 EUR)
-9. Tanner Beason (Atlanta United) — **+0.0%** vs media (0.57 EUR vs 0.57 EUR)
-10. Alex Roldan (Atlanta United) — **+0.0%** vs media (6.05 EUR vs 6.05 EUR)
+1. Anderson Julio (Atlanta United) — **+0.0%** vs media (0.63 EUR vs 0.63 EUR)
+2. Reed Baker-Whiting (Atlanta United) — **+0.0%** vs media (1.19 EUR vs 1.19 EUR)
+3. Preston Judd (Atlanta United) — **+0.0%** vs media (15.63 EUR vs 15.63 EUR)
+4. Adrián Marín (Atlanta United) — **+0.0%** vs media (2.38 EUR vs 2.38 EUR)
+5. Stijn Spierings (Atlanta United) — **+0.0%** vs media (3.05 EUR vs 3.05 EUR)
+6. Manu Duah (Atlanta United) — **+0.0%** vs media (9.06 EUR vs 9.06 EUR)
+7. Paxten Aaronson (Atlanta United) — **+0.0%** vs media (11.00 EUR vs 11.00 EUR)
+8. Dániel Sallói (Atlanta United) — **+0.0%** vs media (4.55 EUR vs 4.55 EUR)
+9. Christopher Mcvey (Atlanta United) — **+0.0%** vs media (10.49 EUR vs 10.49 EUR)
+10. Emil Forsberg (Atlanta United) — **+0.0%** vs media (2.34 EUR vs 2.34 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Atlanta United**
-Carte trovate: 45 | Prezzo medio: 5.62 EUR | Volatilità (σ): 7.30
+Carte trovate: 48 | Prezzo medio: 5.63 EUR | Volatilità (σ): 7.28
 
