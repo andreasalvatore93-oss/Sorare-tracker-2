@@ -339,6 +339,15 @@ LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
 AUCTION_DIAGNOSTIC = os.environ.get('AUCTION_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 
+# FIX 21/07 (richiesta esplicita utente, test mirato): quando attivo, SOLO le aste con
+# currentPrice == minNextBid (nessun bid mai piazzato) vengono valutate -- tutte le altre
+# scartate silenziosamente PRIMA di qualunque log/query, cosi' nei log resta solo il
+# segnale che interessa per capire se/quando il bot intercetta aste a 0 bid. Si applica
+# a tutte e 3 le fonti (WS/SAFETY/ENDING-SOON) tramite process_incoming_auction. Non
+# tocca whitelist/cooldown/calcolo bid, che restano identici per le aste che passano
+# questo filtro.
+TEST_ONLY_ZERO_BID = os.environ.get('TEST_ONLY_ZERO_BID', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+
 # FIX 21/07 (richiesta esplicita utente): tetto massimo assoluto che il bot puo' mai
 # offrire su UNA SINGOLA asta, indipendentemente da quanto alto risulti il calcolo
 # (riferimento * (1-sconto)). Protezione contro riferimenti di mercato anomali (es. un
@@ -1054,6 +1063,15 @@ def send_telegram_msg(message):
         r = requests.post(url, json=payload, timeout=10)
         if not r.ok:
             log(f"Errore invio Telegram (HTTP {r.status_code}): {r.text[:500]}")
+            # FIX (caso reale: testo dinamico con '<'/'>' non previsti, es. "asta conclusa
+            # <24h", ha rotto il parsing HTML e fatto fallire l'intero invio): se l'errore
+            # e' proprio di parsing entita', ritento UNA volta senza parse_mode, cosi' il
+            # messaggio arriva comunque (senza grassetto) invece di andare perso del tutto.
+            if r.status_code == 400 and 'parse entities' in r.text.lower():
+                payload_plain = {'chat_id': TELEGRAM_CHAT_ID, 'text': message}
+                r2 = requests.post(url, json=payload_plain, timeout=10)
+                if not r2.ok:
+                    log(f"Errore invio Telegram (ritento senza HTML, HTTP {r2.status_code}): {r2.text[:500]}")
     except Exception as e:
         log(f"Errore invio Telegram: {e}")
 
@@ -1388,6 +1406,12 @@ def process_incoming_auction(auction, eth_rate, state, source):
     """Punto di ingresso UNICO per tutte e 3 le fonti (WS/SAFETY/ENDING-SOON) -- dedup
     condivisa, log diagnostico apertura asta, poi delega a evaluate_auction. Cosi' la
     logica di dedup/valutazione resta scritta una volta sola."""
+    if TEST_ONLY_ZERO_BID:
+        current_price = auction.get('currentPrice')
+        min_next_bid = auction.get('minNextBid')
+        if current_price is None or min_next_bid is None or current_price != min_next_bid:
+            return  # non e' un'asta a 0 bid -- scartata silenziosamente, modalita' test
+
     auction_id = auction.get('id') or ''
     dedup_key = (auction_id, auction.get('currentPrice'), auction.get('minNextBid'), auction.get('endDate'))
     with state.lock:
@@ -1608,7 +1632,7 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
          f"{'%.2fEUR' % last_auction if last_auction is not None else 'nessuna trovata'}")
 
     candidati = [(p, s) for p, s in
-                 ((live_min, 'minimo live vendita diretta'), (last_auction, 'ultima asta conclusa <24h'))
+                 ((live_min, 'minimo live vendita diretta'), (last_auction, 'ultima asta conclusa entro 24h'))
                  if p is not None]
     if not candidati:
         log(f"[{source}] {player_name}: scarto -- nessun riferimento di mercato "
@@ -1823,6 +1847,8 @@ def main():
         f"{ENDING_SOON_POLL_SIZE} aste per pagina, max {ENDING_SOON_MAX_RESULTS} valutate")
     log(f"Log verbosi per-fase (AUCTION_DIAGNOSTIC): "
         f"{'ATTIVI' if AUCTION_DIAGNOSTIC else 'spenti'}")
+    log(f"Modalita' TEST solo aste a 0 bid (TEST_ONLY_ZERO_BID): "
+        f"{'ATTIVA -- tutte le altre aste vengono scartate silenziosamente' if TEST_ONLY_ZERO_BID else 'spenta'}")
     log(f"Campionati inclusi nella whitelist ({len(LEAGUE_WHITELIST_SLUGS)}): "
         f"{sorted(LEAGUE_WHITELIST_SLUGS)}")
     log(f"Giocatori in blacklist ({len(BLACKLISTED_PLAYER_SLUGS_ASTE)}): "
