@@ -59,9 +59,9 @@ on:
         required: false
         default: "4"
       min_transactions_30d:
-        description: "Transazioni minime (30gg) -- secondo layer di protezione liquidita'"
+        description: "Transazioni minime (30gg) -- secondo layer di protezione liquidita' (il server mostra al massimo 5 transazioni totali per giocatore, quindi valori vicini a 5 scartano quasi tutto)"
         required: false
-        default: "5"
+        default: "3"
       blacklisted_manager_slugs:
         description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
         required: false
@@ -139,7 +139,7 @@ jobs:
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '4' }}
-          MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '5' }}
+          MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '3' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
           BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
