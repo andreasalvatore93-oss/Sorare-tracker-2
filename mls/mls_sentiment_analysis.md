@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T22:46:24.741232Z
-**Run totali:** 17
+**Data analisi:** 2026-07-21T22:48:26.886496Z
+**Run totali:** 18
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.34 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.5%)
-- **Sentiment:** 🟡 Leggero Calo
+- **Prezzo medio MLS:** 9.26 EUR
+- **Trend mercato:** ➡️ STABLE (-0.9%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.5%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**➡️ TREND GLOBALE: STABLE (-0.9%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
 Prezzo: **42.98 EUR** | Media: **58.99 EUR** | Sconto: **-27.1%**
@@ -75,7 +75,7 @@ Carte trovate: 7 | Prezzo medio: 10.55 EUR | Volatilità (σ): 10.23
 Carte trovate: 5 | Prezzo medio: 5.36 EUR | Volatilità (σ): 2.45
 
 **Chicago Fire FC**
-Carte trovate: 6 | Prezzo medio: 14.22 EUR | Volatilità (σ): 15.74
+Carte trovate: 7 | Prezzo medio: 12.33 EUR | Volatilità (σ): 15.22
 
 **Inter Miami CF**
 Carte trovate: 4 | Prezzo medio: 8.20 EUR | Volatilità (σ): 7.19
