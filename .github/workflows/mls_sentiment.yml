@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       listen_seconds:
-        description: "Secondi di ascolto massimi (default 600 = 10 minuti, max 3600 = 1 ora)"
+        description: "Secondi di ascolto massimi (default 3600 = 1 ora, max 3600 = 1 ora)"
         required: false
-        default: "600"
+        default: "3600"
 
 permissions:
   contents: write
@@ -34,7 +34,7 @@ jobs:
       - name: Run MLS Sentiment Scanner
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '600' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '3600' }}
           PYTHONUNBUFFERED: "1"
         run: |
           python mls_sentiment_scanner.py
