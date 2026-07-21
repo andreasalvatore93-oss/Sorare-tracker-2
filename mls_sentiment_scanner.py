@@ -153,6 +153,66 @@ subscription OnTokenOfferUpdated {
 }
 """
 
+LIVE_OFFERS_QUERY = """
+query LiveOffersForPlayer($slug: String!, $n: Int!) {
+  tokens {
+    liveSingleSaleOffers(playerSlug: $slug, last: $n) {
+      nodes {
+        status
+        receiverSide { amounts { eurCents wei usdCents gbpCents lamport } anyCards { slug } }
+        senderSide {
+          anyCards {
+            slug
+            rarityTyped
+            sport
+            inSeasonEligible
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_min_in_season_price(player_slug, eth_rate):
+    """Query diretta: cerca tra TUTTI gli annunci live aperti di un giocatore
+    (classic + in_season) e restituisce il minimo prezzo SOLO tra quelli in_season.
+    Usata come trigger veloce quando vediamo passare una carta classic dello stesso
+    giocatore sul WebSocket -- ci permette di acquisire un dato in_season anche se
+    in quel momento nessuno lo sta vendendo attivamente in_season sul mercato."""
+    data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": 50})
+    if data.get('errors'):
+        return None
+    
+    nodes = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {}).get('nodes') or []
+    min_price = None
+    
+    for node in nodes:
+        if node.get('status') != 'opened':
+            continue
+        receiver_side = node.get('receiverSide') or {}
+        if receiver_side.get('anyCards'):
+            continue
+        
+        price_eur = eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
+        if price_eur is None:
+            continue
+        
+        sender_cards = (node.get('senderSide') or {}).get('anyCards') or []
+        if len(sender_cards) > 1:
+            continue
+        
+        for card in sender_cards:
+            if card.get('rarityTyped') != 'limited' or card.get('sport') != 'FOOTBALL':
+                continue
+            if not card.get('inSeasonEligible'):
+                continue
+            if min_price is None or price_eur < min_price:
+                min_price = price_eur
+    
+    return min_price
+
 
 def get_eth_rate():
     """Ottiene il tasso ETH/EUR corrente da API pubblica."""
@@ -239,6 +299,45 @@ def run_listener(eth_rate, data, listen_seconds):
     stats = {"received": 0, "processed": 0, "prices_found": 0}
     ws_container = [None]  # Contenitore per WebSocket (per chiuderlo dal timer)
     seen_offer_status = set()
+    last_triggered = {}  # player_slug -> timestamp ultima query trigger (anti rate-limit)
+    TRIGGER_COOLDOWN_SECONDS = 20
+    
+    def register_price(player_slug, player_name, player, price_eur, source):
+        """Registra un prezzo in_season nella struttura dati. source = 'live' o 'trigger'."""
+        team_slug = ''
+        for ts, tn in MLS_TEAMS.items():
+            if player.get('activeClub', {}).get('slug') == ts:
+                team_slug = ts
+                break
+        
+        if team_slug not in data['teams']:
+            team_slug = list(data['teams'].keys())[0]  # fallback
+        
+        if player_slug not in data['teams'][team_slug]['players']:
+            data['teams'][team_slug]['players'][player_slug] = {
+                'name': player_name,
+                'prices_this_run': [],
+                'min_live_price': price_eur,
+                'max_live_price': price_eur,
+                'historical_mean': 0,
+                'std_dev': 0,
+                'occurrences': 0,
+                'change_from_mean_pct': 0,
+                'first_seen': datetime.datetime.utcnow().isoformat() + 'Z',
+                'last_update': datetime.datetime.utcnow().isoformat() + 'Z',
+            }
+        
+        player_data = data['teams'][team_slug]['players'][player_slug]
+        player_data['prices_this_run'].append(price_eur)
+        player_data['min_live_price'] = min(player_data['min_live_price'], price_eur)
+        player_data['max_live_price'] = max(player_data['max_live_price'], price_eur)
+        player_data['last_update'] = datetime.datetime.utcnow().isoformat() + 'Z'
+        player_data['occurrences'] += 1
+        stats["prices_found"] += 1
+        
+        tag = "trigger da classic" if source == 'trigger' else "live"
+        log(f"[Carta trovata - {tag}] {player_name} (slug: {player_slug}) — "
+            f"{data['teams'][team_slug]['team_name']} — {price_eur:.2f} EUR")
     
     def on_open(ws):
         log("Connesso al WebSocket Sorare, sottoscrizione in corso...")
@@ -303,8 +402,6 @@ def run_listener(eth_rate, data, listen_seconds):
             for card in sender_cards:
                 if card.get('rarityTyped') != 'limited' or card.get('sport') != 'FOOTBALL':
                     continue
-                if not card.get('inSeasonEligible'):
-                    continue
                 
                 player = card.get('anyPlayer') or {}
                 player_slug = player.get('slug')
@@ -314,41 +411,29 @@ def run_listener(eth_rate, data, listen_seconds):
                 if not player_slug or league_slug != MLS_SLUG:
                     continue
                 
+                # Ascoltiamo anche le classic MLS per agganciare il bot più spesso.
+                # Quando vediamo una classic, facciamo una query diretta per cercare
+                # il minimo in_season disponibile in questo momento per lo stesso giocatore.
+                if not card.get('inSeasonEligible'):
+                    stats["classic_seen"] = stats.get("classic_seen", 0) + 1
+                    
+                    now = time.time()
+                    last_time = last_triggered.get(player_slug, 0)
+                    if now - last_time < TRIGGER_COOLDOWN_SECONDS:
+                        continue
+                    last_triggered[player_slug] = now
+                    
+                    log(f"[Evento classic] {player_name} (slug: {player_slug}) classic visto sul mercato — cerco minimo in_season...")
+                    trigger_price = fetch_min_in_season_price(player_slug, eth_rate)
+                    if trigger_price is not None:
+                        log(f"[Trigger da classic] {player_name} — registro minimo in_season: {trigger_price:.2f} EUR")
+                        register_price(player_slug, player_name, player, trigger_price, source='trigger')
+                    else:
+                        log(f"[Trigger da classic] {player_name} — nessun annuncio in_season attualmente disponibile")
+                    continue
+                
                 stats["processed"] += 1
-                
-                # Registra il prezzo nella struttura dati
-                team_slug = ''
-                for ts, tn in MLS_TEAMS.items():
-                    if player.get('activeClub', {}).get('slug') == ts:
-                        team_slug = ts
-                        break
-                
-                if team_slug not in data['teams']:
-                    team_slug = list(data['teams'].keys())[0]  # fallback
-                
-                if player_slug not in data['teams'][team_slug]['players']:
-                    data['teams'][team_slug]['players'][player_slug] = {
-                        'name': player_name,
-                        'prices_this_run': [],
-                        'min_live_price': price_eur,
-                        'max_live_price': price_eur,
-                        'historical_mean': 0,
-                        'std_dev': 0,
-                        'occurrences': 0,
-                        'change_from_mean_pct': 0,
-                        'first_seen': datetime.datetime.utcnow().isoformat() + 'Z',
-                        'last_update': datetime.datetime.utcnow().isoformat() + 'Z',
-                    }
-                
-                player_data = data['teams'][team_slug]['players'][player_slug]
-                player_data['prices_this_run'].append(price_eur)
-                player_data['min_live_price'] = min(player_data['min_live_price'], price_eur)
-                player_data['max_live_price'] = max(player_data['max_live_price'], price_eur)
-                player_data['last_update'] = datetime.datetime.utcnow().isoformat() + 'Z'
-                player_data['occurrences'] += 1
-                stats["prices_found"] += 1
-                
-                log(f"[Carta trovata] {player_name} (slug: {player_slug}) — {data['teams'][team_slug]['team_name']} — {price_eur:.2f} EUR")
+                register_price(player_slug, player_name, player, price_eur, source='live')
         
         except Exception as e:
             log(f"[Errore in on_message] {e}")
@@ -358,7 +443,8 @@ def run_listener(eth_rate, data, listen_seconds):
     
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa. Events ricevuti: {stats['received']}, "
-            f"prezzi trovati: {stats['prices_found']}")
+            f"prezzi in_season trovati: {stats['prices_found']}, "
+            f"classic MLS viste (scartate): {stats.get('classic_seen', 0)}")
     
     def close_ws_after_timeout():
         """Chiude il WebSocket dopo listen_seconds."""
