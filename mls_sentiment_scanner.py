@@ -27,6 +27,7 @@ OUTPUT_DIR = 'mls'
 SENTIMENT_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_analysis.json')
 MARKDOWN_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_analysis.md')
 HTML_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_chart.html')
+COOKIES = os.environ.get('SORARE_COOKIE')
 
 # Default listen duration: 10 minutes (600 seconds)
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '600'))
@@ -376,6 +377,7 @@ def run_listener(eth_rate, data, listen_seconds):
     
     ws = websocket.WebSocketApp(
         WS_URL,
+        header=[f"Cookie: {COOKIES}"] if COOKIES else [],
         on_open=on_open,
         on_message=on_message,
         on_error=on_error,
