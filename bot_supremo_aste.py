@@ -1076,18 +1076,27 @@ def send_telegram_msg(message):
         log(f"Errore invio Telegram: {e}")
 
 
-def build_card_link(player_slug, card_slug):
-    """FIX 21/07 (pattern osservato su 3 casi reali dall'utente: Lorenzo Dellavalle
-    -287/-288, Damario McIntosh -222/-223, e un terzo caso -- in tutti e tre anyCards
-    restituiva il serial SBAGLIATO, sempre esattamente uno in meno di quello realmente
-    in asta): il seriale finale dello slug carta viene incrementato di 1 di default per
-    generare il link. Se il pattern smette di valere (link +1 che non esiste/404), va
-    rivalutato -- non e' un campo GraphQL verificato, e' un'euristica su dati osservati."""
+def build_card_link(player_slug, card_slug, serial_number=None):
+    """FIX 21/07, REVISIONATO 21/07 dopo nuovo caso reale (Ryan Porteous): l'euristica
+    "+1 sempre" (basata su 3 casi osservati dove il serial nello slug era sempre uno in
+    meno di quello vero) NON regge in generale -- su Porteous lo scarto era di 2, non di
+    1, a conferma che affidarsi al pattern dello slug e' intrinsecamente inaffidabile.
+
+    Fix definitivo: la query ora richiede anche il campo serialNumber (Int), verificato
+    dal self-check di avvio (validate_auction_schema, sulla query liveAuctions) --
+    quando disponibile e' quello il valore giusto da usare per costruire il link, il
+    numero di serie non va piu' indovinato dallo slug in nessun modo.
+
+    Fallback (solo se per qualche motivo serial_number non arriva, es. errore API): usa
+    lo slug cosi' com'e', SENZA alcuna correzione euristica -- meglio un link
+    potenzialmente col serial originale (a volte sbagliato di un numero non prevedibile)
+    che uno "corretto" con un'euristica ormai nota per essere inaffidabile."""
     corrected_slug = card_slug
-    m = re.search(r'^(.*-)(\d+)$', card_slug)
-    if m:
-        prefix, serial = m.groups()
-        corrected_slug = f"{prefix}{int(serial) + 1}"
+    if serial_number is not None:
+        m = re.search(r'^(.*-)(\d+)$', card_slug)
+        if m:
+            prefix, _old_serial = m.groups()
+            corrected_slug = f"{prefix}{int(serial_number)}"
     return f"https://sorare.com/it/football/players/{player_slug}?card={corrected_slug}"
 
 
@@ -1304,6 +1313,7 @@ subscription OnTokenAuctionUpdated {
     bidsCount
     anyCards {
       slug
+      serialNumber
       rarityTyped
       sport
       inSeasonEligible
@@ -1350,6 +1360,7 @@ query ListLiveAuctions($n: Int!, $cursor: String) {
         bidsCount
         anyCards {
           slug
+          serialNumber
           rarityTyped
           sport
           inSeasonEligible
@@ -1487,15 +1498,15 @@ def process_incoming_auction(auction, eth_rate, state, source):
     # puo' confermare quale dei due casi sia.
     if source == 'WS' and is_first_sighting and AUCTION_DIAGNOSTIC:
         cards = auction.get('anyCards') or []
-        candidates = [(c.get('anyPlayer', {}).get('slug'), c.get('slug')) for c in cards
-                      if c.get('anyPlayer', {}).get('slug') and c.get('slug')]
+        candidates = [(c.get('anyPlayer', {}).get('slug'), c.get('slug'), c.get('serialNumber'))
+                      for c in cards if c.get('anyPlayer', {}).get('slug') and c.get('slug')]
         link_hint = ""
         if len(candidates) > 1:
-            slugs = ', '.join(c_slug for _, c_slug in candidates)
+            slugs = ', '.join(c_slug for _, c_slug, _ in candidates)
             link_hint = f", ATTENZIONE link ambiguo ({len(candidates)} carte candidate: {slugs})"
         if candidates:
-            p_slug, c_slug = candidates[0]
-            link_hint += f", link={build_card_link(p_slug, c_slug)}"
+            p_slug, c_slug, c_serial = candidates[0]
+            link_hint += f", link={build_card_link(p_slug, c_slug, c_serial)}"
         log(f"[WS-POSSIBILE-APERTURA] primo avvistamento in questa run, id={auction_id}, "
             f"currentPrice={auction.get('currentPrice')}, minNextBid={auction.get('minNextBid')}, "
             f"endDate={auction.get('endDate')}{link_hint} -- verifica a mano se corrisponde a "
@@ -1585,8 +1596,8 @@ def send_end_msg(stats):
 
 def send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
                     bid_ceiling, min_next_bid, live_mode, bid_completed=None, bid_error=None,
-                    seconds_left=None):
-    link = build_card_link(player_slug, card_slug)
+                    seconds_left=None, card_serial_number=None):
+    link = build_card_link(player_slug, card_slug, card_serial_number)
     intestazione = "\U0001F3AF <b>ASTA -- BID PIAZZATO</b>" if (live_mode and bid_completed) else \
         ("\u274C <b>ASTA -- BID FALLITO</b>" if (live_mode and bid_completed is False) else
          "\U0001F4CB <b>ASTA -- AVREI BIDDATO (diagnostica)</b>")
@@ -1663,6 +1674,7 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
             f"mano finche' il pattern non e' confermato su piu' casi.")
 
     card_slug = match.get('slug')
+    card_serial_number = match.get('serialNumber')
     player = match.get('anyPlayer') or {}
     player_slug = player.get('slug')
     player_name = player.get('displayName', player_slug)
@@ -1736,13 +1748,14 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
         # righe di dettaglio (riferimento/tetto/minNextBid), per rendere il log leggibile
         # con volumi alti. Le aste che INVECE superano il tetto (occasioni vere) restano
         # con il log completo come prima, invariato.
-        log(f"[{source}] {player_name}: link={build_card_link(player_slug, card_slug)}")
+        log(f"[{source}] {player_name}: link={build_card_link(player_slug, card_slug, card_serial_number)}")
         stats['skip_tetto_insufficiente'] = stats.get('skip_tetto_insufficiente', 0) + 1
         return False
 
     log(f"[{source}] {player_name}: riferimento {reference_price:.2f}EUR ({reference_source}), "
         f"tetto bid {bid_ceiling:.2f}EUR (max per asta {MAX_BID_PER_AUCTION_EUR:.2f}EUR), "
-        f"minNextBid attuale {min_next_bid_eur:.2f}EUR, link={build_card_link(player_slug, card_slug)}")
+        f"minNextBid attuale {min_next_bid_eur:.2f}EUR, "
+        f"link={build_card_link(player_slug, card_slug, card_serial_number)}")
 
     seconds_left = None
     end_date = auction.get('endDate')
@@ -1757,7 +1770,8 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
         log(f"[{source}] {player_name}: [DIAGNOSTICA] avrei biddato {bid_ceiling:.2f}EUR "
             f"su questa asta")
         send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
-                        bid_ceiling, min_next_bid_eur, live_mode=False, seconds_left=seconds_left)
+                        bid_ceiling, min_next_bid_eur, live_mode=False, seconds_left=seconds_left,
+                        card_serial_number=card_serial_number)
         stats['bid_simulated'] = stats.get('bid_simulated', 0) + 1
         return True
 
@@ -1795,7 +1809,8 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
 
     send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
                     bid_ceiling, min_next_bid_eur, live_mode=True,
-                    bid_completed=bid_completed, bid_error=bid_error, seconds_left=seconds_left)
+                    bid_completed=bid_completed, bid_error=bid_error, seconds_left=seconds_left,
+                    card_serial_number=card_serial_number)
     return bool(bid_completed)
 
 
