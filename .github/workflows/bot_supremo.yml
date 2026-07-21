@@ -9,15 +9,15 @@ on:
       max_price_eur:
         description: "Prezzo massimo carta da valutare (EUR)"
         required: false
-        default: "20"
+        default: "30"
       makeoffer_margin_percent:
         description: "Margine MINIMO per il ramo MakeOffer (offerta scontata), in % (es. 10 = 10%)"
         required: false
-        default: "15"
+        default: "17"
       makeoffer_max_margin_percent:
         description: "Margine MASSIMO per il ramo MakeOffer -- oltre questa soglia interviene AutoBuy"
         required: false
-        default: "25"
+        default: "27"
       offer_discount_percent:
         description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
         required: false
@@ -25,7 +25,7 @@ on:
       autobuy_margin_percent:
         description: "Margine MINIMO per il ramo AutoBuy (accetta offerta esistente), in % -- deve essere >= makeoffer_max_margin_percent"
         required: false
-        default: "26"
+        default: "28"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -33,7 +33,7 @@ on:
       target_matches:
         description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-20)"
         required: false
-        default: "20"
+        default: "3"
       autobuy_diagnostic:
         description: "Log extra sul confronto in_season/classic per lega, di default spento"
         required: false
@@ -119,12 +119,12 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
           AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
-          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '20' }}
-          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '15' }}
-          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '25' }}
-          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '26' }}
+          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
+          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '17' }}
+          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '27' }}
+          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '28' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
-          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '20' }}
+          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '3' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
