@@ -356,24 +356,26 @@ MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
 # FIX 21/07 (richiesta esplicita utente, "voglio ascoltare anche aste a 0 bid gia'
 # aperte, aperture in tempo reale, e le aste in scadenza"): due fonti di aste che
 # alimenta lo STESSO motore di valutazione (evaluate_auction).
-# FIX 21/07 v3 (richiesta esplicita utente, WebSocket rimosso): CICLO CONTINUO a TRE
-# fasi, ciascuna della durata di CYCLE_PHASE_SECONDS, separate da pause fisse di
-# CYCLE_PAUSE_SECONDS (anche dopo l'ultima fase, prima di ricominciare dalla prima):
-# FIX 21/07 v4 (richiesta esplicita utente, "altrimenti vengo sommerso da notifiche"):
-# MAX_AUCTIONS_PER_PHASE limita quante aste vengono VALUTATE (quindi eventualmente
-# notificate) per ciascuna fase, non solo in FASE 3 -- prima valeva solo li', ora vale
-# ovunque, stesso tetto uniforme per NUOVE/ZEROBID/SCADENZA.
-#   FASE 1 "NUOVE": scan completo whitelist, valuta SOLO le aste con id MAI visto
-#     prima in questa run -- cattura le aperture appena immesse sul mercato. Se sono
-#     piu' di MAX_AUCTIONS_PER_PHASE, valuta solo le prime, il resto rimane "non ancora
-#     vista" e viene ripreso al ciclo successivo.
+# FIX 21/07 v5 (richiesta esplicita utente, "trova un modo per non perderti nessuna
+# asta rilevante, senza appesantire, senza troppe notifiche"): rimosso il tetto di
+# valutazione dalle fasi NUOVE e ZEROBID -- sono le due fasi che garantiscono la
+# COPERTURA completa della whitelist, un tetto li' significava accumulare un arretrato
+# che poteva far perdere aste vere (bid altrui nel frattempo, o scadenza prima del
+# turno). SCADENZA_TOP_N resta invece un tetto voluto SOLO per la fase SCADENZA, che e'
+# un "ultima chance" per le aste piu' urgenti, non il meccanismo di copertura primario.
+# Per evitare il "delirio di notifiche" anche quando MOLTE aste sono appetibili insieme,
+# le notifiche Telegram non partono piu' una per asta: si accorpano in UN SOLO messaggio
+# per fase (vedi flush_phase_alerts), quindi al massimo 3 messaggi per ciclo completo,
+# indipendentemente da quante occasioni vengono trovate.
+#   FASE 1 "NUOVE": scan completo whitelist, valuta TUTTE le aste con id MAI visto
+#     prima in questa run -- cattura le aperture appena immesse sul mercato, nessuna
+#     esclusa.
 #   pausa CYCLE_PAUSE_SECONDS
-#   FASE 2 "ZEROBID": stessa scansione completa, valuta SOLO le aste con bidsCount==0
-#     (nuove o vecchie che siano, non solo quelle appena viste in FASE 1), tetto
-#     MAX_AUCTIONS_PER_PHASE.
+#   FASE 2 "ZEROBID": stessa scansione completa, valuta TUTTE le aste con bidsCount==0
+#     (nuove o vecchie che siano, non solo quelle appena viste in FASE 1).
 #   pausa CYCLE_PAUSE_SECONDS
 #   FASE 3 "SCADENZA": stessa scansione completa, ordinata per scadenza piu' vicina,
-#     valutate solo le prime MAX_AUCTIONS_PER_PHASE.
+#     valutate solo le prime SCADENZA_TOP_N (default 5) -- qui il tetto e' voluto.
 #   pausa CYCLE_PAUSE_SECONDS
 #   ricomincia da FASE 1. E' del tutto normale (e atteso) che le stesse aste in
 #   scadenza ricompaiano identiche a fine ciclo in FASE 3 -- la dedup (vedi
@@ -381,7 +383,7 @@ MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
 #   currentPrice/minNextBid sono identici a un evento gia' notificato.
 CYCLE_PHASE_SECONDS = float(os.environ.get('CYCLE_PHASE_SECONDS', '20'))
 CYCLE_PAUSE_SECONDS = float(os.environ.get('CYCLE_PAUSE_SECONDS', '20'))
-MAX_AUCTIONS_PER_PHASE = int(os.environ.get('MAX_AUCTIONS_PER_PHASE', '5'))
+SCADENZA_TOP_N = int(os.environ.get('SCADENZA_TOP_N', '5'))
 
 
 # Ritardo prima della riverifica live pre-bid (il backend di Sorare a volte non e'
@@ -1187,7 +1189,8 @@ def get_live_min_direct_sale_in_season(player_slug, eth_rate):
             return None
         return min(prices)
     except Exception as e:
-        log(f"[vendita diretta live] eccezione per {player_slug}: {e}")
+        if AUCTION_DIAGNOSTIC:
+            log(f"[vendita diretta live] eccezione per {player_slug}: {e}")
         return None
 
 
@@ -1223,11 +1226,17 @@ def get_last_concluded_auction_price(player_slug, eth_rate):
     try:
         data = graphql_query(LAST_TRANSACTIONS_QUERY, {"p": player_slug})
         if data.get('errors'):
-            log(f"[ultima asta] errore GraphQL per {player_slug}: {data['errors']}")
+            # FIX 21/07 v5 (richiesta esplicita utente, "il log e' troppo pesante"):
+            # questo errore e' FREQUENTE e NORMALE (tanti giocatori, specie in leghe di
+            # nicchia, non hanno alcuna transazione registrata) -- non blocca nulla, il
+            # bot ricade sul minimo live. Log spostato dietro AUCTION_DIAGNOSTIC.
+            if AUCTION_DIAGNOSTIC:
+                log(f"[ultima asta] errore GraphQL per {player_slug}: {data['errors']}")
             return None
         nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
     except Exception as e:
-        log(f"[ultima asta] eccezione per {player_slug}: {e}")
+        if AUCTION_DIAGNOSTIC:
+            log(f"[ultima asta] eccezione per {player_slug}: {e}")
         return None
 
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -1443,13 +1452,17 @@ class _SharedListenerState:
     """Stato condiviso tra le 3 fasi del ciclo di tracking (FIX 21/07 v3: ora un ciclo
     sequenziale in un solo thread, il lock resta comunque per sicurezza) -- seen_events
     per la dedup notifiche, known_auction_ids per riconoscere le aste "nuove" in FASE 1,
-    stats per i contatori."""
+    stats per i contatori, pending_alerts per accumulare le occasioni trovate in UNA
+    fase e mandarle come UN SOLO messaggio Telegram a fine fase (FIX 21/07 v5, richiesta
+    esplicita utente: "senza troppe notifiche" -- anche se in una fase sono TUTTE
+    appetibili, arriva un solo messaggio consolidato, mai uno a testa)."""
 
     def __init__(self):
         self.lock = threading.Lock()
         self.seen_events = set()
         self.known_auction_ids = set()
         self.stats = {}
+        self.pending_alerts = []
 
 
 def process_incoming_auction(auction, eth_rate, state, source):
@@ -1498,25 +1511,25 @@ def process_incoming_auction(auction, eth_rate, state, source):
         state.known_auction_ids.add(auction_id)
         state.stats[f'source_{source.lower()}'] = state.stats.get(f'source_{source.lower()}', 0) + 1
 
-    # FIX 21/07 v2 (richiesta esplicita utente: "log verboso con link alla carta
-    # rilevata, cosi' sono sicuro che stai facendo bene"): SEMPRE attivo (non solo con
-    # AUCTION_DIAGNOSTIC), per OGNI fase (NUOVE/ZEROBID/SCADENZA) -- una riga per ogni
-    # asta unica rilevata, con link carta e i dati grezzi principali, per poter
-    # verificare a occhio cosa il ciclo sta effettivamente tracciando.
-    cards = auction.get('anyCards') or []
-    candidates = [(c.get('anyPlayer', {}).get('slug'), c.get('anyPlayer', {}).get('displayName'),
-                   c.get('slug'), c.get('serialNumber'))
-                  for c in cards if c.get('anyPlayer', {}).get('slug') and c.get('slug')]
-    if candidates:
-        p_slug, p_name, c_slug, c_serial = candidates[0]
-        detect_link = build_card_link(p_slug, c_slug, c_serial)
-        ambiguo = f" [ATTENZIONE: {len(candidates)} carte candidate, uso la prima]" if len(candidates) > 1 else ""
-        log(f"[{source}] [RILEVATA] {p_name or p_slug}, bidsCount={auction.get('bidsCount')}, "
-            f"currentPrice={auction.get('currentPrice')}, minNextBid={auction.get('minNextBid')}, "
-            f"endDate={auction.get('endDate')}, link={detect_link}{ambiguo}")
+    # FIX 21/07 v5 (richiesta esplicita utente, "il log e' troppo pesante, troppe
+    # scritte"): questo log per-asta ora e' SOLO in diagnostica (era sempre attivo dalla
+    # v2) -- di default il ciclo mostra solo il riepilogo di fase e le vere occasioni
+    # trovate, non piu' una riga per ogni singola asta scandagliata.
+    if AUCTION_DIAGNOSTIC:
+        cards = auction.get('anyCards') or []
+        candidates = [(c.get('anyPlayer', {}).get('slug'), c.get('anyPlayer', {}).get('displayName'),
+                       c.get('slug'), c.get('serialNumber'))
+                      for c in cards if c.get('anyPlayer', {}).get('slug') and c.get('slug')]
+        if candidates:
+            p_slug, p_name, c_slug, c_serial = candidates[0]
+            detect_link = build_card_link(p_slug, c_slug, c_serial)
+            ambiguo = f" [ATTENZIONE: {len(candidates)} carte candidate, uso la prima]" if len(candidates) > 1 else ""
+            log(f"[{source}] [RILEVATA] {p_name or p_slug}, bidsCount={auction.get('bidsCount')}, "
+                f"currentPrice={auction.get('currentPrice')}, minNextBid={auction.get('minNextBid')}, "
+                f"endDate={auction.get('endDate')}, link={detect_link}{ambiguo}")
 
     try:
-        evaluate_auction(auction, eth_rate, state.stats, source=source)
+        evaluate_auction(auction, eth_rate, state, source=source)
     except Exception as e:
         log(f"[{source}] Errore nel processare un'asta: {e}")
 
@@ -1530,49 +1543,49 @@ def _fetch_whitelisted_live_auctions():
 
 
 def run_new_auctions_phase(eth_rate, state):
-    """FASE 1 "NUOVE" (FIX 21/07 v3/v4, richiesta esplicita utente): scan completo
-    whitelist, valuta SOLO le aste con id MAI visto prima in questa run -- cattura le
-    aperture appena immesse sul mercato. Tetto MAX_AUCTIONS_PER_PHASE per non sommergere
-    di notifiche -- le eventuali eccedenti restano "non ancora viste" e vengono riprese
-    al ciclo successivo (known_auction_ids NON viene marcato per quelle scartate)."""
+    """FASE 1 "NUOVE" (FIX 21/07 v5, richiesta esplicita utente: "non perdersi nessuna
+    asta rilevante"): scan completo whitelist, valuta TUTTE le aste con id MAI visto
+    prima in questa run -- nessun tetto, cattura ogni apertura appena immessa sul
+    mercato, senza accumulare arretrato. Le notifiche di questa fase vengono comunque
+    accorpate in UN SOLO messaggio Telegram a fine fase (vedi flush_phase_alerts)."""
     page, whitelisted = _fetch_whitelisted_live_auctions()
     nuove = [a for a in whitelisted if (a.get('id') or '') not in state.known_auction_ids]
-    selected = nuove[:MAX_AUCTIONS_PER_PHASE]
-    troncato = f" (tetto {MAX_AUCTIONS_PER_PHASE}, le altre riprese al prossimo ciclo)" if len(nuove) > len(selected) else ""
-    log(f"[NUOVE] {len(page)} aste totali scandagliate, {len(whitelisted)} in whitelist, "
-        f"{len(nuove)} mai viste prima in questa run -- valuto {len(selected)}{troncato}")
-    for auction in selected:
+    log(f"[NUOVE] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
+        f"{len(nuove)} mai viste prima -- valuto tutte")
+    for auction in nuove:
         process_incoming_auction(auction, eth_rate, state, source='NUOVE')
+    flush_phase_alerts('NUOVE', state)
 
 
 def run_zero_bid_phase(eth_rate, state):
-    """FASE 2 "ZEROBID" (FIX 21/07 v3/v4): scan completo whitelist, valuta SOLO le aste
-    con bidsCount==0 -- nuove o vecchie che siano, non solo quelle appena viste in
-    FASE 1. Tetto MAX_AUCTIONS_PER_PHASE per non sommergere di notifiche."""
+    """FASE 2 "ZEROBID" (FIX 21/07 v5): scan completo whitelist, valuta TUTTE le aste
+    con bidsCount==0 -- nuove o vecchie che siano, nessun tetto (stesso motivo di FASE
+    1: non perdere occasioni). Notifiche accorpate in UN SOLO messaggio a fine fase."""
     page, whitelisted = _fetch_whitelisted_live_auctions()
     zero_bid = [a for a in whitelisted if a.get('bidsCount') == 0]
-    selected = zero_bid[:MAX_AUCTIONS_PER_PHASE]
-    troncato = f" (tetto {MAX_AUCTIONS_PER_PHASE}, le altre riprese al prossimo ciclo)" if len(zero_bid) > len(selected) else ""
-    log(f"[ZEROBID] {len(page)} aste totali scandagliate, {len(whitelisted)} in whitelist, "
-        f"{len(zero_bid)} a 0 bid -- valuto {len(selected)}{troncato}")
-    for auction in selected:
+    log(f"[ZEROBID] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
+        f"{len(zero_bid)} a 0 bid -- valuto tutte")
+    for auction in zero_bid:
         process_incoming_auction(auction, eth_rate, state, source='ZEROBID')
+    flush_phase_alerts('ZEROBID', state)
 
 
 def run_ending_soon_phase(eth_rate, state):
-    """FASE 3 "SCADENZA" (FIX 21/07 v3/v4): scan completo whitelist, ordinata per
-    scadenza piu' vicina, valutate solo le prime MAX_AUCTIONS_PER_PHASE (default 5). E'
-    normale/atteso che le stesse aste ricompaiano identiche da un ciclo all'altro se
-    nessuno ha rilanciato -- la dedup in process_incoming_auction evita la doppia
-    notifica in quel caso."""
+    """FASE 3 "SCADENZA" (FIX 21/07 v5): unica fase che resta CAPPATA (SCADENZA_TOP_N,
+    default 5) -- a differenza di NUOVE/ZEROBID, qui il tetto e' voluto: e' un
+    ulteriore "ultima chance" per le aste piu' urgenti, non il meccanismo primario di
+    copertura (quello lo fanno NUOVE+ZEROBID, entrambe senza tetto). E' normale/atteso
+    che le stesse aste ricompaiano identiche da un ciclo all'altro se nessuno ha
+    rilanciato -- la dedup in process_incoming_auction evita la doppia notifica."""
     _, whitelisted = _fetch_whitelisted_live_auctions()
     whitelisted.sort(key=lambda a: (_seconds_until_end(a.get('endDate')) is None,
                                      _seconds_until_end(a.get('endDate'))))
-    selected = whitelisted[:MAX_AUCTIONS_PER_PHASE]
+    selected = whitelisted[:SCADENZA_TOP_N]
     log(f"[SCADENZA] {len(whitelisted)} in whitelist, valuto le {len(selected)} piu' "
         f"vicine alla scadenza...")
     for auction in selected:
         process_incoming_auction(auction, eth_rate, state, source='SCADENZA')
+    flush_phase_alerts('SCADENZA', state)
 
 
 def _run_timed_phase(phase_name, phase_fn, eth_rate, state):
@@ -1666,6 +1679,11 @@ def send_end_msg(stats):
 def send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
                     bid_ceiling, min_next_bid, live_mode, bid_completed=None, bid_error=None,
                     seconds_left=None, card_serial_number=None):
+    """FIX 21/07 v5 (richiesta esplicita utente, "senza troppe notifiche"): NON invia
+    piu' il messaggio Telegram direttamente -- ritorna il testo composto, che il
+    chiamante accoda a state.pending_alerts. L'invio vero avviene UNA volta a fine
+    fase, in flush_phase_alerts, accorpando tutte le occasioni trovate in quella fase
+    in un solo messaggio."""
     link = build_card_link(player_slug, card_slug, card_serial_number)
     intestazione = "\U0001F3AF <b>ASTA -- BID PIAZZATO</b>" if (live_mode and bid_completed) else \
         ("\u274C <b>ASTA -- BID FALLITO</b>" if (live_mode and bid_completed is False) else
@@ -1683,7 +1701,21 @@ def send_bid_alert(player_name, player_slug, card_slug, reference_price, referen
     if live_mode and bid_completed is False:
         righe.append(f"Motivo: {bid_error}")
     righe.append(link)
-    send_telegram_msg('\n'.join(righe))
+    return '\n'.join(righe)
+
+
+def flush_phase_alerts(phase_name, state):
+    """FIX 21/07 v5: invia UN SOLO messaggio Telegram con TUTTE le occasioni accumulate
+    in state.pending_alerts durante questa fase, poi svuota la lista. Se la fase non ha
+    trovato nulla, non manda nessun messaggio (silenzio, non spam)."""
+    if not state.pending_alerts:
+        return
+    n = len(state.pending_alerts)
+    parola = "occasione trovata" if n == 1 else "occasioni trovate"
+    intestazione = f"\U0001F4CB <b>FASE {phase_name}</b> -- {n} {parola}"
+    corpo = '\n\n\u2500\u2500\u2500\u2500\u2500\n\n'.join(state.pending_alerts)
+    send_telegram_msg(f"{intestazione}\n\n{corpo}")
+    state.pending_alerts.clear()
 
 
 def send_insufficient_funds_alert(player_name):
@@ -1694,7 +1726,7 @@ def send_insufficient_funds_alert(player_name):
     )
 
 
-def evaluate_auction(auction, eth_rate, stats, source='WS'):
+def evaluate_auction(auction, eth_rate, state, source='WS'):
     """Valutazione completa di un'asta: filtri -> riferimento di mercato -> calcolo bid
     -> (diagnostica o bid reale). Ritorna True se e' stato un caso valido (bid piazzato
     o simulato), False se scartata per qualunque motivo.
@@ -1707,6 +1739,8 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
         utente, fase di test) -- su file di log, mai su Telegram (che resta minimale)."""
         if AUCTION_DIAGNOSTIC:
             log(f"[{source}] [diagnostica] {message}")
+
+    stats = state.stats  # alias, resto della funzione invariato
 
     if INSUFFICIENT_FUNDS_STOP[0]:
         return False
@@ -1812,12 +1846,14 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
         return False
 
     if bid_ceiling < min_next_bid_eur:
-        # Richiesta esplicita utente (fase "tutte le aste" dopo il filtro 0-bid): per le
-        # aste scartate per tetto insufficiente, log ridotto al solo link -- niente
-        # righe di dettaglio (riferimento/tetto/minNextBid), per rendere il log leggibile
-        # con volumi alti. Le aste che INVECE superano il tetto (occasioni vere) restano
-        # con il log completo come prima, invariato.
-        log(f"[{source}] {player_name}: link={build_card_link(player_slug, card_slug, card_serial_number)}")
+        # FIX 21/07 v5 (richiesta esplicita utente, "il log e' troppo pesante"): questo
+        # e' lo scarto PIU' FREQUENTE in assoluto (la maggior parte delle aste non e'
+        # abbastanza sotto prezzo) -- di default nessun log per-asta, solo il contatore
+        # aggregato (visibile nel riepilogo di fine run). Il dettaglio resta disponibile
+        # con AUCTION_DIAGNOSTIC=si.
+        if AUCTION_DIAGNOSTIC:
+            log(f"[{source}] {player_name}: scarto -- tetto insufficiente, "
+                f"link={build_card_link(player_slug, card_slug, card_serial_number)}")
         stats['skip_tetto_insufficiente'] = stats.get('skip_tetto_insufficiente', 0) + 1
         return False
 
@@ -1838,9 +1874,10 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
     if not AUCTION_LIVE_MODE:
         log(f"[{source}] {player_name}: [DIAGNOSTICA] avrei biddato {bid_ceiling:.2f}EUR "
             f"su questa asta")
-        send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
-                        bid_ceiling, min_next_bid_eur, live_mode=False, seconds_left=seconds_left,
-                        card_serial_number=card_serial_number)
+        alert_text = send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
+                                     bid_ceiling, min_next_bid_eur, live_mode=False, seconds_left=seconds_left,
+                                     card_serial_number=card_serial_number)
+        state.pending_alerts.append(alert_text)
         stats['bid_simulated'] = stats.get('bid_simulated', 0) + 1
         return True
 
@@ -1876,10 +1913,11 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
             send_insufficient_funds_alert(player_name)
         stats['bid_failed'] = stats.get('bid_failed', 0) + 1
 
-    send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
-                    bid_ceiling, min_next_bid_eur, live_mode=True,
-                    bid_completed=bid_completed, bid_error=bid_error, seconds_left=seconds_left,
-                    card_serial_number=card_serial_number)
+    alert_text = send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
+                                 bid_ceiling, min_next_bid_eur, live_mode=True,
+                                 bid_completed=bid_completed, bid_error=bid_error, seconds_left=seconds_left,
+                                 card_serial_number=card_serial_number)
+    state.pending_alerts.append(alert_text)
     return bool(bid_completed)
 
 
@@ -1924,12 +1962,13 @@ def main():
     log(f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h")
     log(f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
     log(f"Ciclo di tracking (WebSocket rimosso, solo scansioni GraphQL): "
-        f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s, max {MAX_AUCTIONS_PER_PHASE} aste) -> "
+        f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s, valuta TUTTE) -> "
         f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
-        f"FASE ZEROBID ({CYCLE_PHASE_SECONDS:.0f}s, max {MAX_AUCTIONS_PER_PHASE} aste) -> "
+        f"FASE ZEROBID ({CYCLE_PHASE_SECONDS:.0f}s, valuta TUTTE) -> "
         f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
-        f"FASE SCADENZA ({CYCLE_PHASE_SECONDS:.0f}s, max {MAX_AUCTIONS_PER_PHASE} aste) -> "
-        f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> ricomincia")
+        f"FASE SCADENZA ({CYCLE_PHASE_SECONDS:.0f}s, top {SCADENZA_TOP_N}) -> "
+        f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> ricomincia. Notifiche Telegram accorpate "
+        f"in UN messaggio per fase (mai una a testa).")
     log(f"Log verbosi per-fase (AUCTION_DIAGNOSTIC): "
         f"{'ATTIVI' if AUCTION_DIAGNOSTIC else 'spenti'}")
     log(f"Modalita' TEST solo aste a 0 bid (TEST_ONLY_ZERO_BID): "
