@@ -19,14 +19,18 @@ on:
         description: "Tetto massimo assoluto (EUR) che il bot puo' offrire su UNA singola asta"
         required: false
         default: "20"
-      cycle_pause_seconds:
-        description: "Pausa in secondi tra le due fasi del ciclo di tracking (scan completo <-> top scadenza)"
+      cycle_phase_seconds:
+        description: "Durata in secondi di ciascuna delle 3 fasi del ciclo (NUOVE / ZEROBID / SCADENZA)"
         required: false
         default: "20"
-      ending_soon_top_n:
-        description: "Numero di aste whitelist (le piu' vicine alla scadenza) valutate in FASE 2 del ciclo"
+      cycle_pause_seconds:
+        description: "Pausa in secondi tra le fasi del ciclo di tracking (anche dopo l'ultima, prima di ricominciare)"
         required: false
-        default: "10"
+        default: "20"
+      max_auctions_per_phase:
+        description: "Numero massimo di aste valutate per ciascuna fase (NUOVE/ZEROBID/SCADENZA) -- limita le notifiche per ciclo"
+        required: false
+        default: "5"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -87,8 +91,9 @@ jobs:
           LAST_AUCTION_REFERENCE_WINDOW_HOURS: ${{ github.event.inputs.last_auction_reference_window_hours || '24' }}
           AUCTION_COOLDOWN_HOURS: ${{ github.event.inputs.auction_cooldown_hours || '12' }}
           MAX_BID_PER_AUCTION_EUR: ${{ github.event.inputs.max_bid_per_auction_eur || '20' }}
+          CYCLE_PHASE_SECONDS: ${{ github.event.inputs.cycle_phase_seconds || '20' }}
           CYCLE_PAUSE_SECONDS: ${{ github.event.inputs.cycle_pause_seconds || '20' }}
-          ENDING_SOON_TOP_N: ${{ github.event.inputs.ending_soon_top_n || '10' }}
+          MAX_AUCTIONS_PER_PHASE: ${{ github.event.inputs.max_auctions_per_phase || '5' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'no' }}
           AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
