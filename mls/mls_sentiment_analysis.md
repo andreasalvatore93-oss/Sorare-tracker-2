@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T21:22:19.857404Z
-**Run totali:** 10
+**Data analisi:** 2026-07-21T21:24:21.415182Z
+**Run totali:** 11
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 10.17 EUR
-- **Trend mercato:** 📈 STRONG_ASCENDING (+5.3%)
-- **Sentiment:** 💚 Forte Rialzo
+- **Prezzo medio MLS:** 10.06 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.1%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: STRONG_ASCENDING (+5.3%)**
-I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
+**📉 TREND GLOBALE: DESCENDING (-1.1%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
 Prezzo: **42.98 EUR** | Media: **58.99 EUR** | Sconto: **-27.1%**
@@ -63,7 +63,7 @@ Carte trovate: 3 | Prezzo medio: 10.41 EUR | Volatilità (σ): 10.43
 Carte trovate: 3 | Prezzo medio: 5.99 EUR | Volatilità (σ): 4.71
 
 **San Jose Earthquakes**
-Carte trovate: 4 | Prezzo medio: 6.59 EUR | Volatilità (σ): 8.07
+Carte trovate: 5 | Prezzo medio: 5.42 EUR | Volatilità (σ): 7.46
 
 **Columbus Crew**
 Carte trovate: 3 | Prezzo medio: 5.73 EUR | Volatilità (σ): 5.19
