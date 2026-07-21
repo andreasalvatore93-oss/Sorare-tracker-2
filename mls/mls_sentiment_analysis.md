@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T22:44:22.537454Z
-**Run totali:** 16
+**Data analisi:** 2026-07-21T22:46:24.741232Z
+**Run totali:** 17
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.49 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.8%)
+- **Prezzo medio MLS:** 9.34 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.5%)
 - **Sentiment:** 🟡 Leggero Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.8%)**
+**📉 TREND GLOBALE: DESCENDING (-1.5%)**
 Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
@@ -69,7 +69,7 @@ Carte trovate: 5 | Prezzo medio: 5.42 EUR | Volatilità (σ): 7.46
 Carte trovate: 3 | Prezzo medio: 5.73 EUR | Volatilità (σ): 5.19
 
 **Charlotte FC**
-Carte trovate: 6 | Prezzo medio: 11.77 EUR | Volatilità (σ): 10.64
+Carte trovate: 7 | Prezzo medio: 10.55 EUR | Volatilità (σ): 10.23
 
 **St. Louis City SC**
 Carte trovate: 5 | Prezzo medio: 5.36 EUR | Volatilità (σ): 2.45
@@ -81,7 +81,7 @@ Carte trovate: 6 | Prezzo medio: 14.22 EUR | Volatilità (σ): 15.74
 Carte trovate: 4 | Prezzo medio: 8.20 EUR | Volatilità (σ): 7.19
 
 **FC Cincinnati**
-Carte trovate: 4 | Prezzo medio: 19.42 EUR | Volatilità (σ): 35.39
+Carte trovate: 5 | Prezzo medio: 15.92 EUR | Volatilità (σ): 31.64
 
 **Minnesota United**
 Carte trovate: 2 | Prezzo medio: 4.36 EUR | Volatilità (σ): 2.11
