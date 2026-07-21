@@ -88,6 +88,10 @@ BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
 # (resta li' finche' non la si toglie a mano o finche' il bot non la rinnova scrivendo
 # una nuova scadenza per lo stesso slug/tipo).
 LISTA_NERA_PATH = os.environ.get('LISTA_NERA_PATH', 'sorare_lista_nera.txt')
+# Cache in memoria per _lista_nera_leggi_righe (ottimizzazione velocita' 21/07) --
+# None finche' non e' stata fatta la prima lettura, poi lista di dict finche' non
+# viene invalidata da _lista_nera_scrivi_righe dopo ogni scrittura.
+_lista_nera_cache = None
 
 # Durate di default (giorni), usate quando il bot AGGIUNGE una riga per conto suo
 # (es. dal workflow_dispatch, o registrando un acquisto/offerta/thin-market skip).
@@ -228,12 +232,29 @@ def _lista_nera_migra_vecchio_formato_riga_se_serve():
 def _lista_nera_leggi_righe():
     """Legge tutte le righe valide dal file unico (nuovo formato a sezioni:
     slug,durata_leggibile sotto un'intestazione '## tipo'). Ritorna lista di dict
-    {tipo, slug, scadenza (datetime)}. Righe malformate vengono ignorate con log."""
+    {tipo, slug, scadenza (datetime)}. Righe malformate vengono ignorate con log.
+
+    OTTIMIZZAZIONE VELOCITA' (21/07, richiesta esplicita utente -- "trova qualcosa
+    da ottimizzare senza rischiare di rompere niente"): CACHATA in memoria per tutta
+    la run. Questa funzione viene chiamata per OGNI singolo evento del mercato
+    valutato (is_player_in_cooldown + is_player_in_thin_market_cache, dentro
+    evaluate_event) -- con centinaia di eventi al minuto, prima del fix questo
+    significava altrettante aperture+letture+parsing dell'intero file da disco,
+    anche quando il contenuto non era affatto cambiato dall'ultima lettura. La
+    cache viene invalidata automaticamente da _lista_nera_scrivi_righe (unico punto
+    che modifica il file), quindi resta sempre sincronizzata con lo stato vero --
+    zero rischio di leggere dati stantii. NON tocca la logica di
+    acquisto/firma/Playwright, solo il path di lettura di questo file."""
+    global _lista_nera_cache
+    if _lista_nera_cache is not None:
+        return _lista_nera_cache
+
     righe = []
     try:
         with open(LISTA_NERA_PATH, 'r', encoding='utf-8') as f:
             raw_lines = f.readlines()
     except FileNotFoundError:
+        _lista_nera_cache = righe
         return righe
     ora = datetime.datetime.now(datetime.timezone.utc)
     tipo_corrente = None
@@ -262,6 +283,7 @@ def _lista_nera_leggi_righe():
         if secondi is None:
             continue
         righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi)})
+    _lista_nera_cache = righe
     return righe
 
 
@@ -276,7 +298,10 @@ def _lista_nera_scrivi_righe(righe):
     """Riscrive il file unico in sezioni per tipo (ordine fisso, thin_market per
     ultimo perche' e' la sezione piu' numerosa), ognuna con intestazione descrittiva.
     La durata scritta e' SEMPRE il tempo RIMANENTE alla scadenza (ricalcolato ogni
-    volta), non la durata originale -- cosi' l'utente vede sempre quanto manca."""
+    volta), non la durata originale -- cosi' l'utente vede sempre quanto manca.
+    Invalida la cache di lettura (vedi _lista_nera_leggi_righe) dopo la scrittura,
+    cosi' la prossima lettura riflette sempre lo stato vero del file."""
+    global _lista_nera_cache
     ora = datetime.datetime.now(datetime.timezone.utc)
     dedup = {}
     for r in righe:
@@ -306,6 +331,9 @@ def _lista_nera_scrivi_righe(righe):
                 delta = (r['scadenza'] - ora).total_seconds()
                 f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
             f.write("\n")
+    # Invalida la cache: la prossima chiamata a _lista_nera_leggi_righe ricarichera'
+    # dal file appena scritto, cosi' resta sempre sincronizzata con lo stato vero.
+    _lista_nera_cache = None
 
 
 def _lista_nera_upsert(tipo, slug, giorni_da_ora):
