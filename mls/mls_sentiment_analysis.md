@@ -1,6 +1,6 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T09:30:03.813620Z
-**Run totali:** 5
+**Data analisi:** 2026-07-21T09:39:45.376621Z
+**Run totali:** 6
 
 📊 **[Apri i grafici interattivi](https://andreasalvatore93-oss.github.io/Sorare-tracker-2/mls/mls_sentiment_chart.html)**
 
