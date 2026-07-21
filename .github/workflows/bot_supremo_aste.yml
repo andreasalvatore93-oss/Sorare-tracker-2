@@ -19,22 +19,14 @@ on:
         description: "Tetto massimo assoluto (EUR) che il bot puo' offrire su UNA singola asta"
         required: false
         default: "20"
-      auction_safety_poll_size:
-        description: "Aste live piu' recenti controllate UNA volta all'avvio (cattura aste gia' aperte a 0 bid)"
+      cycle_pause_seconds:
+        description: "Pausa in secondi tra le due fasi del ciclo di tracking (scan completo <-> top scadenza)"
         required: false
-        default: "50"
-      ending_soon_poll_interval_seconds:
-        description: "Ogni quanti secondi ripetere la scansione delle aste whitelist in scadenza"
+        default: "20"
+      ending_soon_top_n:
+        description: "Numero di aste whitelist (le piu' vicine alla scadenza) valutate in FASE 2 del ciclo"
         required: false
-        default: "120"
-      ending_soon_poll_size:
-        description: "Aste per pagina controllate ad ogni scansione ending-soon (nessuna paginazione multipla)"
-        required: false
-        default: "50"
-      ending_soon_max_results:
-        description: "Numero massimo di aste whitelist (le piu' vicine alla scadenza) valutate ad ogni scansione ending-soon"
-        required: false
-        default: "40"
+        default: "10"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -95,10 +87,8 @@ jobs:
           LAST_AUCTION_REFERENCE_WINDOW_HOURS: ${{ github.event.inputs.last_auction_reference_window_hours || '24' }}
           AUCTION_COOLDOWN_HOURS: ${{ github.event.inputs.auction_cooldown_hours || '12' }}
           MAX_BID_PER_AUCTION_EUR: ${{ github.event.inputs.max_bid_per_auction_eur || '20' }}
-          AUCTION_SAFETY_POLL_SIZE: ${{ github.event.inputs.auction_safety_poll_size || '50' }}
-          ENDING_SOON_POLL_INTERVAL_SECONDS: ${{ github.event.inputs.ending_soon_poll_interval_seconds || '120' }}
-          ENDING_SOON_POLL_SIZE: ${{ github.event.inputs.ending_soon_poll_size || '50' }}
-          ENDING_SOON_MAX_RESULTS: ${{ github.event.inputs.ending_soon_max_results || '40' }}
+          CYCLE_PAUSE_SECONDS: ${{ github.event.inputs.cycle_pause_seconds || '20' }}
+          ENDING_SOON_TOP_N: ${{ github.event.inputs.ending_soon_top_n || '10' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'no' }}
           AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
