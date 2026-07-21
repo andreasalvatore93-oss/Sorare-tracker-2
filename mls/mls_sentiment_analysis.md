@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T14:39:00.666456Z
-**Run totali:** 27
+**Data analisi:** 2026-07-21T14:41:02.774757Z
+**Run totali:** 28
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.19 EUR
-- **Trend mercato:** ➡️ STABLE (+0.0%)
+- **Prezzo medio MLS:** 7.17 EUR
+- **Trend mercato:** ➡️ STABLE (-0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.0%)**
+**➡️ TREND GLOBALE: STABLE (-0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Maximiliano Falcón (Inter Miami CF)**
@@ -74,7 +74,7 @@ Carte trovate: 5 | Prezzo medio: 7.33 EUR | Volatilità (σ): 5.99
 Carte trovate: 8 | Prezzo medio: 6.02 EUR | Volatilità (σ): 5.85
 
 **CF Montreal**
-Carte trovate: 4 | Prezzo medio: 5.35 EUR | Volatilità (σ): 5.44
+Carte trovate: 5 | Prezzo medio: 4.48 EUR | Volatilità (σ): 5.09
 
 **St. Louis City SC**
 Carte trovate: 10 | Prezzo medio: 4.01 EUR | Volatilità (σ): 2.85
@@ -98,7 +98,7 @@ Carte trovate: 4 | Prezzo medio: 10.13 EUR | Volatilità (σ): 7.38
 Carte trovate: 2 | Prezzo medio: 0.86 EUR | Volatilità (σ): 0.02
 
 **LA Galaxy**
-Carte trovate: 7 | Prezzo medio: 2.81 EUR | Volatilità (σ): 3.16
+Carte trovate: 8 | Prezzo medio: 3.52 EUR | Volatilità (σ): 3.54
 
 **Los Angeles FC**
 Carte trovate: 9 | Prezzo medio: 5.43 EUR | Volatilità (σ): 7.89
