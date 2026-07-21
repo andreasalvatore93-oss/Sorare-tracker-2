@@ -140,7 +140,7 @@ subscription OnTokenOfferUpdated {
         slug
         rarityTyped
         sport
-        anyPlayer { slug displayName activeClub { slug domesticLeague { slug } } }
+        anyPlayer { slug displayName activeClub { slug name domesticLeague { slug } } }
         sportSeason { name }
         inSeasonEligible
       }
@@ -299,16 +299,20 @@ def run_listener(eth_rate, data, listen_seconds):
     
     def register_price(player_slug, player_name, player, price_eur, source='live'):
         """Registra un prezzo in_season nella struttura dati. source = 'live' o 'trigger'."""
-        club_slug = (player.get('activeClub') or {}).get('slug')
-        log(f"[DEBUG raw] {player_name}: activeClub completo = {player.get('activeClub')}")
-        team_slug = ''
-        for ts, tn in MLS_TEAMS.items():
-            if club_slug == ts:
-                team_slug = ts
-                break
+        club = player.get('activeClub') or {}
+        club_slug = club.get('slug')
+        club_name = club.get('name') or club_slug or 'Unknown'
         
-        if team_slug not in data['teams']:
-            team_slug = list(data['teams'].keys())[0]  # fallback
+        if not club_slug:
+            club_slug = 'unknown-team'
+            club_name = 'Unknown'
+        
+        # Creiamo la squadra al volo con lo slug REALE di Sorare se non esiste ancora
+        # (i nomi hard-coded in MLS_TEAMS erano indovinati e non corrispondevano)
+        if club_slug not in data['teams']:
+            data['teams'][club_slug] = {'team_name': club_name, 'players': {}}
+        
+        team_slug = club_slug
         
         if player_slug not in data['teams'][team_slug]['players']:
             data['teams'][team_slug]['players'][player_slug] = {
