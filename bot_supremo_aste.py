@@ -339,6 +339,31 @@ LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
 AUCTION_DIAGNOSTIC = os.environ.get('AUCTION_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 
+# FIX 21/07 (richiesta esplicita utente): tetto massimo assoluto che il bot puo' mai
+# offrire su UNA SINGOLA asta, indipendentemente da quanto alto risulti il calcolo
+# (riferimento * (1-sconto)). Protezione contro riferimenti di mercato anomali (es. un
+# singolo annuncio fuori mercato che alza il "minimo live" per errore/manipolazione).
+MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
+
+# FIX 21/07 (richiesta esplicita utente, "voglio ascoltare anche aste a 0 bid gia'
+# aperte, aperture in tempo reale, e le aste in scadenza"): tre fonti di aste che
+# alimentano lo STESSO motore di valutazione (evaluate_auction) --
+#  1) WebSocket tokenAuctionWasUpdated (gia' esistente) -- tempo reale, ma scatta solo
+#     sui CAMBIAMENTI di un'asta (nuovo bid, o -- da verificare dal vivo, vedi log
+#     [WS-POSSIBILE-APERTURA] -- apertura).
+#  2) Safety poll: UNA volta sola all'avvio, le AUCTION_SAFETY_POLL_SIZE aste live piu'
+#     recenti per creazione (liveAuctions(last:N)) -- cattura le aste gia' aperte con 0
+#     bid prima che il bot si mettesse in ascolto.
+#  3) Ending-soon poll: ogni ENDING_SOON_POLL_INTERVAL_SECONDS secondi per tutta la
+#     durata dell'ascolto, UNA pagina da ENDING_SOON_POLL_SIZE aste (stessa query,
+#     nessuna paginazione multipla -- scelta esplicita dell'utente per restare leggeri
+#     sulle richieste API), filtrata SUBITO per whitelist campionati e poi ordinata per
+#     scadenza piu' vicina, tenendo le prime ENDING_SOON_MAX_RESULTS.
+AUCTION_SAFETY_POLL_SIZE = int(os.environ.get('AUCTION_SAFETY_POLL_SIZE', '50'))
+ENDING_SOON_POLL_INTERVAL_SECONDS = float(os.environ.get('ENDING_SOON_POLL_INTERVAL_SECONDS', '120'))
+ENDING_SOON_POLL_SIZE = int(os.environ.get('ENDING_SOON_POLL_SIZE', '50'))
+ENDING_SOON_MAX_RESULTS = int(os.environ.get('ENDING_SOON_MAX_RESULTS', '40'))
+
 # Ritardo prima della riverifica live pre-bid (stesso principio/stesso default del
 # vecchio notificatore aste: il backend di Sorare a volte non e' ancora "consistente"
 # se riletto a distanza di meno di un secondo dall'evento WS che l'ha segnalato).
@@ -1202,6 +1227,17 @@ def validate_auction_schema():
     else:
         log("[self-check] Query annunci live (vendita diretta in_season) validata.")
 
+    data3 = graphql_query(LIVE_AUCTIONS_QUERY, {"n": 1})
+    if data3.get('errors'):
+        msg = (f"[SELF-CHECK FALLITO] Query liveAuctions (usata da safety poll ed "
+               f"ending-soon poll) fallisce: {data3['errors']}. Il bot potra' comunque "
+               f"contare sul solo WebSocket in tempo reale -- niente cattura delle aste "
+               f"gia' aperte a 0 bid ne' scansione periodica delle aste in scadenza.")
+        log(msg)
+        send_telegram_msg(f"BOT SUPREMO ASTE -- AVVISO ALL'AVVIO\n\n{msg}")
+    else:
+        log("[self-check] Query liveAuctions (safety poll + ending-soon poll) validata.")
+
     data2 = graphql_query(LAST_TRANSACTIONS_QUERY, {"p": probe_slug})
     if data2.get('errors'):
         msg = (f"[SELF-CHECK FALLITO] Query ultime transazioni (deal.__typename + amounts "
@@ -1264,6 +1300,154 @@ query GetAuctionById($id: String!) {
 }
 """
 
+# Stessa forma esatta di SUBSCRIPTION_QUERY sopra (stessi campi che evaluate_auction si
+# aspetta), solo su liveAuctions invece che sull'evento websocket -- cosi' un'asta presa
+# da un poll e un'asta presa dal WS sono indistinguibili per evaluate_auction.
+LIVE_AUCTIONS_QUERY = """
+query ListLiveAuctions($n: Int!) {
+  tokens {
+    liveAuctions(last: $n) {
+      nodes {
+        id
+        currentPrice
+        minNextBid
+        endDate
+        open
+        cancelled
+        anyCards {
+          slug
+          rarityTyped
+          sport
+          inSeasonEligible
+          anyPlayer {
+            slug
+            displayName
+            activeClub { domesticLeague { slug } }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_live_auctions_page(n):
+    """Una sola pagina (nessuna paginazione a cursore) delle N aste live piu' recenti
+    per creazione. Usata sia dal safety poll (una volta, N grande) sia dall'ending-soon
+    poll (ripetuto, N piccolo -- scelta esplicita dell'utente per restare leggeri sulle
+    richieste API)."""
+    try:
+        data = graphql_query(LIVE_AUCTIONS_QUERY, {"n": n})
+        if data.get('errors'):
+            log(f"[liveAuctions] errore: {data['errors']}")
+            return []
+        return (((data.get('data') or {}).get('tokens') or {}).get('liveAuctions') or {}).get('nodes') or []
+    except Exception as e:
+        log(f"[liveAuctions] eccezione: {e}")
+        return []
+
+
+def _seconds_until_end(end_date_str):
+    if not end_date_str:
+        return None
+    try:
+        end_dt = datetime.datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+        return (end_dt - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+    except (ValueError, TypeError):
+        return None
+
+
+def _auction_league_slug(auction):
+    """Stessa identica estrazione lega gia' usata dentro evaluate_auction -- fattorizzata
+    qui per poter filtrare whitelist PRIMA di passare le aste a evaluate_auction (richiesta
+    esplicita utente: filtro whitelist applicato subito, non dopo)."""
+    cards = auction.get('anyCards') or []
+    for c in cards:
+        if c.get('rarityTyped') != 'limited' or c.get('sport') != 'FOOTBALL' or not c.get('inSeasonEligible'):
+            continue
+        player = c.get('anyPlayer') or {}
+        return ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug', '').lower()
+    return None
+
+
+class _SharedListenerState:
+    """Stato condiviso tra il thread WS (on_message, eseguito nel thread che chiama
+    ws.run_forever) e il thread di background dell'ending-soon poll -- un solo lock per
+    tutte le strutture condivise (seen_events per la dedup, known_auction_ids per il log
+    diagnostico apertura asta, stats per i contatori)."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.seen_events = set()
+        self.known_auction_ids = set()
+        self.stats = {}
+
+
+def process_incoming_auction(auction, eth_rate, state, source):
+    """Punto di ingresso UNICO per tutte e 3 le fonti (WS/SAFETY/ENDING-SOON) -- dedup
+    condivisa, log diagnostico apertura asta, poi delega a evaluate_auction. Cosi' la
+    logica di dedup/valutazione resta scritta una volta sola."""
+    auction_id = auction.get('id') or ''
+    dedup_key = (auction_id, auction.get('currentPrice'), auction.get('minNextBid'), auction.get('endDate'))
+    with state.lock:
+        if dedup_key in state.seen_events:
+            return
+        state.seen_events.add(dedup_key)
+        is_first_sighting = auction_id not in state.known_auction_ids
+        state.known_auction_ids.add(auction_id)
+        state.stats[f'source_{source.lower()}'] = state.stats.get(f'source_{source.lower()}', 0) + 1
+
+    # NOTA (21/07, richiesta esplicita utente): NON abbiamo ancora la conferma dal vivo
+    # che l'evento WS scatti anche all'APERTURA di un'asta (finora visto scattare solo
+    # sui bid). Questo log NON e' una conferma -- e' un segnale da controllare a mano:
+    # se un id arriva per la prima volta via WS (mai visto dal safety poll ne' da poll
+    # precedenti), o e' un'asta appena aperta, o e' un'asta sfuggita al safety poll per
+    # altri motivi. Solo un controllo manuale (guardando Sorare nello stesso momento)
+    # puo' confermare quale dei due casi sia.
+    if source == 'WS' and is_first_sighting:
+        log(f"[WS-POSSIBILE-APERTURA] primo avvistamento in questa run, id={auction_id}, "
+            f"currentPrice={auction.get('currentPrice')}, minNextBid={auction.get('minNextBid')}, "
+            f"endDate={auction.get('endDate')} -- verifica a mano se corrisponde a un'asta "
+            f"appena aperta su Sorare in questo momento")
+
+    try:
+        evaluate_auction(auction, eth_rate, state.stats, source=source)
+    except Exception as e:
+        log(f"[{source}] Errore nel processare un'asta: {e}")
+
+
+def run_safety_poll(eth_rate, state):
+    """Scansione UNA TANTUM prima di aprire il WS: cattura le aste gia' aperte (incluse
+    quelle a 0 bid) prima dell'avvio del bot."""
+    log(f"[SAFETY] scansione di avvio: controllo le {AUCTION_SAFETY_POLL_SIZE} aste live "
+        f"piu' recenti...")
+    auctions = fetch_live_auctions_page(AUCTION_SAFETY_POLL_SIZE)
+    log(f"[SAFETY] {len(auctions)} aste trovate, valutazione in corso...")
+    for auction in auctions:
+        process_incoming_auction(auction, eth_rate, state, source='SAFETY')
+    log("[SAFETY] scansione di avvio completata.")
+
+
+def run_ending_soon_loop(eth_rate, state, stop_event):
+    """Thread di background: ogni ENDING_SOON_POLL_INTERVAL_SECONDS, UNA pagina da
+    ENDING_SOON_POLL_SIZE aste, filtro whitelist SUBITO (richiesta esplicita utente),
+    poi le ENDING_SOON_MAX_RESULTS piu' vicine alla scadenza vengono valutate."""
+    while not stop_event.wait(ENDING_SOON_POLL_INTERVAL_SECONDS):
+        try:
+            page = fetch_live_auctions_page(ENDING_SOON_POLL_SIZE)
+            whitelisted = [a for a in page if (_auction_league_slug(a) in LEAGUE_WHITELIST_SLUGS)]
+            whitelisted.sort(key=lambda a: (_seconds_until_end(a.get('endDate')) is None,
+                                             _seconds_until_end(a.get('endDate'))))
+            selected = whitelisted[:ENDING_SOON_MAX_RESULTS]
+            log(f"[ENDING-SOON] pagina di {len(page)} aste, {len(whitelisted)} in whitelist, "
+                f"valuto le {len(selected)} piu' vicine alla scadenza...")
+            for auction in selected:
+                process_incoming_auction(auction, eth_rate, state, source='ENDING-SOON')
+        except Exception as e:
+            log(f"[ENDING-SOON] errore nel ciclo di scansione: {e}")
+    log("[ENDING-SOON] ciclo di scansione terminato.")
+
 
 def get_auction_live_state(auction_id):
     """Rilegge lo stato REALE e aggiornato di un'asta -- usata come riverifica di
@@ -1289,6 +1473,7 @@ def send_startup_msg():
         f"\U0001F3C6 <b>Bot Supremo Aste avviato</b>\n"
         f"Modalita': {modalita}\n"
         f"Sconto target: {AUCTION_DISCOUNT_FRACTION:.0%} sotto il minimo di mercato\n"
+        f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR\n"
         f"Campionati inclusi: {leagues}\n"
         f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h\n"
         f"Ascolto fino a {LISTEN_SECONDS}s"
@@ -1338,16 +1523,28 @@ def send_insufficient_funds_alert(player_name):
     )
 
 
-def evaluate_auction(auction, eth_rate, stats):
+def evaluate_auction(auction, eth_rate, stats, source='WS'):
     """Valutazione completa di un'asta: filtri -> riferimento di mercato -> calcolo bid
     -> (diagnostica o bid reale). Ritorna True se e' stato un caso valido (bid piazzato
-    o simulato), False se scartata per qualunque motivo."""
+    o simulato), False se scartata per qualunque motivo.
+    'source' indica solo da dove e' arrivata l'asta (WS/SAFETY/ENDING-SOON) -- usato per
+    taggare i log, nessun impatto sulla logica di valutazione (richiesta esplicita utente:
+    stesso motore per tutte e 3 le fonti)."""
+
+    def vlog(message):
+        """Log verboso per-fase, SOLO se AUCTION_DIAGNOSTIC e' attivo (richiesta esplicita
+        utente, fase di test) -- su file di log, mai su Telegram (che resta minimale)."""
+        if AUCTION_DIAGNOSTIC:
+            log(f"[{source}] [diagnostica] {message}")
+
     if INSUFFICIENT_FUNDS_STOP[0]:
         return False
 
     auction_id = auction.get('id') or ''
     if not auction_id.startswith('EnglishAuction:'):
         return False
+
+    vlog(f"asta intercettata tramite {source}, id={auction_id}")
 
     cards = auction.get('anyCards') or []
     match = None
@@ -1375,52 +1572,69 @@ def evaluate_auction(auction, eth_rate, stats):
         stats['skip_campionato'] = stats.get('skip_campionato', 0) + 1
         return False
 
+    vlog(f"{player_name}: campionato '{league_slug}' in whitelist, proseguo")
+
     if player_slug in BLACKLISTED_PLAYER_SLUGS_ASTE:
-        log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
+        log(f"[{source}] {player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
         stats['skip_blacklist'] = stats.get('skip_blacklist', 0) + 1
         return False
 
     if is_player_in_bid_cooldown(player_slug):
-        log(f"{player_name}: scarto -- gia' biddato nelle ultime {AUCTION_COOLDOWN_HOURS:.0f}h")
+        log(f"[{source}] {player_name}: scarto -- gia' biddato nelle ultime "
+            f"{AUCTION_COOLDOWN_HOURS:.0f}h")
         stats['skip_cooldown'] = stats.get('skip_cooldown', 0) + 1
         return False
 
     stats['processed'] = stats.get('processed', 0) + 1
 
+    vlog(f"{player_name}: verifica del minimo di vendita diretta live in corso...")
     live_min = get_live_min_direct_sale_in_season(player_slug, eth_rate)
+    vlog(f"{player_name}: minimo vendita diretta live = "
+         f"{'%.2fEUR' % live_min if live_min is not None else 'nessuno trovato'}")
+
+    vlog(f"{player_name}: verifica ultima asta conclusa (finestra "
+         f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h) in corso...")
     last_auction = get_last_concluded_auction_price(player_slug, eth_rate)
+    vlog(f"{player_name}: ultima asta conclusa recente = "
+         f"{'%.2fEUR' % last_auction if last_auction is not None else 'nessuna trovata'}")
 
     candidati = [(p, s) for p, s in
                  ((live_min, 'minimo live vendita diretta'), (last_auction, 'ultima asta conclusa <24h'))
                  if p is not None]
     if not candidati:
-        log(f"{player_name}: scarto -- nessun riferimento di mercato disponibile "
-            f"(ne' vendita diretta live ne' asta conclusa nelle ultime "
+        log(f"[{source}] {player_name}: scarto -- nessun riferimento di mercato "
+            f"disponibile (ne' vendita diretta live ne' asta conclusa nelle ultime "
             f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h)")
         stats['skip_nessun_riferimento'] = stats.get('skip_nessun_riferimento', 0) + 1
         return False
 
     reference_price, reference_source = min(candidati, key=lambda t: t[0])
     if len(candidati) == 2:
-        log(f"{player_name}: riferimenti trovati -- live={live_min:.2f}EUR, "
+        log(f"[{source}] {player_name}: riferimenti trovati -- live={live_min:.2f}EUR, "
             f"ultima asta={last_auction:.2f}EUR -- uso il piu' basso ({reference_source})")
 
-    bid_ceiling = reference_price * (1 - AUCTION_DISCOUNT_FRACTION)
+    vlog(f"{player_name}: calcolo tetto bid -- riferimento {reference_price:.2f}EUR, "
+         f"sconto {AUCTION_DISCOUNT_FRACTION:.0%}")
+    bid_ceiling_calcolato = reference_price * (1 - AUCTION_DISCOUNT_FRACTION)
+    bid_ceiling = min(bid_ceiling_calcolato, MAX_BID_PER_AUCTION_EUR)
+    if bid_ceiling < bid_ceiling_calcolato:
+        vlog(f"{player_name}: tetto calcolato {bid_ceiling_calcolato:.2f}EUR limitato al "
+             f"massimo per asta di {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
 
     min_next_bid_wei = auction.get('minNextBid')
     min_next_bid_eur = wei_to_eur(min_next_bid_wei, eth_rate)
     if min_next_bid_eur is None:
-        log(f"{player_name}: scarto -- minNextBid non leggibile")
+        log(f"[{source}] {player_name}: scarto -- minNextBid non leggibile")
         stats['skip_minnextbid_illeggibile'] = stats.get('skip_minnextbid_illeggibile', 0) + 1
         return False
 
-    log(f"{player_name}: riferimento {reference_price:.2f}EUR ({reference_source}), "
-        f"tetto bid {bid_ceiling:.2f}EUR ({AUCTION_DISCOUNT_FRACTION:.0%} sotto), "
+    log(f"[{source}] {player_name}: riferimento {reference_price:.2f}EUR ({reference_source}), "
+        f"tetto bid {bid_ceiling:.2f}EUR (max per asta {MAX_BID_PER_AUCTION_EUR:.2f}EUR), "
         f"minNextBid attuale {min_next_bid_eur:.2f}EUR")
 
     if bid_ceiling < min_next_bid_eur:
-        log(f"{player_name}: scarto -- il tetto bid ({bid_ceiling:.2f}EUR) e' sotto "
-            f"minNextBid attuale ({min_next_bid_eur:.2f}EUR), non biddo")
+        log(f"[{source}] {player_name}: scarto -- il tetto bid ({bid_ceiling:.2f}EUR) e' "
+            f"sotto minNextBid attuale ({min_next_bid_eur:.2f}EUR), non biddo")
         stats['skip_tetto_insufficiente'] = stats.get('skip_tetto_insufficiente', 0) + 1
         return False
 
@@ -1434,7 +1648,8 @@ def evaluate_auction(auction, eth_rate, stats):
             pass
 
     if not AUCTION_LIVE_MODE:
-        log(f"{player_name}: [DIAGNOSTICA] avrei biddato {bid_ceiling:.2f}EUR su questa asta")
+        log(f"[{source}] {player_name}: [DIAGNOSTICA] avrei biddato {bid_ceiling:.2f}EUR "
+            f"su questa asta")
         send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
                         bid_ceiling, min_next_bid_eur, live_mode=False, seconds_left=seconds_left)
         stats['bid_simulated'] = stats.get('bid_simulated', 0) + 1
@@ -1444,30 +1659,30 @@ def evaluate_auction(auction, eth_rate, stats):
     time.sleep(AUCTION_RECHECK_DELAY_SECONDS)
     fresh = get_auction_live_state(auction_id)
     if fresh is None:
-        log(f"{player_name}: scarto -- riverifica live fallita o asta non piu' trovata, "
-            f"non biddo su dati non confermati")
+        log(f"[{source}] {player_name}: scarto -- riverifica live fallita o asta non piu' "
+            f"trovata, non biddo su dati non confermati")
         stats['skip_riverifica_fallita'] = stats.get('skip_riverifica_fallita', 0) + 1
         return False
     if not fresh.get('open') or fresh.get('cancelled'):
-        log(f"{player_name}: scarto -- asta non piu' aperta alla riverifica")
+        log(f"[{source}] {player_name}: scarto -- asta non piu' aperta alla riverifica")
         stats['skip_asta_chiusa'] = stats.get('skip_asta_chiusa', 0) + 1
         return False
     fresh_min_next_bid_eur = wei_to_eur(fresh.get('minNextBid'), eth_rate)
     if fresh_min_next_bid_eur is not None and fresh_min_next_bid_eur > bid_ceiling:
-        log(f"{player_name}: scarto -- minNextBid salito sopra il tetto durante la "
-            f"riverifica ({fresh_min_next_bid_eur:.2f}EUR > {bid_ceiling:.2f}EUR)")
+        log(f"[{source}] {player_name}: scarto -- minNextBid salito sopra il tetto durante "
+            f"la riverifica ({fresh_min_next_bid_eur:.2f}EUR > {bid_ceiling:.2f}EUR)")
         stats['skip_superato_in_riverifica'] = stats.get('skip_superato_in_riverifica', 0) + 1
         return False
 
     bid_completed, bid_error = execute_live_bid(auction_id, bid_ceiling)
     if bid_completed:
-        log(f"{player_name}: BID PIAZZATO CON SUCCESSO ({bid_ceiling:.2f}EUR)")
+        log(f"[{source}] {player_name}: BID PIAZZATO CON SUCCESSO ({bid_ceiling:.2f}EUR)")
         record_player_bid(player_slug)
         stats['bid_placed'] = stats.get('bid_placed', 0) + 1
     else:
-        log(f"{player_name}: bid reale fallito -- {bid_error}")
+        log(f"[{source}] {player_name}: bid reale fallito -- {bid_error}")
         if _is_insufficient_funds_error(bid_error):
-            log(f"{player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot")
+            log(f"[{source}] {player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot")
             INSUFFICIENT_FUNDS_STOP[0] = True
             send_insufficient_funds_alert(player_name)
         stats['bid_failed'] = stats.get('bid_failed', 0) + 1
@@ -1484,8 +1699,20 @@ def run_listener(eth_rate):
         "query": SUBSCRIPTION_QUERY, "variables": {},
         "operationName": "OnTokenAuctionUpdated", "action": "execute",
     }
-    stats = {}
-    seen_events = set()
+    state = _SharedListenerState()
+    stats = state.stats  # stesso dict, solo un alias piu' corto per il resto della funzione
+
+    # Safety poll -- una volta sola, PRIMA di aprire il WS (richiesta esplicita utente:
+    # intercettare anche le aste gia' aperte a 0 bid prima dell'avvio).
+    run_safety_poll(eth_rate, state)
+
+    # Ending-soon poll -- in un thread separato, gira per tutta la durata dell'ascolto
+    # (richiesta esplicita utente: rivalutare periodicamente le aste whitelist piu'
+    # vicine alla scadenza, per non perdere quelle ferme che non generano eventi WS).
+    ending_soon_stop = threading.Event()
+    ending_soon_thread = threading.Thread(
+        target=run_ending_soon_loop, args=(eth_rate, state, ending_soon_stop), daemon=True)
+    ending_soon_thread.start()
 
     pause_state = {"last_pause_at": time.monotonic()}
 
@@ -1531,14 +1758,7 @@ def run_listener(eth_rate):
             auction = (payload.get('result', {}).get('data', {}) or {}).get('tokenAuctionWasUpdated')
             if not auction:
                 return
-            auction_id = auction.get('id') or ''
-            dedup_key = (auction_id, auction.get('currentPrice'), auction.get('minNextBid'),
-                         auction.get('endDate'))
-            if dedup_key in seen_events:
-                return
-            seen_events.add(dedup_key)
-
-            found = evaluate_auction(auction, eth_rate, stats)
+            process_incoming_auction(auction, eth_rate, state, source='WS')
             maybe_random_pause()
             if INSUFFICIENT_FUNDS_STOP[0]:
                 log("STOP: fondi insufficienti rilevati, chiudo la connessione")
@@ -1557,8 +1777,11 @@ def run_listener(eth_rate):
         total_bid = stats.get('bid_placed', 0) + stats.get('bid_simulated', 0)
         skip_keys = sorted(k for k in stats if k.startswith('skip_'))
         breakdown = ', '.join(f"{k[5:]}={stats[k]}" for k in skip_keys) or "nessuno"
+        source_keys = sorted(k for k in stats if k.startswith('source_'))
+        source_breakdown = ', '.join(f"{k[7:]}={stats[k]}" for k in source_keys) or "nessuno"
         log(f"[riepilogo] bid {'reali' if AUCTION_LIVE_MODE else 'simulati'}: {total_bid}, "
             f"bid falliti: {stats.get('bid_failed', 0)}, scarti: {breakdown}")
+        log(f"[riepilogo] aste valutate per fonte: {source_breakdown}")
 
     ws = websocket.WebSocketApp(
         WS_URL, header=[f"Cookie: {COOKIES}"] if COOKIES else [],
@@ -1569,6 +1792,8 @@ def run_listener(eth_rate):
     timer.start()
     ws.run_forever(ping_interval=60, ping_timeout=45)
     timer.cancel()
+    ending_soon_stop.set()
+    ending_soon_thread.join(timeout=5)
     return stats
 
 
@@ -1583,6 +1808,12 @@ def main():
     log(f"Finestra riferimento 'ultima asta conclusa': "
         f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h")
     log(f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h")
+    log(f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
+    log(f"Safety poll all'avvio: {AUCTION_SAFETY_POLL_SIZE} aste")
+    log(f"Ending-soon poll: ogni {ENDING_SOON_POLL_INTERVAL_SECONDS:.0f}s, "
+        f"{ENDING_SOON_POLL_SIZE} aste per pagina, max {ENDING_SOON_MAX_RESULTS} valutate")
+    log(f"Log verbosi per-fase (AUCTION_DIAGNOSTIC): "
+        f"{'ATTIVI' if AUCTION_DIAGNOSTIC else 'spenti'}")
     log(f"Campionati inclusi nella whitelist ({len(LEAGUE_WHITELIST_SLUGS)}): "
         f"{sorted(LEAGUE_WHITELIST_SLUGS)}")
     log(f"Giocatori in blacklist ({len(BLACKLISTED_PLAYER_SLUGS_ASTE)}): "
