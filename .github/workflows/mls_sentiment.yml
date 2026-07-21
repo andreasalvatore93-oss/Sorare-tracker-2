@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       total_minutes:
-        description: "Minuti totali di ascolto (default 60 = 1 ora)"
+        description: "Minuti totali di ascolto (default 30)"
         required: false
-        default: "60"
+        default: "30"
       chunk_minutes:
-        description: "Durata di ogni singola sessione prima di salvare+committare (default 10 min -- se ti interrompi perdi al massimo questo intervallo)"
+        description: "Durata di ogni singola sessione prima di salvare+committare (default 2 min -- se ti interrompi perdi al massimo questo intervallo)"
         required: false
-        default: "10"
+        default: "2"
 
 permissions:
   contents: write
