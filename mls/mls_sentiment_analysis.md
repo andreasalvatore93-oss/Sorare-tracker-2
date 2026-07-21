@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T11:36:06.702365Z
-**Run totali:** 4
+**Data analisi:** 2026-07-21T11:39:17.816585Z
+**Run totali:** 5
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 3.17 EUR
-- **Trend mercato:** ➡️ STABLE (-0.0%)
+- **Prezzo medio MLS:** 3.84 EUR
+- **Trend mercato:** ➡️ STABLE (+0.1%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.0%)**
+**➡️ TREND GLOBALE: STABLE (+0.1%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 MOD. OPPORTUNITÀ — Luis Suárez (Inter Miami CF)**
@@ -40,16 +40,16 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 10. Ryan Schewe (Sporting Kansas City ) — **0.0%** vs media (0.67 EUR vs 0.67 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Victor Olatunji (Real Salt Lake) — **+0.0%** vs media (0.57 EUR vs 0.57 EUR)
-2. Ender Echenique (FC Cincinnati) — **+0.0%** vs media (2.20 EUR vs 2.20 EUR)
-3. Brendan McSorley (St. Louis City SC) — **+0.0%** vs media (1.03 EUR vs 1.03 EUR)
-4. Marcel Hartel (St. Louis City SC) — **+0.0%** vs media (9.20 EUR vs 9.20 EUR)
-5. Eduard Löwen (St. Louis City SC) — **+0.0%** vs media (8.58 EUR vs 8.58 EUR)
-6. Thomas Guillier (CF Montreal) — **+0.0%** vs media (13.00 EUR vs 13.00 EUR)
-7. Victor Loturi (CF Montreal) — **+0.0%** vs media (1.10 EUR vs 1.10 EUR)
-8. Prince Osei Owusu (CF Montreal) — **+0.0%** vs media (5.41 EUR vs 5.41 EUR)
-9. Nimfasha Berchimas (Charlotte FC) — **+0.0%** vs media (0.78 EUR vs 0.78 EUR)
-10. Ryan Gauld (Vancouver Whitecaps FC) — **+0.0%** vs media (5.76 EUR vs 5.76 EUR)
+1. Erik Thommy (LA Galaxy) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
+2. Malik Henry (Toronto FC) — **+0.0%** vs media (0.85 EUR vs 0.85 EUR)
+3. Cole Bassett (Portland Timbers) — **+0.0%** vs media (10.00 EUR vs 10.00 EUR)
+4. Jackson Ragen (Seattle Sounders FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
+5. Andy Najar (Nashville SC) — **+0.0%** vs media (6.59 EUR vs 6.59 EUR)
+6. Victor Olatunji (Real Salt Lake) — **+0.0%** vs media (0.57 EUR vs 0.57 EUR)
+7. Ender Echenique (FC Cincinnati) — **+0.0%** vs media (2.20 EUR vs 2.20 EUR)
+8. Brendan McSorley (St. Louis City SC) — **+0.0%** vs media (1.03 EUR vs 1.03 EUR)
+9. Marcel Hartel (St. Louis City SC) — **+0.0%** vs media (9.20 EUR vs 9.20 EUR)
+10. Eduard Löwen (St. Louis City SC) — **+0.0%** vs media (8.58 EUR vs 8.58 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Inter Miami CF**
@@ -84,4 +84,19 @@ Carte trovate: 1 | Prezzo medio: 2.20 EUR | Volatilità (σ): 0.00
 
 **Real Salt Lake**
 Carte trovate: 1 | Prezzo medio: 0.57 EUR | Volatilità (σ): 0.00
+
+**Nashville SC**
+Carte trovate: 1 | Prezzo medio: 6.59 EUR | Volatilità (σ): 0.00
+
+**Seattle Sounders FC**
+Carte trovate: 1 | Prezzo medio: 15.00 EUR | Volatilità (σ): 0.00
+
+**Portland Timbers**
+Carte trovate: 1 | Prezzo medio: 10.00 EUR | Volatilità (σ): 0.00
+
+**Toronto FC**
+Carte trovate: 1 | Prezzo medio: 0.85 EUR | Volatilità (σ): 0.00
+
+**LA Galaxy**
+Carte trovate: 1 | Prezzo medio: 0.90 EUR | Volatilità (σ): 0.00
 
