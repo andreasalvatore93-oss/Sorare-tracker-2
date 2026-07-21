@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T10:58:23.047683Z
-**Run totali:** 4
+**Data analisi:** 2026-07-21T10:59:24.963490Z
+**Run totali:** 5
 
 📊 **[Apri i grafici interattivi](https://andreasalvatore93-oss.github.io/Sorare-tracker-2/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.70 EUR
+- **Prezzo medio MLS:** 10.39 EUR
 - **Trend mercato:** ➡️ STABLE (-0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
@@ -40,16 +40,16 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 10. Jonathan Sirois (FC Dallas) — **0.0%** vs media (2.39 EUR vs 2.39 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Pep Biel (Charlotte FC) — **+0.0%** vs media (9.62 EUR vs 9.62 EUR)
-2. Omar Marquez (Real Salt Lake) — **+0.0%** vs media (1.90 EUR vs 1.90 EUR)
-3. Miki Yamane (LA Galaxy) — **+0.0%** vs media (2.30 EUR vs 2.30 EUR)
-4. JT Marcinkowski (LA Galaxy) — **+0.0%** vs media (6.40 EUR vs 6.40 EUR)
-5. Klauss (LA Galaxy) — **+0.0%** vs media (2.20 EUR vs 2.20 EUR)
-6. Joseph Paintsil (LA Galaxy) — **+0.0%** vs media (5.80 EUR vs 5.80 EUR)
-7. Jakob Glesnes (LA Galaxy) — **+0.0%** vs media (6.80 EUR vs 6.80 EUR)
-8. Marco Reus (LA Galaxy) — **+0.0%** vs media (9.10 EUR vs 9.10 EUR)
-9. Novak Mićović (LA Galaxy) — **+0.0%** vs media (2.70 EUR vs 2.70 EUR)
-10. Evan Bush (Columbus Crew) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
+1. Maxwell Woledzi (Nashville SC) — **+0.0%** vs media (25.50 EUR vs 25.50 EUR)
+2. Sebastian Berhalter (Vancouver Whitecaps FC) — **+0.0%** vs media (18.00 EUR vs 18.00 EUR)
+3. Pep Biel (Charlotte FC) — **+0.0%** vs media (9.62 EUR vs 9.62 EUR)
+4. Omar Marquez (Real Salt Lake) — **+0.0%** vs media (1.90 EUR vs 1.90 EUR)
+5. Miki Yamane (LA Galaxy) — **+0.0%** vs media (2.30 EUR vs 2.30 EUR)
+6. JT Marcinkowski (LA Galaxy) — **+0.0%** vs media (6.40 EUR vs 6.40 EUR)
+7. Klauss (LA Galaxy) — **+0.0%** vs media (2.20 EUR vs 2.20 EUR)
+8. Joseph Paintsil (LA Galaxy) — **+0.0%** vs media (5.80 EUR vs 5.80 EUR)
+9. Jakob Glesnes (LA Galaxy) — **+0.0%** vs media (6.80 EUR vs 6.80 EUR)
+10. Marco Reus (LA Galaxy) — **+0.0%** vs media (9.10 EUR vs 9.10 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Inter Miami**
@@ -99,4 +99,10 @@ Carte trovate: 1 | Prezzo medio: 1.90 EUR | Volatilità (σ): 0.00
 
 **Charlotte FC**
 Carte trovate: 1 | Prezzo medio: 9.62 EUR | Volatilità (σ): 0.00
+
+**Vancouver Whitecaps FC**
+Carte trovate: 1 | Prezzo medio: 18.00 EUR | Volatilità (σ): 0.00
+
+**Nashville SC**
+Carte trovate: 1 | Prezzo medio: 25.50 EUR | Volatilità (σ): 0.00
 
