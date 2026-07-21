@@ -1155,59 +1155,19 @@ def build_card_link(player_slug, card_slug):
 # SINGLE_BUY_OFFER, DIRECT_OFFER, aste, ecc. -- richiesta esplicita "di qualunque tipo incluso
 # le aste, offerta diretta, scambio"), perche' qui l'obiettivo e' misurare la liquidita'
 # generale del giocatore, non isolare un tipo di transazione specifico.
-RECENT_TRANSACTIONS_QUERY = """
-query RecentTransactionsQuery($p: String!) {
-  tokens {
-    tokenPrices(playerSlug: $p, rarity: limited) {
-      date
-      deal {
-        __typename
-        ... on TokenOffer {
-          type
-        }
-      }
-    }
-  }
-}
-"""
-
-# FIX 21/07 (bug reale segnalato dall'utente: offerta fatta su una carta CLASSIC coreana
-# con una sola transazione negli ultimi 7 giorni, che avrebbe dovuto essere scartata dal
-# controllo di liquidita'): RECENT_TRANSACTIONS_QUERY sopra conta le transazioni di
-# QUALUNQUE tipo di carta del giocatore (in_season + classic mescolate insieme), quindi
-# un giocatore con market in_season vivace ma classic pressoche' morto (o viceversa)
-# passava comunque la soglia minima grazie alle transazioni dell'ALTRA stagione -- il
-# controllo di liquidita' non stava proteggendo la stagione che stavamo davvero per
-# comprare/offrire.
-#
-# FIX 21/07 SERA (causa reale degli scarti a 0 transazioni di questa sera): il primo
-# tentativo filtrava lato server con un argomento $seasonEligibility: SeasonEligibility!
-# indovinato per analogia, mai confermato via introspection -- restituiva sempre zero
-# nodi SENZA generare errori GraphQL, quindi il self-check e il fallback automatico non
-# si accorgevano del problema. Query riscritta senza quell'argomento: prende tutti i
-# tokenPrices col campo booleano card.inSeasonEligible (stesso campo gia' confermato
-# funzionante altrove nel file), e il filtro per stagione lo fa
-# _count_transactions_from_nodes lato Python (season_filter=is_in_season). Se questa
-# query fallisce comunque, il bot NON blocca l'avvio per questo -- ripiega
-# automaticamente sulla query combinata di prima (comportamento precedente, imperfetto
-# ma funzionante) con un avviso loggato UNA sola volta.
-#
-# FIX 22/07 (bug CRITICO trovato via diagnostica LIQUIDITY_DIAGNOSTIC, confermato dal
-# vivo su daniel-baran: 50 nodi ricevuti, TUTTI scartati per finestra 30gg -- e su
-# bryan-acosta/sean-johnson/ecc., tutti giocatori MLS/K-League: 50 nodi ricevuti, TUTTI
-# scartati per stagione, __typename SEMPRE vuoto): il tentativo di riscrivere queste
-# query come connessione Relay (nodes/pageInfo) e' FALLITO in produzione con errore
-# GraphQL esplicito ("Field 'nodes' doesn't exist on type 'TokenPrice'") -- il campo
-# tokenPrices qui NON e' una connessione paginata come liveSingleSaleOffers, e' una
-# LISTA PIATTA di oggetti TokenPrice. Struttura ripristinata alla forma piatta originale
-# (nessun nodes/pageInfo), ma con $n/$cursor mantenuti come argomenti last/before diretti
-# sul campo -- se lo schema li accetta (da confermare dal vivo), il server restituira'
-# comunque una lista piatta (non un oggetto con nodes), semplicemente contenente gli
-# ultimi N elementi prima del cursore invece del blocco di default. _fetch_paginated_
-# transaction_nodes gestisce ora ENTRAMBI i casi (vedi sotto): se la risposta e' una
-# lista pura la usa direttamente per questa singola pagina senza aspettarsi pageInfo, e
-# se il server rifiuta anche last/before con un secondo errore esplicito, logga e si
-# ferma senza inventare altri tentativi alla cieca."""
+# FIX 22/07 (unificazione, richiesta esplicita utente -- "perche' funziona solo per
+# MLS/Korea, risolvi anche per le altre leghe"): esisteva una SECONDA query,
+# RECENT_TRANSACTIONS_QUERY su tokens.tokenPrices(playerSlug), usata per tutti i
+# campionati "normali" -- ma quel campo e' CONFERMATO dal server essere una lista
+# piatta senza alcuna paginazione (last/before rifiutati esplicitamente). Il campo
+# QUI SOTTO (anyPlayer.tokenPrices) e' invece un vero TokenPriceConnection con
+# paginazione Relay CONFERMATA FUNZIONANTE dal vivo (last/before/pageInfo). Non c'e'
+# alcun motivo di continuare a usare il campo rotto quando lo stesso dato (transazioni
+# di un giocatore) e' raggiungibile con paginazione vera tramite questo secondo campo
+# -- quindi ora e' l'UNICA query usata, per tutti i campionati. Il filtro per stagione
+# (season_filter, via card.inSeasonEligible) viene applicato lato Python SOLO per
+# MLS/K-League, esattamente come prima; per gli altri campionati passa None e conta
+# tutte le transazioni (in_season+classic mescolate, coerente col resto della logica).
 RECENT_TRANSACTIONS_QUERY_BY_SEASON = """
 query RecentTransactionsBySeasonQuery($p: String!, $n: Int!, $cursor: String) {
   anyPlayer(slug: $p) {
@@ -1309,42 +1269,19 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
     return count_short, count_long
 
 
-def _fetch_flat_transaction_nodes(query, variables_base, extract_connection, player_slug):
-    """Per tokens.tokenPrices(playerSlug): CONFERMATO dal server essere una LISTA PIATTA
-    senza alcun argomento di paginazione utilizzabile (last/before rifiutati esplicitamente,
-    introspection disabilitata) -- tronca SEMPRE a un tetto fisso non configurabile lato
-    client (osservato: 5 nodi). Una sola chiamata, nessun parametro di dimensione reale."""
-    data = graphql_query(query, variables_base)
-    if data.get('errors'):
-        log(f"[liquidita' paginazione] {player_slug}: errore GraphQL: {data['errors']}")
-        return []
-    nodes = extract_connection(data)
-    if not isinstance(nodes, list):
-        log(f"[liquidita' paginazione] {player_slug}: risposta inattesa (non e' una "
-            f"lista), tipo ricevuto={type(nodes).__name__}, valore grezzo={nodes}")
-        return []
-    oldest_date_str = nodes[-1].get('date') if nodes else None
-    log(f"[liquidita' paginazione] {player_slug}: {len(nodes)} transazioni ricevute dal "
-        f"server, nodo piu' vecchio: {oldest_date_str or 'n/d'}")
-    return nodes
-
-
 TRANSACTIONS_PAGE_SIZE = 50
 TRANSACTIONS_MAX_PAGES = 10
 
 
-def _fetch_paginated_season_transaction_nodes(player_slug):
-    """FIX 22/07 (bug reale trovato dal vivo: l'errore server "Field 'date' doesn't exist
-    on type 'TokenPriceConnection'" prova che anyPlayer.tokenPrices e' un vero
-    TokenPriceConnection, diverso da tokens.tokenPrices che invece e' confermato piatto --
-    quindi QUI (solo qui) una vera paginazione Relay (last/before/pageInfo) e' plausibile e
-    non ancora stata esclusa da un errore esplicito su questo specifico campo. Pagina
-    davvero: si ferma quando il nodo piu' vecchio della pagina esce dalla finestra 30gg
-    (i nodi arrivano dal piu' recente al piu' vecchio con 'last', ordine Relay standard),
-    quando il server non ha piu' pagine, o dopo TRANSACTIONS_MAX_PAGES di sicurezza. Se il
-    server rifiuta last/before anche qui con un errore esplicito, si ferma al primo errore
-    e ritorna quel che ha (o vuoto), gestito dal fallback gia' esistente in
-    count_recent_transactions -- nessun crash possibile."""
+def _fetch_paginated_transaction_nodes(player_slug):
+    """Pagina davvero le transazioni di un giocatore tramite anyPlayer.tokenPrices, un
+    vero TokenPriceConnection con paginazione Relay CONFERMATA funzionante dal vivo
+    (last/before/pageInfo). Usata per TUTTI i campionati (22/07: unificata, prima
+    esisteva un secondo campo -- tokens.tokenPrices(playerSlug) -- confermato invece
+    essere una lista piatta senza paginazione, rimosso perche' ridondante e peggiore).
+    Si ferma quando il nodo piu' vecchio della pagina esce dalla finestra 30gg (i nodi
+    arrivano dal piu' recente al piu' vecchio con 'last', ordine Relay standard), quando
+    il server non ha piu' pagine, o dopo TRANSACTIONS_MAX_PAGES di sicurezza."""
     now = datetime.datetime.now(datetime.timezone.utc)
     cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
     all_nodes = []
@@ -1360,14 +1297,14 @@ def _fetch_paginated_season_transaction_nodes(player_slug):
         all_nodes.extend(nodes)
         page_info = conn.get('pageInfo') or {}
         oldest_date_str = nodes[-1].get('date') if nodes else None
-        log(f"[liquidita' paginazione season] {player_slug}: pagina {page_num}, "
+        log(f"[liquidita' paginazione] {player_slug}: pagina {page_num}, "
             f"{len(nodes)} nodi (totale {len(all_nodes)}), piu' vecchio: {oldest_date_str or 'n/d'}")
         if not nodes:
             break
         try:
             oldest_dt = datetime.datetime.fromisoformat((oldest_date_str or '').replace('Z', '+00:00'))
             if oldest_dt < cutoff_long:
-                log(f"[liquidita' paginazione season] {player_slug}: nodo piu' vecchio "
+                log(f"[liquidita' paginazione] {player_slug}: nodo piu' vecchio "
                     f"della pagina {page_num} fuori dalla finestra 30gg, mi fermo")
                 break
         except (ValueError, AttributeError):
@@ -1384,59 +1321,24 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
     """Ritorna una tupla (count_7d, count_30d): numero di transazioni di player_slug
     negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni.
 
-    FIX 21/07 SERA (v2, richiesta esplicita utente): il tentativo precedente filtrava
-    per stagione (is_in_season) su OGNI campionato, usando una query separata verso il
-    server (RECENT_TRANSACTIONS_QUERY_BY_SEASON) che interroga di nuovo tutte le
-    transazioni del giocatore. Il problema: quel filtro veniva applicato SEMPRE, anche
-    per i campionati "normali" dove classic+in_season vanno gia' considerati insieme
-    (vedi is_asia_americas_excluded_league) -- risultato: per un giocatore con market
-    in_season vivace ma prevalentemente classic (o viceversa), il filtro scartava
-    erroneamente le transazioni "giuste" con lo stesso identico bug che il primo fix
-    voleva risolvere, solo ribaltato.
-
-    FIX CORRETTO: il filtro per stagione (season_filter) viene applicato SOLO per
-    MLS/K-League (is_asia_americas_excluded_league(league_slug)==True) -- le uniche 2
-    leghe per cui il confronto classic/in_season e' ESCLUSO per design (vedi
-    get_in_season_prices). Per tutti gli altri campionati, si conta come sempre
-    TUTTE le transazioni (in_season+classic mescolate), perche' li' la logica del
-    resto del bot considera comunque le due stagioni insieme per il calcolo del
-    minimo/margine -- ha senso che anche la liquidita' segua la stessa logica.
-
-    FIX 22/07: ramo season pagina davvero (_fetch_paginated_season_transaction_nodes,
-    connessione reale confermata), ramo combinato resta una sola chiamata piatta
-    (_fetch_flat_transaction_nodes, nessuna paginazione possibile su quel campo).
+    FIX 22/07 (unificazione): un'unica query paginata (_fetch_paginated_transaction_nodes)
+    per TUTTI i campionati. Il filtro per stagione (season_filter) si applica SOLO per
+    MLS/K-League (is_asia_americas_excluded_league), le uniche 2 leghe dove classic/
+    in_season sono davvero separate nel calcolo del margine (vedi get_in_season_prices).
+    Per tutti gli altri campionati, season_filter=None conta TUTTE le transazioni
+    (in_season+classic mescolate), coerente col resto della logica di calcolo
+    minimo/margine per questi campionati.
 
     Ritorna (None, None) se la query fallisce. Fail-safe: il chiamante NON deve
     bloccare l'acquisto solo per questo."""
     excluded_league = is_asia_americas_excluded_league(league_slug)
-
-    if excluded_league:
-        # Solo per MLS/K-League: serve sapere la stagione ESATTA della carta, quindi
-        # usiamo la query con campo card.inSeasonEligible e filtriamo lato Python.
-        try:
-            nodes = _fetch_paginated_season_transaction_nodes(player_slug)
-            if nodes:
-                return _count_transactions_from_nodes(nodes, season_filter=is_in_season, player_slug=player_slug)
-            log(f"[liquidita'] ATTENZIONE: query di liquidita' per stagione ha restituito "
-                f"zero nodi per {player_slug} (probabile errore GraphQL, vedi log "
-                f"[liquidita' paginazione] sopra) -- ripiego sulla query combinata "
-                f"(in_season+classic mescolate) per questo giocatore.")
-        except Exception as e:
-            log(f"[liquidita'] ATTENZIONE: eccezione nella query di liquidita' per "
-                f"stagione per {player_slug} ({e}) -- ripiego sulla query combinata.")
-
-    # Tutti gli altri campionati (o fallback su errore/eccezione per MLS/K-League):
-    # conta TUTTE le transazioni (in_season+classic mescolate), coerente col resto
-    # della logica di calcolo minimo/margine per questi campionati.
+    season_filter = is_in_season if excluded_league else None
     try:
-        nodes = _fetch_flat_transaction_nodes(
-            RECENT_TRANSACTIONS_QUERY, {"p": player_slug},
-            lambda data: ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or [],
-            player_slug)
+        nodes = _fetch_paginated_transaction_nodes(player_slug)
     except Exception as e:
         log(f"[liquidita'] eccezione per {player_slug}: {e}")
         return None, None
-    return _count_transactions_from_nodes(nodes, player_slug=player_slug)
+    return _count_transactions_from_nodes(nodes, season_filter=season_filter, player_slug=player_slug)
 
 
 EXCHANGE_RATE_QUERY = """
