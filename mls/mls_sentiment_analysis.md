@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T21:24:21.415182Z
-**Run totali:** 11
+**Data analisi:** 2026-07-21T21:26:22.906219Z
+**Run totali:** 12
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 10.06 EUR
+- **Prezzo medio MLS:** 9.95 EUR
 - **Trend mercato:** 📉 DESCENDING (-1.1%)
 - **Sentiment:** 🟨 Quasi Fermo
 
@@ -42,15 +42,15 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Benjamín Kuščević (Toronto FC) — **+0.0%** vs media (0.77 EUR vs 0.77 EUR)
-2. Nicolás Fernández-Mercau (New York City FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
-3. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
-4. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
-5. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
-6. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
-7. Carles Gil (New England Revolution) — **+0.0%** vs media (58.50 EUR vs 58.50 EUR)
-8. Lucas Hoyos (Atlanta United) — **+0.0%** vs media (2.85 EUR vs 2.85 EUR)
-9. Ethan Horvath (New York Red Bulls) — **+0.0%** vs media (7.58 EUR vs 7.58 EUR)
-10. Mohammed Sofo (New York Red Bulls) — **+0.0%** vs media (0.84 EUR vs 0.84 EUR)
+2. Andrew Baiera (New York City FC) — **+0.0%** vs media (0.65 EUR vs 0.65 EUR)
+3. Nicolás Fernández-Mercau (New York City FC) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
+4. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
+5. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
+6. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
+7. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
+8. Carles Gil (New England Revolution) — **+0.0%** vs media (58.50 EUR vs 58.50 EUR)
+9. Lucas Hoyos (Atlanta United) — **+0.0%** vs media (2.85 EUR vs 2.85 EUR)
+10. Ethan Horvath (New York Red Bulls) — **+0.0%** vs media (7.58 EUR vs 7.58 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -129,7 +129,7 @@ Carte trovate: 1 | Prezzo medio: 2.00 EUR | Volatilità (σ): 0.00
 Carte trovate: 1 | Prezzo medio: 7.59 EUR | Volatilità (σ): 0.00
 
 **New York City FC**
-Carte trovate: 1 | Prezzo medio: 15.00 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 7.83 EUR | Volatilità (σ): 10.15
 
 **Toronto FC**
 Carte trovate: 1 | Prezzo medio: 0.77 EUR | Volatilità (σ): 0.00
