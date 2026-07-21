@@ -868,29 +868,6 @@ def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
         return {"errors": [{"message": f"playwright_exception: {e}"}]}
 
 
-TOKENPRICE_INTROSPECTION_QUERY = """
-query TokenPriceIntrospection {
-  __type(name: "TokenPrice") { fields { name args { name type { name kind ofType { name kind } } } } }
-}
-"""
-
-
-def _introspect_and_fix_transactions_query():
-    """Interroga lo schema reale del tipo TokenPrice per scoprire se esiste un
-    argomento di paginazione utilizzabile, invece di indovinare ancora. Chiamata
-    una sola volta all'avvio; se trova qualcosa di utilizzabile lo logga per
-    intero cosi' la query puo' essere aggiornata con certezza."""
-    try:
-        data = graphql_query(TOKENPRICE_INTROSPECTION_QUERY)
-        t = (data.get('data') or {}).get('__type')
-        if not t:
-            log(f"[introspection TokenPrice] fallita o tipo non trovato: {data}")
-            return
-        log(f"[introspection TokenPrice] campi/argomenti reali: {json.dumps(t, indent=2)}")
-    except Exception as e:
-        log(f"[introspection TokenPrice] eccezione: {e}")
-
-
 def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
     """Versione semplificata (stessa base di track.py) del client GraphQL con backoff sui
     429 -- niente rilevamento "ban a tempo fisso" qui, il volume di query di questo bot e'
@@ -1258,7 +1235,7 @@ query RecentTransactionsBySeasonQuery($p: String!) {
 # scartare il caso).
 MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '4'))
 RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '7'))
-MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '5'))
+MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '3'))
 TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
 
@@ -1329,25 +1306,12 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
     return count_short, count_long
 
 
-TRANSACTIONS_PAGE_SIZE = 50
-
-
 def _fetch_paginated_transaction_nodes(query, variables_base, extract_connection, player_slug):
-    """FIX 22/07 (dopo fallimento in produzione del primo tentativo -- vedi nota sopra
-    le query): tokenPrices(playerSlug/anyPlayer) e' confermato dal server essere una
-    LISTA PIATTA (l'errore 'nodes doesn't exist on type TokenPrice' lo prova), NON una
-    connessione Relay con pageInfo/cursore -- quindi non esiste un cursore reale e
-    confermato per chiedere 'la pagina successiva'. Inventarne uno (es. usare la data
-    dell'ultimo elemento come 'before') sarebbe un'altra ipotesi non verificata, stesso
-    errore di approccio del tentativo precedente. Scelta sicura: UNA SOLA chiamata, ma
-    con $n alzato a TRANSACTIONS_PAGE_SIZE (50, anche per il ramo combinato che prima
-    ne prendeva solo 5) per catturare piu' storico in un colpo solo senza rischiare di
-    rompere di nuovo la query con argomenti/struttura indovinati. Se il server dovesse
-    rifiutare last/before come argomenti su questo campo, l'errore viene loggato per
-    intero (diagnosi immediata) e la funzione ritorna una lista vuota, gestita dal
-    chiamante con lo stesso fallback gia' esistente.
-    Log VERBOSO richiesto esplicitamente dall'utente (22/07): quanti nodi ricevuti e
-    la data del piu' vecchio, per capire a colpo d'occhio la copertura reale ottenuta."""
+    """Il campo tokenPrices(playerSlug)/tokenPrices(anyPlayer) e' una LISTA PIATTA senza
+    alcun argomento di paginazione utilizzabile (last/before rifiutati dal server,
+    introspection disabilitata) -- il server tronca SEMPRE a un tetto fisso non
+    configurabile lato client (osservato: 5 nodi sul ramo combinato, fino a 50 sul ramo
+    MLS/K-League). Una sola chiamata, nessun parametro di dimensione reale."""
     data = graphql_query(query, variables_base)
     if data.get('errors'):
         log(f"[liquidita' paginazione] {player_slug}: errore GraphQL: {data['errors']}")
@@ -1361,8 +1325,7 @@ def _fetch_paginated_transaction_nodes(query, variables_base, extract_connection
         return []
     oldest_date_str = nodes[-1].get('date') if nodes else None
     log(f"[liquidita' paginazione] {player_slug}: {len(nodes)} transazioni ricevute dal "
-        f"server (richieste {TRANSACTIONS_PAGE_SIZE}), nodo piu' vecchio: "
-        f"{oldest_date_str or 'n/d'}")
+        f"server, nodo piu' vecchio: {oldest_date_str or 'n/d'}")
     return nodes
 
 
@@ -2981,7 +2944,6 @@ def main():
         log("STOP: self-check dello schema GraphQL fallito, esco senza avviare l'ascolto "
             "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
         return
-    _introspect_and_fix_transactions_query()
     send_startup_msg()
     commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
     commit_thread.start()
