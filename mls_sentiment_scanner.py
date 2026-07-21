@@ -347,6 +347,8 @@ def run_listener(eth_rate, data, listen_seconds):
                 player_data['last_update'] = datetime.datetime.utcnow().isoformat() + 'Z'
                 player_data['occurrences'] += 1
                 stats["prices_found"] += 1
+                
+                log(f"[Carta trovata] {player_name} (slug: {player_slug}) — {data['teams'][team_slug]['team_name']} — {price_eur:.2f} EUR")
         
         except Exception as e:
             log(f"[Errore in on_message] {e}")
