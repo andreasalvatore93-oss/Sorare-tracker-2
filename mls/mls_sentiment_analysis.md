@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T14:45:07.011344Z
-**Run totali:** 30
+**Data analisi:** 2026-07-21T15:34:31.887870Z
+**Run totali:** 31
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.46 EUR
-- **Trend mercato:** ➡️ STABLE (+0.0%)
+- **Prezzo medio MLS:** 7.49 EUR
+- **Trend mercato:** ➡️ STABLE (-0.1%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.0%)**
+**➡️ TREND GLOBALE: STABLE (-0.1%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Maximiliano Falcón (Inter Miami CF)**
@@ -17,27 +17,27 @@ Prezzo: **1.40 EUR** | Media: **2.45 EUR** | Sconto: **-42.9%**
 Liquidità: **2 occorrenze** | Volatilità: 1.48
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
-**🥈 FORTE OPPORTUNITÀ — Martín Ojeda (Orlando City SC)**
+**🥈 FORTE OPPORTUNITÀ — Prince Osei Owusu (CF Montreal)**
+Prezzo: **5.41 EUR** | Media: **7.70 EUR** | Sconto: **-29.8%**
+Liquidità: **2 occorrenze** | Volatilità: 3.25
+Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
+
+**🥉 FORTE OPPORTUNITÀ — Martín Ojeda (Orlando City SC)**
 Prezzo: **20.21 EUR** | Media: **28.50 EUR** | Sconto: **-29.1%**
 Liquidità: **3 occorrenze** | Volatilità: 7.27
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
-**🥉 FORTE OPPORTUNITÀ — Keisuke Kurokawa (DC United)**
-Prezzo: **1.70 EUR** | Media: **2.20 EUR** | Sconto: **-22.7%**
-Liquidità: **2 occorrenze** | Volatilità: 0.71
-Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
-
 ## ⬆️ TOP 10 RIALZI (Stanno CALANDO di prezzo)
 1. Maximiliano Falcón (Inter Miami CF) — **-42.9%** vs media (1.40 EUR vs 2.45 EUR)
-2. Martín Ojeda (Orlando City SC) — **-29.1%** vs media (20.21 EUR vs 28.50 EUR)
-3. Keisuke Kurokawa (DC United) — **-22.7%** vs media (1.70 EUR vs 2.20 EUR)
-4. Kelvin Yeboah (Minnesota United) — **-22.4%** vs media (2.37 EUR vs 3.06 EUR)
-5. Mathieu Choinière (Los Angeles FC) — **-21.0%** vs media (1.30 EUR vs 1.65 EUR)
-6. Carles Gil (New England Revolution) — **-18.9%** vs media (58.50 EUR vs 72.09 EUR)
-7. Nicolás Fernández-Mercau (New York City FC) — **-18.5%** vs media (24.38 EUR vs 29.93 EUR)
-8. Julián Aude (LA Galaxy) — **-16.7%** vs media (1.10 EUR vs 1.32 EUR)
-9. Jonathan Bond (Houston Dynamo FC) — **-16.2%** vs media (9.30 EUR vs 11.10 EUR)
-10. Dániel Gazdag (Columbus Crew) — **-14.2%** vs media (1.00 EUR vs 1.17 EUR)
+2. Prince Osei Owusu (CF Montreal) — **-29.8%** vs media (5.41 EUR vs 7.70 EUR)
+3. Martín Ojeda (Orlando City SC) — **-29.1%** vs media (20.21 EUR vs 28.50 EUR)
+4. Keisuke Kurokawa (DC United) — **-22.7%** vs media (1.70 EUR vs 2.20 EUR)
+5. Kelvin Yeboah (Minnesota United) — **-22.4%** vs media (2.37 EUR vs 3.06 EUR)
+6. Mathieu Choinière (Los Angeles FC) — **-21.0%** vs media (1.30 EUR vs 1.65 EUR)
+7. Carles Gil (New England Revolution) — **-18.9%** vs media (58.50 EUR vs 72.09 EUR)
+8. Nicolás Fernández-Mercau (New York City FC) — **-18.5%** vs media (24.38 EUR vs 29.93 EUR)
+9. Julián Aude (LA Galaxy) — **-16.7%** vs media (1.10 EUR vs 1.32 EUR)
+10. Jonathan Bond (Houston Dynamo FC) — **-16.2%** vs media (9.30 EUR vs 11.10 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Maximiliano Moralez (New York City FC) — **+0.0%** vs media (1.04 EUR vs 1.04 EUR)
@@ -65,10 +65,10 @@ Carte trovate: 5 | Prezzo medio: 13.25 EUR | Volatilità (σ): 25.32
 Carte trovate: 13 | Prezzo medio: 2.36 EUR | Volatilità (σ): 2.36
 
 **Sporting Kansas City **
-Carte trovate: 4 | Prezzo medio: 1.14 EUR | Volatilità (σ): 0.65
+Carte trovate: 4 | Prezzo medio: 1.13 EUR | Volatilità (σ): 0.65
 
 **Vancouver Whitecaps FC**
-Carte trovate: 5 | Prezzo medio: 7.33 EUR | Volatilità (σ): 5.99
+Carte trovate: 6 | Prezzo medio: 8.28 EUR | Volatilità (σ): 5.83
 
 **Charlotte FC**
 Carte trovate: 8 | Prezzo medio: 6.02 EUR | Volatilità (σ): 5.85
@@ -80,7 +80,7 @@ Carte trovate: 5 | Prezzo medio: 4.48 EUR | Volatilità (σ): 5.09
 Carte trovate: 10 | Prezzo medio: 4.01 EUR | Volatilità (σ): 2.85
 
 **FC Cincinnati**
-Carte trovate: 4 | Prezzo medio: 3.82 EUR | Volatilità (σ): 3.58
+Carte trovate: 5 | Prezzo medio: 3.35 EUR | Volatilità (σ): 3.28
 
 **Real Salt Lake**
 Carte trovate: 9 | Prezzo medio: 4.90 EUR | Volatilità (σ): 4.63
