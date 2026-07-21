@@ -82,21 +82,19 @@ def ensure_output_dir():
 
 
 def eur_price_from_amounts(amounts, eth_rate):
-    """Converte amounts (dict ETH+EUR) in EUR price."""
+    """Converte amounts in EUR price. Stessa logica di bot_supremo."""
     if not amounts:
         return None
-    if isinstance(amounts, dict):
-        if 'eur' in amounts:
-            try:
-                return float(amounts['eur'])
-            except (ValueError, TypeError):
-                pass
-        if 'eth' in amounts and eth_rate:
-            try:
-                eth_amount = float(amounts['eth'])
-                return eth_amount * eth_rate
-            except (ValueError, TypeError):
-                pass
+    if amounts.get('eurCents') is not None:
+        try:
+            return amounts['eurCents'] / 100
+        except (ValueError, TypeError):
+            pass
+    if amounts.get('wei') is not None and eth_rate:
+        try:
+            return float(amounts['wei']) / 1e18 * eth_rate
+        except (ValueError, TypeError):
+            pass
     return None
 
 
@@ -134,9 +132,22 @@ subscription OnTokenOfferUpdated {
   tokenOfferWasUpdated {
     id
     status
-    sender { slug }
-    senderSide { anyCards { slug rarityTyped sport inSeasonEligible anyPlayer { slug displayName activeClub { domesticLeague { slug } } } } amounts { eur wei } }
-    receiverSide { anyCards amounts { eur wei } }
+    sender { ... on User { slug } }
+    senderSide {
+      amounts { eurCents wei usdCents gbpCents lamport }
+      anyCards {
+        slug
+        rarityTyped
+        sport
+        anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
+        sportSeason { name }
+        inSeasonEligible
+      }
+    }
+    receiverSide {
+      amounts { eurCents wei usdCents gbpCents lamport }
+      anyCards { slug }
+    }
   }
 }
 """
@@ -226,6 +237,7 @@ def run_listener(eth_rate, data, listen_seconds):
     
     stats = {"received": 0, "processed": 0, "prices_found": 0}
     ws_container = [None]  # Contenitore per WebSocket (per chiuderlo dal timer)
+    seen_offer_status = set()
     
     def on_open(ws):
         log("Connesso al WebSocket Sorare, sottoscrizione in corso...")
@@ -252,17 +264,26 @@ def run_listener(eth_rate, data, listen_seconds):
         
         try:
             payload = message.get('message')
-            if not payload or payload.get('errors'):
+            if not payload:
                 return
             
             stats["received"] += 1
             
-            # DEBUG: log raw structure
-            if stats["received"] <= 5:
-                log(f"[DEBUG] Evento #{stats['received']}: {json.dumps(payload)[:200]}...")
-            
             offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
-            if not offer or offer.get('status') != 'opened':
+            if not offer:
+                return
+            
+            offer_id = offer.get('id') or ''
+            if not offer_id.startswith('SingleSaleOffer:'):
+                return
+            
+            offer_status = offer.get('status')
+            dedup_key = (offer_id, offer_status)
+            if dedup_key in seen_offer_status:
+                return
+            seen_offer_status.add(dedup_key)
+            
+            if offer_status != 'opened':
                 return
             
             sender_side = offer.get('senderSide') or {}
