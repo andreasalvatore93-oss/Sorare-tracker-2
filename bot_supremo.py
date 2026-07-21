@@ -2751,6 +2751,64 @@ def run_listener(eth_rate):
     return stats["matches_found"]
 
 
+# COMMIT PERIODICO LISTA NERA (21/07, richiesta esplicita utente -- "evitare che
+# un'interruzione della run perda blacklist/cooldown accumulati"): il file
+# sorare_lista_nera.txt viene gia' scritto su disco ad ogni upsert (vedi
+# _lista_nera_scrivi_righe), ma restava solo LOCALE fino al commit finale del
+# workflow -- se la run si interrompeva a meta' (timeout, cancellazione manuale,
+# crash), tutto cio' che il bot aveva imparato in quella sessione (nuovi cooldown,
+# nuove blacklist automatiche 365gg) andava perso. Un thread separato, parallelo
+# al listener WebSocket (che resta l'UNICA cosa che deve restare vivo/continuo --
+# niente piu' restart a chunk come per MLS Sentiment, qui romperebbe la sessione
+# live), fa git add/commit/push ogni COMMIT_INTERVAL_SECONDS (default 300s = 5
+# minuti) SOLO se il file e' effettivamente cambiato dall'ultimo commit.
+COMMIT_INTERVAL_SECONDS = int(os.environ.get('COMMIT_INTERVAL_SECONDS', '300'))
+_stop_periodic_commit = threading.Event()
+
+
+def _commit_lista_nera_se_serve():
+    """Un solo tentativo di commit+push, non bloccante per il resto del bot in
+    caso di errore (rete, conflitto git, ecc.) -- logga e continua, la prossima
+    esecuzione periodica ritentera' comunque."""
+    try:
+        status = subprocess.run(
+            ['git', 'status', '--porcelain', '--', LISTA_NERA_PATH],
+            capture_output=True, text=True, timeout=30
+        )
+        if not status.stdout.strip():
+            return  # nessuna modifica, niente da committare
+        subprocess.run(['git', 'config', 'user.name', 'bot-supremo'], timeout=30)
+        subprocess.run(['git', 'config', 'user.email',
+                         'bot-supremo@users.noreply.github.com'], timeout=30)
+        subprocess.run(['git', 'add', LISTA_NERA_PATH], timeout=30)
+        commit = subprocess.run(
+            ['git', 'commit', '-m', 'Bot Supremo: commit periodico lista nera (run in corso)'],
+            capture_output=True, text=True, timeout=30
+        )
+        if commit.returncode != 0:
+            log(f"[commit periodico] nulla da committare o commit fallito: {commit.stdout.strip()} {commit.stderr.strip()}")
+            return
+        pull = subprocess.run(
+            ['git', 'pull', '--rebase', '--autostash', 'origin', 'main'],
+            capture_output=True, text=True, timeout=60
+        )
+        if pull.returncode != 0:
+            log(f"[commit periodico] git pull --rebase fallito, salto il push di questo giro: {pull.stderr.strip()}")
+            return
+        push = subprocess.run(['git', 'push'], capture_output=True, text=True, timeout=60)
+        if push.returncode == 0:
+            log("[commit periodico] lista nera committata e pushata con successo (run ancora in corso)")
+        else:
+            log(f"[commit periodico] push fallito: {push.stderr.strip()}")
+    except Exception as e:
+        log(f"[commit periodico] eccezione non bloccante, ritento al prossimo giro: {e}")
+
+
+def _periodic_commit_loop():
+    while not _stop_periodic_commit.wait(COMMIT_INTERVAL_SECONDS):
+        _commit_lista_nera_se_serve()
+
+
 def main():
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
@@ -2812,6 +2870,10 @@ def main():
             "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
         return
     send_startup_msg()
+    commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
+    commit_thread.start()
+    log(f"[commit periodico] thread avviato, commit+push lista nera ogni "
+        f"{COMMIT_INTERVAL_SECONDS}s se ci sono modifiche")
     try:
         matches_found = run_listener(eth_rate)
         target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
@@ -2823,6 +2885,8 @@ def main():
             log(f"Tempo di ascolto scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi "
                 f"trovati -- esecuzione terminata.")
     finally:
+        _stop_periodic_commit.set()
+        _commit_lista_nera_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
         close_browser()
         close_node_sign_process()
 
