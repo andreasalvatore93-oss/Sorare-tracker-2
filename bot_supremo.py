@@ -1159,16 +1159,13 @@ RECENT_TRANSACTIONS_QUERY = """
 query RecentTransactionsQuery($p: String!, $n: Int!, $cursor: String) {
   tokens {
     tokenPrices(playerSlug: $p, rarity: limited, last: $n, before: $cursor) {
-      nodes {
-        date
-        deal {
-          __typename
-          ... on TokenOffer {
-            type
-          }
+      date
+      deal {
+        __typename
+        ... on TokenOffer {
+          type
         }
       }
-      pageInfo { hasPreviousPage startCursor }
     }
   }
 }
@@ -1198,32 +1195,33 @@ query RecentTransactionsQuery($p: String!, $n: Int!, $cursor: String) {
 # FIX 22/07 (bug CRITICO trovato via diagnostica LIQUIDITY_DIAGNOSTIC, confermato dal
 # vivo su daniel-baran: 50 nodi ricevuti, TUTTI scartati per finestra 30gg -- e su
 # bryan-acosta/sean-johnson/ecc., tutti giocatori MLS/K-League: 50 nodi ricevuti, TUTTI
-# scartati per stagione, __typename SEMPRE vuoto): entrambe le query NON avevano
-# paginazione ne' ordinamento esplicito -- il server restituiva un blocco fisso (5 o 50
-# a seconda della query) delle transazioni PIU' VECCHIE disponibili invece delle piu'
-# recenti, quindi un giocatore con 10+ transazioni reali negli ultimi 7gg risultava a 0
-# se il blocco fisso pescava solo storico lontano. Riscritte entrambe in stile
-# connessione Relay (last/before/pageInfo.hasPreviousPage/startCursor), STESSO pattern
-# gia' confermato funzionante su liveSingleSaleOffers in fetch_all_live_offers -- 'last'
-# richiede esplicitamente gli ULTIMI N risultati (i piu' recenti in una connessione
-# Relay standard), risolvendo il troncamento sui piu' vecchi."""
+# scartati per stagione, __typename SEMPRE vuoto): il tentativo di riscrivere queste
+# query come connessione Relay (nodes/pageInfo) e' FALLITO in produzione con errore
+# GraphQL esplicito ("Field 'nodes' doesn't exist on type 'TokenPrice'") -- il campo
+# tokenPrices qui NON e' una connessione paginata come liveSingleSaleOffers, e' una
+# LISTA PIATTA di oggetti TokenPrice. Struttura ripristinata alla forma piatta originale
+# (nessun nodes/pageInfo), ma con $n/$cursor mantenuti come argomenti last/before diretti
+# sul campo -- se lo schema li accetta (da confermare dal vivo), il server restituira'
+# comunque una lista piatta (non un oggetto con nodes), semplicemente contenente gli
+# ultimi N elementi prima del cursore invece del blocco di default. _fetch_paginated_
+# transaction_nodes gestisce ora ENTRAMBI i casi (vedi sotto): se la risposta e' una
+# lista pura la usa direttamente per questa singola pagina senza aspettarsi pageInfo, e
+# se il server rifiuta anche last/before con un secondo errore esplicito, logga e si
+# ferma senza inventare altri tentativi alla cieca."""
 RECENT_TRANSACTIONS_QUERY_BY_SEASON = """
 query RecentTransactionsBySeasonQuery($p: String!, $n: Int!, $cursor: String) {
   anyPlayer(slug: $p) {
     tokenPrices(rarity: limited, last: $n, before: $cursor) {
-      nodes {
-        date
-        deal {
-          __typename
-          ... on TokenOffer {
-            type
-          }
-        }
-        card {
-          inSeasonEligible
+      date
+      deal {
+        __typename
+        ... on TokenOffer {
+          type
         }
       }
-      pageInfo { hasPreviousPage startCursor }
+      card {
+        inSeasonEligible
+      }
     }
   }
 }
@@ -1309,63 +1307,43 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
 
 
 TRANSACTIONS_PAGE_SIZE = 50
-TRANSACTIONS_MAX_PAGES = 10
 
 
 def _fetch_paginated_transaction_nodes(query, variables_base, extract_connection, player_slug):
-    """Pagina una query transazioni in stile Relay (last/before/pageInfo), fermandosi
-    non appena l'ULTIMO nodo della pagina appena ricevuta e' piu' vecchio della finestra
-    lunga (30gg) -- a quel punto tutte le pagine successive sarebbero ancora piu' vecchie
-    (i nodi arrivano dal piu' recente al piu' vecchio con 'last', stesso ordine Relay
-    standard) quindi non serve continuare. Si ferma anche se il server non ha piu'
-    pagine (hasPreviousPage=False) o dopo TRANSACTIONS_MAX_PAGES di sicurezza (protezione
-    anti-loop-infinito, non dovrebbe mai scattare in pratica).
-    Log VERBOSO per ogni pagina richiesta esplicitamente dall'utente (22/07), utile per
-    diagnosticare a colpo d'occhio quante pagine servono davvero per giocatore."""
-    now = datetime.datetime.now(datetime.timezone.utc)
-    cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
-    all_nodes = []
-    cursor = None
-    for page_num in range(1, TRANSACTIONS_MAX_PAGES + 1):
-        variables = dict(variables_base)
-        variables['n'] = TRANSACTIONS_PAGE_SIZE
-        variables['cursor'] = cursor
-        data = graphql_query(query, variables)
-        if data.get('errors'):
-            log(f"[liquidita' paginazione] {player_slug}: pagina {page_num} errore GraphQL: {data['errors']}")
-            break
-        conn = extract_connection(data)
-        nodes = conn.get('nodes') or []
-        all_nodes.extend(nodes)
-        page_info = conn.get('pageInfo') or {}
-        oldest_date_str = nodes[-1].get('date') if nodes else None
-        log(f"[liquidita' paginazione] {player_slug}: pagina {page_num} ricevuta, "
-            f"{len(nodes)} nodi (totale finora {len(all_nodes)}), "
-            f"nodo piu' vecchio della pagina: {oldest_date_str or 'n/d'}")
-        if not nodes:
-            break
-        try:
-            oldest_dt = datetime.datetime.fromisoformat((oldest_date_str or '').replace('Z', '+00:00'))
-            if oldest_dt < cutoff_long:
-                log(f"[liquidita' paginazione] {player_slug}: nodo piu' vecchio della "
-                    f"pagina {page_num} e' fuori dalla finestra 30gg, mi fermo qui "
-                    f"(le pagine successive sarebbero ancora piu' vecchie)")
-                break
-        except (ValueError, AttributeError):
-            pass  # data non parsabile: non decido di fermarmi solo per questo, continuo paginando
-        if not page_info.get('hasPreviousPage'):
-            log(f"[liquidita' paginazione] {player_slug}: server segnala nessun'altra "
-                f"pagina disponibile (hasPreviousPage=False), mi fermo")
-            break
-        cursor = page_info.get('startCursor')
-        if not cursor:
-            log(f"[liquidita' paginazione] {player_slug}: startCursor assente nonostante "
-                f"hasPreviousPage=True, mi fermo per sicurezza (evito loop)")
-            break
-    else:
-        log(f"[liquidita' paginazione] {player_slug}: raggiunto il tetto di sicurezza "
-            f"{TRANSACTIONS_MAX_PAGES} pagine, mi fermo comunque")
-    return all_nodes
+    """FIX 22/07 (dopo fallimento in produzione del primo tentativo -- vedi nota sopra
+    le query): tokenPrices(playerSlug/anyPlayer) e' confermato dal server essere una
+    LISTA PIATTA (l'errore 'nodes doesn't exist on type TokenPrice' lo prova), NON una
+    connessione Relay con pageInfo/cursore -- quindi non esiste un cursore reale e
+    confermato per chiedere 'la pagina successiva'. Inventarne uno (es. usare la data
+    dell'ultimo elemento come 'before') sarebbe un'altra ipotesi non verificata, stesso
+    errore di approccio del tentativo precedente. Scelta sicura: UNA SOLA chiamata, ma
+    con $n alzato a TRANSACTIONS_PAGE_SIZE (50, anche per il ramo combinato che prima
+    ne prendeva solo 5) per catturare piu' storico in un colpo solo senza rischiare di
+    rompere di nuovo la query con argomenti/struttura indovinati. Se il server dovesse
+    rifiutare last/before come argomenti su questo campo, l'errore viene loggato per
+    intero (diagnosi immediata) e la funzione ritorna una lista vuota, gestita dal
+    chiamante con lo stesso fallback gia' esistente.
+    Log VERBOSO richiesto esplicitamente dall'utente (22/07): quanti nodi ricevuti e
+    la data del piu' vecchio, per capire a colpo d'occhio la copertura reale ottenuta."""
+    variables = dict(variables_base)
+    variables['n'] = TRANSACTIONS_PAGE_SIZE
+    variables['cursor'] = None
+    data = graphql_query(query, variables)
+    if data.get('errors'):
+        log(f"[liquidita' paginazione] {player_slug}: errore GraphQL: {data['errors']}")
+        return []
+    nodes = extract_connection(data)
+    if not isinstance(nodes, list):
+        # Difesa extra: se in futuro il campo dovesse tornare un oggetto invece di una
+        # lista (es. schema cambiato di nuovo), non esplodere -- logga e ritorna vuoto.
+        log(f"[liquidita' paginazione] {player_slug}: risposta inattesa (non e' una "
+            f"lista), tipo ricevuto={type(nodes).__name__}, valore grezzo={nodes}")
+        return []
+    oldest_date_str = nodes[-1].get('date') if nodes else None
+    log(f"[liquidita' paginazione] {player_slug}: {len(nodes)} transazioni ricevute dal "
+        f"server (richieste {TRANSACTIONS_PAGE_SIZE}), nodo piu' vecchio: "
+        f"{oldest_date_str or 'n/d'}")
+    return nodes
 
 
 def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
@@ -1404,7 +1382,7 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
         try:
             nodes = _fetch_paginated_transaction_nodes(
                 RECENT_TRANSACTIONS_QUERY_BY_SEASON, {"p": player_slug},
-                lambda data: ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {},
+                lambda data: ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or [],
                 player_slug)
             if nodes:
                 return _count_transactions_from_nodes(nodes, season_filter=is_in_season, player_slug=player_slug)
@@ -1422,7 +1400,7 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
     try:
         nodes = _fetch_paginated_transaction_nodes(
             RECENT_TRANSACTIONS_QUERY, {"p": player_slug},
-            lambda data: ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or {},
+            lambda data: ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or [],
             player_slug)
     except Exception as e:
         log(f"[liquidita'] eccezione per {player_slug}: {e}")
