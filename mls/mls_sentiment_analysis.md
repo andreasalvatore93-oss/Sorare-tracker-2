@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T14:18:37.343677Z
-**Run totali:** 17
+**Data analisi:** 2026-07-21T14:20:39.527419Z
+**Run totali:** 18
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.94 EUR
-- **Trend mercato:** ➡️ STABLE (+0.0%)
+- **Prezzo medio MLS:** 6.84 EUR
+- **Trend mercato:** ➡️ STABLE (-0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.0%)**
+**➡️ TREND GLOBALE: STABLE (-0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Mathieu Choinière (Los Angeles FC)**
@@ -71,7 +71,7 @@ Carte trovate: 4 | Prezzo medio: 1.14 EUR | Volatilità (σ): 0.65
 Carte trovate: 2 | Prezzo medio: 3.68 EUR | Volatilità (σ): 2.94
 
 **Charlotte FC**
-Carte trovate: 3 | Prezzo medio: 2.05 EUR | Volatilità (σ): 2.46
+Carte trovate: 4 | Prezzo medio: 4.26 EUR | Volatilità (σ): 4.86
 
 **CF Montreal**
 Carte trovate: 4 | Prezzo medio: 5.35 EUR | Volatilità (σ): 5.44
@@ -104,13 +104,13 @@ Carte trovate: 5 | Prezzo medio: 3.58 EUR | Volatilità (σ): 3.52
 Carte trovate: 2 | Prezzo medio: 1.29 EUR | Volatilità (σ): 0.01
 
 **DC United**
-Carte trovate: 2 | Prezzo medio: 1.50 EUR | Volatilità (σ): 0.68
+Carte trovate: 3 | Prezzo medio: 1.90 EUR | Volatilità (σ): 0.85
 
 **San Diego FC**
 Carte trovate: 4 | Prezzo medio: 10.39 EUR | Volatilità (σ): 18.07
 
 **Austin FC**
-Carte trovate: 2 | Prezzo medio: 0.84 EUR | Volatilità (σ): 0.51
+Carte trovate: 3 | Prezzo medio: 1.07 EUR | Volatilità (σ): 0.54
 
 **Chicago Fire FC**
 Carte trovate: 2 | Prezzo medio: 26.48 EUR | Volatilità (σ): 21.88
