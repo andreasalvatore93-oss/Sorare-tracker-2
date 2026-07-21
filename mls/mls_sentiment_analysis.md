@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T10:59:24.963490Z
-**Run totali:** 5
+**Data analisi:** 2026-07-21T11:00:26.846650Z
+**Run totali:** 6
 
 📊 **[Apri i grafici interattivi](https://andreasalvatore93-oss.github.io/Sorare-tracker-2/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 10.39 EUR
-- **Trend mercato:** ➡️ STABLE (-0.0%)
+- **Prezzo medio MLS:** 10.19 EUR
+- **Trend mercato:** ➡️ STABLE (+0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.0%)**
+**➡️ TREND GLOBALE: STABLE (+0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 MOD. OPPORTUNITÀ — Lionel Messi (Inter Miami)**
@@ -40,16 +40,16 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 10. Jonathan Sirois (FC Dallas) — **0.0%** vs media (2.39 EUR vs 2.39 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Maxwell Woledzi (Nashville SC) — **+0.0%** vs media (25.50 EUR vs 25.50 EUR)
-2. Sebastian Berhalter (Vancouver Whitecaps FC) — **+0.0%** vs media (18.00 EUR vs 18.00 EUR)
-3. Pep Biel (Charlotte FC) — **+0.0%** vs media (9.62 EUR vs 9.62 EUR)
-4. Omar Marquez (Real Salt Lake) — **+0.0%** vs media (1.90 EUR vs 1.90 EUR)
-5. Miki Yamane (LA Galaxy) — **+0.0%** vs media (2.30 EUR vs 2.30 EUR)
-6. JT Marcinkowski (LA Galaxy) — **+0.0%** vs media (6.40 EUR vs 6.40 EUR)
-7. Klauss (LA Galaxy) — **+0.0%** vs media (2.20 EUR vs 2.20 EUR)
-8. Joseph Paintsil (LA Galaxy) — **+0.0%** vs media (5.80 EUR vs 5.80 EUR)
-9. Jakob Glesnes (LA Galaxy) — **+0.0%** vs media (6.80 EUR vs 6.80 EUR)
-10. Marco Reus (LA Galaxy) — **+0.0%** vs media (9.10 EUR vs 9.10 EUR)
+1. Beau Leroux (San Jose Earthquakes) — **+0.0%** vs media (12.35 EUR vs 12.35 EUR)
+2. Maxwell Woledzi (Nashville SC) — **+0.0%** vs media (25.50 EUR vs 25.50 EUR)
+3. Sebastian Berhalter (Vancouver Whitecaps FC) — **+0.0%** vs media (18.00 EUR vs 18.00 EUR)
+4. Pep Biel (Charlotte FC) — **+0.0%** vs media (9.62 EUR vs 9.62 EUR)
+5. Omar Marquez (Real Salt Lake) — **+0.0%** vs media (1.90 EUR vs 1.90 EUR)
+6. Miki Yamane (LA Galaxy) — **+0.0%** vs media (2.30 EUR vs 2.30 EUR)
+7. JT Marcinkowski (LA Galaxy) — **+0.0%** vs media (6.40 EUR vs 6.40 EUR)
+8. Klauss (LA Galaxy) — **+0.0%** vs media (2.20 EUR vs 2.20 EUR)
+9. Joseph Paintsil (LA Galaxy) — **+0.0%** vs media (5.80 EUR vs 5.80 EUR)
+10. Jakob Glesnes (LA Galaxy) — **+0.0%** vs media (6.80 EUR vs 6.80 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Inter Miami**
@@ -68,7 +68,7 @@ Carte trovate: 3 | Prezzo medio: 5.50 EUR | Volatilità (σ): 5.20
 Carte trovate: 2 | Prezzo medio: 13.79 EUR | Volatilità (σ): 18.60
 
 **FC Dallas**
-Carte trovate: 1 | Prezzo medio: 2.39 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 1.79 EUR | Volatilità (σ): 0.84
 
 **Toronto FC**
 Carte trovate: 1 | Prezzo medio: 5.59 EUR | Volatilità (σ): 0.00
@@ -105,4 +105,7 @@ Carte trovate: 1 | Prezzo medio: 18.00 EUR | Volatilità (σ): 0.00
 
 **Nashville SC**
 Carte trovate: 1 | Prezzo medio: 25.50 EUR | Volatilità (σ): 0.00
+
+**San Jose Earthquakes**
+Carte trovate: 1 | Prezzo medio: 12.35 EUR | Volatilità (σ): 0.00
 
