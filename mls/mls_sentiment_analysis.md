@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T14:43:04.915510Z
-**Run totali:** 29
+**Data analisi:** 2026-07-21T14:45:07.011344Z
+**Run totali:** 30
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.37 EUR
-- **Trend mercato:** ➡️ STABLE (-0.0%)
+- **Prezzo medio MLS:** 7.46 EUR
+- **Trend mercato:** ➡️ STABLE (+0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.0%)**
+**➡️ TREND GLOBALE: STABLE (+0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Maximiliano Falcón (Inter Miami CF)**
@@ -18,8 +18,8 @@ Liquidità: **2 occorrenze** | Volatilità: 1.48
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 **🥈 FORTE OPPORTUNITÀ — Martín Ojeda (Orlando City SC)**
-Prezzo: **20.21 EUR** | Media: **27.00 EUR** | Sconto: **-25.2%**
-Liquidità: **2 occorrenze** | Volatilità: 9.61
+Prezzo: **20.21 EUR** | Media: **28.50 EUR** | Sconto: **-29.1%**
+Liquidità: **3 occorrenze** | Volatilità: 7.27
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 **🥉 FORTE OPPORTUNITÀ — Keisuke Kurokawa (DC United)**
@@ -29,7 +29,7 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬆️ TOP 10 RIALZI (Stanno CALANDO di prezzo)
 1. Maximiliano Falcón (Inter Miami CF) — **-42.9%** vs media (1.40 EUR vs 2.45 EUR)
-2. Martín Ojeda (Orlando City SC) — **-25.2%** vs media (20.21 EUR vs 27.00 EUR)
+2. Martín Ojeda (Orlando City SC) — **-29.1%** vs media (20.21 EUR vs 28.50 EUR)
 3. Keisuke Kurokawa (DC United) — **-22.7%** vs media (1.70 EUR vs 2.20 EUR)
 4. Kelvin Yeboah (Minnesota United) — **-22.4%** vs media (2.37 EUR vs 3.06 EUR)
 5. Mathieu Choinière (Los Angeles FC) — **-21.0%** vs media (1.30 EUR vs 1.65 EUR)
@@ -119,7 +119,7 @@ Carte trovate: 4 | Prezzo medio: 16.36 EUR | Volatilità (σ): 17.73
 Carte trovate: 4 | Prezzo medio: 7.31 EUR | Volatilità (σ): 8.85
 
 **FC Dallas**
-Carte trovate: 1 | Prezzo medio: 0.95 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 4.52 EUR | Volatilità (σ): 5.06
 
 **San Jose Earthquakes**
 Carte trovate: 3 | Prezzo medio: 7.03 EUR | Volatilità (σ): 6.99
