@@ -22,7 +22,7 @@ except ImportError:
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
-MLS_SLUG = 'mls'
+MLS_SLUG = 'mlspa'
 OUTPUT_DIR = 'mls'
 SENTIMENT_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_analysis.json')
 MARKDOWN_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_analysis.md')
@@ -272,14 +272,10 @@ def run_listener(eth_rate, data, listen_seconds):
             
             offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
             if not offer:
-                if stats["received"] <= 3:
-                    log(f"[DEBUG] Nessun offer nel payload #{stats['received']}: {json.dumps(payload)[:300]}")
                 return
             
             offer_id = offer.get('id') or ''
             if not offer_id.startswith('SingleSaleOffer:'):
-                if stats["received"] <= 10:
-                    log(f"[DEBUG] Offer scartato, id={offer_id[:40]}")
                 return
             
             offer_status = offer.get('status')
@@ -316,8 +312,6 @@ def run_listener(eth_rate, data, listen_seconds):
                 league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
                 
                 if not player_slug or league_slug != MLS_SLUG:
-                    if stats["received"] <= 30 and league_slug:
-                        log(f"[DEBUG] Carta in_season scartata: player={player_name}, league={league_slug} (cerco: {MLS_SLUG})")
                     continue
                 
                 stats["processed"] += 1
