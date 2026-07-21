@@ -713,11 +713,29 @@ def generate_markdown(data, recommendations, movers):
     log(f"Generato Markdown: {MARKDOWN_FILE}")
 
 
+PRICE_TIERS = [
+    (0, 2, 'Scarso', '#8B0000'),
+    (2, 5, 'Starter', '#FF4500'),
+    (5, 10, 'Buono', '#FFA500'),
+    (10, 20, 'Ottimo', '#FFD700'),
+    (20, 30, 'Eccellente', '#9ACD32'),
+    (30, float('inf'), 'Leggendario', '#00C853'),
+]
+
+
+def classify_price_tier(price):
+    """Restituisce (nome_fascia, colore) in base al prezzo minimo."""
+    for low, high, name, color in PRICE_TIERS:
+        if low <= price < high:
+            return name, color
+    return PRICE_TIERS[-1][2], PRICE_TIERS[-1][3]
+
+
 def generate_html_chart(data):
-    """Genera HTML con grafici Chart.js."""
+    """Genera HTML con grafici Chart.js: prezzo medio per squadra e opportunità di acquisto."""
     ensure_output_dir()
     
-    # Preparazione dati per i grafici
+    # Preparazione dati per il grafico prezzo medio per squadra
     teams_data = {}
     for team_slug, team_data in data['teams'].items():
         players = team_data.get('players', {})
@@ -729,6 +747,54 @@ def generate_html_chart(data):
                     'count': len(players),
                 }
     
+    # Preparazione dati per il grafico opportunità: ogni giocatore con sconto % dalla media storica,
+    # ordinato dal migliore sconto (più negativo) al peggiore -- così si vede a colpo d'occhio
+    # dove conviene guardare per comprare
+    opportunities = []
+    for team_slug, team_data in data['teams'].items():
+        for player_slug, player_data in team_data.get('players', {}).items():
+            change_pct = player_data.get('change_from_mean_pct', 0)
+            occurrences = player_data.get('occurrences', 0)
+            opportunities.append({
+                'name': player_data.get('name', player_slug),
+                'team': team_data['team_name'],
+                'change_pct': change_pct,
+                'price': player_data.get('min_live_price', 0),
+                'mean': player_data.get('historical_mean', 0),
+                'occurrences': occurrences,
+            })
+    opportunities.sort(key=lambda x: x['change_pct'])
+    top_opportunities = opportunities[:15]  # le 15 migliori occasioni
+    
+    # Preparazione dati per fasce di prezzo: raggruppa tutti i giocatori per tier
+    # e calcola sconto medio + conteggio per ogni fascia -- risponde alla domanda
+    # "quale fascia di carte sta calando/salendo di più in questo momento?"
+    tier_stats = {name: {'changes': [], 'color': color, 'count': 0} for _, _, name, color in PRICE_TIERS}
+    for team_slug, team_data in data['teams'].items():
+        for player_slug, player_data in team_data.get('players', {}).items():
+            price = player_data.get('min_live_price', 0)
+            if price <= 0:
+                continue
+            tier_name, _ = classify_price_tier(price)
+            tier_stats[tier_name]['changes'].append(player_data.get('change_from_mean_pct', 0))
+            tier_stats[tier_name]['count'] += 1
+    
+    tier_chart_data = []
+    for low, high, name, color in PRICE_TIERS:
+        changes = tier_stats[name]['changes']
+        avg_change = sum(changes) / len(changes) if changes else 0
+        tier_chart_data.append({
+            'name': name,
+            'avg_change': round(avg_change, 1),
+            'count': tier_stats[name]['count'],
+            'color': color,
+            'range': f"{low:.0f}-{high:.0f}" if high != float('inf') else f"{low:.0f}+",
+        })
+    
+    global_trend = data['summary'].get('global_trend', 'STABLE')
+    global_trend_pct = data['summary'].get('trend_change_pct', 0)
+    global_avg = data['summary'].get('global_average_price_eur', 0)
+    
     html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -737,11 +803,34 @@ def generate_html_chart(data):
     <title>MLS Sentiment Analysis Chart</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
+        :root {
+            --bg: #f5f5f7;
+            --card-bg: #ffffff;
+            --text: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --border: #e5e5e7;
+            --green: #34c759;
+            --red: #ff3b30;
+            --blue: #4A90E2;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121214;
+                --card-bg: #1c1c1e;
+                --text: #f5f5f7;
+                --text-secondary: #a1a1a6;
+                --border: #38383a;
+                --green: #30d158;
+                --red: #ff453a;
+                --blue: #64a8f0;
+            }
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             margin: 0;
             padding: 20px;
-            background: #f5f5f5;
+            background: var(--bg);
+            color: var(--text);
         }
         .container {
             max-width: 1400px;
@@ -749,46 +838,208 @@ def generate_html_chart(data):
         }
         h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 30px;
+            color: var(--text);
+            margin-bottom: 8px;
         }
-        .chart-wrapper {
-            background: white;
-            border-radius: 8px;
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .summary-banner {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .summary-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .chart-wrapper {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
         }
         .chart-title {
             font-size: 16px;
             font-weight: 600;
-            color: #333;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
             margin-bottom: 15px;
         }
         canvas {
-            max-height: 300px;
+            max-height: 400px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📊 MLS Sentiment Analysis</h1>
+        <div class="subtitle">Analisi in tempo reale del mercato MLS in-season</div>
         
-        <div class="chart-wrapper">
-            <div class="chart-title">Average Price by Team</div>
-            <canvas id="teamChart"></canvas>
+        <div class="summary-banner">
+            <div class="summary-item">
+                <div class="summary-value">__GLOBAL_AVG__ EUR</div>
+                <div class="summary-label">Prezzo medio</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">__GLOBAL_TREND_EMOJI__ __GLOBAL_TREND_PCT__%</div>
+                <div class="summary-label">Trend mercato</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">__TOTAL_PLAYERS__</div>
+                <div class="summary-label">Giocatori tracciati</div>
+            </div>
         </div>
         
         <div class="chart-wrapper">
-            <div class="chart-title">Cards Found per Team</div>
-            <canvas id="countChart"></canvas>
+            <div class="chart-title">🎯 Migliori Opportunità di Acquisto</div>
+            <div class="chart-subtitle">Sconto % rispetto alla media storica — barre verdi = sotto la media (occasione), rosse = sopra la media</div>
+            <canvas id="opportunityChart"></canvas>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title">🏷️ Andamento per Fascia di Livello</div>
+            <div class="chart-subtitle">Sconto/rialzo medio per fascia di prezzo — capisci se sta calando tutto il mercato o solo una fascia specifica</div>
+            <canvas id="tierChart"></canvas>
+            <div id="tierLegend" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px; justify-content:center;"></div>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title">Prezzo Medio per Squadra</div>
+            <canvas id="teamChart"></canvas>
         </div>
     </div>
     
     <script>
         const teamsData = __TEAMS_DATA_JSON__;
+        const opportunitiesData = __OPPORTUNITIES_DATA_JSON__;
+        const tierData = __TIER_DATA_JSON__;
         
-        // Team average prices
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const textColor = isDark ? '#f5f5f7' : '#1d1d1f';
+        const gridColor = isDark ? '#38383a' : '#e5e5e7';
+        const greenColor = isDark ? '#30d158' : '#34c759';
+        const redColor = isDark ? '#ff453a' : '#ff3b30';
+        const blueColor = isDark ? '#64a8f0' : '#4A90E2';
+        
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
+        
+        // Grafico opportunità: sconto % per giocatore, colorato in base a sopra/sotto media
+        const oppLabels = opportunitiesData.map(o => o.name + ' (' + o.team + ')');
+        const oppValues = opportunitiesData.map(o => o.change_pct);
+        const oppColors = oppValues.map(v => v < 0 ? greenColor : redColor);
+        
+        const ctxOpp = document.getElementById('opportunityChart').getContext('2d');
+        new Chart(ctxOpp, {
+            type: 'bar',
+            data: {
+                labels: oppLabels,
+                datasets: [{
+                    label: 'Sconto vs media storica (%)',
+                    data: oppValues,
+                    backgroundColor: oppColors,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const o = opportunitiesData[ctx.dataIndex];
+                                return o.change_pct.toFixed(1) + '% — Prezzo: ' + o.price.toFixed(2) + 
+                                       ' EUR (media: ' + o.mean.toFixed(2) + ' EUR, ' + o.occurrences + ' occorrenze)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {color: gridColor},
+                        title: {display: true, text: '% sconto (negativo = sotto media, buona occasione)'}
+                    },
+                    y: {grid: {display: false}},
+                },
+            },
+        });
+        
+        // Grafico fasce di prezzo: sconto medio per fascia, colore crescente rosso->verde
+        const tierLabels = tierData.map(t => t.name + ' (' + t.range + ' EUR)');
+        const tierValues = tierData.map(t => t.avg_change);
+        const tierColors = tierData.map(t => t.color);
+        
+        const ctxTier = document.getElementById('tierChart').getContext('2d');
+        new Chart(ctxTier, {
+            type: 'bar',
+            data: {
+                labels: tierLabels,
+                datasets: [{
+                    label: 'Sconto/rialzo medio (%)',
+                    data: tierValues,
+                    backgroundColor: tierColors,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const t = tierData[ctx.dataIndex];
+                                return t.avg_change.toFixed(1) + '% medio — ' + t.count + ' carte in questa fascia';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {grid: {color: gridColor}, title: {display: true, text: '% sconto medio dalla media storica'}},
+                    x: {grid: {display: false}},
+                },
+            },
+        });
+        
+        // Legenda colorata sotto il grafico fasce
+        const legendDiv = document.getElementById('tierLegend');
+        tierData.forEach(t => {
+            const badge = document.createElement('div');
+            badge.style.cssText = 'padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; color:white; background:' + t.color;
+            badge.textContent = t.name + ': ' + t.count + ' carte';
+            legendDiv.appendChild(badge);
+        });
+        
+        // Grafico prezzo medio per squadra
         const teamLabels = Object.keys(teamsData).sort();
         const teamAvgs = teamLabels.map(t => teamsData[t].avg.toFixed(2));
         
@@ -800,9 +1051,8 @@ def generate_html_chart(data):
                 datasets: [{
                     label: 'Average Price (EUR)',
                     data: teamAvgs,
-                    backgroundColor: '#4A90E2',
-                    borderColor: '#2E5C8A',
-                    borderWidth: 1,
+                    backgroundColor: blueColor,
+                    borderRadius: 4,
                 }]
             },
             options: {
@@ -812,35 +1062,8 @@ def generate_html_chart(data):
                     legend: {display: false},
                 },
                 scales: {
-                    y: {beginAtZero: true},
-                },
-            },
-        });
-        
-        // Cards found per team
-        const teamCounts = teamLabels.map(t => teamsData[t].count);
-        
-        const ctx2 = document.getElementById('countChart').getContext('2d');
-        new Chart(ctx2, {
-            type: 'bar',
-            data: {
-                labels: teamLabels,
-                datasets: [{
-                    label: 'Cards Found',
-                    data: teamCounts,
-                    backgroundColor: '#7ED321',
-                    borderColor: '#4A8A0E',
-                    borderWidth: 1,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {display: false},
-                },
-                scales: {
-                    y: {beginAtZero: true},
+                    y: {beginAtZero: true, grid: {color: gridColor}},
+                    x: {grid: {display: false}},
                 },
             },
         });
@@ -850,6 +1073,14 @@ def generate_html_chart(data):
 """
     
     html_content = html_content.replace('__TEAMS_DATA_JSON__', json.dumps(teams_data))
+    html_content = html_content.replace('__OPPORTUNITIES_DATA_JSON__', json.dumps(top_opportunities))
+    html_content = html_content.replace('__TIER_DATA_JSON__', json.dumps(tier_chart_data))
+    html_content = html_content.replace('__GLOBAL_AVG__', f"{global_avg:.2f}")
+    trend_emoji = {'STRONG_DESCENDING': '📉', 'DESCENDING': '📉', 'STABLE': '➡️', 'ASCENDING': '📈', 'STRONG_ASCENDING': '📈'}.get(global_trend, '➡️')
+    html_content = html_content.replace('__GLOBAL_TREND_EMOJI__', trend_emoji)
+    html_content = html_content.replace('__GLOBAL_TREND_PCT__', f"{global_trend_pct:+.1f}")
+    total_players = sum(len(td.get('players', {})) for td in data['teams'].values())
+    html_content = html_content.replace('__TOTAL_PLAYERS__', str(total_players))
     
     with open(HTML_FILE, 'w', encoding='utf-8') as f:
         f.write(html_content)
