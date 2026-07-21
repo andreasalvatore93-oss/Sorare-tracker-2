@@ -254,6 +254,8 @@ def load_sentiment_data():
         'summary': {
             'global_average_price_eur': 0,
             'global_trend': 'STABLE',
+            'global_trend_label': 'Stabile',
+            'global_trend_label_emoji': '⚪',
             'trend_change_pct': 0,
             'top10_movers': [],
         },
@@ -463,6 +465,34 @@ def run_listener(eth_rate, data, listen_seconds):
     return data
 
 
+MARKET_TREND_SCALE = [
+    # (soglia_max_esclusa, nome, emoji) -- scala descrittiva a 10 livelli, PIÙ GRANULARE
+    # dei 5 livelli tecnici (STABLE/ASCENDING/ecc) usati per la logica dei consigli.
+    # Le due scale convivono: global_trend resta per la logica interna, global_trend_label
+    # è la versione a 10 scaglioni pensata per la visualizzazione nei grafici/markdown.
+    (-15, 'Crollo Totale', '🔴'),
+    (-8, 'Forte Ribasso', '🟥'),
+    (-4, 'In Calo', '🟠'),
+    (-1.5, 'Leggero Calo', '🟡'),
+    (-0.3, 'Quasi Fermo', '🟨'),
+    (0.3, 'Stabile', '⚪'),
+    (1.5, 'Leggero Rialzo', '🟩'),
+    (4, 'In Crescita', '🟢'),
+    (8, 'Forte Rialzo', '💚'),
+    (15, 'Impennata', '🚀'),
+]
+
+
+def classify_market_trend(trend_change_pct):
+    """Classifica il trend generale del mercato MLS in 10 scaglioni descrittivi,
+    dal crollo totale all'impennata. Restituisce (nome, emoji). Si affianca a
+    global_trend (i 5 livelli tecnici), non lo sostituisce."""
+    for threshold, name, emoji in MARKET_TREND_SCALE:
+        if trend_change_pct < threshold:
+            return name, emoji
+    return 'Fuori Scala', '🌋'
+
+
 def calculate_statistics(data):
     """Calcola media storica, deviazione standard, trend per ogni giocatore."""
     all_prices = []
@@ -507,23 +537,33 @@ def calculate_statistics(data):
     
     # Media globale MLS
     global_mean = sum(all_prices) / len(all_prices) if all_prices else 0
+    previous_global_avg = data['summary'].get('global_average_price_eur', 0)
     data['summary']['global_average_price_eur'] = round(global_mean, 2)
     
-    # Trend: confronta media globale attuale vs storica (approssimato)
-    if data['summary'].get('global_average_price_eur', 0) > 0:
-        trend_change = (global_mean - (data['summary'].get('global_average_price_eur', global_mean))) / data['summary'].get('global_average_price_eur', global_mean) * 100 if data['summary'].get('global_average_price_eur', 0) > 0 else 0
-        data['summary']['trend_change_pct'] = round(trend_change, 1)
-        
-        if trend_change <= -5:
-            data['summary']['global_trend'] = 'STRONG_DESCENDING'
-        elif -5 < trend_change < -1:
-            data['summary']['global_trend'] = 'DESCENDING'
-        elif -1 <= trend_change <= 1:
-            data['summary']['global_trend'] = 'STABLE'
-        elif 1 < trend_change < 3:
-            data['summary']['global_trend'] = 'ASCENDING'
-        else:
-            data['summary']['global_trend'] = 'STRONG_ASCENDING'
+    # Trend: confronta la media globale APPENA CALCOLATA con quella che c'era PRIMA di questo chunk
+    # (bug precedente: confrontava global_mean con se stesso dopo averlo già sovrascritto, quindi era sempre 0%)
+    if previous_global_avg > 0:
+        trend_change = (global_mean - previous_global_avg) / previous_global_avg * 100
+    else:
+        trend_change = 0
+    data['summary']['trend_change_pct'] = round(trend_change, 1)
+    
+    if trend_change <= -5:
+        data['summary']['global_trend'] = 'STRONG_DESCENDING'
+    elif -5 < trend_change < -1:
+        data['summary']['global_trend'] = 'DESCENDING'
+    elif -1 <= trend_change <= 1:
+        data['summary']['global_trend'] = 'STABLE'
+    elif 1 < trend_change < 3:
+        data['summary']['global_trend'] = 'ASCENDING'
+    else:
+        data['summary']['global_trend'] = 'STRONG_ASCENDING'
+    
+    # In aggiunta ai 5 livelli tecnici sopra, calcoliamo anche i 10 scaglioni
+    # descrittivi per la visualizzazione (grafici, markdown)
+    trend_label, trend_label_emoji = classify_market_trend(trend_change)
+    data['summary']['global_trend_label'] = trend_label
+    data['summary']['global_trend_label_emoji'] = trend_label_emoji
 
 
 def get_top_movers(data, top_n=10):
@@ -668,9 +708,12 @@ def generate_markdown(data, recommendations, movers):
     trend = data['summary'].get('global_trend', 'STABLE')
     trend_change = data['summary'].get('trend_change_pct', 0)
     trend_emoji = {'STRONG_DESCENDING': '📉', 'DESCENDING': '📉', 'STABLE': '➡️', 'ASCENDING': '📈', 'STRONG_ASCENDING': '📈'}.get(trend, '➡️')
+    trend_label = data['summary'].get('global_trend_label', 'Stabile')
+    trend_label_emoji = data['summary'].get('global_trend_label_emoji', '⚪')
     
     md_content.append(f"- **Prezzo medio MLS:** {avg_price:.2f} EUR\n")
-    md_content.append(f"- **Trend mercato:** {trend_emoji} {trend} ({trend_change:+.1f}%)\n\n")
+    md_content.append(f"- **Trend mercato:** {trend_emoji} {trend} ({trend_change:+.1f}%)\n")
+    md_content.append(f"- **Sentiment:** {trend_label_emoji} {trend_label}\n\n")
     
     # Consigli
     md_content.append("## 💡 CONSIGLI INTELLIGENTI\n")
@@ -796,6 +839,8 @@ def generate_html_chart(data):
     global_trend = data['summary'].get('global_trend', 'STABLE')
     global_trend_pct = data['summary'].get('trend_change_pct', 0)
     global_avg = data['summary'].get('global_average_price_eur', 0)
+    global_trend_label = data['summary'].get('global_trend_label', 'Stabile')
+    global_trend_label_emoji = data['summary'].get('global_trend_label_emoji', '⚪')
     
     html_content = """<!DOCTYPE html>
 <html lang="en">
@@ -910,6 +955,10 @@ def generate_html_chart(data):
             <div class="summary-item">
                 <div class="summary-value">__GLOBAL_TREND_EMOJI__ __GLOBAL_TREND_PCT__%</div>
                 <div class="summary-label">Trend mercato</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">__GLOBAL_TREND_LABEL_EMOJI__ __GLOBAL_TREND_LABEL__</div>
+                <div class="summary-label">Sentiment</div>
             </div>
             <div class="summary-item">
                 <div class="summary-value">__TOTAL_PLAYERS__</div>
@@ -1081,6 +1130,8 @@ def generate_html_chart(data):
     trend_emoji = {'STRONG_DESCENDING': '📉', 'DESCENDING': '📉', 'STABLE': '➡️', 'ASCENDING': '📈', 'STRONG_ASCENDING': '📈'}.get(global_trend, '➡️')
     html_content = html_content.replace('__GLOBAL_TREND_EMOJI__', trend_emoji)
     html_content = html_content.replace('__GLOBAL_TREND_PCT__', f"{global_trend_pct:+.1f}")
+    html_content = html_content.replace('__GLOBAL_TREND_LABEL_EMOJI__', global_trend_label_emoji)
+    html_content = html_content.replace('__GLOBAL_TREND_LABEL__', global_trend_label)
     total_players = sum(len(td.get('players', {})) for td in data['teams'].values())
     html_content = html_content.replace('__TOTAL_PLAYERS__', str(total_players))
     
