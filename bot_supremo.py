@@ -1156,16 +1156,19 @@ def build_card_link(player_slug, card_slug):
 # le aste, offerta diretta, scambio"), perche' qui l'obiettivo e' misurare la liquidita'
 # generale del giocatore, non isolare un tipo di transazione specifico.
 RECENT_TRANSACTIONS_QUERY = """
-query RecentTransactionsQuery($p: String!) {
+query RecentTransactionsQuery($p: String!, $n: Int!, $cursor: String) {
   tokens {
-    tokenPrices(playerSlug: $p, rarity: limited) {
-      date
-      deal {
-        __typename
-        ... on TokenOffer {
-          type
+    tokenPrices(playerSlug: $p, rarity: limited, last: $n, before: $cursor) {
+      nodes {
+        date
+        deal {
+          __typename
+          ... on TokenOffer {
+            type
+          }
         }
       }
+      pageInfo { hasPreviousPage startCursor }
     }
   }
 }
@@ -1190,11 +1193,24 @@ query RecentTransactionsQuery($p: String!) {
 # _count_transactions_from_nodes lato Python (season_filter=is_in_season). Se questa
 # query fallisce comunque, il bot NON blocca l'avvio per questo -- ripiega
 # automaticamente sulla query combinata di prima (comportamento precedente, imperfetto
-# ma funzionante) con un avviso loggato UNA sola volta."""
+# ma funzionante) con un avviso loggato UNA sola volta.
+#
+# FIX 22/07 (bug CRITICO trovato via diagnostica LIQUIDITY_DIAGNOSTIC, confermato dal
+# vivo su daniel-baran: 50 nodi ricevuti, TUTTI scartati per finestra 30gg -- e su
+# bryan-acosta/sean-johnson/ecc., tutti giocatori MLS/K-League: 50 nodi ricevuti, TUTTI
+# scartati per stagione, __typename SEMPRE vuoto): entrambe le query NON avevano
+# paginazione ne' ordinamento esplicito -- il server restituiva un blocco fisso (5 o 50
+# a seconda della query) delle transazioni PIU' VECCHIE disponibili invece delle piu'
+# recenti, quindi un giocatore con 10+ transazioni reali negli ultimi 7gg risultava a 0
+# se il blocco fisso pescava solo storico lontano. Riscritte entrambe in stile
+# connessione Relay (last/before/pageInfo.hasPreviousPage/startCursor), STESSO pattern
+# gia' confermato funzionante su liveSingleSaleOffers in fetch_all_live_offers -- 'last'
+# richiede esplicitamente gli ULTIMI N risultati (i piu' recenti in una connessione
+# Relay standard), risolvendo il troncamento sui piu' vecchi."""
 RECENT_TRANSACTIONS_QUERY_BY_SEASON = """
-query RecentTransactionsBySeasonQuery($p: String!) {
+query RecentTransactionsBySeasonQuery($p: String!, $n: Int!, $cursor: String) {
   anyPlayer(slug: $p) {
-    tokenPrices(rarity: limited) {
+    tokenPrices(rarity: limited, last: $n, before: $cursor) {
       nodes {
         date
         deal {
@@ -1207,6 +1223,7 @@ query RecentTransactionsBySeasonQuery($p: String!) {
           inSeasonEligible
         }
       }
+      pageInfo { hasPreviousPage startCursor }
     }
   }
 }
@@ -1291,6 +1308,66 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
     return count_short, count_long
 
 
+TRANSACTIONS_PAGE_SIZE = 50
+TRANSACTIONS_MAX_PAGES = 10
+
+
+def _fetch_paginated_transaction_nodes(query, variables_base, extract_connection, player_slug):
+    """Pagina una query transazioni in stile Relay (last/before/pageInfo), fermandosi
+    non appena l'ULTIMO nodo della pagina appena ricevuta e' piu' vecchio della finestra
+    lunga (30gg) -- a quel punto tutte le pagine successive sarebbero ancora piu' vecchie
+    (i nodi arrivano dal piu' recente al piu' vecchio con 'last', stesso ordine Relay
+    standard) quindi non serve continuare. Si ferma anche se il server non ha piu'
+    pagine (hasPreviousPage=False) o dopo TRANSACTIONS_MAX_PAGES di sicurezza (protezione
+    anti-loop-infinito, non dovrebbe mai scattare in pratica).
+    Log VERBOSO per ogni pagina richiesta esplicitamente dall'utente (22/07), utile per
+    diagnosticare a colpo d'occhio quante pagine servono davvero per giocatore."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
+    all_nodes = []
+    cursor = None
+    for page_num in range(1, TRANSACTIONS_MAX_PAGES + 1):
+        variables = dict(variables_base)
+        variables['n'] = TRANSACTIONS_PAGE_SIZE
+        variables['cursor'] = cursor
+        data = graphql_query(query, variables)
+        if data.get('errors'):
+            log(f"[liquidita' paginazione] {player_slug}: pagina {page_num} errore GraphQL: {data['errors']}")
+            break
+        conn = extract_connection(data)
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        page_info = conn.get('pageInfo') or {}
+        oldest_date_str = nodes[-1].get('date') if nodes else None
+        log(f"[liquidita' paginazione] {player_slug}: pagina {page_num} ricevuta, "
+            f"{len(nodes)} nodi (totale finora {len(all_nodes)}), "
+            f"nodo piu' vecchio della pagina: {oldest_date_str or 'n/d'}")
+        if not nodes:
+            break
+        try:
+            oldest_dt = datetime.datetime.fromisoformat((oldest_date_str or '').replace('Z', '+00:00'))
+            if oldest_dt < cutoff_long:
+                log(f"[liquidita' paginazione] {player_slug}: nodo piu' vecchio della "
+                    f"pagina {page_num} e' fuori dalla finestra 30gg, mi fermo qui "
+                    f"(le pagine successive sarebbero ancora piu' vecchie)")
+                break
+        except (ValueError, AttributeError):
+            pass  # data non parsabile: non decido di fermarmi solo per questo, continuo paginando
+        if not page_info.get('hasPreviousPage'):
+            log(f"[liquidita' paginazione] {player_slug}: server segnala nessun'altra "
+                f"pagina disponibile (hasPreviousPage=False), mi fermo")
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            log(f"[liquidita' paginazione] {player_slug}: startCursor assente nonostante "
+                f"hasPreviousPage=True, mi fermo per sicurezza (evito loop)")
+            break
+    else:
+        log(f"[liquidita' paginazione] {player_slug}: raggiunto il tetto di sicurezza "
+            f"{TRANSACTIONS_MAX_PAGES} pagine, mi fermo comunque")
+    return all_nodes
+
+
 def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
     """Ritorna una tupla (count_7d, count_30d): numero di transazioni di player_slug
     negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni.
@@ -1313,6 +1390,10 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
     resto del bot considera comunque le due stagioni insieme per il calcolo del
     minimo/margine -- ha senso che anche la liquidita' segua la stessa logica.
 
+    FIX 22/07 (paginazione reale, vedi note sulle query sopra): entrambi i rami ora
+    paginano davvero tramite _fetch_paginated_transaction_nodes invece di leggere un
+    solo blocco fisso di nodi.
+
     Ritorna (None, None) se la query fallisce. Fail-safe: il chiamante NON deve
     bloccare l'acquisto solo per questo."""
     excluded_league = is_asia_americas_excluded_league(league_slug)
@@ -1321,14 +1402,16 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
         # Solo per MLS/K-League: serve sapere la stagione ESATTA della carta, quindi
         # usiamo la query con campo card.inSeasonEligible e filtriamo lato Python.
         try:
-            data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON, {"p": player_slug})
-            if data.get('errors'):
-                log(f"[liquidita'] ATTENZIONE: query di liquidita' per stagione fallita "
-                    f"per {player_slug} ({data['errors']}) -- ripiego sulla query "
-                    f"combinata (in_season+classic mescolate) per questo giocatore.")
-            else:
-                nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}).get('nodes') or []
+            nodes = _fetch_paginated_transaction_nodes(
+                RECENT_TRANSACTIONS_QUERY_BY_SEASON, {"p": player_slug},
+                lambda data: ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {},
+                player_slug)
+            if nodes:
                 return _count_transactions_from_nodes(nodes, season_filter=is_in_season, player_slug=player_slug)
+            log(f"[liquidita'] ATTENZIONE: query di liquidita' per stagione ha restituito "
+                f"zero nodi per {player_slug} (probabile errore GraphQL, vedi log "
+                f"[liquidita' paginazione] sopra) -- ripiego sulla query combinata "
+                f"(in_season+classic mescolate) per questo giocatore.")
         except Exception as e:
             log(f"[liquidita'] ATTENZIONE: eccezione nella query di liquidita' per "
                 f"stagione per {player_slug} ({e}) -- ripiego sulla query combinata.")
@@ -1337,11 +1420,10 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
     # conta TUTTE le transazioni (in_season+classic mescolate), coerente col resto
     # della logica di calcolo minimo/margine per questi campionati.
     try:
-        data = graphql_query(RECENT_TRANSACTIONS_QUERY, {"p": player_slug})
-        if data.get('errors'):
-            log(f"[liquidita'] errore GraphQL per {player_slug}: {data['errors']}")
-            return None, None
-        nodes = ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or []
+        nodes = _fetch_paginated_transaction_nodes(
+            RECENT_TRANSACTIONS_QUERY, {"p": player_slug},
+            lambda data: ((data.get('data') or {}).get('tokens') or {}).get('tokenPrices') or {},
+            player_slug)
     except Exception as e:
         log(f"[liquidita'] eccezione per {player_slug}: {e}")
         return None, None
