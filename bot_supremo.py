@@ -868,6 +868,29 @@ def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
         return {"errors": [{"message": f"playwright_exception: {e}"}]}
 
 
+TOKENPRICE_INTROSPECTION_QUERY = """
+query TokenPriceIntrospection {
+  __type(name: "TokenPrice") { fields { name args { name type { name kind ofType { name kind } } } } }
+}
+"""
+
+
+def _introspect_and_fix_transactions_query():
+    """Interroga lo schema reale del tipo TokenPrice per scoprire se esiste un
+    argomento di paginazione utilizzabile, invece di indovinare ancora. Chiamata
+    una sola volta all'avvio; se trova qualcosa di utilizzabile lo logga per
+    intero cosi' la query puo' essere aggiornata con certezza."""
+    try:
+        data = graphql_query(TOKENPRICE_INTROSPECTION_QUERY)
+        t = (data.get('data') or {}).get('__type')
+        if not t:
+            log(f"[introspection TokenPrice] fallita o tipo non trovato: {data}")
+            return
+        log(f"[introspection TokenPrice] campi/argomenti reali: {json.dumps(t, indent=2)}")
+    except Exception as e:
+        log(f"[introspection TokenPrice] eccezione: {e}")
+
+
 def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
     """Versione semplificata (stessa base di track.py) del client GraphQL con backoff sui
     429 -- niente rilevamento "ban a tempo fisso" qui, il volume di query di questo bot e'
@@ -1156,9 +1179,9 @@ def build_card_link(player_slug, card_slug):
 # le aste, offerta diretta, scambio"), perche' qui l'obiettivo e' misurare la liquidita'
 # generale del giocatore, non isolare un tipo di transazione specifico.
 RECENT_TRANSACTIONS_QUERY = """
-query RecentTransactionsQuery($p: String!, $n: Int!, $cursor: String) {
+query RecentTransactionsQuery($p: String!) {
   tokens {
-    tokenPrices(playerSlug: $p, rarity: limited, last: $n, before: $cursor) {
+    tokenPrices(playerSlug: $p, rarity: limited) {
       date
       deal {
         __typename
@@ -1209,9 +1232,9 @@ query RecentTransactionsQuery($p: String!, $n: Int!, $cursor: String) {
 # se il server rifiuta anche last/before con un secondo errore esplicito, logga e si
 # ferma senza inventare altri tentativi alla cieca."""
 RECENT_TRANSACTIONS_QUERY_BY_SEASON = """
-query RecentTransactionsBySeasonQuery($p: String!, $n: Int!, $cursor: String) {
+query RecentTransactionsBySeasonQuery($p: String!) {
   anyPlayer(slug: $p) {
-    tokenPrices(rarity: limited, last: $n, before: $cursor) {
+    tokenPrices(rarity: limited) {
       date
       deal {
         __typename
@@ -1325,10 +1348,7 @@ def _fetch_paginated_transaction_nodes(query, variables_base, extract_connection
     chiamante con lo stesso fallback gia' esistente.
     Log VERBOSO richiesto esplicitamente dall'utente (22/07): quanti nodi ricevuti e
     la data del piu' vecchio, per capire a colpo d'occhio la copertura reale ottenuta."""
-    variables = dict(variables_base)
-    variables['n'] = TRANSACTIONS_PAGE_SIZE
-    variables['cursor'] = None
-    data = graphql_query(query, variables)
+    data = graphql_query(query, variables_base)
     if data.get('errors'):
         log(f"[liquidita' paginazione] {player_slug}: errore GraphQL: {data['errors']}")
         return []
@@ -2961,6 +2981,7 @@ def main():
         log("STOP: self-check dello schema GraphQL fallito, esco senza avviare l'ascolto "
             "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
         return
+    _introspect_and_fix_transactions_query()
     send_startup_msg()
     commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
     commit_thread.start()
