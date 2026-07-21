@@ -580,6 +580,9 @@ def generate_markdown(data, recommendations, movers):
     md_content.append(f"**Data analisi:** {run_date}\n")
     md_content.append(f"**Run totali:** {data['metadata'].get('total_runs', 0)}\n\n")
     
+    chart_pages_url = "https://andreasalvatore93-oss.github.io/Sorare-tracker-2/mls/mls_sentiment_chart.html"
+    md_content.append(f"📊 **[Apri i grafici interattivi]({chart_pages_url})**\n\n")
+    
     # Riepilogo globale
     md_content.append("## 📈 RIEPILOGO GLOBALE\n")
     avg_price = data['summary'].get('global_average_price_eur', 0)
