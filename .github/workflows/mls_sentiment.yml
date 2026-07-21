@@ -3,10 +3,14 @@ name: MLS Sentiment Analysis Scanner
 on:
   workflow_dispatch:
     inputs:
-      listen_seconds:
-        description: "Secondi di ascolto massimi (default 3600 = 1 ora, max 3600 = 1 ora)"
+      total_minutes:
+        description: "Minuti totali di ascolto (default 60 = 1 ora)"
         required: false
-        default: "3600"
+        default: "60"
+      chunk_minutes:
+        description: "Durata di ogni singola sessione prima di salvare+committare (default 10 min -- se ti interrompi perdi al massimo questo intervallo)"
+        required: false
+        default: "10"
 
 permissions:
   contents: write
@@ -18,7 +22,7 @@ concurrency:
 jobs:
   mls-sentiment:
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,23 +35,43 @@ jobs:
       - name: Install dependencies
         run: pip install requests websocket-client curl_cffi
 
-      - name: Run MLS Sentiment Scanner
+      - name: Run MLS Sentiment Scanner in chunks (con commit protettivo tra una sessione e l'altra)
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '3600' }}
           PYTHONUNBUFFERED: "1"
         run: |
-          python mls_sentiment_scanner.py
+          TOTAL_SECONDS=$(( ${{ github.event.inputs.total_minutes || '60' }} * 60 ))
+          CHUNK_SECONDS=$(( ${{ github.event.inputs.chunk_minutes || '10' }} * 60 ))
+          ELAPSED=0
+          CHUNK_NUM=1
 
-      - name: Commit JSON sentiment analysis
-        if: always()
-        run: |
-          if [ -z "$(git status --porcelain -- mls/)" ]; then
-            echo "Nessuna modifica ai file sentiment, niente da committare."
-          else
-            git config user.name "mls-sentiment-scanner"
-            git config user.email "mls-sentiment-scanner@users.noreply.github.com"
-            git add mls/
-            git commit -m "MLS Sentiment: aggiorna analisi"
-            git push
-          fi
+          git config user.name "mls-sentiment-scanner"
+          git config user.email "mls-sentiment-scanner@users.noreply.github.com"
+
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            REMAINING=$(( TOTAL_SECONDS - ELAPSED ))
+            THIS_CHUNK=$CHUNK_SECONDS
+            if [ $REMAINING -lt $CHUNK_SECONDS ]; then
+              THIS_CHUNK=$REMAINING
+            fi
+
+            echo "=================================================================="
+            echo "SESSIONE $CHUNK_NUM — ascolto per $THIS_CHUNK secondi (elapsed finora: $ELAPSED / $TOTAL_SECONDS)"
+            echo "=================================================================="
+
+            LISTEN_SECONDS=$THIS_CHUNK python mls_sentiment_scanner.py
+
+            if [ -n "$(git status --porcelain -- mls/)" ]; then
+              git add mls/
+              git commit -m "MLS Sentiment: sessione $CHUNK_NUM (protezione dati intermedia)"
+              git push
+              echo "Commit sessione $CHUNK_NUM completato — dati al sicuro su GitHub"
+            else
+              echo "Nessuna modifica in questa sessione, niente da committare"
+            fi
+
+            ELAPSED=$(( ELAPSED + THIS_CHUNK ))
+            CHUNK_NUM=$(( CHUNK_NUM + 1 ))
+          done
+
+          echo "Tutte le sessioni completate, ascolto totale: $ELAPSED secondi"
