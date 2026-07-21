@@ -1,15 +1,15 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T10:18:35.928009Z
-**Run totali:** 2
+**Data analisi:** 2026-07-21T10:57:11.554339Z
+**Run totali:** 3
 
 📊 **[Apri i grafici interattivi](https://andreasalvatore93-oss.github.io/Sorare-tracker-2/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 9.94 EUR
-- **Trend mercato:** ➡️ STABLE (-0.0%)
+- **Prezzo medio MLS:** 9.64 EUR
+- **Trend mercato:** ➡️ STABLE (+0.0%)
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.0%)**
+**➡️ TREND GLOBALE: STABLE (+0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 MOD. OPPORTUNITÀ — Lionel Messi (Inter Miami)**
@@ -77,7 +77,7 @@ Carte trovate: 1 | Prezzo medio: 5.59 EUR | Volatilità (σ): 0.00
 Carte trovate: 2 | Prezzo medio: 7.79 EUR | Volatilità (σ): 6.80
 
 **New England Revolution**
-Carte trovate: 2 | Prezzo medio: 38.48 EUR | Volatilità (σ): 37.51
+Carte trovate: 3 | Prezzo medio: 25.95 EUR | Volatilità (σ): 34.27
 
 **FC Cincinnati**
 Carte trovate: 2 | Prezzo medio: 6.86 EUR | Volatilità (σ): 6.02
