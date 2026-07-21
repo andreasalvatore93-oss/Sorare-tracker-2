@@ -135,8 +135,8 @@ subscription OnTokenOfferUpdated {
     id
     status
     sender { slug }
-    senderSide { anyCards { slug rarityTyped sport inSeasonEligible anyPlayer { slug displayName activeClub { domesticLeague { slug } } } } amounts }
-    receiverSide { anyCards amounts }
+    senderSide { anyCards { slug rarityTyped sport inSeasonEligible anyPlayer { slug displayName activeClub { domesticLeague { slug } } } } amounts { eur eth wei } }
+    receiverSide { anyCards amounts { eur eth wei } }
   }
 }
 """
