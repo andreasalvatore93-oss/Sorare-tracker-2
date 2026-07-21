@@ -243,7 +243,8 @@ def load_sentiment_data():
         except Exception as e:
             log(f"[Errore caricamento] {e}")
     
-    # Crea struttura vuota
+    # Crea struttura vuota -- le squadre si aggiungono dinamicamente in register_price()
+    # usando gli slug REALI restituiti da Sorare, non più una lista indovinata a mano
     return {
         'metadata': {
             'first_run': datetime.datetime.utcnow().isoformat() + 'Z',
@@ -256,7 +257,7 @@ def load_sentiment_data():
             'trend_change_pct': 0,
             'top10_movers': [],
         },
-        'teams': {team_slug: {'team_name': team_name, 'players': {}} for team_slug, team_name in MLS_TEAMS.items()},
+        'teams': {},
     }
 
 
