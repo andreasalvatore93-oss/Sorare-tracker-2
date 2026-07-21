@@ -1429,7 +1429,7 @@ def process_incoming_auction(auction, eth_rate, state, source):
     # precedenti), o e' un'asta appena aperta, o e' un'asta sfuggita al safety poll per
     # altri motivi. Solo un controllo manuale (guardando Sorare nello stesso momento)
     # puo' confermare quale dei due casi sia.
-    if source == 'WS' and is_first_sighting:
+    if source == 'WS' and is_first_sighting and AUCTION_DIAGNOSTIC:
         link_hint = ""
         cards = auction.get('anyCards') or []
         for c in cards:
@@ -1576,8 +1576,6 @@ def evaluate_auction(auction, eth_rate, stats, source='WS'):
     auction_id = auction.get('id') or ''
     if not auction_id.startswith('EnglishAuction:'):
         return False
-
-    vlog(f"asta intercettata tramite {source}, id={auction_id}")
 
     cards = auction.get('anyCards') or []
     match = None
