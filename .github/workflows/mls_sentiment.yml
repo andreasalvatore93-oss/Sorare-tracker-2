@@ -1,0 +1,53 @@
+name: MLS Sentiment Analysis Scanner
+
+on:
+  workflow_dispatch:
+    inputs:
+      listen_seconds:
+        description: "Secondi di ascolto massimi (default 600 = 10 minuti, max 3600 = 1 ora)"
+        required: false
+        default: "600"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mls-sentiment-scanner
+  cancel-in-progress: false
+
+jobs:
+  mls-sentiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests websocket-client curl_cffi
+
+      - name: Run MLS Sentiment Scanner
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '600' }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python mls_sentiment_scanner.py
+
+      - name: Commit JSON sentiment analysis
+        if: always()
+        run: |
+          if [ -z "$(git status --porcelain -- mls/mls_sentiment_analysis.json)" ]; then
+            echo "Nessuna modifica al JSON sentiment, niente da committare."
+          else
+            git config user.name "mls-sentiment-scanner"
+            git config user.email "mls-sentiment-scanner@users.noreply.github.com"
+            git add mls/mls_sentiment_analysis.json mls/mls_sentiment_analysis.md mls/mls_sentiment_chart.html
+            git commit -m "MLS Sentiment: aggiorna analisi"
+            git push
+          fi
