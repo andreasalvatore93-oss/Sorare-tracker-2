@@ -296,8 +296,6 @@ def run_listener(eth_rate, data, listen_seconds):
     stats = {"received": 0, "processed": 0, "prices_found": 0}
     ws_container = [None]  # Contenitore per WebSocket (per chiuderlo dal timer)
     seen_offer_status = set()
-    last_triggered = {}  # player_slug -> timestamp ultima query trigger (anti rate-limit)
-    TRIGGER_COOLDOWN_SECONDS = 20
     
     def register_price(player_slug, player_name, player, price_eur, source='live'):
         """Registra un prezzo in_season nella struttura dati. source = 'live' o 'trigger'."""
@@ -413,12 +411,6 @@ def run_listener(eth_rate, data, listen_seconds):
                 # il minimo in_season disponibile in questo momento per lo stesso giocatore.
                 if not card.get('inSeasonEligible'):
                     stats["classic_seen"] = stats.get("classic_seen", 0) + 1
-                    
-                    now = time.time()
-                    last_time = last_triggered.get(player_slug, 0)
-                    if now - last_time < TRIGGER_COOLDOWN_SECONDS:
-                        continue
-                    last_triggered[player_slug] = now
                     
                     trigger_price = fetch_min_in_season_price(player_slug, eth_rate)
                     if trigger_price is not None:
