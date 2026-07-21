@@ -1235,7 +1235,7 @@ query RecentTransactionsBySeasonQuery($p: String!) {
 # scartare il caso).
 MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '4'))
 RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '7'))
-MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '3'))
+MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '4'))
 TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
 
