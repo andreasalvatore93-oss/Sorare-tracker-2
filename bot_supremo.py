@@ -708,15 +708,20 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
-GRAPHQL_MIN_INTERVAL_SECONDS = 0.35
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = 0.05
+GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = 0.35
+GRAPHQL_429_COOLDOWN_SECONDS = 30.0
 _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
+_graphql_last_429_ts = [0.0]
 
 
 def _graphql_throttle():
     with _graphql_throttle_lock:
         now = time.time()
-        wait = GRAPHQL_MIN_INTERVAL_SECONDS - (now - _graphql_last_call_ts[0])
+        recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
+        min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
+        wait = min_interval - (now - _graphql_last_call_ts[0])
         if wait > 0:
             time.sleep(wait)
         _graphql_last_call_ts[0] = time.time()
@@ -906,6 +911,7 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
         else:
             r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
+            _graphql_last_429_ts[0] = time.time()
             wait_seconds = min((2 ** attempt) * 2, 8.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s...")
@@ -1319,9 +1325,6 @@ query ExchangeRateQuery {
 """
 
 
-_exchange_rate_id_cache = {}
-
-
 def get_exchange_rate_id():
     """Recupera l'id del tasso di cambio corrente (serve a PrepareAcceptOfferMutation/
     PrepareOfferMutation), stessa query ExchangeRateQuery vista nel flusso reale di
@@ -1335,13 +1338,9 @@ def get_exchange_rate_id():
     senza contattare di nuovo il server. Elimina una chiamata di rete intera dal
     percorso critico di ogni acquisto/offerta.
     """
-    if 'id' in _exchange_rate_id_cache:
-        return _exchange_rate_id_cache['id']
     try:
         data = graphql_query(EXCHANGE_RATE_QUERY)
         rate_id = (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
-        if rate_id:
-            _exchange_rate_id_cache['id'] = rate_id
         return rate_id
     except Exception as e:
         log(f"[prepare accept] errore lettura tasso di cambio: {e}")
@@ -2784,15 +2783,10 @@ def main():
         # parte direttamente dal passo di firma, senza aspettarle. Nessuna modifica
         # alla logica di acquisto/decisione -- solo l'ordine in cui il lavoro
         # (comunque necessario) viene svolto.
-        log("[precarico velocita'] recupero anticipato exchange_rate_id e chiave "
-            "cifrata del wallet...")
-        pre_rate_id = get_exchange_rate_id()
-        if pre_rate_id:
-            log(f"[precarico velocita'] exchange_rate_id gia' in cache: {pre_rate_id}")
-        else:
-            log("[precarico velocita'] ATTENZIONE: precarico exchange_rate_id fallito, "
-                "verra' ritentato al primo acquisto/offerta reale (nessun problema "
-                "bloccante, solo un millisecondo in piu' sulla prima occasione)")
+        log("[precarico velocita'] recupero anticipato chiave cifrata del wallet...")
+        # NOTA 21/07: exchange_rate_id NON viene piu' precaricato/cachato -- causava
+        # 'exchange rate has expired' riusando lo stesso id gia' consumato su piu'
+        # acquisti. Ora richiesto fresco ad ogni prepare_accept_offer.
         if SORARE_WALLET_PASSWORD:
             pre_key = fetch_encrypted_private_key()
             if pre_key:
