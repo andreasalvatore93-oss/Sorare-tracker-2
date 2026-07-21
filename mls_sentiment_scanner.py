@@ -140,7 +140,7 @@ subscription OnTokenOfferUpdated {
         slug
         rarityTyped
         sport
-        anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
+        anyPlayer { slug displayName activeClub { slug domesticLeague { slug } } }
         sportSeason { name }
         inSeasonEligible
       }
@@ -299,9 +299,11 @@ def run_listener(eth_rate, data, listen_seconds):
     
     def register_price(player_slug, player_name, player, price_eur, source='live'):
         """Registra un prezzo in_season nella struttura dati. source = 'live' o 'trigger'."""
+        club_slug = (player.get('activeClub') or {}).get('slug')
+        log(f"[DEBUG raw] {player_name}: activeClub completo = {player.get('activeClub')}")
         team_slug = ''
         for ts, tn in MLS_TEAMS.items():
-            if player.get('activeClub', {}).get('slug') == ts:
+            if club_slug == ts:
                 team_slug = ts
                 break
         
