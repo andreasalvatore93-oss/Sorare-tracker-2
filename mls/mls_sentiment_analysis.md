@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-21T21:16:15.270302Z
-**Run totali:** 7
+**Data analisi:** 2026-07-21T21:18:16.831683Z
+**Run totali:** 8
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 10.48 EUR
-- **Trend mercato:** 📉 STRONG_DESCENDING (-5.9%)
+- **Prezzo medio MLS:** 9.77 EUR
+- **Trend mercato:** 📉 STRONG_DESCENDING (-6.8%)
 - **Sentiment:** 🟠 In Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: STRONG_DESCENDING (-5.9%)**
+**📉 TREND GLOBALE: STRONG_DESCENDING (-6.8%)**
 Il mercato sta crollando. Eccellente momento di accumulo. Valuta le carte con sconto >15% dalla media storica.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
@@ -41,16 +41,16 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 10. Omar Marquez (Real Salt Lake) — **0.0%** vs media (0.62 EUR vs 0.62 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
-2. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
-3. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
-4. Carles Gil (New England Revolution) — **+0.0%** vs media (58.50 EUR vs 58.50 EUR)
-5. Lucas Hoyos (Atlanta United) — **+0.0%** vs media (2.85 EUR vs 2.85 EUR)
-6. Ethan Horvath (New York Red Bulls) — **+0.0%** vs media (7.58 EUR vs 7.58 EUR)
-7. Mohammed Sofo (New York Red Bulls) — **+0.0%** vs media (0.84 EUR vs 0.84 EUR)
-8. Adri Mehmeti (New York Red Bulls) — **+0.0%** vs media (4.35 EUR vs 4.35 EUR)
-9. Paxten Aaronson (Colorado Rapids) — **+0.0%** vs media (9.93 EUR vs 9.93 EUR)
-10. Nicholas Hansen (Colorado Rapids) — **+0.0%** vs media (5.50 EUR vs 5.50 EUR)
+1. Thomas Guillier (CF Montreal) — **+0.0%** vs media (7.59 EUR vs 7.59 EUR)
+2. Antônio Carlos (Houston Dynamo FC) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
+3. Juan Mosquera (Portland Timbers) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
+4. Diego Chará (Portland Timbers) — **+0.0%** vs media (0.67 EUR vs 0.67 EUR)
+5. Donovan Parisian (New England Revolution) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
+6. Carles Gil (New England Revolution) — **+0.0%** vs media (58.50 EUR vs 58.50 EUR)
+7. Lucas Hoyos (Atlanta United) — **+0.0%** vs media (2.85 EUR vs 2.85 EUR)
+8. Ethan Horvath (New York Red Bulls) — **+0.0%** vs media (7.58 EUR vs 7.58 EUR)
+9. Mohammed Sofo (New York Red Bulls) — **+0.0%** vs media (0.84 EUR vs 0.84 EUR)
+10. Adri Mehmeti (New York Red Bulls) — **+0.0%** vs media (4.35 EUR vs 4.35 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -63,16 +63,16 @@ Carte trovate: 3 | Prezzo medio: 10.41 EUR | Volatilità (σ): 10.43
 Carte trovate: 3 | Prezzo medio: 5.99 EUR | Volatilità (σ): 4.71
 
 **San Jose Earthquakes**
-Carte trovate: 2 | Prezzo medio: 11.48 EUR | Volatilità (σ): 9.92
+Carte trovate: 3 | Prezzo medio: 7.95 EUR | Volatilità (σ): 9.31
 
 **Columbus Crew**
 Carte trovate: 3 | Prezzo medio: 5.73 EUR | Volatilità (σ): 5.19
 
 **Charlotte FC**
-Carte trovate: 5 | Prezzo medio: 13.63 EUR | Volatilità (σ): 10.76
+Carte trovate: 6 | Prezzo medio: 11.77 EUR | Volatilità (σ): 10.64
 
 **St. Louis City SC**
-Carte trovate: 4 | Prezzo medio: 5.81 EUR | Volatilità (σ): 2.58
+Carte trovate: 5 | Prezzo medio: 5.36 EUR | Volatilità (σ): 2.45
 
 **Chicago Fire FC**
 Carte trovate: 5 | Prezzo medio: 15.68 EUR | Volatilità (σ): 17.14
@@ -81,7 +81,7 @@ Carte trovate: 5 | Prezzo medio: 15.68 EUR | Volatilità (σ): 17.14
 Carte trovate: 4 | Prezzo medio: 8.20 EUR | Volatilità (σ): 7.19
 
 **FC Cincinnati**
-Carte trovate: 3 | Prezzo medio: 25.48 EUR | Volatilità (σ): 42.02
+Carte trovate: 4 | Prezzo medio: 19.80 EUR | Volatilità (σ): 36.14
 
 **Minnesota United**
 Carte trovate: 2 | Prezzo medio: 4.36 EUR | Volatilità (σ): 2.11
@@ -99,7 +99,7 @@ Carte trovate: 2 | Prezzo medio: 3.75 EUR | Volatilità (σ): 4.46
 Carte trovate: 1 | Prezzo medio: 0.98 EUR | Volatilità (σ): 0.00
 
 **Vancouver Whitecaps FC**
-Carte trovate: 3 | Prezzo medio: 9.09 EUR | Volatilità (σ): 10.40
+Carte trovate: 4 | Prezzo medio: 7.14 EUR | Volatilità (σ): 9.34
 
 **Philadelphia Union**
 Carte trovate: 3 | Prezzo medio: 6.19 EUR | Volatilità (σ): 1.63
@@ -121,4 +121,10 @@ Carte trovate: 2 | Prezzo medio: 30.85 EUR | Volatilità (σ): 39.10
 
 **Portland Timbers**
 Carte trovate: 2 | Prezzo medio: 0.96 EUR | Volatilità (σ): 0.41
+
+**Houston Dynamo FC**
+Carte trovate: 1 | Prezzo medio: 2.00 EUR | Volatilità (σ): 0.00
+
+**CF Montreal**
+Carte trovate: 1 | Prezzo medio: 7.59 EUR | Volatilità (σ): 0.00
 
