@@ -105,8 +105,11 @@ PLAYER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_D
 PLAYER_BLACKLIST_DEFAULT_365_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_365_DAYS', '365'))
 THIN_MARKET_DEFAULT_DAYS = float(os.environ.get('THIN_MARKET_DEFAULT_DAYS', '2'))
 COOLDOWN_ACQUISTO_DEFAULT_DAYS = float(os.environ.get('COOLDOWN_ACQUISTO_DEFAULT_DAYS', '1'))
+# FIX 21/07 (richiesta esplicita utente): durata default per la blacklist CAMPIONATI --
+# 15 giorni, rinnovabile/modificabile a mano nel file come tutte le altre sezioni.
+LEAGUE_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_BLACKLIST_DEFAULT_DAYS', '15'))
 
-_LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto')
+_LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto', 'campionato')
 
 # Vecchi file, letti SOLO per la migrazione automatica una tantum (prima run dopo
 # l'aggiornamento). Una volta migrati in sorare_lista_nera.txt possono essere eliminati
@@ -143,8 +146,16 @@ _LISTA_NERA_INTESTAZIONI = {
         "recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare "
         "di comprare/offrire su un mercato poco liquido."
     ),
+    'campionato': (
+        "CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), "
+        "SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla "
+        "con le altre. Ogni carta di un giocatore attivo in uno di questi campionati "
+        "viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato "
+        "PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default "
+        "15 giorni, rinnovabile o modificabile a mano come le altre sezioni."
+    ),
 }
-_LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market')
+_LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market', 'campionato')
 
 
 def _durata_a_leggibile(delta_secondi):
@@ -465,6 +476,7 @@ BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
 
 BLACKLISTED_PLAYER_SLUGS = _SetTipoLive('giocatore')
 BLACKLISTED_MANAGER_SLUGS = _SetTipoLive('manager')
+BLACKLISTED_LEAGUE_SLUGS = _SetTipoLive('campionato')
 # Alias per compatibilita' col nome usato nel codice AutoBuy originale.
 BLACKLISTED_AUTOBUY_MANAGER_SLUGS = BLACKLISTED_MANAGER_SLUGS
 
@@ -483,6 +495,24 @@ if _extra_blacklisted_managers.strip():
         _s = _s.strip().lower()
         if _s:
             _lista_nera_upsert('manager', _s, MANAGER_BLACKLIST_DEFAULT_DAYS)
+
+# FIX 21/07 (richiesta esplicita utente): stesso pattern per campionati -- lo
+# slug del primo campionato da blacklistare (es. 'premiership-gb-sct', il
+# campionato scozzese) viene passato da workflow_dispatch e scritto nella
+# sezione '## campionato' del file unico, editabile a mano in seguito come
+# tutte le altre sezioni.
+_extra_blacklisted_leagues = os.environ.get('BLACKLISTED_LEAGUE_SLUGS', '')
+if _extra_blacklisted_leagues.strip():
+    for _s in _extra_blacklisted_leagues.split(','):
+        _s = _s.strip().lower()
+        if _s:
+            _lista_nera_upsert('campionato', _s, LEAGUE_BLACKLIST_DEFAULT_DAYS)
+
+# Log verboso opzionale per il filtro campionati (richiesta esplicita utente per il
+# primo test) -- se attivo, logga OGNI carta scartata per campionato blacklistato con
+# dettagli; se spento (default), il filtro funziona comunque ma resta silenzioso per
+# non riempire i log di rumore una volta che il comportamento e' stato verificato.
+LEAGUE_BLACKLIST_VERBOSE_LOG = os.environ.get('LEAGUE_BLACKLIST_VERBOSE_LOG', 'no').strip().lower() in ('si', 'true', '1', 'yes')
 
 # --- Parametri regolabili ---
 AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1'))
@@ -2283,6 +2313,16 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     if player_slug and player_slug.lower() in BLACKLISTED_PLAYER_SLUGS:
         log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
+        return False
+
+    # FIX 21/07 (richiesta esplicita utente): filtro campionato, controllato IL PIU'
+    # PRESTO POSSIBILE (subito dopo i check istantanei in RAM, prima di qualunque I/O
+    # su file/rete) per risparmiare secondi preziosi su carte che verranno comunque
+    # ignorate -- niente query di liquidita', niente fetch prezzi, niente altro lavoro
+    # sprecato su un campionato che non vogliamo toccare.
+    if league_slug and league_slug.lower() in BLACKLISTED_LEAGUE_SLUGS:
+        if LEAGUE_BLACKLIST_VERBOSE_LOG:
+            log(f"{player_name}: scarto -- campionato blacklistato ({league_slug})")
         return False
 
     if player_slug and is_player_in_cooldown(player_slug, is_in_season):
