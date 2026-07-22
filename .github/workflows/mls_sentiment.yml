@@ -1,4 +1,4 @@
-name: MLS Sentiment Analysis Scanner
+name: Multi-League Sentiment Analysis Scanner
 
 on:
   workflow_dispatch:
@@ -16,11 +16,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: mls-sentiment-scanner
+  group: multi-league-sentiment-scanner
   cancel-in-progress: false
 
 jobs:
-  mls-sentiment:
+  sentiment-scanner:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -35,18 +35,24 @@ jobs:
       - name: Install dependencies
         run: pip install requests websocket-client curl_cffi
 
-      - name: Run MLS Sentiment Scanner in chunks (con commit protettivo tra una sessione e l'altra)
+      - name: Run Sentiment Scanner in chunks (con commit protettivo tra una sessione e l'altra)
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           PYTHONUNBUFFERED: "1"
         run: |
-          TOTAL_SECONDS=$(( ${{ github.event.inputs.total_minutes || '60' }} * 60 ))
-          CHUNK_SECONDS=$(( ${{ github.event.inputs.chunk_minutes || '10' }} * 60 ))
+          TOTAL_SECONDS=$(( ${{ github.event.inputs.total_minutes || '30' }} * 60 ))
+          CHUNK_SECONDS=$(( ${{ github.event.inputs.chunk_minutes || '2' }} * 60 ))
           ELAPSED=0
           CHUNK_NUM=1
 
-          git config user.name "mls-sentiment-scanner"
-          git config user.email "mls-sentiment-scanner@users.noreply.github.com"
+          git config user.name "sentiment-scanner"
+          git config user.email "sentiment-scanner@users.noreply.github.com"
+
+          # Cartelle di output derivate dinamicamente dalla whitelist (seconda colonna
+          # di ogni riga non-commento) -- aggiungere un campionato alla whitelist non
+          # richiede toccare questo workflow
+          OUTPUT_DIRS=$(grep -v '^#' scanner_campionati_whitelist.txt | grep -v '^\s*$' | cut -d':' -f2 | tr '\n' ' ')
+          echo "Cartelle di output tracciate: $OUTPUT_DIRS"
 
           while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
             REMAINING=$(( TOTAL_SECONDS - ELAPSED ))
@@ -61,9 +67,9 @@ jobs:
 
             LISTEN_SECONDS=$THIS_CHUNK python mls_sentiment_scanner.py
 
-            if [ -n "$(git status --porcelain -- mls/)" ]; then
-              git add mls/
-              git commit -m "MLS Sentiment: sessione $CHUNK_NUM (protezione dati intermedia)"
+            if [ -n "$(git status --porcelain -- $OUTPUT_DIRS)" ]; then
+              git add $OUTPUT_DIRS
+              git commit -m "Sentiment Scanner: sessione $CHUNK_NUM (protezione dati intermedia)"
               git pull --rebase --autostash origin main
               git push
               echo "Commit sessione $CHUNK_NUM completato — dati al sicuro su GitHub"
