@@ -1,17 +1,17 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T17:43:30.869699Z
-**Run totali:** 10
+**Data analisi:** 2026-07-22T17:53:32.796509Z
+**Run totali:** 11
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 3.35 EUR
-- **Trend mercato:** 📉 STRONG_DESCENDING (-12.2%)
-- **Sentiment:** 🟥 Forte Ribasso
+- **Prezzo medio K League 1:** 3.30 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.4%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: STRONG_DESCENDING (-12.2%)**
-Il mercato sta crollando. Eccellente momento di accumulo. Valuta le carte con sconto >15% dalla media storica.
+**📉 TREND GLOBALE: DESCENDING (-1.4%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 MOD. OPPORTUNITÀ — Lee Ho-Jae (Pohang Steelers FC)**
 Prezzo: **4.00 EUR** | Media: **4.35 EUR** | Sconto: **-7.9%**
@@ -35,10 +35,10 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 4. Jo Hyeon-Woo (Ulsan Hyundai Horang-i) — **-4.7%** vs media (3.09 EUR vs 3.24 EUR)
 5. Maeng Seong-Ung (Jeonbuk Hyundai Motors FC) — **-3.2%** vs media (1.68 EUR vs 1.73 EUR)
 6. Marcão (Ulsan Hyundai Horang-i) — **-2.3%** vs media (1.52 EUR vs 1.56 EUR)
-7. Lim Jun-Hwi (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (0.87 EUR vs 0.87 EUR)
-8. Seo Jeong-Hyeok (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (0.94 EUR vs 0.94 EUR)
-9. SONG BUMKEUN (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (9.20 EUR vs 9.20 EUR)
-10. Cho Wi-Je (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (4.69 EUR vs 4.69 EUR)
+7. Hwang In-Jae (Pohang Steelers FC) — **-0.4%** vs media (2.88 EUR vs 2.89 EUR)
+8. Lim Jun-Hwi (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (0.87 EUR vs 0.87 EUR)
+9. Seo Jeong-Hyeok (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (0.94 EUR vs 0.94 EUR)
+10. SONG BUMKEUN (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (9.20 EUR vs 9.20 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Uh Dam (Bucheon FC 1995) — **+0.0%** vs media (2.36 EUR vs 2.36 EUR)
@@ -60,7 +60,7 @@ Carte trovate: 9 | Prezzo medio: 3.13 EUR | Volatilità (σ): 2.90
 Carte trovate: 2 | Prezzo medio: 8.07 EUR | Volatilità (σ): 9.79
 
 **Pohang Steelers FC**
-Carte trovate: 5 | Prezzo medio: 2.58 EUR | Volatilità (σ): 1.04
+Carte trovate: 6 | Prezzo medio: 2.31 EUR | Volatilità (σ): 1.13
 
 **Ulsan Hyundai Horang-i**
 Carte trovate: 8 | Prezzo medio: 2.87 EUR | Volatilità (σ): 2.98

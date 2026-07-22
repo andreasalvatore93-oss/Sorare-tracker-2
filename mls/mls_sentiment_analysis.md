@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T17:43:30.855395Z
-**Run totali:** 103
+**Data analisi:** 2026-07-22T17:53:32.782276Z
+**Run totali:** 104
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.79 EUR
-- **Trend mercato:** ➡️ STABLE (+0.6%)
+- **Prezzo medio MLS:** 5.81 EUR
+- **Trend mercato:** ➡️ STABLE (+0.4%)
 - **Sentiment:** 🟩 Leggero Rialzo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.6%)**
+**➡️ TREND GLOBALE: STABLE (+0.4%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
@@ -120,7 +120,7 @@ Carte trovate: 14 | Prezzo medio: 1.35 EUR | Volatilità (σ): 1.02
 Carte trovate: 21 | Prezzo medio: 5.13 EUR | Volatilità (σ): 12.15
 
 **Portland Timbers**
-Carte trovate: 20 | Prezzo medio: 3.20 EUR | Volatilità (σ): 3.84
+Carte trovate: 20 | Prezzo medio: 2.76 EUR | Volatilità (σ): 3.16
 
 **Houston Dynamo FC**
 Carte trovate: 18 | Prezzo medio: 5.48 EUR | Volatilità (σ): 12.00
