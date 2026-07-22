@@ -1,44 +1,44 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T13:20:15.471164Z
-**Run totali:** 63
+**Data analisi:** 2026-07-22T13:22:17.097269Z
+**Run totali:** 64
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.96 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.3%)
-- **Sentiment:** 🟨 Quasi Fermo
+- **Prezzo medio MLS:** 6.97 EUR
+- **Trend mercato:** ➡️ STABLE (+0.1%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.3%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**➡️ TREND GLOBALE: STABLE (+0.1%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — G. Guerra (Portland Timbers)**
 Prezzo: **0.50 EUR** | Media: **1.75 EUR** | Sconto: **-71.4%**
 Liquidità: **2 occorrenze** | Volatilità: 1.77
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
-**🥈 FORTE OPPORTUNITÀ — Aníbal Godoy (San Diego FC)**
-Prezzo: **0.98 EUR** | Media: **1.88 EUR** | Sconto: **-47.8%**
-Liquidità: **3 occorrenze** | Volatilità: 1.49
+**🥈 FORTE OPPORTUNITÀ — Allan Oyirwoth (New England Revolution)**
+Prezzo: **0.50 EUR** | Media: **1.58 EUR** | Sconto: **-68.4%**
+Liquidità: **2 occorrenze** | Volatilità: 1.53
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
-**🥉 FORTE OPPORTUNITÀ — Ethan Kohler (New England Revolution)**
-Prezzo: **1.13 EUR** | Media: **1.83 EUR** | Sconto: **-38.2%**
-Liquidità: **4 occorrenze** | Volatilità: 1.18
+**🥉 FORTE OPPORTUNITÀ — Mathieu Choinière (Los Angeles FC)**
+Prezzo: **2.02 EUR** | Media: **3.91 EUR** | Sconto: **-48.3%**
+Liquidità: **2 occorrenze** | Volatilità: 2.67
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬆️ TOP 10 RIALZI (Stanno CALANDO di prezzo)
 1. G. Guerra (Portland Timbers) — **-71.4%** vs media (0.50 EUR vs 1.75 EUR)
-2. Aníbal Godoy (San Diego FC) — **-47.8%** vs media (0.98 EUR vs 1.88 EUR)
-3. Ethan Kohler (New England Revolution) — **-38.2%** vs media (1.13 EUR vs 1.83 EUR)
-4. Viktor Radojević (Chicago Fire FC) — **-35.1%** vs media (0.50 EUR vs 0.77 EUR)
-5. Célio Pompeu (St. Louis City SC) — **-31.4%** vs media (0.50 EUR vs 0.73 EUR)
-6. Jackson Yueill (New England Revolution) — **-31.1%** vs media (0.62 EUR vs 0.90 EUR)
-7. Lucas Halter (Houston Dynamo FC) — **-30.6%** vs media (0.84 EUR vs 1.21 EUR)
-8. Andre Blake (Philadelphia Union) — **-27.8%** vs media (7.93 EUR vs 10.98 EUR)
-9. Philip Zinckernagel (Chicago Fire FC) — **-27.1%** vs media (42.98 EUR vs 58.99 EUR)
-10. Ben Lundt (St. Louis City SC) — **-24.7%** vs media (1.84 EUR vs 2.44 EUR)
+2. Allan Oyirwoth (New England Revolution) — **-68.4%** vs media (0.50 EUR vs 1.58 EUR)
+3. Mathieu Choinière (Los Angeles FC) — **-48.3%** vs media (2.02 EUR vs 3.91 EUR)
+4. Aníbal Godoy (San Diego FC) — **-47.8%** vs media (0.98 EUR vs 1.88 EUR)
+5. Ethan Kohler (New England Revolution) — **-38.2%** vs media (1.13 EUR vs 1.83 EUR)
+6. Viktor Radojević (Chicago Fire FC) — **-35.1%** vs media (0.50 EUR vs 0.77 EUR)
+7. Célio Pompeu (St. Louis City SC) — **-31.4%** vs media (0.50 EUR vs 0.73 EUR)
+8. Jackson Yueill (New England Revolution) — **-31.1%** vs media (0.62 EUR vs 0.90 EUR)
+9. Lucas Halter (Houston Dynamo FC) — **-30.6%** vs media (0.84 EUR vs 1.21 EUR)
+10. Andre Blake (Philadelphia Union) — **-27.8%** vs media (7.93 EUR vs 10.98 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Jayden Reid (Sporting Kansas City ) — **+0.0%** vs media (1.12 EUR vs 1.12 EUR)
@@ -75,7 +75,7 @@ Carte trovate: 10 | Prezzo medio: 8.08 EUR | Volatilità (σ): 9.10
 Carte trovate: 16 | Prezzo medio: 2.55 EUR | Volatilità (σ): 2.36
 
 **Chicago Fire FC**
-Carte trovate: 12 | Prezzo medio: 8.32 EUR | Volatilità (σ): 12.09
+Carte trovate: 12 | Prezzo medio: 8.29 EUR | Volatilità (σ): 12.07
 
 **Inter Miami CF**
 Carte trovate: 9 | Prezzo medio: 11.64 EUR | Volatilità (σ): 17.74
