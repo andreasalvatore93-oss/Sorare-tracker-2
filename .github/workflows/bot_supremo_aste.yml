@@ -20,9 +20,9 @@ on:
         required: false
         default: "10"
       max_bids_per_run:
-        description: "Numero massimo di TENTATIVI di bid reale per l'intera run (oltre, solo diagnostica) -- fase di test, meglio basso"
+        description: "Numero massimo di TENTATIVI di bid reale per l'intera run -- raggiunto il tetto (o se un'asta fallisce per fondi insufficienti), il bot si FERMA DEFINITIVAMENTE, non solo i bid"
         required: false
-        default: "1"
+        default: "10"
       cycle_phase_seconds:
         description: "Durata in secondi di ciascuna delle 3 fasi del ciclo (NUOVE / ZEROBID / SCADENZA)"
         required: false
@@ -50,7 +50,7 @@ on:
       auction_live_mode:
         description: "'si' = BID REALI ATTIVI (non ritirabili). 'no' = solo diagnostica, nessun bid reale."
         required: false
-        default: "no"
+        default: "si"
       auction_diagnostic:
         description: "Log extra di diagnostica, di default spento"
         required: false
@@ -103,14 +103,14 @@ jobs:
           LAST_AUCTION_REFERENCE_WINDOW_HOURS: ${{ github.event.inputs.last_auction_reference_window_hours || '24' }}
           AUCTION_COOLDOWN_HOURS: ${{ github.event.inputs.auction_cooldown_hours || '12' }}
           MAX_BID_PER_AUCTION_EUR: ${{ github.event.inputs.max_bid_per_auction_eur || '10' }}
-          MAX_BIDS_PER_RUN: ${{ github.event.inputs.max_bids_per_run || '1' }}
+          MAX_BIDS_PER_RUN: ${{ github.event.inputs.max_bids_per_run || '10' }}
           CYCLE_PHASE_SECONDS: ${{ github.event.inputs.cycle_phase_seconds || '20' }}
           CYCLE_PAUSE_SECONDS: ${{ github.event.inputs.cycle_pause_seconds || '20' }}
           SCADENZA_TOP_N: ${{ github.event.inputs.scadenza_top_n || '5' }}
           ALERT_FLUSH_INTERVAL_SECONDS: ${{ github.event.inputs.alert_flush_interval_seconds || '30' }}
           REFERENCE_PRICE_CACHE_TTL_SECONDS: ${{ github.event.inputs.reference_price_cache_ttl_seconds || '300' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
-          AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'no' }}
+          AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'si' }}
           AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
           TEST_ONLY_ZERO_BID: ${{ github.event.inputs.test_only_zero_bid || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
