@@ -34,10 +34,6 @@ on:
         description: "Ogni quanti secondi il bot fa commit+push della lista nera DURANTE la run (protezione da interruzioni) -- default 300 = 5 minuti"
         required: false
         default: "300"
-      liquidity_diagnostic:
-        description: "'si' = log dettagliato diagnostico sul conteggio transazioni (nodi ricevuti, scarti per tipo/data/stagione) per capire falsi 'mercato sottile'. 'no' = normale."
-        required: false
-        default: "no"
       rate_limit_notify_cooldown_seconds:
         description: "Ogni quanti secondi (minimo) notificare su Telegram un HTTP 429 -- una raffica di piu' 429 nella stessa finestra manda UN SOLO avviso"
         required: false
@@ -102,10 +98,6 @@ on:
         description: "Durata dell'offerta MakeOffer in giorni interi, 1-7"
         required: false
         default: "1"
-      max_pending_offers:
-        description: "Tetto massimo di offerte MakeOffer pendenti create in questa esecuzione"
-        required: false
-        default: "20"
 permissions:
   contents: write
 concurrency:
@@ -149,7 +141,7 @@ jobs:
           AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '26' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
-          LIQUIDITY_DIAGNOSTIC: ${{ github.event.inputs.liquidity_diagnostic || 'no' }}
+          LIQUIDITY_DIAGNOSTIC: "no"
           RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS: ${{ github.event.inputs.rate_limit_notify_cooldown_seconds || '300' }}
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '3' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
@@ -167,7 +159,7 @@ jobs:
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
           OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '25' }}
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
-          MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '20' }}
+          MAX_PENDING_OFFERS: "20"
         run: |
           set -o pipefail
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
