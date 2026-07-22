@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       auction_discount_percent:
-        description: "Sconto sotto il minimo di mercato per calcolare il tetto del bid, in % (es. 35 = 35%)"
+        description: "Sconto sotto il minimo di mercato per calcolare il tetto del bid, in % (es. 30 = 30%)"
         required: false
-        default: "35"
+        default: "30"
       last_auction_reference_window_hours:
         description: "Finestra in ore entro cui un'asta CONCLUSA vale ancora come riferimento di prezzo"
         required: false
@@ -39,6 +39,10 @@ on:
         description: "Ogni quanti secondi mandare le notifiche diagnostiche accumulate, anche a META' fase (i bid REALI notificano sempre subito, non aspettano mai)"
         required: false
         default: "30"
+      reference_price_cache_ttl_seconds:
+        description: "Per quanti secondi riusare i riferimenti di prezzo (vendita diretta live + ultima asta) gia' calcolati per un giocatore, invece di rifare le query -- riduce il carico su Sorare (protezione 429)"
+        required: false
+        default: "300"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -95,7 +99,7 @@ jobs:
           AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
           AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
-          AUCTION_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.auction_discount_percent || '35' }}
+          AUCTION_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.auction_discount_percent || '30' }}
           LAST_AUCTION_REFERENCE_WINDOW_HOURS: ${{ github.event.inputs.last_auction_reference_window_hours || '24' }}
           AUCTION_COOLDOWN_HOURS: ${{ github.event.inputs.auction_cooldown_hours || '12' }}
           MAX_BID_PER_AUCTION_EUR: ${{ github.event.inputs.max_bid_per_auction_eur || '10' }}
@@ -104,6 +108,7 @@ jobs:
           CYCLE_PAUSE_SECONDS: ${{ github.event.inputs.cycle_pause_seconds || '20' }}
           SCADENZA_TOP_N: ${{ github.event.inputs.scadenza_top_n || '5' }}
           ALERT_FLUSH_INTERVAL_SECONDS: ${{ github.event.inputs.alert_flush_interval_seconds || '30' }}
+          REFERENCE_PRICE_CACHE_TTL_SECONDS: ${{ github.event.inputs.reference_price_cache_ttl_seconds || '300' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'no' }}
           AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
