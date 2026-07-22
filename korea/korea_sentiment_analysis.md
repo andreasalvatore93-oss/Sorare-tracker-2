@@ -1,17 +1,17 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T17:23:26.826214Z
-**Run totali:** 8
+**Data analisi:** 2026-07-22T17:33:28.814845Z
+**Run totali:** 9
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 3.97 EUR
-- **Trend mercato:** 📈 STRONG_ASCENDING (+64.1%)
-- **Sentiment:** 🌋 Fuori Scala
+- **Prezzo medio K League 1:** 3.82 EUR
+- **Trend mercato:** 📉 DESCENDING (-3.7%)
+- **Sentiment:** 🟡 Leggero Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: STRONG_ASCENDING (+64.1%)**
-I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
+**📉 TREND GLOBALE: DESCENDING (-3.7%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 MOD. OPPORTUNITÀ — Lee Ho-Jae (Pohang Steelers FC)**
 Prezzo: **4.00 EUR** | Media: **4.35 EUR** | Sconto: **-7.9%**
@@ -36,25 +36,25 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 5. Lim Jun-Hwi (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (0.87 EUR vs 0.87 EUR)
 6. Seo Jeong-Hyeok (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (0.94 EUR vs 0.94 EUR)
 7. SONG BUMKEUN (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (9.20 EUR vs 9.20 EUR)
-8. Choi Gyu-Hyeon (FC Anyang) — **0.0%** vs media (1.15 EUR vs 1.15 EUR)
-9. Matheus Oliveira (FC Anyang) — **0.0%** vs media (15.00 EUR vs 15.00 EUR)
-10. Hwang In-Jae (Pohang Steelers FC) — **0.0%** vs media (2.91 EUR vs 2.91 EUR)
+8. Cho Wi-Je (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (4.69 EUR vs 4.69 EUR)
+9. KIM JIN-GYU (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (5.95 EUR vs 5.95 EUR)
+10. Tiago Orobó (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (0.81 EUR vs 0.81 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Kim Hyeon-Ug (Daejeon Citizen FC) — **+0.0%** vs media (0.53 EUR vs 0.53 EUR)
-2. Cheon Seong-Hoon (FC Seoul) — **+0.0%** vs media (7.83 EUR vs 7.83 EUR)
-3. Kim Sin-Jin (Jeju SK FC) — **+0.0%** vs media (1.00 EUR vs 1.00 EUR)
-4. An Chan-Gi (Jeju SK FC) — **+0.0%** vs media (0.68 EUR vs 0.68 EUR)
-5. Ahn Joon Soo (Gimcheon Sangmu) — **+0.0%** vs media (1.40 EUR vs 1.40 EUR)
-6. Park Yong-Hui (Gimcheon Sangmu) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
-7. Lee Gi-Hyeok (Gangwon FC) — **+0.0%** vs media (10.00 EUR vs 10.00 EUR)
-8. Park Cheong-Hyo (Gangwon FC) — **+0.0%** vs media (11.00 EUR vs 11.00 EUR)
-9. Kim Dae-Won (Gangwon FC) — **+0.0%** vs media (14.00 EUR vs 14.00 EUR)
-10. Won Hee-Do (Gangwon FC) — **+0.0%** vs media (0.60 EUR vs 0.60 EUR)
+1. Lee Myung-Jae (Daejeon Citizen FC) — **+0.0%** vs media (4.50 EUR vs 4.50 EUR)
+2. Kim Hyeon-Ug (Daejeon Citizen FC) — **+0.0%** vs media (0.53 EUR vs 0.53 EUR)
+3. Cheon Seong-Hoon (FC Seoul) — **+0.0%** vs media (7.83 EUR vs 7.83 EUR)
+4. Lee Chang-Min (Jeju SK FC) — **+0.0%** vs media (2.89 EUR vs 2.89 EUR)
+5. Kim Sin-Jin (Jeju SK FC) — **+0.0%** vs media (1.00 EUR vs 1.00 EUR)
+6. An Chan-Gi (Jeju SK FC) — **+0.0%** vs media (0.68 EUR vs 0.68 EUR)
+7. Lee Kang Hyun (Gimcheon Sangmu) — **+0.0%** vs media (0.59 EUR vs 0.59 EUR)
+8. Ahn Joon Soo (Gimcheon Sangmu) — **+0.0%** vs media (1.40 EUR vs 1.40 EUR)
+9. Park Yong-Hui (Gimcheon Sangmu) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
+10. Lee Gi-Hyeok (Gangwon FC) — **+0.0%** vs media (10.00 EUR vs 10.00 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Jeonbuk Hyundai Motors FC**
-Carte trovate: 5 | Prezzo medio: 2.86 EUR | Volatilità (σ): 3.56
+Carte trovate: 8 | Prezzo medio: 3.22 EUR | Volatilità (σ): 3.09
 
 **FC Anyang**
 Carte trovate: 2 | Prezzo medio: 8.07 EUR | Volatilità (σ): 9.79
@@ -63,20 +63,20 @@ Carte trovate: 2 | Prezzo medio: 8.07 EUR | Volatilità (σ): 9.79
 Carte trovate: 4 | Prezzo medio: 2.52 EUR | Volatilità (σ): 1.20
 
 **Ulsan Hyundai Horang-i**
-Carte trovate: 5 | Prezzo medio: 3.38 EUR | Volatilità (σ): 3.79
+Carte trovate: 6 | Prezzo medio: 3.21 EUR | Volatilità (σ): 3.42
 
 **Gangwon FC**
 Carte trovate: 4 | Prezzo medio: 8.90 EUR | Volatilità (σ): 5.79
 
 **Gimcheon Sangmu**
-Carte trovate: 2 | Prezzo medio: 1.05 EUR | Volatilità (σ): 0.49
+Carte trovate: 3 | Prezzo medio: 0.90 EUR | Volatilità (σ): 0.44
 
 **Jeju SK FC**
-Carte trovate: 2 | Prezzo medio: 0.84 EUR | Volatilità (σ): 0.23
+Carte trovate: 3 | Prezzo medio: 1.52 EUR | Volatilità (σ): 1.19
 
 **FC Seoul**
 Carte trovate: 1 | Prezzo medio: 7.83 EUR | Volatilità (σ): 0.00
 
 **Daejeon Citizen FC**
-Carte trovate: 1 | Prezzo medio: 0.53 EUR | Volatilità (σ): 0.00
+Carte trovate: 2 | Prezzo medio: 2.52 EUR | Volatilità (σ): 2.81
 
