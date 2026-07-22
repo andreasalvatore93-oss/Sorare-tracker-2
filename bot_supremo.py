@@ -1490,15 +1490,28 @@ def _fetch_paginated_transaction_nodes(player_slug):
     (last/before/pageInfo). Usata per TUTTI i campionati (22/07: unificata, prima
     esisteva un secondo campo -- tokens.tokenPrices(playerSlug) -- confermato invece
     essere una lista piatta senza paginazione, rimosso perche' ridondante e peggiore).
-    Si ferma quando il nodo piu' vecchio della pagina esce dalla finestra 30gg (i nodi
+    Si ferma quando il nodo piu' vecchio della pagina esce dalla finestra 7gg (i nodi
     arrivano dal piu' recente al piu' vecchio con 'last', ordine Relay standard), quando
     il server non ha piu' pagine, o dopo TRANSACTIONS_MAX_PAGES di sicurezza.
+    FIX 22/07 v5 (richiesta esplicita utente, chiave del rallentamento su giocatori
+    molto scambiati come Angus Gunn/Hrvoje Babec): il taglio era ancora a 30gg
+    (TRANSACTIONS_WINDOW_30D_DAYS) nonostante count_30d non sia piu' usato per
+    nessuna decisione dal fix che ha rimosso la soglia 30gg -- solo un log
+    diagnostico opzionale lo legge. Per un giocatore molto scambiato, le prime 50
+    transazioni possono coprire solo pochi giorni, costringendo la paginazione a
+    tirare dentro pagine su pagine pur di arrivare a 30gg -- tempo sprecato per un
+    dato che non serve piu'. Ora si ferma a 7gg (RECENT_TRANSACTIONS_WINDOW_DAYS,
+    la stessa finestra dell'unica soglia ancora attiva): count_7d resta identico e
+    accurato (la finestra e' comunque sempre coperta per intero), ultimo/penultimo
+    prezzo restano identici (derivati da qualunque nodo gia' fetchato, indipendenti
+    dal taglio), count_30d diventa potenzialmente sottostimato ma e' innocuo (mai
+    usato per decisioni, solo diagnostica).
     FIX 22/07 (richiesta esplicita utente -- ripristino log puliti): il log dettagliato
     per pagina torna OPT-IN (LIQUIDITY_DIAGNOSTIC='si'), non piu' permanente su ogni
     chiamata -- era stato reso permanente durante l'indagine sul falso mercato sottile,
     ora che la causa e' stata isolata ed esclusa non serve piu' di default."""
     now = datetime.datetime.now(datetime.timezone.utc)
-    cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
+    cutoff_pagine = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
     all_nodes = []
     cursor = None
     for page_num in range(1, TRANSACTIONS_MAX_PAGES + 1):
@@ -1519,10 +1532,10 @@ def _fetch_paginated_transaction_nodes(player_slug):
             break
         try:
             oldest_dt = datetime.datetime.fromisoformat((oldest_date_str or '').replace('Z', '+00:00'))
-            if oldest_dt < cutoff_long:
+            if oldest_dt < cutoff_pagine:
                 if LIQUIDITY_DIAGNOSTIC:
                     log(f"[liquidita' paginazione] {player_slug}: nodo piu' vecchio "
-                        f"della pagina {page_num} fuori dalla finestra 30gg, mi fermo")
+                        f"della pagina {page_num} fuori dalla finestra {RECENT_TRANSACTIONS_WINDOW_DAYS}gg, mi fermo")
                 break
         except (ValueError, AttributeError):
             pass
