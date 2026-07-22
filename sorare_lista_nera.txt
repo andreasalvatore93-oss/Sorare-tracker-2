@@ -1,8 +1,11 @@
 # LISTA NERA DEL BOT SUPREMO
-# Ogni riga: slug,durata (es. 'clem777,5 giorni'). La durata e' il tempo
-# rimanente, aggiornato automaticamente ogni volta che il bot riscrive questo
-# file -- puoi modificarla a mano in qualunque momento (es. '3 ore', '10 giorni',
-# '30 minuti') per accorciare o allungare il blocco. Per rimuovere un blocco,
+# Sezioni giocatore/manager/campionato: ogni riga 'slug,durata' (es. 'clem777,5
+# giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni
+# scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').
+# Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora
+# ASSOLUTA di scadenza (fix 22/07: una durata testuale si 'rinnovava' da sola ad
+# ogni lettura se il file restava statico tra le run). NON pensate per modifica a
+# mano, gestite automaticamente dal bot. Per rimuovere un blocco in ogni sezione,
 # cancella semplicemente la riga.
 
 ## manager
@@ -45,6 +48,7 @@ hidde-jurjus,365 giorni
 hidemasa-morita,365 giorni
 hirving-rodrigo-lozano-bahena,14 giorni
 hugo-cuypers,7 giorni
+ilias-iliadis,365 giorni
 illan-meslier,365 giorni
 inigo-lekue-martinez,365 giorni
 isak-dahlqvist,7 giorni
@@ -68,6 +72,7 @@ luca-philipp,365 giorni
 luca-podlech,365 giorni
 malang-sarr,365 giorni
 marcus-bettinelli,365 giorni
+marlon-hairston,365 giorni
 mauro-emanuel-icardi-rivero,365 giorni
 maximilian-philipp,365 giorni
 mert-hakan-yandas,365 giorni
@@ -85,6 +90,7 @@ seung-beom-son,365 giorni
 simon-mignolet,365 giorni
 stefan-drljaca,365 giorni
 stefan-ortega-moreno,365 giorni
+stephen-turnbull,365 giorni
 sverre-halseth-nypan,365 giorni
 thomas-dahne,365 giorni
 toni-leistner,365 giorni
@@ -98,170 +104,170 @@ yves-bissouma,365 giorni
 
 ## cooldown_acquisto
 # COOLDOWN ACQUISTI/OFFERTE -- giocatori appena comprati o a cui abbiamo appena fatto un'offerta: ignorati per il tempo indicato, per non ricomprare/riproporre subito lo stesso giocatore.
-alejandro-garnacho-ferreyra-inseason,24 ore
-alejandro-remiro-gargallo-inseason,24 ore
-aleksa-todorovic-2004-01-25-classic,24 ore
-alessandro-circati-classic,24 ore
-alvaro-david-montero-perales-classic,24 ore
-andreas-raedergard-schjelderup-inseason,24 ore
-angus-gunn,24 ore
-anthony-patterson-inseason,24 ore
-benjamin-maximilian-lundt-inseason,24 ore
-cabral-jones-carter-inseason,24 ore
-camilo-andres-vargas-gil-classic,24 ore
-cristian-roldan,22 ore
-daniel-pinter-2007-06-06-inseason,24 ore
-david-olatukunbo-alaba,24 ore
-drake-callender,23 ore
-ezri-konsa-ngoyo,22 ore
-ezri-konsa-ngoyo-classic,24 ore
-fabio-daniel-ferreira-vieira,21 ore
-finn-dahmen-inseason,24 ore
-gjivai-zechiel-classic,24 ore
-hong-seong-min-inseason,24 ore
-jacob-brochner-ambaek,22 ore
-jean-philippe-mateta-classic,24 ore
-jerome-prior-classic,24 ore
-jin-gyu-kim-classic,24 ore
-jonas-thomas-kersken,22 ore
-jordan-pickford-inseason,24 ore
-jose-manuel-lopez-classic,24 ore
-josip-stanisic-inseason,24 ore
-josue-ndenge-kongolo-inseason,24 ore
-juan-agustin-musso-inseason,24 ore
-julian-eitschberger-inseason,24 ore
-kaishu-sano,24 ore
-kyogo-furuhashi-classic,24 ore
-leandro-daniel-paredes-classic,24 ore
-luka-modric-classic,24 ore
-malik-tillman-inseason,24 ore
-marko-tuci,21 ore
-matthijs-de-ligt-classic,24 ore
-milan-skriniar-classic,24 ore
-min-jae-kim-classic,24 ore
-nathaniel-brown-inseason,24 ore
-noe-lebreton-inseason,24 ore
-or-blorian-inseason,24 ore
-pablo-pagis-inseason,24 ore
-patrick-berg-inseason,24 ore
-rafael-elias-da-silva-inseason,24 ore
-rob-holding,21 ore
-rodrigo-zalazar-martinez-inseason,24 ore
-scott-mctominay-classic,24 ore
-sergi-palencia-hurtado-inseason,24 ore
-stijn-van-gassel,22 ore
-tae-joon-park,21 ore
-unai-marrero-larranaga-classic,24 ore
-waldemar-anton-classic,24 ore
+alejandro-garnacho-ferreyra-inseason,2026-07-23T08:13:28.802435+00:00
+alejandro-remiro-gargallo-inseason,2026-07-23T08:13:28.802435+00:00
+aleksa-todorovic-2004-01-25-classic,2026-07-23T08:13:28.802435+00:00
+alessandro-circati-classic,2026-07-23T08:13:28.802435+00:00
+alvaro-david-montero-perales-classic,2026-07-23T08:13:28.802435+00:00
+andreas-raedergard-schjelderup-inseason,2026-07-23T08:13:28.802435+00:00
+angus-gunn,2026-07-23T08:13:28.802435+00:00
+anthony-patterson-inseason,2026-07-23T08:13:28.802435+00:00
+benjamin-maximilian-lundt-inseason,2026-07-23T08:13:28.802435+00:00
+cabral-jones-carter-inseason,2026-07-23T08:13:28.802435+00:00
+camilo-andres-vargas-gil-classic,2026-07-23T08:13:28.802435+00:00
+cristian-roldan,2026-07-23T06:13:28.802435+00:00
+daniel-pinter-2007-06-06-inseason,2026-07-23T08:13:28.802435+00:00
+david-olatukunbo-alaba,2026-07-23T08:13:28.802435+00:00
+drake-callender,2026-07-23T07:13:28.802435+00:00
+ezri-konsa-ngoyo,2026-07-23T06:13:28.802435+00:00
+ezri-konsa-ngoyo-classic,2026-07-23T08:13:28.802435+00:00
+fabio-daniel-ferreira-vieira,2026-07-23T05:13:28.802435+00:00
+finn-dahmen-inseason,2026-07-23T08:13:28.802435+00:00
+gjivai-zechiel-classic,2026-07-23T08:13:28.802435+00:00
+hong-seong-min-inseason,2026-07-23T08:13:28.802435+00:00
+jacob-brochner-ambaek,2026-07-23T06:13:28.802435+00:00
+jean-philippe-mateta-classic,2026-07-23T08:13:28.802435+00:00
+jerome-prior-classic,2026-07-23T08:13:28.802435+00:00
+jin-gyu-kim-classic,2026-07-23T08:13:28.802435+00:00
+jonas-thomas-kersken,2026-07-23T06:13:28.802435+00:00
+jordan-pickford-inseason,2026-07-23T08:13:28.802435+00:00
+jose-manuel-lopez-classic,2026-07-23T08:13:28.802435+00:00
+josip-stanisic-inseason,2026-07-23T08:13:28.802435+00:00
+josue-ndenge-kongolo-inseason,2026-07-23T08:13:28.802435+00:00
+juan-agustin-musso-inseason,2026-07-23T08:13:28.802435+00:00
+julian-eitschberger-inseason,2026-07-23T08:13:28.802435+00:00
+kaishu-sano,2026-07-23T08:13:28.802435+00:00
+kyogo-furuhashi-classic,2026-07-23T08:13:28.802435+00:00
+leandro-daniel-paredes-classic,2026-07-23T08:13:28.802435+00:00
+luka-modric-classic,2026-07-23T08:13:28.802435+00:00
+malik-tillman-inseason,2026-07-23T08:13:28.802435+00:00
+marko-tuci,2026-07-23T05:13:28.802435+00:00
+matthijs-de-ligt-classic,2026-07-23T08:13:28.802435+00:00
+milan-skriniar-classic,2026-07-23T08:13:28.802435+00:00
+min-jae-kim-classic,2026-07-23T08:13:28.802435+00:00
+nathaniel-brown-inseason,2026-07-23T08:13:28.802435+00:00
+noe-lebreton-inseason,2026-07-23T08:13:28.802435+00:00
+or-blorian-inseason,2026-07-23T08:13:28.802435+00:00
+pablo-pagis-inseason,2026-07-23T08:13:28.802435+00:00
+patrick-berg-inseason,2026-07-23T08:13:28.802435+00:00
+rafael-elias-da-silva-inseason,2026-07-23T08:13:28.802435+00:00
+rob-holding,2026-07-23T05:13:28.802435+00:00
+rodrigo-zalazar-martinez-inseason,2026-07-23T08:13:28.802435+00:00
+scott-mctominay-classic,2026-07-23T08:13:28.802435+00:00
+sergi-palencia-hurtado-inseason,2026-07-23T08:13:28.802435+00:00
+stijn-van-gassel,2026-07-23T06:13:28.802435+00:00
+tae-joon-park,2026-07-23T05:13:28.802435+00:00
+unai-marrero-larranaga-classic,2026-07-23T08:13:28.802435+00:00
+waldemar-anton-classic,2026-07-23T08:13:28.802435+00:00
 
 ## thin_market
 # THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare di comprare/offrire su un mercato poco liquido.
-alan-matturro-romero-inseason,2 giorni
-alejandro-blesa-pina-classic,2 giorni
-aljoscha-kemlein-inseason,2 giorni
-amos-pieper-classic,2 giorni
-arnaldo-antonio-sanabria-ayala-classic,2 giorni
-arsen-zakharyan-inseason,2 giorni
-augusto-jorge-mateo-solari-classic,2 giorni
-barry-lauwers-classic,2 giorni
-bernhard-zimmermann-classic,2 giorni
-brian-roberto-heras-gonzalez-classic,2 giorni
-christian-gytkjaer-classic,2 giorni
-colin-dagba-classic,2 giorni
-damil-dankerlui-classic,2 giorni
-danny-hoesen-classic,2 giorni
-denil-castillo-classic,2 giorni
-denis-genreau-classic,2 giorni
-devis-stiven-vasquez-llach-inseason,2 giorni
-do-hyun-yeom-classic,2 giorni
-dominick-drexler-classic,2 giorni
-elias-jelert-kristensen-classic,2 giorni
-enrique-marlon-aguilar-classic,2 giorni
-erwin-mulder-classic,2 giorni
-evan-mooney-classic,2 giorni
-federico-bonazzoli-classic,2 giorni
-fofin-turay-inseason,2 giorni
-franko-kovacevic-classic,2 giorni
-gideon-mensah-classic,2 giorni
-giovanni-emmanuel-bogado-duarte-classic,2 giorni
-giulio-maggiore-classic,2 giorni
-heon-jae-lee-inseason,2 giorni
-hyun-kim-classic,2 giorni
-ivo-grbic-classic,2 giorni
-jacopo-sala-classic,2 giorni
-jean-eric-moursou-classic,2 giorni
-joelinton-cassio-apolinario-de-lira-inseason,2 giorni
-jonas-martin-classic,2 giorni
-jozhua-vertrouwd-inseason,2 giorni
-juan-valentin-gimenez-classic,2 giorni
-julian-aude-classic,2 giorni
-julius-beck-classic,2 giorni
-jun-ha-kim-classic,2 giorni
-kazuki-fukai-classic,2 giorni
-keke-maximilian-topp-inseason,2 giorni
-keylor-navas-gamboa-classic,2 giorni
-ki-jana-hoever-inseason,2 giorni
-kobe-corbanie-inseason,2 giorni
-kofi-jeremy-amoako-inseason,2 giorni
-konstantin-kuchaev-classic,2 giorni
-kosei-shibasaki-classic,2 giorni
-kristian-mandic-inseason,2 giorni
-leon-grgic-classic,2 giorni
-leon-opitz-inseason,2 giorni
-leonardo-benedito-da-silva-classic,2 giorni
-leonardo-duarte-da-silva-classic,2 giorni
-livan-baha-burcu-inseason,2 giorni
-lorenzo-torriani-classic,2 giorni
-loubadhe-abakar-sylla-inseason,2 giorni
-louis-leroux-inseason,2 giorni
-louis-mouton-inseason,2 giorni
-louis-oppie-inseason,2 giorni
-loum-tchaouna-inseason,2 giorni
-lucas-ariel-boye-classic,2 giorni
-luis-antonio-da-rocha-junior-classic,2 giorni
-luka-sucic-inseason,2 giorni
-luka-tunjic-inseason,2 giorni
-mamadou-sarr-classic,2 giorni
-marco-gaston-ruben-rodriguez-classic,2 giorni
-marko-tolic-classic,2 giorni
-martin-beautrel-atemengue-ndzie-classic,2 giorni
-mathias-fjortoft-lovik-inseason,2 giorni
-matt-lendfers-classic,2 giorni
-maxime-ble-classic,2 giorni
-mickael-nade-inseason,2 giorni
-miguel-gianpierre-araujo-blanco-classic,2 giorni
-miguel-gutierrez-ortega-inseason,2 giorni
-noah-jose-saviolo-inseason,2 giorni
-noah-streit-inseason,2 giorni
-oleksandr-zubkov-inseason,2 giorni
-oscar-mingueza-garcia-inseason,2 giorni
-rene-mitongo-muteba-inseason,2 giorni
-rihito-yamamoto-inseason,2 giorni
-roko-perkovic-classic,2 giorni
-romelle-donovan-inseason,2 giorni
-ross-callachan-classic,2 giorni
-royer-caicedo-inseason,2 giorni
-ruben-ramos-jr-classic,2 giorni
-ryan-schewe-classic,2 giorni
-salih-malkocoglu-inseason,2 giorni
-santiago-castaneda-classic,2 giorni
-serge-ngoma-classic,2 giorni
-shandre-miguel-campbell-inseason,2 giorni
-simone-verdi-classic,2 giorni
-sota-kitano-classic,2 giorni
-souleymane-alio-classic,2 giorni
-souleymane-isaak-toure-inseason,2 giorni
-stefan-stefanov-smarkalev-inseason,2 giorni
-strahinja-stojkovic-inseason,2 giorni
-thomas-guilier-classic,2 giorni
-thomas-watson-inseason,2 giorni
-tim-breithaupt-classic,2 giorni
-tolikpaley-luc-evrad-zogbe-inseason,2 giorni
-tom-vandenberghe-classic,2 giorni
-tomas-jacob-classic,2 giorni
-valeri-qazaishvili-classic,2 giorni
-vinko-medimorec-classic,2 giorni
-yuriy-gorshkov-classic,2 giorni
+alan-matturro-romero-inseason,2026-07-24T08:13:28.802435+00:00
+alejandro-blesa-pina-classic,2026-07-24T08:13:28.802435+00:00
+aljoscha-kemlein-inseason,2026-07-24T08:13:28.802435+00:00
+amos-pieper-classic,2026-07-24T08:13:28.802435+00:00
+arnaldo-antonio-sanabria-ayala-classic,2026-07-24T08:13:28.802435+00:00
+arsen-zakharyan-inseason,2026-07-24T08:13:28.802435+00:00
+augusto-jorge-mateo-solari-classic,2026-07-24T08:13:28.802435+00:00
+barry-lauwers-classic,2026-07-24T08:13:28.802435+00:00
+bernhard-zimmermann-classic,2026-07-24T08:13:28.802435+00:00
+brian-roberto-heras-gonzalez-classic,2026-07-24T08:13:28.802435+00:00
+christian-gytkjaer-classic,2026-07-24T08:13:28.802435+00:00
+colin-dagba-classic,2026-07-24T08:13:28.802435+00:00
+damil-dankerlui-classic,2026-07-24T08:13:28.802435+00:00
+danny-hoesen-classic,2026-07-24T08:13:28.802435+00:00
+denil-castillo-classic,2026-07-24T08:13:28.802435+00:00
+denis-genreau-classic,2026-07-24T08:13:28.802435+00:00
+devis-stiven-vasquez-llach-inseason,2026-07-24T08:13:28.802435+00:00
+do-hyun-yeom-classic,2026-07-24T08:13:28.802435+00:00
+dominick-drexler-classic,2026-07-24T08:13:28.802435+00:00
+elias-jelert-kristensen-classic,2026-07-24T08:13:28.802435+00:00
+enrique-marlon-aguilar-classic,2026-07-24T08:13:28.802435+00:00
+erwin-mulder-classic,2026-07-24T08:13:28.802435+00:00
+evan-mooney-classic,2026-07-24T08:13:28.802435+00:00
+federico-bonazzoli-classic,2026-07-24T08:13:28.802435+00:00
+fofin-turay-inseason,2026-07-24T08:13:28.802435+00:00
+franko-kovacevic-classic,2026-07-24T08:13:28.802435+00:00
+gideon-mensah-classic,2026-07-24T08:13:28.802435+00:00
+giovanni-emmanuel-bogado-duarte-classic,2026-07-24T08:13:28.802435+00:00
+giulio-maggiore-classic,2026-07-24T08:13:28.802435+00:00
+heon-jae-lee-inseason,2026-07-24T08:13:28.802435+00:00
+hyun-kim-classic,2026-07-24T08:13:28.802435+00:00
+ivo-grbic-classic,2026-07-24T08:13:28.802435+00:00
+jacopo-sala-classic,2026-07-24T08:13:28.802435+00:00
+jean-eric-moursou-classic,2026-07-24T08:13:28.802435+00:00
+joelinton-cassio-apolinario-de-lira-inseason,2026-07-24T08:13:28.802435+00:00
+jonas-martin-classic,2026-07-24T08:13:28.802435+00:00
+jozhua-vertrouwd-inseason,2026-07-24T08:13:28.802435+00:00
+juan-valentin-gimenez-classic,2026-07-24T08:13:28.802435+00:00
+julian-aude-classic,2026-07-24T08:13:28.802435+00:00
+julius-beck-classic,2026-07-24T08:13:28.802435+00:00
+jun-ha-kim-classic,2026-07-24T08:13:28.802435+00:00
+kazuki-fukai-classic,2026-07-24T08:13:28.802435+00:00
+keke-maximilian-topp-inseason,2026-07-24T08:13:28.802435+00:00
+keylor-navas-gamboa-classic,2026-07-24T08:13:28.802435+00:00
+ki-jana-hoever-inseason,2026-07-24T08:13:28.802435+00:00
+kobe-corbanie-inseason,2026-07-24T08:13:28.802435+00:00
+kofi-jeremy-amoako-inseason,2026-07-24T08:13:28.802435+00:00
+konstantin-kuchaev-classic,2026-07-24T08:13:28.802435+00:00
+kosei-shibasaki-classic,2026-07-24T08:13:28.802435+00:00
+kristian-mandic-inseason,2026-07-24T08:13:28.802435+00:00
+leon-grgic-classic,2026-07-24T08:13:28.802435+00:00
+leon-opitz-inseason,2026-07-24T08:13:28.802435+00:00
+leonardo-benedito-da-silva-classic,2026-07-24T08:13:28.802435+00:00
+leonardo-duarte-da-silva-classic,2026-07-24T08:13:28.802435+00:00
+livan-baha-burcu-inseason,2026-07-24T08:13:28.802435+00:00
+lorenzo-torriani-classic,2026-07-24T08:13:28.802435+00:00
+loubadhe-abakar-sylla-inseason,2026-07-24T08:13:28.802435+00:00
+louis-leroux-inseason,2026-07-24T08:13:28.802435+00:00
+louis-mouton-inseason,2026-07-24T08:13:28.802435+00:00
+louis-oppie-inseason,2026-07-24T08:13:28.802435+00:00
+loum-tchaouna-inseason,2026-07-24T08:13:28.802435+00:00
+lucas-ariel-boye-classic,2026-07-24T08:13:28.802435+00:00
+luis-antonio-da-rocha-junior-classic,2026-07-24T08:13:28.802435+00:00
+luka-sucic-inseason,2026-07-24T08:13:28.802435+00:00
+luka-tunjic-inseason,2026-07-24T08:13:28.802435+00:00
+mamadou-sarr-classic,2026-07-24T08:13:28.802435+00:00
+marco-gaston-ruben-rodriguez-classic,2026-07-24T08:13:28.802435+00:00
+marko-tolic-classic,2026-07-24T08:13:28.802435+00:00
+martin-beautrel-atemengue-ndzie-classic,2026-07-24T08:13:28.802435+00:00
+mathias-fjortoft-lovik-inseason,2026-07-24T08:13:28.802435+00:00
+matt-lendfers-classic,2026-07-24T08:13:28.802435+00:00
+maxime-ble-classic,2026-07-24T08:13:28.802435+00:00
+mickael-nade-inseason,2026-07-24T08:13:28.802435+00:00
+miguel-gianpierre-araujo-blanco-classic,2026-07-24T08:13:28.802435+00:00
+miguel-gutierrez-ortega-inseason,2026-07-24T08:13:28.802435+00:00
+noah-jose-saviolo-inseason,2026-07-24T08:13:28.802435+00:00
+noah-streit-inseason,2026-07-24T08:13:28.802435+00:00
+oleksandr-zubkov-inseason,2026-07-24T08:13:28.802435+00:00
+oscar-mingueza-garcia-inseason,2026-07-24T08:13:28.802435+00:00
+rene-mitongo-muteba-inseason,2026-07-24T08:13:28.802435+00:00
+rihito-yamamoto-inseason,2026-07-24T08:13:28.802435+00:00
+roko-perkovic-classic,2026-07-24T08:13:28.802435+00:00
+romelle-donovan-inseason,2026-07-24T08:13:28.802435+00:00
+ross-callachan-classic,2026-07-24T08:13:28.802435+00:00
+royer-caicedo-inseason,2026-07-24T08:13:28.802435+00:00
+ruben-ramos-jr-classic,2026-07-24T08:13:28.802435+00:00
+ryan-schewe-classic,2026-07-24T08:13:28.802435+00:00
+salih-malkocoglu-inseason,2026-07-24T08:13:28.802435+00:00
+santiago-castaneda-classic,2026-07-24T08:13:28.802435+00:00
+serge-ngoma-classic,2026-07-24T08:13:28.802435+00:00
+shandre-miguel-campbell-inseason,2026-07-24T08:13:28.802435+00:00
+simone-verdi-classic,2026-07-24T08:13:28.802435+00:00
+sota-kitano-classic,2026-07-24T08:13:28.802435+00:00
+souleymane-alio-classic,2026-07-24T08:13:28.802435+00:00
+souleymane-isaak-toure-inseason,2026-07-24T08:13:28.802435+00:00
+stefan-stefanov-smarkalev-inseason,2026-07-24T08:13:28.802435+00:00
+strahinja-stojkovic-inseason,2026-07-24T08:13:28.802435+00:00
+thomas-guilier-classic,2026-07-24T08:13:28.802435+00:00
+thomas-watson-inseason,2026-07-24T08:13:28.802435+00:00
+tim-breithaupt-classic,2026-07-24T08:13:28.802435+00:00
+tolikpaley-luc-evrad-zogbe-inseason,2026-07-24T08:13:28.802435+00:00
+tom-vandenberghe-classic,2026-07-24T08:13:28.802435+00:00
+tomas-jacob-classic,2026-07-24T08:13:28.802435+00:00
+valeri-qazaishvili-classic,2026-07-24T08:13:28.802435+00:00
+vinko-medimorec-classic,2026-07-24T08:13:28.802435+00:00
+yuriy-gorshkov-classic,2026-07-24T08:13:28.802435+00:00
 
 ## campionato
 # CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla con le altre. Ogni carta di un giocatore attivo in uno di questi campionati viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
