@@ -1389,6 +1389,11 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
 MIN_LISTED_CARDS_FOR_PURCHASE = int(os.environ.get('MIN_LISTED_CARDS_FOR_PURCHASE', '4'))
 MIN_LISTED_CARDS_DIAGNOSTIC = os.environ.get('MIN_LISTED_CARDS_DIAGNOSTIC', 'no').strip().lower() == 'si'
 
+# NUOVO 22/07 (richiesta esplicita utente): log dedicato opt-in (default spento) per
+# segnalare quando un'offerta e' stata fatta/tentata tramite il meccanismo "trigger su
+# minimo non allineato" -- vedi evaluate_event per la logica completa.
+MIN_NON_TRIGGER_LOG = os.environ.get('MIN_NON_TRIGGER_LOG', 'no').strip().lower() == 'si'
+
 
 def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None, force_log=False):
     """Fattorizzata da count_recent_transactions: conta le transazioni valide (short/long
@@ -2611,6 +2616,17 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     true_min_price, true_min_card_slug, true_min_seller_slug = prices[0]
 
+    # NUOVO 22/07 (richiesta esplicita utente -- "trigger su minimo non allineato"):
+    # quando l'annuncio triggerante NON e' il minimo assoluto di mercato, invece di
+    # scartare subito il caso proviamo comunque il minimo assoluto come bersaglio di
+    # un'offerta (ramo MakeOffer soltanto, MAI AutoBuy) -- il minimo era gia' sul
+    # mercato ed e' probabile che sia gia' stato preso da qualcun altro, ma tentare
+    # un'offerta scontata su di esso non costa nulla in piu' (stesso identico
+    # calcolo/lista prices gia' fatto sopra, zero query extra). Il flag qui sotto
+    # viene riusato piu' avanti per: (a) impedire al router di instradare questo
+    # caso verso AutoBuy anche se il margine risultasse sufficiente, (b) loggare in
+    # modo dedicato quando MIN_NON_TRIGGER_LOG e' attivo.
+    trigger_su_minimo_non_allineato = False
     if true_min_card_slug != card_slug:
         if price_eur < true_min_price:
             log(f"{player_name}: minimo query non aggiornato ({true_min_price:.2f}EUR), "
@@ -2619,9 +2635,13 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             prices = [(price_eur, card_slug, seller_slug)] + [p for p in prices if p[1] != card_slug]
         else:
             categoria = "in_season" if excluded_league else "in_season/classic"
-            log(f"{player_name}: scarto -- annuncio a {price_eur:.2f}EUR non e' il minimo attuale "
-                f"{categoria} (minimo vero: {true_min_price:.2f}EUR)")
-            return False
+            trigger_su_minimo_non_allineato = True
+            if MIN_NON_TRIGGER_LOG:
+                log(f"[trigger su minimo non allineato] {player_name}: annuncio a "
+                    f"{price_eur:.2f}EUR ({categoria}) non e' il minimo attuale -- provo "
+                    f"comunque il minimo vero ({true_min_price:.2f}EUR, carta "
+                    f"{true_min_card_slug}) come bersaglio di un'offerta (solo ramo "
+                    f"MakeOffer, mai AutoBuy)")
 
     if true_min_seller_slug in BLACKLISTED_SELLER_SLUGS or \
             true_min_seller_slug in BLACKLISTED_MANAGER_SLUGS:
@@ -2674,7 +2694,17 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return False
 
     # --- ROUTER: nessuna sovrapposizione per costruzione ---
-    if margin_percent >= AUTOBUY_MARGIN_FRACTION:
+    # NUOVO 22/07: il caso "trigger su minimo non allineato" e' SOLO MakeOffer per
+    # richiesta esplicita -- anche se il margine calcolato risultasse >= soglia
+    # AutoBuy, non deve MAI finire nel ramo AutoBuy (non stiamo accettando
+    # un'offerta esistente su quella carta specifica, stiamo proponendo
+    # un'offerta scontata su un'altra carta che risulta essere il vero minimo).
+    if trigger_su_minimo_non_allineato:
+        if MAKEOFFER_MARGIN_FRACTION <= margin_percent <= MAKEOFFER_MAX_MARGIN_FRACTION:
+            prezzo_da_pagare = round(true_min_price * (1 - OFFER_DISCOUNT_FRACTION), 2)
+        else:
+            return False
+    elif margin_percent >= AUTOBUY_MARGIN_FRACTION:
         prezzo_da_pagare = true_min_price
     elif MAKEOFFER_MARGIN_FRACTION <= margin_percent <= MAKEOFFER_MAX_MARGIN_FRACTION:
         prezzo_da_pagare = round(true_min_price * (1 - OFFER_DISCOUNT_FRACTION), 2)
@@ -2693,6 +2723,16 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"ultima/penultima transazione ({prezzo_da_pagare:.2f}EUR >= penultima "
             f"{penultimo_prezzo_transazione:.2f}EUR)")
         return False
+
+    if trigger_su_minimo_non_allineato:
+        # Offerta sempre sulla carta del VERO minimo (true_min_card_slug/
+        # true_min_seller_slug), non su quella dell'evento triggerante -- e' il
+        # minimo ad essere il bersaglio dell'offerta, l'evento ha solo fatto
+        # scattare la rivalutazione del mercato.
+        return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
+                                         margin_percent, true_min_card_slug, excluded_league,
+                                         is_in_season, true_min_seller_slug,
+                                         via_trigger_non_allineato=True)
 
     if margin_percent >= AUTOBUY_MARGIN_FRACTION:
         return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
@@ -2752,9 +2792,16 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
 
 
 def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
-                              margin_percent, card_slug, excluded_league, is_in_season, seller_slug):
-    log(f"MAKEOFFER: {player_name} -- TROVATO AFFARE ({true_min_price:.2f}EUR, "
-        f"margine {margin_percent:.1%}) -- valuto se fare un'offerta")
+                              margin_percent, card_slug, excluded_league, is_in_season, seller_slug,
+                              via_trigger_non_allineato=False):
+    if via_trigger_non_allineato:
+        log(f"MAKEOFFER [trigger su minimo non allineato]: {player_name} -- TROVATO AFFARE "
+            f"({true_min_price:.2f}EUR, margine {margin_percent:.1%}) -- valuto se fare un'offerta "
+            f"sul vero minimo (carta {card_slug}, diversa dall'annuncio che ha fatto scattare "
+            f"l'evento)")
+    else:
+        log(f"MAKEOFFER: {player_name} -- TROVATO AFFARE ({true_min_price:.2f}EUR, "
+            f"margine {margin_percent:.1%}) -- valuto se fare un'offerta")
 
     card_details = get_card_offer_details(card_slug)
     if not card_details:
@@ -2813,6 +2860,10 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
             log(f"{player_name}: ECCEZIONE IMPREVISTA durante offerta live -- {e}")
         if offer_sent:
             log(f"{player_name}: OFFERTA INVIATA CON SUCCESSO")
+            if via_trigger_non_allineato and MIN_NON_TRIGGER_LOG:
+                log(f"[trigger su minimo non allineato] {player_name}: offerta di "
+                    f"{offer_amount_eur:.2f}EUR inviata con successo tramite questo "
+                    f"meccanismo (carta {card_slug})")
             if player_slug:
                 record_player_offer(player_slug, is_in_season)
             pending_offers_count[0] += 1
