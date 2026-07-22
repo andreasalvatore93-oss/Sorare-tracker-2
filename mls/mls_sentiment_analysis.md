@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T08:10:48.694309Z
-**Run totali:** 24
+**Data analisi:** 2026-07-22T08:12:59.512643Z
+**Run totali:** 25
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 8.92 EUR
-- **Trend mercato:** 📉 DESCENDING (-2.3%)
-- **Sentiment:** 🟡 Leggero Calo
+- **Prezzo medio MLS:** 8.47 EUR
+- **Trend mercato:** 📉 STRONG_DESCENDING (-5.0%)
+- **Sentiment:** 🟠 In Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-2.3%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**📉 TREND GLOBALE: STRONG_DESCENDING (-5.0%)**
+Il mercato sta crollando. Eccellente momento di accumulo. Valuta le carte con sconto >15% dalla media storica.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
 Prezzo: **42.98 EUR** | Media: **58.99 EUR** | Sconto: **-27.1%**
@@ -42,15 +42,15 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Jansen Miller (Sporting Kansas City ) — **+0.0%** vs media (0.85 EUR vs 0.85 EUR)
-2. Ricardo Louis (FC Dallas) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
-3. Álvaro Augusto (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
-4. Daniel Baran (FC Dallas) — **+0.0%** vs media (0.81 EUR vs 0.81 EUR)
-5. Nathan Ordaz (DC United) — **+0.0%** vs media (2.19 EUR vs 2.19 EUR)
-6. Jared Stroud (DC United) — **+0.0%** vs media (0.79 EUR vs 0.79 EUR)
-7. Sean Nealis (DC United) — **+0.0%** vs media (0.49 EUR vs 0.49 EUR)
-8. Emilio Aristizábal (Toronto FC) — **+0.0%** vs media (1.81 EUR vs 1.81 EUR)
-9. Kobe Franklin (Toronto FC) — **+0.0%** vs media (2.35 EUR vs 2.35 EUR)
-10. Benjamín Kuščević (Toronto FC) — **+0.0%** vs media (0.77 EUR vs 0.77 EUR)
+2. Slade Starnes (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
+3. Ricardo Louis (FC Dallas) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
+4. Álvaro Augusto (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
+5. Daniel Baran (FC Dallas) — **+0.0%** vs media (0.81 EUR vs 0.81 EUR)
+6. Nathan Ordaz (DC United) — **+0.0%** vs media (2.19 EUR vs 2.19 EUR)
+7. Jared Stroud (DC United) — **+0.0%** vs media (0.79 EUR vs 0.79 EUR)
+8. Sean Nealis (DC United) — **+0.0%** vs media (0.49 EUR vs 0.49 EUR)
+9. Emilio Aristizábal (Toronto FC) — **+0.0%** vs media (1.81 EUR vs 1.81 EUR)
+10. Kobe Franklin (Toronto FC) — **+0.0%** vs media (2.35 EUR vs 2.35 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -72,7 +72,7 @@ Carte trovate: 4 | Prezzo medio: 4.72 EUR | Volatilità (σ): 4.69
 Carte trovate: 7 | Prezzo medio: 10.41 EUR | Volatilità (σ): 10.15
 
 **St. Louis City SC**
-Carte trovate: 8 | Prezzo medio: 3.98 EUR | Volatilità (σ): 2.67
+Carte trovate: 9 | Prezzo medio: 3.80 EUR | Volatilità (σ): 2.55
 
 **Chicago Fire FC**
 Carte trovate: 9 | Prezzo medio: 11.03 EUR | Volatilità (σ): 13.54
@@ -84,7 +84,7 @@ Carte trovate: 4 | Prezzo medio: 8.20 EUR | Volatilità (σ): 7.19
 Carte trovate: 5 | Prezzo medio: 15.92 EUR | Volatilità (σ): 31.64
 
 **Minnesota United**
-Carte trovate: 2 | Prezzo medio: 4.36 EUR | Volatilità (σ): 2.11
+Carte trovate: 5 | Prezzo medio: 2.20 EUR | Volatilità (σ): 2.26
 
 **Orlando City SC**
 Carte trovate: 4 | Prezzo medio: 6.68 EUR | Volatilità (σ): 7.13
@@ -93,7 +93,7 @@ Carte trovate: 4 | Prezzo medio: 6.68 EUR | Volatilità (σ): 7.13
 Carte trovate: 5 | Prezzo medio: 6.13 EUR | Volatilità (σ): 8.37
 
 **Austin FC**
-Carte trovate: 2 | Prezzo medio: 3.75 EUR | Volatilità (σ): 4.46
+Carte trovate: 3 | Prezzo medio: 2.66 EUR | Volatilità (σ): 3.67
 
 **San Diego FC**
 Carte trovate: 2 | Prezzo medio: 0.89 EUR | Volatilità (σ): 0.13
@@ -123,13 +123,13 @@ Carte trovate: 3 | Prezzo medio: 20.70 EUR | Volatilità (σ): 31.45
 Carte trovate: 3 | Prezzo medio: 1.37 EUR | Volatilità (σ): 0.77
 
 **Houston Dynamo FC**
-Carte trovate: 3 | Prezzo medio: 24.49 EUR | Volatilità (σ): 23.30
+Carte trovate: 4 | Prezzo medio: 18.87 EUR | Volatilità (σ): 22.09
 
 **CF Montreal**
 Carte trovate: 1 | Prezzo medio: 7.59 EUR | Volatilità (σ): 0.00
 
 **New York City FC**
-Carte trovate: 2 | Prezzo medio: 7.83 EUR | Volatilità (σ): 10.15
+Carte trovate: 3 | Prezzo medio: 6.88 EUR | Volatilità (σ): 7.36
 
 **Toronto FC**
 Carte trovate: 3 | Prezzo medio: 1.64 EUR | Volatilità (σ): 0.81
@@ -138,7 +138,7 @@ Carte trovate: 3 | Prezzo medio: 1.64 EUR | Volatilità (σ): 0.81
 Carte trovate: 3 | Prezzo medio: 1.16 EUR | Volatilità (σ): 0.91
 
 **FC Dallas**
-Carte trovate: 3 | Prezzo medio: 0.67 EUR | Volatilità (σ): 0.16
+Carte trovate: 4 | Prezzo medio: 0.63 EUR | Volatilità (σ): 0.15
 
 **Sporting Kansas City **
 Carte trovate: 1 | Prezzo medio: 0.85 EUR | Volatilità (σ): 0.00
