@@ -743,6 +743,13 @@ _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
 
+# FIX 22/07 (richiesta esplicita utente, stesso fix gia' fatto sul bot aste): notifica
+# Telegram UNA SOLA volta per finestra di RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS (default
+# 5 minuti), non ad ogni singolo 429 -- durante una raffica di retry arriverebbero
+# altrimenti decine di messaggi per lo stesso evento.
+RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS = float(os.environ.get('RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS', '300'))
+_last_429_notify_ts = [0.0]
+
 
 def _graphql_throttle():
     with _graphql_throttle_lock:
@@ -940,6 +947,15 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
             r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             _graphql_last_429_ts[0] = time.time()
+            now = time.time()
+            if now - _last_429_notify_ts[0] >= RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS:
+                _last_429_notify_ts[0] = now
+                send_telegram_msg(
+                    "\u26A0\uFE0F <b>Bot Supremo -- rate limit (HTTP 429)</b>\n"
+                    "Sorare sta rifiutando richieste per troppo carico -- il bot sta "
+                    "rallentando automaticamente. Continua da solo, nessuna azione "
+                    "richiesta."
+                )
             wait_seconds = min((2 ** attempt) * 2, 8.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s...")
