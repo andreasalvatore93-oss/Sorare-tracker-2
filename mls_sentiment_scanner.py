@@ -826,26 +826,41 @@ def generate_html_chart(data, display_name, output_dir, html_file):
     # Preparazione dati per fasce di prezzo: raggruppa tutti i giocatori per tier
     # e calcola sconto medio + conteggio per ogni fascia -- risponde alla domanda
     # "quale fascia di carte sta calando/salendo di più in questo momento?"
-    tier_stats = {name: {'changes': [], 'color': color, 'count': 0} for _, _, name, color in PRICE_TIERS}
+    # Tracciamo anche il singolo giocatore col calo % maggiore in ogni fascia.
+    tier_stats = {name: {'changes': [], 'color': color, 'count': 0, 'players': []} for _, _, name, color in PRICE_TIERS}
     for team_slug, team_data in data['teams'].items():
         for player_slug, player_data in team_data.get('players', {}).items():
             price = player_data.get('min_live_price', 0)
             if price <= 0:
                 continue
             tier_name, _ = classify_price_tier(price)
-            tier_stats[tier_name]['changes'].append(player_data.get('change_from_mean_pct', 0))
+            change_pct = player_data.get('change_from_mean_pct', 0)
+            tier_stats[tier_name]['changes'].append(change_pct)
             tier_stats[tier_name]['count'] += 1
+            tier_stats[tier_name]['players'].append({
+                'name': player_data.get('name', player_slug),
+                'team': team_data.get('team_name', ''),
+                'change_pct': change_pct,
+            })
     
     tier_chart_data = []
     for low, high, name, color in PRICE_TIERS:
         changes = tier_stats[name]['changes']
         avg_change = sum(changes) / len(changes) if changes else 0
+        
+        # Il giocatore col calo % maggiore in questa fascia (change_pct più negativo)
+        players_in_tier = tier_stats[name]['players']
+        top_drop = min(players_in_tier, key=lambda p: p['change_pct']) if players_in_tier else None
+        
         tier_chart_data.append({
             'name': name,
             'avg_change': round(avg_change, 1),
             'count': tier_stats[name]['count'],
             'color': color,
             'range': f"{low:.0f}-{high:.0f}" if high != float('inf') else f"{low:.0f}+",
+            'top_drop_name': top_drop['name'] if top_drop else None,
+            'top_drop_team': top_drop['team'] if top_drop else None,
+            'top_drop_pct': round(top_drop['change_pct'], 1) if top_drop else None,
         })
     
     global_trend = data['summary'].get('global_trend', 'STABLE')
@@ -1005,6 +1020,7 @@ def generate_html_chart(data, display_name, output_dir, html_file):
         
         const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const textColor = isDark ? '#f5f5f7' : '#1d1d1f';
+        const textSecondaryColor = isDark ? '#a1a1a6' : '#6e6e73';
         const gridColor = isDark ? '#38383a' : '#e5e5e7';
         const greenColor = isDark ? '#30d158' : '#34c759';
         const redColor = isDark ? '#ff453a' : '#ff3b30';
@@ -1063,7 +1079,7 @@ def generate_html_chart(data, display_name, output_dir, html_file):
         const tierValues = tierDataReversed.map(t => t.avg_change);
         const tierColors = tierDataReversed.map(t => t.color);
         
-        // Plugin custom per scrivere il valore % direttamente sopra/dentro ogni barra
+        // Plugin custom per scrivere il valore % e il giocatore col calo maggiore su ogni barra
         const dataLabelsPlugin = {
             id: 'dataLabelsPlugin',
             afterDatasetsDraw(chart) {
@@ -1072,18 +1088,28 @@ def generate_html_chart(data, display_name, output_dir, html_file):
                     const meta = chart.getDatasetMeta(datasetIndex);
                     meta.data.forEach((bar, index) => {
                         const value = dataset.data[index];
+                        const t = tierDataReversed[index];
                         const label = (value > 0 ? '+' : '') + value.toFixed(1) + '%';
+                        const topDropLabel = t.top_drop_name
+                            ? t.top_drop_name + ' ' + (t.top_drop_pct > 0 ? '+' : '') + t.top_drop_pct.toFixed(1) + '%'
+                            : null;
                         ctx.save();
-                        ctx.fillStyle = textColor;
                         ctx.font = 'bold 12px -apple-system, sans-serif';
                         ctx.textBaseline = 'middle';
                         if (chart.options.indexAxis === 'y') {
                             ctx.textAlign = value < 0 ? 'right' : 'left';
                             const xPos = value < 0 ? bar.x - 8 : bar.x + 8;
-                            ctx.fillText(label, xPos, bar.y);
+                            ctx.fillStyle = textColor;
+                            ctx.fillText(label, xPos, bar.y - 8);
+                            if (topDropLabel) {
+                                ctx.font = '10px -apple-system, sans-serif';
+                                ctx.fillStyle = textSecondaryColor;
+                                ctx.fillText('📉 ' + topDropLabel, xPos, bar.y + 8);
+                            }
                         } else {
                             ctx.textAlign = 'center';
                             const yPos = value < 0 ? bar.y + 16 : bar.y - 8;
+                            ctx.fillStyle = textColor;
                             ctx.fillText(label, bar.x, yPos);
                         }
                         ctx.restore();
@@ -1109,7 +1135,7 @@ def generate_html_chart(data, display_name, output_dir, html_file):
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: {padding: {right: 40, left: 10}},
+                layout: {padding: {right: 40, left: 10, top: 10, bottom: 10}},
                 plugins: {
                     legend: {display: false},
                     tooltip: {
@@ -1117,6 +1143,12 @@ def generate_html_chart(data, display_name, output_dir, html_file):
                             label: function(ctx) {
                                 const t = tierDataReversed[ctx.dataIndex];
                                 return t.avg_change.toFixed(1) + '% medio — ' + t.count + ' carte in questa fascia';
+                            },
+                            afterLabel: function(ctx) {
+                                const t = tierDataReversed[ctx.dataIndex];
+                                if (!t.top_drop_name) return '';
+                                return '📉 Top calo: ' + t.top_drop_name + ' (' + t.top_drop_team + ') ' +
+                                       (t.top_drop_pct > 0 ? '+' : '') + t.top_drop_pct.toFixed(1) + '%';
                             }
                         }
                     }
