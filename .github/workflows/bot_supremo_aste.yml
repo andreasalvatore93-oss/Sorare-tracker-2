@@ -35,6 +35,10 @@ on:
         description: "Tetto SOLO per la fase SCADENZA (le N piu' vicine alla scadenza). NUOVE e ZEROBID non hanno tetto -- valutano sempre tutto, per non perdere occasioni"
         required: false
         default: "5"
+      alert_flush_interval_seconds:
+        description: "Ogni quanti secondi mandare le notifiche diagnostiche accumulate, anche a META' fase (i bid REALI notificano sempre subito, non aspettano mai)"
+        required: false
+        default: "30"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -99,6 +103,7 @@ jobs:
           CYCLE_PHASE_SECONDS: ${{ github.event.inputs.cycle_phase_seconds || '20' }}
           CYCLE_PAUSE_SECONDS: ${{ github.event.inputs.cycle_pause_seconds || '20' }}
           SCADENZA_TOP_N: ${{ github.event.inputs.scadenza_top_n || '5' }}
+          ALERT_FLUSH_INTERVAL_SECONDS: ${{ github.event.inputs.alert_flush_interval_seconds || '30' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'no' }}
           AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
