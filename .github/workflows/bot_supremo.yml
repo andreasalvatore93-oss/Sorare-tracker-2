@@ -21,11 +21,11 @@ on:
       offer_discount_percent:
         description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
         required: false
-        default: "25"
+        default: "20"
       autobuy_margin_percent:
         description: "Margine MINIMO per il ramo AutoBuy (accetta offerta esistente), in % -- deve essere >= makeoffer_max_margin_percent"
         required: false
-        default: "26"
+        default: "25"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -41,7 +41,7 @@ on:
       target_matches:
         description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-20)"
         required: false
-        default: "3"
+        default: "20"
       autobuy_diagnostic:
         description: "Log extra sul confronto in_season/classic per lega, di default spento"
         required: false
@@ -138,12 +138,12 @@ jobs:
           AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
           MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '15' }}
           MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '25' }}
-          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '26' }}
+          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '25' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
           LIQUIDITY_DIAGNOSTIC: "no"
           RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS: ${{ github.event.inputs.rate_limit_notify_cooldown_seconds || '300' }}
-          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '3' }}
+          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '20' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
@@ -157,7 +157,7 @@ jobs:
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'si' }}
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
-          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '25' }}
+          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '20' }}
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: "20"
         run: |
