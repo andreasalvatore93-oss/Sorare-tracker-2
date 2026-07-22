@@ -288,9 +288,31 @@ def _lista_nera_leggi_righe():
         if len(parts) != 2:
             log(f"[lista nera] riga {n} malformata (attesi 2 campi slug,durata), ignorata: {raw!r}")
             continue
-        slug, durata_str = parts
+        slug, valore_str = parts
         slug = slug.lower()
-        secondi = _leggibire_wrapper(durata_str, n, raw)
+        # FIX 22/07 (richiesta esplicita utente): thin_market e cooldown_acquisto usano
+        # ora una SCADENZA ASSOLUTA (ISO), non piu' una durata testuale -- una durata
+        # testuale viene reinterpretata "da adesso" ad OGNI lettura, quindi una riga
+        # mai piu' riscritta non scade mai davvero se il file resta statico tra le
+        # letture. giocatore/manager/campionato restano a durata leggibile (l'utente
+        # vuole poter scrivere/editare "X giorni" a mano per questi).
+        if tipo_corrente in ('thin_market', 'cooldown_acquisto'):
+            try:
+                scadenza = datetime.datetime.fromisoformat(valore_str.replace('Z', '+00:00'))
+                if scadenza.tzinfo is None:
+                    scadenza = scadenza.replace(tzinfo=datetime.timezone.utc)
+                righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': scadenza})
+                continue
+            except ValueError:
+                pass  # non e' ISO -- prova il vecchio formato durata testuale (compatibilita'
+                      # con entry scritte prima di questo fix, verranno convertite in ISO alla
+                      # prossima riscrittura del file)
+            secondi_legacy = _leggibire_wrapper(valore_str, n, raw)
+            if secondi_legacy is None:
+                continue
+            righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi_legacy)})
+            continue
+        secondi = _leggibire_wrapper(valore_str, n, raw)
         if secondi is None:
             continue
         righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi)})
@@ -327,10 +349,13 @@ def _lista_nera_scrivi_righe(righe):
 
     with open(LISTA_NERA_PATH, 'w', encoding='utf-8') as f:
         f.write("# LISTA NERA DEL BOT SUPREMO\n")
-        f.write("# Ogni riga: slug,durata (es. 'clem777,5 giorni'). La durata e' il tempo\n")
-        f.write("# rimanente, aggiornato automaticamente ogni volta che il bot riscrive questo\n")
-        f.write("# file -- puoi modificarla a mano in qualunque momento (es. '3 ore', '10 giorni',\n")
-        f.write("# '30 minuti') per accorciare o allungare il blocco. Per rimuovere un blocco,\n")
+        f.write("# Sezioni giocatore/manager/campionato: ogni riga 'slug,durata' (es. 'clem777,5\n")
+        f.write("# giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni\n")
+        f.write("# scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').\n")
+        f.write("# Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora\n")
+        f.write("# ASSOLUTA di scadenza (fix 22/07: una durata testuale si 'rinnovava' da sola ad\n")
+        f.write("# ogni lettura se il file restava statico tra le run). NON pensate per modifica a\n")
+        f.write("# mano, gestite automaticamente dal bot. Per rimuovere un blocco in ogni sezione,\n")
         f.write("# cancella semplicemente la riga.\n\n")
         for tipo in _LISTA_NERA_ORDINE_SEZIONI:
             righe_tipo = sorted(per_tipo[tipo], key=lambda r: r['slug'])
@@ -339,8 +364,11 @@ def _lista_nera_scrivi_righe(righe):
             if not righe_tipo:
                 f.write("# (vuoto)\n")
             for r in righe_tipo:
-                delta = (r['scadenza'] - ora).total_seconds()
-                f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
+                if tipo in ('thin_market', 'cooldown_acquisto'):
+                    f.write(f"{r['slug']},{r['scadenza'].isoformat()}\n")
+                else:
+                    delta = (r['scadenza'] - ora).total_seconds()
+                    f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
             f.write("\n")
     # Invalida la cache: la prossima chiamata a _lista_nera_leggi_righe ricarichera'
     # dal file appena scritto, cosi' resta sempre sincronizzata con lo stato vero.
@@ -515,15 +543,15 @@ if _extra_blacklisted_leagues.strip():
 LEAGUE_BLACKLIST_VERBOSE_LOG = os.environ.get('LEAGUE_BLACKLIST_VERBOSE_LOG', 'no').strip().lower() in ('si', 'true', '1', 'yes')
 
 # --- Parametri regolabili ---
-AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1'))
+AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1.50'))
 AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
 
 # Due soglie SEPARATE per fascia, nessuna sovrapponibile per costruzione:
 # MAKEOFFER_MARGIN_FRACTION <= margine < MAKEOFFER_MAX_MARGIN_FRACTION -> ramo MakeOffer
 # margine >= AUTOBUY_MARGIN_FRACTION -> ramo AutoBuy (deve essere >= al tetto MakeOffer)
-MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.10'))
-MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.19'))
-AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'))
+MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.15'))
+MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.25'))
+AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.26'))
 
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
@@ -544,16 +572,8 @@ AUTOBUY_TARGET_MATCHES = max(1, min(20, AUTOBUY_TARGET_MATCHES))
 AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
-# Modalita' diagnostica isolata (22/07, richiesta esplicita utente -- verificare in pochi
-# secondi il conteggio transazioni di UN giocatore specifico, senza aspettare che il
-# bot lo incontri per caso sul mercato via listener). Se valorizzata, main() esegue
-# SOLO count_recent_transactions per questo slug (con log diagnostico forzato) e
-# termina subito -- non tocca browser/listener/blacklist/nient'altro del bot normale.
-DIAGNOSTIC_PLAYER_SLUG = os.environ.get('DIAGNOSTIC_PLAYER_SLUG', '').strip()
-DIAGNOSTIC_LEAGUE_SLUG = os.environ.get('DIAGNOSTIC_LEAGUE_SLUG', '').strip()
-
 # Parametri MakeOffer (ramo offerta scontata)
-OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'))
+OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.25'))
 OFFER_DURATION_DAYS = max(1, min(7, int(os.environ.get('OFFER_DURATION_DAYS', '1'))))
 OFFER_DURATION_SECONDS = OFFER_DURATION_DAYS * 86400
 MAX_PENDING_OFFERS = int(os.environ.get('MAX_PENDING_OFFERS', '10'))
@@ -1206,7 +1226,7 @@ query RecentTransactionsBySeasonQuery($p: String!, $n: Int!, $cursor: String) {
 # scartare il caso).
 MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '4'))
 RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '7'))
-MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '4'))
+MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '6'))
 TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
 
@@ -1297,7 +1317,11 @@ def _fetch_paginated_transaction_nodes(player_slug):
     essere una lista piatta senza paginazione, rimosso perche' ridondante e peggiore).
     Si ferma quando il nodo piu' vecchio della pagina esce dalla finestra 30gg (i nodi
     arrivano dal piu' recente al piu' vecchio con 'last', ordine Relay standard), quando
-    il server non ha piu' pagine, o dopo TRANSACTIONS_MAX_PAGES di sicurezza."""
+    il server non ha piu' pagine, o dopo TRANSACTIONS_MAX_PAGES di sicurezza.
+    FIX 22/07 (richiesta esplicita utente -- ripristino log puliti): il log dettagliato
+    per pagina torna OPT-IN (LIQUIDITY_DIAGNOSTIC='si'), non piu' permanente su ogni
+    chiamata -- era stato reso permanente durante l'indagine sul falso mercato sottile,
+    ora che la causa e' stata isolata ed esclusa non serve piu' di default."""
     now = datetime.datetime.now(datetime.timezone.utc)
     cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
     all_nodes = []
@@ -1313,15 +1337,17 @@ def _fetch_paginated_transaction_nodes(player_slug):
         all_nodes.extend(nodes)
         page_info = conn.get('pageInfo') or {}
         oldest_date_str = nodes[-1].get('date') if nodes else None
-        log(f"[liquidita' paginazione] {player_slug}: pagina {page_num}, "
-            f"{len(nodes)} nodi (totale {len(all_nodes)}), piu' vecchio: {oldest_date_str or 'n/d'}")
+        if LIQUIDITY_DIAGNOSTIC:
+            log(f"[liquidita' paginazione] {player_slug}: pagina {page_num}, "
+                f"{len(nodes)} nodi (totale {len(all_nodes)}), piu' vecchio: {oldest_date_str or 'n/d'}")
         if not nodes:
             break
         try:
             oldest_dt = datetime.datetime.fromisoformat((oldest_date_str or '').replace('Z', '+00:00'))
             if oldest_dt < cutoff_long:
-                log(f"[liquidita' paginazione] {player_slug}: nodo piu' vecchio "
-                    f"della pagina {page_num} fuori dalla finestra 30gg, mi fermo")
+                if LIQUIDITY_DIAGNOSTIC:
+                    log(f"[liquidita' paginazione] {player_slug}: nodo piu' vecchio "
+                        f"della pagina {page_num} fuori dalla finestra 30gg, mi fermo")
                 break
         except (ValueError, AttributeError):
             pass
@@ -1338,24 +1364,26 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None, 
     negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni.
 
     FIX 22/07 (unificazione): un'unica query paginata (_fetch_paginated_transaction_nodes)
-    per TUTTI i campionati. Il filtro per stagione (season_filter) si applica SOLO per
-    MLS/K-League (is_asia_americas_excluded_league), le uniche 2 leghe dove classic/
-    in_season sono davvero separate nel calcolo del margine (vedi get_in_season_prices).
-    Per tutti gli altri campionati, season_filter=None conta TUTTE le transazioni
-    (in_season+classic mescolate), coerente col resto della logica di calcolo
-    minimo/margine per questi campionati.
+    per TUTTI i campionati.
 
-    force_diagnostic (22/07, seconda diagnostica -- permanente): se True, forza il
-    log dettagliato indipendentemente da LIQUIDITY_DIAGNOSTIC, e stampa anche i
-    parametri esatti con cui e' stata chiamata (is_in_season, league_slug,
-    excluded_league/season_filter risultante) -- evita di dover indovinare a
-    posteriori con quali parametri il bot ha valutato un certo scarto.
+    FIX 22/07 (seconda modifica, richiesta esplicita utente -- caso Souleymane Isaak
+    Touré: bot sommava in_season+classic in un solo conteggio, causando scarti per
+    mercato sottile basati sulla stagione sbagliata): il filtro per stagione
+    (season_filter = is_in_season) si applica ora SEMPRE, per TUTTI i campionati, non
+    solo MLS/K-League -- riguarda SOLO questo conteggio liquidita'/transazioni. Il
+    calcolo del prezzo minimo/margine (get_in_season_prices) NON e' toccato da questo
+    fix e per i campionati non-MLS/K-League continua a mescolare in_season+classic
+    come prima (is_asia_americas_excluded_league resta usata solo li').
+
+    force_diagnostic: se True, forza il log dettagliato indipendentemente da
+    LIQUIDITY_DIAGNOSTIC, e stampa anche i parametri esatti con cui e' stata chiamata
+    -- utile per test isolati mirati, non attivo di default sul percorso live.
 
     Ritorna (None, None) se la query fallisce. Fail-safe: il chiamante NON deve
     bloccare l'acquisto solo per questo."""
-    excluded_league = is_asia_americas_excluded_league(league_slug)
-    season_filter = is_in_season if excluded_league else None
+    season_filter = is_in_season
     if force_diagnostic:
+        excluded_league = is_asia_americas_excluded_league(league_slug)
         log(f"[diagnostica liquidita'] {player_slug}: chiamata con is_in_season={is_in_season}, "
             f"league_slug={league_slug!r}, excluded_league(MLS/K-League)={excluded_league}, "
             f"season_filter effettivo={season_filter}")
@@ -2389,26 +2417,18 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
         return False
 
-    if player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
-        log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile nelle "
-            f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
-        return False
-
-    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season, league_slug, force_diagnostic=True)
-    if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
-        log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
-            f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
-            f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
-        if player_slug:
-            record_thin_market_skip(player_slug, is_in_season)
-        return False
-    if count_30d is not None and count_30d < MIN_TRANSACTIONS_30D:
-        log(f"{player_name}: scarto -- solo {count_30d} transazioni negli ultimi "
-            f"{TRANSACTIONS_WINDOW_30D_DAYS} giorni (minimo richiesto "
-            f"{MIN_TRANSACTIONS_30D}), mercato troppo sottile")
-        if player_slug:
-            record_thin_market_skip(player_slug, is_in_season)
-        return False
+    # OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente -- "ogni millisecondo
+    # e' importante nello sniping"): il controllo di liquidita' (cache thin_market +
+    # query di rete count_recent_transactions) e' stato SPOSTATO piu' in basso, DOPO
+    # il calcolo del margine, invece di stare qui subito dopo il filtro prezzo. Motivo:
+    # la query di liquidita' e' la piu' costosa del percorso (fino a 6 round-trip
+    # GraphQL paginati) ed era pagata SEMPRE, anche per carte che poi risultavano
+    # scartate per margine insufficiente (la maggioranza dei casi nei log reali) --
+    # lavoro di rete sprecato. Ora si paga solo per candidati che sono gia' un affare
+    # sulla carta (margine sufficiente), zero costo aggiuntivo sui veri affari (la
+    # query serve comunque prima di procedere), risparmio netto sui casi scartati.
+    # La cache thin_market (istantanea, RAM/file) resta comunque a costo quasi zero
+    # ovunque si trovi nell'ordine -- il vero risparmio e' sulla query di rete.
 
     if is_in_season:
         prices, excluded_league = get_in_season_prices(player_slug, eth_rate, league_slug)
@@ -2459,6 +2479,33 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     log(f"{player_name}: minimo {true_min_price:.2f}EUR, secondo {second_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%} (soglie MakeOffer {MAKEOFFER_MARGIN_FRACTION:.0%}-"
         f"{MAKEOFFER_MAX_MARGIN_FRACTION:.0%}, AutoBuy >= {AUTOBUY_MARGIN_FRACTION:.0%})")
+
+    if margin_percent < MAKEOFFER_MARGIN_FRACTION:
+        return False  # margine insufficiente per qualunque ramo -- niente query liquidita' sprecata
+
+    # Controllo liquidita' (thin_market cache + query di rete) spostato QUI: solo ora
+    # sappiamo che la carta e' gia' un affare sulla carta, quindi vale la pena del
+    # costo della verifica -- vedi nota sopra sul filtro prezzo per il razionale.
+    if player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
+        log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile nelle "
+            f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
+        return False
+
+    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season, league_slug)
+    if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
+        log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
+            f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
+            f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
+        if player_slug:
+            record_thin_market_skip(player_slug, is_in_season)
+        return False
+    if count_30d is not None and count_30d < MIN_TRANSACTIONS_30D:
+        log(f"{player_name}: scarto -- solo {count_30d} transazioni negli ultimi "
+            f"{TRANSACTIONS_WINDOW_30D_DAYS} giorni (minimo richiesto "
+            f"{MIN_TRANSACTIONS_30D}), mercato troppo sottile")
+        if player_slug:
+            record_thin_market_skip(player_slug, is_in_season)
+        return False
 
     # --- ROUTER: nessuna sovrapposizione per costruzione ---
     if margin_percent >= AUTOBUY_MARGIN_FRACTION:
@@ -2861,25 +2908,7 @@ def _periodic_commit_loop():
         _commit_lista_nera_se_serve()
 
 
-def run_diagnostic_player_check(player_slug, league_slug=None):
-    """Modalita' isolata (22/07): verifica in pochi secondi il conteggio transazioni
-    di UN giocatore specifico, senza passare da listener/mercato/blacklist. Usa
-    force_diagnostic=True per ottenere il log dettagliato indipendentemente da
-    LIQUIDITY_DIAGNOSTIC nell'env, cosi' basta valorizzare DIAGNOSTIC_PLAYER_SLUG per
-    ottenere il dettaglio senza dover cambiare altri input del workflow."""
-    log(f"[diagnostica isolata] avvio verifica transazioni per: {player_slug}")
-    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season=True, league_slug=league_slug,
-                                                      force_diagnostic=True)
-    log(f"[diagnostica isolata] RISULTATO per {player_slug}: count_7d={count_7d}, "
-        f"count_30d={count_30d} (soglie attuali: 7gg>={MIN_RECENT_TRANSACTIONS}, "
-        f"30gg>={MIN_TRANSACTIONS_30D})")
-    log("[diagnostica isolata] fine, nessun'altra azione eseguita (browser/listener/blacklist non toccati).")
-
-
 def main():
-    if DIAGNOSTIC_PLAYER_SLUG:
-        run_diagnostic_player_check(DIAGNOSTIC_PLAYER_SLUG, DIAGNOSTIC_LEAGUE_SLUG or None)
-        return
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
     autobuy_modalita = "ACQUISTO REALE ATTIVO" if AUTOBUY_LIVE_MODE else "solo diagnostica"
