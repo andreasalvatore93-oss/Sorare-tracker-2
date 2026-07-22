@@ -1155,16 +1155,13 @@ def get_bucket_prices(player_slug, eth_rate):
         raw[bucket].append((price, match.get('slug'), seller_slug))
     if skipped_coverage:
         log(f"[scarto coverage] {player_slug}: {len(skipped_coverage)} carta/e esclusa/e dal "
-            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5): "
-            f"{', '.join(skipped_coverage)}")
+            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5)")
     if skipped_zero_avg:
         log(f"[scarto media 0] {player_slug}: {len(skipped_zero_avg)} carta/e esclusa/e dal "
-            f"confronto -- media 0 nelle ultime 10 giocate e/o nelle ultime 40: "
-            f"{', '.join(skipped_zero_avg)}")
+            f"confronto -- media 0 nelle ultime 10 giocate e/o nelle ultime 40")
     if skipped_forma_bassa:
         log(f"[scarto forma bassa] {player_slug}: {len(skipped_forma_bassa)} carta/e esclusa/e "
-            f"dal confronto -- media SO5 ultime 5 sotto soglia ({LAST_FIVE_AVG_SCORE_THRESHOLD:.0f}): "
-            f"{', '.join(skipped_forma_bassa)}")
+            f"dal confronto -- media SO5 ultime 5 sotto soglia ({LAST_FIVE_AVG_SCORE_THRESHOLD:.0f})")
     for key in ('in_season', 'classic'):
         raw[key].sort(key=lambda p: p[0])
     return raw
