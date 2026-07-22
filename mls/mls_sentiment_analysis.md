@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T16:48:16.176902Z
-**Run totali:** 98
+**Data analisi:** 2026-07-22T16:50:18.009346Z
+**Run totali:** 99
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.90 EUR
-- **Trend mercato:** ➡️ STABLE (-0.2%)
-- **Sentiment:** ⚪ Stabile
+- **Prezzo medio MLS:** 5.86 EUR
+- **Trend mercato:** ➡️ STABLE (-0.6%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.2%)**
+**➡️ TREND GLOBALE: STABLE (-0.6%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Alexander Bonetig (Portland Timbers)**
@@ -44,17 +44,17 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 1. Justin Reynolds (Sporting Kansas City ) — **+0.0%** vs media (0.64 EUR vs 0.64 EUR)
 2. C. Tschantret (Sporting Kansas City ) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
 3. Ryan Schewe (Sporting Kansas City ) — **+0.0%** vs media (0.62 EUR vs 0.62 EUR)
-4. Nicholas Simmonds (FC Dallas) — **+0.0%** vs media (0.80 EUR vs 0.80 EUR)
-5. Herman Johansson (FC Dallas) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
-6. Bernard Kamungo (FC Dallas) — **+0.0%** vs media (0.51 EUR vs 0.51 EUR)
-7. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
-8. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
-9. Kaick (FC Dallas) — **+0.0%** vs media (1.69 EUR vs 1.69 EUR)
-10. Ran Binyamin (FC Dallas) — **+0.0%** vs media (2.30 EUR vs 2.30 EUR)
+4. Daniel (FC Dallas) — **+0.0%** vs media (7.18 EUR vs 7.18 EUR)
+5. Nicholas Simmonds (FC Dallas) — **+0.0%** vs media (0.80 EUR vs 0.80 EUR)
+6. Herman Johansson (FC Dallas) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
+7. Bernard Kamungo (FC Dallas) — **+0.0%** vs media (0.51 EUR vs 0.51 EUR)
+8. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
+9. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
+10. Kaick (FC Dallas) — **+0.0%** vs media (1.69 EUR vs 1.69 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
-Carte trovate: 16 | Prezzo medio: 4.94 EUR | Volatilità (σ): 5.58
+Carte trovate: 17 | Prezzo medio: 4.71 EUR | Volatilità (σ): 5.48
 
 **Los Angeles FC**
 Carte trovate: 16 | Prezzo medio: 9.06 EUR | Volatilità (σ): 11.03
@@ -63,7 +63,7 @@ Carte trovate: 16 | Prezzo medio: 9.06 EUR | Volatilità (σ): 11.03
 Carte trovate: 20 | Prezzo medio: 2.08 EUR | Volatilità (σ): 2.46
 
 **San Jose Earthquakes**
-Carte trovate: 15 | Prezzo medio: 3.38 EUR | Volatilità (σ): 4.36
+Carte trovate: 16 | Prezzo medio: 3.25 EUR | Volatilità (σ): 4.25
 
 **Columbus Crew**
 Carte trovate: 19 | Prezzo medio: 2.54 EUR | Volatilità (σ): 1.95
@@ -135,10 +135,10 @@ Carte trovate: 17 | Prezzo medio: 3.45 EUR | Volatilità (σ): 4.75
 Carte trovate: 17 | Prezzo medio: 2.25 EUR | Volatilità (σ): 2.39
 
 **DC United**
-Carte trovate: 11 | Prezzo medio: 1.49 EUR | Volatilità (σ): 1.63
+Carte trovate: 12 | Prezzo medio: 1.54 EUR | Volatilità (σ): 1.57
 
 **FC Dallas**
-Carte trovate: 26 | Prezzo medio: 1.26 EUR | Volatilità (σ): 1.40
+Carte trovate: 27 | Prezzo medio: 1.46 EUR | Volatilità (σ): 1.72
 
 **Sporting Kansas City **
 Carte trovate: 14 | Prezzo medio: 1.30 EUR | Volatilità (σ): 1.35
