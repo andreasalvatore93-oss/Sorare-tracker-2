@@ -62,6 +62,14 @@ on:
         description: "Transazioni minime (30gg) -- secondo layer di protezione liquidita' (il server mostra al massimo 5 transazioni totali per giocatore; questa soglia non puo' essere piu' bassa di min_recent_transactions, la finestra 30gg include sempre quella 7gg)"
         required: false
         default: "6"
+      min_listed_cards_for_purchase:
+        description: "Carte MINIME dello stesso giocatore attualmente IN VENDITA (annunci vivi, non storico) perche' il caso proceda -- protezione mercato poco popolato. MLS/K-League confrontano solo la stagione giusta (season/classic separate), altri campionati mescolano in_season+classic come sempre"
+        required: false
+        default: "3"
+      min_listed_cards_diagnostic:
+        description: "'si' = logga anche quando il controllo 'carte in vendita minime' PASSA (utile per verificare che il controllo giri su ogni candidato durante il test). 'no' = logga solo gli scarti, come tutti gli altri controlli."
+        required: false
+        default: "no"
       blacklisted_manager_slugs:
         description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
         required: false
@@ -140,6 +148,8 @@ jobs:
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '4' }}
           MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '6' }}
+          MIN_LISTED_CARDS_FOR_PURCHASE: ${{ github.event.inputs.min_listed_cards_for_purchase || '3' }}
+          MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
           BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
