@@ -74,6 +74,10 @@ on:
         description: "'si' = logga anche quando il controllo 'carte in vendita minime' PASSA (utile per verificare che il controllo giri su ogni candidato durante il test). 'no' = logga solo gli scarti, come tutti gli altri controlli."
         required: false
         default: "no"
+      min_non_trigger_log:
+        description: "'si' = log dedicato per il meccanismo 'trigger su minimo non allineato' (offerta sul vero minimo di mercato quando l'annuncio che ha fatto scattare l'evento non e' il minimo) -- solo ramo MakeOffer. 'no' = meccanismo attivo comunque, ma silenzioso."
+        required: false
+        default: "no"
       blacklisted_manager_slugs:
         description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
         required: false
@@ -155,6 +159,7 @@ jobs:
           MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '6' }}
           MIN_LISTED_CARDS_FOR_PURCHASE: ${{ github.event.inputs.min_listed_cards_for_purchase || '3' }}
           MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
+          MIN_NON_TRIGGER_LOG: ${{ github.event.inputs.min_non_trigger_log || 'no' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
           BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
