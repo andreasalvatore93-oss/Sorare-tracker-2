@@ -398,7 +398,7 @@ TEST_ONLY_ZERO_BID = os.environ.get('TEST_ONLY_ZERO_BID', 'no').strip().lower() 
 # singolo annuncio fuori mercato che alza il "minimo live" per errore/manipolazione).
 # FIX 22/07 (richiesta esplicita utente, primi test con bid REALI: "cosi' anche se ci
 # sono problemi non perdo molti soldi"): default abbassato da 20 a 10 EUR.
-MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '10'))
+MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '20'))
 
 # FIX 22/07 v8 (richiesta esplicita utente, "vorrei farli girare insieme"): il rate
 # limit di Sorare e' probabilmente per ACCOUNT (stesso cookie), non per processo --
@@ -476,6 +476,20 @@ INSUFFICIENT_FUNDS_STOP = [False]
 MAX_BIDS_PER_RUN = int(os.environ.get('MAX_BIDS_PER_RUN', '10'))
 BIDS_ATTEMPTED_THIS_RUN = [0]
 _bids_attempted_lock = threading.Lock()
+
+# Richiesta esplicita utente 22/07: tra un TENTATIVO di bid reale e il successivo
+# devono passare almeno MIN_DELAY_BETWEEN_BIDS_SECONDS secondi, per evitare bid "a
+# raffica" quando piu' occasioni vengono trovate nello stesso istante. Nessuna asta
+# viene persa o scartata per questo: il bot si limita ad aspettare (sleep) restando
+# sulla stessa identica asta gia' selezionata, poi riprende da li'. Il timestamp
+# viene aggiornato subito PRIMA di partire con l'attesa (vedi punto di inserimento
+# in evaluate_auction), cosi' il prossimo tentativo calcola correttamente quanto
+# manca. Lock dedicato (diverso da _bids_attempted_lock) perche' l'attesa avviene
+# PRIMA della riverifica live, quindi in un momento diverso da quello in cui si
+# consuma il tetto MAX_BIDS_PER_RUN.
+MIN_DELAY_BETWEEN_BIDS_SECONDS = float(os.environ.get('MIN_DELAY_BETWEEN_BIDS_SECONDS', '10'))
+LAST_REAL_BID_ATTEMPT_TIME = [0.0]
+_last_bid_time_lock = threading.Lock()
 
 
 # =====================================================================================
@@ -2083,6 +2097,23 @@ def evaluate_auction(auction, eth_rate, state, source='WS'):
         stats['skip_max_bids_run'] = stats.get('skip_max_bids_run', 0) + 1
         return False
 
+    # Richiesta esplicita utente 22/07: almeno MIN_DELAY_BETWEEN_BIDS_SECONDS tra un
+    # tentativo di bid reale e il successivo, per evitare bid "a raffica". Calcolo
+    # intelligente: se e' gia' passato abbastanza tempo dall'ultimo tentativo (es.
+    # per via del tempo speso a valutare altre aste nel frattempo), si aspetta solo
+    # il resto mancante (anche zero). L'asta NON viene persa ne' scartata: si resta
+    # fermi (sleep) su questa stessa asta gia' selezionata, poi si riprende da qui.
+    with _last_bid_time_lock:
+        elapsed_since_last_bid = time.monotonic() - LAST_REAL_BID_ATTEMPT_TIME[0]
+        wait_needed = MIN_DELAY_BETWEEN_BIDS_SECONDS - elapsed_since_last_bid
+        if wait_needed > 0:
+            log(f"[{source}] {player_name}: attendo {wait_needed:.1f}s per rispettare "
+                f"il gap minimo di {MIN_DELAY_BETWEEN_BIDS_SECONDS:.0f}s tra bid reali "
+                f"(resto su questa stessa asta)")
+        LAST_REAL_BID_ATTEMPT_TIME[0] = time.monotonic() + max(0.0, wait_needed)
+    if wait_needed > 0:
+        time.sleep(wait_needed)
+
     # --- Modalita' live: riverifica di sicurezza prima del bid reale (non ritirabile) ---
     time.sleep(AUCTION_RECHECK_DELAY_SECONDS)
     fresh = get_auction_live_state(auction_id)
@@ -2245,6 +2276,9 @@ def main():
     log(f"Tetto massimo BID REALI per questa run: {MAX_BIDS_PER_RUN} "
         f"(raggiunto il tetto, o su fondi insufficienti, il bot si FERMA "
         f"DEFINITIVAMENTE)")
+    log(f"Attesa minima tra un tentativo di bid reale e il successivo: "
+        f"{MIN_DELAY_BETWEEN_BIDS_SECONDS:.0f}s (nessuna asta persa -- il bot resta "
+        f"fermo sulla stessa asta gia' selezionata e riprende da li')")
     log(f"Modalita' carico condiviso (SHARED_LOAD, per account Sorare occupato anche "
         f"altrove): {'ATTIVA' if SHARED_LOAD else 'spenta'} -- pace GraphQL "
         f"{GRAPHQL_MIN_INTERVAL_SECONDS:.2f}s, tetto {PHASE_MAX_CANDIDATES} aste per "
