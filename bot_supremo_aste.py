@@ -70,7 +70,7 @@ CSRF_TOKEN = _extract_csrf_from_cookie(COOKIES) or os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('AUCTION_TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('AUCTION_TELEGRAM_CHAT_ID', '').strip()
 
-AUCTION_LIVE_MODE = os.environ.get('AUCTION_LIVE_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+AUCTION_LIVE_MODE = os.environ.get('AUCTION_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
 SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 
@@ -404,14 +404,15 @@ AUCTION_RECHECK_DELAY_SECONDS = float(os.environ.get('AUCTION_RECHECK_DELAY_SECO
 # successivo fallirebbe uguale -- ci si ferma subito invece di continuare a vuoto.
 INSUFFICIENT_FUNDS_STOP = [False]
 
-# FIX 22/07 (richiesta esplicita utente, primi test con bid REALI su aste vere: "max 1
-# asta su cui biddare per run... andiamo per tentativi"): tetto al numero di TENTATIVI
-# di bid reale (non di valutazioni diagnostiche) per l'intera durata della run -- una
-# volta raggiunto, il bot continua a girare e a valutare/notificare in diagnostica come
-# sempre, ma non tenta piu' nessun bid reale aggiuntivo. Contatore incrementato subito
-# PRIMA di chiamare execute_live_bid (quindi conta i TENTATIVI, non solo i successi --
-# un tentativo fallito consuma comunque il tetto, e' comunque un test completato).
-MAX_BIDS_PER_RUN = int(os.environ.get('MAX_BIDS_PER_RUN', '1'))
+# FIX 22/07 v7 (richiesta esplicita utente, dopo i primi test riusciti: "il bot si deve
+# interrompere dopo 10 bid, o se un'asta fallisce per mancanza di fondi"): tetto al
+# numero di TENTATIVI di bid reale per l'intera durata della run -- una volta
+# raggiunto, il bot si FERMA DEFINITIVAMENTE (non solo i bid: l'intero ciclo di
+# tracking si interrompe), stesso comportamento gia' esistente per i fondi
+# insufficienti (vedi INSUFFICIENT_FUNDS_STOP sopra e _run_should_halt piu' sotto).
+# Contatore incrementato subito PRIMA di chiamare execute_live_bid (quindi conta i
+# TENTATIVI, non solo i successi -- un tentativo fallito consuma comunque il tetto).
+MAX_BIDS_PER_RUN = int(os.environ.get('MAX_BIDS_PER_RUN', '10'))
 BIDS_ATTEMPTED_THIS_RUN = [0]
 _bids_attempted_lock = threading.Lock()
 
@@ -1583,6 +1584,10 @@ def run_new_auctions_phase(eth_rate, state):
     log(f"[NUOVE] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
         f"{len(nuove)} mai viste prima -- valuto tutte")
     for auction in nuove:
+        halt, reason = _run_should_halt()
+        if halt:
+            log(f"[NUOVE] STOP: {reason} -- interrompo questa fase a meta' scansione")
+            break
         process_incoming_auction(auction, eth_rate, state, source='NUOVE')
         maybe_flush_alerts('NUOVE', state)
     flush_phase_alerts('NUOVE', state)
@@ -1598,6 +1603,10 @@ def run_zero_bid_phase(eth_rate, state):
     log(f"[ZEROBID] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
         f"{len(zero_bid)} a 0 bid -- valuto tutte")
     for auction in zero_bid:
+        halt, reason = _run_should_halt()
+        if halt:
+            log(f"[ZEROBID] STOP: {reason} -- interrompo questa fase a meta' scansione")
+            break
         process_incoming_auction(auction, eth_rate, state, source='ZEROBID')
         maybe_flush_alerts('ZEROBID', state)
     flush_phase_alerts('ZEROBID', state)
@@ -1617,6 +1626,10 @@ def run_ending_soon_phase(eth_rate, state):
     log(f"[SCADENZA] {len(whitelisted)} in whitelist, valuto le {len(selected)} piu' "
         f"vicine alla scadenza...")
     for auction in selected:
+        halt, reason = _run_should_halt()
+        if halt:
+            log(f"[SCADENZA] STOP: {reason} -- interrompo questa fase a meta' scansione")
+            break
         process_incoming_auction(auction, eth_rate, state, source='SCADENZA')
         maybe_flush_alerts('SCADENZA', state)
     flush_phase_alerts('SCADENZA', state)
@@ -1641,10 +1654,24 @@ def _run_timed_phase(phase_name, phase_fn, eth_rate, state):
     return remaining
 
 
+def _run_should_halt():
+    """FIX 22/07 v7 (richiesta esplicita utente): ritorna (True, motivo) se il ciclo
+    deve fermarsi DEFINITIVAMENTE -- fondi insufficienti rilevati durante un bid reale,
+    oppure il tetto MAX_BIDS_PER_RUN di tentativi di bid reale per questa run e' stato
+    raggiunto. Controllata sia DENTRO ogni fase (stop immediato, non aspetta la fine
+    della scansione corrente) sia tra una fase e l'altra (stop definitivo del ciclo)."""
+    if INSUFFICIENT_FUNDS_STOP[0]:
+        return True, "fondi insufficienti rilevati"
+    if AUCTION_LIVE_MODE and BIDS_ATTEMPTED_THIS_RUN[0] >= MAX_BIDS_PER_RUN:
+        return True, f"tetto MAX_BIDS_PER_RUN ({MAX_BIDS_PER_RUN}) raggiunto"
+    return False, None
+
+
 def run_tracking_cycle(eth_rate, state, stop_event):
     """FIX 21/07 v3 (richiesta esplicita utente, WebSocket rimosso): ciclo continuo a
     TRE fasi -- NUOVE -> pausa -> ZEROBID -> pausa -> SCADENZA -> pausa -> ricomincia
-    da NUOVE, per tutta la durata dell'ascolto."""
+    da NUOVE, per tutta la durata dell'ascolto (a meno di uno stop definitivo, vedi
+    _run_should_halt)."""
     fasi = (
         ('NUOVE', run_new_auctions_phase),
         ('ZEROBID', run_zero_bid_phase),
@@ -1653,8 +1680,9 @@ def run_tracking_cycle(eth_rate, state, stop_event):
     while not stop_event.is_set():
         for phase_name, phase_fn in fasi:
             remaining = _run_timed_phase(phase_name, phase_fn, eth_rate, state)
-            if INSUFFICIENT_FUNDS_STOP[0]:
-                log("STOP: fondi insufficienti rilevati, fermo il ciclo di tracking")
+            halt, reason = _run_should_halt()
+            if halt:
+                log(f"STOP: {reason}, fermo il ciclo di tracking definitivamente")
                 stop_event.set()
                 break
             if remaining > 0 and stop_event.wait(remaining):
@@ -1692,7 +1720,7 @@ def send_startup_msg():
         f"Modalita': {modalita}\n"
         f"Sconto target: {AUCTION_DISCOUNT_FRACTION:.0%} sotto il minimo di mercato\n"
         f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR\n"
-        f"Max bid reali per questa run: {MAX_BIDS_PER_RUN}\n"
+        f"Max bid reali per questa run: {MAX_BIDS_PER_RUN} (poi stop definitivo)\n"
         f"Campionati inclusi: {leagues}\n"
         f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h\n"
         f"Ascolto fino a {LISTEN_SECONDS}s"
@@ -1953,17 +1981,14 @@ def evaluate_auction(auction, eth_rate, state, source='WS'):
         stats['bid_simulated'] = stats.get('bid_simulated', 0) + 1
         return True
 
-    # FIX 22/07 (richiesta esplicita utente, primi test con soldi veri: "max 1 asta su
-    # cui biddare per run"): controllo veloce PRIMA della riverifica live, solo per
-    # risparmiare i 3s di attesa + una chiamata GraphQL se il tetto e' gia' pieno --
-    # l'incremento vero (che "consuma" il tetto) avviene piu' sotto, subito prima del
-    # vero tentativo di bid, cosi' una riverifica fallita (asta chiusa, prezzo salito)
-    # NON spreca l'unico tentativo consentito.
+    # FIX 22/07 v7 (richiesta esplicita utente): controllo veloce PRIMA della riverifica
+    # live, solo per risparmiare i 3s di attesa + una chiamata GraphQL se il tetto e'
+    # gia' pieno -- in pratica questo ramo e' solo un fallback di sicurezza, dato che
+    # _run_should_halt nel ciclo di tracking ferma l'intero bot PRIMA di richiamare
+    # evaluate_auction su altre aste una volta raggiunto il tetto.
     if BIDS_ATTEMPTED_THIS_RUN[0] >= MAX_BIDS_PER_RUN:
         log(f"[{source}] {player_name}: scarto -- tetto MAX_BIDS_PER_RUN "
-            f"({MAX_BIDS_PER_RUN}) gia' raggiunto in questa run, nessun altro bid "
-            f"reale verra' tentato (continua comunque a valutare/notificare in "
-            f"diagnostica)")
+            f"({MAX_BIDS_PER_RUN}) gia' raggiunto in questa run, bot in fase di stop")
         stats['skip_max_bids_run'] = stats.get('skip_max_bids_run', 0) + 1
         return False
 
@@ -2065,7 +2090,8 @@ def main():
     log(f"Cooldown per giocatore: {AUCTION_COOLDOWN_HOURS:.0f}h")
     log(f"Tetto massimo per asta: {MAX_BID_PER_AUCTION_EUR:.2f}EUR")
     log(f"Tetto massimo BID REALI per questa run: {MAX_BIDS_PER_RUN} "
-        f"(oltre questo, solo diagnostica -- nessun altro bid reale)")
+        f"(raggiunto il tetto, o su fondi insufficienti, il bot si FERMA "
+        f"DEFINITIVAMENTE)")
     log(f"Ciclo di tracking (WebSocket rimosso, solo scansioni GraphQL): "
         f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s, valuta TUTTE) -> "
         f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
