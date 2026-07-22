@@ -1,17 +1,17 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T16:50:18.021531Z
-**Run totali:** 6
+**Data analisi:** 2026-07-22T16:52:19.924094Z
+**Run totali:** 7
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
 - **Prezzo medio K League 1:** 2.42 EUR
-- **Trend mercato:** 📈 STRONG_ASCENDING (+28.7%)
-- **Sentiment:** 🌋 Fuori Scala
+- **Trend mercato:** ➡️ STABLE (-0.0%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: STRONG_ASCENDING (+28.7%)**
-I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
+**➡️ TREND GLOBALE: STABLE (-0.0%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 MOD. OPPORTUNITÀ — Jo Hyeon-Woo (Ulsan Hyundai Horang-i)**
 Prezzo: **3.09 EUR** | Media: **3.24 EUR** | Sconto: **-4.7%**
