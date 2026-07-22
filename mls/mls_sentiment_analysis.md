@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T13:05:54.142933Z
-**Run totali:** 56
+**Data analisi:** 2026-07-22T13:08:05.615785Z
+**Run totali:** 57
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.23 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.1%)
+- **Prezzo medio MLS:** 7.18 EUR
+- **Trend mercato:** ➡️ STABLE (-0.7%)
 - **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.1%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**➡️ TREND GLOBALE: STABLE (-0.7%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — G. Guerra (Portland Timbers)**
 Prezzo: **0.50 EUR** | Media: **1.75 EUR** | Sconto: **-71.4%**
@@ -23,22 +23,22 @@ Prezzo: **0.98 EUR** | Media: **2.29 EUR** | Sconto: **-57.2%**
 Liquidità: **2 occorrenze** | Volatilità: 1.85
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
-**🥉 FORTE OPPORTUNITÀ — Célio Pompeu (St. Louis City SC)**
-Prezzo: **0.51 EUR** | Media: **0.84 EUR** | Sconto: **-39.5%**
-Liquidità: **2 occorrenze** | Volatilità: 0.47
+**🥉 FORTE OPPORTUNITÀ — Viktor Radojević (Chicago Fire FC)**
+Prezzo: **0.50 EUR** | Media: **0.77 EUR** | Sconto: **-35.1%**
+Liquidità: **2 occorrenze** | Volatilità: 0.38
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬆️ TOP 10 RIALZI (Stanno CALANDO di prezzo)
 1. G. Guerra (Portland Timbers) — **-71.4%** vs media (0.50 EUR vs 1.75 EUR)
 2. Aníbal Godoy (San Diego FC) — **-57.2%** vs media (0.98 EUR vs 2.29 EUR)
-3. Célio Pompeu (St. Louis City SC) — **-39.5%** vs media (0.51 EUR vs 0.84 EUR)
-4. Lucas Halter (Houston Dynamo FC) — **-30.6%** vs media (0.84 EUR vs 1.21 EUR)
-5. Ben Lundt (St. Louis City SC) — **-27.9%** vs media (1.85 EUR vs 2.56 EUR)
-6. Andre Blake (Philadelphia Union) — **-27.8%** vs media (7.93 EUR vs 10.98 EUR)
-7. Philip Zinckernagel (Chicago Fire FC) — **-27.1%** vs media (42.98 EUR vs 58.99 EUR)
-8. Timo Werner (San Jose Earthquakes) — **-25.8%** vs media (9.37 EUR vs 12.62 EUR)
-9. Hannes Wolf (New York City FC) — **-24.7%** vs media (1.18 EUR vs 1.56 EUR)
-10. Paxten Aaronson (Colorado Rapids) — **-24.5%** vs media (9.00 EUR vs 11.91 EUR)
+3. Viktor Radojević (Chicago Fire FC) — **-35.1%** vs media (0.50 EUR vs 0.77 EUR)
+4. Célio Pompeu (St. Louis City SC) — **-31.4%** vs media (0.50 EUR vs 0.73 EUR)
+5. Lucas Halter (Houston Dynamo FC) — **-30.6%** vs media (0.84 EUR vs 1.21 EUR)
+6. Ben Lundt (St. Louis City SC) — **-27.9%** vs media (1.85 EUR vs 2.56 EUR)
+7. Andre Blake (Philadelphia Union) — **-27.8%** vs media (7.93 EUR vs 10.98 EUR)
+8. Philip Zinckernagel (Chicago Fire FC) — **-27.1%** vs media (42.98 EUR vs 58.99 EUR)
+9. Timo Werner (San Jose Earthquakes) — **-25.8%** vs media (9.37 EUR vs 12.62 EUR)
+10. Hannes Wolf (New York City FC) — **-24.7%** vs media (1.18 EUR vs 1.56 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Wyatt Meyer (Sporting Kansas City ) — **+0.0%** vs media (1.19 EUR vs 1.19 EUR)
@@ -48,9 +48,9 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 5. Manu García (Sporting Kansas City ) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
 6. Magomed-Shapi Suleymanov (Sporting Kansas City ) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
 7. Jacob Bartlett (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
-8. Enzo Newman (FC Dallas) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
-9. Shaq Moore (FC Dallas) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
-10. Lalas Abubakar (FC Dallas) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
+8. Petar Musa (FC Dallas) — **+0.0%** vs media (7.47 EUR vs 7.47 EUR)
+9. Enzo Newman (FC Dallas) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
+10. Shaq Moore (FC Dallas) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -138,7 +138,7 @@ Carte trovate: 9 | Prezzo medio: 2.58 EUR | Volatilità (σ): 2.14
 Carte trovate: 8 | Prezzo medio: 1.82 EUR | Volatilità (σ): 1.82
 
 **FC Dallas**
-Carte trovate: 16 | Prezzo medio: 1.03 EUR | Volatilità (σ): 0.87
+Carte trovate: 17 | Prezzo medio: 1.41 EUR | Volatilità (σ): 1.78
 
 **Sporting Kansas City **
 Carte trovate: 10 | Prezzo medio: 2.21 EUR | Volatilità (σ): 4.53
