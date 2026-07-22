@@ -1,16 +1,16 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T16:42:10.963896Z
-**Run totali:** 2
+**Data analisi:** 2026-07-22T16:44:12.727540Z
+**Run totali:** 3
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 2.12 EUR
-- **Trend mercato:** 📉 STRONG_DESCENDING (-8.4%)
+- **Prezzo medio K League 1:** 1.94 EUR
+- **Trend mercato:** 📉 STRONG_DESCENDING (-8.5%)
 - **Sentiment:** 🟥 Forte Ribasso
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: STRONG_DESCENDING (-8.4%)**
+**📉 TREND GLOBALE: STRONG_DESCENDING (-8.5%)**
 Il mercato sta crollando. Eccellente momento di accumulo. Valuta le carte con sconto >15% dalla media storica.
 
 **🥇 MOD. OPPORTUNITÀ — Jo Hyeon-Woo (Ulsan Hyundai Horang-i)**
@@ -32,21 +32,25 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 1. Jo Hyeon-Woo (Ulsan Hyundai Horang-i) — **-6.6%** vs media (3.10 EUR vs 3.32 EUR)
 2. Maeng Seong-Ung (Jeonbuk Hyundai Motors FC) — **-3.2%** vs media (1.68 EUR vs 1.73 EUR)
 3. Lim Jun-Hwi (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (0.87 EUR vs 0.87 EUR)
-4. Choi Gyu-Hyeon (FC Anyang) — **0.0%** vs media (1.15 EUR vs 1.15 EUR)
-5. Hwang In-Jae (Pohang Steelers FC) — **0.0%** vs media (2.91 EUR vs 2.91 EUR)
-6. Eo Jeong-Won (Pohang Steelers FC) — **0.0%** vs media (1.90 EUR vs 1.90 EUR)
+4. Lee Ju-Hyun (Jeonbuk Hyundai Motors FC) — **0.0%** vs media (1.87 EUR vs 1.87 EUR)
+5. Choi Gyu-Hyeon (FC Anyang) — **0.0%** vs media (1.15 EUR vs 1.15 EUR)
+6. Hwang In-Jae (Pohang Steelers FC) — **0.0%** vs media (2.91 EUR vs 2.91 EUR)
+7. Eo Jeong-Won (Pohang Steelers FC) — **0.0%** vs media (1.90 EUR vs 1.90 EUR)
+8. Won Hee-Do (Gangwon FC) — **0.0%** vs media (0.60 EUR vs 0.60 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
-1. Eo Jeong-Won (Pohang Steelers FC) — **+0.0%** vs media (1.90 EUR vs 1.90 EUR)
-2. Hwang In-Jae (Pohang Steelers FC) — **+0.0%** vs media (2.91 EUR vs 2.91 EUR)
-3. Choi Gyu-Hyeon (FC Anyang) — **+0.0%** vs media (1.15 EUR vs 1.15 EUR)
-4. Lim Jun-Hwi (Jeonbuk Hyundai Motors FC) — **+0.0%** vs media (0.87 EUR vs 0.87 EUR)
-5. Maeng Seong-Ung (Jeonbuk Hyundai Motors FC) — **+-3.2%** vs media (1.68 EUR vs 1.73 EUR)
-6. Jo Hyeon-Woo (Ulsan Hyundai Horang-i) — **+-6.6%** vs media (3.10 EUR vs 3.32 EUR)
+1. Won Hee-Do (Gangwon FC) — **+0.0%** vs media (0.60 EUR vs 0.60 EUR)
+2. Eo Jeong-Won (Pohang Steelers FC) — **+0.0%** vs media (1.90 EUR vs 1.90 EUR)
+3. Hwang In-Jae (Pohang Steelers FC) — **+0.0%** vs media (2.91 EUR vs 2.91 EUR)
+4. Choi Gyu-Hyeon (FC Anyang) — **+0.0%** vs media (1.15 EUR vs 1.15 EUR)
+5. Lee Ju-Hyun (Jeonbuk Hyundai Motors FC) — **+0.0%** vs media (1.87 EUR vs 1.87 EUR)
+6. Lim Jun-Hwi (Jeonbuk Hyundai Motors FC) — **+0.0%** vs media (0.87 EUR vs 0.87 EUR)
+7. Maeng Seong-Ung (Jeonbuk Hyundai Motors FC) — **+-3.2%** vs media (1.68 EUR vs 1.73 EUR)
+8. Jo Hyeon-Woo (Ulsan Hyundai Horang-i) — **+-6.6%** vs media (3.10 EUR vs 3.32 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Jeonbuk Hyundai Motors FC**
-Carte trovate: 2 | Prezzo medio: 1.27 EUR | Volatilità (σ): 0.57
+Carte trovate: 3 | Prezzo medio: 1.47 EUR | Volatilità (σ): 0.53
 
 **FC Anyang**
 Carte trovate: 1 | Prezzo medio: 1.15 EUR | Volatilità (σ): 0.00
@@ -56,4 +60,7 @@ Carte trovate: 2 | Prezzo medio: 2.40 EUR | Volatilità (σ): 0.71
 
 **Ulsan Hyundai Horang-i**
 Carte trovate: 1 | Prezzo medio: 3.10 EUR | Volatilità (σ): 0.00
+
+**Gangwon FC**
+Carte trovate: 1 | Prezzo medio: 0.60 EUR | Volatilità (σ): 0.00
 
