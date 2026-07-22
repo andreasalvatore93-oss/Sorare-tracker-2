@@ -5,7 +5,7 @@ on:
       min_price_eur:
         description: "Prezzo minimo carta da valutare (EUR)"
         required: false
-        default: "1"
+        default: "1.50"
       max_price_eur:
         description: "Prezzo massimo carta da valutare (EUR)"
         required: false
@@ -13,19 +13,19 @@ on:
       makeoffer_margin_percent:
         description: "Margine MINIMO per il ramo MakeOffer (offerta scontata), in % (es. 10 = 10%)"
         required: false
-        default: "17"
+        default: "15"
       makeoffer_max_margin_percent:
         description: "Margine MASSIMO per il ramo MakeOffer -- oltre questa soglia interviene AutoBuy"
         required: false
-        default: "27"
+        default: "25"
       offer_discount_percent:
         description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
         required: false
-        default: "20"
+        default: "25"
       autobuy_margin_percent:
         description: "Margine MINIMO per il ramo AutoBuy (accetta offerta esistente), in % -- deve essere >= makeoffer_max_margin_percent"
         required: false
-        default: "28"
+        default: "26"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -61,7 +61,7 @@ on:
       min_transactions_30d:
         description: "Transazioni minime (30gg) -- secondo layer di protezione liquidita' (il server mostra al massimo 5 transazioni totali per giocatore; questa soglia non puo' essere piu' bassa di min_recent_transactions, la finestra 30gg include sempre quella 7gg)"
         required: false
-        default: "4"
+        default: "6"
       blacklisted_manager_slugs:
         description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
         required: false
@@ -90,14 +90,6 @@ on:
         description: "Tetto massimo di offerte MakeOffer pendenti create in questa esecuzione"
         required: false
         default: "20"
-      diagnostic_player_slug:
-        description: "TEST ISOLATO: se valorizzato, il bot verifica SOLO il conteggio transazioni di questo slug (log diagnostico completo) e termina in pochi secondi -- ignora mercato/listener/blacklist. Lasciare vuoto per il funzionamento normale del bot."
-        required: false
-        default: ""
-      diagnostic_league_slug:
-        description: "TEST ISOLATO: slug campionato del giocatore sopra (es. 'mlspa' per MLS) -- necessario per riprodurre fedelmente il filtro stagione che il bot applica dal vivo per MLS/K-League. Lasciare vuoto per campionati normali."
-        required: false
-        default: ""
 permissions:
   contents: write
 concurrency:
@@ -134,11 +126,11 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
-          AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
+          AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1.50' }}
           AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
-          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '17' }}
-          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '27' }}
-          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '28' }}
+          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '15' }}
+          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '25' }}
+          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '26' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
           LIQUIDITY_DIAGNOSTIC: ${{ github.event.inputs.liquidity_diagnostic || 'no' }}
@@ -147,17 +139,15 @@ jobs:
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '4' }}
-          MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '4' }}
+          MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '6' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
           BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'si' }}
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
-          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '20' }}
+          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '25' }}
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '20' }}
-          DIAGNOSTIC_PLAYER_SLUG: ${{ github.event.inputs.diagnostic_player_slug || '' }}
-          DIAGNOSTIC_LEAGUE_SLUG: ${{ github.event.inputs.diagnostic_league_slug || '' }}
         run: |
           set -o pipefail
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
