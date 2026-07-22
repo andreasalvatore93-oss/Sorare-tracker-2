@@ -2753,6 +2753,33 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         f"{MAKEOFFER_MAX_MARGIN_FRACTION:.0%}, AutoBuy >= {AUTOBUY_MARGIN_FRACTION:.0%})")
 
     if margin_percent < MAKEOFFER_MARGIN_FRACTION:
+        # BID PERIODICO (22/07, richiesta esplicita utente): prima di scartare per
+        # margine insufficiente, se la carta e' nella fascia 2-30EUR fissa del
+        # meccanismo periodico, la confrontiamo col candidato gia' tracciato per il
+        # ciclo di 2 minuti corrente -- se e' PIU' VICINA alla soglia MakeOffer
+        # (margine piu' alto, anche restando sotto), diventa la nuova "migliore del
+        # periodo". Zero query extra: riusa margin_percent/true_min_price gia'
+        # calcolati qui sopra. Il candidato tracciato viene poi verificato DA CAPO
+        # (liquidita', cooldown, offerte pendenti, ecc.) dal thread del timer prima
+        # di offrire -- questo e' solo il tracciamento, nessuna offerta parte da qui.
+        if (PERIODIC_BID_ENABLED and player_slug
+                and PERIODIC_BID_MIN_PRICE_EUR <= true_min_price <= PERIODIC_BID_MAX_PRICE_EUR):
+            global _periodic_bid_best
+            with _periodic_bid_lock:
+                gia_migliore = (_periodic_bid_best is not None
+                                 and _periodic_bid_best['margin_percent'] >= margin_percent)
+                if not gia_migliore:
+                    _periodic_bid_best = {
+                        'player_slug': player_slug,
+                        'player_name': player_name,
+                        'card_slug': true_min_card_slug,
+                        'seller_slug': true_min_seller_slug,
+                        'true_min_price': true_min_price,
+                        'margin_percent': margin_percent,
+                        'is_in_season': is_in_season,
+                        'league_slug': league_slug,
+                        'excluded_league': excluded_league,
+                    }
         return False  # margine insufficiente per qualunque ramo -- niente query liquidita' sprecata
 
     # Controllo liquidita' (thin_market cache + query di rete) spostato QUI: solo ora
@@ -3281,6 +3308,26 @@ def run_listener(eth_rate):
 # live), fa git add/commit/push ogni COMMIT_INTERVAL_SECONDS (default 300s = 5
 # minuti) SOLO se il file e' effettivamente cambiato dall'ultimo commit.
 COMMIT_INTERVAL_SECONDS = int(os.environ.get('COMMIT_INTERVAL_SECONDS', '300'))
+# BID PERIODICO OGNI 2 MINUTI (22/07, richiesta esplicita utente, specifica completa
+# concordata) -- meccanismo INDIPENDENTE dal listener WebSocket, CONVIVE in parallelo.
+# Ogni PERIODIC_BID_INTERVAL_SECONDS, prende il candidato che durante la finestra si
+# e' avvicinato di piu' alla soglia MakeOffer (anche restando sotto), e gli fa
+# un'offerta secca al PERIODIC_BID_DISCOUNT sotto il minimo REGISTRATO in quel
+# momento -- bypassando la sola soglia minima di margine. SOLO offerte (MakeOffer),
+# MAI acquisto diretto. Fascia prezzo e sconto FISSI nel codice (non configurabili),
+# solo l'attivazione e' un input del workflow (default 'si').
+PERIODIC_BID_ENABLED = os.environ.get('PERIODIC_BID_ENABLED', 'si').strip().lower() == 'si'
+PERIODIC_BID_INTERVAL_SECONDS = 120
+PERIODIC_BID_MIN_PRICE_EUR = 2.0
+PERIODIC_BID_MAX_PRICE_EUR = 30.0
+PERIODIC_BID_DISCOUNT_FRACTION = 0.30
+
+# Stato condiviso tra i thread worker di evaluate_event (che scrivono il candidato
+# migliore del ciclo corrente) e il thread del timer periodico (che legge e svuota).
+# Protetto da _periodic_bid_lock -- scritture concorrenti da piu' thread evaluate_event,
+# lettura+svuotamento dal thread del timer.
+_periodic_bid_lock = threading.Lock()
+_periodic_bid_best = None  # dict col candidato migliore del ciclo corrente, o None
 # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita utente,
 # rischio accettato): quanti eventi valutare IN PARALLELO invece che uno alla
 # volta. Prima, on_message chiamava evaluate_event in modo sincrono/bloccante --
@@ -3300,6 +3347,7 @@ EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '6'))
 # EVENT_TIMING_DIAGNOSTIC') quando l'indagine e' conclusa.
 EVENT_TIMING_DIAGNOSTIC = os.environ.get('EVENT_TIMING_DIAGNOSTIC', 'si').strip().lower() == 'si'
 _stop_periodic_commit = threading.Event()
+_stop_periodic_bid = threading.Event()
 
 
 def _commit_lista_nera_se_serve():
@@ -3343,6 +3391,156 @@ def _commit_lista_nera_se_serve():
 def _periodic_commit_loop():
     while not _stop_periodic_commit.wait(COMMIT_INTERVAL_SECONDS):
         _commit_lista_nera_se_serve()
+
+
+def _try_periodic_bid(candidato, eth_rate):
+    """Verifica DA CAPO il candidato scelto (cooldown, offerte pendenti, liquidita',
+    ultimo/penultimo prezzo -- esattamente come una carta target normale del
+    MakeOffer) e, se passa tutto, invia un'offerta secca al PERIODIC_BID_DISCOUNT_
+    FRACTION sotto il minimo REGISTRATO al momento del tracciamento (non ricalcolato
+    fresco, scelta esplicita dell'utente). SOLO offerte, MAI acquisto diretto. Se un
+    qualunque controllo fallisce, salta il giro -- NESSUN ripiego su altri candidati
+    (confermato esplicitamente dall'utente)."""
+    player_slug = candidato['player_slug']
+    player_name = candidato['player_name']
+    card_slug = candidato['card_slug']
+    seller_slug = candidato['seller_slug']
+    true_min_price = candidato['true_min_price']
+    is_in_season = candidato['is_in_season']
+    league_slug = candidato['league_slug']
+
+    log(f"[bid periodico] {player_name}: candidato del ciclo -- minimo registrato "
+        f"{true_min_price:.2f}EUR, margine registrato {candidato['margin_percent']:.1%} "
+        f"-- rivalidazione in corso prima dell'offerta")
+
+    # Stessi controlli di cooldown/offerte pendenti di una carta target normale --
+    # possono essere cambiati nei ~2 minuti trascorsi dal tracciamento.
+    if player_slug and is_player_in_cooldown(player_slug, is_in_season):
+        log(f"[bid periodico] {player_name}: scarto -- gia' acquistato/offerto di "
+            f"recente (cooldown), salto questo ciclo")
+        return False
+    if player_slug and is_player_in_forma_bassa(player_slug.lower()):
+        log(f"[bid periodico] {player_name}: scarto -- in 'forma bassa ultime 5', "
+            f"salto questo ciclo")
+        return False
+    if player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
+        log(f"[bid periodico] {player_name}: scarto -- gia' segnalato come mercato "
+            f"troppo sottile di recente, salto questo ciclo")
+        return False
+
+    count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione = \
+        get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
+    if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
+        log(f"[bid periodico] {player_name}: scarto -- solo {count_7d} transazioni "
+            f"negli ultimi {RECENT_TRANSACTIONS_WINDOW_DAYS} giorni, mercato troppo "
+            f"sottile, salto questo ciclo")
+        if player_slug:
+            record_thin_market_skip(player_slug, is_in_season)
+        return False
+
+    offer_amount_eur = round(true_min_price * (1 - PERIODIC_BID_DISCOUNT_FRACTION), 2)
+    if offer_amount_eur <= 0:
+        log(f"[bid periodico] {player_name}: scarto -- offerta calcolata non positiva")
+        return False
+    if ultimo_prezzo_transazione is not None and offer_amount_eur >= ultimo_prezzo_transazione:
+        log(f"[bid periodico] {player_name}: scarto -- offerta ({offer_amount_eur:.2f}EUR) "
+            f"non inferiore all'ultima transazione ({ultimo_prezzo_transazione:.2f}EUR), "
+            f"salto questo ciclo")
+        return False
+    if penultimo_prezzo_transazione is not None and offer_amount_eur >= penultimo_prezzo_transazione:
+        log(f"[bid periodico] {player_name}: scarto -- offerta ({offer_amount_eur:.2f}EUR) "
+            f"non inferiore alla penultima transazione ({penultimo_prezzo_transazione:.2f}EUR), "
+            f"salto questo ciclo")
+        return False
+
+    # Da qui in poi, IDENTICO a _handle_makeoffer_branch: dettagli carta, offerta
+    # pendente gia' esistente, valute accettate, invio -- stessi identici controlli
+    # di una carta target normale.
+    card_details = get_card_offer_details(card_slug)
+    if not card_details:
+        log(f"[bid periodico] {player_name}: scarto -- impossibile recuperare i "
+            f"dettagli della carta, salto questo ciclo")
+        return False
+    card_asset_id = card_details.get('assetId')
+    if not card_asset_id:
+        log(f"[bid periodico] {player_name}: scarto -- assetId assente, salto questo ciclo")
+        return False
+    existing_offers = card_details.get('liveSingleBuyOffers') or []
+    if existing_offers:
+        log(f"[bid periodico] {player_name}: scarto -- offerta gia' pendente su "
+            f"questa carta, salto questo ciclo")
+        return False
+    sale_offer = card_details.get('liveSingleSaleOffer') or {}
+    settlement_currencies = sale_offer.get('settlementCurrencies') or []
+    crypto_only_currencies = {'WEI', 'ETH'}
+    if settlement_currencies and set(settlement_currencies).issubset(crypto_only_currencies):
+        log(f"[bid periodico] {player_name}: scarto -- venditore accetta solo cripto, "
+            f"salto questo ciclo")
+        return False
+    if pending_offers_count[0] >= MAX_PENDING_OFFERS:
+        log(f"[bid periodico] {player_name}: scarto -- gia' raggiunto il tetto di "
+            f"offerte pendenti in questa esecuzione, salto questo ciclo")
+        return False
+
+    log(f"[bid periodico] {player_name}: offerta calcolata {offer_amount_eur:.2f}EUR "
+        f"(minimo registrato {true_min_price:.2f}EUR - sconto "
+        f"{PERIODIC_BID_DISCOUNT_FRACTION:.0%}), durata {OFFER_DURATION_DAYS} giorni")
+
+    prepared = prepare_offer(card_asset_id, seller_slug, offer_amount_eur)
+    if not prepared:
+        log(f"[bid periodico] {player_name}: prenotazione offerta non riuscita, "
+            f"salto questo ciclo")
+        return False
+    nonce = (prepared.get('request') or {}).get('nonce')
+    log(f"[bid periodico] {player_name}: offerta prenotata lato server (nonce={nonce})")
+
+    if not MAKEOFFER_LIVE_MODE:
+        log(f"[bid periodico] {player_name}: MAKEOFFER_LIVE_MODE spento, offerta non inviata")
+        return False
+
+    try:
+        offer_sent, offer_error = execute_live_offer(card_asset_id, seller_slug,
+                                                      offer_amount_eur, prepared)
+    except Exception as e:
+        log(f"[bid periodico] {player_name}: ECCEZIONE IMPREVISTA durante l'invio -- {e}")
+        return False
+
+    if offer_sent:
+        log(f"[bid periodico] {player_name}: OFFERTA INVIATA CON SUCCESSO")
+        if player_slug:
+            record_player_offer(player_slug, is_in_season)
+        pending_offers_count[0] += 1
+        return True
+
+    log(f"[bid periodico] {player_name}: offerta fallita -- {offer_error}")
+    if _is_insufficient_funds_error(offer_error):
+        log(f"[bid periodico] {player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot")
+        INSUFFICIENT_FUNDS_STOP[0] = True
+        send_insufficient_funds_alert(player_name, "Bid periodico")
+    return False
+
+
+def _periodic_bid_loop(eth_rate):
+    """Gira in un thread dedicato per tutta la run, indipendente dal listener
+    WebSocket -- ogni PERIODIC_BID_INTERVAL_SECONDS (default 120s = 2 minuti),
+    prende il candidato migliore del ciclo appena concluso (se c'e'), svuota
+    SUBITO il tracciamento per il ciclo successivo, poi lo rivalida da capo e
+    prova l'offerta. Se non c'e' nessun candidato, o se fallisce un controllo,
+    salta semplicemente il giro -- il timer riparte comunque."""
+    global _periodic_bid_best
+    while not _stop_periodic_bid.wait(PERIODIC_BID_INTERVAL_SECONDS):
+        if INSUFFICIENT_FUNDS_STOP[0]:
+            continue
+        with _periodic_bid_lock:
+            candidato = _periodic_bid_best
+            _periodic_bid_best = None
+        if candidato is None:
+            log("[bid periodico] nessun candidato idoneo in questo ciclo, salto")
+            continue
+        try:
+            _try_periodic_bid(candidato, eth_rate)
+        except Exception as e:
+            log(f"[bid periodico] eccezione non gestita, salto questo ciclo e continuo: {e}")
 
 
 def main():
@@ -3415,6 +3613,10 @@ def main():
     commit_thread.start()
     log(f"[commit periodico] thread avviato, commit+push lista nera ogni "
         f"{COMMIT_INTERVAL_SECONDS}s se ci sono modifiche")
+    periodic_bid_thread = threading.Thread(target=_periodic_bid_loop, args=(eth_rate,), daemon=True)
+    periodic_bid_thread.start()
+    log(f"[bid periodico] thread avviato -- ogni {PERIODIC_BID_INTERVAL_SECONDS}s, "
+        f"attivo={PERIODIC_BID_ENABLED}")
     try:
         matches_found = run_listener(eth_rate)
         target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
@@ -3427,6 +3629,7 @@ def main():
                 f"trovati -- esecuzione terminata.")
     finally:
         _stop_periodic_commit.set()
+        _stop_periodic_bid.set()
         _commit_lista_nera_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
         # FIX 22/07 v2: chiusura anch'essa sullo stesso thread dedicato -- tocca
         # gli stessi oggetti Playwright creati li'.
