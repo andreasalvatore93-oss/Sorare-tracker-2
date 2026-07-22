@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T12:49:40.793612Z
-**Run totali:** 48
+**Data analisi:** 2026-07-22T12:51:42.536984Z
+**Run totali:** 49
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.72 EUR
-- **Trend mercato:** ➡️ STABLE (-0.8%)
+- **Prezzo medio MLS:** 7.65 EUR
+- **Trend mercato:** ➡️ STABLE (-0.9%)
 - **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.8%)**
+**➡️ TREND GLOBALE: STABLE (-0.9%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Aníbal Godoy (San Diego FC)**
@@ -60,10 +60,10 @@ Carte trovate: 6 | Prezzo medio: 6.54 EUR | Volatilità (σ): 7.37
 Carte trovate: 9 | Prezzo medio: 10.82 EUR | Volatilità (σ): 12.19
 
 **Real Salt Lake**
-Carte trovate: 15 | Prezzo medio: 2.20 EUR | Volatilità (σ): 2.79
+Carte trovate: 16 | Prezzo medio: 2.12 EUR | Volatilità (σ): 2.72
 
 **San Jose Earthquakes**
-Carte trovate: 11 | Prezzo medio: 4.55 EUR | Volatilità (σ): 5.38
+Carte trovate: 11 | Prezzo medio: 4.54 EUR | Volatilità (σ): 5.36
 
 **Columbus Crew**
 Carte trovate: 13 | Prezzo medio: 2.71 EUR | Volatilità (σ): 2.25
@@ -90,13 +90,13 @@ Carte trovate: 10 | Prezzo medio: 2.24 EUR | Volatilità (σ): 1.85
 Carte trovate: 12 | Prezzo medio: 5.71 EUR | Volatilità (σ): 11.22
 
 **Nashville SC**
-Carte trovate: 8 | Prezzo medio: 8.40 EUR | Volatilità (σ): 9.55
+Carte trovate: 8 | Prezzo medio: 8.39 EUR | Volatilità (σ): 9.56
 
 **Austin FC**
 Carte trovate: 6 | Prezzo medio: 3.11 EUR | Volatilità (σ): 3.64
 
 **San Diego FC**
-Carte trovate: 5 | Prezzo medio: 10.30 EUR | Volatilità (σ): 16.10
+Carte trovate: 6 | Prezzo medio: 8.86 EUR | Volatilità (σ): 14.82
 
 **Vancouver Whitecaps FC**
 Carte trovate: 8 | Prezzo medio: 9.44 EUR | Volatilità (σ): 9.16
@@ -105,10 +105,10 @@ Carte trovate: 8 | Prezzo medio: 9.44 EUR | Volatilità (σ): 9.16
 Carte trovate: 8 | Prezzo medio: 4.47 EUR | Volatilità (σ): 4.52
 
 **LA Galaxy**
-Carte trovate: 5 | Prezzo medio: 3.87 EUR | Volatilità (σ): 3.06
+Carte trovate: 7 | Prezzo medio: 4.51 EUR | Volatilità (σ): 3.61
 
 **Colorado Rapids**
-Carte trovate: 8 | Prezzo medio: 2.32 EUR | Volatilità (σ): 3.20
+Carte trovate: 9 | Prezzo medio: 2.16 EUR | Volatilità (σ): 3.03
 
 **New York Red Bulls**
 Carte trovate: 9 | Prezzo medio: 2.68 EUR | Volatilità (σ): 2.27
