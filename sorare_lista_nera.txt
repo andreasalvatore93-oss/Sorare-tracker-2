@@ -3,8 +3,12 @@
 # giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni
 # scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').
 # Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora
-# ASSOLUTA di scadenza (fix 22/07: una durata testuale si 'rinnovava' da sola ad
-# ogni lettura se il file restava statico tra le run). NON pensate per modifica a
+# ASSOLUTA di scadenza in UTC (fix 22/07: una durata testuale si 'rinnovava' da
+# sola ad ogni lettura se il file restava statico tra le run). Dopo la virgola, un
+# commento '# scade: ...' mostra lo stesso istante in ora di Roma (Europe/Rome, si
+# adatta automaticamente a legale/solare) solo per comodita' di lettura -- il bot
+# usa SEMPRE e SOLO il valore ISO prima della virgola/cancelletto, il commento e'
+# puramente informativo e viene ignorato in lettura. NON pensate per modifica a
 # mano, gestite automaticamente dal bot. Per rimuovere un blocco in ogni sezione,
 # cancella semplicemente la riga.
 
@@ -61,6 +65,7 @@ bum-soo-lee,365 giorni
 byong-jun-an,365 giorni
 caleb-kporha,365 giorni
 cardoso-pinto-mandume-varela,365 giorni
+christian-kouame,365 giorni
 clement-diop-degoud,365 giorni
 cristhian-fabian-paredes-maciel,365 giorni
 cristiano-ronaldo-dos-santos-aveiro,7 giorni
@@ -80,6 +85,7 @@ diego-jose-conde-alcolado,365 giorni
 djibril-sidibe,365 giorni
 eduardo-manuel-de-freitas-monteiro-ferreira-felicissimo,365 giorni
 eliano-reijnders,365 giorni
+elias-kratzer,365 giorni
 emerson-hyndman,365 giorni
 emil-krafth,365 giorni
 emir-kaan-gultekin,365 giorni
@@ -203,6 +209,7 @@ patrick-berg-inseason,7 giorni
 patrick-hasenhuttl,365 giorni
 patryk-klimala,7 giorni
 pavao-pervan,365 giorni
+pelle-van-amersfoort,365 giorni
 petar-musa,7 giorni
 raphael-adelino-jose-guerreiro,365 giorni
 raul-fernandez-cavada-mateos,365 giorni
@@ -256,193 +263,193 @@ yves-bissouma,365 giorni
 
 ## cooldown_acquisto
 # COOLDOWN ACQUISTI/OFFERTE -- giocatori appena comprati o a cui abbiamo appena fatto un'offerta: ignorati per il tempo indicato, per non ricomprare/riproporre subito lo stesso giocatore.
-alejandro-garnacho-ferreyra-inseason,2026-07-23T08:13:28.802435+00:00
-alejandro-remiro-gargallo-inseason,2026-07-23T08:13:28.802435+00:00
-aleksa-todorovic-2004-01-25-classic,2026-07-23T08:13:28.802435+00:00
-alessandro-circati-classic,2026-07-23T08:13:28.802435+00:00
-alvaro-david-montero-perales-classic,2026-07-23T08:13:28.802435+00:00
-alvaro-valles-rosa-inseason,2026-07-23T11:23:25.701800+00:00
-andreas-raedergard-schjelderup-inseason,2026-07-23T08:13:28.802435+00:00
-angus-gunn,2026-07-23T08:13:28.802435+00:00
-anthony-patterson-inseason,2026-07-23T08:13:28.802435+00:00
-ariath-deng-piol-inseason,2026-07-23T08:53:48.775473+00:00
-benjamin-maximilian-lundt-inseason,2026-07-23T08:13:28.802435+00:00
-cabral-jones-carter-inseason,2026-07-23T08:13:28.802435+00:00
-camilo-andres-vargas-gil-classic,2026-07-23T08:13:28.802435+00:00
-cristian-roldan,2026-07-23T06:13:28.802435+00:00
-daniel-pinter-2007-06-06-inseason,2026-07-23T08:13:28.802435+00:00
-david-olatukunbo-alaba,2026-07-23T08:13:28.802435+00:00
-drake-callender,2026-07-23T07:13:28.802435+00:00
-ezri-konsa-ngoyo,2026-07-23T06:13:28.802435+00:00
-ezri-konsa-ngoyo-classic,2026-07-23T08:13:28.802435+00:00
-fabio-daniel-ferreira-vieira,2026-07-23T05:13:28.802435+00:00
-finn-dahmen-inseason,2026-07-23T08:13:28.802435+00:00
-gi-hyuk-lee-inseason,2026-07-23T11:50:32.225289+00:00
-gjivai-zechiel-classic,2026-07-23T08:13:28.802435+00:00
-hong-seong-min-inseason,2026-07-23T08:13:28.802435+00:00
-jacob-brochner-ambaek,2026-07-23T06:13:28.802435+00:00
-jae-hyeok-oh-inseason,2026-07-23T08:58:00.051600+00:00
-jean-philippe-mateta-classic,2026-07-23T08:13:28.802435+00:00
-jerome-prior-classic,2026-07-23T08:13:28.802435+00:00
-jin-gyu-kim-classic,2026-07-23T08:13:28.802435+00:00
-jonas-thomas-kersken,2026-07-23T06:13:28.802435+00:00
-jordan-pickford-inseason,2026-07-23T08:13:28.802435+00:00
-jose-manuel-lopez-classic,2026-07-23T08:13:28.802435+00:00
-jose-pedro-malheiro-de-sa-classic,2026-07-23T11:01:11.705078+00:00
-josip-misic-1994-06-28-classic,2026-07-23T08:36:30.228653+00:00
-josip-stanisic-inseason,2026-07-23T08:13:28.802435+00:00
-josue-ndenge-kongolo-inseason,2026-07-23T08:13:28.802435+00:00
-juan-agustin-musso-inseason,2026-07-23T08:13:28.802435+00:00
-julian-eitschberger-inseason,2026-07-23T08:13:28.802435+00:00
-kaishu-sano,2026-07-23T08:13:28.802435+00:00
-kim-gun-hee-inseason,2026-07-23T08:36:52.889186+00:00
-kyogo-furuhashi-classic,2026-07-23T08:13:28.802435+00:00
-leandro-daniel-paredes-classic,2026-07-23T08:13:28.802435+00:00
-luka-modric-classic,2026-07-23T08:13:28.802435+00:00
-malik-tillman-inseason,2026-07-23T08:13:28.802435+00:00
-marko-tuci,2026-07-23T05:13:28.802435+00:00
-mathis-ryan-cherki-classic,2026-07-23T08:28:37.663110+00:00
-matthijs-de-ligt-classic,2026-07-23T08:13:28.802435+00:00
-milan-skriniar-classic,2026-07-23T08:13:28.802435+00:00
-min-jae-kim-classic,2026-07-23T08:13:28.802435+00:00
-nathaniel-brown-inseason,2026-07-23T08:13:28.802435+00:00
-noe-lebreton-inseason,2026-07-23T08:13:28.802435+00:00
-or-blorian-inseason,2026-07-23T08:13:28.802435+00:00
-pablo-pagis-inseason,2026-07-23T08:13:28.802435+00:00
-patrick-berg-inseason,2026-07-23T08:13:28.802435+00:00
-prince-osei-owusu-inseason,2026-07-23T08:25:49.479042+00:00
-rafael-elias-da-silva-inseason,2026-07-23T08:13:28.802435+00:00
-rob-holding,2026-07-23T05:13:28.802435+00:00
-rodrigo-zalazar-martinez-inseason,2026-07-23T08:13:28.802435+00:00
-scott-mctominay-classic,2026-07-23T08:13:28.802435+00:00
-sergi-palencia-hurtado-inseason,2026-07-23T08:13:28.802435+00:00
-stijn-van-gassel,2026-07-23T06:13:28.802435+00:00
-tae-joon-park,2026-07-23T05:13:28.802435+00:00
-unai-marrero-larranaga-classic,2026-07-23T08:13:28.802435+00:00
-waldemar-anton-classic,2026-07-23T08:13:28.802435+00:00
+alejandro-garnacho-ferreyra-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+alejandro-remiro-gargallo-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+aleksa-todorovic-2004-01-25-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+alessandro-circati-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+alvaro-david-montero-perales-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+alvaro-valles-rosa-inseason,2026-07-23T11:23:25.701800+00:00  # scade: 23/07/2026 13:23 ora di Roma
+andreas-raedergard-schjelderup-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+angus-gunn,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+anthony-patterson-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+ariath-deng-piol-inseason,2026-07-23T08:53:48.775473+00:00  # scade: 23/07/2026 10:53 ora di Roma
+benjamin-maximilian-lundt-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+cabral-jones-carter-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+camilo-andres-vargas-gil-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+cristian-roldan,2026-07-23T06:13:28.802435+00:00  # scade: 23/07/2026 08:13 ora di Roma
+daniel-pinter-2007-06-06-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+david-olatukunbo-alaba,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+drake-callender,2026-07-23T07:13:28.802435+00:00  # scade: 23/07/2026 09:13 ora di Roma
+ezri-konsa-ngoyo,2026-07-23T06:13:28.802435+00:00  # scade: 23/07/2026 08:13 ora di Roma
+ezri-konsa-ngoyo-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+fabio-daniel-ferreira-vieira,2026-07-23T05:13:28.802435+00:00  # scade: 23/07/2026 07:13 ora di Roma
+finn-dahmen-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+gi-hyuk-lee-inseason,2026-07-23T11:50:32.225289+00:00  # scade: 23/07/2026 13:50 ora di Roma
+gjivai-zechiel-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+hong-seong-min-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+jacob-brochner-ambaek,2026-07-23T06:13:28.802435+00:00  # scade: 23/07/2026 08:13 ora di Roma
+jae-hyeok-oh-inseason,2026-07-23T08:58:00.051600+00:00  # scade: 23/07/2026 10:58 ora di Roma
+jean-philippe-mateta-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+jerome-prior-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+jin-gyu-kim-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+jonas-thomas-kersken,2026-07-23T06:13:28.802435+00:00  # scade: 23/07/2026 08:13 ora di Roma
+jordan-pickford-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+jose-manuel-lopez-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+jose-pedro-malheiro-de-sa-classic,2026-07-23T11:01:11.705078+00:00  # scade: 23/07/2026 13:01 ora di Roma
+josip-misic-1994-06-28-classic,2026-07-23T08:36:30.228653+00:00  # scade: 23/07/2026 10:36 ora di Roma
+josip-stanisic-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+josue-ndenge-kongolo-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+juan-agustin-musso-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+julian-eitschberger-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+kaishu-sano,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+kim-gun-hee-inseason,2026-07-23T08:36:52.889186+00:00  # scade: 23/07/2026 10:36 ora di Roma
+kyogo-furuhashi-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+leandro-daniel-paredes-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+luka-modric-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+malik-tillman-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+marko-tuci,2026-07-23T05:13:28.802435+00:00  # scade: 23/07/2026 07:13 ora di Roma
+mathis-ryan-cherki-classic,2026-07-23T08:28:37.663110+00:00  # scade: 23/07/2026 10:28 ora di Roma
+matthijs-de-ligt-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+milan-skriniar-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+min-jae-kim-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+nathaniel-brown-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+noe-lebreton-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+or-blorian-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+pablo-pagis-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+patrick-berg-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+prince-osei-owusu-inseason,2026-07-23T08:25:49.479042+00:00  # scade: 23/07/2026 10:25 ora di Roma
+rafael-elias-da-silva-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+rob-holding,2026-07-23T05:13:28.802435+00:00  # scade: 23/07/2026 07:13 ora di Roma
+rodrigo-zalazar-martinez-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+scott-mctominay-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+sergi-palencia-hurtado-inseason,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+stijn-van-gassel,2026-07-23T06:13:28.802435+00:00  # scade: 23/07/2026 08:13 ora di Roma
+tae-joon-park,2026-07-23T05:13:28.802435+00:00  # scade: 23/07/2026 07:13 ora di Roma
+unai-marrero-larranaga-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
+waldemar-anton-classic,2026-07-23T08:13:28.802435+00:00  # scade: 23/07/2026 10:13 ora di Roma
 
 ## thin_market
 # THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare di comprare/offrire su un mercato poco liquido.
-alan-matturro-romero-inseason,2026-07-24T08:13:28.802435+00:00
-alejandro-blesa-pina-classic,2026-07-24T08:13:28.802435+00:00
-aljoscha-kemlein-inseason,2026-07-24T08:13:28.802435+00:00
-amos-pieper-classic,2026-07-24T08:13:28.802435+00:00
-arnaldo-antonio-sanabria-ayala-classic,2026-07-24T08:13:28.802435+00:00
-arsen-zakharyan-inseason,2026-07-24T08:13:28.802435+00:00
-augusto-jorge-mateo-solari-classic,2026-07-24T08:13:28.802435+00:00
-barry-lauwers-classic,2026-07-24T08:13:28.802435+00:00
-bernhard-zimmermann-classic,2026-07-24T08:13:28.802435+00:00
-brian-roberto-heras-gonzalez-classic,2026-07-24T08:13:28.802435+00:00
-christian-gytkjaer-classic,2026-07-24T08:13:28.802435+00:00
-colin-dagba-classic,2026-07-24T08:13:28.802435+00:00
-damil-dankerlui-classic,2026-07-24T08:13:28.802435+00:00
-danny-hoesen-classic,2026-07-24T08:13:28.802435+00:00
-david-villa-sanchez-classic,2026-07-24T12:04:32.344216+00:00
-denil-castillo-classic,2026-07-24T08:13:28.802435+00:00
-denis-genreau-classic,2026-07-24T08:13:28.802435+00:00
-devis-stiven-vasquez-llach-inseason,2026-07-24T08:13:28.802435+00:00
-do-hyun-yeom-classic,2026-07-24T08:13:28.802435+00:00
-dominick-drexler-classic,2026-07-24T08:13:28.802435+00:00
-el-chadaille-bitshiabu-inseason,2026-07-24T08:54:57.992480+00:00
-elias-jelert-kristensen-classic,2026-07-24T08:13:28.802435+00:00
-enrique-marlon-aguilar-classic,2026-07-24T08:13:28.802435+00:00
-erwin-mulder-classic,2026-07-24T08:13:28.802435+00:00
-evan-mooney-classic,2026-07-24T08:13:28.802435+00:00
-federico-bonazzoli-classic,2026-07-24T08:13:28.802435+00:00
-fofin-turay-inseason,2026-07-24T08:13:28.802435+00:00
-franko-kovacevic-classic,2026-07-24T08:13:28.802435+00:00
-gideon-mensah-classic,2026-07-24T08:13:28.802435+00:00
-giovanni-emmanuel-bogado-duarte-classic,2026-07-24T08:13:28.802435+00:00
-giulio-maggiore-classic,2026-07-24T08:13:28.802435+00:00
-heon-jae-lee-inseason,2026-07-24T08:13:28.802435+00:00
-hyun-kim-classic,2026-07-24T08:13:28.802435+00:00
-ivo-grbic-classic,2026-07-24T08:13:28.802435+00:00
-jacopo-sala-classic,2026-07-24T08:13:28.802435+00:00
-jean-eric-moursou-classic,2026-07-24T08:13:28.802435+00:00
-jeevan-singh-badwal-classic,2026-07-24T08:23:45.254443+00:00
-joelinton-cassio-apolinario-de-lira-inseason,2026-07-24T08:13:28.802435+00:00
-jonas-martin-classic,2026-07-24T08:13:28.802435+00:00
-jozhua-vertrouwd-inseason,2026-07-24T08:13:28.802435+00:00
-juan-valentin-gimenez-classic,2026-07-24T08:13:28.802435+00:00
-julian-aude-classic,2026-07-24T08:13:28.802435+00:00
-julius-beck-classic,2026-07-24T08:13:28.802435+00:00
-jun-ha-kim-classic,2026-07-24T08:13:28.802435+00:00
-justin-bijlow-inseason,2026-07-24T11:22:39.724112+00:00
-kazuki-fukai-classic,2026-07-24T08:13:28.802435+00:00
-keke-maximilian-topp-inseason,2026-07-24T08:13:28.802435+00:00
-keylor-navas-gamboa-classic,2026-07-24T08:13:28.802435+00:00
-ki-jana-hoever-inseason,2026-07-24T08:13:28.802435+00:00
-kobe-corbanie-inseason,2026-07-24T08:13:28.802435+00:00
-kofi-jeremy-amoako-inseason,2026-07-24T08:13:28.802435+00:00
-konstantin-kuchaev-classic,2026-07-24T08:13:28.802435+00:00
-kosei-shibasaki-classic,2026-07-24T08:13:28.802435+00:00
-kristian-mandic-inseason,2026-07-24T08:13:28.802435+00:00
-leon-grgic-classic,2026-07-24T08:13:28.802435+00:00
-leon-opitz-inseason,2026-07-24T08:13:28.802435+00:00
-leonardo-benedito-da-silva-classic,2026-07-24T08:13:28.802435+00:00
-leonardo-duarte-da-silva-classic,2026-07-24T08:13:28.802435+00:00
-leonardo-sequeira-classic,2026-07-24T11:54:29.874375+00:00
-livan-baha-burcu-inseason,2026-07-24T08:13:28.802435+00:00
-lorenzo-torriani-classic,2026-07-24T08:13:28.802435+00:00
-loubadhe-abakar-sylla-inseason,2026-07-24T08:13:28.802435+00:00
-louis-leroux-inseason,2026-07-24T08:13:28.802435+00:00
-louis-mouton-inseason,2026-07-24T08:13:28.802435+00:00
-louis-oppie-inseason,2026-07-24T08:13:28.802435+00:00
-loum-tchaouna-inseason,2026-07-24T08:13:28.802435+00:00
-lucas-ariel-boye-classic,2026-07-24T08:13:28.802435+00:00
-luis-antonio-da-rocha-junior-classic,2026-07-24T08:13:28.802435+00:00
-luka-sucic-inseason,2026-07-24T08:13:28.802435+00:00
-luka-tunjic-inseason,2026-07-24T08:13:28.802435+00:00
-mamadou-sarr-classic,2026-07-24T08:13:28.802435+00:00
-marco-gaston-ruben-rodriguez-classic,2026-07-24T08:13:28.802435+00:00
-marko-tolic-classic,2026-07-24T08:13:28.802435+00:00
-martin-beautrel-atemengue-ndzie-classic,2026-07-24T08:13:28.802435+00:00
-mathias-fjortoft-lovik-inseason,2026-07-24T08:13:28.802435+00:00
-matt-lendfers-classic,2026-07-24T08:13:28.802435+00:00
-maxime-ble-classic,2026-07-24T08:13:28.802435+00:00
-mickael-nade-inseason,2026-07-24T08:13:28.802435+00:00
-miguel-gianpierre-araujo-blanco-classic,2026-07-24T08:13:28.802435+00:00
-miguel-gutierrez-ortega-inseason,2026-07-24T08:13:28.802435+00:00
-nikolaj-duus-moller-classic,2026-07-24T11:21:53.035511+00:00
-noah-jose-saviolo-inseason,2026-07-24T08:13:28.802435+00:00
-noah-raveyre-classic,2026-07-24T09:49:35.582900+00:00
-noah-streit-inseason,2026-07-24T08:13:28.802435+00:00
-norman-bassette-inseason,2026-07-24T09:40:54.421514+00:00
-oleksandr-zubkov-inseason,2026-07-24T08:13:28.802435+00:00
-oscar-mingueza-garcia-inseason,2026-07-24T08:13:28.802435+00:00
-rene-mitongo-muteba-inseason,2026-07-24T08:13:28.802435+00:00
-rihito-yamamoto-inseason,2026-07-24T08:13:28.802435+00:00
-roko-perkovic-classic,2026-07-24T08:13:28.802435+00:00
-romelle-donovan-inseason,2026-07-24T08:13:28.802435+00:00
-ross-callachan-classic,2026-07-24T08:13:28.802435+00:00
-royer-caicedo-inseason,2026-07-24T08:13:28.802435+00:00
-ruben-ramos-jr-classic,2026-07-24T08:13:28.802435+00:00
-ryan-schewe-classic,2026-07-24T08:13:28.802435+00:00
-salih-malkocoglu-inseason,2026-07-24T08:13:28.802435+00:00
-santiago-castaneda-classic,2026-07-24T08:13:28.802435+00:00
-serge-ngoma-classic,2026-07-24T08:13:28.802435+00:00
-shandre-miguel-campbell-inseason,2026-07-24T08:13:28.802435+00:00
-simone-verdi-classic,2026-07-24T08:13:28.802435+00:00
-sota-kitano-classic,2026-07-24T08:13:28.802435+00:00
-souleymane-alio-classic,2026-07-24T08:13:28.802435+00:00
-souleymane-isaak-toure-inseason,2026-07-24T08:13:28.802435+00:00
-stefan-stefanov-smarkalev-inseason,2026-07-24T08:13:28.802435+00:00
-strahinja-stojkovic-inseason,2026-07-24T08:13:28.802435+00:00
-thomas-guilier-classic,2026-07-24T08:13:28.802435+00:00
-thomas-watson-inseason,2026-07-24T08:13:28.802435+00:00
-tim-breithaupt-classic,2026-07-24T08:13:28.802435+00:00
-tolikpaley-luc-evrad-zogbe-inseason,2026-07-24T08:13:28.802435+00:00
-tom-vandenberghe-classic,2026-07-24T08:13:28.802435+00:00
-tomas-jacob-classic,2026-07-24T08:13:28.802435+00:00
-valeri-qazaishvili-classic,2026-07-24T08:13:28.802435+00:00
-vinko-medimorec-classic,2026-07-24T08:13:28.802435+00:00
-yuriy-gorshkov-classic,2026-07-24T08:13:28.802435+00:00
+alan-matturro-romero-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+alejandro-blesa-pina-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+aljoscha-kemlein-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+amos-pieper-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+arnaldo-antonio-sanabria-ayala-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+arsen-zakharyan-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+augusto-jorge-mateo-solari-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+barry-lauwers-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+bernhard-zimmermann-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+brian-roberto-heras-gonzalez-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+christian-gytkjaer-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+colin-dagba-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+damil-dankerlui-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+danny-hoesen-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+david-villa-sanchez-classic,2026-07-24T12:04:32.344216+00:00  # scade: 24/07/2026 14:04 ora di Roma
+denil-castillo-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+denis-genreau-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+devis-stiven-vasquez-llach-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+do-hyun-yeom-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+dominick-drexler-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+el-chadaille-bitshiabu-inseason,2026-07-24T08:54:57.992480+00:00  # scade: 24/07/2026 10:54 ora di Roma
+elias-jelert-kristensen-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+enrique-marlon-aguilar-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+erwin-mulder-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+evan-mooney-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+federico-bonazzoli-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+fofin-turay-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+franko-kovacevic-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+gideon-mensah-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+giovanni-emmanuel-bogado-duarte-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+giulio-maggiore-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+heon-jae-lee-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+hyun-kim-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+ivo-grbic-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+jacopo-sala-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+jean-eric-moursou-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+jeevan-singh-badwal-classic,2026-07-24T08:23:45.254443+00:00  # scade: 24/07/2026 10:23 ora di Roma
+joelinton-cassio-apolinario-de-lira-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+jonas-martin-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+jozhua-vertrouwd-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+juan-valentin-gimenez-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+julian-aude-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+julius-beck-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+jun-ha-kim-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+justin-bijlow-inseason,2026-07-24T11:22:39.724112+00:00  # scade: 24/07/2026 13:22 ora di Roma
+kazuki-fukai-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+keke-maximilian-topp-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+keylor-navas-gamboa-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+ki-jana-hoever-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+kobe-corbanie-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+kofi-jeremy-amoako-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+konstantin-kuchaev-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+kosei-shibasaki-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+kristian-mandic-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+leon-grgic-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+leon-opitz-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+leonardo-benedito-da-silva-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+leonardo-duarte-da-silva-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+leonardo-sequeira-classic,2026-07-24T11:54:29.874375+00:00  # scade: 24/07/2026 13:54 ora di Roma
+livan-baha-burcu-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+lorenzo-torriani-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+loubadhe-abakar-sylla-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+louis-leroux-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+louis-mouton-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+louis-oppie-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+loum-tchaouna-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+lucas-ariel-boye-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+luis-antonio-da-rocha-junior-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+luka-sucic-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+luka-tunjic-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+mamadou-sarr-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+marco-gaston-ruben-rodriguez-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+marko-tolic-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+martin-beautrel-atemengue-ndzie-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+mathias-fjortoft-lovik-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+matt-lendfers-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+maxime-ble-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+mickael-nade-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+miguel-gianpierre-araujo-blanco-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+miguel-gutierrez-ortega-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+nikolaj-duus-moller-classic,2026-07-24T11:21:53.035511+00:00  # scade: 24/07/2026 13:21 ora di Roma
+noah-jose-saviolo-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+noah-raveyre-classic,2026-07-24T09:49:35.582900+00:00  # scade: 24/07/2026 11:49 ora di Roma
+noah-streit-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+norman-bassette-inseason,2026-07-24T09:40:54.421514+00:00  # scade: 24/07/2026 11:40 ora di Roma
+oleksandr-zubkov-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+oscar-mingueza-garcia-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+rene-mitongo-muteba-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+rihito-yamamoto-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+roko-perkovic-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+romelle-donovan-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+ross-callachan-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+royer-caicedo-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+ruben-ramos-jr-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+ryan-schewe-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+salih-malkocoglu-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+santiago-castaneda-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+serge-ngoma-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+shandre-miguel-campbell-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+simone-verdi-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+sota-kitano-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+souleymane-alio-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+souleymane-isaak-toure-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+stefan-stefanov-smarkalev-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+strahinja-stojkovic-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+thomas-guilier-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+thomas-watson-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+tim-breithaupt-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+tolikpaley-luc-evrad-zogbe-inseason,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+tom-vandenberghe-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+tomas-jacob-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+valeri-qazaishvili-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+vinko-medimorec-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
+yuriy-gorshkov-classic,2026-07-24T08:13:28.802435+00:00  # scade: 24/07/2026 10:13 ora di Roma
 
 ## campionato
 # CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla con le altre. Ogni carta di un giocatore attivo in uno di questi campionati viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
 global-cup,15 giorni
 j1-100-year-vision-league,60 giorni
 premiership-gb-sct,15 giorni
-seasonal-contenders, 15 giorni
-seasonal-contender, 15 giorni
+seasonal-contender,15 giorni
+seasonal-contenders,15 giorni
 
