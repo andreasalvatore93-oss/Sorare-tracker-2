@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T13:12:08.956144Z
-**Run totali:** 59
+**Data analisi:** 2026-07-22T13:14:10.630145Z
+**Run totali:** 60
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.15 EUR
-- **Trend mercato:** ➡️ STABLE (-0.2%)
-- **Sentiment:** ⚪ Stabile
+- **Prezzo medio MLS:** 7.12 EUR
+- **Trend mercato:** ➡️ STABLE (-0.4%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.2%)**
+**➡️ TREND GLOBALE: STABLE (-0.4%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — G. Guerra (Portland Timbers)**
@@ -69,7 +69,7 @@ Carte trovate: 11 | Prezzo medio: 4.33 EUR | Volatilità (σ): 5.08
 Carte trovate: 16 | Prezzo medio: 2.54 EUR | Volatilità (σ): 2.08
 
 **Charlotte FC**
-Carte trovate: 9 | Prezzo medio: 8.65 EUR | Volatilità (σ): 9.47
+Carte trovate: 9 | Prezzo medio: 8.62 EUR | Volatilità (σ): 9.47
 
 **St. Louis City SC**
 Carte trovate: 16 | Prezzo medio: 2.56 EUR | Volatilità (σ): 2.36
@@ -120,7 +120,7 @@ Carte trovate: 5 | Prezzo medio: 1.92 EUR | Volatilità (σ): 1.17
 Carte trovate: 8 | Prezzo medio: 10.50 EUR | Volatilità (σ): 19.26
 
 **Portland Timbers**
-Carte trovate: 11 | Prezzo medio: 3.19 EUR | Volatilità (σ): 3.94
+Carte trovate: 12 | Prezzo medio: 3.08 EUR | Volatilità (σ): 3.78
 
 **Houston Dynamo FC**
 Carte trovate: 14 | Prezzo medio: 6.71 EUR | Volatilità (σ): 13.45
