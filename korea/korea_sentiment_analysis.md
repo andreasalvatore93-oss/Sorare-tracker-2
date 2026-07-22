@@ -1,16 +1,16 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:46:42.548590Z
-**Run totali:** 31
+**Data analisi:** 2026-07-22T23:56:44.195174Z
+**Run totali:** 32
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 3.23 EUR
-- **Trend mercato:** ➡️ STABLE (-0.2%)
-- **Sentiment:** ⚪ Stabile
+- **Prezzo medio K League 1:** 3.22 EUR
+- **Trend mercato:** ➡️ STABLE (-0.3%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.2%)**
+**➡️ TREND GLOBALE: STABLE (-0.3%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Lee Seung-Woo (Jeonbuk Hyundai Motors FC)**
@@ -54,7 +54,7 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Jeonbuk Hyundai Motors FC**
-Carte trovate: 16 | Prezzo medio: 2.91 EUR | Volatilità (σ): 2.59
+Carte trovate: 17 | Prezzo medio: 2.80 EUR | Volatilità (σ): 2.55
 
 **FC Anyang**
 Carte trovate: 6 | Prezzo medio: 4.16 EUR | Volatilità (σ): 5.45
@@ -72,7 +72,7 @@ Carte trovate: 9 | Prezzo medio: 4.71 EUR | Volatilità (σ): 5.35
 Carte trovate: 7 | Prezzo medio: 1.51 EUR | Volatilità (σ): 0.88
 
 **Jeju SK FC**
-Carte trovate: 7 | Prezzo medio: 1.94 EUR | Volatilità (σ): 1.01
+Carte trovate: 7 | Prezzo medio: 1.92 EUR | Volatilità (σ): 0.99
 
 **FC Seoul**
 Carte trovate: 4 | Prezzo medio: 2.79 EUR | Volatilità (σ): 2.04

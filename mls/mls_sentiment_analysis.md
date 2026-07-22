@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:46:42.531268Z
-**Run totali:** 124
+**Data analisi:** 2026-07-22T23:56:44.178602Z
+**Run totali:** 125
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.17 EUR
-- **Trend mercato:** ➡️ STABLE (+0.0%)
+- **Prezzo medio MLS:** 6.19 EUR
+- **Trend mercato:** ➡️ STABLE (+0.3%)
 - **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.0%)**
+**➡️ TREND GLOBALE: STABLE (+0.3%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
@@ -69,7 +69,7 @@ Carte trovate: 18 | Prezzo medio: 3.48 EUR | Volatilità (σ): 4.29
 Carte trovate: 25 | Prezzo medio: 2.24 EUR | Volatilità (σ): 1.78
 
 **Charlotte FC**
-Carte trovate: 15 | Prezzo medio: 4.38 EUR | Volatilità (σ): 4.64
+Carte trovate: 15 | Prezzo medio: 4.36 EUR | Volatilità (σ): 4.65
 
 **St. Louis City SC**
 Carte trovate: 20 | Prezzo medio: 2.15 EUR | Volatilità (σ): 2.17
