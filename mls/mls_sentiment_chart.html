@@ -1,1 +1,352 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLS Sentiment Analysis Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card-bg: #ffffff;
+            --text: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --border: #e5e5e7;
+            --green: #34c759;
+            --red: #ff3b30;
+            --blue: #4A90E2;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121214;
+                --card-bg: #1c1c1e;
+                --text: #f5f5f7;
+                --text-secondary: #a1a1a6;
+                --border: #38383a;
+                --green: #30d158;
+                --red: #ff453a;
+                --blue: #64a8f0;
+            }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .summary-banner {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .summary-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .chart-wrapper {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+        canvas {
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 MLS Sentiment Analysis</h1>
+        <div class="subtitle">Analisi in tempo reale del mercato MLS in-season</div>
+        
+        <div class="summary-banner">
+            <div class="summary-item">
+                <div class="summary-value">5.99 EUR</div>
+                <div class="summary-label">Prezzo medio</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">➡️ -0.1%</div>
+                <div class="summary-label">Trend mercato</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">⚪ Stabile</div>
+                <div class="summary-label">Sentiment</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">557</div>
+                <div class="summary-label">Giocatori tracciati</div>
+            </div>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title">🎯 Migliori Opportunità di Acquisto</div>
+            <div class="chart-subtitle">Sconto % rispetto alla media storica — barre verdi = sotto la media (occasione), rosse = sopra la media</div>
+            <canvas id="opportunityChart"></canvas>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title">🏷️ Andamento per Fascia di Livello</div>
+            <div class="chart-subtitle">Sconto/rialzo medio per fascia di prezzo — capisci se sta calando tutto il mercato o solo una fascia specifica</div>
+            <canvas id="tierChart"></canvas>
+            <div id="tierLegend" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px; justify-content:center;"></div>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title">💰 Prezzo Medio per Squadra</div>
+            <div class="chart-subtitle">Prezzo medio delle carte in_season trovate per ogni squadra MLS — utile per confrontare quali squadre hanno giocatori mediamente più costosi. Passa il mouse su una barra per vedere il nome della squadra</div>
+            <canvas id="teamChart"></canvas>
+        </div>
+    </div>
+    
+    <script>
+        const teamsData = {"Seattle Sounders FC": {"avg": 4.6296436000000005, "count": 20}, "Los Angeles FC": {"avg": 8.505105333333333, "count": 18}, "Real Salt Lake": {"avg": 1.987812090909091, "count": 22}, "San Jose Earthquakes": {"avg": 3.484194444444445, "count": 18}, "Columbus Crew": {"avg": 2.2608986521739127, "count": 23}, "Charlotte FC": {"avg": 4.580993428571429, "count": 14}, "St. Louis City SC": {"avg": 2.313366222222222, "count": 18}, "Chicago Fire FC": {"avg": 5.057042818181819, "count": 22}, "Inter Miami CF": {"avg": 10.493993692307694, "count": 13}, "FC Cincinnati": {"avg": 5.188800318181818, "count": 22}, "Minnesota United": {"avg": 2.064849368421052, "count": 19}, "Orlando City SC": {"avg": 2.814117647058823, "count": 17}, "Nashville SC": {"avg": 7.883766863636365, "count": 22}, "Austin FC": {"avg": 2.2224320769230768, "count": 13}, "San Diego FC": {"avg": 5.003179428571428, "count": 21}, "Vancouver Whitecaps FC": {"avg": 6.391946150000001, "count": 20}, "Philadelphia Union": {"avg": 4.053730894736842, "count": 19}, "LA Galaxy": {"avg": 3.2328571428571427, "count": 14}, "Colorado Rapids": {"avg": 1.9326889500000004, "count": 20}, "New York Red Bulls": {"avg": 2.8158504374999995, "count": 16}, "Atlanta United": {"avg": 1.3485714285714285, "count": 14}, "New England Revolution": {"avg": 4.919118818181818, "count": 22}, "Portland Timbers": {"avg": 2.7553267500000005, "count": 20}, "Houston Dynamo FC": {"avg": 5.4770127777777775, "count": 18}, "CF Montreal": {"avg": 1.7367149999999996, "count": 16}, "New York City FC": {"avg": 3.100108894736842, "count": 19}, "Toronto FC": {"avg": 2.085722, "count": 20}, "DC United": {"avg": 1.5335230769230768, "count": 13}, "FC Dallas": {"avg": 1.5430239999999997, "count": 29}, "Sporting Kansas City ": {"avg": 1.22839, "count": 15}};
+        const opportunitiesData = [{"name": "Zackary Steffen", "team": "Colorado Rapids", "change_pct": -83.3, "price": 0.99, "mean": 5.9366666666666665, "occurrences": 3}, {"name": "Alexander Bonetig", "team": "Portland Timbers", "change_pct": -81.9, "price": 0.49, "mean": 2.703333333333333, "occurrences": 3}, {"name": "Japhet Sery Larsen", "team": "Philadelphia Union", "change_pct": -80.5, "price": 0.8417100000000001, "mean": 4.307236666666667, "occurrences": 3}, {"name": "Joshua Torquato", "team": "FC Dallas", "change_pct": -77.3, "price": 0.35, "mean": 1.54, "occurrences": 5}, {"name": "An\u00edbal Godoy", "team": "San Diego FC", "change_pct": -76.4, "price": 0.98, "mean": 4.154, "occurrences": 5}, {"name": "Robert Voloder", "team": "New York Red Bulls", "change_pct": -75.8, "price": 0.51, "mean": 2.109116, "occurrences": 2}, {"name": "Allan Oyirwoth", "team": "New England Revolution", "change_pct": -74.2, "price": 0.5, "mean": 1.9400000000000002, "occurrences": 3}, {"name": "G. Guerra", "team": "Portland Timbers", "change_pct": -71.4, "price": 0.5, "mean": 1.75, "occurrences": 2}, {"name": "Tai Baribo", "team": "DC United", "change_pct": -69.3, "price": 2.355248, "mean": 7.678812, "occurrences": 4}, {"name": "Antoine Griezmann", "team": "Orlando City SC", "change_pct": -67.6, "price": 15.0, "mean": 46.246, "occurrences": 5}, {"name": "Riley Thomas", "team": "Austin FC", "change_pct": -65.2, "price": 0.5, "mean": 1.435, "occurrences": 2}, {"name": "D.J. Taylor", "team": "Minnesota United", "change_pct": -65.1, "price": 0.48, "mean": 1.3766666666666667, "occurrences": 3}, {"name": "Ariath Piol", "team": "Real Salt Lake", "change_pct": -63.2, "price": 0.51, "mean": 1.3865536666666667, "occurrences": 3}, {"name": "Augustin Anello", "team": "Philadelphia Union", "change_pct": -62.8, "price": 0.63, "mean": 1.6933333333333334, "occurrences": 3}, {"name": "Evan Bush", "team": "Columbus Crew", "change_pct": -62.4, "price": 0.86, "mean": 2.286302, "occurrences": 3}];
+        const tierData = [{"name": "Scarso", "avg_change": -10.6, "count": 352, "color": "#8B0000", "range": "0-2", "top_drop_name": "Zackary Steffen", "top_drop_team": "Colorado Rapids", "top_drop_pct": -83.3}, {"name": "Starter", "avg_change": -7.2, "count": 99, "color": "#FF4500", "range": "2-5", "top_drop_name": "Tai Baribo", "top_drop_team": "DC United", "top_drop_pct": -69.3}, {"name": "Buono", "avg_change": -9.1, "count": 60, "color": "#FFA500", "range": "5-10", "top_drop_name": "Alex Roldan", "top_drop_team": "Seattle Sounders FC", "top_drop_pct": -56.8}, {"name": "Ottimo", "avg_change": -9.9, "count": 29, "color": "#DAA520", "range": "10-20", "top_drop_name": "Antoine Griezmann", "top_drop_team": "Orlando City SC", "top_drop_pct": -67.6}, {"name": "Eccellente", "avg_change": -5.9, "count": 10, "color": "#9ACD32", "range": "20-30", "top_drop_name": "Heung-min Son", "top_drop_team": "Los Angeles FC", "top_drop_pct": -22.7}, {"name": "Leggendario", "avg_change": -14.8, "count": 7, "color": "#00C853", "range": "30+", "top_drop_name": "Lionel Messi", "top_drop_team": "Inter Miami CF", "top_drop_pct": -26.2}];
+        
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const textColor = isDark ? '#f5f5f7' : '#1d1d1f';
+        const textSecondaryColor = isDark ? '#a1a1a6' : '#6e6e73';
+        const gridColor = isDark ? '#38383a' : '#e5e5e7';
+        const greenColor = isDark ? '#30d158' : '#34c759';
+        const redColor = isDark ? '#ff453a' : '#ff3b30';
+        const blueColor = isDark ? '#64a8f0' : '#4A90E2';
+        
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
+        
+        // Grafico opportunità: sconto % per giocatore, colorato in base a sopra/sotto media
+        const oppLabels = opportunitiesData.map(o => o.name + ' (' + o.team + ')');
+        const oppValues = opportunitiesData.map(o => o.change_pct);
+        const oppColors = oppValues.map(v => v < 0 ? greenColor : redColor);
+        
+        const ctxOpp = document.getElementById('opportunityChart').getContext('2d');
+        new Chart(ctxOpp, {
+            type: 'bar',
+            data: {
+                labels: oppLabels,
+                datasets: [{
+                    label: 'Sconto vs media storica (%)',
+                    data: oppValues,
+                    backgroundColor: oppColors,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const o = opportunitiesData[ctx.dataIndex];
+                                return o.change_pct.toFixed(1) + '% — Prezzo: ' + o.price.toFixed(2) + 
+                                       ' EUR (media: ' + o.mean.toFixed(2) + ' EUR, ' + o.occurrences + ' occorrenze)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {color: gridColor},
+                        title: {display: true, text: '% sconto (negativo = sotto media, buona occasione)'}
+                    },
+                    y: {grid: {display: false}},
+                },
+            },
+        });
+        
+        // Grafico fasce di prezzo: sconto medio per fascia, colore crescente rosso->verde
+        // Ordine invertito: dalla fascia più bassa (Scarso) in basso, alla più alta (Leggendario) in alto
+        const tierDataReversed = [...tierData].reverse();
+        const tierLabels = tierDataReversed.map(t => t.name + ' (' + t.range + ' EUR)');
+        const tierValues = tierDataReversed.map(t => t.avg_change);
+        const tierColors = tierDataReversed.map(t => t.color);
+        
+        // Plugin custom per scrivere il valore % e il giocatore col calo maggiore su ogni barra
+        const dataLabelsPlugin = {
+            id: 'dataLabelsPlugin',
+            afterDatasetsDraw(chart) {
+                const {ctx} = chart;
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    meta.data.forEach((bar, index) => {
+                        const value = dataset.data[index];
+                        const t = tierDataReversed[index];
+                        const label = (value > 0 ? '+' : '') + value.toFixed(1) + '%';
+                        const topDropLabel = t.top_drop_name
+                            ? t.top_drop_name + ' ' + (t.top_drop_pct > 0 ? '+' : '') + t.top_drop_pct.toFixed(1) + '%'
+                            : null;
+                        ctx.save();
+                        ctx.font = 'bold 12px -apple-system, sans-serif';
+                        ctx.textBaseline = 'middle';
+                        if (chart.options.indexAxis === 'y') {
+                            ctx.textAlign = value < 0 ? 'right' : 'left';
+                            const xPos = value < 0 ? bar.x - 8 : bar.x + 8;
+                            ctx.fillStyle = textColor;
+                            ctx.fillText(label, xPos, bar.y - 8);
+                            if (topDropLabel) {
+                                ctx.font = '10px -apple-system, sans-serif';
+                                ctx.fillStyle = textSecondaryColor;
+                                ctx.fillText('📉 ' + topDropLabel, xPos, bar.y + 8);
+                            }
+                        } else {
+                            ctx.textAlign = 'center';
+                            const yPos = value < 0 ? bar.y + 16 : bar.y - 8;
+                            ctx.fillStyle = textColor;
+                            ctx.fillText(label, bar.x, yPos);
+                        }
+                        ctx.restore();
+                    });
+                });
+            }
+        };
+        
+        const ctxTier = document.getElementById('tierChart').getContext('2d');
+        new Chart(ctxTier, {
+            type: 'bar',
+            data: {
+                labels: tierLabels,
+                datasets: [{
+                    label: 'Sconto/rialzo medio (%)',
+                    data: tierValues,
+                    backgroundColor: tierColors,
+                    borderRadius: 4,
+                }]
+            },
+            plugins: [dataLabelsPlugin],
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {padding: {right: 40, left: 10, top: 10, bottom: 10}},
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const t = tierDataReversed[ctx.dataIndex];
+                                return t.avg_change.toFixed(1) + '% medio — ' + t.count + ' carte in questa fascia';
+                            },
+                            afterLabel: function(ctx) {
+                                const t = tierDataReversed[ctx.dataIndex];
+                                if (!t.top_drop_name) return '';
+                                return '📉 Top calo: ' + t.top_drop_name + ' (' + t.top_drop_team + ') ' +
+                                       (t.top_drop_pct > 0 ? '+' : '') + t.top_drop_pct.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {grid: {color: gridColor}, title: {display: true, text: '% sconto medio dalla media storica (negativo = mercato in calo in questa fascia)'}},
+                    y: {grid: {display: false}},
+                },
+            },
+        });
+        
+        // Legenda colorata sotto il grafico fasce
+        const legendDiv = document.getElementById('tierLegend');
+        tierData.forEach(t => {
+            const badge = document.createElement('div');
+            badge.style.cssText = 'padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; color:white; background:' + t.color;
+            badge.textContent = t.name + ': ' + t.count + ' carte';
+            legendDiv.appendChild(badge);
+        });
+        
+        // Grafico prezzo medio per squadra, ordinato dal più caro al più economico
+        const teamEntries = Object.entries(teamsData).sort((a, b) => b[1].avg - a[1].avg);
+        const teamLabels = teamEntries.map(([name]) => name);
+        const teamAvgs = teamEntries.map(([, v]) => v.avg.toFixed(2));
+        const teamCounts = teamEntries.map(([, v]) => v.count);
+        
+        const ctx1 = document.getElementById('teamChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: teamLabels,
+                datasets: [{
+                    label: 'Prezzo medio (EUR)',
+                    data: teamAvgs,
+                    backgroundColor: blueColor,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            title: function(ctx) {
+                                return ctx[0].label;
+                            },
+                            label: function(ctx) {
+                                const count = teamCounts[ctx.dataIndex];
+                                return 'Prezzo medio: ' + ctx.parsed.y.toFixed(2) + ' EUR (' + count + ' carte trovate)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {beginAtZero: true, grid: {color: gridColor}, title: {display: true, text: 'Prezzo medio (EUR)'}},
+                    x: {
+                        grid: {display: false},
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 90,
+                            minRotation: 60,
+                            font: {size: 10}
+                        }
+                    },
+                },
+            },
+        });
+    </script>
+</body>
+</html>

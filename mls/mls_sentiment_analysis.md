@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T18:53:57.933155Z
-**Run totali:** 111
+**Data analisi:** 2026-07-22T19:03:06.560255Z
+**Run totali:** 112
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
 - **Prezzo medio MLS:** 5.99 EUR
-- **Trend mercato:** ➡️ STABLE (+0.8%)
-- **Sentiment:** 🟩 Leggero Rialzo
+- **Trend mercato:** ➡️ STABLE (-0.1%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.8%)**
+**➡️ TREND GLOBALE: STABLE (-0.1%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
@@ -111,7 +111,7 @@ Carte trovate: 14 | Prezzo medio: 3.23 EUR | Volatilità (σ): 2.78
 Carte trovate: 20 | Prezzo medio: 1.93 EUR | Volatilità (σ): 2.36
 
 **New York Red Bulls**
-Carte trovate: 16 | Prezzo medio: 2.82 EUR | Volatilità (σ): 3.28
+Carte trovate: 16 | Prezzo medio: 2.82 EUR | Volatilità (σ): 3.27
 
 **Atlanta United**
 Carte trovate: 14 | Prezzo medio: 1.35 EUR | Volatilità (σ): 1.02
