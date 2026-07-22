@@ -1,1 +1,352 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K League 1 Sentiment Analysis Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card-bg: #ffffff;
+            --text: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --border: #e5e5e7;
+            --green: #34c759;
+            --red: #ff3b30;
+            --blue: #4A90E2;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121214;
+                --card-bg: #1c1c1e;
+                --text: #f5f5f7;
+                --text-secondary: #a1a1a6;
+                --border: #38383a;
+                --green: #30d158;
+                --red: #ff453a;
+                --blue: #64a8f0;
+            }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .summary-banner {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .summary-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .chart-wrapper {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+        canvas {
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 K League 1 Sentiment Analysis</h1>
+        <div class="subtitle">Analisi in tempo reale del mercato K League 1 in-season</div>
+        
+        <div class="summary-banner">
+            <div class="summary-item">
+                <div class="summary-value">3.23 EUR</div>
+                <div class="summary-label">Prezzo medio</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">➡️ -0.4%</div>
+                <div class="summary-label">Trend mercato</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">🟨 Quasi Fermo</div>
+                <div class="summary-label">Sentiment</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">67</div>
+                <div class="summary-label">Giocatori tracciati</div>
+            </div>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title">🎯 Migliori Opportunità di Acquisto</div>
+            <div class="chart-subtitle">Sconto % rispetto alla media storica — barre verdi = sotto la media (occasione), rosse = sopra la media</div>
+            <canvas id="opportunityChart"></canvas>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title">🏷️ Andamento per Fascia di Livello</div>
+            <div class="chart-subtitle">Sconto/rialzo medio per fascia di prezzo — capisci se sta calando tutto il mercato o solo una fascia specifica</div>
+            <canvas id="tierChart"></canvas>
+            <div id="tierLegend" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px; justify-content:center;"></div>
+        </div>
+        
+        <div class="chart-wrapper">
+            <div class="chart-title">💰 Prezzo Medio per Squadra</div>
+            <div class="chart-subtitle">Prezzo medio delle carte in_season trovate per ogni squadra MLS — utile per confrontare quali squadre hanno giocatori mediamente più costosi. Passa il mouse su una barra per vedere il nome della squadra</div>
+            <canvas id="teamChart"></canvas>
+        </div>
+    </div>
+    
+    <script>
+        const teamsData = {"Jeonbuk Hyundai Motors FC": {"avg": 3.0509090909090903, "count": 11}, "FC Anyang": {"avg": 5.946666666666666, "count": 3}, "Pohang Steelers FC": {"avg": 2.260329375, "count": 8}, "Ulsan Hyundai Horang-i": {"avg": 3.906, "count": 10}, "Gangwon FC": {"avg": 5.578571428571428, "count": 7}, "Gimcheon Sangmu": {"avg": 1.5833333333333333, "count": 6}, "Jeju SK FC": {"avg": 1.7616581666666669, "count": 6}, "FC Seoul": {"avg": 4.917196666666666, "count": 3}, "Daejeon Citizen FC": {"avg": 4.812, "count": 5}, "Bucheon FC 1995": {"avg": 2.2199999999999998, "count": 4}, "Incheon United FC": {"avg": 2.165, "count": 2}, "Gwangju FC": {"avg": 1.4449999999999998, "count": 2}};
+        const opportunitiesData = [{"name": "Shin Kwang-Hoon", "team": "Pohang Steelers FC", "change_pct": -13.9, "price": 0.96, "mean": 1.115, "occurrences": 2}, {"name": "Choe Byung-Chan", "team": "Gangwon FC", "change_pct": -12.9, "price": 1.8, "mean": 2.0666666666666664, "occurrences": 9}, {"name": "Park Chan-Yong", "team": "Pohang Steelers FC", "change_pct": -12.2, "price": 0.842635, "mean": 0.9595303333333333, "occurrences": 3}, {"name": "Jo Hyeon-Woo", "team": "Ulsan Hyundai Horang-i", "change_pct": -9.3, "price": 3.09, "mean": 3.405555555555556, "occurrences": 9}, {"name": "Oh Jae-Hyeok", "team": "Jeju SK FC", "change_pct": -8.7, "price": 2.2, "mean": 2.41, "occurrences": 4}, {"name": "Lee Ho-Jae", "team": "Pohang Steelers FC", "change_pct": -7.9, "price": 4.0, "mean": 4.345000000000001, "occurrences": 2}, {"name": "Lee Ju-Hyun", "team": "Jeonbuk Hyundai Motors FC", "change_pct": -7.8, "price": 1.6, "mean": 1.735, "occurrences": 2}, {"name": "Lee Dong-Gyeong", "team": "Ulsan Hyundai Horang-i", "change_pct": -4.8, "price": 9.4, "mean": 9.875, "occurrences": 4}, {"name": "Maeng Seong-Ung", "team": "Jeonbuk Hyundai Motors FC", "change_pct": -3.2, "price": 1.68, "mean": 1.7349999999999999, "occurrences": 2}, {"name": "Marc\u00e3o", "team": "Ulsan Hyundai Horang-i", "change_pct": -2.3, "price": 1.52, "mean": 1.5550000000000002, "occurrences": 2}, {"name": "Park Cheol-Woo", "team": "Gimcheon Sangmu", "change_pct": -2.0, "price": 1.46, "mean": 1.49, "occurrences": 2}, {"name": "Sim Sang-Min", "team": "Ulsan Hyundai Horang-i", "change_pct": -1.1, "price": 0.88, "mean": 0.89, "occurrences": 2}, {"name": "Hwang In-Jae", "team": "Pohang Steelers FC", "change_pct": -0.4, "price": 2.88, "mean": 2.892582, "occurrences": 2}, {"name": "Kim Kyeong-Min", "team": "Gwangju FC", "change_pct": -0.3, "price": 1.69, "mean": 1.6949999999999998, "occurrences": 2}, {"name": "Kim Jin-Su", "team": "FC Seoul", "change_pct": -0.1, "price": 4.921589999999999, "mean": 4.9258239999999995, "occurrences": 2}];
+        const tierData = [{"name": "Scarso", "avg_change": -1.7, "count": 32, "color": "#8B0000", "range": "0-2", "top_drop_name": "Shin Kwang-Hoon", "top_drop_team": "Pohang Steelers FC", "top_drop_pct": -13.9}, {"name": "Starter", "avg_change": -1.1, "count": 25, "color": "#FF4500", "range": "2-5", "top_drop_name": "Jo Hyeon-Woo", "top_drop_team": "Ulsan Hyundai Horang-i", "top_drop_pct": -9.3}, {"name": "Buono", "avg_change": -1.2, "count": 4, "color": "#FFA500", "range": "5-10", "top_drop_name": "Lee Dong-Gyeong", "top_drop_team": "Ulsan Hyundai Horang-i", "top_drop_pct": -4.8}, {"name": "Ottimo", "avg_change": 0.0, "count": 6, "color": "#DAA520", "range": "10-20", "top_drop_name": "Matheus Oliveira", "top_drop_team": "FC Anyang", "top_drop_pct": 0.0}, {"name": "Eccellente", "avg_change": 0, "count": 0, "color": "#9ACD32", "range": "20-30", "top_drop_name": null, "top_drop_team": null, "top_drop_pct": null}, {"name": "Leggendario", "avg_change": 0, "count": 0, "color": "#00C853", "range": "30+", "top_drop_name": null, "top_drop_team": null, "top_drop_pct": null}];
+        
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const textColor = isDark ? '#f5f5f7' : '#1d1d1f';
+        const textSecondaryColor = isDark ? '#a1a1a6' : '#6e6e73';
+        const gridColor = isDark ? '#38383a' : '#e5e5e7';
+        const greenColor = isDark ? '#30d158' : '#34c759';
+        const redColor = isDark ? '#ff453a' : '#ff3b30';
+        const blueColor = isDark ? '#64a8f0' : '#4A90E2';
+        
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
+        
+        // Grafico opportunità: sconto % per giocatore, colorato in base a sopra/sotto media
+        const oppLabels = opportunitiesData.map(o => o.name + ' (' + o.team + ')');
+        const oppValues = opportunitiesData.map(o => o.change_pct);
+        const oppColors = oppValues.map(v => v < 0 ? greenColor : redColor);
+        
+        const ctxOpp = document.getElementById('opportunityChart').getContext('2d');
+        new Chart(ctxOpp, {
+            type: 'bar',
+            data: {
+                labels: oppLabels,
+                datasets: [{
+                    label: 'Sconto vs media storica (%)',
+                    data: oppValues,
+                    backgroundColor: oppColors,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const o = opportunitiesData[ctx.dataIndex];
+                                return o.change_pct.toFixed(1) + '% — Prezzo: ' + o.price.toFixed(2) + 
+                                       ' EUR (media: ' + o.mean.toFixed(2) + ' EUR, ' + o.occurrences + ' occorrenze)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {color: gridColor},
+                        title: {display: true, text: '% sconto (negativo = sotto media, buona occasione)'}
+                    },
+                    y: {grid: {display: false}},
+                },
+            },
+        });
+        
+        // Grafico fasce di prezzo: sconto medio per fascia, colore crescente rosso->verde
+        // Ordine invertito: dalla fascia più bassa (Scarso) in basso, alla più alta (Leggendario) in alto
+        const tierDataReversed = [...tierData].reverse();
+        const tierLabels = tierDataReversed.map(t => t.name + ' (' + t.range + ' EUR)');
+        const tierValues = tierDataReversed.map(t => t.avg_change);
+        const tierColors = tierDataReversed.map(t => t.color);
+        
+        // Plugin custom per scrivere il valore % e il giocatore col calo maggiore su ogni barra
+        const dataLabelsPlugin = {
+            id: 'dataLabelsPlugin',
+            afterDatasetsDraw(chart) {
+                const {ctx} = chart;
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    meta.data.forEach((bar, index) => {
+                        const value = dataset.data[index];
+                        const t = tierDataReversed[index];
+                        const label = (value > 0 ? '+' : '') + value.toFixed(1) + '%';
+                        const topDropLabel = t.top_drop_name
+                            ? t.top_drop_name + ' ' + (t.top_drop_pct > 0 ? '+' : '') + t.top_drop_pct.toFixed(1) + '%'
+                            : null;
+                        ctx.save();
+                        ctx.font = 'bold 12px -apple-system, sans-serif';
+                        ctx.textBaseline = 'middle';
+                        if (chart.options.indexAxis === 'y') {
+                            ctx.textAlign = value < 0 ? 'right' : 'left';
+                            const xPos = value < 0 ? bar.x - 8 : bar.x + 8;
+                            ctx.fillStyle = textColor;
+                            ctx.fillText(label, xPos, bar.y - 8);
+                            if (topDropLabel) {
+                                ctx.font = '10px -apple-system, sans-serif';
+                                ctx.fillStyle = textSecondaryColor;
+                                ctx.fillText('📉 ' + topDropLabel, xPos, bar.y + 8);
+                            }
+                        } else {
+                            ctx.textAlign = 'center';
+                            const yPos = value < 0 ? bar.y + 16 : bar.y - 8;
+                            ctx.fillStyle = textColor;
+                            ctx.fillText(label, bar.x, yPos);
+                        }
+                        ctx.restore();
+                    });
+                });
+            }
+        };
+        
+        const ctxTier = document.getElementById('tierChart').getContext('2d');
+        new Chart(ctxTier, {
+            type: 'bar',
+            data: {
+                labels: tierLabels,
+                datasets: [{
+                    label: 'Sconto/rialzo medio (%)',
+                    data: tierValues,
+                    backgroundColor: tierColors,
+                    borderRadius: 4,
+                }]
+            },
+            plugins: [dataLabelsPlugin],
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {padding: {right: 40, left: 10, top: 10, bottom: 10}},
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const t = tierDataReversed[ctx.dataIndex];
+                                return t.avg_change.toFixed(1) + '% medio — ' + t.count + ' carte in questa fascia';
+                            },
+                            afterLabel: function(ctx) {
+                                const t = tierDataReversed[ctx.dataIndex];
+                                if (!t.top_drop_name) return '';
+                                return '📉 Top calo: ' + t.top_drop_name + ' (' + t.top_drop_team + ') ' +
+                                       (t.top_drop_pct > 0 ? '+' : '') + t.top_drop_pct.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {grid: {color: gridColor}, title: {display: true, text: '% sconto medio dalla media storica (negativo = mercato in calo in questa fascia)'}},
+                    y: {grid: {display: false}},
+                },
+            },
+        });
+        
+        // Legenda colorata sotto il grafico fasce
+        const legendDiv = document.getElementById('tierLegend');
+        tierData.forEach(t => {
+            const badge = document.createElement('div');
+            badge.style.cssText = 'padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; color:white; background:' + t.color;
+            badge.textContent = t.name + ': ' + t.count + ' carte';
+            legendDiv.appendChild(badge);
+        });
+        
+        // Grafico prezzo medio per squadra, ordinato dal più caro al più economico
+        const teamEntries = Object.entries(teamsData).sort((a, b) => b[1].avg - a[1].avg);
+        const teamLabels = teamEntries.map(([name]) => name);
+        const teamAvgs = teamEntries.map(([, v]) => v.avg.toFixed(2));
+        const teamCounts = teamEntries.map(([, v]) => v.count);
+        
+        const ctx1 = document.getElementById('teamChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: teamLabels,
+                datasets: [{
+                    label: 'Prezzo medio (EUR)',
+                    data: teamAvgs,
+                    backgroundColor: blueColor,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            title: function(ctx) {
+                                return ctx[0].label;
+                            },
+                            label: function(ctx) {
+                                const count = teamCounts[ctx.dataIndex];
+                                return 'Prezzo medio: ' + ctx.parsed.y.toFixed(2) + ' EUR (' + count + ' carte trovate)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {beginAtZero: true, grid: {color: gridColor}, title: {display: true, text: 'Prezzo medio (EUR)'}},
+                    x: {
+                        grid: {display: false},
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 90,
+                            minRotation: 60,
+                            font: {size: 10}
+                        }
+                    },
+                },
+            },
+        });
+    </script>
+</body>
+</html>
