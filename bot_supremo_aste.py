@@ -3,6 +3,7 @@ import os
 import re
 import time
 import datetime
+from zoneinfo import ZoneInfo
 import threading
 import subprocess
 import queue
@@ -99,6 +100,16 @@ def log(message):
 # cooldown bid (12h di default, un bid reale per giocatore al massimo ogni tot ore).
 # =====================================================================================
 LISTA_NERA_ASTE_PATH = os.environ.get('LISTA_NERA_ASTE_PATH', 'sorare_lista_nera_aste.txt')
+
+# FIX 22/07 v13 (richiesta esplicita utente: "possiamo far mostrare il mio fuso
+# orario?"): le scadenze cooldown_bid restano calcolate/confrontate internamente in
+# UTC (corretto, niente ambiguita'), ma vengono SCRITTE nel file gia' convertite
+# all'ora locale configurata -- stesso istante esatto, solo espresso nell'offset
+# giusto (con cambio automatico ora legale/solare), cosi' non serve fare il calcolo
+# a mano ogni volta che si legge il file. Il parsing (fromisoformat) funziona
+# identico con qualunque offset valido, quindi questa e' una modifica SOLO di
+# visualizzazione, zero impatto sulla logica di cooldown.
+DISPLAY_TIMEZONE = ZoneInfo(os.environ.get('DISPLAY_TIMEZONE', 'Europe/Rome'))
 _LISTA_NERA_ASTE_TIPI_VALIDI = ('giocatore', 'cooldown_bid')
 _LISTA_NERA_ASTE_ORDINE_SEZIONI = ('giocatore', 'cooldown_bid')
 _LISTA_NERA_ASTE_INTESTAZIONI = {
@@ -244,10 +255,10 @@ def _lista_nera_aste_scrivi_righe(righe):
         f.write("# il bot riscrive questo file -- puoi modificarla a mano in qualunque momento\n")
         f.write("# (es. '3 ore', '10 giorni', '30 minuti'). Per rimuovere un blocco, cancella la riga.\n")
         f.write("# Sezione 'cooldown_bid': ogni riga 'slug,scadenza_ISO' -- data/ora ASSOLUTA di\n")
-        f.write("# scadenza (fix 22/07 v11, richiesta esplicita utente: 'come faccio ad essere\n")
-        f.write("# certo per quanto tempo un giocatore e' in cooldown?' -- una scadenza assoluta\n")
-        f.write("# e' leggibile direttamente e non dipende da quando il file viene toccato).\n")
-        f.write("# NON pensata per modifica a mano, gestita automaticamente dal bot.\n")
+        f.write(f"# scadenza (fix 22/07 v13: mostrata in ora locale {DISPLAY_TIMEZONE.key}, cambio\n")
+        f.write("# automatico legale/solare -- stesso istante esatto di prima, solo senza dover\n")
+        f.write("# fare il calcolo a mano dall'UTC). NON pensata per modifica a mano, gestita\n")
+        f.write("# automaticamente dal bot.\n")
         f.write("# NOTA: file indipendente dalla lista nera del bot buyer (sorare_lista_nera.txt)\n")
         f.write("# -- questo bot non la legge e non ci scrive.\n\n")
         for tipo in _LISTA_NERA_ASTE_ORDINE_SEZIONI:
@@ -258,7 +269,7 @@ def _lista_nera_aste_scrivi_righe(righe):
                 f.write("# (vuoto)\n")
             for r in righe_tipo:
                 if tipo == 'cooldown_bid':
-                    f.write(f"{r['slug']},{r['scadenza'].isoformat()}\n")
+                    f.write(f"{r['slug']},{r['scadenza'].astimezone(DISPLAY_TIMEZONE).isoformat()}\n")
                 else:
                     delta = (r['scadenza'] - ora).total_seconds()
                     f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
@@ -668,7 +679,6 @@ _node_stdout_queue = None
 _node_stderr_tail = collections.deque(maxlen=20)
 _decrypted_key_cache = {}
 _encrypted_key_cache = {}
-_exchange_rate_id_cache = {}
 
 
 def _node_stdout_reader(proc, q):
@@ -873,14 +883,17 @@ query ExchangeRateQuery {
 
 
 def get_exchange_rate_id():
-    """Identica al bot buyer -- cachata in memoria per l'intera run."""
-    if 'id' in _exchange_rate_id_cache:
-        return _exchange_rate_id_cache['id']
+    """FIX 22/07 v12 (bug reale confermato dall'utente: i primi bid di una run vanno a
+    segno, poi iniziano a fallire tutti con 'exchange rate has expired'): la cache
+    'per tutta la run' (ereditata dal bot buyer, dove ha senso perche' i bid sono
+    frequenti e ravvicinati) qui era sbagliata -- nel bot aste i bid sono RARI (al
+    massimo MAX_BIDS_PER_RUN nell'arco di ore), e il tasso di cambio scade lato
+    server prima che la cache venga mai riusata. Ora richiesto FRESCO ad ogni bid
+    reale -- costo trascurabile (1 query in piu', al massimo MAX_BIDS_PER_RUN volte
+    a run), niente piu' bid sprecati su un tasso scaduto."""
     try:
         data = graphql_query(EXCHANGE_RATE_QUERY)
         rate_id = (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
-        if rate_id:
-            _exchange_rate_id_cache['id'] = rate_id
         return rate_id
     except Exception as e:
         log(f"[exchange rate] errore: {e}")
@@ -2266,15 +2279,13 @@ def main():
         log("[playwright] pre-apertura browser all'avvio (ottimizzazione velocita')...")
         get_browser_page()
         log("[playwright] browser pronto e riscaldato")
-        log("[precarico velocita'] recupero anticipato exchange_rate_id e chiave "
-            "cifrata del wallet...")
-        pre_rate_id = get_exchange_rate_id()
-        if pre_rate_id:
-            log(f"[precarico velocita'] exchange_rate_id gia' in cache: {pre_rate_id}")
-        else:
-            log("[precarico velocita'] ATTENZIONE: precarico exchange_rate_id fallito, "
-                "verra' ritentato al primo bid reale")
+        # FIX 22/07 v12: il pre-caricamento dell'exchange_rate_id qui non ha piu' senso
+        # -- non viene piu' cachato per tutta la run (vedi get_exchange_rate_id), ogni
+        # bid reale ne richiede uno fresco. Il pre-caricamento della chiave cifrata del
+        # wallet invece resta valido: e' materiale crittografico, non scade come un
+        # tasso di cambio di mercato.
         if SORARE_WALLET_PASSWORD:
+            log("[precarico velocita'] recupero anticipato chiave cifrata del wallet...")
             pre_key = fetch_encrypted_private_key()
             if pre_key:
                 log("[precarico velocita'] chiave cifrata del wallet gia' in cache")
