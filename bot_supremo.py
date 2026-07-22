@@ -1232,6 +1232,17 @@ TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS'
 
 LIQUIDITY_DIAGNOSTIC = os.environ.get('LIQUIDITY_DIAGNOSTIC', 'no').strip().lower() == 'si'
 
+# NUOVA PROTEZIONE (22/07, richiesta esplicita utente): oltre alla liquidita' storica
+# (transazioni passate), controlla anche quante carte dello stesso giocatore sono
+# ATTUALMENTE in vendita in questo momento -- un mercato con pochissimi annunci vivi
+# e' rischioso anche se lo storico transazioni sembra ok. Usa la stessa lista 'prices'
+# gia' calcolata per il margine (nessuna query aggiuntiva), che segue gia' la stessa
+# separazione per stagione del resto della logica: MLS/K-League confrontano SOLO la
+# stagione giusta (season vs season, classic vs classic), gli altri campionati
+# mescolano in_season+classic come sempre.
+MIN_LISTED_CARDS_FOR_PURCHASE = int(os.environ.get('MIN_LISTED_CARDS_FOR_PURCHASE', '3'))
+MIN_LISTED_CARDS_DIAGNOSTIC = os.environ.get('MIN_LISTED_CARDS_DIAGNOSTIC', 'no').strip().lower() == 'si'
+
 
 def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None, force_log=False):
     """Fattorizzata da count_recent_transactions: conta le transazioni valide (short/long
@@ -2467,9 +2478,13 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"venditore blacklistato ({true_min_seller_slug}), non acquistabile")
         return False
 
-    if len(prices) < 2:
-        log(f"{player_name}: scarto -- nessun secondo annuncio per confrontare il margine")
+    if len(prices) < MIN_LISTED_CARDS_FOR_PURCHASE:
+        log(f"{player_name}: scarto -- solo {len(prices)} carta/e in vendita (minimo richiesto "
+            f"{MIN_LISTED_CARDS_FOR_PURCHASE}), mercato poco popolato")
         return False
+    if MIN_LISTED_CARDS_DIAGNOSTIC:
+        log(f"[diagnostica carte in vendita] {player_name}: {len(prices)} carte in vendita "
+            f"(soglia {MIN_LISTED_CARDS_FOR_PURCHASE}), controllo superato")
 
     second_min_price, _, _ = prices[1]
     if second_min_price <= 0:
