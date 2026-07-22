@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T13:24:18.811449Z
-**Run totali:** 65
+**Data analisi:** 2026-07-22T13:26:30.162750Z
+**Run totali:** 66
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.91 EUR
-- **Trend mercato:** ➡️ STABLE (-0.9%)
-- **Sentiment:** 🟨 Quasi Fermo
+- **Prezzo medio MLS:** 6.90 EUR
+- **Trend mercato:** ➡️ STABLE (-0.2%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.9%)**
+**➡️ TREND GLOBALE: STABLE (-0.2%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — G. Guerra (Portland Timbers)**
@@ -96,7 +96,7 @@ Carte trovate: 10 | Prezzo medio: 11.65 EUR | Volatilità (σ): 15.60
 Carte trovate: 6 | Prezzo medio: 3.11 EUR | Volatilità (σ): 3.64
 
 **San Diego FC**
-Carte trovate: 8 | Prezzo medio: 7.54 EUR | Volatilità (σ): 12.81
+Carte trovate: 9 | Prezzo medio: 7.45 EUR | Volatilità (σ): 11.98
 
 **Vancouver Whitecaps FC**
 Carte trovate: 10 | Prezzo medio: 9.66 EUR | Volatilità (σ): 8.24
@@ -117,7 +117,7 @@ Carte trovate: 10 | Prezzo medio: 2.46 EUR | Volatilità (σ): 2.26
 Carte trovate: 6 | Prezzo medio: 1.72 EUR | Volatilità (σ): 1.16
 
 **New England Revolution**
-Carte trovate: 10 | Prezzo medio: 8.99 EUR | Volatilità (σ): 17.32
+Carte trovate: 11 | Prezzo medio: 8.27 EUR | Volatilità (σ): 16.60
 
 **Portland Timbers**
 Carte trovate: 12 | Prezzo medio: 3.07 EUR | Volatilità (σ): 3.77
