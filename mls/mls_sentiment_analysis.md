@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T13:30:33.509882Z
-**Run totali:** 68
+**Data analisi:** 2026-07-22T13:32:35.116069Z
+**Run totali:** 69
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.78 EUR
-- **Trend mercato:** ➡️ STABLE (-0.8%)
-- **Sentiment:** 🟨 Quasi Fermo
+- **Prezzo medio MLS:** 6.67 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.6%)
+- **Sentiment:** 🟡 Leggero Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.8%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📉 TREND GLOBALE: DESCENDING (-1.6%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — G. Guerra (Portland Timbers)**
 Prezzo: **0.50 EUR** | Media: **1.75 EUR** | Sconto: **-71.4%**
@@ -54,19 +54,19 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
-Carte trovate: 9 | Prezzo medio: 8.45 EUR | Volatilità (σ): 8.28
+Carte trovate: 11 | Prezzo medio: 7.25 EUR | Volatilità (σ): 7.88
 
 **Los Angeles FC**
 Carte trovate: 9 | Prezzo medio: 10.82 EUR | Volatilità (σ): 12.19
 
 **Real Salt Lake**
-Carte trovate: 17 | Prezzo medio: 2.17 EUR | Volatilità (σ): 2.64
+Carte trovate: 17 | Prezzo medio: 2.16 EUR | Volatilità (σ): 2.64
 
 **San Jose Earthquakes**
 Carte trovate: 12 | Prezzo medio: 4.04 EUR | Volatilità (σ): 4.86
 
 **Columbus Crew**
-Carte trovate: 17 | Prezzo medio: 2.72 EUR | Volatilità (σ): 2.16
+Carte trovate: 18 | Prezzo medio: 2.81 EUR | Volatilità (σ): 2.12
 
 **Charlotte FC**
 Carte trovate: 10 | Prezzo medio: 8.08 EUR | Volatilità (σ): 9.10
@@ -81,16 +81,16 @@ Carte trovate: 13 | Prezzo medio: 7.85 EUR | Volatilità (σ): 11.67
 Carte trovate: 9 | Prezzo medio: 11.64 EUR | Volatilità (σ): 17.74
 
 **FC Cincinnati**
-Carte trovate: 10 | Prezzo medio: 9.86 EUR | Volatilità (σ): 18.13
+Carte trovate: 12 | Prezzo medio: 8.45 EUR | Volatilità (σ): 16.72
 
 **Minnesota United**
 Carte trovate: 14 | Prezzo medio: 2.39 EUR | Volatilità (σ): 2.74
 
 **Orlando City SC**
-Carte trovate: 14 | Prezzo medio: 5.06 EUR | Volatilità (σ): 10.45
+Carte trovate: 14 | Prezzo medio: 5.03 EUR | Volatilità (σ): 10.46
 
 **Nashville SC**
-Carte trovate: 10 | Prezzo medio: 11.65 EUR | Volatilità (σ): 15.60
+Carte trovate: 10 | Prezzo medio: 11.64 EUR | Volatilità (σ): 15.61
 
 **Austin FC**
 Carte trovate: 6 | Prezzo medio: 3.11 EUR | Volatilità (σ): 3.64
@@ -111,7 +111,7 @@ Carte trovate: 8 | Prezzo medio: 4.35 EUR | Volatilità (σ): 3.35
 Carte trovate: 13 | Prezzo medio: 2.65 EUR | Volatilità (σ): 3.22
 
 **New York Red Bulls**
-Carte trovate: 10 | Prezzo medio: 2.46 EUR | Volatilità (σ): 2.26
+Carte trovate: 11 | Prezzo medio: 2.30 EUR | Volatilità (σ): 2.21
 
 **Atlanta United**
 Carte trovate: 6 | Prezzo medio: 1.72 EUR | Volatilità (σ): 1.16
