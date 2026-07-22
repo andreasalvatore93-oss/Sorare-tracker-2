@@ -51,6 +51,14 @@ on:
         description: "Ogni quanti secondi (minimo) notificare su Telegram un HTTP 429 -- una raffica di piu' 429 nella stessa finestra manda UN SOLO avviso"
         required: false
         default: "300"
+      commit_interval_seconds:
+        description: "Ogni quanti secondi il bot fa commit+push della lista nera aste DURANTE la run (protezione da interruzioni forzate) -- default 300 = 5 minuti"
+        required: false
+        default: "300"
+      display_timezone:
+        description: "Fuso orario usato per mostrare le scadenze cooldown_bid nel file (nome IANA, es. 'Europe/Rome') -- cambio automatico ora legale/solare"
+        required: false
+        default: "Europe/Rome"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -119,6 +127,8 @@ jobs:
           REFERENCE_PRICE_CACHE_TTL_SECONDS: ${{ github.event.inputs.reference_price_cache_ttl_seconds || '300' }}
           SHARED_LOAD: ${{ github.event.inputs.shared_load || 'si' }}
           RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS: ${{ github.event.inputs.rate_limit_notify_cooldown_seconds || '300' }}
+          COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
+          DISPLAY_TIMEZONE: ${{ github.event.inputs.display_timezone || 'Europe/Rome' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'si' }}
           AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
