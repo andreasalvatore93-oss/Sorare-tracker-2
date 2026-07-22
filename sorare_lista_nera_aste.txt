@@ -1,9 +1,13 @@
 # LISTA NERA DEL BOT SUPREMO ASTE
-# Ogni riga: slug,durata (es. 'kang-in-lee,10 ore'). La durata e' il tempo
-# rimanente, aggiornato automaticamente ogni volta che il bot riscrive questo
-# file -- puoi modificarla a mano in qualunque momento (es. '3 ore', '10 giorni',
-# '30 minuti') per accorciare o allungare il blocco. Per rimuovere un blocco,
-# cancella semplicemente la riga.
+# Sezione 'giocatore': ogni riga 'slug,durata' (es. 'kang-in-lee,10 ore').
+# La durata e' il tempo rimanente, aggiornata automaticamente ogni volta che
+# il bot riscrive questo file -- puoi modificarla a mano in qualunque momento
+# (es. '3 ore', '10 giorni', '30 minuti'). Per rimuovere un blocco, cancella la riga.
+# Sezione 'cooldown_bid': ogni riga 'slug,scadenza_ISO' -- data/ora ASSOLUTA di
+# scadenza (fix 22/07 v11, richiesta esplicita utente: 'come faccio ad essere
+# certo per quanto tempo un giocatore e' in cooldown?' -- una scadenza assoluta
+# e' leggibile direttamente e non dipende da quando il file viene toccato).
+# NON pensata per modifica a mano, gestita automaticamente dal bot.
 # NOTA: file indipendente dalla lista nera del bot buyer (sorare_lista_nera.txt)
 # -- questo bot non la legge e non ci scrive.
 
@@ -13,17 +17,22 @@
 
 ## cooldown_bid
 # COOLDOWN BID -- giocatori su cui abbiamo gia' piazzato un bid reale: ignorati per il tempo indicato, per non biddare piu' di una volta sullo stesso giocatore troppo ravvicinatamente.
-anders-dreyer,12 ore
-chang-geun-lee,12 ore
-dong-heon-kim,12 ore
-jin-su-seo,12 ore
-julian-hall-2008-03-24,12 ore
-kevin-jesus-kelsy-genez,12 ore
-mateo-silvetti,12 ore
-mathias-nicolas-laborda-malsenido,12 ore
-maxime-crepeau,12 ore
-nicholas-defreitas-hansen,12 ore
-reid-roberts,12 ore
-thiago-martins-bueno,12 ore
-yannick-bright,12 ore
+anders-dreyer,2026-07-22T23:54:01.791558+00:00
+cavan-sullivan,2026-07-22T23:58:00.311014+00:00
+chang-geun-lee,2026-07-22T23:54:01.791558+00:00
+dong-heon-kim,2026-07-22T23:54:01.791558+00:00
+jin-su-seo,2026-07-22T23:54:01.791558+00:00
+juan-fernandez-blanco,2026-07-22T23:54:01.791661+00:00
+julian-hall-2008-03-24,2026-07-22T23:54:01.791558+00:00
+kevin-jesus-kelsy-genez,2026-07-22T23:54:01.791558+00:00
+lucas-bartlett,2026-07-22T23:54:58.134912+00:00
+mateo-silvetti,2026-07-22T23:54:01.791558+00:00
+mathias-nicolas-laborda-malsenido,2026-07-22T23:54:01.791558+00:00
+maxime-crepeau,2026-07-22T23:54:01.791558+00:00
+nicholas-defreitas-hansen,2026-07-22T23:54:01.791558+00:00
+reid-roberts,2026-07-22T23:54:01.791558+00:00
+robert-lewandowski,2026-07-22T23:54:26.145321+00:00
+tayvon-gray,2026-07-22T23:57:55.636343+00:00
+thiago-martins-bueno,2026-07-22T23:54:01.791558+00:00
+yannick-bright,2026-07-22T23:54:01.791558+00:00
 
