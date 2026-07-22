@@ -1,17 +1,17 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T18:43:54.503865Z
-**Run totali:** 16
+**Data analisi:** 2026-07-22T18:48:56.197036Z
+**Run totali:** 17
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 3.41 EUR
-- **Trend mercato:** ➡️ STABLE (-0.9%)
+- **Prezzo medio K League 1:** 3.36 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.3%)
 - **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.9%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📉 TREND GLOBALE: DESCENDING (-1.3%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 MOD. OPPORTUNITÀ — Shin Kwang-Hoon (Pohang Steelers FC)**
 Prezzo: **0.96 EUR** | Media: **1.11 EUR** | Sconto: **-13.9%**
@@ -54,16 +54,16 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Jeonbuk Hyundai Motors FC**
-Carte trovate: 10 | Prezzo medio: 3.04 EUR | Volatilità (σ): 2.75
+Carte trovate: 11 | Prezzo medio: 3.05 EUR | Volatilità (σ): 2.61
 
 **FC Anyang**
 Carte trovate: 3 | Prezzo medio: 5.95 EUR | Volatilità (σ): 7.85
 
 **Pohang Steelers FC**
-Carte trovate: 7 | Prezzo medio: 2.32 EUR | Volatilità (σ): 1.10
+Carte trovate: 8 | Prezzo medio: 2.28 EUR | Volatilità (σ): 1.02
 
 **Ulsan Hyundai Horang-i**
-Carte trovate: 9 | Prezzo medio: 4.15 EUR | Volatilità (σ): 4.82
+Carte trovate: 9 | Prezzo medio: 4.15 EUR | Volatilità (σ): 4.83
 
 **Gangwon FC**
 Carte trovate: 6 | Prezzo medio: 6.38 EUR | Volatilità (σ): 5.96
