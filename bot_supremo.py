@@ -4,6 +4,7 @@ import random
 import time
 import datetime
 import threading
+import concurrent.futures
 from zoneinfo import ZoneInfo
 
 import requests
@@ -404,19 +405,23 @@ def _lista_nera_scrivi_righe(righe):
 
 def _lista_nera_upsert(tipo, slug, giorni_da_ora):
     """Aggiunge o rinnova una riga (tipo, slug) con nuova scadenza = ora + giorni_da_ora.
-    Se la riga esiste gia', la sostituisce (rinnovo); altrimenti la aggiunge."""
+    Se la riga esiste gia', la sostituisce (rinnovo); altrimenti la aggiunge.
+    Protetto da _lista_nera_lock (22/07): con piu' eventi valutati in parallelo,
+    senza lock due thread potrebbero leggere lo stesso stato e scriversi sopra a
+    vicenda, perdendo un aggiornamento."""
     slug = slug.lower()
-    righe = _lista_nera_leggi_righe()
-    scadenza = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=giorni_da_ora)
-    trovata = False
-    for r in righe:
-        if r['tipo'] == tipo and r['slug'] == slug:
-            r['scadenza'] = scadenza
-            trovata = True
-            break
-    if not trovata:
-        righe.append({'tipo': tipo, 'slug': slug, 'scadenza': scadenza})
-    _lista_nera_scrivi_righe(righe)
+    with _lista_nera_lock:
+        righe = _lista_nera_leggi_righe()
+        scadenza = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=giorni_da_ora)
+        trovata = False
+        for r in righe:
+            if r['tipo'] == tipo and r['slug'] == slug:
+                r['scadenza'] = scadenza
+                trovata = True
+                break
+        if not trovata:
+            righe.append({'tipo': tipo, 'slug': slug, 'scadenza': scadenza})
+        _lista_nera_scrivi_righe(righe)
 
 
 def _lista_nera_attiva(tipo, slug):
@@ -909,7 +914,13 @@ def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
     autentica del browser (TLS, JS engine, eventuali controlli antibot lato
     client), impossibile da imitare fino in fondo con librerie Python.
     Usata SOLO per le tre chiamate critiche dell'acquisto (prepareAcceptOffer,
-    fetchEncryptedPrivateKey, acceptOffer) -- ipotesi 20/07 per unknown_fingerprint."""
+    fetchEncryptedPrivateKey, acceptOffer) -- ipotesi 20/07 per unknown_fingerprint.
+    Protetta da _browser_lock (22/07): con piu' eventi valutati in parallelo, la
+    singola pagina Playwright condivisa non e' pensata per essere usata da piu'
+    thread contemporaneamente -- questo lock serializza solo QUESTA chiamata
+    finale (rapida, nessuna attesa di rete precedente inclusa), non le query di
+    valutazione precedenti (quelle usano graphql_query/curl_cffi, gia' sicure per
+    l'uso concorrente)."""
     page = get_browser_page()
     payload = {"query": query, "variables": variables or {}}
 
@@ -939,10 +950,11 @@ def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
     """
 
     try:
-        result = page.evaluate(
-            js_code,
-            [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
-        )
+        with _browser_lock:
+            result = page.evaluate(
+                js_code,
+                [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
+            )
         body_text = result.get('body', '')
         return json.loads(body_text)
     except Exception as e:
@@ -1768,6 +1780,19 @@ import collections
 # processo Node si pianta senza rispondere).
 _node_process = None
 _node_process_lock = threading.Lock()
+# OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita utente,
+# rischio accettato): con piu' eventi valutati in parallelo (vedi run_listener/
+# on_message piu' sotto), queste risorse condivise NON erano protette prima
+# (bastava un solo thread alla volta). _lista_nera_lock protegge il ciclo
+# leggi-modifica-scrivi di _lista_nera_upsert (senza lock, due thread potrebbero
+# leggere lo stesso stato e poi sovrascriversi a vicenda, perdendo un
+# aggiornamento -- "lost update"). _browser_lock protegge l'uso della singola
+# pagina Playwright condivisa (graphql_query_via_browser) -- non e' pensata per
+# essere usata da piu' thread contemporaneamente. _node_process_lock (sopra)
+# esisteva GIA' e protegge gia' correttamente la comunicazione col processo Node
+# di firma, nessuna modifica necessaria li'.
+_lista_nera_lock = threading.Lock()
+_browser_lock = threading.Lock()
 _node_stdout_queue = None
 _node_stderr_tail = collections.deque(maxlen=20)
 
@@ -2569,6 +2594,37 @@ def send_end_msg(matches_found, target_reached):
     )
 
 
+def _parallel_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate):
+    """OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente): count_recent_
+    transactions e get_last_transaction_prices sono due query di rete indipendenti
+    -- nessuna delle due dipende dal risultato dell'altra (entrambe leggono solo
+    player_slug/is_in_season/league_slug[/eth_rate]). Prima venivano eseguite in
+    sequenza; qui partono in due thread separati e si aspettano ENTRAMBI i
+    risultati prima di procedere -- il tempo di attesa diventa il massimo delle
+    due invece della somma. Nessun controllo saltato o allentato: e' solo un
+    cambio nell'ordine/tempistica di esecuzione, non nella logica di validazione.
+    Ritorna (count_7d, count_30d, ultimo_prezzo, penultimo_prezzo)."""
+    risultati = {}
+
+    def _run_count():
+        risultati['count'] = count_recent_transactions(player_slug, is_in_season, league_slug)
+
+    def _run_last_price():
+        risultati['last_price'] = get_last_transaction_prices(
+            player_slug, is_in_season, league_slug, eth_rate)
+
+    t_count = threading.Thread(target=_run_count)
+    t_last_price = threading.Thread(target=_run_last_price)
+    t_count.start()
+    t_last_price.start()
+    t_count.join()
+    t_last_price.join()
+
+    count_7d, count_30d = risultati.get('count', (None, None))
+    ultimo, penultimo = risultati.get('last_price', (None, None))
+    return count_7d, count_30d, ultimo, penultimo
+
+
 def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
                     offer_id=None, seller_slug=None, is_in_season=True):
     """Valutazione UNICA condivisa (un solo scan di mercato per evento, niente doppio
@@ -2708,7 +2764,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
         return False
 
-    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season, league_slug)
+    count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione = \
+        _parallel_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
     if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
@@ -2716,13 +2773,11 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         if player_slug:
             record_thin_market_skip(player_slug, is_in_season)
         return False
-    if count_30d is not None and count_30d < MIN_TRANSACTIONS_30D:
-        log(f"{player_name}: scarto -- solo {count_30d} transazioni negli ultimi "
-            f"{TRANSACTIONS_WINDOW_30D_DAYS} giorni (minimo richiesto "
-            f"{MIN_TRANSACTIONS_30D}), mercato troppo sottile")
-        if player_slug:
-            record_thin_market_skip(player_slug, is_in_season)
-        return False
+    # NOTA 22/07 (richiesta esplicita utente): rimossa l'imposizione della soglia a
+    # 30gg (MIN_TRANSACTIONS_30D) -- quella a 7gg basta e avanza. count_30d viene
+    # ancora calcolato dalla stessa identica query/funzione (nessuna modifica a
+    # count_recent_transactions), semplicemente non viene piu' confrontato con
+    # nessuna soglia qui.
 
     # --- ROUTER: nessuna sovrapposizione per costruzione ---
     # NUOVO 22/07: il caso "trigger su minimo non allineato" e' SOLO MakeOffer per
@@ -2742,8 +2797,14 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     else:
         return False
 
-    ultimo_prezzo_transazione, penultimo_prezzo_transazione = get_last_transaction_prices(
-        player_slug, is_in_season, league_slug, eth_rate)
+    # OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente -- "ottimizza
+    # parallelizzazione"): count_recent_transactions e get_last_transaction_prices
+    # sono gia' state lanciate IN PARALLELO sopra (vedi
+    # _parallel_liquidity_and_last_price), invece che in sequenza -- sono due query
+    # di rete indipendenti (nessuna dipende dal risultato dell'altra), quindi il
+    # tempo di attesa e' ora il massimo delle due invece della somma. Nessun
+    # controllo saltato: si aspettano comunque entrambi i risultati prima di
+    # decidere, esattamente come prima.
     if ultimo_prezzo_transazione is not None and prezzo_da_pagare >= ultimo_prezzo_transazione:
         log(f"{player_name}: scarto -- prezzo di acquisto/offerta e' inferiore ad "
             f"ultima/penultima transazione ({prezzo_da_pagare:.2f}EUR >= ultima "
@@ -2954,8 +3015,19 @@ def run_listener(eth_rate):
         "action": "execute",
     }
 
-    stats = {"received": 0, "processed": 0, "matches_found": 0}
+    stats = {"received": 0, "processed": 0, "matches_found": 0,
+              "_closed_target": False, "_closed_insufficient_funds": False}
     seen_offer_status = set()
+    # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07): stats_lock protegge gli
+    # incrementi/controlli su stats fatti dai thread worker (sotto), e le due
+    # flag "_closed_*" evitano di chiudere il WebSocket piu' di una volta se piu'
+    # thread arrivano alla condizione di stop quasi insieme.
+    stats_lock = threading.Lock()
+    # Pool di thread per valutare piu' eventi IN PARALLELO invece che uno alla
+    # volta -- vedi nota su EVENT_WORKER_THREADS. on_message torna subito dopo
+    # aver sottomesso il lavoro, restando libero di leggere il prossimo evento.
+    event_executor = concurrent.futures.ThreadPoolExecutor(
+        max_workers=EVENT_WORKER_THREADS, thread_name_prefix='evt')
 
     # --- Pausa random periodica (20/07, richiesta esplicita utente: "non martellare
     # Sorare di richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_
@@ -2965,14 +3037,24 @@ def run_listener(eth_rate):
     # non resetta ad ogni evento -- e' un ritmo di fondo, non legato al volume di
     # eventi ricevuti.
     pause_state = {"last_pause_at": time.monotonic()}
+    # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07): con piu' thread worker che
+    # possono chiamare maybe_random_pause() quasi insieme, serve un lock -- ma
+    # SOLO per il controllo/marcatura "e' ora di pausare?", non per il time.sleep
+    # vero e proprio (che resta FUORI dal lock, altrimenti un thread in pausa
+    # bloccherebbe anche gli altri dal controllare/aggiornare il proprio stato).
+    _pause_lock = threading.Lock()
 
     def maybe_random_pause():
-        now = time.monotonic()
-        if now - pause_state["last_pause_at"] >= RANDOM_PAUSE_INTERVAL_SECONDS:
+        due = False
+        with _pause_lock:
+            now = time.monotonic()
+            if now - pause_state["last_pause_at"] >= RANDOM_PAUSE_INTERVAL_SECONDS:
+                due = True
+                pause_state["last_pause_at"] = now
+        if due:
             pause_seconds = random.uniform(RANDOM_PAUSE_MIN_SECONDS, RANDOM_PAUSE_MAX_SECONDS)
             log(f"[pausa random] fermo {pause_seconds:.1f}s (ritmo di fondo anti-martellamento)")
             time.sleep(pause_seconds)
-            pause_state["last_pause_at"] = time.monotonic()
 
     def on_open(ws):
         log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
@@ -2983,6 +3065,44 @@ def run_listener(eth_rate):
             "identifier": identifier,
             "data": json.dumps(subscription_payload),
         }))
+
+    def _process_one_card_event(player_slug, player_name, price_eur, card_slug,
+                                 league_slug, offer_id, seller_slug, is_in_season):
+        """Gira in un thread del pool: valuta UN candidato per intero (stessa
+        identica logica di prima), senza bloccare on_message/il lettore
+        WebSocket nel frattempo. Ogni eccezione e' catturata qui (on_message
+        NON puo' piu' farlo per questo pezzo, dato che ora gira in un thread
+        separato) -- stesso principio 'mai un crash silenzioso' di sempre."""
+        try:
+            found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
+                                    league_slug, offer_id, seller_slug, is_in_season)
+        except Exception as e:
+            log(f"[ERRORE in valutazione evento] {player_name}: eccezione non gestita "
+                f"durante la valutazione (thread worker), la salto e continuo: {e}")
+            found = False
+
+        maybe_random_pause()
+
+        if INSUFFICIENT_FUNDS_STOP[0]:
+            with stats_lock:
+                gia_chiuso = stats["_closed_insufficient_funds"]
+                stats["_closed_insufficient_funds"] = True
+            if not gia_chiuso:
+                log("STOP: fondi insufficienti rilevati, chiudo la connessione -- "
+                    "nessun tentativo successivo avrebbe senso")
+                ws.close()
+            return
+
+        if found:
+            with stats_lock:
+                stats["matches_found"] += 1
+                trovati = stats["matches_found"]
+                target_raggiunto = trovati >= AUTOBUY_TARGET_MATCHES and not stats["_closed_target"]
+                if target_raggiunto:
+                    stats["_closed_target"] = True
+            log(f"Casi trovati finora: {trovati}/{AUTOBUY_TARGET_MATCHES}")
+            if target_raggiunto:
+                ws.close()
 
     def on_message(ws, raw_message):
         try:
@@ -3072,19 +3192,16 @@ def run_listener(eth_rate):
                     continue
 
                 stats["processed"] += 1
-                found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
-                                        league_slug, offer_id, seller_slug, is_in_season)
-                maybe_random_pause()
-                if INSUFFICIENT_FUNDS_STOP[0]:
-                    log("STOP: fondi insufficienti rilevati, chiudo la connessione -- "
-                        "nessun tentativo successivo avrebbe senso")
-                    ws.close()
-                    return
-                if found:
-                    stats["matches_found"] += 1
-                    log(f"Casi trovati finora: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
-                    if stats["matches_found"] >= AUTOBUY_TARGET_MATCHES:
-                        ws.close()
+                # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita
+                # utente): invece di valutare qui (bloccando la lettura del prossimo
+                # evento WebSocket per tutta la durata di evaluate_event), il lavoro
+                # viene sottomesso al pool e on_message torna subito -- il bot resta
+                # libero di leggere/valutare il prossimo evento mentre questo e'
+                # ancora in corso. Stessa identica logica di valutazione, solo non
+                # piu' bloccante per il lettore WebSocket.
+                event_executor.submit(_process_one_card_event, player_slug, player_name,
+                                       price_eur, card_slug, league_slug, offer_id,
+                                       seller_slug, is_in_season)
         except Exception as e:
             log(f"[ERRORE in on_message] eccezione non gestita durante la valutazione "
                 f"di un evento, la salto e continuo ad ascoltare: {e}")
@@ -3112,6 +3229,11 @@ def run_listener(eth_rate):
 
     ws.run_forever(ping_interval=60, ping_timeout=45)
     timer.cancel()
+    # Aspetta che eventuali valutazioni ancora in corso nel pool finiscano
+    # (es. un'offerta/acquisto gia' avviato) prima di chiudere -- niente
+    # tentativi troncati a meta' solo perche' la connessione WebSocket si e'
+    # chiusa nel frattempo.
+    event_executor.shutdown(wait=True)
 
     return stats["matches_found"]
 
@@ -3128,6 +3250,16 @@ def run_listener(eth_rate):
 # live), fa git add/commit/push ogni COMMIT_INTERVAL_SECONDS (default 300s = 5
 # minuti) SOLO se il file e' effettivamente cambiato dall'ultimo commit.
 COMMIT_INTERVAL_SECONDS = int(os.environ.get('COMMIT_INTERVAL_SECONDS', '300'))
+# OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita utente,
+# rischio accettato): quanti eventi valutare IN PARALLELO invece che uno alla
+# volta. Prima, on_message chiamava evaluate_event in modo sincrono/bloccante --
+# mentre il bot era occupato a valutare un candidato (anche uno che poi risultava
+# uno scarto, dopo una o piu' query di rete), non poteva nemmeno leggere il
+# prossimo evento in arrivo dal WebSocket, restando "cieco" proprio nel momento
+# in cui poteva arrivare il vero affare. Non esposta nel workflow_dispatch
+# (il file .yml e' gia' al limite di 25 input) -- modificabile qui o con una env
+# var settata direttamente nel job se mai servisse.
+EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '6'))
 _stop_periodic_commit = threading.Event()
 
 
