@@ -684,7 +684,7 @@ def record_thin_market_skip(player_slug, is_in_season=True):
 # ultime 5 e' una statistica del GIOCATORE, identica per la sua carta in_season e
 # classic -- lo stesso della logica coverage/media-zero esistente.
 FORMA_BASSA_DEFAULT_DAYS = float(os.environ.get('FORMA_BASSA_DEFAULT_DAYS', '30'))
-LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '30'))
+LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '0'))
 
 
 def is_player_in_forma_bassa(player_slug):
@@ -1124,7 +1124,7 @@ def get_bucket_prices(player_slug, eth_rate):
                 continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
                           # filtro/motivazione di coverageStatus, richiesta utente 21/07
             last_five_avg = player_c.get('lastFiveAvgScore')
-            if last_five_avg is not None and last_five_avg < LAST_FIVE_AVG_SCORE_THRESHOLD:
+            if last_five_avg is not None and last_five_avg <= LAST_FIVE_AVG_SCORE_THRESHOLD:
                 skipped_forma_bassa.append(c.get('slug'))
                 # NUOVO 22/07 (richiesta esplicita utente): media SO5 ultime 5 partite
                 # sotto soglia -- condizione TRANSITORIA, sezione separata
