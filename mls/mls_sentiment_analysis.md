@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:06:26.793757Z
-**Run totali:** 120
+**Data analisi:** 2026-07-22T23:16:28.447249Z
+**Run totali:** 121
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.12 EUR
-- **Trend mercato:** ➡️ STABLE (+0.5%)
-- **Sentiment:** 🟩 Leggero Rialzo
+- **Prezzo medio MLS:** 6.14 EUR
+- **Trend mercato:** ➡️ STABLE (+0.2%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.5%)**
+**➡️ TREND GLOBALE: STABLE (+0.2%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
@@ -35,8 +35,8 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 4. Joshua Torquato (FC Dallas) — **-79.3%** vs media (0.35 EUR vs 1.69 EUR)
 5. Nick Fernandez (San Jose Earthquakes) — **-77.8%** vs media (1.92 EUR vs 8.65 EUR)
 6. Aníbal Godoy (San Diego FC) — **-76.4%** vs media (0.98 EUR vs 4.15 EUR)
-7. Robert Voloder (New York Red Bulls) — **-75.8%** vs media (0.51 EUR vs 2.11 EUR)
-8. Allan Oyirwoth (New England Revolution) — **-74.2%** vs media (0.50 EUR vs 1.94 EUR)
+7. Allan Oyirwoth (New England Revolution) — **-76.4%** vs media (0.50 EUR vs 2.12 EUR)
+8. Robert Voloder (New York Red Bulls) — **-75.8%** vs media (0.51 EUR vs 2.11 EUR)
 9. G. Guerra (Portland Timbers) — **-71.4%** vs media (0.50 EUR vs 1.75 EUR)
 10. Tai Baribo (DC United) — **-69.3%** vs media (2.36 EUR vs 7.68 EUR)
 
@@ -99,7 +99,7 @@ Carte trovate: 15 | Prezzo medio: 2.61 EUR | Volatilità (σ): 3.27
 Carte trovate: 22 | Prezzo medio: 4.80 EUR | Volatilità (σ): 8.50
 
 **Vancouver Whitecaps FC**
-Carte trovate: 21 | Prezzo medio: 6.11 EUR | Volatilità (σ): 6.64
+Carte trovate: 21 | Prezzo medio: 6.10 EUR | Volatilità (σ): 6.64
 
 **Philadelphia Union**
 Carte trovate: 19 | Prezzo medio: 3.26 EUR | Volatilità (σ): 3.48
@@ -126,10 +126,10 @@ Carte trovate: 22 | Prezzo medio: 3.57 EUR | Volatilità (σ): 4.90
 Carte trovate: 18 | Prezzo medio: 5.48 EUR | Volatilità (σ): 12.00
 
 **CF Montreal**
-Carte trovate: 17 | Prezzo medio: 1.93 EUR | Volatilità (σ): 1.79
+Carte trovate: 18 | Prezzo medio: 1.88 EUR | Volatilità (σ): 1.74
 
 **New York City FC**
-Carte trovate: 21 | Prezzo medio: 2.91 EUR | Volatilità (σ): 4.18
+Carte trovate: 21 | Prezzo medio: 2.88 EUR | Volatilità (σ): 4.17
 
 **Toronto FC**
 Carte trovate: 21 | Prezzo medio: 2.11 EUR | Volatilità (σ): 2.18
@@ -138,7 +138,7 @@ Carte trovate: 21 | Prezzo medio: 2.11 EUR | Volatilità (σ): 2.18
 Carte trovate: 16 | Prezzo medio: 1.72 EUR | Volatilità (σ): 1.53
 
 **FC Dallas**
-Carte trovate: 29 | Prezzo medio: 1.54 EUR | Volatilità (σ): 1.70
+Carte trovate: 29 | Prezzo medio: 1.53 EUR | Volatilità (σ): 1.70
 
 **Sporting Kansas City **
 Carte trovate: 18 | Prezzo medio: 1.60 EUR | Volatilità (σ): 1.90
