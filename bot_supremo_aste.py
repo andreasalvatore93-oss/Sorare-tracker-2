@@ -160,6 +160,16 @@ def _leggibile_a_secondi(testo):
 
 
 def _lista_nera_aste_leggi_righe():
+    """FIX 22/07 v11 (richiesta esplicita utente: "come faccio ad essere certo per
+    quanto tempo un giocatore e' in cooldown?"): il fix precedente (v10, ancoraggio al
+    mtime del file) funzionava ma restava fragile -- qualunque cosa tocchi il file
+    senza cambiarne davvero il contenuto (es. un 'git pull --rebase' del commit
+    periodico) puo' aggiornare il mtime e "rinfrescare" il conto alla rovescia senza
+    che sia successo nulla di reale. Fix definitivo, stesso principio gia' validato nel
+    bot buyer: la sezione 'cooldown_bid' (gestita SOLO dal bot, mai a mano) usa ora una
+    scadenza ISO ASSOLUTA scritta nel file stesso -- leggibile direttamente, certa,
+    immune a mtime/git. La sezione 'giocatore' (blacklist manuale, pensata per essere
+    modificata a mano con testo tipo '3 giorni') resta a durata leggibile relativa."""
     righe = []
     try:
         with open(LISTA_NERA_ASTE_PATH, 'r', encoding='utf-8') as f:
@@ -187,11 +197,28 @@ def _lista_nera_aste_leggi_righe():
         if len(parts) != 2:
             log(f"[lista nera aste] riga {n} malformata (attesi 2 campi slug,durata), ignorata: {raw!r}")
             continue
-        slug, durata_str = parts
+        slug, valore_str = parts
         slug = slug.lower()
-        secondi = _leggibile_a_secondi(durata_str)
+        if tipo_corrente == 'cooldown_bid':
+            try:
+                scadenza = datetime.datetime.fromisoformat(valore_str.replace('Z', '+00:00'))
+                if scadenza.tzinfo is None:
+                    scadenza = scadenza.replace(tzinfo=datetime.timezone.utc)
+                righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': scadenza})
+                continue
+            except ValueError:
+                pass  # non e' ISO -- riga scritta prima di questo fix, formato durata
+                      # testuale legacy: reinterpretata "da adesso" un'ultima volta,
+                      # verra' convertita in ISO al prossimo bid su quel giocatore
+            secondi = _leggibile_a_secondi(valore_str)
+            if secondi is None:
+                log(f"[lista nera aste] riga {n} durata non riconosciuta ('{valore_str}'), ignorata: {raw!r}")
+                continue
+            righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi)})
+            continue
+        secondi = _leggibile_a_secondi(valore_str)
         if secondi is None:
-            log(f"[lista nera aste] riga {n} durata non riconosciuta ('{durata_str}'), ignorata: {raw!r}")
+            log(f"[lista nera aste] riga {n} durata non riconosciuta ('{valore_str}'), ignorata: {raw!r}")
             continue
         righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi)})
     return righe
@@ -212,11 +239,15 @@ def _lista_nera_aste_scrivi_righe(righe):
 
     with open(LISTA_NERA_ASTE_PATH, 'w', encoding='utf-8') as f:
         f.write("# LISTA NERA DEL BOT SUPREMO ASTE\n")
-        f.write("# Ogni riga: slug,durata (es. 'kang-in-lee,10 ore'). La durata e' il tempo\n")
-        f.write("# rimanente, aggiornato automaticamente ogni volta che il bot riscrive questo\n")
-        f.write("# file -- puoi modificarla a mano in qualunque momento (es. '3 ore', '10 giorni',\n")
-        f.write("# '30 minuti') per accorciare o allungare il blocco. Per rimuovere un blocco,\n")
-        f.write("# cancella semplicemente la riga.\n")
+        f.write("# Sezione 'giocatore': ogni riga 'slug,durata' (es. 'kang-in-lee,10 ore').\n")
+        f.write("# La durata e' il tempo rimanente, aggiornata automaticamente ogni volta che\n")
+        f.write("# il bot riscrive questo file -- puoi modificarla a mano in qualunque momento\n")
+        f.write("# (es. '3 ore', '10 giorni', '30 minuti'). Per rimuovere un blocco, cancella la riga.\n")
+        f.write("# Sezione 'cooldown_bid': ogni riga 'slug,scadenza_ISO' -- data/ora ASSOLUTA di\n")
+        f.write("# scadenza (fix 22/07 v11, richiesta esplicita utente: 'come faccio ad essere\n")
+        f.write("# certo per quanto tempo un giocatore e' in cooldown?' -- una scadenza assoluta\n")
+        f.write("# e' leggibile direttamente e non dipende da quando il file viene toccato).\n")
+        f.write("# NON pensata per modifica a mano, gestita automaticamente dal bot.\n")
         f.write("# NOTA: file indipendente dalla lista nera del bot buyer (sorare_lista_nera.txt)\n")
         f.write("# -- questo bot non la legge e non ci scrive.\n\n")
         for tipo in _LISTA_NERA_ASTE_ORDINE_SEZIONI:
@@ -226,8 +257,11 @@ def _lista_nera_aste_scrivi_righe(righe):
             if not righe_tipo:
                 f.write("# (vuoto)\n")
             for r in righe_tipo:
-                delta = (r['scadenza'] - ora).total_seconds()
-                f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
+                if tipo == 'cooldown_bid':
+                    f.write(f"{r['slug']},{r['scadenza'].isoformat()}\n")
+                else:
+                    delta = (r['scadenza'] - ora).total_seconds()
+                    f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
             f.write("\n")
 
 
@@ -2121,6 +2155,68 @@ def run_listener(eth_rate):
     return stats
 
 
+# =====================================================================================
+# COMMIT PERIODICO della lista nera aste DURANTE la run (FIX 22/07, richiesta esplicita
+# utente: "se interrompo forzatamente una run, viene registrato comunque?") -- lo stesso
+# principio gia' in uso nel bot buyer. Il file sorare_lista_nera_aste.txt viene gia'
+# scritto su disco SUBITO ad ogni bid reale (vedi _lista_nera_aste_scrivi_righe,
+# chiamata da record_player_bid), ma restava solo LOCALE fino al commit finale del
+# workflow (lo step 'if: always()' nello .yml) -- che di norma gira anche su
+# cancellazione manuale, ma non e' garantito in ogni scenario (kill piu' brutale del
+# runner). Un thread separato fa git add/commit/push ogni COMMIT_INTERVAL_SECONDS
+# (default 300s = 5 minuti) SOLO se il file e' effettivamente cambiato, cosi' anche
+# nel caso peggiore si perde al massimo l'ultimo intervallo, non l'intera run.
+# =====================================================================================
+COMMIT_INTERVAL_SECONDS = int(os.environ.get('COMMIT_INTERVAL_SECONDS', '300'))
+_stop_periodic_commit = threading.Event()
+
+
+def _commit_lista_nera_aste_se_serve():
+    """Un solo tentativo di commit+push, non bloccante per il resto del bot in caso di
+    errore (rete, conflitto git, ecc.) -- logga e continua, la prossima esecuzione
+    periodica (o il commit finale) ritentera' comunque."""
+    try:
+        status = subprocess.run(
+            ['git', 'status', '--porcelain', '--', LISTA_NERA_ASTE_PATH],
+            capture_output=True, text=True, timeout=30
+        )
+        if not status.stdout.strip():
+            return  # nessuna modifica, niente da committare
+        subprocess.run(['git', 'config', 'user.name', 'bot-supremo-aste'], timeout=30)
+        subprocess.run(['git', 'config', 'user.email',
+                         'bot-supremo-aste@users.noreply.github.com'], timeout=30)
+        subprocess.run(['git', 'add', LISTA_NERA_ASTE_PATH], timeout=30)
+        commit = subprocess.run(
+            ['git', 'commit', '-m', 'Bot Supremo Aste: commit periodico lista nera (run in corso)'],
+            capture_output=True, text=True, timeout=30
+        )
+        if commit.returncode != 0:
+            log(f"[commit periodico] nulla da committare o commit fallito: "
+                f"{commit.stdout.strip()} {commit.stderr.strip()}")
+            return
+        pull = subprocess.run(
+            ['git', 'pull', '--rebase', '--autostash', 'origin', 'main'],
+            capture_output=True, text=True, timeout=60
+        )
+        if pull.returncode != 0:
+            log(f"[commit periodico] git pull --rebase fallito, salto il push di questo giro: "
+                f"{pull.stderr.strip()}")
+            return
+        push = subprocess.run(['git', 'push'], capture_output=True, text=True, timeout=60)
+        if push.returncode == 0:
+            log("[commit periodico] lista nera aste committata e pushata con successo "
+                "(run ancora in corso)")
+        else:
+            log(f"[commit periodico] push fallito: {push.stderr.strip()}")
+    except Exception as e:
+        log(f"[commit periodico] eccezione non bloccante, ritento al prossimo giro: {e}")
+
+
+def _periodic_commit_loop():
+    while not _stop_periodic_commit.wait(COMMIT_INTERVAL_SECONDS):
+        _commit_lista_nera_aste_se_serve()
+
+
 def main():
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
@@ -2199,11 +2295,17 @@ def main():
         return
 
     send_startup_msg()
+    commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
+    commit_thread.start()
+    log(f"[commit periodico] thread avviato, commit+push lista nera aste ogni "
+        f"{COMMIT_INTERVAL_SECONDS}s se ci sono modifiche")
     try:
         stats = run_listener(eth_rate)
         send_end_msg(stats)
         log("Ascolto terminato.")
     finally:
+        _stop_periodic_commit.set()
+        _commit_lista_nera_aste_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
         close_browser()
         close_node_sign_process()
 
