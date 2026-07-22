@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T18:03:35.794397Z
-**Run totali:** 105
+**Data analisi:** 2026-07-22T18:13:37.877556Z
+**Run totali:** 106
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.83 EUR
-- **Trend mercato:** ➡️ STABLE (+0.4%)
+- **Prezzo medio MLS:** 5.90 EUR
+- **Trend mercato:** 📈 ASCENDING (+1.2%)
 - **Sentiment:** 🟩 Leggero Rialzo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.4%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📈 TREND GLOBALE: ASCENDING (+1.2%)**
+I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
 Prezzo: **0.99 EUR** | Media: **5.94 EUR** | Sconto: **-83.3%**
@@ -57,13 +57,13 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 Carte trovate: 20 | Prezzo medio: 4.63 EUR | Volatilità (σ): 5.25
 
 **Los Angeles FC**
-Carte trovate: 18 | Prezzo medio: 8.52 EUR | Volatilità (σ): 10.50
+Carte trovate: 18 | Prezzo medio: 8.51 EUR | Volatilità (σ): 10.50
 
 **Real Salt Lake**
 Carte trovate: 21 | Prezzo medio: 2.05 EUR | Volatilità (σ): 2.40
 
 **San Jose Earthquakes**
-Carte trovate: 18 | Prezzo medio: 3.50 EUR | Volatilità (σ): 4.31
+Carte trovate: 18 | Prezzo medio: 3.48 EUR | Volatilità (σ): 4.29
 
 **Columbus Crew**
 Carte trovate: 22 | Prezzo medio: 2.31 EUR | Volatilità (σ): 1.88
@@ -87,10 +87,10 @@ Carte trovate: 22 | Prezzo medio: 5.19 EUR | Volatilità (σ): 12.64
 Carte trovate: 19 | Prezzo medio: 2.07 EUR | Volatilità (σ): 2.46
 
 **Orlando City SC**
-Carte trovate: 17 | Prezzo medio: 2.88 EUR | Volatilità (σ): 4.08
+Carte trovate: 17 | Prezzo medio: 2.81 EUR | Volatilità (σ): 3.94
 
 **Nashville SC**
-Carte trovate: 20 | Prezzo medio: 8.07 EUR | Volatilità (σ): 12.29
+Carte trovate: 22 | Prezzo medio: 7.88 EUR | Volatilità (σ): 11.73
 
 **Austin FC**
 Carte trovate: 12 | Prezzo medio: 2.34 EUR | Volatilità (σ): 2.76
@@ -108,10 +108,10 @@ Carte trovate: 19 | Prezzo medio: 4.05 EUR | Volatilità (σ): 5.15
 Carte trovate: 14 | Prezzo medio: 3.23 EUR | Volatilità (σ): 2.78
 
 **Colorado Rapids**
-Carte trovate: 19 | Prezzo medio: 1.98 EUR | Volatilità (σ): 2.42
+Carte trovate: 20 | Prezzo medio: 1.93 EUR | Volatilità (σ): 2.36
 
 **New York Red Bulls**
-Carte trovate: 15 | Prezzo medio: 2.30 EUR | Volatilità (σ): 2.64
+Carte trovate: 16 | Prezzo medio: 2.82 EUR | Volatilità (σ): 3.28
 
 **Atlanta United**
 Carte trovate: 14 | Prezzo medio: 1.35 EUR | Volatilità (σ): 1.02
