@@ -1,0 +1,13 @@
+# Whitelist campionati per lo scanner di sentiment analysis.
+# Una riga per campionato, formato: slug:cartella_output:nome_leggibile
+# Righe che iniziano con # sono commenti e vengono ignorate.
+#
+# slug          -> lo slug esatto della domesticLeague su Sorare (es. 'mlspa')
+# cartella      -> nome della cartella dove salvare json/md/html per questo campionato
+# nome_leggibile -> nome mostrato nei titoli dei report (es. "MLS", "K League 1")
+#
+# Per aggiungere un nuovo campionato in futuro: basta aggiungere una riga qui,
+# nessuna modifica al codice Python è necessaria.
+
+mlspa:mls:MLS
+k-league-1:korea:K League 1
