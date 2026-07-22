@@ -110,7 +110,8 @@ COOLDOWN_ACQUISTO_DEFAULT_DAYS = float(os.environ.get('COOLDOWN_ACQUISTO_DEFAULT
 # 15 giorni, rinnovabile/modificabile a mano nel file come tutte le altre sezioni.
 LEAGUE_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_BLACKLIST_DEFAULT_DAYS', '15'))
 
-_LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto', 'campionato')
+_LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto', 'campionato',
+                           'forma_bassa_ultime_5')
 
 # Vecchi file, letti SOLO per la migrazione automatica una tantum (prima run dopo
 # l'aggiornamento). Una volta migrati in sorare_lista_nera.txt possono essere eliminati
@@ -155,8 +156,16 @@ _LISTA_NERA_INTESTAZIONI = {
         "PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default "
         "15 giorni, rinnovabile o modificabile a mano come le altre sezioni."
     ),
+    'forma_bassa_ultime_5': (
+        "FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite "
+        "giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), "
+        "SEZIONE SEPARATA e distinta dai blacklist permanenti (coverage/media-zero "
+        "restano in 'giocatore'), perche' questa e' una condizione transitoria che "
+        "puo' rientrare -- non merita un blocco di 365gg."
+    ),
 }
-_LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market', 'campionato')
+_LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market', 'campionato',
+                              'forma_bassa_ultime_5')
 
 
 def _durata_a_leggibile(delta_secondi):
@@ -302,7 +311,7 @@ def _lista_nera_leggi_righe():
         # mai piu' riscritta non scade mai davvero se il file resta statico tra le
         # letture. giocatore/manager/campionato restano a durata leggibile (l'utente
         # vuole poter scrivere/editare "X giorni" a mano per questi).
-        if tipo_corrente in ('thin_market', 'cooldown_acquisto'):
+        if tipo_corrente in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5'):
             try:
                 scadenza = datetime.datetime.fromisoformat(valore_str.replace('Z', '+00:00'))
                 if scadenza.tzinfo is None:
@@ -374,7 +383,7 @@ def _lista_nera_scrivi_righe(righe):
             if not righe_tipo:
                 f.write("# (vuoto)\n")
             for r in righe_tipo:
-                if tipo in ('thin_market', 'cooldown_acquisto'):
+                if tipo in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5'):
                     scadenza_roma = r['scadenza'].astimezone(ZoneInfo('Europe/Rome'))
                     f.write(f"{r['slug']},{r['scadenza'].isoformat()}  "
                             f"# scade: {scadenza_roma.strftime('%d/%m/%Y %H:%M')} ora di Roma\n")
@@ -596,6 +605,11 @@ pending_offers_count = [0]  # contatore in-memory per run, richiesto da create_d
 # stesso slug se ricompare piu' volte nello stesso scan, senza rallentare il flusso.
 _gia_blacklistati_coverage_o_media_zero = set()
 
+# Stessa idea, per la nuova sezione 'forma_bassa_ultime_5' (22/07, richiesta esplicita
+# utente): evita upsert ripetuti sullo stesso slug se ricompare piu' volte nello stesso
+# scan.
+_gia_in_forma_bassa_ultime_5 = set()
+
 # --- Stop automatico su fondi insufficienti (20/07, richiesta esplicita utente) ---
 # Se un tentativo di acquisto/offerta reale fallisce per mancanza di fondi, non ha
 # senso continuare l'esecuzione: ogni tentativo successivo fallirebbe allo stesso modo,
@@ -659,6 +673,28 @@ def is_player_in_thin_market_cache(player_slug, is_in_season=True):
 
 def record_thin_market_skip(player_slug, is_in_season=True):
     _lista_nera_upsert('thin_market', _slug_cooldown(player_slug, is_in_season), THIN_MARKET_DEFAULT_DAYS)
+
+
+# FORMA BASSA ULTIME 5 (22/07, richiesta esplicita utente): media punti SO5 nelle
+# ultime 5 partite giocate -- se < 30 (strettamente, non <=), il giocatore viene
+# ignorato per FORMA_BASSA_DEFAULT_DAYS (default 30gg = 1 mese). A differenza di
+# coverage/media-zero (condizioni quasi permanenti, blacklist 365gg in 'giocatore'),
+# questa e' una condizione TRANSITORIA (un giocatore puo' tornare in forma), quindi
+# sezione separata e scadenza molto piu' breve. Nessun suffisso stagione: la media
+# ultime 5 e' una statistica del GIOCATORE, identica per la sua carta in_season e
+# classic -- lo stesso della logica coverage/media-zero esistente.
+FORMA_BASSA_DEFAULT_DAYS = float(os.environ.get('FORMA_BASSA_DEFAULT_DAYS', '30'))
+LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '30'))
+
+
+def is_player_in_forma_bassa(player_slug):
+    return _lista_nera_attiva('forma_bassa_ultime_5', (player_slug or '').lower())
+
+
+def record_forma_bassa(player_slug):
+    _lista_nera_upsert('forma_bassa_ultime_5', player_slug, FORMA_BASSA_DEFAULT_DAYS)
+    log(f"[lista nera] {player_slug} in 'forma bassa ultime 5' per {FORMA_BASSA_DEFAULT_DAYS:.0f}gg "
+        f"-- media SO5 ultime 5 partite sotto soglia ({LAST_FIVE_AVG_SCORE_THRESHOLD:.0f})")
 
 _FIAT_RATE_CACHE = {}
 
@@ -986,6 +1022,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
               lastTenSo5Appearances
               lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
               lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
+              lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
             }
           }
         }
@@ -1042,6 +1079,7 @@ def get_bucket_prices(player_slug, eth_rate):
     # per giocatore/chiamata invece di una riga per ogni singola carta.
     skipped_coverage = []
     skipped_zero_avg = []
+    skipped_forma_bassa = []
     for node in nodes:
         if node.get('status') != 'opened':
             continue
@@ -1085,6 +1123,17 @@ def get_bucket_prices(player_slug, eth_rate):
                         f"nelle ultime 10 e/o nelle ultime 40 giocate")
                 continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
                           # filtro/motivazione di coverageStatus, richiesta utente 21/07
+            last_five_avg = player_c.get('lastFiveAvgScore')
+            if last_five_avg is not None and last_five_avg < LAST_FIVE_AVG_SCORE_THRESHOLD:
+                skipped_forma_bassa.append(c.get('slug'))
+                # NUOVO 22/07 (richiesta esplicita utente): media SO5 ultime 5 partite
+                # sotto soglia -- condizione TRANSITORIA, sezione separata
+                # 'forma_bassa_ultime_5' con scadenza breve (default 30gg), non la
+                # blacklist permanente 365gg usata per coverage/media-zero sopra.
+                if player_slug not in _gia_in_forma_bassa_ultime_5:
+                    record_forma_bassa(player_slug)
+                    _gia_in_forma_bassa_ultime_5.add(player_slug)
+                continue
             match = c
             break
         if not match:
@@ -1102,6 +1151,10 @@ def get_bucket_prices(player_slug, eth_rate):
         log(f"[scarto media 0] {player_slug}: {len(skipped_zero_avg)} carta/e esclusa/e dal "
             f"confronto -- media 0 nelle ultime 10 giocate e/o nelle ultime 40: "
             f"{', '.join(skipped_zero_avg)}")
+    if skipped_forma_bassa:
+        log(f"[scarto forma bassa] {player_slug}: {len(skipped_forma_bassa)} carta/e esclusa/e "
+            f"dal confronto -- media SO5 ultime 5 sotto soglia ({LAST_FIVE_AVG_SCORE_THRESHOLD:.0f}): "
+            f"{', '.join(skipped_forma_bassa)}")
     for key in ('in_season', 'classic'):
         raw[key].sort(key=lambda p: p[0])
     return raw
@@ -1272,34 +1325,45 @@ _LAST_PRICE_CHECK_DISABLED = False
 _last_price_warning_logged = False
 
 
-def get_last_transaction_price(player_slug, is_in_season, league_slug, eth_rate, n=10):
-    """Ritorna il prezzo EUR dell'ultima transazione reale (vendita/scambio/asta) di
-    player_slug, oppure None se non disponibile/query fallita (fail-safe, il chiamante
-    NON deve bloccare l'acquisto solo per questo).
+def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate, n=10):
+    """Ritorna una tupla (ultimo_prezzo, penultimo_prezzo) delle transazioni reali
+    (vendita/scambio/asta) piu' recenti di player_slug, in EUR -- ciascuno None se non
+    disponibile/query fallita (fail-safe, il chiamante NON deve bloccare l'acquisto
+    solo per questo).
+
+    FIX 22/07 v2 (richiesta esplicita utente, secondo layer di protezione): oltre
+    all'ultima transazione, ora si guarda anche la PENULTIMA -- protezione in piu'
+    contro il caso in cui l'ultima transazione sia un singolo valore anomalo/outlier
+    (es. una svendita isolata) che da sola non rappresenta il vero prezzo di mercato,
+    mentre la penultima racconta una storia diversa. Rinominata al plurale (era
+    get_last_transaction_price) per riflettere che ora ritorna piu' di un valore --
+    nessun'altra logica cambiata.
 
     Stessa differenziazione per campionato gia' in uso altrove (richiesta esplicita
     utente): MLS/K-League confrontano SOLO la stagione giusta (season vs season,
-    classic vs classic); altri campionati prendono l'ultima transazione in assoluto,
+    classic vs classic); altri campionati prendono le transazioni in assoluto,
     mescolando in_season+classic (coerente col resto della logica per questi
     campionati)."""
     global _LAST_PRICE_CHECK_DISABLED, _last_price_warning_logged
     if _LAST_PRICE_CHECK_DISABLED:
-        return None
+        return None, None
     try:
         data = graphql_query(LAST_TRANSACTION_PRICE_QUERY, {"p": player_slug, "n": n})
     except Exception as e:
         log(f"[ultimo prezzo transazione] eccezione per {player_slug}: {e}")
-        return None
+        return None, None
     if data.get('errors'):
         if not _last_price_warning_logged:
             log(f"[ultimo prezzo transazione] ATTENZIONE: query fallita ({data['errors']}) -- "
-                f"controllo 'prezzo inferiore all'ultima transazione' DISATTIVATO per il resto "
-                f"della run (fail-safe, non blocca acquisti/offerte). Dettaglio mostrato una sola volta.")
+                f"controllo 'prezzo inferiore all'ultima/penultima transazione' DISATTIVATO per "
+                f"il resto della run (fail-safe, non blocca acquisti/offerte). Dettaglio mostrato "
+                f"una sola volta.")
             _last_price_warning_logged = True
         _LAST_PRICE_CHECK_DISABLED = True
-        return None
+        return None, None
     nodes = ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices', {}).get('nodes') or []
     excluded_league = is_asia_americas_excluded_league(league_slug)
+    prezzi_trovati = []
     for node in nodes:
         if excluded_league:
             card = node.get('card') or {}
@@ -1307,8 +1371,12 @@ def get_last_transaction_price(player_slug, is_in_season, league_slug, eth_rate,
                 continue
         price = eur_price_from_amounts(node.get('amounts'), eth_rate)
         if price is not None:
-            return price
-    return None
+            prezzi_trovati.append(price)
+            if len(prezzi_trovati) == 2:
+                break
+    ultimo = prezzi_trovati[0] if len(prezzi_trovati) >= 1 else None
+    penultimo = prezzi_trovati[1] if len(prezzi_trovati) >= 2 else None
+    return ultimo, penultimo
 
 # NUOVA PROTEZIONE (22/07, richiesta esplicita utente): oltre alla liquidita' storica
 # (transazioni passate), controlla anche quante carte dello stesso giocatore sono
@@ -2488,6 +2556,11 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
         return False
 
+    if player_slug and is_player_in_forma_bassa(player_slug.lower()):
+        log(f"{player_name}: scarto -- in 'forma bassa ultime 5' (media SO5 sotto soglia, "
+            f"registrata in precedenza)")
+        return False
+
     # FIX 21/07 (richiesta esplicita utente): filtro campionato, controllato IL PIU'
     # PRESTO POSSIBILE (subito dopo i check istantanei in RAM, prima di qualunque I/O
     # su file/rete) per risparmiare secondi preziosi su carte che verranno comunque
@@ -2608,10 +2681,17 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     else:
         return False
 
-    ultimo_prezzo_transazione = get_last_transaction_price(player_slug, is_in_season, league_slug, eth_rate)
+    ultimo_prezzo_transazione, penultimo_prezzo_transazione = get_last_transaction_prices(
+        player_slug, is_in_season, league_slug, eth_rate)
     if ultimo_prezzo_transazione is not None and prezzo_da_pagare >= ultimo_prezzo_transazione:
-        log(f"{player_name}: scarto -- prezzo da pagare ({prezzo_da_pagare:.2f}EUR) non e' "
-            f"inferiore all'ultima transazione reale ({ultimo_prezzo_transazione:.2f}EUR)")
+        log(f"{player_name}: scarto -- prezzo di acquisto/offerta e' inferiore ad "
+            f"ultima/penultima transazione ({prezzo_da_pagare:.2f}EUR >= ultima "
+            f"{ultimo_prezzo_transazione:.2f}EUR)")
+        return False
+    if penultimo_prezzo_transazione is not None and prezzo_da_pagare >= penultimo_prezzo_transazione:
+        log(f"{player_name}: scarto -- prezzo di acquisto/offerta e' inferiore ad "
+            f"ultima/penultima transazione ({prezzo_da_pagare:.2f}EUR >= penultima "
+            f"{penultimo_prezzo_transazione:.2f}EUR)")
         return False
 
     if margin_percent >= AUTOBUY_MARGIN_FRACTION:
