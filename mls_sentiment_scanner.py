@@ -14,56 +14,56 @@ except ImportError:
     _HAS_CURL_CFFI = False
 
 # =====================================================================================
-# MLS SENTIMENT ANALYSIS SCANNER
+# MULTI-LEAGUE SENTIMENT ANALYSIS SCANNER
 # =====================================================================================
-# Scanner standalone per tracciare prezzi MLS in_season, accumulare dati storici,
-# calcolare sentiment di mercato e generare consigli intelligenti basati su statistiche
+# Scanner standalone per tracciare prezzi in_season di più campionati contemporaneamente,
+# accumulare dati storici, calcolare sentiment di mercato e generare consigli intelligenti.
+# I campionati da tracciare sono definiti in scanner_campionati_whitelist.txt -- aggiungerne
+# uno nuovo richiede solo una riga in quel file, nessuna modifica al codice.
 # =====================================================================================
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
-MLS_SLUG = 'mlspa'
-OUTPUT_DIR = 'mls'
-SENTIMENT_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_analysis.json')
-MARKDOWN_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_analysis.md')
-HTML_FILE = os.path.join(OUTPUT_DIR, 'mls_sentiment_chart.html')
+WHITELIST_FILE = 'scanner_campionati_whitelist.txt'
 COOKIES = os.environ.get('SORARE_COOKIE')
 
 # Default listen duration: 60 minutes (3600 seconds)
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '3600'))
 INSUFFICIENT_FUNDS_STOP = [False]
 
-# MLS Teams (all 28)
-MLS_TEAMS = {
-    'atlanta-united': 'Atlanta United',
-    'chicago-fire': 'Chicago Fire',
-    'colorado-rapids': 'Colorado Rapids',
-    'columbus-crew': 'Columbus Crew',
-    'dc-united': 'DC United',
-    'fc-dallas': 'FC Dallas',
-    'houston-dynamo': 'Houston Dynamo',
-    'inter-miami': 'Inter Miami',
-    'la-galaxy': 'LA Galaxy',
-    'lafc': 'LAFC',
-    'los-angeles-football-club': 'LAFC',
-    'minnesota-united': 'Minnesota United',
-    'montreal-impact': 'Montreal Impact',
-    'new-england-revolution': 'New England Revolution',
-    'new-york-city-fc': 'New York City FC',
-    'new-york-red-bulls': 'New York Red Bulls',
-    'orlando-city': 'Orlando City',
-    'philadelphia-union': 'Philadelphia Union',
-    'portland-timbers': 'Portland Timbers',
-    'real-salt-lake': 'Real Salt Lake',
-    'san-diego-loyal': 'San Diego Loyal',
-    'san-jose-earthquakes': 'San Jose Earthquakes',
-    'seattle-sounders': 'Seattle Sounders',
-    'sporting-kansas-city': 'Sporting Kansas City',
-    'toronto-fc': 'Toronto FC',
-    'vancouver-whitecaps': 'Vancouver Whitecaps',
-    'fc-cincinnati': 'FC Cincinnati',
-    'cf-montreal': 'CF Montreal',
-}
+
+def load_league_whitelist():
+    """Legge scanner_campionati_whitelist.txt e restituisce un dict
+    {league_slug: {'output_dir': ..., 'display_name': ...}}.
+    Righe vuote o che iniziano con # vengono ignorate."""
+    leagues = {}
+    if not os.path.exists(WHITELIST_FILE):
+        log(f"[ERRORE] File whitelist non trovato: {WHITELIST_FILE}")
+        return leagues
+    
+    with open(WHITELIST_FILE, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            parts = line.split(':')
+            if len(parts) != 3:
+                log(f"[ERRORE] Riga whitelist malformata, ignorata: {line}")
+                continue
+            slug, output_dir, display_name = parts
+            leagues[slug] = {'output_dir': output_dir, 'display_name': display_name}
+    
+    return leagues
+
+
+def paths_for_league(output_dir):
+    """Restituisce i path dei 3 file di output per una data cartella campionato."""
+    return {
+        'sentiment_file': os.path.join(output_dir, f'{output_dir}_sentiment_analysis.json'),
+        'markdown_file': os.path.join(output_dir, f'{output_dir}_sentiment_analysis.md'),
+        'html_file': os.path.join(output_dir, f'{output_dir}_sentiment_chart.html'),
+    }
+
 
 if _HAS_CURL_CFFI:
     _http_session = curl_requests.Session(impersonate="chrome")
@@ -76,10 +76,10 @@ def log(msg):
     print(f"[{timestamp}] {msg}")
 
 
-def ensure_output_dir():
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
-        log(f"Creata cartella output: {OUTPUT_DIR}")
+def ensure_output_dir(output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        log(f"Creata cartella output: {output_dir}")
 
 
 def eur_price_from_amounts(amounts, eth_rate):
@@ -232,16 +232,16 @@ def get_eth_rate():
     return 1700
 
 
-def load_sentiment_data():
-    """Carica il file JSON storico di sentiment."""
-    if os.path.exists(SENTIMENT_FILE):
+def load_sentiment_data(sentiment_file):
+    """Carica il file JSON storico di sentiment per una specifica lega."""
+    if os.path.exists(sentiment_file):
         try:
-            with open(SENTIMENT_FILE, 'r', encoding='utf-8') as f:
+            with open(sentiment_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                log(f"Caricato storico sentiment: {len(data.get('teams', {}))} squadre")
+                log(f"Caricato storico sentiment ({sentiment_file}): {len(data.get('teams', {}))} squadre")
                 return data
         except Exception as e:
-            log(f"[Errore caricamento] {e}")
+            log(f"[Errore caricamento {sentiment_file}] {e}")
     
     # Crea struttura vuota -- le squadre si aggiungono dinamicamente in register_price()
     # usando gli slug REALI restituiti da Sorare, non più una lista indovinata a mano
@@ -286,8 +286,11 @@ def purge_old_entries(data, days=30):
     return data
 
 
-def run_listener(eth_rate, data, listen_seconds):
-    """Ascolta WebSocket e raccoglie prezzi MLS in_season."""
+def run_listener(eth_rate, leagues_data, leagues_config, listen_seconds):
+    """Ascolta WebSocket UNA VOLTA e smista ogni carta trovata nella lega giusta
+    in base al suo league_slug reale, tra tutte quelle presenti nella whitelist.
+    leagues_data: dict {league_slug: data_dict_di_quella_lega}
+    leagues_config: dict {league_slug: {'output_dir':..., 'display_name':...}}"""
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
         "query": SUBSCRIPTION_QUERY,
@@ -296,12 +299,13 @@ def run_listener(eth_rate, data, listen_seconds):
         "action": "execute",
     }
     
-    stats = {"received": 0, "processed": 0, "prices_found": 0}
+    stats = {"received": 0, "processed": 0, "prices_found": 0, "by_league": {}}
     ws_container = [None]  # Contenitore per WebSocket (per chiuderlo dal timer)
     seen_offer_status = set()
     
-    def register_price(player_slug, player_name, player, price_eur, source='live'):
-        """Registra un prezzo in_season nella struttura dati. source = 'live' o 'trigger'."""
+    def register_price(league_slug, player_slug, player_name, player, price_eur, source='live'):
+        """Registra un prezzo in_season nella struttura dati della lega corretta."""
+        data = leagues_data[league_slug]
         club = player.get('activeClub') or {}
         club_slug = club.get('slug')
         club_name = club.get('name') or club_slug or 'Unknown'
@@ -311,7 +315,6 @@ def run_listener(eth_rate, data, listen_seconds):
             club_name = 'Unknown'
         
         # Creiamo la squadra al volo con lo slug REALE di Sorare se non esiste ancora
-        # (i nomi hard-coded in MLS_TEAMS erano indovinati e non corrispondevano)
         if club_slug not in data['teams']:
             data['teams'][club_slug] = {'team_name': club_name, 'players': {}}
         
@@ -338,9 +341,11 @@ def run_listener(eth_rate, data, listen_seconds):
         player_data['last_update'] = datetime.datetime.utcnow().isoformat() + 'Z'
         player_data['occurrences'] += 1
         stats["prices_found"] += 1
+        stats["by_league"][league_slug] = stats["by_league"].get(league_slug, 0) + 1
         
         tag = "trigger da classic" if source == 'trigger' else "live"
-        log(f"[Carta trovata - {tag}] {player_name} (slug: {player_slug}) — "
+        league_name = leagues_config[league_slug]['display_name']
+        log(f"[{league_name} - Carta trovata - {tag}] {player_name} (slug: {player_slug}) — "
             f"{data['teams'][team_slug]['team_name']} — {price_eur:.2f} EUR")
     
     def on_open(ws):
@@ -412,10 +417,12 @@ def run_listener(eth_rate, data, listen_seconds):
                 player_name = player.get('displayName', player_slug)
                 league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
                 
-                if not player_slug or league_slug != MLS_SLUG:
+                # Smistamento multi-lega: la carta viene processata solo se il suo
+                # campionato è tra quelli presenti nella whitelist caricata
+                if not player_slug or league_slug not in leagues_data:
                     continue
                 
-                # Ascoltiamo anche le classic MLS per agganciare il bot più spesso.
+                # Ascoltiamo anche le classic per agganciare il bot più spesso.
                 # Quando vediamo una classic, facciamo una query diretta per cercare
                 # il minimo in_season disponibile in questo momento per lo stesso giocatore.
                 if not card.get('inSeasonEligible'):
@@ -423,11 +430,11 @@ def run_listener(eth_rate, data, listen_seconds):
                     
                     trigger_price = fetch_min_in_season_price(player_slug, eth_rate)
                     if trigger_price is not None:
-                        register_price(player_slug, player_name, player, trigger_price, source='trigger')
+                        register_price(league_slug, player_slug, player_name, player, trigger_price, source='trigger')
                     continue
                 
                 stats["processed"] += 1
-                register_price(player_slug, player_name, player, price_eur, source='live')
+                register_price(league_slug, player_slug, player_name, player, price_eur, source='live')
         
         except Exception as e:
             log(f"[Errore in on_message] {e}")
@@ -436,9 +443,13 @@ def run_listener(eth_rate, data, listen_seconds):
         log(f"Errore WebSocket: {error}")
     
     def on_close(ws, close_status_code, close_message):
+        by_league_str = ", ".join(
+            f"{leagues_config[slug]['display_name']}: {count}"
+            for slug, count in stats.get("by_league", {}).items()
+        ) or "nessuna"
         log(f"Connessione chiusa. Events ricevuti: {stats['received']}, "
-            f"prezzi in_season trovati: {stats['prices_found']}, "
-            f"classic MLS viste (scartate): {stats.get('classic_seen', 0)}")
+            f"prezzi in_season trovati: {stats['prices_found']} ({by_league_str}), "
+            f"classic viste (scartate): {stats.get('classic_seen', 0)}")
     
     def close_ws_after_timeout():
         """Chiude il WebSocket dopo listen_seconds."""
@@ -462,7 +473,7 @@ def run_listener(eth_rate, data, listen_seconds):
     
     ws_container[0] = ws
     ws.run_forever(ping_interval=30)
-    return data
+    return leagues_data
 
 
 MARKET_TREND_SCALE = [
@@ -673,32 +684,33 @@ def _mover_to_action(mover):
         return "Opportunità moderata. Aspetta conferma ulteriore prima di agire."
 
 
-def save_sentiment_data(data):
-    """Salva il JSON finale."""
-    ensure_output_dir()
+def save_sentiment_data(data, sentiment_file, output_dir):
+    """Salva il JSON finale per una specifica lega."""
+    ensure_output_dir(output_dir)
     
     data['metadata']['last_run'] = datetime.datetime.utcnow().isoformat() + 'Z'
     data['metadata']['total_runs'] = data['metadata'].get('total_runs', 0) + 1
     
-    with open(SENTIMENT_FILE, 'w', encoding='utf-8') as f:
+    with open(sentiment_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
     
-    log(f"Salvato JSON: {SENTIMENT_FILE}")
+    log(f"Salvato JSON: {sentiment_file}")
     return True
 
 
-def generate_markdown(data, recommendations, movers):
-    """Genera il file Markdown leggibile."""
-    ensure_output_dir()
+def generate_markdown(data, recommendations, movers, display_name, output_dir, markdown_file):
+    """Genera il file Markdown leggibile per una specifica lega."""
+    ensure_output_dir(output_dir)
     
     md_content = []
-    md_content.append("# 🔍 MLS SENTIMENT ANALYSIS\n")
+    md_content.append(f"# 🔍 {display_name.upper()} SENTIMENT ANALYSIS\n")
     
     run_date = data['metadata'].get('last_run', 'N/A')
     md_content.append(f"**Data analisi:** {run_date}\n")
     md_content.append(f"**Run totali:** {data['metadata'].get('total_runs', 0)}\n\n")
     
-    raw_html_url = "https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html"
+    html_filename = os.path.basename(paths_for_league(output_dir)['html_file'])
+    raw_html_url = f"https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/{output_dir}/{html_filename}"
     chart_preview_url = f"https://htmlpreview.github.io/?{raw_html_url}"
     md_content.append(f"📊 **[Apri i grafici interattivi]({chart_preview_url})**\n\n")
     
@@ -711,7 +723,7 @@ def generate_markdown(data, recommendations, movers):
     trend_label = data['summary'].get('global_trend_label', 'Stabile')
     trend_label_emoji = data['summary'].get('global_trend_label_emoji', '⚪')
     
-    md_content.append(f"- **Prezzo medio MLS:** {avg_price:.2f} EUR\n")
+    md_content.append(f"- **Prezzo medio {display_name}:** {avg_price:.2f} EUR\n")
     md_content.append(f"- **Trend mercato:** {trend_emoji} {trend} ({trend_change:+.1f}%)\n")
     md_content.append(f"- **Sentiment:** {trend_label_emoji} {trend_label}\n\n")
     
@@ -752,10 +764,10 @@ def generate_markdown(data, recommendations, movers):
                 md_content.append(f"**{team_data['team_name']}**\n")
                 md_content.append(f"Carte trovate: {len(players)} | Prezzo medio: {team_avg:.2f} EUR | Volatilità (σ): {volatility:.2f}\n\n")
     
-    with open(MARKDOWN_FILE, 'w', encoding='utf-8') as f:
+    with open(markdown_file, 'w', encoding='utf-8') as f:
         f.write(''.join(md_content))
     
-    log(f"Generato Markdown: {MARKDOWN_FILE}")
+    log(f"Generato Markdown: {markdown_file}")
 
 
 PRICE_TIERS = [
@@ -776,9 +788,9 @@ def classify_price_tier(price):
     return PRICE_TIERS[-1][2], PRICE_TIERS[-1][3]
 
 
-def generate_html_chart(data):
-    """Genera HTML con grafici Chart.js: prezzo medio per squadra e opportunità di acquisto."""
-    ensure_output_dir()
+def generate_html_chart(data, display_name, output_dir, html_file):
+    """Genera HTML con grafici Chart.js per una specifica lega: prezzo medio per squadra e opportunità di acquisto."""
+    ensure_output_dir(output_dir)
     
     # Preparazione dati per il grafico prezzo medio per squadra
     teams_data = {}
@@ -847,7 +859,7 @@ def generate_html_chart(data):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MLS Sentiment Analysis Chart</title>
+    <title>__DISPLAY_NAME__ Sentiment Analysis Chart</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
         :root {
@@ -944,8 +956,8 @@ def generate_html_chart(data):
 </head>
 <body>
     <div class="container">
-        <h1>📊 MLS Sentiment Analysis</h1>
-        <div class="subtitle">Analisi in tempo reale del mercato MLS in-season</div>
+        <h1>📊 __DISPLAY_NAME__ Sentiment Analysis</h1>
+        <div class="subtitle">Analisi in tempo reale del mercato __DISPLAY_NAME__ in-season</div>
         
         <div class="summary-banner">
             <div class="summary-item">
@@ -1190,62 +1202,77 @@ def generate_html_chart(data):
     html_content = html_content.replace('__GLOBAL_TREND_LABEL__', global_trend_label)
     total_players = sum(len(td.get('players', {})) for td in data['teams'].values())
     html_content = html_content.replace('__TOTAL_PLAYERS__', str(total_players))
+    html_content = html_content.replace('__DISPLAY_NAME__', display_name)
     
-    with open(HTML_FILE, 'w', encoding='utf-8') as f:
+    with open(html_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
     
-    log(f"Generato HTML chart: {HTML_FILE}")
+    log(f"Generato HTML chart: {html_file}")
 
 
 def main():
-    """Main flow dello scanner."""
+    """Main flow dello scanner multi-campionato."""
     log("=" * 80)
-    log("MLS SENTIMENT ANALYSIS SCANNER - INIZIO")
+    log("MULTI-LEAGUE SENTIMENT ANALYSIS SCANNER - INIZIO")
     log("=" * 80)
     
-    ensure_output_dir()
+    leagues_config = load_league_whitelist()
+    if not leagues_config:
+        log("[ERRORE FATALE] Nessun campionato nella whitelist, impossibile procedere")
+        return
     
-    # Load storico
-    data = load_sentiment_data()
+    log(f"Campionati da tracciare: {', '.join(c['display_name'] for c in leagues_config.values())}")
     
-    # Purge >30gg
-    data = purge_old_entries(data, days=30)
+    # Load storico + purge per OGNI lega nella whitelist
+    leagues_data = {}
+    leagues_paths = {}
+    for league_slug, config in leagues_config.items():
+        output_dir = config['output_dir']
+        paths = paths_for_league(output_dir)
+        leagues_paths[league_slug] = paths
+        
+        data = load_sentiment_data(paths['sentiment_file'])
+        data = purge_old_entries(data, days=30)
+        leagues_data[league_slug] = data
     
-    # Get ETH rate
+    # Get ETH rate (condiviso tra tutte le leghe, un solo tasso di cambio)
     eth_rate = get_eth_rate()
     if not eth_rate:
         eth_rate = 2500  # fallback
     log(f"Tasso ETH/EUR: {eth_rate}")
     
-    # Listen WebSocket
-    log(f"Ascolto WebSocket per {LISTEN_SECONDS} secondi...")
-    data = run_listener(eth_rate, data, LISTEN_SECONDS)
+    # Listen WebSocket UNA VOLTA SOLA per tutti i campionati, smistamento automatico
+    log(f"Ascolto WebSocket per {LISTEN_SECONDS} secondi (campionati: "
+        f"{', '.join(leagues_config.keys())})...")
+    leagues_data = run_listener(eth_rate, leagues_data, leagues_config, LISTEN_SECONDS)
     
-    # Calculate stats
-    calculate_statistics(data)
-    
-    # Get movers
-    movers = get_top_movers(data, top_n=10)
-    
-    # Build recommendations
-    recommendations = build_recommendations(data, movers)
-    
-    # Save JSON
-    json_modified = save_sentiment_data(data)
-    
-    # Generate Markdown e HTML se JSON modificato
-    if json_modified:
-        generate_markdown(data, recommendations, movers)
-        generate_html_chart(data)
+    # Per ogni lega: calcola statistiche, salva, genera report
+    for league_slug, config in leagues_config.items():
+        display_name = config['display_name']
+        output_dir = config['output_dir']
+        paths = leagues_paths[league_slug]
+        data = leagues_data[league_slug]
         
-        # Output URL finale
-        repo_url = "https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main"
-        html_url = f"{repo_url}/mls/mls_sentiment_chart.html"
-        preview_url = f"https://htmlpreview.github.io/?{html_url}"
-        log(f"\n📊 Chart URL (renderizzato): {preview_url}\n")
+        log(f"--- Elaborazione {display_name} ---")
+        
+        calculate_statistics(data)
+        movers = get_top_movers(data, top_n=10)
+        recommendations = build_recommendations(data, movers)
+        
+        json_modified = save_sentiment_data(data, paths['sentiment_file'], output_dir)
+        
+        if json_modified:
+            generate_markdown(data, recommendations, movers, display_name, output_dir, paths['markdown_file'])
+            generate_html_chart(data, display_name, output_dir, paths['html_file'])
+            
+            html_filename = os.path.basename(paths['html_file'])
+            repo_url = "https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main"
+            html_url = f"{repo_url}/{output_dir}/{html_filename}"
+            preview_url = f"https://htmlpreview.github.io/?{html_url}"
+            log(f"📊 {display_name} Chart URL (renderizzato): {preview_url}")
     
     log("=" * 80)
-    log("MLS SENTIMENT ANALYSIS SCANNER - COMPLETATO")
+    log("MULTI-LEAGUE SENTIMENT ANALYSIS SCANNER - COMPLETATO")
     log("=" * 80)
 
 
