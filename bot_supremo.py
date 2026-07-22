@@ -2500,7 +2500,7 @@ def send_autobuy_alert(player_name, player_slug, price_eur, second_price, margin
 def send_makeoffer_alert(player_name, player_slug, price_eur, second_price, margin_percent,
                           card_slug, excluded_league, prepared=None, is_in_season=True,
                           live_mode=False, purchase_completed=False, purchase_error=None,
-                          offer_amount_eur=None):
+                          offer_amount_eur=None, via_periodic_bid=False):
     link = build_card_link(player_slug, card_slug)
     if not is_in_season:
         categoria = "CLASSIC (modalita' check_classic, confronto su tutti i campionati)"
@@ -2512,16 +2512,17 @@ def send_makeoffer_alert(player_name, player_slug, price_eur, second_price, marg
         "\u26A0\uFE0F Prenotazione lato server non riuscita, apri e conferma normalmente\n"
     )
     offer_line = f"Offerta calcolata: {offer_amount_eur:.2f}EUR\n" if offer_amount_eur is not None else ""
+    tag_periodico = " [Bid periodico]" if via_periodic_bid else ""
     if live_mode:
         if purchase_completed:
-            titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer) -- OFFERTA INVIATA IN AUTOMATICO</b>"
+            titolo = f"\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer){tag_periodico} -- OFFERTA INVIATA IN AUTOMATICO</b>"
             esito = "\u2705 <b>Offerta inviata con successo, in attesa che il venditore risponda.</b>\n\n"
         else:
-            titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer) -- OFFERTA AUTOMATICA FALLITA</b>"
+            titolo = f"\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer){tag_periodico} -- OFFERTA AUTOMATICA FALLITA</b>"
             esito = (f"\u274C <b>Offerta automatica NON inviata</b>: {purchase_error}\n"
                       f"Apri e valuta se fare l'offerta a mano.\n\n")
     else:
-        titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer) -- FAREI UN'OFFERTA</b>"
+        titolo = f"\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer){tag_periodico} -- FAREI UN'OFFERTA</b>"
         esito = "\u26A0\uFE0F Fase di test: nessuna offerta reale inviata, controlla a mano.\n\n"
     msg_text = (
         f"{titolo}\n\n"
@@ -3490,6 +3491,12 @@ def _try_periodic_bid(candidato, eth_rate):
     if not prepared:
         log(f"[bid periodico] {player_name}: prenotazione offerta non riuscita, "
             f"salto questo ciclo")
+        send_makeoffer_alert(player_name, player_slug, true_min_price, true_min_price,
+                              candidato['margin_percent'], card_slug, candidato['excluded_league'],
+                              prepared, is_in_season, live_mode=MAKEOFFER_LIVE_MODE,
+                              purchase_completed=False,
+                              purchase_error="prenotazione (prepareOffer) non riuscita",
+                              offer_amount_eur=offer_amount_eur, via_periodic_bid=True)
         return False
     nonce = (prepared.get('request') or {}).get('nonce')
     log(f"[bid periodico] {player_name}: offerta prenotata lato server (nonce={nonce})")
@@ -3510,6 +3517,11 @@ def _try_periodic_bid(candidato, eth_rate):
         if player_slug:
             record_player_offer(player_slug, is_in_season)
         pending_offers_count[0] += 1
+        send_makeoffer_alert(player_name, player_slug, true_min_price, true_min_price,
+                              candidato['margin_percent'], card_slug, candidato['excluded_league'],
+                              prepared, is_in_season, live_mode=MAKEOFFER_LIVE_MODE,
+                              purchase_completed=True, offer_amount_eur=offer_amount_eur,
+                              via_periodic_bid=True)
         return True
 
     log(f"[bid periodico] {player_name}: offerta fallita -- {offer_error}")
@@ -3517,6 +3529,11 @@ def _try_periodic_bid(candidato, eth_rate):
         log(f"[bid periodico] {player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot")
         INSUFFICIENT_FUNDS_STOP[0] = True
         send_insufficient_funds_alert(player_name, "Bid periodico")
+    send_makeoffer_alert(player_name, player_slug, true_min_price, true_min_price,
+                          candidato['margin_percent'], card_slug, candidato['excluded_league'],
+                          prepared, is_in_season, live_mode=MAKEOFFER_LIVE_MODE,
+                          purchase_completed=False, purchase_error=offer_error,
+                          offer_amount_eur=offer_amount_eur, via_periodic_bid=True)
     return False
 
 
