@@ -2654,6 +2654,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
       MakeOffer (crea offerta scontata)
     Ritorna True se questo evento ha portato a un caso valido (di QUALSIASI ramo),
     False altrimenti -- usato dal listener per decidere se fermarsi."""
+    _t0 = time.monotonic()
     if INSUFFICIENT_FUNDS_STOP[0]:
         return False  # bot gia' fermato per fondi insufficienti, non valutare altro
 
@@ -2713,6 +2714,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                 f"(in_season {len(buckets['in_season'])} + classic {len(buckets['classic'])})")
     if not prices:
         return False
+    _t_scan_prezzi = time.monotonic()
 
     true_min_price, true_min_card_slug, true_min_seller_slug = prices[0]
 
@@ -2785,6 +2787,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione = \
         _parallel_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
+    _t_liquidita = time.monotonic()
     if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
@@ -2835,6 +2838,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"{penultimo_prezzo_transazione:.2f}EUR)")
         return False
 
+    _timing = (_t0, _t_scan_prezzi, _t_liquidita)
+
     if trigger_su_minimo_non_allineato:
         # Offerta sempre sulla carta del VERO minimo (true_min_card_slug/
         # true_min_seller_slug), non su quella dell'evento triggerante -- e' il
@@ -2843,25 +2848,28 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                                          margin_percent, true_min_card_slug, excluded_league,
                                          is_in_season, true_min_seller_slug,
-                                         via_trigger_non_allineato=True)
+                                         via_trigger_non_allineato=True, timing=_timing)
 
     if margin_percent >= AUTOBUY_MARGIN_FRACTION:
         return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                                        margin_percent, card_slug, excluded_league, is_in_season,
-                                       offer_id)
+                                       offer_id, timing=_timing)
     return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                                      margin_percent, card_slug, excluded_league, is_in_season,
-                                     seller_slug)
+                                     seller_slug, timing=_timing)
 
 
 def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
-                            margin_percent, card_slug, excluded_league, is_in_season, offer_id):
+                            margin_percent, card_slug, excluded_league, is_in_season, offer_id,
+                            timing=None):
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
 
     prepared = None
+    _t_prep = None
     if offer_id:
         prepared, prepare_category = prepare_accept_offer(offer_id)
+        _t_prep = time.monotonic()
         if prepared:
             nonce = (prepared.get('request') or {}).get('nonce')
             log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
@@ -2895,6 +2903,18 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
         purchase_error = "prenotazione (prepareAcceptOffer) non riuscita, acquisto automatico saltato"
         log(f"{player_name}: {purchase_error}")
 
+    # DIAGNOSTICA TEMPORANEA TEMPI (22/07, richiesta esplicita utente -- capire
+    # dove va il tempo nei casi persi per velocita' contro altri bot). Da
+    # rimuovere quando l'indagine e' conclusa (EVENT_TIMING_DIAGNOSTIC).
+    if EVENT_TIMING_DIAGNOSTIC and timing:
+        _t0, _t_scan, _t_liq = timing
+        _t_fine = time.monotonic()
+        _parti = [f"scan_prezzi={_t_scan - _t0:.3f}s", f"liquidita+ultimo_prezzo={_t_liq - _t_scan:.3f}s"]
+        if _t_prep is not None:
+            _parti.append(f"prepare_accept_offer={_t_prep - _t_liq:.3f}s")
+            _parti.append(f"esecuzione_finale={_t_fine - _t_prep:.3f}s")
+        log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s")
+
     send_autobuy_alert(player_name, player_slug, true_min_price, second_min_price,
                         margin_percent, card_slug, excluded_league, prepared, is_in_season,
                         live_mode=AUTOBUY_LIVE_MODE, purchase_completed=purchase_completed,
@@ -2904,7 +2924,7 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
 
 def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                               margin_percent, card_slug, excluded_league, is_in_season, seller_slug,
-                              via_trigger_non_allineato=False):
+                              via_trigger_non_allineato=False, timing=None):
     if via_trigger_non_allineato:
         log(f"MAKEOFFER [trigger su minimo non allineato]: {player_name} -- TROVATO AFFARE "
             f"({true_min_price:.2f}EUR, margine {margin_percent:.1%}) -- valuto se fare un'offerta "
@@ -2915,6 +2935,7 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
             f"margine {margin_percent:.1%}) -- valuto se fare un'offerta")
 
     card_details = get_card_offer_details(card_slug)
+    _t_card_details = time.monotonic()
     if not card_details:
         log(f"{player_name}: scarto -- impossibile recuperare i dettagli della carta "
             f"({card_slug}), niente assetId disponibile")
@@ -2954,6 +2975,7 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
         f"durata {OFFER_DURATION_DAYS} giorni")
 
     prepared = prepare_offer(card_asset_id, seller_slug, offer_amount_eur)
+    _t_prep = time.monotonic()
     if prepared:
         nonce = (prepared.get('request') or {}).get('nonce')
         log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
@@ -2993,6 +3015,20 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
     elif MAKEOFFER_LIVE_MODE and not prepared:
         offer_error = "prenotazione (prepareOffer) non riuscita, offerta automatica saltata"
         log(f"{player_name}: {offer_error}")
+
+    # DIAGNOSTICA TEMPORANEA TEMPI (22/07, richiesta esplicita utente -- capire
+    # dove va il tempo nei casi persi per velocita' contro altri bot, in
+    # particolare per il ramo MakeOffer che ha uno step in piu' (dettagli carta)
+    # rispetto ad AutoBuy. Da rimuovere quando l'indagine e' conclusa
+    # (EVENT_TIMING_DIAGNOSTIC).
+    if EVENT_TIMING_DIAGNOSTIC and timing:
+        _t0, _t_scan, _t_liq = timing
+        _t_fine = time.monotonic()
+        _parti = [f"scan_prezzi={_t_scan - _t0:.3f}s", f"liquidita+ultimo_prezzo={_t_liq - _t_scan:.3f}s",
+                  f"dettagli_carta={_t_card_details - _t_liq:.3f}s",
+                  f"prepare_offer={_t_prep - _t_card_details:.3f}s",
+                  f"esecuzione_finale={_t_fine - _t_prep:.3f}s"]
+        log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s")
 
     send_makeoffer_alert(player_name, player_slug, true_min_price, second_min_price,
                           margin_percent, card_slug, excluded_league, prepared, is_in_season,
@@ -3279,6 +3315,14 @@ COMMIT_INTERVAL_SECONDS = int(os.environ.get('COMMIT_INTERVAL_SECONDS', '300'))
 # (il file .yml e' gia' al limite di 25 input) -- modificabile qui o con una env
 # var settata direttamente nel job se mai servisse.
 EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '6'))
+# DIAGNOSTICA TEMPORANEA TEMPI (22/07, richiesta esplicita utente -- capire dove
+# va il tempo nei casi persi per velocita' contro altri bot). Default 'si'
+# apposta (non 'no' come le altre diagnostiche opt-in) perche' e' esattamente
+# quello che serve ORA per l'indagine in corso -- non esposta nel
+# workflow_dispatch (.yml gia' al limite di 25 input), disattivabile con una env
+# var se mai servisse. RIMUOVERE (variabile + tutti i blocchi 'if
+# EVENT_TIMING_DIAGNOSTIC') quando l'indagine e' conclusa.
+EVENT_TIMING_DIAGNOSTIC = os.environ.get('EVENT_TIMING_DIAGNOSTIC', 'si').strip().lower() == 'si'
 _stop_periodic_commit = threading.Event()
 
 
