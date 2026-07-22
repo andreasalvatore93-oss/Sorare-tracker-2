@@ -47,6 +47,10 @@ on:
         description: "'si' = account Sorare occupato anche da altri bot/browser -- rallenta preventivamente pace GraphQL e tetto per fase (60 aste/giro invece di 120). 'no' = solo questo bot, va piu' veloce"
         required: false
         default: "si"
+      rate_limit_notify_cooldown_seconds:
+        description: "Ogni quanti secondi (minimo) notificare su Telegram un HTTP 429 -- una raffica di piu' 429 nella stessa finestra manda UN SOLO avviso"
+        required: false
+        default: "300"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -114,6 +118,7 @@ jobs:
           ALERT_FLUSH_INTERVAL_SECONDS: ${{ github.event.inputs.alert_flush_interval_seconds || '30' }}
           REFERENCE_PRICE_CACHE_TTL_SECONDS: ${{ github.event.inputs.reference_price_cache_ttl_seconds || '300' }}
           SHARED_LOAD: ${{ github.event.inputs.shared_load || 'si' }}
+          RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS: ${{ github.event.inputs.rate_limit_notify_cooldown_seconds || '300' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'si' }}
           AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
