@@ -387,6 +387,12 @@ CYCLE_PHASE_SECONDS = float(os.environ.get('CYCLE_PHASE_SECONDS', '20'))
 CYCLE_PAUSE_SECONDS = float(os.environ.get('CYCLE_PAUSE_SECONDS', '20'))
 SCADENZA_TOP_N = int(os.environ.get('SCADENZA_TOP_N', '5'))
 
+# FIX 22/07 v6 (caso reale: FASE NUOVE senza tetto puo' valutare migliaia di aste in una
+# sola volta, un flush solo a fine fase avrebbe ritardato la notifica di minuti): le
+# occasioni DIAGNOSTICHE restano accorpate in un solo messaggio, ma vengono comunque
+# spedite ogni ALERT_FLUSH_INTERVAL_SECONDS anche a META' fase, non solo alla fine.
+ALERT_FLUSH_INTERVAL_SECONDS = float(os.environ.get('ALERT_FLUSH_INTERVAL_SECONDS', '30'))
+
 
 # Ritardo prima della riverifica live pre-bid (il backend di Sorare a volte non e'
 # ancora "consistente" se riletto a distanza di meno di un secondo dalla scansione che
@@ -1278,10 +1284,17 @@ def get_last_concluded_auction_price(player_slug, eth_rate):
 
 
 def validate_auction_schema():
-    """Self-check di avvio (stesso principio gia' validato nel bot buyer): prova le due
-    query di riferimento (annunci live in_season + ultime transazioni con deal+amounts)
-    su un giocatore reale PRIMA di iniziare il ciclo di tracking, cosi' un problema di schema si
-    scopre in pochi secondi invece che dopo ore di ascolto a vuoto."""
+    """Self-check di avvio (stesso principio gia' validato nel bot buyer): prova le
+    query di riferimento PRIMA di iniziare il ciclo di tracking, cosi' un problema di
+    schema si scopre in pochi secondi invece che dopo ore di ascolto a vuoto.
+    FIX 22/07 (richiesta esplicita utente, "quella cosa di mbappe e' fastidiosa e
+    inutile"): rimosso il probe su LAST_TRANSACTIONS_QUERY con kylian-mbappe -- dava
+    SEMPRE "Player not found" (probabile causa: quella query ha bisogno di un
+    giocatore con transazioni reali di tipo TokenAuction, Mbappe' probabilmente non ne
+    ha mai avute), generando un falso allarme (log + notifica Telegram) ad OGNI singolo
+    avvio nonostante la query funzioni perfettamente sui giocatori veri -- confermato
+    dal vivo in produzione, dove 'ultima asta conclusa' viene trovata correttamente per
+    decine di giocatori whitelist ogni run. Non era comunque mai bloccante."""
     probe_slug = "kylian-mbappe"
     ok = True
 
@@ -1310,21 +1323,6 @@ def validate_auction_schema():
     else:
         log("[self-check] Query liveAuctions (usata da tutte e 3 le fasi del ciclo, "
             "bidsCount incluso) validata.")
-
-    data2 = graphql_query(LAST_TRANSACTIONS_QUERY, {"p": probe_slug})
-    if data2.get('errors'):
-        msg = (f"[SELF-CHECK FALLITO] Query ultime transazioni (deal.__typename + amounts "
-               f"insieme) fallisce su {probe_slug}: {data2['errors']}. Il riferimento "
-               f"'ultima asta conclusa nelle 24h' NON funzionera' finche' non si sistema "
-               f"questa query -- il bot puo' comunque continuare usando SOLO il minimo "
-               f"live come riferimento, ma e' meno preciso di quanto pensato.")
-        log(msg)
-        send_telegram_msg(f"BOT SUPREMO ASTE -- AVVISO ALL'AVVIO\n\n{msg}")
-        # NON blocchiamo l'avvio per questo -- il minimo live da solo resta un
-        # riferimento valido, solo meno completo. Il blocco vero scatta solo se
-        # ANCHE gli annunci live falliscono (vedi sopra).
-    else:
-        log("[self-check] Query ultime transazioni (asta conclusa + prezzo) validata.")
 
     return ok
 
@@ -1467,10 +1465,12 @@ class _SharedListenerState:
     """Stato condiviso tra le 3 fasi del ciclo di tracking (FIX 21/07 v3: ora un ciclo
     sequenziale in un solo thread, il lock resta comunque per sicurezza) -- seen_events
     per la dedup notifiche, known_auction_ids per riconoscere le aste "nuove" in FASE 1,
-    stats per i contatori, pending_alerts per accumulare le occasioni trovate in UNA
-    fase e mandarle come UN SOLO messaggio Telegram a fine fase (FIX 21/07 v5, richiesta
-    esplicita utente: "senza troppe notifiche" -- anche se in una fase sono TUTTE
-    appetibili, arriva un solo messaggio consolidato, mai uno a testa)."""
+    stats per i contatori, pending_alerts per accumulare le occasioni DIAGNOSTICHE
+    trovate (i bid REALI notificano subito, mai accorpati -- vedi evaluate_auction),
+    last_flush_ts per il flush periodico (FIX 22/07 v6, caso reale osservato: con FASE
+    NUOVE senza tetto e migliaia di aste candidate, un flush solo a fine fase poteva
+    ritardare la notifica di minuti -- ora si flush anche a intervalli, non solo a
+    fine fase)."""
 
     def __init__(self):
         self.lock = threading.Lock()
@@ -1478,6 +1478,7 @@ class _SharedListenerState:
         self.known_auction_ids = set()
         self.stats = {}
         self.pending_alerts = []
+        self.last_flush_ts = time.monotonic()
 
 
 def process_incoming_auction(auction, eth_rate, state, source):
@@ -1561,27 +1562,30 @@ def run_new_auctions_phase(eth_rate, state):
     """FASE 1 "NUOVE" (FIX 21/07 v5, richiesta esplicita utente: "non perdersi nessuna
     asta rilevante"): scan completo whitelist, valuta TUTTE le aste con id MAI visto
     prima in questa run -- nessun tetto, cattura ogni apertura appena immessa sul
-    mercato, senza accumulare arretrato. Le notifiche di questa fase vengono comunque
-    accorpate in UN SOLO messaggio Telegram a fine fase (vedi flush_phase_alerts)."""
+    mercato, senza accumulare arretrato. Le notifiche diagnostiche vengono accorpate,
+    ma spedite anche a meta' fase (vedi maybe_flush_alerts), non solo alla fine."""
     page, whitelisted = _fetch_whitelisted_live_auctions()
     nuove = [a for a in whitelisted if (a.get('id') or '') not in state.known_auction_ids]
     log(f"[NUOVE] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
         f"{len(nuove)} mai viste prima -- valuto tutte")
     for auction in nuove:
         process_incoming_auction(auction, eth_rate, state, source='NUOVE')
+        maybe_flush_alerts('NUOVE', state)
     flush_phase_alerts('NUOVE', state)
 
 
 def run_zero_bid_phase(eth_rate, state):
     """FASE 2 "ZEROBID" (FIX 21/07 v5): scan completo whitelist, valuta TUTTE le aste
     con bidsCount==0 -- nuove o vecchie che siano, nessun tetto (stesso motivo di FASE
-    1: non perdere occasioni). Notifiche accorpate in UN SOLO messaggio a fine fase."""
+    1: non perdere occasioni). Notifiche diagnostiche accorpate, con flush anche a
+    meta' fase."""
     page, whitelisted = _fetch_whitelisted_live_auctions()
     zero_bid = [a for a in whitelisted if a.get('bidsCount') == 0]
     log(f"[ZEROBID] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
         f"{len(zero_bid)} a 0 bid -- valuto tutte")
     for auction in zero_bid:
         process_incoming_auction(auction, eth_rate, state, source='ZEROBID')
+        maybe_flush_alerts('ZEROBID', state)
     flush_phase_alerts('ZEROBID', state)
 
 
@@ -1600,6 +1604,7 @@ def run_ending_soon_phase(eth_rate, state):
         f"vicine alla scadenza...")
     for auction in selected:
         process_incoming_auction(auction, eth_rate, state, source='SCADENZA')
+        maybe_flush_alerts('SCADENZA', state)
     flush_phase_alerts('SCADENZA', state)
 
 
@@ -1732,6 +1737,20 @@ def flush_phase_alerts(phase_name, state):
     corpo = '\n\n\u2500\u2500\u2500\u2500\u2500\n\n'.join(state.pending_alerts)
     send_telegram_msg(f"{intestazione}\n\n{corpo}")
     state.pending_alerts.clear()
+    state.last_flush_ts = time.monotonic()
+
+
+def maybe_flush_alerts(phase_name, state):
+    """FIX 22/07 v6 (richiesta esplicita utente, dopo un caso reale di notifica mai
+    arrivata in tempo utile): da chiamare dopo OGNI singola asta valutata dentro il
+    ciclo di una fase, non solo alla fine -- se sono passati almeno
+    ALERT_FLUSH_INTERVAL_SECONDS dall'ultimo invio E c'e' almeno un'occasione in coda,
+    manda subito quello che c'e' invece di aspettare la fine dell'intera fase (che con
+    FASE NUOVE/ZEROBID senza tetto puo' richiedere minuti su migliaia di aste)."""
+    if not state.pending_alerts:
+        return
+    if time.monotonic() - state.last_flush_ts >= ALERT_FLUSH_INTERVAL_SECONDS:
+        flush_phase_alerts(phase_name, state)
 
 
 def send_insufficient_funds_alert(player_name):
@@ -1955,11 +1974,16 @@ def evaluate_auction(auction, eth_rate, state, source='WS'):
             send_insufficient_funds_alert(player_name)
         stats['bid_failed'] = stats.get('bid_failed', 0) + 1
 
+    # FIX 22/07 v6 (richiesta esplicita utente, caso reale: notifica di un bid VERO
+    # arrivata tardi/mai perche' accodata dietro migliaia di altre valutazioni della
+    # stessa fase): i risultati di bid REALE non vengono piu' accorpati in nessun modo
+    # -- partono SUBITO come messaggio Telegram a se stante. Zero rischio di "flood"
+    # qui: sono al massimo MAX_BIDS_PER_RUN per l'intera run (default 1).
     alert_text = send_bid_alert(player_name, player_slug, card_slug, reference_price, reference_source,
                                  bid_ceiling, min_next_bid_eur, live_mode=True,
                                  bid_completed=bid_completed, bid_error=bid_error, seconds_left=seconds_left,
                                  card_serial_number=card_serial_number)
-    state.pending_alerts.append(alert_text)
+    send_telegram_msg(alert_text)
     return bool(bid_completed)
 
 
