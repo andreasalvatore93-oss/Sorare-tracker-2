@@ -1,26 +1,26 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:16:28.447249Z
-**Run totali:** 121
+**Data analisi:** 2026-07-22T23:26:29.966867Z
+**Run totali:** 122
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.14 EUR
-- **Trend mercato:** ➡️ STABLE (+0.2%)
-- **Sentiment:** ⚪ Stabile
+- **Prezzo medio MLS:** 6.17 EUR
+- **Trend mercato:** ➡️ STABLE (+0.5%)
+- **Sentiment:** 🟩 Leggero Rialzo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.2%)**
+**➡️ TREND GLOBALE: STABLE (+0.5%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
-Prezzo: **0.99 EUR** | Media: **5.94 EUR** | Sconto: **-83.3%**
-Liquidità: **3 occorrenze** | Volatilità: 4.28
+Prezzo: **0.99 EUR** | Media: **6.55 EUR** | Sconto: **-84.9%**
+Liquidità: **4 occorrenze** | Volatilità: 3.71
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 **🥈 FORTE OPPORTUNITÀ — Alexander Bonetig (Portland Timbers)**
-Prezzo: **0.49 EUR** | Media: **2.70 EUR** | Sconto: **-81.9%**
-Liquidità: **3 occorrenze** | Volatilità: 1.92
+Prezzo: **0.49 EUR** | Media: **2.98 EUR** | Sconto: **-83.6%**
+Liquidità: **4 occorrenze** | Volatilità: 1.66
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 **🥉 FORTE OPPORTUNITÀ — Japhet Sery Larsen (Philadelphia Union)**
@@ -29,16 +29,16 @@ Liquidità: **3 occorrenze** | Volatilità: 3.00
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬆️ TOP 10 RIALZI (Stanno CALANDO di prezzo)
-1. Zackary Steffen (Colorado Rapids) — **-83.3%** vs media (0.99 EUR vs 5.94 EUR)
-2. Alexander Bonetig (Portland Timbers) — **-81.9%** vs media (0.49 EUR vs 2.70 EUR)
+1. Zackary Steffen (Colorado Rapids) — **-84.9%** vs media (0.99 EUR vs 6.55 EUR)
+2. Alexander Bonetig (Portland Timbers) — **-83.6%** vs media (0.49 EUR vs 2.98 EUR)
 3. Japhet Sery Larsen (Philadelphia Union) — **-80.5%** vs media (0.84 EUR vs 4.31 EUR)
-4. Joshua Torquato (FC Dallas) — **-79.3%** vs media (0.35 EUR vs 1.69 EUR)
-5. Nick Fernandez (San Jose Earthquakes) — **-77.8%** vs media (1.92 EUR vs 8.65 EUR)
-6. Aníbal Godoy (San Diego FC) — **-76.4%** vs media (0.98 EUR vs 4.15 EUR)
+4. Aníbal Godoy (San Diego FC) — **-79.3%** vs media (0.98 EUR vs 4.72 EUR)
+5. Joshua Torquato (FC Dallas) — **-79.3%** vs media (0.35 EUR vs 1.69 EUR)
+6. Nick Fernandez (San Jose Earthquakes) — **-77.8%** vs media (1.92 EUR vs 8.65 EUR)
 7. Allan Oyirwoth (New England Revolution) — **-76.4%** vs media (0.50 EUR vs 2.12 EUR)
 8. Robert Voloder (New York Red Bulls) — **-75.8%** vs media (0.51 EUR vs 2.11 EUR)
 9. G. Guerra (Portland Timbers) — **-71.4%** vs media (0.50 EUR vs 1.75 EUR)
-10. Tai Baribo (DC United) — **-69.3%** vs media (2.36 EUR vs 7.68 EUR)
+10. Rocco Ríos Novo  (Inter Miami CF) — **-71.2%** vs media (1.69 EUR vs 5.85 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Stephen Afrifa (Sporting Kansas City ) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
@@ -78,7 +78,7 @@ Carte trovate: 20 | Prezzo medio: 2.15 EUR | Volatilità (σ): 2.17
 Carte trovate: 24 | Prezzo medio: 4.81 EUR | Volatilità (σ): 8.41
 
 **Inter Miami CF**
-Carte trovate: 22 | Prezzo medio: 6.44 EUR | Volatilità (σ): 10.94
+Carte trovate: 22 | Prezzo medio: 5.98 EUR | Volatilità (σ): 10.50
 
 **FC Cincinnati**
 Carte trovate: 22 | Prezzo medio: 5.18 EUR | Volatilità (σ): 12.65

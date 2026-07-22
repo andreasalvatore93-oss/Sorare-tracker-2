@@ -1,16 +1,16 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:16:28.464210Z
-**Run totali:** 28
+**Data analisi:** 2026-07-22T23:26:29.982854Z
+**Run totali:** 29
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
 - **Prezzo medio K League 1:** 3.30 EUR
-- **Trend mercato:** ➡️ STABLE (-0.2%)
+- **Trend mercato:** ➡️ STABLE (-0.0%)
 - **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.2%)**
+**➡️ TREND GLOBALE: STABLE (-0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Lee Seung-Woo (Jeonbuk Hyundai Motors FC)**
@@ -63,7 +63,7 @@ Carte trovate: 6 | Prezzo medio: 4.18 EUR | Volatilità (σ): 5.44
 Carte trovate: 9 | Prezzo medio: 2.42 EUR | Volatilità (σ): 1.10
 
 **Ulsan Hyundai Horang-i**
-Carte trovate: 14 | Prezzo medio: 4.44 EUR | Volatilità (σ): 5.00
+Carte trovate: 15 | Prezzo medio: 4.45 EUR | Volatilità (σ): 4.81
 
 **Gangwon FC**
 Carte trovate: 8 | Prezzo medio: 4.99 EUR | Volatilità (σ): 5.65
