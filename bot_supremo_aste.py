@@ -332,7 +332,7 @@ LEAGUE_WHITELIST_SLUGS = load_league_whitelist()
 
 
 # --- Parametri regolabili ---
-AUCTION_DISCOUNT_FRACTION = float(os.environ.get('AUCTION_DISCOUNT_FRACTION', '0.27'))
+AUCTION_DISCOUNT_FRACTION = float(os.environ.get('AUCTION_DISCOUNT_FRACTION', '0.30'))
 LAST_AUCTION_REFERENCE_WINDOW_HOURS = float(os.environ.get('LAST_AUCTION_REFERENCE_WINDOW_HOURS', '24'))
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
@@ -419,16 +419,29 @@ _bids_attempted_lock = threading.Lock()
 # =====================================================================================
 # GraphQL: throttle, sessione persistente, browser Playwright per le chiamate critiche
 # (prepareBid/bid) -- infrastruttura IDENTICA a quella gia' validata nel bot buyer.
+# FIX 22/07 (richiesta esplicita utente, "vado in 429 e non succede con gli altri
+# bot"): il volume di FASE NUOVE/ZEROBID senza tetto (centinaia/migliaia di aste
+# whitelist, 2+ query ognuna, per minuti filati) e' strutturalmente diverso dal bot
+# buyer (che si ferma appena trova target_matches occasioni) -- throttle costante non
+# basta piu'. Aggiunto backoff REATTIVO: pace normale invariato (0.35s), ma dopo un
+# 429 rallenta ulteriormente (1.0s) per un periodo di raffreddamento, dando respiro al
+# server invece di continuare a martellare allo stesso ritmo che ha appena fatto
+# scattare il rate limit.
 # =====================================================================================
 GRAPHQL_MIN_INTERVAL_SECONDS = 0.35
+GRAPHQL_MIN_INTERVAL_SECONDS_COOLDOWN = 1.0
+GRAPHQL_429_COOLDOWN_SECONDS = 45.0
 _graphql_last_call_ts = [0.0]
+_graphql_last_429_ts = [0.0]
 _graphql_throttle_lock = threading.Lock()
 
 
 def _graphql_throttle():
     with _graphql_throttle_lock:
         now = time.time()
-        wait = GRAPHQL_MIN_INTERVAL_SECONDS - (now - _graphql_last_call_ts[0])
+        recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
+        min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_COOLDOWN if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS
+        wait = min_interval - (now - _graphql_last_call_ts[0])
         if wait > 0:
             time.sleep(wait)
         _graphql_last_call_ts[0] = time.time()
@@ -462,6 +475,7 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
         _graphql_throttle()
         r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
+            _graphql_last_429_ts[0] = time.time()
             wait_seconds = min((2 ** attempt) * 2, 8.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s...")
@@ -1761,6 +1775,33 @@ def send_insufficient_funds_alert(player_name):
     )
 
 
+_REFERENCE_PRICE_CACHE = {}
+REFERENCE_PRICE_CACHE_TTL_SECONDS = float(os.environ.get('REFERENCE_PRICE_CACHE_TTL_SECONDS', '300'))
+
+
+def get_reference_prices_cached(player_slug, eth_rate, source, vlog):
+    """FIX 22/07 (richiesta esplicita utente, "vado in 429... bisogna alleggerire il
+    carico"): con FASE NUOVE/ZEROBID senza tetto e il ciclo che ricomincia in
+    continuazione, lo STESSO giocatore viene spesso rivalutato piu' volte in pochi
+    minuti (stessa asta vista da fasi diverse, o cicli successivi con nessun cambiamento
+    di prezzo) -- rifare da zero le 2 query GraphQL (vendita diretta live + ultima asta)
+    ogni singola volta e' lo spreco piu' grosso di banda del ciclo. Cache in-memory per
+    l'intera run, TTL di REFERENCE_PRICE_CACHE_TTL_SECONDS (default 5 minuti): entro
+    quella finestra i prezzi non sono comunque abbastanza vecchi da cambiare la
+    decisione in modo significativo. Ritorna (live_min, last_auction)."""
+    now = time.monotonic()
+    cached = _REFERENCE_PRICE_CACHE.get(player_slug)
+    if cached is not None and (now - cached[0]) < REFERENCE_PRICE_CACHE_TTL_SECONDS:
+        vlog(f"{player_slug}: riferimenti da cache (eta' {now - cached[0]:.0f}s, "
+             f"nessuna query GraphQL rifatta)")
+        return cached[1], cached[2]
+
+    live_min = get_live_min_direct_sale_in_season(player_slug, eth_rate)
+    last_auction = get_last_concluded_auction_price(player_slug, eth_rate)
+    _REFERENCE_PRICE_CACHE[player_slug] = (now, live_min, last_auction)
+    return live_min, last_auction
+
+
 def evaluate_auction(auction, eth_rate, state, source='WS'):
     """Valutazione completa di un'asta: filtri -> riferimento di mercato -> calcolo bid
     -> (diagnostica o bid reale). Ritorna True se e' stato un caso valido (bid piazzato
@@ -1839,14 +1880,10 @@ def evaluate_auction(auction, eth_rate, state, source='WS'):
 
     stats['processed'] = stats.get('processed', 0) + 1
 
-    vlog(f"{player_name}: verifica del minimo di vendita diretta live in corso...")
-    live_min = get_live_min_direct_sale_in_season(player_slug, eth_rate)
+    vlog(f"{player_name}: verifica riferimenti di mercato (con cache {REFERENCE_PRICE_CACHE_TTL_SECONDS:.0f}s) in corso...")
+    live_min, last_auction = get_reference_prices_cached(player_slug, eth_rate, source, vlog)
     vlog(f"{player_name}: minimo vendita diretta live = "
          f"{'%.2fEUR' % live_min if live_min is not None else 'nessuno trovato'}")
-
-    vlog(f"{player_name}: verifica ultima asta conclusa (finestra "
-         f"{LAST_AUCTION_REFERENCE_WINDOW_HOURS:.0f}h) in corso...")
-    last_auction = get_last_concluded_auction_price(player_slug, eth_rate)
     vlog(f"{player_name}: ultima asta conclusa recente = "
          f"{'%.2fEUR' % last_auction if last_auction is not None else 'nessuna trovata'}")
 
