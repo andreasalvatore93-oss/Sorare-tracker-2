@@ -1296,12 +1296,23 @@ query RecentTransactionsBySeasonQuery($p: String!, $n: Int!, $cursor: String) {
         card {
           inSeasonEligible
         }
+        amounts { eurCents wei usdCents gbpCents lamport }
       }
       pageInfo { hasPreviousPage startCursor }
     }
   }
 }
 """
+# FIX 22/07 v4 (richiesta esplicita utente -- ottimizzazione velocita', "prova a
+# fonderle e facciamo un test con diagnostica"): campo 'amounts' AGGIUNTO qui,
+# fondendo questa query con quella (ora ex) dedicata al prezzo -- un solo
+# round-trip di rete invece di due, anche se gia' in parallelo. RISCHIO ACCETTATO
+# ESPLICITAMENTE dall'utente: questa fusione va CONTRO la scelta originale di
+# tenerle separate (vedi nota storica sotto, rimasta per contesto) -- se il campo
+# 'amounts' (mai confermato al 100% contro lo schema) dovesse rompersi, ora
+# romperebbe ANCHE il conteggio liquidita' (prima isolato e protetto). Fail-safe
+# di entrambi i controlli INVARIATO (nessun blocco su acquisti/offerte in caso di
+# errore), ma non piu' indipendenti l'uno dall'altro come prima.
 
 # Doppio layer di protezione liquidita' (richiesta esplicita utente, 19/07): la finestra
 # breve (7gg) da sola potrebbe far passare un giocatore con un breve picco isolato di
@@ -1317,35 +1328,21 @@ TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS'
 
 LIQUIDITY_DIAGNOSTIC = os.environ.get('LIQUIDITY_DIAGNOSTIC', 'no').strip().lower() == 'si'
 
-# NUOVA PROTEZIONE (22/07, richiesta esplicita utente): il prezzo da pagare (AutoBuy)
-# o da offrire (MakeOffer, gia' scontato) deve essere INFERIORE all'ultima transazione
-# reale (vendita/scambio/asta) di quella carta -- altrimenti si rischia di pagare piu'
-# di quanto qualcuno abbia gia' accettato di recente. Query SEPARATA e DEDICATA
-# (non la stessa della liquidita'): un campo prezzo non confermato aggiunto alla query
-# di conteggio transazioni avrebbe potuto rompere ANCHE quel conteggio se il nome del
-# campo fosse sbagliato (gia' successo 2 volte in questa sessione con altri tentativi
-# di query alla cieca) -- isolando il rischio su una query a se stante, un eventuale
-# errore di schema disattiva SOLO questo nuovo controllo (fail-safe, non blocca mai
-# acquisti/offerte), senza toccare la logica di liquidita' gia' funzionante.
-LAST_TRANSACTION_PRICE_QUERY = """
-query LastTransactionPriceQuery($p: String!, $n: Int!) {
-  anyPlayer(slug: $p) {
-    tokenPrices(rarity: limited, last: $n) {
-      nodes {
-        date
-        amounts { eurCents wei usdCents gbpCents lamport }
-        card { inSeasonEligible }
-      }
-    }
-  }
-}
-"""
-
-_LAST_PRICE_CHECK_DISABLED = False
-_last_price_warning_logged = False
+# STORIA (22/07, superata dalla fusione sopra, lasciata per contesto): il prezzo da
+# pagare (AutoBuy) o da offrire (MakeOffer, gia' scontato) deve essere INFERIORE
+# all'ultima transazione reale (vendita/scambio/asta) di quella carta -- altrimenti
+# si rischia di pagare piu' di quanto qualcuno abbia gia' accettato di recente.
+# In origine questa era una query SEPARATA e DEDICATA proprio per isolare il rischio
+# del campo 'amounts' non confermato -- ora fusa nella query di liquidita' sopra su
+# richiesta esplicita dell'utente, che ha accettato il rischio di accoppiamento.
+# NOTA 22/07 v4: _LAST_PRICE_CHECK_DISABLED/_last_price_warning_logged (kill-switch
+# manuale per un errore di schema sul campo 'amounts') sono state RIMOSSE -- non
+# avevano piu' un punto di attivazione chiaro dopo la fusione delle query (il
+# fallimento del fetch ora e' gestito a monte in get_liquidity_and_last_price,
+# fail-open su entrambi i risultati).
 
 
-def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate, n=10):
+def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate, nodes):
     """Ritorna una tupla (ultimo_prezzo, penultimo_prezzo) delle transazioni reali
     (vendita/scambio/asta) piu' recenti di player_slug, in EUR -- ciascuno None se non
     disponibile/query fallita (fail-safe, il chiamante NON deve bloccare l'acquisto
@@ -1363,46 +1360,24 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
     utente): MLS/K-League confrontano SOLO la stagione giusta (season vs season,
     classic vs classic); altri campionati prendono le transazioni in assoluto,
     mescolando in_season+classic (coerente col resto della logica per questi
-    campionati)."""
-    global _LAST_PRICE_CHECK_DISABLED, _last_price_warning_logged
-    if _LAST_PRICE_CHECK_DISABLED:
-        return None, None
-    try:
-        data = graphql_query(LAST_TRANSACTION_PRICE_QUERY, {"p": player_slug, "n": n})
-    except Exception as e:
-        log(f"[ultimo prezzo transazione] eccezione per {player_slug}: {e}")
-        return None, None
-    if data.get('errors'):
-        if not _last_price_warning_logged:
-            log(f"[ultimo prezzo transazione] ATTENZIONE: query fallita ({data['errors']}) -- "
-                f"controllo 'prezzo inferiore all'ultima/penultima transazione' DISATTIVATO per "
-                f"il resto della run (fail-safe, non blocca acquisti/offerte). Dettaglio mostrato "
-                f"una sola volta.")
-            _last_price_warning_logged = True
-        _LAST_PRICE_CHECK_DISABLED = True
-        return None, None
-    nodes = ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices', {}).get('nodes') or []
+    campionati).
 
-    # FIX 22/07 v3 (bug reale confermato coi log, caso Viktor Gyökeres e verifica
-    # diagnostica su Kendry Páez): il campo Relay tokenPrices(last: n) restituisce i
-    # nodi in ordine cronologico CRESCENTE (dal piu' vecchio al piu' recente), non
-    # decrescente come assunto in precedenza -- confermato con dati reali (log
-    # diagnostico temporaneo, rimosso ora che l'ordine e' verificato). Senza un
-    # ordinamento esplicito, prezzi_trovati[0] finiva per essere il piu' VECCHIO dei
-    # nodi raccolti, non il piu' recente, invertendo di fatto ultimo/penultimo.
-    # Ordiniamo esplicitamente per data decrescente (piu' recente prima) cosi' il
-    # significato di 'ultimo'/'penultimo' e' sempre corretto indipendentemente
-    # dall'ordine con cui il server li restituisce.
+    FUSIONE 22/07 (richiesta esplicita utente): non fa piu' una query di rete
+    propria -- riceve 'nodes', gia' scaricati una volta sola da
+    get_liquidity_and_last_price (stessa lista usata anche per il conteggio
+    liquidita'). Funzione pura, stessa identica logica di derivazione di prima
+    (ordinamento esplicito per data decrescente + filtro stagione solo sui
+    campionati esclusi)."""
     def _parse_date_per_ordinamento(nodo):
         try:
             return datetime.datetime.fromisoformat((nodo.get('date') or '').replace('Z', '+00:00'))
         except (ValueError, AttributeError):
             return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
-    nodes = sorted(nodes, key=_parse_date_per_ordinamento, reverse=True)
+    nodes_ordinati = sorted(nodes or [], key=_parse_date_per_ordinamento, reverse=True)
 
     excluded_league = is_asia_americas_excluded_league(league_slug)
     prezzi_trovati = []
-    for node in nodes:
+    for node in nodes_ordinati:
         if excluded_league:
             card = node.get('card') or {}
             if bool(card.get('inSeasonEligible')) != is_in_season:
@@ -1559,28 +1534,29 @@ def _fetch_paginated_transaction_nodes(player_slug):
     return all_nodes
 
 
-def count_recent_transactions(player_slug, is_in_season=True, league_slug=None, force_diagnostic=False):
-    """Ritorna una tupla (count_7d, count_30d): numero di transazioni di player_slug
-    negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni.
+def get_liquidity_and_last_price(player_slug, is_in_season=True, league_slug=None, eth_rate=None,
+                                  force_diagnostic=False):
+    """FUSIONE 22/07 (richiesta esplicita utente -- "prova a fonderle"): un SOLO
+    fetch paginato (_fetch_paginated_transaction_nodes) al posto delle due query
+    separate di prima (conteggio liquidita' + ultimo/penultimo prezzo) -- un solo
+    round-trip di rete invece di due, anche se gia' in parallelo. Da questa stessa
+    lista di nodi si derivano ENTRAMBI i risultati:
+    - count_7d/count_30d via _count_transactions_from_nodes (season_filter=
+      is_in_season SEMPRE, per tutti i campionati -- fix Souleymane Isaak Touré,
+      invariato)
+    - ultimo/penultimo prezzo via get_last_transaction_prices (ora funzione pura,
+      nessuna chiamata di rete propria, riceve i nodi gia' scaricati)
 
-    FIX 22/07 (unificazione): un'unica query paginata (_fetch_paginated_transaction_nodes)
-    per TUTTI i campionati.
+    RISCHIO ACCETTATO ESPLICITAMENTE dall'utente: le due query erano separate DI
+    PROPOSITO (vedi nota storica sopra la vecchia LAST_TRANSACTION_PRICE_QUERY)
+    per isolare il campo 'amounts' (mai confermato al 100% contro lo schema) dal
+    conteggio liquidita' gia' validato -- fondendole, un problema sul campo
+    'amounts' ora romperebbe ANCHE il conteggio liquidita' (prima restava isolato).
+    Fail-safe INVARIATO: se il fetch fallisce, i nodi tornano vuoti, count_7d
+    risulta 0 (sotto soglia -> scarto per mercato sottile, esito sicuro) e
+    ultimo/penultimo tornano None (controllo prezzo saltato, non blocca).
 
-    FIX 22/07 (seconda modifica, richiesta esplicita utente -- caso Souleymane Isaak
-    Touré: bot sommava in_season+classic in un solo conteggio, causando scarti per
-    mercato sottile basati sulla stagione sbagliata): il filtro per stagione
-    (season_filter = is_in_season) si applica ora SEMPRE, per TUTTI i campionati, non
-    solo MLS/K-League -- riguarda SOLO questo conteggio liquidita'/transazioni. Il
-    calcolo del prezzo minimo/margine (get_in_season_prices) NON e' toccato da questo
-    fix e per i campionati non-MLS/K-League continua a mescolare in_season+classic
-    come prima (is_asia_americas_excluded_league resta usata solo li').
-
-    force_diagnostic: se True, forza il log dettagliato indipendentemente da
-    LIQUIDITY_DIAGNOSTIC, e stampa anche i parametri esatti con cui e' stata chiamata
-    -- utile per test isolati mirati, non attivo di default sul percorso live.
-
-    Ritorna (None, None) se la query fallisce. Fail-safe: il chiamante NON deve
-    bloccare l'acquisto solo per questo."""
+    Ritorna (count_7d, count_30d, ultimo_prezzo, penultimo_prezzo)."""
     season_filter = is_in_season
     if force_diagnostic:
         excluded_league = is_asia_americas_excluded_league(league_slug)
@@ -1590,10 +1566,18 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None, 
     try:
         nodes = _fetch_paginated_transaction_nodes(player_slug)
     except Exception as e:
-        log(f"[liquidita'] eccezione per {player_slug}: {e}")
-        return None, None
-    return _count_transactions_from_nodes(nodes, season_filter=season_filter, player_slug=player_slug,
-                                           force_log=force_diagnostic)
+        log(f"[liquidita'+ultimo prezzo] eccezione per {player_slug}: {e}")
+        return None, None, None, None
+
+    count_7d, count_30d = _count_transactions_from_nodes(
+        nodes, season_filter=season_filter, player_slug=player_slug, force_log=force_diagnostic)
+    ultimo, penultimo = get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate, nodes)
+
+    if LIQUIDITY_DIAGNOSTIC:
+        log(f"[diagnostica fusione] {player_slug}: {len(nodes)} nodi fetched (1 sola query) -- "
+            f"count_7d={count_7d}, count_30d={count_30d}, ultimo={ultimo}, penultimo={penultimo}")
+
+    return count_7d, count_30d, ultimo, penultimo
 
 
 EXCHANGE_RATE_QUERY = """
@@ -1810,8 +1794,26 @@ def _run_on_browser_thread(fn, *args, **kwargs):
     """Esegue fn(*args, **kwargs) SEMPRE sull'unico thread dedicato al browser
     Playwright (vedi nota sopra su _browser_executor) -- usare per QUALUNQUE
     interazione con get_browser_page/pagina/browser/playwright, sia in lettura
-    che in scrittura, chiamata da qualunque altro thread."""
-    return _browser_executor.submit(fn, *args, **kwargs).result()
+    che in scrittura, chiamata da qualunque altro thread.
+
+    DIAGNOSTICA TEMPORANEA CODA (22/07, richiesta esplicita utente -- capire se
+    piu' candidati valutati in parallelo si mettono in coda su questo unico
+    thread dedicato): misura quanto tempo passa tra la richiesta di questa
+    chiamata e l'inizio effettivo dell'esecuzione sul thread dedicato -- se
+    l'unico worker e' gia' occupato con un'altra chiamata, questo tempo cresce.
+    Log solo se l'attesa e' non trascurabile, per non riempire i log a vuoto.
+    RIMUOVERE (il wrapping + il blocco di log) quando l'indagine e' conclusa."""
+    _t_richiesta = time.monotonic()
+
+    def _con_diagnostica():
+        if EVENT_TIMING_DIAGNOSTIC:
+            _attesa = time.monotonic() - _t_richiesta
+            if _attesa > 0.01:
+                log(f"[diagnostica coda browser] attesa in coda prima di iniziare "
+                    f"{getattr(fn, '__name__', '?')}: {_attesa:.3f}s")
+        return fn(*args, **kwargs)
+
+    return _browser_executor.submit(_con_diagnostica).result()
 _node_stdout_queue = None
 _node_stderr_tail = collections.deque(maxlen=20)
 
@@ -2613,35 +2615,11 @@ def send_end_msg(matches_found, target_reached):
     )
 
 
-def _parallel_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate):
-    """OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente): count_recent_
-    transactions e get_last_transaction_prices sono due query di rete indipendenti
-    -- nessuna delle due dipende dal risultato dell'altra (entrambe leggono solo
-    player_slug/is_in_season/league_slug[/eth_rate]). Prima venivano eseguite in
-    sequenza; qui partono in due thread separati e si aspettano ENTRAMBI i
-    risultati prima di procedere -- il tempo di attesa diventa il massimo delle
-    due invece della somma. Nessun controllo saltato o allentato: e' solo un
-    cambio nell'ordine/tempistica di esecuzione, non nella logica di validazione.
-    Ritorna (count_7d, count_30d, ultimo_prezzo, penultimo_prezzo)."""
-    risultati = {}
-
-    def _run_count():
-        risultati['count'] = count_recent_transactions(player_slug, is_in_season, league_slug)
-
-    def _run_last_price():
-        risultati['last_price'] = get_last_transaction_prices(
-            player_slug, is_in_season, league_slug, eth_rate)
-
-    t_count = threading.Thread(target=_run_count)
-    t_last_price = threading.Thread(target=_run_last_price)
-    t_count.start()
-    t_last_price.start()
-    t_count.join()
-    t_last_price.join()
-
-    count_7d, count_30d = risultati.get('count', (None, None))
-    ultimo, penultimo = risultati.get('last_price', (None, None))
-    return count_7d, count_30d, ultimo, penultimo
+# NOTA 22/07 v4: _parallel_liquidity_and_last_price (due thread paralleli) e'
+# stata RIMOSSA -- superata dalla fusione delle due query in una sola
+# (get_liquidity_and_last_price), che fa un solo fetch di rete invece di due
+# (nemmeno piu' bisogno del parallelismo, dato che non c'e' piu' una seconda
+# query da parallelizzare).
 
 
 def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
@@ -2687,7 +2665,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     # OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente -- "ogni millisecondo
     # e' importante nello sniping"): il controllo di liquidita' (cache thin_market +
-    # query di rete count_recent_transactions) e' stato SPOSTATO piu' in basso, DOPO
+    # query di rete get_liquidity_and_last_price) e' stato SPOSTATO piu' in basso, DOPO
     # il calcolo del margine, invece di stare qui subito dopo il filtro prezzo. Motivo:
     # la query di liquidita' e' la piu' costosa del percorso (fino a 6 round-trip
     # GraphQL paginati) ed era pagata SEMPRE, anche per carte che poi risultavano
@@ -2786,7 +2764,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return False
 
     count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione = \
-        _parallel_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
+        get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
     _t_liquidita = time.monotonic()
     if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
@@ -2797,8 +2775,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return False
     # NOTA 22/07 (richiesta esplicita utente): rimossa l'imposizione della soglia a
     # 30gg (MIN_TRANSACTIONS_30D) -- quella a 7gg basta e avanza. count_30d viene
-    # ancora calcolato dalla stessa identica query/funzione (nessuna modifica a
-    # count_recent_transactions), semplicemente non viene piu' confrontato con
+    # ancora calcolato dalla stessa identica logica (nessuna modifica a
+    # _count_transactions_from_nodes), semplicemente non viene piu' confrontato con
     # nessuna soglia qui.
 
     # --- ROUTER: nessuna sovrapposizione per costruzione ---
@@ -2819,13 +2797,11 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     else:
         return False
 
-    # OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente -- "ottimizza
-    # parallelizzazione"): count_recent_transactions e get_last_transaction_prices
-    # sono gia' state lanciate IN PARALLELO sopra (vedi
-    # _parallel_liquidity_and_last_price), invece che in sequenza -- sono due query
-    # di rete indipendenti (nessuna dipende dal risultato dell'altra), quindi il
-    # tempo di attesa e' ora il massimo delle due invece della somma. Nessun
-    # controllo saltato: si aspettano comunque entrambi i risultati prima di
+    # OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente -- "prova a
+    # fonderle"): count_7d/count_30d e ultimo/penultimo prezzo ora derivano da UN
+    # SOLO fetch di rete (get_liquidity_and_last_price), non piu' due query
+    # separate (nemmeno parallele) -- un intero round-trip risparmiato. Nessun
+    # controllo saltato: entrambi i risultati arrivano comunque insieme prima di
     # decidere, esattamente come prima.
     if ultimo_prezzo_transazione is not None and prezzo_da_pagare >= ultimo_prezzo_transazione:
         log(f"{player_name}: scarto -- prezzo di acquisto/offerta e' inferiore ad "
