@@ -94,6 +94,10 @@ on:
         description: "TEST ISOLATO: se valorizzato, il bot verifica SOLO il conteggio transazioni di questo slug (log diagnostico completo) e termina in pochi secondi -- ignora mercato/listener/blacklist. Lasciare vuoto per il funzionamento normale del bot."
         required: false
         default: "paxten-aaronson"
+      diagnostic_league_slug:
+        description: "TEST ISOLATO: slug campionato del giocatore sopra (es. 'mlspa' per MLS) -- necessario per riprodurre fedelmente il filtro stagione che il bot applica dal vivo per MLS/K-League. Lasciare vuoto per campionati normali."
+        required: false
+        default: "mlspa"
 permissions:
   contents: write
 concurrency:
@@ -153,6 +157,7 @@ jobs:
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '20' }}
           DIAGNOSTIC_PLAYER_SLUG: ${{ github.event.inputs.diagnostic_player_slug || '' }}
+          DIAGNOSTIC_LEAGUE_SLUG: ${{ github.event.inputs.diagnostic_league_slug || '' }}
         run: |
           set -o pipefail
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
