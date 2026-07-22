@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T22:46:13.748019Z
-**Run totali:** 118
+**Data analisi:** 2026-07-22T22:56:25.130614Z
+**Run totali:** 119
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.11 EUR
-- **Trend mercato:** ➡️ STABLE (-0.1%)
-- **Sentiment:** ⚪ Stabile
+- **Prezzo medio MLS:** 6.09 EUR
+- **Trend mercato:** ➡️ STABLE (-0.4%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.1%)**
+**➡️ TREND GLOBALE: STABLE (-0.4%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
@@ -120,7 +120,7 @@ Carte trovate: 14 | Prezzo medio: 1.31 EUR | Volatilità (σ): 0.98
 Carte trovate: 24 | Prezzo medio: 4.95 EUR | Volatilità (σ): 10.26
 
 **Portland Timbers**
-Carte trovate: 21 | Prezzo medio: 3.62 EUR | Volatilità (σ): 5.02
+Carte trovate: 22 | Prezzo medio: 3.57 EUR | Volatilità (σ): 4.90
 
 **Houston Dynamo FC**
 Carte trovate: 18 | Prezzo medio: 5.48 EUR | Volatilità (σ): 12.00
@@ -138,7 +138,7 @@ Carte trovate: 21 | Prezzo medio: 2.11 EUR | Volatilità (σ): 2.18
 Carte trovate: 16 | Prezzo medio: 1.72 EUR | Volatilità (σ): 1.53
 
 **FC Dallas**
-Carte trovate: 29 | Prezzo medio: 1.54 EUR | Volatilità (σ): 1.71
+Carte trovate: 29 | Prezzo medio: 1.54 EUR | Volatilità (σ): 1.70
 
 **Sporting Kansas City **
 Carte trovate: 18 | Prezzo medio: 1.60 EUR | Volatilità (σ): 1.90
