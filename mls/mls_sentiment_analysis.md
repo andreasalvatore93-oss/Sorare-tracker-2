@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T12:33:17.850668Z
-**Run totali:** 40
+**Data analisi:** 2026-07-22T12:35:29.340361Z
+**Run totali:** 41
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.82 EUR
-- **Trend mercato:** ➡️ STABLE (+0.9%)
-- **Sentiment:** 🟩 Leggero Rialzo
+- **Prezzo medio MLS:** 7.03 EUR
+- **Trend mercato:** 📈 STRONG_ASCENDING (+3.1%)
+- **Sentiment:** 🟢 In Crescita
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.9%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📈 TREND GLOBALE: STRONG_ASCENDING (+3.1%)**
+I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
 
 **🥇 FORTE OPPORTUNITÀ — Aníbal Godoy (San Diego FC)**
 Prezzo: **0.98 EUR** | Media: **2.29 EUR** | Sconto: **-57.2%**
@@ -35,10 +35,10 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 4. Philip Zinckernagel (Chicago Fire FC) — **-27.1%** vs media (42.98 EUR vs 58.99 EUR)
 5. Jansen Miller (Sporting Kansas City ) — **-25.9%** vs media (0.50 EUR vs 0.68 EUR)
 6. Martín Ojeda (Orlando City SC) — **-21.8%** vs media (11.05 EUR vs 14.13 EUR)
-7. Germán Berterame (Inter Miami CF) — **-18.2%** vs media (9.00 EUR vs 11.00 EUR)
-8. Evander (FC Cincinnati) — **-12.8%** vs media (59.99 EUR vs 68.83 EUR)
-9. Patrick Schulte (Columbus Crew) — **-12.0%** vs media (9.00 EUR vs 10.23 EUR)
-10. Pep Biel (Charlotte FC) — **-10.4%** vs media (12.90 EUR vs 14.40 EUR)
+7. JT Marcinkowski (LA Galaxy) — **-19.7%** vs media (6.23 EUR vs 7.76 EUR)
+8. Germán Berterame (Inter Miami CF) — **-18.2%** vs media (9.00 EUR vs 11.00 EUR)
+9. Nicolás Fernández-Mercau (New York City FC) — **-16.1%** vs media (14.50 EUR vs 17.28 EUR)
+10. Evander (FC Cincinnati) — **-12.8%** vs media (59.99 EUR vs 68.83 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Magomed-Shapi Suleymanov (Sporting Kansas City ) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
@@ -60,13 +60,13 @@ Carte trovate: 5 | Prezzo medio: 7.75 EUR | Volatilità (σ): 8.25
 Carte trovate: 7 | Prezzo medio: 15.81 EUR | Volatilità (σ): 17.12
 
 **Real Salt Lake**
-Carte trovate: 12 | Prezzo medio: 2.20 EUR | Volatilità (σ): 3.08
+Carte trovate: 13 | Prezzo medio: 2.10 EUR | Volatilità (σ): 2.97
 
 **San Jose Earthquakes**
 Carte trovate: 11 | Prezzo medio: 4.55 EUR | Volatilità (σ): 5.38
 
 **Columbus Crew**
-Carte trovate: 11 | Prezzo medio: 2.62 EUR | Volatilità (σ): 2.45
+Carte trovate: 12 | Prezzo medio: 2.68 EUR | Volatilità (σ): 2.35
 
 **Charlotte FC**
 Carte trovate: 9 | Prezzo medio: 8.65 EUR | Volatilità (σ): 9.47
@@ -84,13 +84,13 @@ Carte trovate: 6 | Prezzo medio: 6.03 EUR | Volatilità (σ): 6.51
 Carte trovate: 6 | Prezzo medio: 13.85 EUR | Volatilità (σ): 23.32
 
 **Minnesota United**
-Carte trovate: 7 | Prezzo medio: 1.83 EUR | Volatilità (σ): 1.96
+Carte trovate: 8 | Prezzo medio: 1.89 EUR | Volatilità (σ): 1.82
 
 **Orlando City SC**
 Carte trovate: 11 | Prezzo medio: 2.59 EUR | Volatilità (σ): 3.19
 
 **Nashville SC**
-Carte trovate: 7 | Prezzo medio: 8.10 EUR | Volatilità (σ): 10.27
+Carte trovate: 8 | Prezzo medio: 8.40 EUR | Volatilità (σ): 9.55
 
 **Austin FC**
 Carte trovate: 4 | Prezzo medio: 2.38 EUR | Volatilità (σ): 3.05
@@ -123,7 +123,7 @@ Carte trovate: 6 | Prezzo medio: 13.40 EUR | Volatilità (σ): 21.87
 Carte trovate: 9 | Prezzo medio: 2.76 EUR | Volatilità (σ): 3.64
 
 **Houston Dynamo FC**
-Carte trovate: 9 | Prezzo medio: 9.08 EUR | Volatilità (σ): 16.43
+Carte trovate: 12 | Prezzo medio: 8.44 EUR | Volatilità (σ): 14.68
 
 **CF Montreal**
 Carte trovate: 5 | Prezzo medio: 3.48 EUR | Volatilità (σ): 2.69
