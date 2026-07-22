@@ -915,46 +915,47 @@ def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
     client), impossibile da imitare fino in fondo con librerie Python.
     Usata SOLO per le tre chiamate critiche dell'acquisto (prepareAcceptOffer,
     fetchEncryptedPrivateKey, acceptOffer) -- ipotesi 20/07 per unknown_fingerprint.
-    Protetta da _browser_lock (22/07): con piu' eventi valutati in parallelo, la
-    singola pagina Playwright condivisa non e' pensata per essere usata da piu'
-    thread contemporaneamente -- questo lock serializza solo QUESTA chiamata
-    finale (rapida, nessuna attesa di rete precedente inclusa), non le query di
-    valutazione precedenti (quelle usano graphql_query/curl_cffi, gia' sicure per
-    l'uso concorrente)."""
-    page = get_browser_page()
-    payload = {"query": query, "variables": variables or {}}
+    FIX 22/07 v2: sia get_browser_page() che page.evaluate() vengono eseguiti
+    tramite _run_on_browser_thread -- con piu' eventi valutati in parallelo,
+    Playwright (API sync, legata via greenlet a un thread preciso) va sempre
+    interpellato dallo STESSO thread dedicato, indipendentemente da quale thread
+    worker ha chiamato questa funzione (vedi nota su _browser_executor)."""
 
-    js_code = """
-    async ([url, payload, csrfToken, deviceFingerprint]) => {
-        try {
-            const headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'x-csrf-token': csrfToken,
-            };
-            if (deviceFingerprint) {
-                headers['device_fingerprint'] = deviceFingerprint;
+    def _fai_la_chiamata():
+        page = get_browser_page()
+        payload = {"query": query, "variables": variables or {}}
+
+        js_code = """
+        async ([url, payload, csrfToken, deviceFingerprint]) => {
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'x-csrf-token': csrfToken,
+                };
+                if (deviceFingerprint) {
+                    headers['device_fingerprint'] = deviceFingerprint;
+                }
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    credentials: 'include',
+                    body: JSON.stringify(payload),
+                });
+                const text = await resp.text();
+                return { status: resp.status, body: text };
+            } catch (e) {
+                return { status: 0, body: JSON.stringify({error: String(e)}) };
             }
-            const resp = await fetch(url, {
-                method: 'POST',
-                headers: headers,
-                credentials: 'include',
-                body: JSON.stringify(payload),
-            });
-            const text = await resp.text();
-            return { status: resp.status, body: text };
-        } catch (e) {
-            return { status: 0, body: JSON.stringify({error: String(e)}) };
         }
-    }
-    """
+        """
+        return page.evaluate(
+            js_code,
+            [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
+        )
 
     try:
-        with _browser_lock:
-            result = page.evaluate(
-                js_code,
-                [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
-            )
+        result = _run_on_browser_thread(_fai_la_chiamata)
         body_text = result.get('body', '')
         return json.loads(body_text)
     except Exception as e:
@@ -1792,7 +1793,25 @@ _node_process_lock = threading.Lock()
 # esisteva GIA' e protegge gia' correttamente la comunicazione col processo Node
 # di firma, nessuna modifica necessaria li'.
 _lista_nera_lock = threading.Lock()
-_browser_lock = threading.Lock()
+# FIX 22/07 v2 (bug reale confermato dal vivo, 3 casi -- "Cannot switch to a
+# different thread" / greenlet): un _browser_lock semplice NON basta per
+# Playwright in modalita' sync -- la sua API e' legata (via greenlet) al thread
+# ESATTO che l'ha creata/usata, non solo serializzata nell'accesso. Chiamarla da
+# un thread DIVERSO fallisce sempre, anche con un lock che garantisce "un thread
+# alla volta" -- il problema non e' la concorrenza, e' l'identita' del thread.
+# FIX: un ThreadPoolExecutor con un SOLO worker dedicato -- ogni interazione con
+# Playwright (creazione inclusa) passa SEMPRE da li', sottomessa e attesa
+# (.result()) da qualunque thread la richieda, cosi' Playwright vede sempre lo
+# stesso identico thread dall'inizio alla fine della run.
+_browser_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix='browser')
+
+
+def _run_on_browser_thread(fn, *args, **kwargs):
+    """Esegue fn(*args, **kwargs) SEMPRE sull'unico thread dedicato al browser
+    Playwright (vedi nota sopra su _browser_executor) -- usare per QUALUNQUE
+    interazione con get_browser_page/pagina/browser/playwright, sia in lettura
+    che in scrittura, chiamata da qualunque altro thread."""
+    return _browser_executor.submit(fn, *args, **kwargs).result()
 _node_stdout_queue = None
 _node_stderr_tail = collections.deque(maxlen=20)
 
@@ -3324,7 +3343,12 @@ def main():
         f"{sorted(BLACKLISTED_MANAGER_SLUGS)}")
     if AUTOBUY_LIVE_MODE or MAKEOFFER_LIVE_MODE:
         log("[playwright] pre-apertura browser all'avvio (ottimizzazione velocita')...")
-        get_browser_page()
+        # FIX 22/07 v2: la creazione della pagina Playwright DEVE avvenire sullo
+        # stesso thread dedicato che verra' riusato per ogni chiamata successiva
+        # (vedi _run_on_browser_thread) -- altrimenti il browser nascerebbe sul
+        # thread principale e le chiamate successive (dal thread dedicato)
+        # fallirebbero comunque con "Cannot switch to a different thread".
+        _run_on_browser_thread(get_browser_page)
         log("[playwright] browser pronto e riscaldato, in attesa di occasioni")
 
         # OTTIMIZZAZIONE VELOCITA' SNIPING: exchange_rate_id e la chiave cifrata del
@@ -3384,7 +3408,10 @@ def main():
     finally:
         _stop_periodic_commit.set()
         _commit_lista_nera_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
-        close_browser()
+        # FIX 22/07 v2: chiusura anch'essa sullo stesso thread dedicato -- tocca
+        # gli stessi oggetti Playwright creati li'.
+        _run_on_browser_thread(close_browser)
+        _browser_executor.shutdown(wait=True)
         close_node_sign_process()
 
 
