@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T19:35:58.237503Z
-**Run totali:** 114
+**Data analisi:** 2026-07-22T19:45:59.945335Z
+**Run totali:** 115
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.16 EUR
-- **Trend mercato:** 📈 ASCENDING (+1.0%)
+- **Prezzo medio MLS:** 6.19 EUR
+- **Trend mercato:** ➡️ STABLE (+0.6%)
 - **Sentiment:** 🟩 Leggero Rialzo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: ASCENDING (+1.0%)**
-I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
+**➡️ TREND GLOBALE: STABLE (+0.6%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
 Prezzo: **0.99 EUR** | Media: **5.94 EUR** | Sconto: **-83.3%**
@@ -37,8 +37,8 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 6. Robert Voloder (New York Red Bulls) — **-75.8%** vs media (0.51 EUR vs 2.11 EUR)
 7. Allan Oyirwoth (New England Revolution) — **-74.2%** vs media (0.50 EUR vs 1.94 EUR)
 8. G. Guerra (Portland Timbers) — **-71.4%** vs media (0.50 EUR vs 1.75 EUR)
-9. Paxten Aaronson (Colorado Rapids) — **-69.5%** vs media (2.98 EUR vs 9.78 EUR)
-10. Tai Baribo (DC United) — **-69.3%** vs media (2.36 EUR vs 7.68 EUR)
+9. Tai Baribo (DC United) — **-69.3%** vs media (2.36 EUR vs 7.68 EUR)
+10. Paxten Aaronson (Colorado Rapids) — **-69.1%** vs media (2.98 EUR vs 9.64 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Jack Kortkamp (Sporting Kansas City ) — **+0.0%** vs media (1.47 EUR vs 1.47 EUR)
@@ -46,15 +46,15 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 3. Justin Reynolds (Sporting Kansas City ) — **+0.0%** vs media (0.64 EUR vs 0.64 EUR)
 4. Logan Farrington (FC Dallas) — **+0.0%** vs media (4.30 EUR vs 4.30 EUR)
 5. Nicholas Simmonds (FC Dallas) — **+0.0%** vs media (0.80 EUR vs 0.80 EUR)
-6. Bernard Kamungo (FC Dallas) — **+0.0%** vs media (0.51 EUR vs 0.51 EUR)
-7. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
-8. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
-9. Kaick (FC Dallas) — **+0.0%** vs media (1.69 EUR vs 1.69 EUR)
-10. Enzo Newman (FC Dallas) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
+6. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
+7. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
+8. Kaick (FC Dallas) — **+0.0%** vs media (1.69 EUR vs 1.69 EUR)
+9. Enzo Newman (FC Dallas) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
+10. Lalas Abubakar (FC Dallas) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
-Carte trovate: 21 | Prezzo medio: 4.50 EUR | Volatilità (σ): 5.15
+Carte trovate: 21 | Prezzo medio: 4.46 EUR | Volatilità (σ): 5.06
 
 **Los Angeles FC**
 Carte trovate: 19 | Prezzo medio: 8.21 EUR | Volatilità (σ): 10.09
@@ -75,7 +75,7 @@ Carte trovate: 14 | Prezzo medio: 4.58 EUR | Volatilità (σ): 4.74
 Carte trovate: 19 | Prezzo medio: 2.24 EUR | Volatilità (σ): 2.20
 
 **Chicago Fire FC**
-Carte trovate: 23 | Prezzo medio: 4.91 EUR | Volatilità (σ): 8.58
+Carte trovate: 24 | Prezzo medio: 4.81 EUR | Volatilità (σ): 8.41
 
 **Inter Miami CF**
 Carte trovate: 22 | Prezzo medio: 6.46 EUR | Volatilità (σ): 10.93
@@ -90,10 +90,10 @@ Carte trovate: 19 | Prezzo medio: 2.06 EUR | Volatilità (σ): 2.46
 Carte trovate: 17 | Prezzo medio: 2.81 EUR | Volatilità (σ): 3.94
 
 **Nashville SC**
-Carte trovate: 22 | Prezzo medio: 7.83 EUR | Volatilità (σ): 11.76
+Carte trovate: 22 | Prezzo medio: 7.82 EUR | Volatilità (σ): 11.76
 
 **Austin FC**
-Carte trovate: 13 | Prezzo medio: 2.22 EUR | Volatilità (σ): 2.67
+Carte trovate: 14 | Prezzo medio: 2.07 EUR | Volatilità (σ): 2.61
 
 **San Diego FC**
 Carte trovate: 22 | Prezzo medio: 4.80 EUR | Volatilità (σ): 8.50
@@ -114,13 +114,13 @@ Carte trovate: 20 | Prezzo medio: 1.64 EUR | Volatilità (σ): 1.73
 Carte trovate: 16 | Prezzo medio: 2.82 EUR | Volatilità (σ): 3.27
 
 **Atlanta United**
-Carte trovate: 14 | Prezzo medio: 1.35 EUR | Volatilità (σ): 1.02
+Carte trovate: 14 | Prezzo medio: 1.31 EUR | Volatilità (σ): 0.98
 
 **New England Revolution**
-Carte trovate: 23 | Prezzo medio: 5.04 EUR | Volatilità (σ): 10.48
+Carte trovate: 24 | Prezzo medio: 4.98 EUR | Volatilità (σ): 10.25
 
 **Portland Timbers**
-Carte trovate: 20 | Prezzo medio: 2.76 EUR | Volatilità (σ): 3.16
+Carte trovate: 21 | Prezzo medio: 3.62 EUR | Volatilità (σ): 5.02
 
 **Houston Dynamo FC**
 Carte trovate: 18 | Prezzo medio: 5.48 EUR | Volatilità (σ): 12.00
@@ -129,7 +129,7 @@ Carte trovate: 18 | Prezzo medio: 5.48 EUR | Volatilità (σ): 12.00
 Carte trovate: 16 | Prezzo medio: 1.74 EUR | Volatilità (σ): 1.64
 
 **New York City FC**
-Carte trovate: 19 | Prezzo medio: 3.04 EUR | Volatilità (σ): 4.40
+Carte trovate: 20 | Prezzo medio: 2.97 EUR | Volatilità (σ): 4.29
 
 **Toronto FC**
 Carte trovate: 21 | Prezzo medio: 2.11 EUR | Volatilità (σ): 2.18
