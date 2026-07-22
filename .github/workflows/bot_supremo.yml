@@ -93,11 +93,11 @@ on:
       diagnostic_player_slug:
         description: "TEST ISOLATO: se valorizzato, il bot verifica SOLO il conteggio transazioni di questo slug (log diagnostico completo) e termina in pochi secondi -- ignora mercato/listener/blacklist. Lasciare vuoto per il funzionamento normale del bot."
         required: false
-        default: "paxten-aaronson"
+        default: ""
       diagnostic_league_slug:
         description: "TEST ISOLATO: slug campionato del giocatore sopra (es. 'mlspa' per MLS) -- necessario per riprodurre fedelmente il filtro stagione che il bot applica dal vivo per MLS/K-League. Lasciare vuoto per campionati normali."
         required: false
-        default: "mlspa"
+        default: ""
 permissions:
   contents: write
 concurrency:
