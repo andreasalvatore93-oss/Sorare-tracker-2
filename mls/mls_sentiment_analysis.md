@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T08:35:22.208245Z
-**Run totali:** 29
+**Data analisi:** 2026-07-22T08:50:40.820322Z
+**Run totali:** 30
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.97 EUR
-- **Trend mercato:** 📈 ASCENDING (+1.1%)
-- **Sentiment:** 🟩 Leggero Rialzo
+- **Prezzo medio MLS:** 7.82 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.8%)
+- **Sentiment:** 🟡 Leggero Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: ASCENDING (+1.1%)**
-I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
+**📉 TREND GLOBALE: DESCENDING (-1.8%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Timo Werner (San Jose Earthquakes)**
 Prezzo: **10.00 EUR** | Media: **14.25 EUR** | Sconto: **-29.8%**
@@ -44,13 +44,13 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 1. Jake Davis (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
 2. Jacob Bartlett (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
 3. Ethan Bartlow (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
-4. Louicius Deedson (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
-5. Slade Starnes (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
-6. Ricardo Louis (FC Dallas) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
-7. Álvaro Augusto (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
-8. Daniel Baran (FC Dallas) — **+0.0%** vs media (0.81 EUR vs 0.81 EUR)
-9. Sean Johnson (DC United) — **+0.0%** vs media (5.88 EUR vs 5.88 EUR)
-10. Nathan Ordaz (DC United) — **+0.0%** vs media (2.19 EUR vs 2.19 EUR)
+4. Jaidyn Contreras (FC Dallas) — **+0.0%** vs media (0.82 EUR vs 0.82 EUR)
+5. Joaquín Valiente (FC Dallas) — **+0.0%** vs media (1.10 EUR vs 1.10 EUR)
+6. Nolan Norris (FC Dallas) — **+0.0%** vs media (2.94 EUR vs 2.94 EUR)
+7. Louicius Deedson (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
+8. Slade Starnes (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
+9. Ricardo Louis (FC Dallas) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
+10. Álvaro Augusto (FC Dallas) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -129,7 +129,7 @@ Carte trovate: 5 | Prezzo medio: 15.61 EUR | Volatilità (σ): 20.48
 Carte trovate: 2 | Prezzo medio: 5.81 EUR | Volatilità (σ): 2.51
 
 **New York City FC**
-Carte trovate: 3 | Prezzo medio: 6.72 EUR | Volatilità (σ): 7.08
+Carte trovate: 4 | Prezzo medio: 5.29 EUR | Volatilità (σ): 6.45
 
 **Toronto FC**
 Carte trovate: 3 | Prezzo medio: 1.64 EUR | Volatilità (σ): 0.81
@@ -138,7 +138,7 @@ Carte trovate: 3 | Prezzo medio: 1.64 EUR | Volatilità (σ): 0.81
 Carte trovate: 4 | Prezzo medio: 2.34 EUR | Volatilità (σ): 2.48
 
 **FC Dallas**
-Carte trovate: 5 | Prezzo medio: 0.60 EUR | Volatilità (σ): 0.14
+Carte trovate: 8 | Prezzo medio: 0.98 EUR | Volatilità (σ): 0.82
 
 **Sporting Kansas City **
 Carte trovate: 4 | Prezzo medio: 0.50 EUR | Volatilità (σ): 0.00
