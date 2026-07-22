@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T18:13:37.877556Z
-**Run totali:** 106
+**Data analisi:** 2026-07-22T18:23:40.004985Z
+**Run totali:** 107
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.90 EUR
-- **Trend mercato:** 📈 ASCENDING (+1.2%)
+- **Prezzo medio MLS:** 5.95 EUR
+- **Trend mercato:** ➡️ STABLE (+0.8%)
 - **Sentiment:** 🟩 Leggero Rialzo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: ASCENDING (+1.2%)**
-I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
+**➡️ TREND GLOBALE: STABLE (+0.8%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
 Prezzo: **0.99 EUR** | Media: **5.94 EUR** | Sconto: **-83.3%**
@@ -78,7 +78,7 @@ Carte trovate: 18 | Prezzo medio: 2.31 EUR | Volatilità (σ): 2.23
 Carte trovate: 21 | Prezzo medio: 5.22 EUR | Volatilità (σ): 8.94
 
 **Inter Miami CF**
-Carte trovate: 13 | Prezzo medio: 10.54 EUR | Volatilità (σ): 14.85
+Carte trovate: 13 | Prezzo medio: 10.49 EUR | Volatilità (σ): 14.85
 
 **FC Cincinnati**
 Carte trovate: 22 | Prezzo medio: 5.19 EUR | Volatilità (σ): 12.64
@@ -132,7 +132,7 @@ Carte trovate: 16 | Prezzo medio: 1.74 EUR | Volatilità (σ): 1.64
 Carte trovate: 19 | Prezzo medio: 3.10 EUR | Volatilità (σ): 4.58
 
 **Toronto FC**
-Carte trovate: 19 | Prezzo medio: 2.10 EUR | Volatilità (σ): 2.30
+Carte trovate: 20 | Prezzo medio: 2.09 EUR | Volatilità (σ): 2.24
 
 **DC United**
 Carte trovate: 12 | Prezzo medio: 1.54 EUR | Volatilità (σ): 1.57
