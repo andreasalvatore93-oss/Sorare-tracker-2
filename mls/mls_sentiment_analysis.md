@@ -1,44 +1,44 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T12:59:49.223742Z
-**Run totali:** 53
+**Data analisi:** 2026-07-22T13:01:50.763991Z
+**Run totali:** 54
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.43 EUR
-- **Trend mercato:** ➡️ STABLE (-0.9%)
-- **Sentiment:** 🟨 Quasi Fermo
+- **Prezzo medio MLS:** 7.30 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.7%)
+- **Sentiment:** 🟡 Leggero Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.9%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📉 TREND GLOBALE: DESCENDING (-1.7%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Aníbal Godoy (San Diego FC)**
 Prezzo: **0.98 EUR** | Media: **2.29 EUR** | Sconto: **-57.2%**
 Liquidità: **2 occorrenze** | Volatilità: 1.85
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
-**🥈 FORTE OPPORTUNITÀ — Lucas Halter (Houston Dynamo FC)**
+**🥈 FORTE OPPORTUNITÀ — Célio Pompeu (St. Louis City SC)**
+Prezzo: **0.51 EUR** | Media: **0.84 EUR** | Sconto: **-39.5%**
+Liquidità: **2 occorrenze** | Volatilità: 0.47
+Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
+
+**🥉 FORTE OPPORTUNITÀ — Lucas Halter (Houston Dynamo FC)**
 Prezzo: **0.84 EUR** | Media: **1.21 EUR** | Sconto: **-30.6%**
 Liquidità: **2 occorrenze** | Volatilità: 0.52
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
-**🥉 FORTE OPPORTUNITÀ — Timo Werner (San Jose Earthquakes)**
-Prezzo: **10.00 EUR** | Media: **14.25 EUR** | Sconto: **-29.8%**
-Liquidità: **2 occorrenze** | Volatilità: 6.01
-Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
-
 ## ⬆️ TOP 10 RIALZI (Stanno CALANDO di prezzo)
 1. Aníbal Godoy (San Diego FC) — **-57.2%** vs media (0.98 EUR vs 2.29 EUR)
-2. Lucas Halter (Houston Dynamo FC) — **-30.6%** vs media (0.84 EUR vs 1.21 EUR)
-3. Timo Werner (San Jose Earthquakes) — **-29.8%** vs media (10.00 EUR vs 14.25 EUR)
+2. Célio Pompeu (St. Louis City SC) — **-39.5%** vs media (0.51 EUR vs 0.84 EUR)
+3. Lucas Halter (Houston Dynamo FC) — **-30.6%** vs media (0.84 EUR vs 1.21 EUR)
 4. Philip Zinckernagel (Chicago Fire FC) — **-27.1%** vs media (42.98 EUR vs 58.99 EUR)
 5. Ben Lundt (St. Louis City SC) — **-26.7%** vs media (1.85 EUR vs 2.53 EUR)
-6. Paxten Aaronson (Colorado Rapids) — **-24.5%** vs media (9.00 EUR vs 11.91 EUR)
-7. Chris Brady (Chicago Fire FC) — **-22.9%** vs media (17.30 EUR vs 22.42 EUR)
-8. Heung-min Son (Los Angeles FC) — **-22.7%** vs media (29.00 EUR vs 37.50 EUR)
-9. Martín Ojeda (Orlando City SC) — **-21.8%** vs media (11.05 EUR vs 14.13 EUR)
-10. Jansen Miller (Sporting Kansas City ) — **-21.3%** vs media (0.48 EUR vs 0.61 EUR)
+6. Timo Werner (San Jose Earthquakes) — **-25.8%** vs media (9.37 EUR vs 12.62 EUR)
+7. Paxten Aaronson (Colorado Rapids) — **-24.5%** vs media (9.00 EUR vs 11.91 EUR)
+8. Chris Brady (Chicago Fire FC) — **-22.9%** vs media (17.30 EUR vs 22.42 EUR)
+9. Heung-min Son (Los Angeles FC) — **-22.7%** vs media (29.00 EUR vs 37.50 EUR)
+10. Martín Ojeda (Orlando City SC) — **-21.8%** vs media (11.05 EUR vs 14.13 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Calvin Harris (Sporting Kansas City ) — **+0.0%** vs media (2.36 EUR vs 2.36 EUR)
@@ -63,7 +63,7 @@ Carte trovate: 9 | Prezzo medio: 10.82 EUR | Volatilità (σ): 12.19
 Carte trovate: 16 | Prezzo medio: 2.12 EUR | Volatilità (σ): 2.72
 
 **San Jose Earthquakes**
-Carte trovate: 11 | Prezzo medio: 4.38 EUR | Volatilità (σ): 5.15
+Carte trovate: 11 | Prezzo medio: 4.33 EUR | Volatilità (σ): 5.08
 
 **Columbus Crew**
 Carte trovate: 16 | Prezzo medio: 2.54 EUR | Volatilità (σ): 2.08
@@ -72,7 +72,7 @@ Carte trovate: 16 | Prezzo medio: 2.54 EUR | Volatilità (σ): 2.08
 Carte trovate: 9 | Prezzo medio: 8.65 EUR | Volatilità (σ): 9.47
 
 **St. Louis City SC**
-Carte trovate: 15 | Prezzo medio: 2.75 EUR | Volatilità (σ): 2.41
+Carte trovate: 16 | Prezzo medio: 2.60 EUR | Volatilità (σ): 2.40
 
 **Chicago Fire FC**
 Carte trovate: 12 | Prezzo medio: 8.32 EUR | Volatilità (σ): 12.09
@@ -84,7 +84,7 @@ Carte trovate: 8 | Prezzo medio: 12.24 EUR | Volatilità (σ): 18.86
 Carte trovate: 9 | Prezzo medio: 10.60 EUR | Volatilità (σ): 19.07
 
 **Minnesota United**
-Carte trovate: 10 | Prezzo medio: 2.24 EUR | Volatilità (σ): 1.85
+Carte trovate: 12 | Prezzo medio: 2.04 EUR | Volatilità (σ): 1.76
 
 **Orlando City SC**
 Carte trovate: 12 | Prezzo medio: 5.71 EUR | Volatilità (σ): 11.22
@@ -120,7 +120,7 @@ Carte trovate: 3 | Prezzo medio: 1.82 EUR | Volatilità (σ): 0.83
 Carte trovate: 8 | Prezzo medio: 10.50 EUR | Volatilità (σ): 19.26
 
 **Portland Timbers**
-Carte trovate: 11 | Prezzo medio: 3.19 EUR | Volatilità (σ): 3.93
+Carte trovate: 11 | Prezzo medio: 3.19 EUR | Volatilità (σ): 3.94
 
 **Houston Dynamo FC**
 Carte trovate: 14 | Prezzo medio: 6.71 EUR | Volatilità (σ): 13.45
@@ -132,7 +132,7 @@ Carte trovate: 7 | Prezzo medio: 2.85 EUR | Volatilità (σ): 2.48
 Carte trovate: 8 | Prezzo medio: 3.83 EUR | Volatilità (σ): 4.94
 
 **Toronto FC**
-Carte trovate: 7 | Prezzo medio: 2.69 EUR | Volatilità (σ): 2.33
+Carte trovate: 8 | Prezzo medio: 2.46 EUR | Volatilità (σ): 2.25
 
 **DC United**
 Carte trovate: 8 | Prezzo medio: 1.82 EUR | Volatilità (σ): 1.82
