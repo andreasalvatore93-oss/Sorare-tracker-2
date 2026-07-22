@@ -1,110 +1,75 @@
-name: Bot Supremo Sorare (AutoBuy + MakeOffer fusi)
+name: Bot Supremo Aste
+
 on:
   workflow_dispatch:
     inputs:
-      min_price_eur:
-        description: "Prezzo minimo carta da valutare (EUR)"
-        required: false
-        default: "1.50"
-      max_price_eur:
-        description: "Prezzo massimo carta da valutare (EUR)"
+      auction_discount_percent:
+        description: "Sconto sotto il minimo di mercato per calcolare il tetto del bid, in % (es. 30 = 30%)"
         required: false
         default: "30"
-      makeoffer_margin_percent:
-        description: "Margine MINIMO per il ramo MakeOffer (offerta scontata), in % (es. 10 = 10%)"
+      last_auction_reference_window_hours:
+        description: "Finestra in ore entro cui un'asta CONCLUSA vale ancora come riferimento di prezzo"
         required: false
-        default: "15"
-      makeoffer_max_margin_percent:
-        description: "Margine MASSIMO per il ramo MakeOffer -- oltre questa soglia interviene AutoBuy"
+        default: "24"
+      auction_cooldown_hours:
+        description: "Ore minime tra due bid reali sullo stesso giocatore"
         required: false
-        default: "25"
-      offer_discount_percent:
-        description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
+        default: "12"
+      max_bid_per_auction_eur:
+        description: "Tetto massimo assoluto (EUR) che il bot puo' offrire su UNA singola asta"
         required: false
-        default: "25"
-      autobuy_margin_percent:
-        description: "Margine MINIMO per il ramo AutoBuy (accetta offerta esistente), in % -- deve essere >= makeoffer_max_margin_percent"
+        default: "10"
+      max_bids_per_run:
+        description: "Numero massimo di TENTATIVI di bid reale per l'intera run (oltre, solo diagnostica) -- fase di test, meglio basso"
         required: false
-        default: "26"
+        default: "1"
+      cycle_phase_seconds:
+        description: "Durata in secondi di ciascuna delle 3 fasi del ciclo (NUOVE / ZEROBID / SCADENZA)"
+        required: false
+        default: "20"
+      cycle_pause_seconds:
+        description: "Pausa in secondi tra le fasi del ciclo di tracking (anche dopo l'ultima, prima di ricominciare)"
+        required: false
+        default: "20"
+      scadenza_top_n:
+        description: "Tetto SOLO per la fase SCADENZA (le N piu' vicine alla scadenza). NUOVE e ZEROBID non hanno tetto -- valutano sempre tutto, per non perdere occasioni"
+        required: false
+        default: "5"
+      alert_flush_interval_seconds:
+        description: "Ogni quanti secondi mandare le notifiche diagnostiche accumulate, anche a META' fase (i bid REALI notificano sempre subito, non aspettano mai)"
+        required: false
+        default: "30"
+      reference_price_cache_ttl_seconds:
+        description: "Per quanti secondi riusare i riferimenti di prezzo (vendita diretta live + ultima asta) gia' calcolati per un giocatore, invece di rifare le query -- riduce il carico su Sorare (protezione 429)"
+        required: false
+        default: "300"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
         default: "18000"
-      commit_interval_seconds:
-        description: "Ogni quanti secondi il bot fa commit+push della lista nera DURANTE la run (protezione da interruzioni) -- default 300 = 5 minuti"
-        required: false
-        default: "300"
-      liquidity_diagnostic:
-        description: "'si' = log dettagliato diagnostico sul conteggio transazioni (nodi ricevuti, scarti per tipo/data/stagione) per capire falsi 'mercato sottile'. 'no' = normale."
+      auction_live_mode:
+        description: "'si' = BID REALI ATTIVI (non ritirabili). 'no' = solo diagnostica, nessun bid reale."
         required: false
         default: "no"
-      target_matches:
-        description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-20)"
+      auction_diagnostic:
+        description: "Log extra di diagnostica, di default spento"
         required: false
-        default: "3"
-      autobuy_diagnostic:
-        description: "Log extra sul confronto in_season/classic per lega, di default spento"
+        default: "no"
+      test_only_zero_bid:
+        description: "TEST: valuta SOLO aste a 0 bid (currentPrice=minNextBid), scarta tutte le altre. Usare solo per test mirati."
         required: false
         default: "no"
       blacklisted_player_slugs:
-        description: "Slug giocatori da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
+        description: "Slug giocatori da aggiungere PERMANENTEMENTE alla blacklist aste (separati da virgola)"
         required: false
         default: ""
-      check_classic:
-        description: "Controlla anche gli annunci CLASSIC (tutti i campionati) -- vale per ENTRAMBI i rami, AutoBuy e MakeOffer, un solo interruttore condiviso"
-        required: false
-        default: "si"
-      min_recent_transactions:
-        description: "Transazioni minime (7gg) per non scartare il caso -- protezione mercato sottile"
-        required: false
-        default: "4"
-      min_transactions_30d:
-        description: "Transazioni minime (30gg) -- secondo layer di protezione liquidita' (il server mostra al massimo 5 transazioni totali per giocatore; questa soglia non puo' essere piu' bassa di min_recent_transactions, la finestra 30gg include sempre quella 7gg)"
-        required: false
-        default: "6"
-      min_listed_cards_for_purchase:
-        description: "Carte MINIME dello stesso giocatore attualmente IN VENDITA (annunci vivi, non storico) perche' il caso proceda -- protezione mercato poco popolato. MLS/K-League confrontano solo la stagione giusta (season/classic separate), altri campionati mescolano in_season+classic come sempre"
-        required: false
-        default: "3"
-      min_listed_cards_diagnostic:
-        description: "'si' = logga anche quando il controllo 'carte in vendita minime' PASSA (utile per verificare che il controllo giri su ogni candidato durante il test). 'no' = logga solo gli scarti, come tutti gli altri controlli."
-        required: false
-        default: "no"
-      blacklisted_manager_slugs:
-        description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
-        required: false
-        default: ""
-      blacklisted_league_slugs:
-        description: "Slug CAMPIONATI da aggiungere alla blacklist unita (separati da virgola, es. premiership-gb-sct) -- carte di questi campionati vengono ignorate completamente, default 15gg rinnovabile"
-        required: false
-        default: ""
-      league_blacklist_verbose_log:
-        description: "'si' = log dettagliato per OGNI carta scartata per campionato blacklistato (utile per il primo test). 'no' = filtro silenzioso."
-        required: false
-        default: "no"
-      autobuy_live_mode:
-        description: "'si' = ACQUISTO REALE AUTOMATICO (ramo AutoBuy). 'no' = solo diagnostica."
-        required: false
-        default: "si"
-      makeoffer_live_mode:
-        description: "'si' = OFFERTE REALI AUTOMATICHE (ramo MakeOffer). 'no' = solo diagnostica."
-        required: false
-        default: "si"
-      offer_duration_days:
-        description: "Durata dell'offerta MakeOffer in giorni interi, 1-7"
-        required: false
-        default: "1"
-      max_pending_offers:
-        description: "Tetto massimo di offerte MakeOffer pendenti create in questa esecuzione"
-        required: false
-        default: "20"
 permissions:
   contents: write
 concurrency:
-  group: sorare-bot-supremo
+  group: sorare-bot-supremo-aste
   cancel-in-progress: false
 jobs:
-  bot-supremo:
+  bot-supremo-aste:
     runs-on: ubuntu-latest
     timeout-minutes: 340
     steps:
@@ -123,7 +88,7 @@ jobs:
           npm install
       - run: pip install requests websocket-client curl_cffi playwright
       - run: playwright install --with-deps chromium
-      - name: Run Bot Supremo
+      - name: Run Bot Supremo Aste
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
@@ -131,50 +96,37 @@ jobs:
           SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
+          AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
-          AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1.50' }}
-          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
-          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '15' }}
-          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '25' }}
-          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '26' }}
+          AUCTION_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.auction_discount_percent || '30' }}
+          LAST_AUCTION_REFERENCE_WINDOW_HOURS: ${{ github.event.inputs.last_auction_reference_window_hours || '24' }}
+          AUCTION_COOLDOWN_HOURS: ${{ github.event.inputs.auction_cooldown_hours || '12' }}
+          MAX_BID_PER_AUCTION_EUR: ${{ github.event.inputs.max_bid_per_auction_eur || '10' }}
+          MAX_BIDS_PER_RUN: ${{ github.event.inputs.max_bids_per_run || '1' }}
+          CYCLE_PHASE_SECONDS: ${{ github.event.inputs.cycle_phase_seconds || '20' }}
+          CYCLE_PAUSE_SECONDS: ${{ github.event.inputs.cycle_pause_seconds || '20' }}
+          SCADENZA_TOP_N: ${{ github.event.inputs.scadenza_top_n || '5' }}
+          ALERT_FLUSH_INTERVAL_SECONDS: ${{ github.event.inputs.alert_flush_interval_seconds || '30' }}
+          REFERENCE_PRICE_CACHE_TTL_SECONDS: ${{ github.event.inputs.reference_price_cache_ttl_seconds || '300' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
-          COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
-          LIQUIDITY_DIAGNOSTIC: ${{ github.event.inputs.liquidity_diagnostic || 'no' }}
-          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '3' }}
-          AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
+          AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'no' }}
+          AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
+          TEST_ONLY_ZERO_BID: ${{ github.event.inputs.test_only_zero_bid || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
-          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
-          MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '4' }}
-          MIN_TRANSACTIONS_30D: ${{ github.event.inputs.min_transactions_30d || '6' }}
-          MIN_LISTED_CARDS_FOR_PURCHASE: ${{ github.event.inputs.min_listed_cards_for_purchase || '3' }}
-          MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
-          BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
-          BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
-          LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
-          AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'si' }}
-          MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
-          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '25' }}
-          OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
-          MAX_PENDING_OFFERS: ${{ github.event.inputs.max_pending_offers || '20' }}
         run: |
           set -o pipefail
-          export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
-          export MAKEOFFER_MAX_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MAX_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
-          export AUTOBUY_MARGIN_FRACTION=$(awk -v p="$AUTOBUY_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
-          export OFFER_DISCOUNT_FRACTION=$(awk -v p="$OFFER_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
-          python bot_supremo.py
-      - name: Commit lista nera unica (manager, giocatori, thin market, cooldown acquisti)
+          export AUCTION_DISCOUNT_FRACTION=$(awk -v p="$AUCTION_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          python bot_supremo_aste.py
+      - name: Commit lista nera aste (cooldown bid + blacklist manuale)
         if: always()
         run: |
-          if [ -z "$(git status --porcelain -- sorare_lista_nera.txt)" ]; then
-            echo "Nessuna modifica alla lista nera, niente da committare."
+          if [ -z "$(git status --porcelain -- sorare_lista_nera_aste.txt)" ]; then
+            echo "Nessuna modifica alla lista nera aste, niente da committare."
           else
-            git config user.name "bot-supremo"
-            git config user.email "bot-supremo@users.noreply.github.com"
-            git add sorare_lista_nera.txt
-            git commit -m "Bot Supremo: aggiorna lista nera unica"
-            git pull --rebase --autostash origin main
+            git config user.name "bot-supremo-aste"
+            git config user.email "bot-supremo-aste@users.noreply.github.com"
+            git add sorare_lista_nera_aste.txt
+            git commit -m "Bot Supremo Aste: aggiorna lista nera (cooldown bid)"
             git push
           fi
