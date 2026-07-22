@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T13:08:05.615785Z
-**Run totali:** 57
+**Data analisi:** 2026-07-22T13:10:07.320966Z
+**Run totali:** 58
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.18 EUR
-- **Trend mercato:** ➡️ STABLE (-0.7%)
-- **Sentiment:** 🟨 Quasi Fermo
+- **Prezzo medio MLS:** 7.16 EUR
+- **Trend mercato:** ➡️ STABLE (-0.3%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.7%)**
+**➡️ TREND GLOBALE: STABLE (-0.3%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — G. Guerra (Portland Timbers)**
@@ -54,7 +54,7 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
-Carte trovate: 8 | Prezzo medio: 7.65 EUR | Volatilità (σ): 8.47
+Carte trovate: 9 | Prezzo medio: 8.45 EUR | Volatilità (σ): 8.28
 
 **Los Angeles FC**
 Carte trovate: 9 | Prezzo medio: 10.82 EUR | Volatilità (σ): 12.19
@@ -72,7 +72,7 @@ Carte trovate: 16 | Prezzo medio: 2.54 EUR | Volatilità (σ): 2.08
 Carte trovate: 9 | Prezzo medio: 8.65 EUR | Volatilità (σ): 9.47
 
 **St. Louis City SC**
-Carte trovate: 16 | Prezzo medio: 2.57 EUR | Volatilità (σ): 2.37
+Carte trovate: 16 | Prezzo medio: 2.56 EUR | Volatilità (σ): 2.36
 
 **Chicago Fire FC**
 Carte trovate: 12 | Prezzo medio: 8.32 EUR | Volatilità (σ): 12.09
@@ -105,7 +105,7 @@ Carte trovate: 10 | Prezzo medio: 9.67 EUR | Volatilità (σ): 8.25
 Carte trovate: 9 | Prezzo medio: 4.09 EUR | Volatilità (σ): 4.38
 
 **LA Galaxy**
-Carte trovate: 8 | Prezzo medio: 4.36 EUR | Volatilità (σ): 3.35
+Carte trovate: 8 | Prezzo medio: 4.35 EUR | Volatilità (σ): 3.35
 
 **Colorado Rapids**
 Carte trovate: 10 | Prezzo medio: 1.94 EUR | Volatilità (σ): 2.78
@@ -126,7 +126,7 @@ Carte trovate: 11 | Prezzo medio: 3.19 EUR | Volatilità (σ): 3.94
 Carte trovate: 14 | Prezzo medio: 6.71 EUR | Volatilità (σ): 13.45
 
 **CF Montreal**
-Carte trovate: 7 | Prezzo medio: 2.80 EUR | Volatilità (σ): 2.47
+Carte trovate: 7 | Prezzo medio: 2.80 EUR | Volatilità (σ): 2.46
 
 **New York City FC**
 Carte trovate: 8 | Prezzo medio: 3.83 EUR | Volatilità (σ): 4.94
