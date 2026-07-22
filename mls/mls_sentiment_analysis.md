@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T15:54:28.953406Z
-**Run totali:** 83
+**Data analisi:** 2026-07-22T15:56:30.571438Z
+**Run totali:** 84
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.07 EUR
-- **Trend mercato:** ➡️ STABLE (-0.9%)
+- **Prezzo medio MLS:** 6.01 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.0%)
 - **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.9%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📉 TREND GLOBALE: DESCENDING (-1.0%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Alexander Bonetig (Portland Timbers)**
 Prezzo: **0.49 EUR** | Media: **2.15 EUR** | Sconto: **-77.2%**
@@ -63,19 +63,19 @@ Carte trovate: 11 | Prezzo medio: 9.97 EUR | Volatilità (σ): 11.17
 Carte trovate: 20 | Prezzo medio: 2.08 EUR | Volatilità (σ): 2.46
 
 **San Jose Earthquakes**
-Carte trovate: 13 | Prezzo medio: 3.86 EUR | Volatilità (σ): 4.69
+Carte trovate: 14 | Prezzo medio: 3.63 EUR | Volatilità (σ): 4.44
 
 **Columbus Crew**
 Carte trovate: 19 | Prezzo medio: 2.70 EUR | Volatilità (σ): 2.09
 
 **Charlotte FC**
-Carte trovate: 13 | Prezzo medio: 5.04 EUR | Volatilità (σ): 4.68
+Carte trovate: 14 | Prezzo medio: 4.72 EUR | Volatilità (σ): 4.65
 
 **St. Louis City SC**
 Carte trovate: 18 | Prezzo medio: 2.32 EUR | Volatilità (σ): 2.23
 
 **Chicago Fire FC**
-Carte trovate: 14 | Prezzo medio: 7.10 EUR | Volatilità (σ): 10.63
+Carte trovate: 16 | Prezzo medio: 6.42 EUR | Volatilità (σ): 10.07
 
 **Inter Miami CF**
 Carte trovate: 9 | Prezzo medio: 11.64 EUR | Volatilità (σ): 17.74
@@ -96,10 +96,10 @@ Carte trovate: 18 | Prezzo medio: 8.15 EUR | Volatilità (σ): 12.76
 Carte trovate: 10 | Prezzo medio: 2.52 EUR | Volatilità (σ): 2.99
 
 **San Diego FC**
-Carte trovate: 18 | Prezzo medio: 4.52 EUR | Volatilità (σ): 8.85
+Carte trovate: 19 | Prezzo medio: 4.33 EUR | Volatilità (σ): 8.64
 
 **Vancouver Whitecaps FC**
-Carte trovate: 11 | Prezzo medio: 8.82 EUR | Volatilità (σ): 8.20
+Carte trovate: 13 | Prezzo medio: 8.30 EUR | Volatilità (σ): 7.62
 
 **Philadelphia Union**
 Carte trovate: 13 | Prezzo medio: 4.68 EUR | Volatilità (σ): 5.90
@@ -117,22 +117,22 @@ Carte trovate: 12 | Prezzo medio: 2.89 EUR | Volatilità (σ): 2.94
 Carte trovate: 6 | Prezzo medio: 1.69 EUR | Volatilità (σ): 1.20
 
 **New England Revolution**
-Carte trovate: 15 | Prezzo medio: 6.60 EUR | Volatilità (σ): 14.21
+Carte trovate: 16 | Prezzo medio: 6.24 EUR | Volatilità (σ): 13.80
 
 **Portland Timbers**
 Carte trovate: 18 | Prezzo medio: 3.10 EUR | Volatilità (σ): 3.93
 
 **Houston Dynamo FC**
-Carte trovate: 16 | Prezzo medio: 6.03 EUR | Volatilità (σ): 12.66
+Carte trovate: 17 | Prezzo medio: 5.74 EUR | Volatilità (σ): 12.32
 
 **CF Montreal**
-Carte trovate: 13 | Prezzo medio: 1.91 EUR | Volatilità (σ): 1.78
+Carte trovate: 15 | Prezzo medio: 1.81 EUR | Volatilità (σ): 1.67
 
 **New York City FC**
 Carte trovate: 15 | Prezzo medio: 2.76 EUR | Volatilità (σ): 3.71
 
 **Toronto FC**
-Carte trovate: 12 | Prezzo medio: 2.40 EUR | Volatilità (σ): 2.14
+Carte trovate: 13 | Prezzo medio: 2.30 EUR | Volatilità (σ): 2.08
 
 **DC United**
 Carte trovate: 11 | Prezzo medio: 1.49 EUR | Volatilità (σ): 1.63
