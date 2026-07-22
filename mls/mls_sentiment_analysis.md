@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:26:29.966867Z
-**Run totali:** 122
+**Data analisi:** 2026-07-22T23:36:41.026480Z
+**Run totali:** 123
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
 - **Prezzo medio MLS:** 6.17 EUR
-- **Trend mercato:** ➡️ STABLE (+0.5%)
-- **Sentiment:** 🟩 Leggero Rialzo
+- **Trend mercato:** ➡️ STABLE (-0.0%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.5%)**
+**➡️ TREND GLOBALE: STABLE (-0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
@@ -24,21 +24,21 @@ Liquidità: **4 occorrenze** | Volatilità: 1.66
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 **🥉 FORTE OPPORTUNITÀ — Japhet Sery Larsen (Philadelphia Union)**
-Prezzo: **0.84 EUR** | Media: **4.31 EUR** | Sconto: **-80.5%**
-Liquidità: **3 occorrenze** | Volatilità: 3.00
+Prezzo: **0.84 EUR** | Media: **4.74 EUR** | Sconto: **-82.2%**
+Liquidità: **4 occorrenze** | Volatilità: 2.60
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬆️ TOP 10 RIALZI (Stanno CALANDO di prezzo)
 1. Zackary Steffen (Colorado Rapids) — **-84.9%** vs media (0.99 EUR vs 6.55 EUR)
 2. Alexander Bonetig (Portland Timbers) — **-83.6%** vs media (0.49 EUR vs 2.98 EUR)
-3. Japhet Sery Larsen (Philadelphia Union) — **-80.5%** vs media (0.84 EUR vs 4.31 EUR)
+3. Japhet Sery Larsen (Philadelphia Union) — **-82.2%** vs media (0.84 EUR vs 4.74 EUR)
 4. Aníbal Godoy (San Diego FC) — **-79.3%** vs media (0.98 EUR vs 4.72 EUR)
 5. Joshua Torquato (FC Dallas) — **-79.3%** vs media (0.35 EUR vs 1.69 EUR)
 6. Nick Fernandez (San Jose Earthquakes) — **-77.8%** vs media (1.92 EUR vs 8.65 EUR)
 7. Allan Oyirwoth (New England Revolution) — **-76.4%** vs media (0.50 EUR vs 2.12 EUR)
 8. Robert Voloder (New York Red Bulls) — **-75.8%** vs media (0.51 EUR vs 2.11 EUR)
-9. G. Guerra (Portland Timbers) — **-71.4%** vs media (0.50 EUR vs 1.75 EUR)
-10. Rocco Ríos Novo  (Inter Miami CF) — **-71.2%** vs media (1.69 EUR vs 5.85 EUR)
+9. Tai Baribo (DC United) — **-72.9%** vs media (2.36 EUR vs 8.70 EUR)
+10. G. Guerra (Portland Timbers) — **-71.4%** vs media (0.50 EUR vs 1.75 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Stephen Afrifa (Sporting Kansas City ) — **+0.0%** vs media (1.25 EUR vs 1.25 EUR)
@@ -93,7 +93,7 @@ Carte trovate: 17 | Prezzo medio: 2.81 EUR | Volatilità (σ): 3.94
 Carte trovate: 22 | Prezzo medio: 7.82 EUR | Volatilità (σ): 11.76
 
 **Austin FC**
-Carte trovate: 15 | Prezzo medio: 2.61 EUR | Volatilità (σ): 3.27
+Carte trovate: 16 | Prezzo medio: 2.53 EUR | Volatilità (σ): 3.18
 
 **San Diego FC**
 Carte trovate: 22 | Prezzo medio: 4.80 EUR | Volatilità (σ): 8.50
