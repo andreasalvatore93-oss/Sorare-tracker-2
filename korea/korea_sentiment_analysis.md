@@ -1,16 +1,16 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T18:23:40.020067Z
-**Run totali:** 14
+**Data analisi:** 2026-07-22T18:38:52.820334Z
+**Run totali:** 15
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 3.40 EUR
-- **Trend mercato:** 📈 STRONG_ASCENDING (+3.9%)
-- **Sentiment:** 🟢 In Crescita
+- **Prezzo medio K League 1:** 3.44 EUR
+- **Trend mercato:** 📈 ASCENDING (+1.2%)
+- **Sentiment:** 🟩 Leggero Rialzo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: STRONG_ASCENDING (+3.9%)**
+**📈 TREND GLOBALE: ASCENDING (+1.2%)**
 I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
 
 **🥇 MOD. OPPORTUNITÀ — Shin Kwang-Hoon (Pohang Steelers FC)**
@@ -19,23 +19,23 @@ Liquidità: **2 occorrenze** | Volatilità: 0.22
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 **🥈 MOD. OPPORTUNITÀ — Jo Hyeon-Woo (Ulsan Hyundai Horang-i)**
-Prezzo: **3.09 EUR** | Media: **3.38 EUR** | Sconto: **-8.7%**
-Liquidità: **6 occorrenze** | Volatilità: 0.23
+Prezzo: **3.09 EUR** | Media: **3.39 EUR** | Sconto: **-8.7%**
+Liquidità: **8 occorrenze** | Volatilità: 0.19
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
-**🥉 MOD. OPPORTUNITÀ — Choe Byung-Chan (Gangwon FC)**
-Prezzo: **1.90 EUR** | Media: **2.07 EUR** | Sconto: **-8.4%**
-Liquidità: **5 occorrenze** | Volatilità: 0.20
+**🥉 MOD. OPPORTUNITÀ — Oh Jae-Hyeok (Jeju SK FC)**
+Prezzo: **2.20 EUR** | Media: **2.41 EUR** | Sconto: **-8.7%**
+Liquidità: **4 occorrenze** | Volatilità: 0.24
 Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬆️ TOP 10 RIALZI (Stanno CALANDO di prezzo)
 1. Shin Kwang-Hoon (Pohang Steelers FC) — **-13.9%** vs media (0.96 EUR vs 1.11 EUR)
-2. Jo Hyeon-Woo (Ulsan Hyundai Horang-i) — **-8.7%** vs media (3.09 EUR vs 3.38 EUR)
-3. Choe Byung-Chan (Gangwon FC) — **-8.4%** vs media (1.90 EUR vs 2.07 EUR)
-4. Lee Ho-Jae (Pohang Steelers FC) — **-7.9%** vs media (4.00 EUR vs 4.35 EUR)
-5. Lee Ju-Hyun (Jeonbuk Hyundai Motors FC) — **-7.8%** vs media (1.60 EUR vs 1.74 EUR)
-6. Oh Jae-Hyeok (Jeju SK FC) — **-7.7%** vs media (2.29 EUR vs 2.48 EUR)
-7. Lee Dong-Gyeong (Ulsan Hyundai Horang-i) — **-4.1%** vs media (9.40 EUR vs 9.80 EUR)
+2. Jo Hyeon-Woo (Ulsan Hyundai Horang-i) — **-8.7%** vs media (3.09 EUR vs 3.39 EUR)
+3. Oh Jae-Hyeok (Jeju SK FC) — **-8.7%** vs media (2.20 EUR vs 2.41 EUR)
+4. Choe Byung-Chan (Gangwon FC) — **-8.4%** vs media (1.90 EUR vs 2.07 EUR)
+5. Lee Ho-Jae (Pohang Steelers FC) — **-7.9%** vs media (4.00 EUR vs 4.35 EUR)
+6. Lee Ju-Hyun (Jeonbuk Hyundai Motors FC) — **-7.8%** vs media (1.60 EUR vs 1.74 EUR)
+7. Lee Dong-Gyeong (Ulsan Hyundai Horang-i) — **-4.8%** vs media (9.40 EUR vs 9.88 EUR)
 8. Maeng Seong-Ung (Jeonbuk Hyundai Motors FC) — **-3.2%** vs media (1.68 EUR vs 1.73 EUR)
 9. Marcão (Ulsan Hyundai Horang-i) — **-2.3%** vs media (1.52 EUR vs 1.56 EUR)
 10. Park Cheol-Woo (Gimcheon Sangmu) — **-2.0%** vs media (1.46 EUR vs 1.49 EUR)
@@ -72,10 +72,10 @@ Carte trovate: 5 | Prezzo medio: 7.50 EUR | Volatilità (σ): 5.91
 Carte trovate: 6 | Prezzo medio: 1.58 EUR | Volatilità (σ): 0.94
 
 **Jeju SK FC**
-Carte trovate: 6 | Prezzo medio: 1.78 EUR | Volatilità (σ): 0.96
+Carte trovate: 6 | Prezzo medio: 1.76 EUR | Volatilità (σ): 0.95
 
 **FC Seoul**
-Carte trovate: 2 | Prezzo medio: 6.38 EUR | Volatilità (σ): 2.06
+Carte trovate: 3 | Prezzo medio: 4.92 EUR | Volatilità (σ): 2.92
 
 **Daejeon Citizen FC**
 Carte trovate: 4 | Prezzo medio: 2.27 EUR | Volatilità (σ): 1.65
