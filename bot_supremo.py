@@ -4,6 +4,7 @@ import random
 import time
 import datetime
 import threading
+from zoneinfo import ZoneInfo
 
 import requests
 import websocket  # pip install websocket-client
@@ -284,7 +285,12 @@ def _lista_nera_leggi_righe():
         if tipo_corrente is None:
             log(f"[lista nera] riga {n} fuori da qualunque sezione, ignorata: {raw!r}")
             continue
-        parts = [p.strip() for p in stripped.split(',')]
+        # FIX 22/07 (leggibilita' ora locale): un eventuale commento inline '# scade: ...'
+        # (aggiunto in scrittura per mostrare l'orario in ora di Roma, puramente
+        # informativo) va scartato PRIMA di dividere sulla virgola -- altrimenti
+        # finirebbe attaccato al valore ISO/durata e ne romperebbe il parsing.
+        stripped_dati = stripped.split('#', 1)[0].strip()
+        parts = [p.strip() for p in stripped_dati.split(',')]
         if len(parts) != 2:
             log(f"[lista nera] riga {n} malformata (attesi 2 campi slug,durata), ignorata: {raw!r}")
             continue
@@ -353,8 +359,12 @@ def _lista_nera_scrivi_righe(righe):
         f.write("# giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni\n")
         f.write("# scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').\n")
         f.write("# Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora\n")
-        f.write("# ASSOLUTA di scadenza (fix 22/07: una durata testuale si 'rinnovava' da sola ad\n")
-        f.write("# ogni lettura se il file restava statico tra le run). NON pensate per modifica a\n")
+        f.write("# ASSOLUTA di scadenza in UTC (fix 22/07: una durata testuale si 'rinnovava' da\n")
+        f.write("# sola ad ogni lettura se il file restava statico tra le run). Dopo la virgola, un\n")
+        f.write("# commento '# scade: ...' mostra lo stesso istante in ora di Roma (Europe/Rome, si\n")
+        f.write("# adatta automaticamente a legale/solare) solo per comodita' di lettura -- il bot\n")
+        f.write("# usa SEMPRE e SOLO il valore ISO prima della virgola/cancelletto, il commento e'\n")
+        f.write("# puramente informativo e viene ignorato in lettura. NON pensate per modifica a\n")
         f.write("# mano, gestite automaticamente dal bot. Per rimuovere un blocco in ogni sezione,\n")
         f.write("# cancella semplicemente la riga.\n\n")
         for tipo in _LISTA_NERA_ORDINE_SEZIONI:
@@ -365,7 +375,9 @@ def _lista_nera_scrivi_righe(righe):
                 f.write("# (vuoto)\n")
             for r in righe_tipo:
                 if tipo in ('thin_market', 'cooldown_acquisto'):
-                    f.write(f"{r['slug']},{r['scadenza'].isoformat()}\n")
+                    scadenza_roma = r['scadenza'].astimezone(ZoneInfo('Europe/Rome'))
+                    f.write(f"{r['slug']},{r['scadenza'].isoformat()}  "
+                            f"# scade: {scadenza_roma.strftime('%d/%m/%Y %H:%M')} ora di Roma\n")
                 else:
                     delta = (r['scadenza'] - ora).total_seconds()
                     f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
@@ -743,13 +755,6 @@ _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
 
-# FIX 22/07 (richiesta esplicita utente, stesso fix gia' fatto sul bot aste): notifica
-# Telegram UNA SOLA volta per finestra di RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS (default
-# 5 minuti), non ad ogni singolo 429 -- durante una raffica di retry arriverebbero
-# altrimenti decine di messaggi per lo stesso evento.
-RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS = float(os.environ.get('RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS', '300'))
-_last_429_notify_ts = [0.0]
-
 
 def _graphql_throttle():
     with _graphql_throttle_lock:
@@ -947,15 +952,6 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
             r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             _graphql_last_429_ts[0] = time.time()
-            now = time.time()
-            if now - _last_429_notify_ts[0] >= RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS:
-                _last_429_notify_ts[0] = now
-                send_telegram_msg(
-                    "\u26A0\uFE0F <b>Bot Supremo -- rate limit (HTTP 429)</b>\n"
-                    "Sorare sta rifiutando richieste per troppo carico -- il bot sta "
-                    "rallentando automaticamente. Continua da solo, nessuna azione "
-                    "richiesta."
-                )
             wait_seconds = min((2 ** attempt) * 2, 8.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
                 f"attendo {wait_seconds:.1f}s...")
@@ -1322,7 +1318,7 @@ def get_last_transaction_price(player_slug, is_in_season, league_slug, eth_rate,
 # separazione per stagione del resto della logica: MLS/K-League confrontano SOLO la
 # stagione giusta (season vs season, classic vs classic), gli altri campionati
 # mescolano in_season+classic come sempre.
-MIN_LISTED_CARDS_FOR_PURCHASE = int(os.environ.get('MIN_LISTED_CARDS_FOR_PURCHASE', '3'))
+MIN_LISTED_CARDS_FOR_PURCHASE = int(os.environ.get('MIN_LISTED_CARDS_FOR_PURCHASE', '4'))
 MIN_LISTED_CARDS_DIAGNOSTIC = os.environ.get('MIN_LISTED_CARDS_DIAGNOSTIC', 'no').strip().lower() == 'si'
 
 
