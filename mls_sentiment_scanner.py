@@ -762,7 +762,7 @@ PRICE_TIERS = [
     (0, 2, 'Scarso', '#8B0000'),
     (2, 5, 'Starter', '#FF4500'),
     (5, 10, 'Buono', '#FFA500'),
-    (10, 20, 'Ottimo', '#FFD700'),
+    (10, 20, 'Ottimo', '#DAA520'),
     (20, 30, 'Eccellente', '#9ACD32'),
     (30, float('inf'), 'Leggendario', '#00C853'),
 ]
@@ -980,7 +980,8 @@ def generate_html_chart(data):
         </div>
         
         <div class="chart-wrapper">
-            <div class="chart-title">Prezzo Medio per Squadra</div>
+            <div class="chart-title">💰 Prezzo Medio per Squadra</div>
+            <div class="chart-subtitle">Prezzo medio delle carte in_season trovate per ogni squadra MLS — utile per confrontare quali squadre hanno giocatori mediamente più costosi. Passa il mouse su una barra per vedere il nome della squadra</div>
             <canvas id="teamChart"></canvas>
         </div>
     </div>
@@ -1044,9 +1045,40 @@ def generate_html_chart(data):
         });
         
         // Grafico fasce di prezzo: sconto medio per fascia, colore crescente rosso->verde
-        const tierLabels = tierData.map(t => t.name + ' (' + t.range + ' EUR)');
-        const tierValues = tierData.map(t => t.avg_change);
-        const tierColors = tierData.map(t => t.color);
+        // Ordine invertito: dalla fascia più bassa (Scarso) in basso, alla più alta (Leggendario) in alto
+        const tierDataReversed = [...tierData].reverse();
+        const tierLabels = tierDataReversed.map(t => t.name + ' (' + t.range + ' EUR)');
+        const tierValues = tierDataReversed.map(t => t.avg_change);
+        const tierColors = tierDataReversed.map(t => t.color);
+        
+        // Plugin custom per scrivere il valore % direttamente sopra/dentro ogni barra
+        const dataLabelsPlugin = {
+            id: 'dataLabelsPlugin',
+            afterDatasetsDraw(chart) {
+                const {ctx} = chart;
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    meta.data.forEach((bar, index) => {
+                        const value = dataset.data[index];
+                        const label = (value > 0 ? '+' : '') + value.toFixed(1) + '%';
+                        ctx.save();
+                        ctx.fillStyle = textColor;
+                        ctx.font = 'bold 12px -apple-system, sans-serif';
+                        ctx.textBaseline = 'middle';
+                        if (chart.options.indexAxis === 'y') {
+                            ctx.textAlign = value < 0 ? 'right' : 'left';
+                            const xPos = value < 0 ? bar.x - 8 : bar.x + 8;
+                            ctx.fillText(label, xPos, bar.y);
+                        } else {
+                            ctx.textAlign = 'center';
+                            const yPos = value < 0 ? bar.y + 16 : bar.y - 8;
+                            ctx.fillText(label, bar.x, yPos);
+                        }
+                        ctx.restore();
+                    });
+                });
+            }
+        };
         
         const ctxTier = document.getElementById('tierChart').getContext('2d');
         new Chart(ctxTier, {
@@ -1060,23 +1092,26 @@ def generate_html_chart(data):
                     borderRadius: 4,
                 }]
             },
+            plugins: [dataLabelsPlugin],
             options: {
+                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {padding: {right: 40, left: 10}},
                 plugins: {
                     legend: {display: false},
                     tooltip: {
                         callbacks: {
                             label: function(ctx) {
-                                const t = tierData[ctx.dataIndex];
+                                const t = tierDataReversed[ctx.dataIndex];
                                 return t.avg_change.toFixed(1) + '% medio — ' + t.count + ' carte in questa fascia';
                             }
                         }
                     }
                 },
                 scales: {
-                    y: {grid: {color: gridColor}, title: {display: true, text: '% sconto medio dalla media storica'}},
-                    x: {grid: {display: false}},
+                    x: {grid: {color: gridColor}, title: {display: true, text: '% sconto medio dalla media storica (negativo = mercato in calo in questa fascia)'}},
+                    y: {grid: {display: false}},
                 },
             },
         });
@@ -1090,9 +1125,11 @@ def generate_html_chart(data):
             legendDiv.appendChild(badge);
         });
         
-        // Grafico prezzo medio per squadra
-        const teamLabels = Object.keys(teamsData).sort();
-        const teamAvgs = teamLabels.map(t => teamsData[t].avg.toFixed(2));
+        // Grafico prezzo medio per squadra, ordinato dal più caro al più economico
+        const teamEntries = Object.entries(teamsData).sort((a, b) => b[1].avg - a[1].avg);
+        const teamLabels = teamEntries.map(([name]) => name);
+        const teamAvgs = teamEntries.map(([, v]) => v.avg.toFixed(2));
+        const teamCounts = teamEntries.map(([, v]) => v.count);
         
         const ctx1 = document.getElementById('teamChart').getContext('2d');
         new Chart(ctx1, {
@@ -1100,7 +1137,7 @@ def generate_html_chart(data):
             data: {
                 labels: teamLabels,
                 datasets: [{
-                    label: 'Average Price (EUR)',
+                    label: 'Prezzo medio (EUR)',
                     data: teamAvgs,
                     backgroundColor: blueColor,
                     borderRadius: 4,
@@ -1111,10 +1148,29 @@ def generate_html_chart(data):
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {display: false},
+                    tooltip: {
+                        callbacks: {
+                            title: function(ctx) {
+                                return ctx[0].label;
+                            },
+                            label: function(ctx) {
+                                const count = teamCounts[ctx.dataIndex];
+                                return 'Prezzo medio: ' + ctx.parsed.y.toFixed(2) + ' EUR (' + count + ' carte trovate)';
+                            }
+                        }
+                    }
                 },
                 scales: {
-                    y: {beginAtZero: true, grid: {color: gridColor}},
-                    x: {grid: {display: false}},
+                    y: {beginAtZero: true, grid: {color: gridColor}, title: {display: true, text: 'Prezzo medio (EUR)'}},
+                    x: {
+                        grid: {display: false},
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 90,
+                            minRotation: 60,
+                            font: {size: 10}
+                        }
+                    },
                 },
             },
         });
