@@ -1362,6 +1362,22 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
         _LAST_PRICE_CHECK_DISABLED = True
         return None, None
     nodes = ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices', {}).get('nodes') or []
+
+    # DIAGNOSTICA TEMPORANEA (22/07, richiesta esplicita utente -- indagine bug ordine
+    # ultimo/penultimo, caso reale Viktor Gyökeres): stampa l'ordine GREZZO dei nodi
+    # esattamente come arrivano dal server, PRIMA di qualunque elaborazione/filtro,
+    # per confermare se 'last: n' li restituisce dal piu' recente al piu' vecchio o
+    # viceversa. RIMUOVERE questo blocco (e SOLO questo blocco) una volta confermato
+    # l'ordine e applicato il fix definitivo -- non e' dietro un flag/env var di
+    # proposito, va tolto a mano quando l'indagine e' conclusa.
+    if nodes:
+        diag_righe = []
+        for i, n_diag in enumerate(nodes, start=1):
+            p_diag = eur_price_from_amounts(n_diag.get('amounts'), eth_rate)
+            diag_righe.append(f"[{i}] data={n_diag.get('date')} prezzo={p_diag}")
+        log(f"[diagnostica ordine transazioni] {player_slug}: nodi ricevuti da 'last: {n}' "
+            f"nell'ordine esatto del server -- {', '.join(diag_righe)}")
+
     excluded_league = is_asia_americas_excluded_league(league_slug)
     prezzi_trovati = []
     for node in nodes:
@@ -2635,6 +2651,12 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             prices = [(price_eur, card_slug, seller_slug)] + [p for p in prices if p[1] != card_slug]
         else:
             categoria = "in_season" if excluded_league else "in_season/classic"
+            if not (AUTOBUY_MIN_PRICE_EUR <= true_min_price <= AUTOBUY_MAX_PRICE_EUR):
+                log(f"{player_name}: scarto -- il vero minimo ({true_min_price:.2f}EUR, carta "
+                    f"{true_min_card_slug}) e' fuori dal range prezzo consentito "
+                    f"({AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR), 'trigger su "
+                    f"minimo non allineato' non si applica")
+                return False
             trigger_su_minimo_non_allineato = True
             if MIN_NON_TRIGGER_LOG:
                 log(f"[trigger su minimo non allineato] {player_name}: annuncio a "
