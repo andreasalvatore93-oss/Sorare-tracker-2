@@ -550,6 +550,7 @@ CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', '
 # SOLO count_recent_transactions per questo slug (con log diagnostico forzato) e
 # termina subito -- non tocca browser/listener/blacklist/nient'altro del bot normale.
 DIAGNOSTIC_PLAYER_SLUG = os.environ.get('DIAGNOSTIC_PLAYER_SLUG', '').strip()
+DIAGNOSTIC_LEAGUE_SLUG = os.environ.get('DIAGNOSTIC_LEAGUE_SLUG', '').strip()
 
 # Parametri MakeOffer (ramo offerta scontata)
 OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'))
@@ -1212,7 +1213,7 @@ TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS'
 LIQUIDITY_DIAGNOSTIC = os.environ.get('LIQUIDITY_DIAGNOSTIC', 'no').strip().lower() == 'si'
 
 
-def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
+def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None, force_log=False):
     """Fattorizzata da count_recent_transactions: conta le transazioni valide (short/long
     window) da una lista di nodi tokenPrices, qualunque sia la query che li ha prodotti.
 
@@ -1227,7 +1228,14 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
     da ciascun filtro (season_filter, is_countable, data non parsabile, fuori finestra
     30gg) -- permette di capire SENZA ambiguita' se il problema e' il filtro is_countable
     (deal.__typename non previsto), la finestra data, o il numero di nodi che il server
-    restituisce per quella query (possibile troncamento lato server, mai verificato)."""
+    restituisce per quella query (possibile troncamento lato server, mai verificato).
+
+    force_log (22/07, seconda diagnostica -- permanente, non opt-in): se True, stampa
+    lo stesso identico blocco diagnostico indipendentemente da LIQUIDITY_DIAGNOSTIC.
+    Usato da evaluate_event proprio nel momento in cui una carta rischia di essere
+    scartata per mercato sottile, cosi' la PROSSIMA volta che succede dal vivo il log
+    del run contiene gia' tutto il dettaglio necessario, senza dover rilanciare un
+    test isolato a posteriori."""
     now = datetime.datetime.now(datetime.timezone.utc)
     cutoff_short = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
     cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
@@ -1236,7 +1244,8 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
     diag_totale = len(nodes)
     diag_scartati_stagione = 0
     diag_scartati_tipo = 0
-    diag_typename_visti = {} if LIQUIDITY_DIAGNOSTIC else None
+    _diag_on = LIQUIDITY_DIAGNOSTIC or force_log
+    diag_typename_visti = {} if _diag_on else None
     diag_scartati_data = 0
     diag_scartati_finestra = 0
     for n in nodes:
@@ -1247,7 +1256,7 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
                 continue
         deal = n.get('deal') or {}
         deal_typename = deal.get('__typename')
-        if LIQUIDITY_DIAGNOSTIC:
+        if _diag_on:
             diag_typename_visti[str(deal_typename)] = diag_typename_visti.get(str(deal_typename), 0) + 1
         is_countable = bool(deal.get('type')) or deal_typename in ('TokenAuction', 'TokenPrimaryOffer')
         if not is_countable:
@@ -1265,9 +1274,9 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None):
                 count_short += 1
         else:
             diag_scartati_finestra += 1
-    if LIQUIDITY_DIAGNOSTIC:
-        log(f"[diagnostica liquidita'] {player_slug or '?'}: nodi totali ricevuti dal "
-            f"server={diag_totale}, scartati per stagione={diag_scartati_stagione}, "
+    if _diag_on:
+        log(f"[diagnostica liquidita'] {player_slug or '?'}: season_filter={season_filter}, "
+            f"nodi totali ricevuti dal server={diag_totale}, scartati per stagione={diag_scartati_stagione}, "
             f"scartati per tipo deal (is_countable=False)={diag_scartati_tipo}, "
             f"tipi __typename visti={diag_typename_visti}, "
             f"scartati per data non parsabile={diag_scartati_data}, "
@@ -1324,7 +1333,7 @@ def _fetch_paginated_transaction_nodes(player_slug):
     return all_nodes
 
 
-def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
+def count_recent_transactions(player_slug, is_in_season=True, league_slug=None, force_diagnostic=False):
     """Ritorna una tupla (count_7d, count_30d): numero di transazioni di player_slug
     negli ultimi RECENT_TRANSACTIONS_WINDOW_DAYS e TRANSACTIONS_WINDOW_30D_DAYS giorni.
 
@@ -1336,16 +1345,27 @@ def count_recent_transactions(player_slug, is_in_season=True, league_slug=None):
     (in_season+classic mescolate), coerente col resto della logica di calcolo
     minimo/margine per questi campionati.
 
+    force_diagnostic (22/07, seconda diagnostica -- permanente): se True, forza il
+    log dettagliato indipendentemente da LIQUIDITY_DIAGNOSTIC, e stampa anche i
+    parametri esatti con cui e' stata chiamata (is_in_season, league_slug,
+    excluded_league/season_filter risultante) -- evita di dover indovinare a
+    posteriori con quali parametri il bot ha valutato un certo scarto.
+
     Ritorna (None, None) se la query fallisce. Fail-safe: il chiamante NON deve
     bloccare l'acquisto solo per questo."""
     excluded_league = is_asia_americas_excluded_league(league_slug)
     season_filter = is_in_season if excluded_league else None
+    if force_diagnostic:
+        log(f"[diagnostica liquidita'] {player_slug}: chiamata con is_in_season={is_in_season}, "
+            f"league_slug={league_slug!r}, excluded_league(MLS/K-League)={excluded_league}, "
+            f"season_filter effettivo={season_filter}")
     try:
         nodes = _fetch_paginated_transaction_nodes(player_slug)
     except Exception as e:
         log(f"[liquidita'] eccezione per {player_slug}: {e}")
         return None, None
-    return _count_transactions_from_nodes(nodes, season_filter=season_filter, player_slug=player_slug)
+    return _count_transactions_from_nodes(nodes, season_filter=season_filter, player_slug=player_slug,
+                                           force_log=force_diagnostic)
 
 
 EXCHANGE_RATE_QUERY = """
@@ -2374,7 +2394,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
         return False
 
-    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season, league_slug)
+    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season, league_slug, force_diagnostic=True)
     if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
@@ -2841,16 +2861,15 @@ def _periodic_commit_loop():
         _commit_lista_nera_se_serve()
 
 
-def run_diagnostic_player_check(player_slug):
+def run_diagnostic_player_check(player_slug, league_slug=None):
     """Modalita' isolata (22/07): verifica in pochi secondi il conteggio transazioni
-    di UN giocatore specifico, senza passare da listener/mercato/blacklist. Forza il
-    log diagnostico completo (tipi __typename visti, scarti per filtro) indipendentemente
-    da LIQUIDITY_DIAGNOSTIC nell'env, cosi' basta valorizzare DIAGNOSTIC_PLAYER_SLUG per
+    di UN giocatore specifico, senza passare da listener/mercato/blacklist. Usa
+    force_diagnostic=True per ottenere il log dettagliato indipendentemente da
+    LIQUIDITY_DIAGNOSTIC nell'env, cosi' basta valorizzare DIAGNOSTIC_PLAYER_SLUG per
     ottenere il dettaglio senza dover cambiare altri input del workflow."""
-    global LIQUIDITY_DIAGNOSTIC
     log(f"[diagnostica isolata] avvio verifica transazioni per: {player_slug}")
-    LIQUIDITY_DIAGNOSTIC = True
-    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season=True, league_slug=None)
+    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season=True, league_slug=league_slug,
+                                                      force_diagnostic=True)
     log(f"[diagnostica isolata] RISULTATO per {player_slug}: count_7d={count_7d}, "
         f"count_30d={count_30d} (soglie attuali: 7gg>={MIN_RECENT_TRANSACTIONS}, "
         f"30gg>={MIN_TRANSACTIONS_30D})")
@@ -2859,7 +2878,7 @@ def run_diagnostic_player_check(player_slug):
 
 def main():
     if DIAGNOSTIC_PLAYER_SLUG:
-        run_diagnostic_player_check(DIAGNOSTIC_PLAYER_SLUG)
+        run_diagnostic_player_check(DIAGNOSTIC_PLAYER_SLUG, DIAGNOSTIC_LEAGUE_SLUG or None)
         return
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
