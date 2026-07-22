@@ -38,6 +38,10 @@ on:
         description: "'si' = log dettagliato diagnostico sul conteggio transazioni (nodi ricevuti, scarti per tipo/data/stagione) per capire falsi 'mercato sottile'. 'no' = normale."
         required: false
         default: "no"
+      rate_limit_notify_cooldown_seconds:
+        description: "Ogni quanti secondi (minimo) notificare su Telegram un HTTP 429 -- una raffica di piu' 429 nella stessa finestra manda UN SOLO avviso"
+        required: false
+        default: "300"
       target_matches:
         description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-20)"
         required: false
@@ -142,6 +146,7 @@ jobs:
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
           LIQUIDITY_DIAGNOSTIC: ${{ github.event.inputs.liquidity_diagnostic || 'no' }}
+          RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS: ${{ github.event.inputs.rate_limit_notify_cooldown_seconds || '300' }}
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '3' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
