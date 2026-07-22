@@ -355,29 +355,45 @@ TEST_ONLY_ZERO_BID = os.environ.get('TEST_ONLY_ZERO_BID', 'no').strip().lower() 
 # sono problemi non perdo molti soldi"): default abbassato da 20 a 10 EUR.
 MAX_BID_PER_AUCTION_EUR = float(os.environ.get('MAX_BID_PER_AUCTION_EUR', '10'))
 
+# FIX 22/07 v8 (richiesta esplicita utente, "vorrei farli girare insieme"): il rate
+# limit di Sorare e' probabilmente per ACCOUNT (stesso cookie), non per processo --
+# lanciare aste insieme ad altri bot (o essere loggati nel browser) SOMMA il carico
+# sullo stesso budget condiviso, indipendentemente da quanto ciascun processo vada
+# piano per conto suo. SHARED_LOAD (default 'si', dato che l'utente lancia tutto a
+# mano e potrebbe dimenticarsi di attivarlo) rallenta PREVENTIVAMENTE throttle e
+# tetto per fase invece di aspettare il primo 429 -- se aste gira da sola, l'unico
+# effetto e' un ciclo leggermente piu' lento (nessun errore, nessuna funzionalita'
+# persa). Definito qui, PRIMA di tutti i parametri che ne dipendono.
+SHARED_LOAD = os.environ.get('SHARED_LOAD', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+
 # FIX 21/07 (richiesta esplicita utente, "voglio ascoltare anche aste a 0 bid gia'
 # aperte, aperture in tempo reale, e le aste in scadenza"): due fonti di aste che
 # alimenta lo STESSO motore di valutazione (evaluate_auction).
 # FIX 21/07 v5 (richiesta esplicita utente, "trova un modo per non perderti nessuna
 # asta rilevante, senza appesantire, senza troppe notifiche"): rimosso il tetto di
-# valutazione dalle fasi NUOVE e ZEROBID -- sono le due fasi che garantiscono la
-# COPERTURA completa della whitelist, un tetto li' significava accumulare un arretrato
-# che poteva far perdere aste vere (bid altrui nel frattempo, o scadenza prima del
-# turno). SCADENZA_TOP_N resta invece un tetto voluto SOLO per la fase SCADENZA, che e'
-# un "ultima chance" per le aste piu' urgenti, non il meccanismo di copertura primario.
+# valutazione dalle fasi NUOVE e ZEROBID.
+# FIX 22/07 v8 (richiesta esplicita utente, dopo aver visto un 429 con l'account
+# occupato anche altrove: "rallenta aste"): tetto REINTRODOTTO su NUOVE/ZEROBID, ma
+# molto piu' alto di quello vecchio (5) -- abbastanza grande da coprire quasi sempre
+# tutto il mercato whitelist in un solo giro (osservato dal vivo: ~1177 aste whitelist
+# in un momento di punta), con un limite vero sul caso peggiore. Le eccedenti (rare)
+# slittano al ciclo successivo, stesso principio gia' in uso per SCADENZA_TOP_N.
+# Dimezzato quando SHARED_LOAD e' attivo.
+PHASE_MAX_CANDIDATES = int(os.environ.get('PHASE_MAX_CANDIDATES', '60' if SHARED_LOAD else '120'))
+
 # Per evitare il "delirio di notifiche" anche quando MOLTE aste sono appetibili insieme,
 # le notifiche Telegram non partono piu' una per asta: si accorpano in UN SOLO messaggio
 # per fase (vedi flush_phase_alerts), quindi al massimo 3 messaggi per ciclo completo,
 # indipendentemente da quante occasioni vengono trovate.
-#   FASE 1 "NUOVE": scan completo whitelist, valuta TUTTE le aste con id MAI visto
-#     prima in questa run -- cattura le aperture appena immesse sul mercato, nessuna
-#     esclusa.
+#   FASE 1 "NUOVE": scan completo whitelist, valuta le aste con id MAI visto prima in
+#     questa run -- cattura le aperture appena immesse sul mercato, fino a
+#     PHASE_MAX_CANDIDATES per giro (le eccedenti al prossimo ciclo).
 #   pausa CYCLE_PAUSE_SECONDS
-#   FASE 2 "ZEROBID": stessa scansione completa, valuta TUTTE le aste con bidsCount==0
-#     (nuove o vecchie che siano, non solo quelle appena viste in FASE 1).
+#   FASE 2 "ZEROBID": stessa scansione completa, valuta le aste con bidsCount==0
+#     (nuove o vecchie che siano), fino a PHASE_MAX_CANDIDATES per giro.
 #   pausa CYCLE_PAUSE_SECONDS
 #   FASE 3 "SCADENZA": stessa scansione completa, ordinata per scadenza piu' vicina,
-#     valutate solo le prime SCADENZA_TOP_N (default 5) -- qui il tetto e' voluto.
+#     valutate solo le prime SCADENZA_TOP_N (default 5) -- qui il tetto e' sempre stato voluto.
 #   pausa CYCLE_PAUSE_SECONDS
 #   ricomincia da FASE 1. E' del tutto normale (e atteso) che le stesse aste in
 #   scadenza ricompaiano identiche a fine ciclo in FASE 3 -- la dedup (vedi
@@ -421,16 +437,18 @@ _bids_attempted_lock = threading.Lock()
 # GraphQL: throttle, sessione persistente, browser Playwright per le chiamate critiche
 # (prepareBid/bid) -- infrastruttura IDENTICA a quella gia' validata nel bot buyer.
 # FIX 22/07 (richiesta esplicita utente, "vado in 429 e non succede con gli altri
-# bot"): il volume di FASE NUOVE/ZEROBID senza tetto (centinaia/migliaia di aste
-# whitelist, 2+ query ognuna, per minuti filati) e' strutturalmente diverso dal bot
-# buyer (che si ferma appena trova target_matches occasioni) -- throttle costante non
-# basta piu'. Aggiunto backoff REATTIVO: pace normale invariato (0.35s), ma dopo un
-# 429 rallenta ulteriormente (1.0s) per un periodo di raffreddamento, dando respiro al
-# server invece di continuare a martellare allo stesso ritmo che ha appena fatto
-# scattare il rate limit.
+# bot"): il volume di FASE NUOVE/ZEROBID (centinaia/migliaia di aste whitelist, 2+
+# query ognuna, per minuti filati) e' strutturalmente diverso dal bot buyer (che si
+# ferma appena trova target_matches occasioni) -- throttle costante non basta.
+# Aggiunto backoff REATTIVO: dopo un 429 rallenta ulteriormente per un periodo di
+# raffreddamento, dando respiro al server. FIX 22/07 v8: pace di base ora dipende da
+# SHARED_LOAD (definito piu' in alto, prima di questo blocco) -- vedi commento li'.
 # =====================================================================================
-GRAPHQL_MIN_INTERVAL_SECONDS = 0.35
-GRAPHQL_MIN_INTERVAL_SECONDS_COOLDOWN = 1.0
+_GRAPHQL_MIN_INTERVAL_DEFAULT = '0.7' if SHARED_LOAD else '0.35'
+_GRAPHQL_COOLDOWN_INTERVAL_DEFAULT = '1.5' if SHARED_LOAD else '1.0'
+GRAPHQL_MIN_INTERVAL_SECONDS = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS', _GRAPHQL_MIN_INTERVAL_DEFAULT))
+GRAPHQL_MIN_INTERVAL_SECONDS_COOLDOWN = float(
+    os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_COOLDOWN', _GRAPHQL_COOLDOWN_INTERVAL_DEFAULT))
 GRAPHQL_429_COOLDOWN_SECONDS = 45.0
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
@@ -1574,15 +1592,20 @@ def _fetch_whitelisted_live_auctions():
 
 
 def run_new_auctions_phase(eth_rate, state):
-    """FASE 1 "NUOVE" (FIX 21/07 v5, richiesta esplicita utente: "non perdersi nessuna
-    asta rilevante"): scan completo whitelist, valuta TUTTE le aste con id MAI visto
-    prima in questa run -- nessun tetto, cattura ogni apertura appena immessa sul
-    mercato, senza accumulare arretrato. Le notifiche diagnostiche vengono accorpate,
-    ma spedite anche a meta' fase (vedi maybe_flush_alerts), non solo alla fine."""
+    """FASE 1 "NUOVE" (FIX 22/07 v8: tetto reintrodotto, vedi PHASE_MAX_CANDIDATES):
+    scan completo whitelist, valuta le aste con id MAI visto prima in questa run --
+    cattura le aperture appena immesse sul mercato, fino a PHASE_MAX_CANDIDATES per
+    giro (le eccedenti restano "non ancora viste" e vengono riprese al ciclo
+    successivo, known_auction_ids non viene marcato per quelle scartate). Le notifiche
+    diagnostiche vengono accorpate, ma spedite anche a meta' fase (vedi
+    maybe_flush_alerts), non solo alla fine."""
     page, whitelisted = _fetch_whitelisted_live_auctions()
-    nuove = [a for a in whitelisted if (a.get('id') or '') not in state.known_auction_ids]
+    nuove_tutte = [a for a in whitelisted if (a.get('id') or '') not in state.known_auction_ids]
+    nuove = nuove_tutte[:PHASE_MAX_CANDIDATES]
+    troncato = (f" (tetto {PHASE_MAX_CANDIDATES}, le altre {len(nuove_tutte) - len(nuove)} "
+                f"riprese al prossimo ciclo)") if len(nuove_tutte) > len(nuove) else ""
     log(f"[NUOVE] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
-        f"{len(nuove)} mai viste prima -- valuto tutte")
+        f"{len(nuove_tutte)} mai viste prima -- valuto {len(nuove)}{troncato}")
     for auction in nuove:
         halt, reason = _run_should_halt()
         if halt:
@@ -1594,14 +1617,18 @@ def run_new_auctions_phase(eth_rate, state):
 
 
 def run_zero_bid_phase(eth_rate, state):
-    """FASE 2 "ZEROBID" (FIX 21/07 v5): scan completo whitelist, valuta TUTTE le aste
-    con bidsCount==0 -- nuove o vecchie che siano, nessun tetto (stesso motivo di FASE
-    1: non perdere occasioni). Notifiche diagnostiche accorpate, con flush anche a
-    meta' fase."""
+    """FASE 2 "ZEROBID" (FIX 22/07 v8: tetto reintrodotto, vedi PHASE_MAX_CANDIDATES):
+    scan completo whitelist, valuta le aste con bidsCount==0 -- nuove o vecchie che
+    siano, fino a PHASE_MAX_CANDIDATES per giro (le eccedenti tornano candidate al
+    prossimo giro comunque, dato che questa fase non usa known_auction_ids). Notifiche
+    diagnostiche accorpate, con flush anche a meta' fase."""
     page, whitelisted = _fetch_whitelisted_live_auctions()
-    zero_bid = [a for a in whitelisted if a.get('bidsCount') == 0]
+    zero_bid_tutte = [a for a in whitelisted if a.get('bidsCount') == 0]
+    zero_bid = zero_bid_tutte[:PHASE_MAX_CANDIDATES]
+    troncato = (f" (tetto {PHASE_MAX_CANDIDATES}, le altre {len(zero_bid_tutte) - len(zero_bid)} "
+                f"riprese al prossimo ciclo)") if len(zero_bid_tutte) > len(zero_bid) else ""
     log(f"[ZEROBID] {len(page)} aste totali, {len(whitelisted)} in whitelist, "
-        f"{len(zero_bid)} a 0 bid -- valuto tutte")
+        f"{len(zero_bid_tutte)} a 0 bid -- valuto {len(zero_bid)}{troncato}")
     for auction in zero_bid:
         halt, reason = _run_should_halt()
         if halt:
@@ -2092,10 +2119,14 @@ def main():
     log(f"Tetto massimo BID REALI per questa run: {MAX_BIDS_PER_RUN} "
         f"(raggiunto il tetto, o su fondi insufficienti, il bot si FERMA "
         f"DEFINITIVAMENTE)")
+    log(f"Modalita' carico condiviso (SHARED_LOAD, per account Sorare occupato anche "
+        f"altrove): {'ATTIVA' if SHARED_LOAD else 'spenta'} -- pace GraphQL "
+        f"{GRAPHQL_MIN_INTERVAL_SECONDS:.2f}s, tetto {PHASE_MAX_CANDIDATES} aste per "
+        f"fase NUOVE/ZEROBID")
     log(f"Ciclo di tracking (WebSocket rimosso, solo scansioni GraphQL): "
-        f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s, valuta TUTTE) -> "
+        f"FASE NUOVE ({CYCLE_PHASE_SECONDS:.0f}s, max {PHASE_MAX_CANDIDATES}) -> "
         f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
-        f"FASE ZEROBID ({CYCLE_PHASE_SECONDS:.0f}s, valuta TUTTE) -> "
+        f"FASE ZEROBID ({CYCLE_PHASE_SECONDS:.0f}s, max {PHASE_MAX_CANDIDATES}) -> "
         f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> "
         f"FASE SCADENZA ({CYCLE_PHASE_SECONDS:.0f}s, top {SCADENZA_TOP_N}) -> "
         f"pausa {CYCLE_PAUSE_SECONDS:.0f}s -> ricomincia. Notifiche Telegram accorpate "
