@@ -105,11 +105,11 @@
         
         <div class="summary-banner">
             <div class="summary-item">
-                <div class="summary-value">3.30 EUR</div>
+                <div class="summary-value">3.28 EUR</div>
                 <div class="summary-label">Prezzo medio</div>
             </div>
             <div class="summary-item">
-                <div class="summary-value">📉 -1.4%</div>
+                <div class="summary-value">➡️ -0.6%</div>
                 <div class="summary-label">Trend mercato</div>
             </div>
             <div class="summary-item">
@@ -117,7 +117,7 @@
                 <div class="summary-label">Sentiment</div>
             </div>
             <div class="summary-item">
-                <div class="summary-value">46</div>
+                <div class="summary-value">47</div>
                 <div class="summary-label">Giocatori tracciati</div>
             </div>
         </div>
@@ -143,9 +143,9 @@
     </div>
     
     <script>
-        const teamsData = {"Jeonbuk Hyundai Motors FC": {"avg": 3.1288888888888886, "count": 9}, "FC Anyang": {"avg": 8.075, "count": 2}, "Pohang Steelers FC": {"avg": 2.311869666666666, "count": 6}, "Ulsan Hyundai Horang-i": {"avg": 2.8725, "count": 8}, "Gangwon FC": {"avg": 7.508, "count": 5}, "Gimcheon Sangmu": {"avg": 1.0524999999999998, "count": 4}, "Jeju SK FC": {"avg": 1.4174872500000002, "count": 4}, "FC Seoul": {"avg": 6.380029, "count": 2}, "Daejeon Citizen FC": {"avg": 2.265, "count": 4}, "Bucheon FC 1995": {"avg": 1.64, "count": 2}};
+        const teamsData = {"Jeonbuk Hyundai Motors FC": {"avg": 3.1288888888888886, "count": 9}, "FC Anyang": {"avg": 8.075, "count": 2}, "Pohang Steelers FC": {"avg": 2.311869666666666, "count": 6}, "Ulsan Hyundai Horang-i": {"avg": 2.8725, "count": 8}, "Gangwon FC": {"avg": 7.508, "count": 5}, "Gimcheon Sangmu": {"avg": 1.0524999999999998, "count": 4}, "Jeju SK FC": {"avg": 1.4174872500000002, "count": 4}, "FC Seoul": {"avg": 6.380029, "count": 2}, "Daejeon Citizen FC": {"avg": 2.265, "count": 4}, "Bucheon FC 1995": {"avg": 1.64, "count": 2}, "Incheon United FC": {"avg": 1.95, "count": 1}};
         const opportunitiesData = [{"name": "Lee Ho-Jae", "team": "Pohang Steelers FC", "change_pct": -7.9, "price": 4.0, "mean": 4.345000000000001, "occurrences": 2}, {"name": "Lee Ju-Hyun", "team": "Jeonbuk Hyundai Motors FC", "change_pct": -7.8, "price": 1.6, "mean": 1.735, "occurrences": 2}, {"name": "Choe Byung-Chan", "team": "Gangwon FC", "change_pct": -5.8, "price": 1.94, "mean": 2.06, "occurrences": 3}, {"name": "Jo Hyeon-Woo", "team": "Ulsan Hyundai Horang-i", "change_pct": -4.7, "price": 3.09, "mean": 3.2433333333333336, "occurrences": 3}, {"name": "Maeng Seong-Ung", "team": "Jeonbuk Hyundai Motors FC", "change_pct": -3.2, "price": 1.68, "mean": 1.7349999999999999, "occurrences": 2}, {"name": "Marc\u00e3o", "team": "Ulsan Hyundai Horang-i", "change_pct": -2.3, "price": 1.52, "mean": 1.5550000000000002, "occurrences": 2}, {"name": "Hwang In-Jae", "team": "Pohang Steelers FC", "change_pct": -0.4, "price": 2.88, "mean": 2.892582, "occurrences": 2}, {"name": "Lim Jun-Hwi", "team": "Jeonbuk Hyundai Motors FC", "change_pct": 0.0, "price": 0.87, "mean": 0.87, "occurrences": 1}, {"name": "Seo Jeong-Hyeok", "team": "Jeonbuk Hyundai Motors FC", "change_pct": 0.0, "price": 0.94, "mean": 0.94, "occurrences": 2}, {"name": "SONG BUMKEUN", "team": "Jeonbuk Hyundai Motors FC", "change_pct": 0.0, "price": 9.2, "mean": 9.2, "occurrences": 1}, {"name": "Cho Wi-Je", "team": "Jeonbuk Hyundai Motors FC", "change_pct": 0.0, "price": 4.69, "mean": 4.69, "occurrences": 1}, {"name": "KIM JIN-GYU", "team": "Jeonbuk Hyundai Motors FC", "change_pct": 0.0, "price": 5.95, "mean": 5.95, "occurrences": 1}, {"name": "Tiago Orob\u00f3", "team": "Jeonbuk Hyundai Motors FC", "change_pct": 0.0, "price": 0.81, "mean": 0.81, "occurrences": 1}, {"name": "Bruno Mota", "team": "Jeonbuk Hyundai Motors FC", "change_pct": 0.0, "price": 2.42, "mean": 2.42, "occurrences": 1}, {"name": "Choi Gyu-Hyeon", "team": "FC Anyang", "change_pct": 0.0, "price": 1.15, "mean": 1.15, "occurrences": 1}];
-        const tierData = [{"name": "Scarso", "avg_change": -0.8, "count": 25, "color": "#8B0000", "range": "0-2"}, {"name": "Starter", "avg_change": -1.0, "count": 13, "color": "#FF4500", "range": "2-5"}, {"name": "Buono", "avg_change": 0.0, "count": 3, "color": "#FFA500", "range": "5-10"}, {"name": "Ottimo", "avg_change": 0.0, "count": 5, "color": "#DAA520", "range": "10-20"}, {"name": "Eccellente", "avg_change": 0, "count": 0, "color": "#9ACD32", "range": "20-30"}, {"name": "Leggendario", "avg_change": 0, "count": 0, "color": "#00C853", "range": "30+"}];
+        const tierData = [{"name": "Scarso", "avg_change": -0.7, "count": 26, "color": "#8B0000", "range": "0-2"}, {"name": "Starter", "avg_change": -1.0, "count": 13, "color": "#FF4500", "range": "2-5"}, {"name": "Buono", "avg_change": 0.0, "count": 3, "color": "#FFA500", "range": "5-10"}, {"name": "Ottimo", "avg_change": 0.0, "count": 5, "color": "#DAA520", "range": "10-20"}, {"name": "Eccellente", "avg_change": 0, "count": 0, "color": "#9ACD32", "range": "20-30"}, {"name": "Leggendario", "avg_change": 0, "count": 0, "color": "#00C853", "range": "30+"}];
         
         const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const textColor = isDark ? '#f5f5f7' : '#1d1d1f';

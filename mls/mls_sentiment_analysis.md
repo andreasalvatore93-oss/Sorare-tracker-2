@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T17:53:32.782276Z
-**Run totali:** 104
+**Data analisi:** 2026-07-22T18:03:35.794397Z
+**Run totali:** 105
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.81 EUR
+- **Prezzo medio MLS:** 5.83 EUR
 - **Trend mercato:** ➡️ STABLE (+0.4%)
 - **Sentiment:** 🟩 Leggero Rialzo
 
@@ -46,11 +46,11 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 3. C. Tschantret (Sporting Kansas City ) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
 4. Daniel (FC Dallas) — **+0.0%** vs media (7.18 EUR vs 7.18 EUR)
 5. Nicholas Simmonds (FC Dallas) — **+0.0%** vs media (0.80 EUR vs 0.80 EUR)
-6. Herman Johansson (FC Dallas) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
-7. Bernard Kamungo (FC Dallas) — **+0.0%** vs media (0.51 EUR vs 0.51 EUR)
-8. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
-9. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
-10. Kaick (FC Dallas) — **+0.0%** vs media (1.69 EUR vs 1.69 EUR)
+6. Bernard Kamungo (FC Dallas) — **+0.0%** vs media (0.51 EUR vs 0.51 EUR)
+7. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
+8. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
+9. Kaick (FC Dallas) — **+0.0%** vs media (1.69 EUR vs 1.69 EUR)
+10. Enzo Newman (FC Dallas) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -81,7 +81,7 @@ Carte trovate: 21 | Prezzo medio: 5.22 EUR | Volatilità (σ): 8.94
 Carte trovate: 13 | Prezzo medio: 10.54 EUR | Volatilità (σ): 14.85
 
 **FC Cincinnati**
-Carte trovate: 21 | Prezzo medio: 5.55 EUR | Volatilità (σ): 12.89
+Carte trovate: 22 | Prezzo medio: 5.19 EUR | Volatilità (σ): 12.64
 
 **Minnesota United**
 Carte trovate: 19 | Prezzo medio: 2.07 EUR | Volatilità (σ): 2.46
@@ -90,13 +90,13 @@ Carte trovate: 19 | Prezzo medio: 2.07 EUR | Volatilità (σ): 2.46
 Carte trovate: 17 | Prezzo medio: 2.88 EUR | Volatilità (σ): 4.08
 
 **Nashville SC**
-Carte trovate: 20 | Prezzo medio: 8.09 EUR | Volatilità (σ): 12.29
+Carte trovate: 20 | Prezzo medio: 8.07 EUR | Volatilità (σ): 12.29
 
 **Austin FC**
 Carte trovate: 12 | Prezzo medio: 2.34 EUR | Volatilità (σ): 2.76
 
 **San Diego FC**
-Carte trovate: 20 | Prezzo medio: 4.40 EUR | Volatilità (σ): 8.42
+Carte trovate: 21 | Prezzo medio: 5.00 EUR | Volatilità (σ): 8.65
 
 **Vancouver Whitecaps FC**
 Carte trovate: 20 | Prezzo medio: 6.40 EUR | Volatilità (σ): 6.69
@@ -108,7 +108,7 @@ Carte trovate: 19 | Prezzo medio: 4.05 EUR | Volatilità (σ): 5.15
 Carte trovate: 14 | Prezzo medio: 3.23 EUR | Volatilità (σ): 2.78
 
 **Colorado Rapids**
-Carte trovate: 18 | Prezzo medio: 2.07 EUR | Volatilità (σ): 2.47
+Carte trovate: 19 | Prezzo medio: 1.98 EUR | Volatilità (σ): 2.42
 
 **New York Red Bulls**
 Carte trovate: 15 | Prezzo medio: 2.30 EUR | Volatilità (σ): 2.64
