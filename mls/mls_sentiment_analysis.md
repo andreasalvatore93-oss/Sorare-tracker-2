@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T08:12:59.512643Z
-**Run totali:** 25
+**Data analisi:** 2026-07-22T08:15:01.479799Z
+**Run totali:** 26
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 8.47 EUR
-- **Trend mercato:** 📉 STRONG_DESCENDING (-5.0%)
-- **Sentiment:** 🟠 In Calo
+- **Prezzo medio MLS:** 8.37 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.2%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: STRONG_DESCENDING (-5.0%)**
-Il mercato sta crollando. Eccellente momento di accumulo. Valuta le carte con sconto >15% dalla media storica.
+**📉 TREND GLOBALE: DESCENDING (-1.2%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Philip Zinckernagel (Chicago Fire FC)**
 Prezzo: **42.98 EUR** | Media: **58.99 EUR** | Sconto: **-27.1%**
@@ -36,9 +36,9 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 5. Fallou Fall (St. Louis City SC) — **-7.7%** vs media (4.78 EUR vs 5.18 EUR)
 6. Paxten Aaronson (Colorado Rapids) — **-5.9%** vs media (9.00 EUR vs 9.57 EUR)
 7. Kristijan Kahlina (Charlotte FC) — **-5.0%** vs media (15.00 EUR vs 15.78 EUR)
-8. JT Marcinkowski (LA Galaxy) — **-1.8%** vs media (6.23 EUR vs 6.34 EUR)
-9. Guilherme (Houston Dynamo FC) — **-1.5%** vs media (48.50 EUR vs 49.25 EUR)
-10. Carles Gil (New England Revolution) — **-1.3%** vs media (57.00 EUR vs 57.75 EUR)
+8. Drake Callender (Minnesota United) — **-3.6%** vs media (5.85 EUR vs 6.07 EUR)
+9. JT Marcinkowski (LA Galaxy) — **-1.8%** vs media (6.23 EUR vs 6.34 EUR)
+10. Guilherme (Houston Dynamo FC) — **-1.5%** vs media (48.50 EUR vs 49.25 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Jansen Miller (Sporting Kansas City ) — **+0.0%** vs media (0.85 EUR vs 0.85 EUR)
@@ -120,10 +120,10 @@ Carte trovate: 1 | Prezzo medio: 2.85 EUR | Volatilità (σ): 0.00
 Carte trovate: 3 | Prezzo medio: 20.70 EUR | Volatilità (σ): 31.45
 
 **Portland Timbers**
-Carte trovate: 3 | Prezzo medio: 1.37 EUR | Volatilità (σ): 0.77
+Carte trovate: 4 | Prezzo medio: 1.16 EUR | Volatilità (σ): 0.77
 
 **Houston Dynamo FC**
-Carte trovate: 4 | Prezzo medio: 18.87 EUR | Volatilità (σ): 22.09
+Carte trovate: 5 | Prezzo medio: 15.64 EUR | Volatilità (σ): 20.45
 
 **CF Montreal**
 Carte trovate: 1 | Prezzo medio: 7.59 EUR | Volatilità (σ): 0.00
