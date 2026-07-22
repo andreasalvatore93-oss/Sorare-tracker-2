@@ -104,6 +104,12 @@ PLAYER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_D
 # blacklist manuale/da workflow (PLAYER_BLACKLIST_DEFAULT_DAYS, 3gg), perche' un
 # giocatore con questi problemi resta problematico a lungo, non solo per pochi giorni.
 PLAYER_BLACKLIST_DEFAULT_365_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_365_DAYS', '365'))
+# FIX 22/07 (richiesta esplicita utente): la blacklist per MEDIA PUNTI ZERO
+# (ultime 10 e/o ultime 40) e' stata SEPARATA da quella di coverage -- e' una
+# condizione TRANSITORIA (il giocatore puo' tornare a giocare e segnare), quindi
+# durata breve (3gg, come forma_bassa_ultime_5) invece dei 365gg permanenti usati
+# per coverageStatus=NOT_COVERED (quella si', condizione strutturale/permanente).
+MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS', '3'))
 THIN_MARKET_DEFAULT_DAYS = float(os.environ.get('THIN_MARKET_DEFAULT_DAYS', '2'))
 COOLDOWN_ACQUISTO_DEFAULT_DAYS = float(os.environ.get('COOLDOWN_ACQUISTO_DEFAULT_DAYS', '1'))
 # FIX 21/07 (richiesta esplicita utente): durata default per la blacklist CAMPIONATI --
@@ -572,7 +578,7 @@ AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
 # margine >= AUTOBUY_MARGIN_FRACTION -> ramo AutoBuy (deve essere >= al tetto MakeOffer)
 MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.15'))
 MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.25'))
-AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.25'))
+AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.26'))
 
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
@@ -683,7 +689,7 @@ def record_thin_market_skip(player_slug, is_in_season=True):
 # sezione separata e scadenza molto piu' breve. Nessun suffisso stagione: la media
 # ultime 5 e' una statistica del GIOCATORE, identica per la sua carta in_season e
 # classic -- lo stesso della logica coverage/media-zero esistente.
-FORMA_BASSA_DEFAULT_DAYS = float(os.environ.get('FORMA_BASSA_DEFAULT_DAYS', '30'))
+FORMA_BASSA_DEFAULT_DAYS = float(os.environ.get('FORMA_BASSA_DEFAULT_DAYS', '3'))
 LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '0'))
 
 
@@ -1114,12 +1120,16 @@ def get_bucket_prices(player_slug, eth_rate):
             last_forty_avg = player_c.get('lastFortyAvgScore')
             if last_ten_avg == 0.0 or last_forty_avg == 0.0:
                 skipped_zero_avg.append(c.get('slug'))
-                # FIX 21/07 (correzione): stessa blacklist automatica 365gg, media punti
-                # zero nelle ultime 10 O nelle ultime 40 (OR, non AND).
+                # FIX 22/07 (richiesta esplicita utente): non piu' blacklist permanente
+                # condivisa con coverage -- ora durata breve dedicata
+                # (MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS, default 3gg), perche' un giocatore
+                # puo' tornare a giocare e la media si aggiorna da sola alla query
+                # successiva -- niente senso tenerlo fuori per un anno.
                 if player_slug not in _gia_blacklistati_coverage_o_media_zero:
-                    _lista_nera_upsert('giocatore', player_slug, PLAYER_BLACKLIST_DEFAULT_365_DAYS)
+                    _lista_nera_upsert('giocatore', player_slug, MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS)
                     _gia_blacklistati_coverage_o_media_zero.add(player_slug)
-                    log(f"[lista nera] {player_slug} blacklistato 365gg -- media punti 0 "
+                    log(f"[lista nera] {player_slug} blacklistato "
+                        f"{MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS:.0f}gg -- media punti 0 "
                         f"nelle ultime 10 e/o nelle ultime 40 giocate")
                 continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
                           # filtro/motivazione di coverageStatus, richiesta utente 21/07
@@ -1145,7 +1155,8 @@ def get_bucket_prices(player_slug, eth_rate):
         raw[bucket].append((price, match.get('slug'), seller_slug))
     if skipped_coverage:
         log(f"[scarto coverage] {player_slug}: {len(skipped_coverage)} carta/e esclusa/e dal "
-            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5)")
+            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5): "
+            f"{', '.join(skipped_coverage)}")
     if skipped_zero_avg:
         log(f"[scarto media 0] {player_slug}: {len(skipped_zero_avg)} carta/e esclusa/e dal "
             f"confronto -- media 0 nelle ultime 10 giocate e/o nelle ultime 40: "
@@ -1362,12 +1373,22 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
         return None, None
     nodes = ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices', {}).get('nodes') or []
 
-    # FIX 22/07 (confermato con dati reali su Kendry Páez e Baek Jong-Beom): il server
-    # restituisce i nodi di 'last: n' in ordine CRESCENTE (dal piu' vecchio al piu'
-    # recente), non decrescente -- si ordina esplicitamente per data DECRESCENTE prima
-    # di scorrerli, cosi' prezzi_trovati[0] e' sempre il piu' recente indipendentemente
-    # dall'ordine del server.
-    nodes = sorted(nodes, key=lambda n_: n_.get('date') or '', reverse=True)
+    # FIX 22/07 v3 (bug reale confermato coi log, caso Viktor Gyökeres e verifica
+    # diagnostica su Kendry Páez): il campo Relay tokenPrices(last: n) restituisce i
+    # nodi in ordine cronologico CRESCENTE (dal piu' vecchio al piu' recente), non
+    # decrescente come assunto in precedenza -- confermato con dati reali (log
+    # diagnostico temporaneo, rimosso ora che l'ordine e' verificato). Senza un
+    # ordinamento esplicito, prezzi_trovati[0] finiva per essere il piu' VECCHIO dei
+    # nodi raccolti, non il piu' recente, invertendo di fatto ultimo/penultimo.
+    # Ordiniamo esplicitamente per data decrescente (piu' recente prima) cosi' il
+    # significato di 'ultimo'/'penultimo' e' sempre corretto indipendentemente
+    # dall'ordine con cui il server li restituisce.
+    def _parse_date_per_ordinamento(nodo):
+        try:
+            return datetime.datetime.fromisoformat((nodo.get('date') or '').replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+    nodes = sorted(nodes, key=_parse_date_per_ordinamento, reverse=True)
 
     excluded_league = is_asia_americas_excluded_league(league_slug)
     prezzi_trovati = []
