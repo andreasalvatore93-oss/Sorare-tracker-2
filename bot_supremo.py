@@ -572,7 +572,7 @@ AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
 # margine >= AUTOBUY_MARGIN_FRACTION -> ramo AutoBuy (deve essere >= al tetto MakeOffer)
 MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.15'))
 MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.25'))
-AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.26'))
+AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.25'))
 
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
@@ -1145,8 +1145,7 @@ def get_bucket_prices(player_slug, eth_rate):
         raw[bucket].append((price, match.get('slug'), seller_slug))
     if skipped_coverage:
         log(f"[scarto coverage] {player_slug}: {len(skipped_coverage)} carta/e esclusa/e dal "
-            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5): "
-            f"{', '.join(skipped_coverage)}")
+            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5)")
     if skipped_zero_avg:
         log(f"[scarto media 0] {player_slug}: {len(skipped_zero_avg)} carta/e esclusa/e dal "
             f"confronto -- media 0 nelle ultime 10 giocate e/o nelle ultime 40: "
@@ -1363,20 +1362,12 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
         return None, None
     nodes = ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices', {}).get('nodes') or []
 
-    # DIAGNOSTICA TEMPORANEA (22/07, richiesta esplicita utente -- indagine bug ordine
-    # ultimo/penultimo, caso reale Viktor Gyökeres): stampa l'ordine GREZZO dei nodi
-    # esattamente come arrivano dal server, PRIMA di qualunque elaborazione/filtro,
-    # per confermare se 'last: n' li restituisce dal piu' recente al piu' vecchio o
-    # viceversa. RIMUOVERE questo blocco (e SOLO questo blocco) una volta confermato
-    # l'ordine e applicato il fix definitivo -- non e' dietro un flag/env var di
-    # proposito, va tolto a mano quando l'indagine e' conclusa.
-    if nodes:
-        diag_righe = []
-        for i, n_diag in enumerate(nodes, start=1):
-            p_diag = eur_price_from_amounts(n_diag.get('amounts'), eth_rate)
-            diag_righe.append(f"[{i}] data={n_diag.get('date')} prezzo={p_diag}")
-        log(f"[diagnostica ordine transazioni] {player_slug}: nodi ricevuti da 'last: {n}' "
-            f"nell'ordine esatto del server -- {', '.join(diag_righe)}")
+    # FIX 22/07 (confermato con dati reali su Kendry Páez e Baek Jong-Beom): il server
+    # restituisce i nodi di 'last: n' in ordine CRESCENTE (dal piu' vecchio al piu'
+    # recente), non decrescente -- si ordina esplicitamente per data DECRESCENTE prima
+    # di scorrerli, cosi' prezzi_trovati[0] e' sempre il piu' recente indipendentemente
+    # dall'ordine del server.
+    nodes = sorted(nodes, key=lambda n_: n_.get('date') or '', reverse=True)
 
     excluded_league = is_asia_americas_excluded_league(league_slug)
     prezzi_trovati = []
