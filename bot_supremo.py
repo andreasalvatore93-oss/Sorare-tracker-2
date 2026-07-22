@@ -544,6 +544,13 @@ AUTOBUY_TARGET_MATCHES = max(1, min(20, AUTOBUY_TARGET_MATCHES))
 AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
+# Modalita' diagnostica isolata (22/07, richiesta esplicita utente -- verificare in pochi
+# secondi il conteggio transazioni di UN giocatore specifico, senza aspettare che il
+# bot lo incontri per caso sul mercato via listener). Se valorizzata, main() esegue
+# SOLO count_recent_transactions per questo slug (con log diagnostico forzato) e
+# termina subito -- non tocca browser/listener/blacklist/nient'altro del bot normale.
+DIAGNOSTIC_PLAYER_SLUG = os.environ.get('DIAGNOSTIC_PLAYER_SLUG', '').strip()
+
 # Parametri MakeOffer (ramo offerta scontata)
 OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'))
 OFFER_DURATION_DAYS = max(1, min(7, int(os.environ.get('OFFER_DURATION_DAYS', '1'))))
@@ -2834,7 +2841,26 @@ def _periodic_commit_loop():
         _commit_lista_nera_se_serve()
 
 
+def run_diagnostic_player_check(player_slug):
+    """Modalita' isolata (22/07): verifica in pochi secondi il conteggio transazioni
+    di UN giocatore specifico, senza passare da listener/mercato/blacklist. Forza il
+    log diagnostico completo (tipi __typename visti, scarti per filtro) indipendentemente
+    da LIQUIDITY_DIAGNOSTIC nell'env, cosi' basta valorizzare DIAGNOSTIC_PLAYER_SLUG per
+    ottenere il dettaglio senza dover cambiare altri input del workflow."""
+    global LIQUIDITY_DIAGNOSTIC
+    log(f"[diagnostica isolata] avvio verifica transazioni per: {player_slug}")
+    LIQUIDITY_DIAGNOSTIC = True
+    count_7d, count_30d = count_recent_transactions(player_slug, is_in_season=True, league_slug=None)
+    log(f"[diagnostica isolata] RISULTATO per {player_slug}: count_7d={count_7d}, "
+        f"count_30d={count_30d} (soglie attuali: 7gg>={MIN_RECENT_TRANSACTIONS}, "
+        f"30gg>={MIN_TRANSACTIONS_30D})")
+    log("[diagnostica isolata] fine, nessun'altra azione eseguita (browser/listener/blacklist non toccati).")
+
+
 def main():
+    if DIAGNOSTIC_PLAYER_SLUG:
+        run_diagnostic_player_check(DIAGNOSTIC_PLAYER_SLUG)
+        return
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
     autobuy_modalita = "ACQUISTO REALE ATTIVO" if AUTOBUY_LIVE_MODE else "solo diagnostica"
