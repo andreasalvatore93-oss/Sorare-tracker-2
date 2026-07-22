@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T16:40:08.774718Z
-**Run totali:** 94
+**Data analisi:** 2026-07-22T16:42:10.951786Z
+**Run totali:** 95
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.93 EUR
-- **Trend mercato:** 📈 ASCENDING (+1.2%)
-- **Sentiment:** 🟩 Leggero Rialzo
+- **Prezzo medio MLS:** 5.94 EUR
+- **Trend mercato:** ➡️ STABLE (+0.2%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: ASCENDING (+1.2%)**
-I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
+**➡️ TREND GLOBALE: STABLE (+0.2%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Alexander Bonetig (Portland Timbers)**
 Prezzo: **0.49 EUR** | Media: **2.15 EUR** | Sconto: **-77.2%**
@@ -57,7 +57,7 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 Carte trovate: 16 | Prezzo medio: 4.94 EUR | Volatilità (σ): 5.58
 
 **Los Angeles FC**
-Carte trovate: 15 | Prezzo medio: 7.79 EUR | Volatilità (σ): 10.15
+Carte trovate: 16 | Prezzo medio: 9.06 EUR | Volatilità (σ): 11.03
 
 **Real Salt Lake**
 Carte trovate: 20 | Prezzo medio: 2.08 EUR | Volatilità (σ): 2.46
@@ -78,10 +78,10 @@ Carte trovate: 18 | Prezzo medio: 2.32 EUR | Volatilità (σ): 2.23
 Carte trovate: 19 | Prezzo medio: 5.68 EUR | Volatilità (σ): 9.32
 
 **Inter Miami CF**
-Carte trovate: 10 | Prezzo medio: 10.38 EUR | Volatilità (σ): 16.50
+Carte trovate: 11 | Prezzo medio: 9.58 EUR | Volatilità (σ): 15.88
 
 **FC Cincinnati**
-Carte trovate: 17 | Prezzo medio: 6.63 EUR | Volatilità (σ): 14.19
+Carte trovate: 18 | Prezzo medio: 6.30 EUR | Volatilità (σ): 13.83
 
 **Minnesota United**
 Carte trovate: 17 | Prezzo medio: 2.19 EUR | Volatilità (σ): 2.59
