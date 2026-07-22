@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T12:39:33.022237Z
-**Run totali:** 43
+**Data analisi:** 2026-07-22T12:41:34.522136Z
+**Run totali:** 44
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.95 EUR
-- **Trend mercato:** ➡️ STABLE (-0.2%)
-- **Sentiment:** ⚪ Stabile
+- **Prezzo medio MLS:** 7.11 EUR
+- **Trend mercato:** 📈 ASCENDING (+2.3%)
+- **Sentiment:** 🟢 In Crescita
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.2%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📈 TREND GLOBALE: ASCENDING (+2.3%)**
+I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
 
 **🥇 FORTE OPPORTUNITÀ — Aníbal Godoy (San Diego FC)**
 Prezzo: **0.98 EUR** | Media: **2.29 EUR** | Sconto: **-57.2%**
@@ -99,7 +99,7 @@ Carte trovate: 4 | Prezzo medio: 2.38 EUR | Volatilità (σ): 3.05
 Carte trovate: 4 | Prezzo medio: 3.37 EUR | Volatilità (σ): 5.09
 
 **Vancouver Whitecaps FC**
-Carte trovate: 8 | Prezzo medio: 9.46 EUR | Volatilità (σ): 9.16
+Carte trovate: 8 | Prezzo medio: 9.44 EUR | Volatilità (σ): 9.16
 
 **Philadelphia Union**
 Carte trovate: 7 | Prezzo medio: 4.99 EUR | Volatilità (σ): 4.61
@@ -111,7 +111,7 @@ Carte trovate: 5 | Prezzo medio: 4.01 EUR | Volatilità (σ): 3.30
 Carte trovate: 8 | Prezzo medio: 2.33 EUR | Volatilità (σ): 3.20
 
 **New York Red Bulls**
-Carte trovate: 8 | Prezzo medio: 2.94 EUR | Volatilità (σ): 2.28
+Carte trovate: 9 | Prezzo medio: 2.68 EUR | Volatilità (σ): 2.27
 
 **Atlanta United**
 Carte trovate: 2 | Prezzo medio: 2.03 EUR | Volatilità (σ): 1.05
