@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T20:06:03.402684Z
-**Run totali:** 117
+**Data analisi:** 2026-07-22T22:46:13.748019Z
+**Run totali:** 118
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.12 EUR
-- **Trend mercato:** ➡️ STABLE (-0.3%)
+- **Prezzo medio MLS:** 6.11 EUR
+- **Trend mercato:** ➡️ STABLE (-0.1%)
 - **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.3%)**
+**➡️ TREND GLOBALE: STABLE (-0.1%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
@@ -135,7 +135,7 @@ Carte trovate: 20 | Prezzo medio: 2.97 EUR | Volatilità (σ): 4.29
 Carte trovate: 21 | Prezzo medio: 2.11 EUR | Volatilità (σ): 2.18
 
 **DC United**
-Carte trovate: 15 | Prezzo medio: 1.70 EUR | Volatilità (σ): 1.58
+Carte trovate: 16 | Prezzo medio: 1.72 EUR | Volatilità (σ): 1.53
 
 **FC Dallas**
 Carte trovate: 29 | Prezzo medio: 1.54 EUR | Volatilità (σ): 1.71
