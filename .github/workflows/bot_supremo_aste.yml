@@ -43,6 +43,10 @@ on:
         description: "Per quanti secondi riusare i riferimenti di prezzo (vendita diretta live + ultima asta) gia' calcolati per un giocatore, invece di rifare le query -- riduce il carico su Sorare (protezione 429)"
         required: false
         default: "300"
+      shared_load:
+        description: "'si' = account Sorare occupato anche da altri bot/browser -- rallenta preventivamente pace GraphQL e tetto per fase (60 aste/giro invece di 120). 'no' = solo questo bot, va piu' veloce"
+        required: false
+        default: "si"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -109,6 +113,7 @@ jobs:
           SCADENZA_TOP_N: ${{ github.event.inputs.scadenza_top_n || '5' }}
           ALERT_FLUSH_INTERVAL_SECONDS: ${{ github.event.inputs.alert_flush_interval_seconds || '30' }}
           REFERENCE_PRICE_CACHE_TTL_SECONDS: ${{ github.event.inputs.reference_price_cache_ttl_seconds || '300' }}
+          SHARED_LOAD: ${{ github.event.inputs.shared_load || 'si' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUCTION_LIVE_MODE: ${{ github.event.inputs.auction_live_mode || 'si' }}
           AUCTION_DIAGNOSTIC: ${{ github.event.inputs.auction_diagnostic || 'no' }}
