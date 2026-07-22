@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T13:10:07.320966Z
-**Run totali:** 58
+**Data analisi:** 2026-07-22T13:12:08.956144Z
+**Run totali:** 59
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.16 EUR
-- **Trend mercato:** ➡️ STABLE (-0.3%)
+- **Prezzo medio MLS:** 7.15 EUR
+- **Trend mercato:** ➡️ STABLE (-0.2%)
 - **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.3%)**
+**➡️ TREND GLOBALE: STABLE (-0.2%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — G. Guerra (Portland Timbers)**
@@ -42,15 +42,15 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Wyatt Meyer (Sporting Kansas City ) — **+0.0%** vs media (1.19 EUR vs 1.19 EUR)
-2. Calvin Harris (Sporting Kansas City ) — **+0.0%** vs media (2.36 EUR vs 2.36 EUR)
-3. Kwaku Agyabeng (Sporting Kansas City ) — **+0.0%** vs media (0.52 EUR vs 0.52 EUR)
-4. Ryan Schewe (Sporting Kansas City ) — **+0.0%** vs media (0.62 EUR vs 0.62 EUR)
-5. Manu García (Sporting Kansas City ) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
-6. Magomed-Shapi Suleymanov (Sporting Kansas City ) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
-7. Jacob Bartlett (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
-8. Petar Musa (FC Dallas) — **+0.0%** vs media (7.47 EUR vs 7.47 EUR)
-9. Enzo Newman (FC Dallas) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
-10. Shaq Moore (FC Dallas) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
+2. Kwaku Agyabeng (Sporting Kansas City ) — **+0.0%** vs media (0.52 EUR vs 0.52 EUR)
+3. Ryan Schewe (Sporting Kansas City ) — **+0.0%** vs media (0.62 EUR vs 0.62 EUR)
+4. Manu García (Sporting Kansas City ) — **+0.0%** vs media (15.00 EUR vs 15.00 EUR)
+5. Magomed-Shapi Suleymanov (Sporting Kansas City ) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
+6. Jacob Bartlett (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
+7. Petar Musa (FC Dallas) — **+0.0%** vs media (7.47 EUR vs 7.47 EUR)
+8. Enzo Newman (FC Dallas) — **+0.0%** vs media (0.90 EUR vs 0.90 EUR)
+9. Shaq Moore (FC Dallas) — **+0.0%** vs media (3.20 EUR vs 3.20 EUR)
+10. Lalas Abubakar (FC Dallas) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -141,5 +141,5 @@ Carte trovate: 8 | Prezzo medio: 1.82 EUR | Volatilità (σ): 1.82
 Carte trovate: 17 | Prezzo medio: 1.41 EUR | Volatilità (σ): 1.78
 
 **Sporting Kansas City **
-Carte trovate: 10 | Prezzo medio: 2.21 EUR | Volatilità (σ): 4.53
+Carte trovate: 10 | Prezzo medio: 2.15 EUR | Volatilità (σ): 4.53
 
