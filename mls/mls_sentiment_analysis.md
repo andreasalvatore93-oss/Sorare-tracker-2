@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T08:50:40.820322Z
-**Run totali:** 30
+**Data analisi:** 2026-07-22T08:52:42.856101Z
+**Run totali:** 31
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 7.82 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.8%)
+- **Prezzo medio MLS:** 7.53 EUR
+- **Trend mercato:** 📉 DESCENDING (-3.7%)
 - **Sentiment:** 🟡 Leggero Calo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.8%)**
+**📉 TREND GLOBALE: DESCENDING (-3.7%)**
 Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Timo Werner (San Jose Earthquakes)**
@@ -37,8 +37,8 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 6. Thomas Guillier (CF Montreal) — **-10.0%** vs media (7.59 EUR vs 8.43 EUR)
 7. Chris Brady (Chicago Fire FC) — **-8.5%** vs media (17.30 EUR vs 18.90 EUR)
 8. Fallou Fall (St. Louis City SC) — **-7.7%** vs media (4.78 EUR vs 5.18 EUR)
-9. Bryan Acosta (Nashville SC) — **-6.3%** vs media (2.00 EUR vs 2.13 EUR)
-10. Paxten Aaronson (Colorado Rapids) — **-5.9%** vs media (9.00 EUR vs 9.57 EUR)
+9. Ethan Kohler (New England Revolution) — **-6.6%** vs media (1.13 EUR vs 1.21 EUR)
+10. Bryan Acosta (Nashville SC) — **-6.3%** vs media (2.00 EUR vs 2.13 EUR)
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Jake Davis (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
@@ -66,7 +66,7 @@ Carte trovate: 8 | Prezzo medio: 2.70 EUR | Volatilità (σ): 3.72
 Carte trovate: 8 | Prezzo medio: 2.71 EUR | Volatilità (σ): 3.24
 
 **Columbus Crew**
-Carte trovate: 5 | Prezzo medio: 3.98 EUR | Volatilità (σ): 4.39
+Carte trovate: 6 | Prezzo medio: 3.79 EUR | Volatilità (σ): 3.95
 
 **Charlotte FC**
 Carte trovate: 7 | Prezzo medio: 10.41 EUR | Volatilità (σ): 10.15
@@ -87,7 +87,7 @@ Carte trovate: 5 | Prezzo medio: 15.92 EUR | Volatilità (σ): 31.64
 Carte trovate: 6 | Prezzo medio: 1.93 EUR | Volatilità (σ): 2.12
 
 **Orlando City SC**
-Carte trovate: 4 | Prezzo medio: 6.68 EUR | Volatilità (σ): 7.13
+Carte trovate: 6 | Prezzo medio: 4.71 EUR | Volatilità (σ): 6.31
 
 **Nashville SC**
 Carte trovate: 5 | Prezzo medio: 6.08 EUR | Volatilità (σ): 8.40
@@ -102,22 +102,22 @@ Carte trovate: 2 | Prezzo medio: 0.89 EUR | Volatilità (σ): 0.13
 Carte trovate: 5 | Prezzo medio: 8.43 EUR | Volatilità (σ): 8.59
 
 **Philadelphia Union**
-Carte trovate: 3 | Prezzo medio: 6.19 EUR | Volatilità (σ): 1.63
+Carte trovate: 4 | Prezzo medio: 4.80 EUR | Volatilità (σ): 3.09
 
 **LA Galaxy**
 Carte trovate: 2 | Prezzo medio: 7.42 EUR | Volatilità (σ): 1.68
 
 **Colorado Rapids**
-Carte trovate: 7 | Prezzo medio: 2.43 EUR | Volatilità (σ): 3.45
+Carte trovate: 8 | Prezzo medio: 2.33 EUR | Volatilità (σ): 3.20
 
 **New York Red Bulls**
-Carte trovate: 3 | Prezzo medio: 4.26 EUR | Volatilità (σ): 3.37
+Carte trovate: 4 | Prezzo medio: 3.44 EUR | Volatilità (σ): 3.20
 
 **Atlanta United**
 Carte trovate: 2 | Prezzo medio: 2.07 EUR | Volatilità (σ): 1.10
 
 **New England Revolution**
-Carte trovate: 4 | Prezzo medio: 15.85 EUR | Volatilità (σ): 27.45
+Carte trovate: 4 | Prezzo medio: 15.81 EUR | Volatilità (σ): 27.48
 
 **Portland Timbers**
 Carte trovate: 4 | Prezzo medio: 1.16 EUR | Volatilità (σ): 0.77
@@ -126,13 +126,13 @@ Carte trovate: 4 | Prezzo medio: 1.16 EUR | Volatilità (σ): 0.77
 Carte trovate: 5 | Prezzo medio: 15.61 EUR | Volatilità (σ): 20.48
 
 **CF Montreal**
-Carte trovate: 2 | Prezzo medio: 5.81 EUR | Volatilità (σ): 2.51
+Carte trovate: 3 | Prezzo medio: 4.43 EUR | Volatilità (σ): 2.97
 
 **New York City FC**
 Carte trovate: 4 | Prezzo medio: 5.29 EUR | Volatilità (σ): 6.45
 
 **Toronto FC**
-Carte trovate: 3 | Prezzo medio: 1.64 EUR | Volatilità (σ): 0.81
+Carte trovate: 4 | Prezzo medio: 2.96 EUR | Volatilità (σ): 2.71
 
 **DC United**
 Carte trovate: 4 | Prezzo medio: 2.34 EUR | Volatilità (σ): 2.48
