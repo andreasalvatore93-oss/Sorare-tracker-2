@@ -1,11 +1,11 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T16:27:29.029156Z
-**Run totali:** 89
+**Data analisi:** 2026-07-22T16:29:30.948009Z
+**Run totali:** 90
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.94 EUR
+- **Prezzo medio MLS:** 5.90 EUR
 - **Trend mercato:** ➡️ STABLE (-0.6%)
 - **Sentiment:** 🟨 Quasi Fermo
 
@@ -45,7 +45,7 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 2. C. Tschantret (Sporting Kansas City ) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
 3. Jayden Reid (Sporting Kansas City ) — **+0.0%** vs media (1.12 EUR vs 1.12 EUR)
 4. Ryan Schewe (Sporting Kansas City ) — **+0.0%** vs media (0.62 EUR vs 0.62 EUR)
-5. Jacob Bartlett (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
+5. Herman Johansson (FC Dallas) — **+0.0%** vs media (0.70 EUR vs 0.70 EUR)
 6. Bernard Kamungo (FC Dallas) — **+0.0%** vs media (0.51 EUR vs 0.51 EUR)
 7. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
 8. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
@@ -66,7 +66,7 @@ Carte trovate: 20 | Prezzo medio: 2.08 EUR | Volatilità (σ): 2.46
 Carte trovate: 15 | Prezzo medio: 3.38 EUR | Volatilità (σ): 4.36
 
 **Columbus Crew**
-Carte trovate: 19 | Prezzo medio: 2.70 EUR | Volatilità (σ): 2.09
+Carte trovate: 19 | Prezzo medio: 2.69 EUR | Volatilità (σ): 2.09
 
 **Charlotte FC**
 Carte trovate: 14 | Prezzo medio: 4.71 EUR | Volatilità (σ): 4.65
@@ -84,7 +84,7 @@ Carte trovate: 9 | Prezzo medio: 11.43 EUR | Volatilità (σ): 17.14
 Carte trovate: 15 | Prezzo medio: 7.29 EUR | Volatilità (σ): 15.03
 
 **Minnesota United**
-Carte trovate: 16 | Prezzo medio: 2.29 EUR | Volatilità (σ): 2.64
+Carte trovate: 17 | Prezzo medio: 2.19 EUR | Volatilità (σ): 2.59
 
 **Orlando City SC**
 Carte trovate: 16 | Prezzo medio: 3.25 EUR | Volatilità (σ): 4.20
@@ -132,13 +132,13 @@ Carte trovate: 15 | Prezzo medio: 1.81 EUR | Volatilità (σ): 1.67
 Carte trovate: 17 | Prezzo medio: 3.45 EUR | Volatilità (σ): 4.75
 
 **Toronto FC**
-Carte trovate: 13 | Prezzo medio: 2.21 EUR | Volatilità (σ): 2.02
+Carte trovate: 14 | Prezzo medio: 2.11 EUR | Volatilità (σ): 1.98
 
 **DC United**
 Carte trovate: 11 | Prezzo medio: 1.49 EUR | Volatilità (σ): 1.63
 
 **FC Dallas**
-Carte trovate: 24 | Prezzo medio: 1.34 EUR | Volatilità (σ): 1.49
+Carte trovate: 25 | Prezzo medio: 1.31 EUR | Volatilità (σ): 1.46
 
 **Sporting Kansas City **
 Carte trovate: 14 | Prezzo medio: 1.30 EUR | Volatilità (σ): 1.35
