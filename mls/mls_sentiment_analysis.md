@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T16:02:35.661507Z
-**Run totali:** 87
+**Data analisi:** 2026-07-22T16:04:37.268046Z
+**Run totali:** 88
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.90 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.7%)
-- **Sentiment:** 🟡 Leggero Calo
+- **Prezzo medio MLS:** 5.98 EUR
+- **Trend mercato:** 📈 ASCENDING (+1.4%)
+- **Sentiment:** 🟩 Leggero Rialzo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.7%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**📈 TREND GLOBALE: ASCENDING (+1.4%)**
+I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
 
 **🥇 FORTE OPPORTUNITÀ — Alexander Bonetig (Portland Timbers)**
 Prezzo: **0.49 EUR** | Media: **2.15 EUR** | Sconto: **-77.2%**
@@ -42,15 +42,15 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Justin Reynolds (Sporting Kansas City ) — **+0.0%** vs media (0.64 EUR vs 0.64 EUR)
-2. Stefan Cleveland (Sporting Kansas City ) — **+0.0%** vs media (3.07 EUR vs 3.07 EUR)
-3. C. Tschantret (Sporting Kansas City ) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
-4. Jayden Reid (Sporting Kansas City ) — **+0.0%** vs media (1.12 EUR vs 1.12 EUR)
-5. Ryan Schewe (Sporting Kansas City ) — **+0.0%** vs media (0.62 EUR vs 0.62 EUR)
-6. Magomed-Shapi Suleymanov (Sporting Kansas City ) — **+0.0%** vs media (0.48 EUR vs 0.48 EUR)
-7. Jacob Bartlett (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
-8. Bernard Kamungo (FC Dallas) — **+0.0%** vs media (0.51 EUR vs 0.51 EUR)
-9. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
-10. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
+2. C. Tschantret (Sporting Kansas City ) — **+0.0%** vs media (2.00 EUR vs 2.00 EUR)
+3. Jayden Reid (Sporting Kansas City ) — **+0.0%** vs media (1.12 EUR vs 1.12 EUR)
+4. Ryan Schewe (Sporting Kansas City ) — **+0.0%** vs media (0.62 EUR vs 0.62 EUR)
+5. Jacob Bartlett (Sporting Kansas City ) — **+0.0%** vs media (0.50 EUR vs 0.50 EUR)
+6. Bernard Kamungo (FC Dallas) — **+0.0%** vs media (0.51 EUR vs 0.51 EUR)
+7. Diego García (FC Dallas) — **+0.0%** vs media (0.75 EUR vs 0.75 EUR)
+8. Michael Collodi (FC Dallas) — **+0.0%** vs media (1.48 EUR vs 1.48 EUR)
+9. Jonathan Sirois (FC Dallas) — **+0.0%** vs media (3.13 EUR vs 3.13 EUR)
+10. Kaick (FC Dallas) — **+0.0%** vs media (1.69 EUR vs 1.69 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
@@ -63,7 +63,7 @@ Carte trovate: 13 | Prezzo medio: 8.75 EUR | Volatilità (σ): 10.62
 Carte trovate: 20 | Prezzo medio: 2.08 EUR | Volatilità (σ): 2.46
 
 **San Jose Earthquakes**
-Carte trovate: 14 | Prezzo medio: 3.51 EUR | Volatilità (σ): 4.50
+Carte trovate: 15 | Prezzo medio: 3.38 EUR | Volatilità (σ): 4.36
 
 **Columbus Crew**
 Carte trovate: 19 | Prezzo medio: 2.70 EUR | Volatilità (σ): 2.09
@@ -78,7 +78,7 @@ Carte trovate: 18 | Prezzo medio: 2.32 EUR | Volatilità (σ): 2.23
 Carte trovate: 18 | Prezzo medio: 5.96 EUR | Volatilità (σ): 9.56
 
 **Inter Miami CF**
-Carte trovate: 9 | Prezzo medio: 11.64 EUR | Volatilità (σ): 17.74
+Carte trovate: 9 | Prezzo medio: 11.43 EUR | Volatilità (σ): 17.14
 
 **FC Cincinnati**
 Carte trovate: 15 | Prezzo medio: 7.29 EUR | Volatilità (σ): 15.03
@@ -93,13 +93,13 @@ Carte trovate: 16 | Prezzo medio: 3.25 EUR | Volatilità (σ): 4.20
 Carte trovate: 19 | Prezzo medio: 8.51 EUR | Volatilità (σ): 12.50
 
 **Austin FC**
-Carte trovate: 11 | Prezzo medio: 2.36 EUR | Volatilità (σ): 2.89
+Carte trovate: 11 | Prezzo medio: 2.35 EUR | Volatilità (σ): 2.89
 
 **San Diego FC**
 Carte trovate: 19 | Prezzo medio: 4.32 EUR | Volatilità (σ): 8.64
 
 **Vancouver Whitecaps FC**
-Carte trovate: 14 | Prezzo medio: 8.18 EUR | Volatilità (σ): 7.28
+Carte trovate: 15 | Prezzo medio: 7.79 EUR | Volatilità (σ): 7.18
 
 **Philadelphia Union**
 Carte trovate: 14 | Prezzo medio: 4.48 EUR | Volatilità (σ): 5.72
@@ -120,7 +120,7 @@ Carte trovate: 9 | Prezzo medio: 1.37 EUR | Volatilità (σ): 1.06
 Carte trovate: 18 | Prezzo medio: 5.62 EUR | Volatilità (σ): 13.09
 
 **Portland Timbers**
-Carte trovate: 18 | Prezzo medio: 3.10 EUR | Volatilità (σ): 3.93
+Carte trovate: 18 | Prezzo medio: 3.07 EUR | Volatilità (σ): 3.94
 
 **Houston Dynamo FC**
 Carte trovate: 17 | Prezzo medio: 5.74 EUR | Volatilità (σ): 12.32
