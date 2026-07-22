@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T16:44:12.715509Z
-**Run totali:** 96
+**Data analisi:** 2026-07-22T16:46:14.351212Z
+**Run totali:** 97
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 5.93 EUR
-- **Trend mercato:** ➡️ STABLE (-0.2%)
+- **Prezzo medio MLS:** 5.91 EUR
+- **Trend mercato:** ➡️ STABLE (-0.3%)
 - **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.2%)**
+**➡️ TREND GLOBALE: STABLE (-0.3%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Alexander Bonetig (Portland Timbers)**
@@ -78,13 +78,13 @@ Carte trovate: 18 | Prezzo medio: 2.32 EUR | Volatilità (σ): 2.23
 Carte trovate: 19 | Prezzo medio: 5.68 EUR | Volatilità (σ): 9.32
 
 **Inter Miami CF**
-Carte trovate: 11 | Prezzo medio: 9.58 EUR | Volatilità (σ): 15.88
+Carte trovate: 12 | Prezzo medio: 9.71 EUR | Volatilità (σ): 15.14
 
 **FC Cincinnati**
 Carte trovate: 18 | Prezzo medio: 6.30 EUR | Volatilità (σ): 13.83
 
 **Minnesota United**
-Carte trovate: 17 | Prezzo medio: 2.19 EUR | Volatilità (σ): 2.59
+Carte trovate: 18 | Prezzo medio: 2.11 EUR | Volatilità (σ): 2.54
 
 **Orlando City SC**
 Carte trovate: 16 | Prezzo medio: 3.25 EUR | Volatilità (σ): 4.20
@@ -93,7 +93,7 @@ Carte trovate: 16 | Prezzo medio: 3.25 EUR | Volatilità (σ): 4.20
 Carte trovate: 20 | Prezzo medio: 8.12 EUR | Volatilità (σ): 12.28
 
 **Austin FC**
-Carte trovate: 11 | Prezzo medio: 2.35 EUR | Volatilità (σ): 2.89
+Carte trovate: 12 | Prezzo medio: 2.34 EUR | Volatilità (σ): 2.76
 
 **San Diego FC**
 Carte trovate: 20 | Prezzo medio: 4.40 EUR | Volatilità (σ): 8.42
@@ -132,7 +132,7 @@ Carte trovate: 15 | Prezzo medio: 1.81 EUR | Volatilità (σ): 1.67
 Carte trovate: 17 | Prezzo medio: 3.45 EUR | Volatilità (σ): 4.75
 
 **Toronto FC**
-Carte trovate: 16 | Prezzo medio: 2.36 EUR | Volatilità (σ): 2.42
+Carte trovate: 17 | Prezzo medio: 2.25 EUR | Volatilità (σ): 2.39
 
 **DC United**
 Carte trovate: 11 | Prezzo medio: 1.49 EUR | Volatilità (σ): 1.63
