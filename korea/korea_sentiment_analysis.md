@@ -1,17 +1,17 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:36:41.042817Z
-**Run totali:** 30
+**Data analisi:** 2026-07-22T23:46:42.548590Z
+**Run totali:** 31
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 3.24 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.8%)
-- **Sentiment:** 🟡 Leggero Calo
+- **Prezzo medio K League 1:** 3.23 EUR
+- **Trend mercato:** ➡️ STABLE (-0.2%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.8%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**➡️ TREND GLOBALE: STABLE (-0.2%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Lee Seung-Woo (Jeonbuk Hyundai Motors FC)**
 Prezzo: **2.49 EUR** | Media: **13.56 EUR** | Sconto: **-81.6%**

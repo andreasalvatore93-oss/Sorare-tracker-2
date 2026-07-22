@@ -1,16 +1,16 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:36:41.026480Z
-**Run totali:** 123
+**Data analisi:** 2026-07-22T23:46:42.531268Z
+**Run totali:** 124
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
 - **Prezzo medio MLS:** 6.17 EUR
-- **Trend mercato:** ➡️ STABLE (-0.0%)
+- **Trend mercato:** ➡️ STABLE (+0.0%)
 - **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.0%)**
+**➡️ TREND GLOBALE: STABLE (+0.0%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
@@ -66,7 +66,7 @@ Carte trovate: 22 | Prezzo medio: 1.99 EUR | Volatilità (σ): 2.36
 Carte trovate: 18 | Prezzo medio: 3.48 EUR | Volatilità (σ): 4.29
 
 **Columbus Crew**
-Carte trovate: 24 | Prezzo medio: 2.25 EUR | Volatilità (σ): 1.82
+Carte trovate: 25 | Prezzo medio: 2.24 EUR | Volatilità (σ): 1.78
 
 **Charlotte FC**
 Carte trovate: 15 | Prezzo medio: 4.38 EUR | Volatilità (σ): 4.64
@@ -114,7 +114,7 @@ Carte trovate: 20 | Prezzo medio: 1.64 EUR | Volatilità (σ): 1.73
 Carte trovate: 16 | Prezzo medio: 2.82 EUR | Volatilità (σ): 3.27
 
 **Atlanta United**
-Carte trovate: 15 | Prezzo medio: 1.68 EUR | Volatilità (σ): 1.70
+Carte trovate: 16 | Prezzo medio: 1.68 EUR | Volatilità (σ): 1.64
 
 **New England Revolution**
 Carte trovate: 24 | Prezzo medio: 4.93 EUR | Volatilità (σ): 10.26
