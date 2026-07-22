@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T12:37:30.941068Z
-**Run totali:** 42
+**Data analisi:** 2026-07-22T12:39:33.022237Z
+**Run totali:** 43
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.96 EUR
-- **Trend mercato:** 📉 DESCENDING (-1.0%)
-- **Sentiment:** 🟨 Quasi Fermo
+- **Prezzo medio MLS:** 6.95 EUR
+- **Trend mercato:** ➡️ STABLE (-0.2%)
+- **Sentiment:** ⚪ Stabile
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📉 TREND GLOBALE: DESCENDING (-1.0%)**
-Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
+**➡️ TREND GLOBALE: STABLE (-0.2%)**
+Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Aníbal Godoy (San Diego FC)**
 Prezzo: **0.98 EUR** | Media: **2.29 EUR** | Sconto: **-57.2%**
@@ -75,13 +75,13 @@ Carte trovate: 9 | Prezzo medio: 8.65 EUR | Volatilità (σ): 9.47
 Carte trovate: 15 | Prezzo medio: 2.83 EUR | Volatilità (σ): 2.39
 
 **Chicago Fire FC**
-Carte trovate: 12 | Prezzo medio: 8.48 EUR | Volatilità (σ): 12.06
+Carte trovate: 12 | Prezzo medio: 8.32 EUR | Volatilità (σ): 12.09
 
 **Inter Miami CF**
 Carte trovate: 6 | Prezzo medio: 6.03 EUR | Volatilità (σ): 6.51
 
 **FC Cincinnati**
-Carte trovate: 6 | Prezzo medio: 13.85 EUR | Volatilità (σ): 23.32
+Carte trovate: 6 | Prezzo medio: 13.68 EUR | Volatilità (σ): 23.31
 
 **Minnesota United**
 Carte trovate: 9 | Prezzo medio: 2.22 EUR | Volatilità (σ): 1.96
@@ -114,7 +114,7 @@ Carte trovate: 8 | Prezzo medio: 2.33 EUR | Volatilità (σ): 3.20
 Carte trovate: 8 | Prezzo medio: 2.94 EUR | Volatilità (σ): 2.28
 
 **Atlanta United**
-Carte trovate: 2 | Prezzo medio: 2.07 EUR | Volatilità (σ): 1.10
+Carte trovate: 2 | Prezzo medio: 2.03 EUR | Volatilità (σ): 1.05
 
 **New England Revolution**
 Carte trovate: 7 | Prezzo medio: 11.58 EUR | Volatilità (σ): 20.54
@@ -129,7 +129,7 @@ Carte trovate: 13 | Prezzo medio: 7.86 EUR | Volatilità (σ): 14.21
 Carte trovate: 5 | Prezzo medio: 3.48 EUR | Volatilità (σ): 2.69
 
 **New York City FC**
-Carte trovate: 6 | Prezzo medio: 3.75 EUR | Volatilità (σ): 5.54
+Carte trovate: 7 | Prezzo medio: 4.21 EUR | Volatilità (σ): 5.20
 
 **Toronto FC**
 Carte trovate: 5 | Prezzo medio: 2.62 EUR | Volatilità (σ): 2.47
