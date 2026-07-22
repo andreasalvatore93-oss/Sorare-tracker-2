@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       total_minutes:
-        description: "Minuti totali di ascolto (default 30)"
+        description: "Minuti totali di ascolto (default 120)"
         required: false
-        default: "30"
+        default: "120"
       chunk_minutes:
-        description: "Durata di ogni singola sessione prima di salvare+committare (default 2 min -- se ti interrompi perdi al massimo questo intervallo)"
+        description: "Durata di ogni singola sessione prima di salvare+committare (default 10 min -- se ti interrompi perdi al massimo questo intervallo)"
         required: false
-        default: "2"
+        default: "10"
 
 permissions:
   contents: write
@@ -22,7 +22,7 @@ concurrency:
 jobs:
   sentiment-scanner:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
         with:
