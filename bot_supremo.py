@@ -1232,6 +1232,72 @@ TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS'
 
 LIQUIDITY_DIAGNOSTIC = os.environ.get('LIQUIDITY_DIAGNOSTIC', 'no').strip().lower() == 'si'
 
+# NUOVA PROTEZIONE (22/07, richiesta esplicita utente): il prezzo da pagare (AutoBuy)
+# o da offrire (MakeOffer, gia' scontato) deve essere INFERIORE all'ultima transazione
+# reale (vendita/scambio/asta) di quella carta -- altrimenti si rischia di pagare piu'
+# di quanto qualcuno abbia gia' accettato di recente. Query SEPARATA e DEDICATA
+# (non la stessa della liquidita'): un campo prezzo non confermato aggiunto alla query
+# di conteggio transazioni avrebbe potuto rompere ANCHE quel conteggio se il nome del
+# campo fosse sbagliato (gia' successo 2 volte in questa sessione con altri tentativi
+# di query alla cieca) -- isolando il rischio su una query a se stante, un eventuale
+# errore di schema disattiva SOLO questo nuovo controllo (fail-safe, non blocca mai
+# acquisti/offerte), senza toccare la logica di liquidita' gia' funzionante.
+LAST_TRANSACTION_PRICE_QUERY = """
+query LastTransactionPriceQuery($p: String!, $n: Int!) {
+  anyPlayer(slug: $p) {
+    tokenPrices(rarity: limited, last: $n) {
+      nodes {
+        date
+        amounts { eurCents wei usdCents gbpCents lamport }
+        card { inSeasonEligible }
+      }
+    }
+  }
+}
+"""
+
+_LAST_PRICE_CHECK_DISABLED = False
+_last_price_warning_logged = False
+
+
+def get_last_transaction_price(player_slug, is_in_season, league_slug, eth_rate, n=10):
+    """Ritorna il prezzo EUR dell'ultima transazione reale (vendita/scambio/asta) di
+    player_slug, oppure None se non disponibile/query fallita (fail-safe, il chiamante
+    NON deve bloccare l'acquisto solo per questo).
+
+    Stessa differenziazione per campionato gia' in uso altrove (richiesta esplicita
+    utente): MLS/K-League confrontano SOLO la stagione giusta (season vs season,
+    classic vs classic); altri campionati prendono l'ultima transazione in assoluto,
+    mescolando in_season+classic (coerente col resto della logica per questi
+    campionati)."""
+    global _LAST_PRICE_CHECK_DISABLED, _last_price_warning_logged
+    if _LAST_PRICE_CHECK_DISABLED:
+        return None
+    try:
+        data = graphql_query(LAST_TRANSACTION_PRICE_QUERY, {"p": player_slug, "n": n})
+    except Exception as e:
+        log(f"[ultimo prezzo transazione] eccezione per {player_slug}: {e}")
+        return None
+    if data.get('errors'):
+        if not _last_price_warning_logged:
+            log(f"[ultimo prezzo transazione] ATTENZIONE: query fallita ({data['errors']}) -- "
+                f"controllo 'prezzo inferiore all'ultima transazione' DISATTIVATO per il resto "
+                f"della run (fail-safe, non blocca acquisti/offerte). Dettaglio mostrato una sola volta.")
+            _last_price_warning_logged = True
+        _LAST_PRICE_CHECK_DISABLED = True
+        return None
+    nodes = ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices', {}).get('nodes') or []
+    excluded_league = is_asia_americas_excluded_league(league_slug)
+    for node in nodes:
+        if excluded_league:
+            card = node.get('card') or {}
+            if bool(card.get('inSeasonEligible')) != is_in_season:
+                continue
+        price = eur_price_from_amounts(node.get('amounts'), eth_rate)
+        if price is not None:
+            return price
+    return None
+
 # NUOVA PROTEZIONE (22/07, richiesta esplicita utente): oltre alla liquidita' storica
 # (transazioni passate), controlla anche quante carte dello stesso giocatore sono
 # ATTUALMENTE in vendita in questo momento -- un mercato con pochissimi annunci vivi
@@ -2524,14 +2590,25 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     # --- ROUTER: nessuna sovrapposizione per costruzione ---
     if margin_percent >= AUTOBUY_MARGIN_FRACTION:
+        prezzo_da_pagare = true_min_price
+    elif MAKEOFFER_MARGIN_FRACTION <= margin_percent <= MAKEOFFER_MAX_MARGIN_FRACTION:
+        prezzo_da_pagare = round(true_min_price * (1 - OFFER_DISCOUNT_FRACTION), 2)
+    else:
+        return False
+
+    ultimo_prezzo_transazione = get_last_transaction_price(player_slug, is_in_season, league_slug, eth_rate)
+    if ultimo_prezzo_transazione is not None and prezzo_da_pagare >= ultimo_prezzo_transazione:
+        log(f"{player_name}: scarto -- prezzo da pagare ({prezzo_da_pagare:.2f}EUR) non e' "
+            f"inferiore all'ultima transazione reale ({ultimo_prezzo_transazione:.2f}EUR)")
+        return False
+
+    if margin_percent >= AUTOBUY_MARGIN_FRACTION:
         return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                                        margin_percent, card_slug, excluded_league, is_in_season,
                                        offer_id)
-    if MAKEOFFER_MARGIN_FRACTION <= margin_percent <= MAKEOFFER_MAX_MARGIN_FRACTION:
-        return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
-                                         margin_percent, card_slug, excluded_league, is_in_season,
-                                         seller_slug)
-    return False
+    return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
+                                     margin_percent, card_slug, excluded_league, is_in_season,
+                                     seller_slug)
 
 
 def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
