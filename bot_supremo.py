@@ -888,6 +888,38 @@ def get_browser_page():
     except Exception as e:
         log(f"[playwright] navigazione di riscaldamento fallita parzialmente (non bloccante): {e}")
 
+    # 23/07 (ottimizzazione CDP): pre-registra la funzione di fetch GraphQL UNA
+    # SOLA VOLTA su window -- ogni chiamata successiva (_graphql_call_via_browser_raw)
+    # invia solo un piccolo wrapper invece del corpo intero della funzione, riducendo
+    # l'overhead di trasferimento/parsing per ogni page.evaluate. Stesso identico
+    # fetch() reale dentro Chrome, nessun cambiamento di comportamento/fingerprint.
+    page.evaluate("""
+    () => {
+        window.__sorareGraphqlFetch = async (url, payload, csrfToken, deviceFingerprint) => {
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'x-csrf-token': csrfToken,
+                };
+                if (deviceFingerprint) {
+                    headers['device_fingerprint'] = deviceFingerprint;
+                }
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    credentials: 'include',
+                    body: JSON.stringify(payload),
+                });
+                const text = await resp.text();
+                return { status: resp.status, body: text };
+            } catch (e) {
+                return { status: 0, body: JSON.stringify({error: String(e)}) };
+            }
+        };
+    }
+    """)
+
     _playwright_page = page
     return page
 
@@ -923,33 +955,10 @@ def _graphql_call_via_browser_raw(query, variables=None):
     page = get_browser_page()
     payload = {"query": query, "variables": variables or {}}
 
-    js_code = """
-    async ([url, payload, csrfToken, deviceFingerprint]) => {
-        try {
-            const headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'x-csrf-token': csrfToken,
-            };
-            if (deviceFingerprint) {
-                headers['device_fingerprint'] = deviceFingerprint;
-            }
-            const resp = await fetch(url, {
-                method: 'POST',
-                headers: headers,
-                credentials: 'include',
-                body: JSON.stringify(payload),
-            });
-            const text = await resp.text();
-            return { status: resp.status, body: text };
-        } catch (e) {
-            return { status: 0, body: JSON.stringify({error: String(e)}) };
-        }
-    }
-    """
     try:
         result = page.evaluate(
-            js_code,
+            "([url, payload, csrfToken, deviceFingerprint]) => "
+            "window.__sorareGraphqlFetch(url, payload, csrfToken, deviceFingerprint)",
             [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
         )
         body_text = result.get('body', '')
