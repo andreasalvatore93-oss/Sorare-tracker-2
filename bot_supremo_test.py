@@ -1837,6 +1837,17 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
             'salt': salt,
             'authorizationRequest': authorization_request,
         }
+        # DIAGNOSTICA (23/07, richiesta esplicita utente -- capire cosa spiega
+        # firma_node piu' lento del solito): questo ramo fa il decrypt COMPLETO
+        # PBKDF2(50000 iterazioni)+AES-GCM, molto piu' lento del percorso rapido
+        # sopra. Dovrebbe scattare UNA SOLA VOLTA per run (prima firma reale --
+        # il pre-warm avvia il processo Node ma non chiama mai sign_authorization_
+        # via_node, quindi la cache resta vuota fino al primo acquisto/offerta
+        # vero). Se compare PIU' di una volta nello stesso run, la cache non sta
+        # reggendo come previsto -- da investigare.
+        log("[firma Node] decrypt completo (prima chiamata della sessione o cache "
+            "non popolata) -- piu' lento delle chiamate successive che useranno "
+            "la chiave gia' in chiaro")
     line = json.dumps(payload)
 
     idx, wait_s = _acquire_node_slot()
