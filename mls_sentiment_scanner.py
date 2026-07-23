@@ -99,8 +99,24 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
+_RATE_LOCK = threading.Lock()
+_LAST_CALL_TS = [0.0]
+MIN_INTERVAL_SECONDS = float(os.environ.get('MIN_INTERVAL_SECONDS', '0.6'))
+MAX_RETRIES_429 = int(os.environ.get('MAX_RETRIES_429', '4'))
+
+
+def _throttle():
+    """Garantisce almeno MIN_INTERVAL_SECONDS tra due chiamate GraphQL dirette."""
+    with _RATE_LOCK:
+        now = time.time()
+        wait = MIN_INTERVAL_SECONDS - (now - _LAST_CALL_TS[0])
+        if wait > 0:
+            time.sleep(wait)
+        _LAST_CALL_TS[0] = time.time()
+
+
 def graphql_query(query, variables=None):
-    """Esegue query GraphQL via curl_cffi/requests."""
+    """Esegue query GraphQL via curl_cffi/requests, con throttle e retry/backoff su 429."""
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -114,18 +130,31 @@ def graphql_query(query, variables=None):
         'variables': variables or {},
     }
     
-    try:
-        response = _http_session.post(
-            GRAPHQL_URL,
-            json=payload,
-            headers=headers,
-            timeout=10,
-        )
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        log(f"[GraphQL Error] {e}")
-        return {}
+    backoff = 1.0
+    for attempt in range(MAX_RETRIES_429 + 1):
+        _throttle()
+        try:
+            response = _http_session.post(
+                GRAPHQL_URL,
+                json=payload,
+                headers=headers,
+                timeout=10,
+            )
+            if response.status_code == 429:
+                retry_after = response.headers.get('Retry-After')
+                sleep_s = float(retry_after) if retry_after else backoff
+                log(f"[GraphQL 429] tentativo {attempt+1}/{MAX_RETRIES_429+1}, attesa {sleep_s:.1f}s")
+                time.sleep(sleep_s)
+                backoff *= 2
+                continue
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            log(f"[GraphQL Error] {e}")
+            return {}
+    
+    log("[GraphQL Error] Esauriti i retry dopo ripetuti 429")
+    return {}
 
 
 SUBSCRIPTION_QUERY = """
@@ -303,6 +332,27 @@ def run_listener(eth_rate, leagues_data, leagues_config, listen_seconds):
     ws_container = [None]  # Contenitore per WebSocket (per chiuderlo dal timer)
     seen_offer_status = set()
     
+    import queue
+    trigger_queue = queue.Queue()
+    stop_worker = threading.Event()
+    
+    def trigger_worker():
+        """Consuma la coda dei trigger 'classic' uno alla volta, così le query
+        dirette fetch_min_in_season_price non partono mai in burst parallelo
+        (causa principale dei 429 dopo ~30 min di mercato attivo)."""
+        while not stop_worker.is_set():
+            try:
+                league_slug, player_slug, player_name, player = trigger_queue.get(timeout=1)
+            except queue.Empty:
+                continue
+            trigger_price = fetch_min_in_season_price(player_slug, eth_rate)
+            if trigger_price is not None:
+                register_price(league_slug, player_slug, player_name, player, trigger_price, source='trigger')
+            trigger_queue.task_done()
+    
+    worker_thread = threading.Thread(target=trigger_worker, daemon=True)
+    worker_thread.start()
+    
     def register_price(league_slug, player_slug, player_name, player, price_eur, source='live'):
         """Registra un prezzo in_season nella struttura dati della lega corretta."""
         data = leagues_data[league_slug]
@@ -427,10 +477,7 @@ def run_listener(eth_rate, leagues_data, leagues_config, listen_seconds):
                 # il minimo in_season disponibile in questo momento per lo stesso giocatore.
                 if not card.get('inSeasonEligible'):
                     stats["classic_seen"] = stats.get("classic_seen", 0) + 1
-                    
-                    trigger_price = fetch_min_in_season_price(player_slug, eth_rate)
-                    if trigger_price is not None:
-                        register_price(league_slug, player_slug, player_name, player, trigger_price, source='trigger')
+                    trigger_queue.put((league_slug, player_slug, player_name, player))
                     continue
                 
                 stats["processed"] += 1
@@ -473,6 +520,8 @@ def run_listener(eth_rate, leagues_data, leagues_config, listen_seconds):
     
     ws_container[0] = ws
     ws.run_forever(ping_interval=30)
+    stop_worker.set()
+    worker_thread.join(timeout=5)
     return leagues_data
 
 
