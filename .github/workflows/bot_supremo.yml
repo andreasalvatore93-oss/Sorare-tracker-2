@@ -13,19 +13,19 @@ on:
       makeoffer_margin_percent:
         description: "Margine MINIMO per il ramo MakeOffer (offerta scontata), in % (es. 10 = 10%)"
         required: false
-        default: "15"
+        default: "10"
       makeoffer_max_margin_percent:
         description: "Margine MASSIMO per il ramo MakeOffer -- oltre questa soglia interviene AutoBuy"
         required: false
-        default: "25"
+        default: "20"
       offer_discount_percent:
         description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
         required: false
-        default: "25"
+        default: "20"
       autobuy_margin_percent:
         description: "Margine MINIMO per il ramo AutoBuy (accetta offerta esistente), in % -- deve essere >= makeoffer_max_margin_percent"
         required: false
-        default: "26"
+        default: "20"
       listen_seconds:
         description: "Secondi di ascolto massimi, max 18000 (5h)"
         required: false
@@ -41,7 +41,7 @@ on:
       target_matches:
         description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-20)"
         required: false
-        default: "3"
+        default: "10"
       autobuy_diagnostic:
         description: "Log extra sul confronto in_season/classic per lega, di default spento"
         required: false
@@ -55,9 +55,9 @@ on:
         required: false
         default: "si"
       min_recent_transactions:
-        description: "Transazioni minime (7gg) per non scartare il caso -- protezione mercato sottile"
+        description: "Transazioni minime (3gg) per non scartare il caso -- protezione mercato sottile"
         required: false
-        default: "4"
+        default: "3"
       min_listed_cards_for_purchase:
         description: "Carte MINIME dello stesso giocatore attualmente IN VENDITA (annunci vivi, non storico) perche' il caso proceda -- protezione mercato poco popolato. MLS/K-League confrontano solo la stagione giusta (season/classic separate), altri campionati mescolano in_season+classic come sempre"
         required: false
@@ -95,9 +95,9 @@ on:
         required: false
         default: "1"
       periodic_bid_enabled:
-        description: "'si' = attivo il bid periodico ogni 2 minuti (fascia 2-30EUR fissa, sconto 30% fisso sul candidato piu' vicino alla soglia MakeOffer, SOLO offerte mai acquisto diretto). 'no' = disattivato."
+        description: "'si' = attivo il bid periodico ogni 3 minuti (fascia 2-30EUR fissa, sconto 25% fisso sul candidato piu' vicino alla soglia MakeOffer, SOLO offerte mai acquisto diretto). 'no' = disattivato."
         required: false
-        default: "si"
+        default: "no"
 permissions:
   contents: write
 concurrency:
@@ -136,18 +136,18 @@ jobs:
           PYTHONUNBUFFERED: "1"
           AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1.50' }}
           AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
-          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '15' }}
-          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '25' }}
-          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '26' }}
+          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '10' }}
+          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '20' }}
+          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '20' }}
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
           LIQUIDITY_DIAGNOSTIC: "no"
           RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS: ${{ github.event.inputs.rate_limit_notify_cooldown_seconds || '300' }}
-          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '3' }}
+          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '10' }}
           AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
-          MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '4' }}
+          MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
           MIN_LISTED_CARDS_FOR_PURCHASE: ${{ github.event.inputs.min_listed_cards_for_purchase || '3' }}
           MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
           MIN_NON_TRIGGER_LOG: ${{ github.event.inputs.min_non_trigger_log || 'no' }}
@@ -156,10 +156,10 @@ jobs:
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'si' }}
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
-          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '25' }}
+          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '20' }}
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: "20"
-          PERIODIC_BID_ENABLED: ${{ github.event.inputs.periodic_bid_enabled || 'si' }}
+          PERIODIC_BID_ENABLED: ${{ github.event.inputs.periodic_bid_enabled || 'no' }}
         run: |
           set -o pipefail
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
