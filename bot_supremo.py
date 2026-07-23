@@ -2220,14 +2220,19 @@ def execute_live_purchase(offer_id, prepared, _call_fn=None):
     nonce = request.get('nonce')
     authorization_id = prepared.get('authorization_id')
 
+    # 23/07: timing granulare per capire dove va il tempo dentro esecuzione_finale
+    # (fetch_key/firma_node/accept separati) -- nessuna logica toccata, solo misure.
+    _t0 = time.monotonic()
     key_data = fetch_encrypted_private_key(
         authorization_id=authorization_id, fingerprint=fingerprint, offer_id=offer_id,
         _call_fn=_call_fn)
+    _t_fetch_key = time.monotonic() - _t0
     if not key_data:
         log("[acquisto live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
         return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
-    log("[acquisto live] step 1/3 OK: chiave cifrata recuperata")
+    log(f"[acquisto live] step 1/3 OK: chiave cifrata recuperata (fetch_key={_t_fetch_key:.3f}s)")
 
+    _t1 = time.monotonic()
     signature = sign_authorization_via_node(
         SORARE_WALLET_PASSWORD,
         key_data.get('encryptedPrivateKey'),
@@ -2235,10 +2240,11 @@ def execute_live_purchase(offer_id, prepared, _call_fn=None):
         key_data.get('salt'),
         request,
     )
+    _t_firma = time.monotonic() - _t1
     if not signature:
         log("[acquisto live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
         return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
-    log("[acquisto live] step 2/3 OK: firma generata")
+    log(f"[acquisto live] step 2/3 OK: firma generata (firma_node={_t_firma:.3f}s)")
 
     # FIX 19/07 (velocizzazione sniping): riusiamo l'exchange_rate_id gia' ottenuto da
     # prepare_accept_offer invece di rifare la stessa query GraphQL una seconda volta --
@@ -2248,12 +2254,15 @@ def execute_live_purchase(offer_id, prepared, _call_fn=None):
         log("[acquisto live] STOP: exchange_rate_id non disponibile da prepared")
         return False, "exchange_rate_id non disponibile"
 
+    _t2 = time.monotonic()
     success, category, error = accept_offer(offer_id, fingerprint, nonce, signature,
                                              exchange_rate_id, _call_fn=_call_fn)
+    _t_accept = time.monotonic() - _t2
     if not success:
-        log(f"[acquisto live] STOP: step 3/3 fallito, categoria='{category}'")
+        log(f"[acquisto live] STOP: step 3/3 fallito, categoria='{category}' (accept={_t_accept:.3f}s)")
         return False, f"AcceptOfferMutation fallita [{category}]: {error}"
-    log("[acquisto live] step 3/3 OK: acquisto completato")
+    log(f"[acquisto live] step 3/3 OK: acquisto completato "
+        f"(fetch_key={_t_fetch_key:.3f}s, firma_node={_t_firma:.3f}s, accept={_t_accept:.3f}s)")
     return True, None
 
 
