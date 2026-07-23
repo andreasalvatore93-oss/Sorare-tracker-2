@@ -1644,6 +1644,7 @@ def prepare_accept_offer(offer_id, _call_fn=None):
 import subprocess
 import queue
 import collections
+import itertools
 
 # OTTIMIZZAZIONE VELOCITA' SNIPING (21/07, richiesta esplicita utente): il processo
 # Node per la firma non viene piu' avviato da zero ad OGNI acquisto/offerta -- resta
@@ -1655,8 +1656,7 @@ import collections
 # legge le risposte dallo stdout del processo cosi' il chiamante puo' aspettarle
 # con un timeout vero (niente rischio di restare bloccati per sempre se il
 # processo Node si pianta senza rispondere).
-_node_process = None
-_node_process_lock = threading.Lock()
+_NODE_POOL_SIZE = int(os.environ.get('NODE_POOL_SIZE', '3'))
 # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita utente,
 # rischio accettato): con piu' eventi valutati in parallelo (vedi run_listener/
 # on_message piu' sotto), queste risorse condivise NON erano protette prima
@@ -1665,9 +1665,12 @@ _node_process_lock = threading.Lock()
 # leggere lo stesso stato e poi sovrascriversi a vicenda, perdendo un
 # aggiornamento -- "lost update"). _browser_lock protegge l'uso della singola
 # pagina Playwright condivisa (graphql_query_via_browser) -- non e' pensata per
-# essere usata da piu' thread contemporaneamente. _node_process_lock (sopra)
-# esisteva GIA' e protegge gia' correttamente la comunicazione col processo Node
-# di firma, nessuna modifica necessaria li'.
+# essere usata da piu' thread contemporaneamente. Il processo Node di firma NON
+# usa piu' un singolo lock globale -- vedi il pool _node_pool piu' sotto (versione
+# no-playwright, 23/07): con Playwright il lock globale non era mai conteso
+# davvero (la serializzazione la faceva gia' il thread browser unico); rimosso
+# quel vincolo, un solo processo Node avrebbe messo in coda le firme che ora
+# possono arrivare quasi insieme da thread diversi.
 _lista_nera_lock = threading.Lock()
 # FIX 22/07 v2 (bug reale confermato dal vivo, 3 casi -- "Cannot switch to a
 # different thread" / greenlet): un _browser_lock semplice NON basta per
@@ -1693,15 +1696,21 @@ def _run_on_browser_thread(fn, *args, **kwargs):
     thread chiamante -- nessun dispatch necessario, non c'e' piu' un browser/thread
     dedicato a cui vincolarsi."""
     return fn(*args, **kwargs)
-_node_stdout_queue = None
-_node_stderr_tail = collections.deque(maxlen=20)
+_node_stderr_tail = collections.deque(maxlen=20)  # condiviso tra tutti gli slot, solo diagnostica testuale
+
+# POOL di processi Node persistenti (versione no-playwright, 23/07 -- vedi nota
+# sopra su _lista_nera_lock/_browser_lock per il perche'): ogni slot ha il proprio
+# processo/coda/lock, cosi' fino a _NODE_POOL_SIZE firme possono avvenire
+# DAVVERO in parallelo invece di mettersi in coda dietro un processo unico.
+_node_pool = [{'process': None, 'queue': None, 'lock': threading.Lock()} for _ in range(_NODE_POOL_SIZE)]
+_node_pool_rr = itertools.count()  # contatore round-robin per la scelta dello slot di partenza
 
 
 def _node_stdout_reader(proc, q):
-    """Gira in un thread dedicato per tutta la vita del processo Node: legge una
-    riga alla volta dal suo stdout e la mette in coda. Quando lo stdout si chiude
-    (processo terminato/crashato), mette None in coda cosi' chi e' in attesa lo sa
-    subito invece di restare appeso fino al timeout."""
+    """Gira in un thread dedicato per tutta la vita di UN processo Node del pool:
+    legge una riga alla volta dal suo stdout e la mette in coda. Quando lo stdout si
+    chiude (processo terminato/crashato), mette None in coda cosi' chi e' in attesa
+    lo sa subito invece di restare appeso fino al timeout."""
     try:
         for line in proc.stdout:
             q.put(line)
@@ -1711,9 +1720,9 @@ def _node_stdout_reader(proc, q):
 
 
 def _node_stderr_reader(proc, tail):
-    """Thread dedicato per lo stderr del processo Node: lo teniamo solo per
-    diagnostica (ultime righe, utili nei log se una richiesta fallisce o il
-    processo muore), non blocca mai nessuno."""
+    """Thread dedicato per lo stderr di UN processo Node del pool: lo teniamo solo
+    per diagnostica (ultime righe, condivise tra tutti gli slot -- utili nei log se
+    una richiesta fallisce o un processo muore), non blocca mai nessuno."""
     try:
         for line in proc.stderr:
             tail.append(line.rstrip('\n'))
@@ -1721,22 +1730,24 @@ def _node_stderr_reader(proc, tail):
         pass
 
 
-def _ensure_node_sign_process():
-    """Ritorna il processo Node persistente per la firma, avviandolo (o
-    riavviandolo se e' morto) se necessario. Chiamata sempre sotto
-    _node_process_lock dal chiamante."""
-    global _node_process, _node_stdout_queue
-    if _node_process is not None and _node_process.poll() is None:
-        return _node_process
+def _ensure_node_pool_slot(idx):
+    """Ritorna il processo Node persistente dello slot idx del pool, avviandolo (o
+    riavviandolo se e' morto) se necessario. Chiamata sempre col lock di QUELLO
+    slot gia' preso dal chiamante (stessa convenzione di prima, ora per-slot
+    invece che su un unico lock globale)."""
+    slot = _node_pool[idx]
+    proc = slot['process']
+    if proc is not None and proc.poll() is None:
+        return proc
 
-    if _node_process is not None:
-        log(f"[firma Node] il processo persistente precedente non e' piu' attivo "
-            f"(codice uscita {_node_process.poll()}), lo riavvio -- ultime righe stderr: "
+    if proc is not None:
+        log(f"[firma Node] slot {idx}: il processo persistente precedente non e' piu' "
+            f"attivo (codice uscita {proc.poll()}), lo riavvio -- ultime righe stderr: "
             f"{list(_node_stderr_tail)}")
 
     script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
-    log("[firma Node] avvio processo Node persistente per la firma "
-        "(una tantum/riavvio, poi resta vivo e riusato per tutta la run)...")
+    log(f"[firma Node] avvio processo Node persistente per la firma, slot {idx}/{_NODE_POOL_SIZE - 1} "
+        f"(una tantum/riavvio, poi resta vivo e riusato per tutta la run)...")
     proc = subprocess.Popen(
         ['node', script_path],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -1745,36 +1756,55 @@ def _ensure_node_sign_process():
     q = queue.Queue()
     threading.Thread(target=_node_stdout_reader, args=(proc, q), daemon=True).start()
     threading.Thread(target=_node_stderr_reader, args=(proc, _node_stderr_tail), daemon=True).start()
-    _node_process = proc
-    _node_stdout_queue = q
+    slot['process'] = proc
+    slot['queue'] = q
     return proc
 
 
+def _acquire_node_slot():
+    """Sceglie uno slot libero del pool Node (round-robin, tentativo NON
+    bloccante prima su tutti gli slot) -- se sono tutti occupati nello stesso
+    istante, aspetta sul primo in sequenza (bloccante). Con un pool piccolo
+    (default 3) la contesa vera resta rara, ma non serializza piu' tutte le firme
+    su un unico processo come prima. Ritorna (idx, secondi_di_attesa) per la
+    diagnostica timing in sign_authorization_via_node."""
+    _t0 = time.monotonic()
+    start = next(_node_pool_rr) % _NODE_POOL_SIZE
+    for offset in range(_NODE_POOL_SIZE):
+        idx = (start + offset) % _NODE_POOL_SIZE
+        if _node_pool[idx]['lock'].acquire(blocking=False):
+            return idx, time.monotonic() - _t0
+    idx = start
+    _node_pool[idx]['lock'].acquire(blocking=True)
+    return idx, time.monotonic() - _t0
+
+
 def close_node_sign_process():
-    """Chiude il processo Node persistente a fine run (chiamata da close_browser/
+    """Chiude TUTTI i processi Node persistenti del pool a fine run (chiamata da
     finally in main()), stesso principio di pulizia gia' applicato al browser
     Playwright -- non lasciare processi appesi al termine del workflow."""
-    global _node_process
-    with _node_process_lock:
-        if _node_process is not None:
-            try:
-                if _node_process.poll() is None:
-                    _node_process.stdin.close()
-                    _node_process.wait(timeout=5)
-            except Exception as e:
-                log(f"[firma Node] errore chiudendo il processo persistente: {e}")
+    for idx, slot in enumerate(_node_pool):
+        with slot['lock']:
+            proc = slot['process']
+            if proc is not None:
                 try:
-                    _node_process.kill()
-                except Exception:
-                    pass
-            _node_process = None
+                    if proc.poll() is None:
+                        proc.stdin.close()
+                        proc.wait(timeout=5)
+                except Exception as e:
+                    log(f"[firma Node] slot {idx}: errore chiudendo il processo persistente: {e}")
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                slot['process'] = None
 
 
 def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
-    """Invia una richiesta di firma al processo Node PERSISTENTE (vedi
-    _ensure_node_sign_process sopra) tramite il protocollo a righe di
-    sorare-sign/decrypt_and_sign.js: una riga JSON in stdin, una riga JSON in
-    risposta da stdout, timeout vero via thread separato.
+    """Invia una richiesta di firma a UNO SLOT del pool di processi Node
+    PERSISTENTI (vedi _node_pool/_acquire_node_slot sopra) tramite il protocollo a
+    righe di sorare-sign/decrypt_and_sign.js: una riga JSON in stdin, una riga
+    JSON in risposta da stdout, timeout vero via thread separato.
 
     Lo script Node decripta la chiave privata (PBKDF2 + AES-GCM, stesso algoritmo usato
     dal sito sorare.com) e poi chiama @sorare/crypto.signAuthorizationRequest per
@@ -1792,10 +1822,16 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
     costo fisso di avvio Node + caricamento di @sorare/crypto da ogni singolo
     tentativo (prima pagato sempre, ora pagato una volta sola).
 
+    VERSIONE NO-PLAYWRIGHT (23/07): il processo unico e' diventato un POOL di
+    _NODE_POOL_SIZE processi persistenti -- ogni chiamata prende uno slot libero
+    (round-robin, _acquire_node_slot) invece di mettersi sempre in coda dietro lo
+    stesso processo. Diagnostica: se acquisire uno slot richiede piu' di 10ms
+    (tutti occupati nello stesso istante), logga l'attesa -- utile per verificare
+    quanto la contesa sia reale con un pool di questa dimensione.
+
     Ritorna la stringa signature (da usare in approvals[0].mangopayWalletTransferApproval)
     oppure None se qualcosa fallisce (password sbagliata, script non trovato, dipendenze
     npm non installate, timeout, processo morto, ecc.) -- logga sempre il motivo."""
-    global _node_process
     if 'decrypted_private_key' in _decrypted_key_cache:
         payload = {
             'decryptedPrivateKey': _decrypted_key_cache['decrypted_private_key'],
@@ -1811,41 +1847,48 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
         }
     line = json.dumps(payload)
 
-    with _node_process_lock:
+    idx, wait_s = _acquire_node_slot()
+    if wait_s > 0.01:
+        log(f"[firma Node] slot {idx}: atteso {wait_s:.3f}s per uno slot libero nel pool "
+            f"(diagnostica contesa, {_NODE_POOL_SIZE} slot totali)")
+    slot = _node_pool[idx]
+    try:
         try:
-            proc = _ensure_node_sign_process()
-            q = _node_stdout_queue
+            proc = _ensure_node_pool_slot(idx)
+            q = slot['queue']
             proc.stdin.write(line + '\n')
             proc.stdin.flush()
         except Exception as e:
-            log(f"[firma Node] eccezione scrivendo la richiesta al processo persistente "
-                f"(lo forzo a ripartire al prossimo tentativo): {e}")
+            log(f"[firma Node] slot {idx}: eccezione scrivendo la richiesta al processo "
+                f"persistente (lo forzo a ripartire al prossimo tentativo): {e}")
             try:
-                if _node_process is not None:
-                    _node_process.kill()
+                if slot['process'] is not None:
+                    slot['process'].kill()
             except Exception:
                 pass
-            _node_process = None
+            slot['process'] = None
             return None
 
         try:
             raw = q.get(timeout=30)
         except queue.Empty:
-            log("[firma Node] timeout (30s) in attesa della risposta dal processo "
-                "persistente -- lo forzo a ripartire al prossimo tentativo")
+            log(f"[firma Node] slot {idx}: timeout (30s) in attesa della risposta dal "
+                f"processo persistente -- lo forzo a ripartire al prossimo tentativo")
             try:
                 proc.kill()
             except Exception:
                 pass
-            _node_process = None
+            slot['process'] = None
             return None
 
         if raw is None:
-            log(f"[firma Node] il processo persistente e' terminato mentre aspettavo "
-                f"la risposta (ultime righe stderr: {list(_node_stderr_tail)}) -- "
+            log(f"[firma Node] slot {idx}: il processo persistente e' terminato mentre "
+                f"aspettavo la risposta (ultime righe stderr: {list(_node_stderr_tail)}) -- "
                 f"ripartira' al prossimo tentativo")
-            _node_process = None
+            slot['process'] = None
             return None
+    finally:
+        slot['lock'].release()
 
     try:
         output = json.loads(raw.strip())
@@ -2055,8 +2098,8 @@ def execute_live_purchase(offer_id, prepared, _call_fn=None):
     solo hop, vedi _run_autobuy_merged) -- viene passato a sua volta a
     fetch_encrypted_private_key/accept_offer per evitare un doppio dispatch
     annidato. sign_authorization_via_node NON e' toccata: usa il proprio canale
-    IPC verso il processo Node, gia' thread-safe (protetto da _node_process_lock)
-    indipendentemente da quale thread la chiami."""
+    IPC verso il pool di processi Node, gia' thread-safe (ogni slot protetto dal
+    proprio lock) indipendentemente da quale thread la chiami."""
     log(f"[acquisto live] avvio -- offer_id={offer_id}")
 
     if not SORARE_WALLET_PASSWORD:
@@ -3643,16 +3686,18 @@ def main():
             else:
                 log("[precarico velocita'] ATTENZIONE: precarico chiave cifrata fallito, "
                     "verra' ritentato al primo acquisto/offerta reale")
-            # OTTIMIZZAZIONE VELOCITA' (21/07): avviamo qui anche il processo Node
-            # persistente per la firma (sorare-sign/decrypt_and_sign.js), invece di
-            # lasciare che parta al primo acquisto/offerta reale -- l'avvio di Node
-            # e il caricamento di @sorare/crypto costano qualche centinaio di
-            # millisecondi, e non vogliamo pagarli proprio mentre stiamo
-            # competendo con altri bot sullo stesso annuncio.
-            with _node_process_lock:
-                _ensure_node_sign_process()
-            log("[precarico velocita'] processo Node persistente per la firma avviato "
-                "e pronto (restera' vivo per tutta la run)")
+            # OTTIMIZZAZIONE VELOCITA' (21/07, estesa 23/07 al pool intero): avviamo
+            # qui TUTTI gli slot del pool Node persistente per la firma
+            # (sorare-sign/decrypt_and_sign.js), invece di lasciare che partano al
+            # primo acquisto/offerta reale -- l'avvio di Node e il caricamento di
+            # @sorare/crypto costano qualche centinaio di millisecondi ciascuno, e
+            # non vogliamo pagarli proprio mentre stiamo competendo con altri bot
+            # sullo stesso annuncio.
+            for _pool_idx in range(_NODE_POOL_SIZE):
+                with _node_pool[_pool_idx]['lock']:
+                    _ensure_node_pool_slot(_pool_idx)
+            log(f"[precarico velocita'] pool di {_NODE_POOL_SIZE} processi Node "
+                f"persistenti per la firma avviato e pronto (restera' vivo per tutta la run)")
         else:
             log("[precarico velocita'] SORARE_WALLET_PASSWORD non impostata, salto il "
                 "precarico della chiave cifrata e del processo Node di firma")
