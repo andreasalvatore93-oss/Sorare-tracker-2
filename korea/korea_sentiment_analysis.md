@@ -1,17 +1,17 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-23T00:06:45.886404Z
-**Run totali:** 33
+**Data analisi:** 2026-07-23T06:06:26.434359Z
+**Run totali:** 34
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 3.20 EUR
-- **Trend mercato:** ➡️ STABLE (-0.5%)
+- **Prezzo medio K League 1:** 3.16 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.4%)
 - **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.5%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📉 TREND GLOBALE: DESCENDING (-1.4%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Lee Seung-Woo (Jeonbuk Hyundai Motors FC)**
 Prezzo: **2.49 EUR** | Media: **13.56 EUR** | Sconto: **-81.6%**
@@ -43,14 +43,14 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 ## ⬇️ TOP 10 DISCESE (Stanno SALENDO di prezzo)
 1. Ahn Hyeok-Ju (Gwangju FC) — **+0.0%** vs media (1.10 EUR vs 1.10 EUR)
 2. Yu Je-Ho (Gwangju FC) — **+0.0%** vs media (1.20 EUR vs 1.20 EUR)
-3. Kim Dong-Hyun (Incheon United FC) — **+0.0%** vs media (8.14 EUR vs 8.14 EUR)
-4. Juan Ibiza (Incheon United FC) — **+0.0%** vs media (3.85 EUR vs 3.85 EUR)
-5. Kim Myung-Sun (Incheon United FC) — **+0.0%** vs media (1.95 EUR vs 1.95 EUR)
-6. Kim Seung-Bin (Bucheon FC 1995) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
-7. Hong Sung-Wook (Bucheon FC 1995) — **+0.0%** vs media (2.03 EUR vs 2.03 EUR)
-8. GABRIEL (Bucheon FC 1995) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
-9. Uh Dam (Bucheon FC 1995) — **+0.0%** vs media (2.36 EUR vs 2.36 EUR)
-10. Baek Dong-Gyu (Bucheon FC 1995) — **+0.0%** vs media (0.92 EUR vs 0.92 EUR)
+3. Mun Ji-Hwan (Incheon United FC) — **+0.0%** vs media (1.90 EUR vs 1.90 EUR)
+4. Kim Dong-Hyun (Incheon United FC) — **+0.0%** vs media (8.14 EUR vs 8.14 EUR)
+5. Juan Ibiza (Incheon United FC) — **+0.0%** vs media (3.85 EUR vs 3.85 EUR)
+6. Kim Myung-Sun (Incheon United FC) — **+0.0%** vs media (1.95 EUR vs 1.95 EUR)
+7. Kim Seung-Bin (Bucheon FC 1995) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
+8. Hong Sung-Wook (Bucheon FC 1995) — **+0.0%** vs media (2.03 EUR vs 2.03 EUR)
+9. GABRIEL (Bucheon FC 1995) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
+10. Uh Dam (Bucheon FC 1995) — **+0.0%** vs media (2.36 EUR vs 2.36 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Jeonbuk Hyundai Motors FC**
@@ -66,7 +66,7 @@ Carte trovate: 9 | Prezzo medio: 2.42 EUR | Volatilità (σ): 1.10
 Carte trovate: 15 | Prezzo medio: 4.45 EUR | Volatilità (σ): 4.81
 
 **Gangwon FC**
-Carte trovate: 9 | Prezzo medio: 4.71 EUR | Volatilità (σ): 5.35
+Carte trovate: 10 | Prezzo medio: 4.33 EUR | Volatilità (σ): 5.19
 
 **Gimcheon Sangmu**
 Carte trovate: 7 | Prezzo medio: 1.51 EUR | Volatilità (σ): 0.88
@@ -78,13 +78,13 @@ Carte trovate: 7 | Prezzo medio: 1.92 EUR | Volatilità (σ): 0.99
 Carte trovate: 4 | Prezzo medio: 2.79 EUR | Volatilità (σ): 2.04
 
 **Daejeon Citizen FC**
-Carte trovate: 7 | Prezzo medio: 4.22 EUR | Volatilità (σ): 4.93
+Carte trovate: 8 | Prezzo medio: 3.81 EUR | Volatilità (σ): 4.71
 
 **Bucheon FC 1995**
 Carte trovate: 6 | Prezzo medio: 2.25 EUR | Volatilità (σ): 0.73
 
 **Incheon United FC**
-Carte trovate: 4 | Prezzo medio: 4.05 EUR | Volatilità (σ): 2.85
+Carte trovate: 5 | Prezzo medio: 3.59 EUR | Volatilità (σ): 2.67
 
 **Gwangju FC**
 Carte trovate: 3 | Prezzo medio: 1.33 EUR | Volatilità (σ): 0.31
