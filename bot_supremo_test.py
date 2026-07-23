@@ -3192,8 +3192,6 @@ def run_listener(eth_rate):
                 f"durante la valutazione (thread worker), la salto e continuo: {e}")
             found = False
 
-        maybe_random_pause()
-
         if INSUFFICIENT_FUNDS_STOP[0]:
             with stats_lock:
                 gia_chiuso = stats["_closed_insufficient_funds"]
