@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-23T06:06:26.419143Z
-**Run totali:** 127
+**Data analisi:** 2026-07-23T06:16:28.097115Z
+**Run totali:** 128
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.37 EUR
-- **Trend mercato:** 📈 ASCENDING (+1.2%)
-- **Sentiment:** 🟩 Leggero Rialzo
+- **Prezzo medio MLS:** 6.28 EUR
+- **Trend mercato:** 📉 DESCENDING (-1.5%)
+- **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**📈 TREND GLOBALE: ASCENDING (+1.2%)**
-I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
+**📉 TREND GLOBALE: DESCENDING (-1.5%)**
+Mercato in leggero calo. Selettivo: guarda carte con sconto >12%. Le squadre stabili offrono prezzi prevedibili.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
 Prezzo: **0.99 EUR** | Media: **6.55 EUR** | Sconto: **-84.9%**
@@ -54,7 +54,7 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Seattle Sounders FC**
-Carte trovate: 21 | Prezzo medio: 4.44 EUR | Volatilità (σ): 5.04
+Carte trovate: 21 | Prezzo medio: 4.43 EUR | Volatilità (σ): 5.05
 
 **Los Angeles FC**
 Carte trovate: 20 | Prezzo medio: 8.15 EUR | Volatilità (σ): 9.82
@@ -63,10 +63,10 @@ Carte trovate: 20 | Prezzo medio: 8.15 EUR | Volatilità (σ): 9.82
 Carte trovate: 22 | Prezzo medio: 1.99 EUR | Volatilità (σ): 2.36
 
 **San Jose Earthquakes**
-Carte trovate: 18 | Prezzo medio: 3.48 EUR | Volatilità (σ): 4.29
+Carte trovate: 19 | Prezzo medio: 3.44 EUR | Volatilità (σ): 4.18
 
 **Columbus Crew**
-Carte trovate: 25 | Prezzo medio: 2.24 EUR | Volatilità (σ): 1.78
+Carte trovate: 25 | Prezzo medio: 2.22 EUR | Volatilità (σ): 1.78
 
 **Charlotte FC**
 Carte trovate: 16 | Prezzo medio: 4.23 EUR | Volatilità (σ): 4.52
@@ -84,22 +84,22 @@ Carte trovate: 22 | Prezzo medio: 5.90 EUR | Volatilità (σ): 10.50
 Carte trovate: 23 | Prezzo medio: 5.38 EUR | Volatilità (σ): 12.39
 
 **Minnesota United**
-Carte trovate: 21 | Prezzo medio: 2.07 EUR | Volatilità (σ): 2.35
+Carte trovate: 23 | Prezzo medio: 2.40 EUR | Volatilità (σ): 2.86
 
 **Orlando City SC**
-Carte trovate: 18 | Prezzo medio: 4.32 EUR | Volatilità (σ): 7.46
+Carte trovate: 18 | Prezzo medio: 4.18 EUR | Volatilità (σ): 7.27
 
 **Nashville SC**
-Carte trovate: 22 | Prezzo medio: 7.82 EUR | Volatilità (σ): 11.76
+Carte trovate: 22 | Prezzo medio: 7.78 EUR | Volatilità (σ): 11.76
 
 **Austin FC**
 Carte trovate: 16 | Prezzo medio: 2.38 EUR | Volatilità (σ): 2.93
 
 **San Diego FC**
-Carte trovate: 22 | Prezzo medio: 4.80 EUR | Volatilità (σ): 8.50
+Carte trovate: 23 | Prezzo medio: 4.62 EUR | Volatilità (σ): 8.34
 
 **Vancouver Whitecaps FC**
-Carte trovate: 23 | Prezzo medio: 5.26 EUR | Volatilità (σ): 5.69
+Carte trovate: 25 | Prezzo medio: 4.86 EUR | Volatilità (σ): 5.47
 
 **Philadelphia Union**
 Carte trovate: 19 | Prezzo medio: 3.26 EUR | Volatilità (σ): 3.48
@@ -111,13 +111,13 @@ Carte trovate: 15 | Prezzo medio: 3.46 EUR | Volatilità (σ): 2.88
 Carte trovate: 20 | Prezzo medio: 1.64 EUR | Volatilità (σ): 1.73
 
 **New York Red Bulls**
-Carte trovate: 18 | Prezzo medio: 2.85 EUR | Volatilità (σ): 3.07
+Carte trovate: 19 | Prezzo medio: 2.76 EUR | Volatilità (σ): 3.01
 
 **Atlanta United**
-Carte trovate: 17 | Prezzo medio: 1.86 EUR | Volatilità (σ): 1.75
+Carte trovate: 18 | Prezzo medio: 1.84 EUR | Volatilità (σ): 1.70
 
 **New England Revolution**
-Carte trovate: 24 | Prezzo medio: 4.93 EUR | Volatilità (σ): 10.26
+Carte trovate: 24 | Prezzo medio: 4.87 EUR | Volatilità (σ): 10.27
 
 **Portland Timbers**
 Carte trovate: 23 | Prezzo medio: 3.69 EUR | Volatilità (σ): 4.82
@@ -132,7 +132,7 @@ Carte trovate: 18 | Prezzo medio: 1.88 EUR | Volatilità (σ): 1.74
 Carte trovate: 21 | Prezzo medio: 2.88 EUR | Volatilità (σ): 4.17
 
 **Toronto FC**
-Carte trovate: 21 | Prezzo medio: 2.11 EUR | Volatilità (σ): 2.18
+Carte trovate: 21 | Prezzo medio: 2.10 EUR | Volatilità (σ): 2.18
 
 **DC United**
 Carte trovate: 16 | Prezzo medio: 1.72 EUR | Volatilità (σ): 1.53
