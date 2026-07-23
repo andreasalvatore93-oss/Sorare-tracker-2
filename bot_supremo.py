@@ -908,59 +908,73 @@ def close_browser():
     _playwright_page = None
 
 
-def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
-    """Fa una chiamata GraphQL usando fetch() DENTRO un vero browser Chrome
-    (non con curl_cffi/requests) -- cosi' la richiesta esce con l'impronta
-    autentica del browser (TLS, JS engine, eventuali controlli antibot lato
-    client), impossibile da imitare fino in fondo con librerie Python.
-    Usata SOLO per le tre chiamate critiche dell'acquisto (prepareAcceptOffer,
-    fetchEncryptedPrivateKey, acceptOffer) -- ipotesi 20/07 per unknown_fingerprint.
-    FIX 22/07 v2: sia get_browser_page() che page.evaluate() vengono eseguiti
-    tramite _run_on_browser_thread -- con piu' eventi valutati in parallelo,
-    Playwright (API sync, legata via greenlet a un thread preciso) va sempre
-    interpellato dallo STESSO thread dedicato, indipendentemente da quale thread
-    worker ha chiamato questa funzione (vedi nota su _browser_executor)."""
+def _graphql_call_via_browser_raw(query, variables=None):
+    """Logica GRAFFA della chiamata GraphQL via browser (get_browser_page +
+    page.evaluate), IDENTICA a prima ma SENZA il dispatch a
+    _run_on_browser_thread -- da chiamare SOLO quando si e' gia' in esecuzione
+    sul thread dedicato al browser (dentro una funzione gia' sottomessa tramite
+    _run_on_browser_thread). Chiamarla da un thread diverso causa il crash
+    Playwright 'Cannot switch to a different thread'. Introdotta 22/07 v6
+    (ottimizzazione velocita', richiesta esplicita utente) per permettere di
+    fondere piu' chiamate browser consecutive (es. prepare+accept) in UN SOLO
+    dispatch al thread dedicato, invece di uno per chiamata -- dimezza
+    l'overhead di cross-thread hop nel percorso critico di acquisto/offerta.
+    Gestisce le proprie eccezioni e ritorna sempre un dict (mai propaga)."""
+    page = get_browser_page()
+    payload = {"query": query, "variables": variables or {}}
 
-    def _fai_la_chiamata():
-        page = get_browser_page()
-        payload = {"query": query, "variables": variables or {}}
-
-        js_code = """
-        async ([url, payload, csrfToken, deviceFingerprint]) => {
-            try {
-                const headers = {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'x-csrf-token': csrfToken,
-                };
-                if (deviceFingerprint) {
-                    headers['device_fingerprint'] = deviceFingerprint;
-                }
-                const resp = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    credentials: 'include',
-                    body: JSON.stringify(payload),
-                });
-                const text = await resp.text();
-                return { status: resp.status, body: text };
-            } catch (e) {
-                return { status: 0, body: JSON.stringify({error: String(e)}) };
+    js_code = """
+    async ([url, payload, csrfToken, deviceFingerprint]) => {
+        try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'x-csrf-token': csrfToken,
+            };
+            if (deviceFingerprint) {
+                headers['device_fingerprint'] = deviceFingerprint;
             }
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: headers,
+                credentials: 'include',
+                body: JSON.stringify(payload),
+            });
+            const text = await resp.text();
+            return { status: resp.status, body: text };
+        } catch (e) {
+            return { status: 0, body: JSON.stringify({error: String(e)}) };
         }
-        """
-        return page.evaluate(
+    }
+    """
+    try:
+        result = page.evaluate(
             js_code,
             [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
         )
-
-    try:
-        result = _run_on_browser_thread(_fai_la_chiamata)
         body_text = result.get('body', '')
         return json.loads(body_text)
     except Exception as e:
         log(f"[playwright graphql] eccezione: {e}")
         return {"errors": [{"message": f"playwright_exception: {e}"}]}
+
+
+def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
+    """Fa una chiamata GraphQL usando fetch() DENTRO un vero browser Chrome
+    (non con curl_cffi/requests) -- cosi' la richiesta esce con l'impronta
+    autentica del browser (TLS, JS engine, eventuali controlli antibot lato
+    client), impossibile da imitare fino in fondo con librerie Python.
+    Usata SOLO per le chiamate critiche dell'acquisto/offerta (prepareAcceptOffer,
+    fetchEncryptedPrivateKey, acceptOffer, prepareOffer, createDirectOffer) --
+    ipotesi 20/07 per unknown_fingerprint.
+    FIX 22/07 v6: ora un thin wrapper -- la logica vera e' in
+    _graphql_call_via_browser_raw (vedi sopra), qui si limita a sottometterla
+    sul thread dedicato tramite _run_on_browser_thread. Usare direttamente
+    _graphql_call_via_browser_raw (MAI questa funzione) quando si e' gia'
+    dentro una funzione sottomessa a _run_on_browser_thread, per evitare un
+    doppio dispatch annidato (deadlock certo: l'unico worker del pool
+    resterebbe bloccato in attesa di se stesso)."""
+    return _run_on_browser_thread(_graphql_call_via_browser_raw, query, variables)
 
 
 def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
@@ -1692,7 +1706,7 @@ def classify_prepare_accept_error(root_errors, payload_errors):
 classify_prepare_offer_error = classify_prepare_accept_error
 
 
-def prepare_accept_offer(offer_id):
+def prepare_accept_offer(offer_id, _call_fn=None):
     """FASE 2 (prima meta'): 'prenota'/valida l'offerta lato server chiamando la stessa
     PrepareAcceptOfferMutation usata dal sito quando l'utente clicca 'Acquista', PRIMA
     ancora che l'utente clicchi -- riduce la finestra in cui un altro manager potrebbe
@@ -1705,7 +1719,11 @@ def prepare_accept_offer(offer_id):
     automatico) cosi' il chiamante puo' distinguere questo caso da un fallimento
     generico invece di loggare sempre lo stesso messaggio. Il click finale
     dell'utente sul sito resta INVARIATO e necessario (fase 2 = opzione "conferma manuale",
-    vedi nota progetto)."""
+    vedi nota progetto).
+    _call_fn (22/07 v6, ottimizzazione velocita'): vedi nota su fetch_encrypted_private_key
+    -- passare _graphql_call_via_browser_raw quando gia' dentro un dispatch a
+    _run_on_browser_thread, per fondere piu' chiamate in un solo hop."""
+    call_fn = _call_fn or graphql_query_via_browser
     exchange_rate_id = get_exchange_rate_id()
     if not exchange_rate_id:
         log("[prepare accept] exchange_rate_id non ottenuto, impossibile procedere")
@@ -1724,7 +1742,7 @@ def prepare_accept_offer(offer_id):
         }
     }
     try:
-        data = graphql_query_via_browser(PREPARE_ACCEPT_OFFER_MUTATION, variables)
+        data = call_fn(PREPARE_ACCEPT_OFFER_MUTATION, variables)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -2050,7 +2068,7 @@ _encrypted_key_cache = {}
 _decrypted_key_cache = {}
 
 
-def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_id=None):
+def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_id=None, _call_fn=None):
     """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
     (nome/struttura CONFERMATI dal vivo il 19/07 catturando via DevTools la vera
     richiesta che il sito manda durante un'offerta reale -- NON e' una query su
@@ -2058,13 +2076,22 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
     {encryptedPrivateKey, iv, salt} o None se fallisce per qualunque motivo.
     CACHATA in memoria (vedi nota sopra): la query GraphQL viene fatta solo la prima
     volta per l'intera esecuzione del bot, le chiamate successive riusano lo stesso
-    risultato senza contattare di nuovo il server.
+    risultato senza contattare di nuovo il server (in pratica, dato il precarico
+    all'avvio, questa funzione durante lo sniping vero e proprio ritorna sempre
+    dalla cache, riga sopra, senza mai eseguire il resto del corpo).
     FIX 20/07 (nona ipotesi -- body-based scartato in precedenza, schema rifiuta
     authorizationId/fingerprint/offerId come campi dell'input): proviamo stavolta a
     passare fingerprint/authorizationId come HEADER HTTP della richiesta invece che nel
-    body GraphQL -- variante concettualmente diversa, mai testata finora."""
+    body GraphQL -- variante concettualmente diversa, mai testata finora.
+    _call_fn (22/07 v6, ottimizzazione velocita'): permette di passare
+    _graphql_call_via_browser_raw quando questa funzione viene chiamata da
+    dentro un'altra funzione gia' sottomessa a _run_on_browser_thread (evita un
+    doppio dispatch annidato/deadlock) -- default None, che equivale al
+    comportamento precedente (graphql_query_via_browser, sicura da qualunque
+    thread)."""
     if 'key_data' in _encrypted_key_cache:
         return _encrypted_key_cache['key_data']
+    call_fn = _call_fn or graphql_query_via_browser
 
     extra_headers = {}
     if fingerprint:
@@ -2075,7 +2102,7 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
         extra_headers['authorization-id'] = authorization_id
 
     try:
-        data = graphql_query_via_browser(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
+        data = call_fn(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
         if data.get('errors'):
             log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
             log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
@@ -2108,14 +2135,18 @@ mutation AcceptOfferMutation($input: acceptOfferInput!) {
 """
 
 
-def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
+def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id, _call_fn=None):
     """Ultimo passo del flusso di acquisto reale: completa DAVVERO l'operazione.
     Fail-safe assoluto -- qualunque errore ritorna (False, categoria, messaggio_errore),
     MAI un'eccezione non gestita, MAI un retry automatico. La categoria riusa
     classify_prepare_accept_error (stessa logica gia' usata per prepare_accept_offer:
     fondi_insufficienti/valuta_non_supportata/offerta_non_disponibile/sconosciuto) cosi'
     l'utente capisce SUBITO dal log/notifica il tipo di problema, senza dover decifrare
-    il messaggio GraphQL grezzo."""
+    il messaggio GraphQL grezzo.
+    _call_fn (22/07 v6): vedi nota su fetch_encrypted_private_key -- passare
+    _graphql_call_via_browser_raw quando gia' dentro un dispatch a
+    _run_on_browser_thread."""
+    call_fn = _call_fn or graphql_query_via_browser
     variables = {
         "input": {
             "offerId": offer_id,
@@ -2137,7 +2168,7 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
         },
     }
     try:
-        data = graphql_query_via_browser(ACCEPT_OFFER_MUTATION, variables)
+        data = call_fn(ACCEPT_OFFER_MUTATION, variables)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('acceptOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -2158,7 +2189,7 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id):
         return False, 'eccezione', str(e)
 
 
-def execute_live_purchase(offer_id, prepared):
+def execute_live_purchase(offer_id, prepared, _call_fn=None):
     """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
     AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
     ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
@@ -2169,7 +2200,15 @@ def execute_live_purchase(offer_id, prepared):
     prepare_accept_offer() e' gia' stata completata con successo (vedi nota in
     evaluate_event) -- un tentativo di parallelizzare le due chiamate ha causato
     "unknown_fingerprint" in 3 test su 3 dal vivo, il fingerprint deve esistere
-    lato server prima che questa chiamata possa risolversi."""
+    lato server prima che questa chiamata possa risolversi.
+    _call_fn (22/07 v6, ottimizzazione velocita'): se valorizzato (con
+    _graphql_call_via_browser_raw), indica che questa funzione gira gia' dentro
+    un dispatch a _run_on_browser_thread (fusa con prepare_accept_offer in un
+    solo hop, vedi _run_autobuy_merged) -- viene passato a sua volta a
+    fetch_encrypted_private_key/accept_offer per evitare un doppio dispatch
+    annidato. sign_authorization_via_node NON e' toccata: usa il proprio canale
+    IPC verso il processo Node, gia' thread-safe (protetto da _node_process_lock)
+    indipendentemente da quale thread la chiami."""
     log(f"[acquisto live] avvio -- offer_id={offer_id}")
 
     if not SORARE_WALLET_PASSWORD:
@@ -2182,7 +2221,8 @@ def execute_live_purchase(offer_id, prepared):
     authorization_id = prepared.get('authorization_id')
 
     key_data = fetch_encrypted_private_key(
-        authorization_id=authorization_id, fingerprint=fingerprint, offer_id=offer_id)
+        authorization_id=authorization_id, fingerprint=fingerprint, offer_id=offer_id,
+        _call_fn=_call_fn)
     if not key_data:
         log("[acquisto live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
         return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
@@ -2208,7 +2248,8 @@ def execute_live_purchase(offer_id, prepared):
         log("[acquisto live] STOP: exchange_rate_id non disponibile da prepared")
         return False, "exchange_rate_id non disponibile"
 
-    success, category, error = accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id)
+    success, category, error = accept_offer(offer_id, fingerprint, nonce, signature,
+                                             exchange_rate_id, _call_fn=_call_fn)
     if not success:
         log(f"[acquisto live] STOP: step 3/3 fallito, categoria='{category}'")
         return False, f"AcceptOfferMutation fallita [{category}]: {error}"
@@ -2238,14 +2279,18 @@ mutation PrepareOfferMutation($input: prepareOfferInput!) {
 """
 
 
-def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur):
+def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur, _call_fn=None):
     """Prenota/valida la creazione di un'offerta diretta lato server -- mutation
     confermata dal vivo (19/07, catturata via DevTools mentre l'utente faceva un'offerta
     reale su una carta di test). NON invia ancora l'offerta: restituisce
     {fingerprint, request, exchange_rate_id} da usare per firmare e poi chiamare
     create_direct_offer. card_asset_id e' l'assetId ESADECIMALE della carta (campo
     'assetId' della carta, es. "0x0400...", NON lo slug) -- confermato nel payload reale
-    catturato (receiveAssetIds contiene l'assetId, non lo slug)."""
+    catturato (receiveAssetIds contiene l'assetId, non lo slug).
+    _call_fn (22/07 v6, ottimizzazione velocita'): vedi nota su fetch_encrypted_private_key
+    -- passare _graphql_call_via_browser_raw quando gia' dentro un dispatch a
+    _run_on_browser_thread, per fondere piu' chiamate in un solo hop."""
+    call_fn = _call_fn or graphql_query_via_browser
     exchange_rate_id = get_exchange_rate_id()
     if not exchange_rate_id:
         log("[prepare offer] exchange_rate_id non ottenuto, impossibile procedere")
@@ -2269,7 +2314,7 @@ def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur):
         }
     }
     try:
-        data = graphql_query_via_browser(PREPARE_OFFER_MUTATION, variables)
+        data = call_fn(PREPARE_OFFER_MUTATION, variables)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('prepareOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -2339,11 +2384,16 @@ def generate_deal_id():
     return str(uuid.uuid4().int)
 
 
-def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature, deal_id):
+def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature,
+                         deal_id, _call_fn=None):
     """Ultimo passo: invia DAVVERO l'offerta diretta al venditore -- mutation confermata
     dal vivo (19/07, caso reale David Alaba/satonio, offerta di test inviata con
     successo). Fail-safe assoluto: qualunque errore ritorna (False, categoria, msg), MAI
-    un'eccezione non gestita, MAI un retry automatico."""
+    un'eccezione non gestita, MAI un retry automatico.
+    _call_fn (22/07 v6): vedi nota su fetch_encrypted_private_key -- passare
+    _graphql_call_via_browser_raw quando gia' dentro un dispatch a
+    _run_on_browser_thread."""
+    call_fn = _call_fn or graphql_query_via_browser
     # FIX BUG CRITICO (20/07): stesso fix di prepare_offer, per coerenza -- vedi
     # commento dettagliato li'. sendAmount va in centesimi interi.
     amount_cents = int(round(offer_amount_eur * 100))
@@ -2366,7 +2416,7 @@ def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerpr
         }
     }
     try:
-        data = graphql_query_via_browser(CREATE_DIRECT_OFFER_MUTATION, variables)
+        data = call_fn(CREATE_DIRECT_OFFER_MUTATION, variables)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('createDirectOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -2393,10 +2443,15 @@ def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerpr
         return False, 'eccezione', str(e)
 
 
-def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared):
+def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared, _call_fn=None):
     """Orchestrazione completa (attiva SOLO se MAKEOFFER_LIVE_MODE e' 'si'): chiave
     cifrata -> firma -> create_direct_offer. Fail-safe assoluto: MAI retry, un solo
-    tentativo secco. Logga ogni step con OK/STOP esplicito."""
+    tentativo secco. Logga ogni step con OK/STOP esplicito.
+    _call_fn (22/07 v6, ottimizzazione velocita'): se valorizzato (con
+    _graphql_call_via_browser_raw), indica che questa funzione gira gia' dentro
+    un dispatch a _run_on_browser_thread (fusa con prepare_offer in un solo
+    hop, vedi _run_makeoffer_merged) -- passato a fetch_encrypted_private_key/
+    create_direct_offer per evitare un doppio dispatch annidato."""
     log(f"[offerta live] avvio -- carta={card_asset_id}, venditore={receiver_slug}, "
         f"offerta={offer_amount_eur:.2f}EUR")
 
@@ -2404,7 +2459,7 @@ def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared)
         log("[offerta live] STOP: SORARE_WALLET_PASSWORD non impostata")
         return False, "SORARE_WALLET_PASSWORD non impostata"
 
-    key_data = fetch_encrypted_private_key()
+    key_data = fetch_encrypted_private_key(_call_fn=_call_fn)
     if not key_data:
         log("[offerta live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
         return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
@@ -2428,7 +2483,8 @@ def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared)
 
     deal_id = generate_deal_id()
     success, category, error = create_direct_offer(
-        card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature, deal_id)
+        card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature, deal_id,
+        _call_fn=_call_fn)
     if not success:
         log(f"[offerta live] STOP: step 3/3 fallito, categoria='{category}'")
         return False, f"CreateDirectOfferMutation fallita [{category}]: {error}"
@@ -2876,6 +2932,73 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                                      seller_slug, timing=_timing)
 
 
+def _run_autobuy_merged(player_name, offer_id):
+    """OTTIMIZZAZIONE VELOCITA' 22/07 v6 (richiesta esplicita utente -- casi Angus
+    Gunn/Hrvoje Babec, tempi raddoppiati rispetto ai casi migliori dopo il fix
+    del thread singolo Playwright): prima, prepare_accept_offer ed execute_live_
+    purchase (che include accept_offer) facevano CIASCUNO il proprio dispatch
+    separato a _run_on_browser_thread -- due 'andirivieni' verso il thread
+    dedicato invece di uno, ciascuno con un costo reale di cross-thread hop
+    (submit+attesa+risveglio) che PRIMA del fix multi-thread non esisteva
+    (tutto girava gia' su un unico thread). Qui l'intera sequenza
+    prepare->firma->accept gira DENTRO UN SOLO dispatch (le funzioni interne
+    ricevono _graphql_call_via_browser_raw invece della versione che
+    si auto-dispatcherebbe di nuovo -- evitare l'auto-dispatch e' essenziale,
+    altrimenti si genera un doppio submit annidato sullo stesso worker unico,
+    quindi un deadlock certo). La firma (sign_authorization_via_node) resta
+    invariata: usa il canale IPC verso Node, gia' thread-safe di suo, nessun
+    problema a chiamarla da dentro questo dispatch.
+    Cattura i tempi INTERNAMENTE (prepare vs esecuzione) per preservare lo
+    stesso dettaglio nel log [timing] di prima, anche se ora e' un solo
+    dispatch invece di due checkpoint esterni.
+    Ritorna (prepared, prepare_category, purchase_completed, purchase_error,
+    durata_prepare, durata_esecuzione)."""
+    def _sequenza_completa():
+        _t_a = time.monotonic()
+        prepared, prepare_category = prepare_accept_offer(
+            offer_id, _call_fn=_graphql_call_via_browser_raw)
+        _t_b = time.monotonic()
+        if not prepared or not AUTOBUY_LIVE_MODE:
+            return prepared, prepare_category, False, None, _t_b - _t_a, 0.0
+        try:
+            purchase_completed, purchase_error = execute_live_purchase(
+                offer_id, prepared, _call_fn=_graphql_call_via_browser_raw)
+        except Exception as e:
+            log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
+            return prepared, prepare_category, False, f"eccezione imprevista: {e}", \
+                _t_b - _t_a, time.monotonic() - _t_b
+        return (prepared, prepare_category, purchase_completed, purchase_error,
+                _t_b - _t_a, time.monotonic() - _t_b)
+    return _run_on_browser_thread(_sequenza_completa)
+
+
+def _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_eur):
+    """Stessa ottimizzazione di _run_autobuy_merged, per il ramo MakeOffer:
+    prepare_offer + execute_live_offer (che include create_direct_offer) fusi
+    in UN SOLO dispatch al thread dedicato Playwright, invece di due. Usata sia
+    dal MakeOffer normale (_handle_makeoffer_branch) sia dal bid periodico
+    (_try_periodic_bid) -- stessa logica di offerta, stesso beneficio.
+    Rispetta MAKEOFFER_LIVE_MODE internamente (esegue create_direct_offer SOLO
+    se e' 'si' e prepare_offer e' riuscita), stessa logica di prima.
+    Ritorna (prepared, offer_sent, offer_error, durata_prepare, durata_esecuzione)."""
+    def _sequenza_completa():
+        _t_a = time.monotonic()
+        prepared = prepare_offer(card_asset_id, seller_slug, offer_amount_eur,
+                                  _call_fn=_graphql_call_via_browser_raw)
+        _t_b = time.monotonic()
+        if not prepared or not MAKEOFFER_LIVE_MODE:
+            return prepared, False, None, _t_b - _t_a, 0.0
+        try:
+            offer_sent, offer_error = execute_live_offer(
+                card_asset_id, seller_slug, offer_amount_eur, prepared,
+                _call_fn=_graphql_call_via_browser_raw)
+        except Exception as e:
+            log(f"{player_name}: ECCEZIONE IMPREVISTA durante offerta live -- {e}")
+            return prepared, False, f"eccezione imprevista: {e}", _t_b - _t_a, time.monotonic() - _t_b
+        return prepared, offer_sent, offer_error, _t_b - _t_a, time.monotonic() - _t_b
+    return _run_on_browser_thread(_sequenza_completa)
+
+
 def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                             margin_percent, card_slug, excluded_league, is_in_season, offer_id,
                             timing=None):
@@ -2883,10 +3006,20 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
         f"margine {margin_percent:.1%})")
 
     prepared = None
-    _t_prep = None
+    prepare_category = None
+    purchase_completed = False
+    purchase_error = None
+    _durata_prepare = None
+    _durata_esecuzione = None
+
+    # FIX 22/07 v6 (ottimizzazione velocita'): prepare_accept_offer + execute_live_
+    # purchase ora fusi in UN SOLO dispatch al thread browser (_run_autobuy_merged),
+    # invece di due chiamate separate -- dimezza l'overhead di cross-thread hop.
+    # _run_autobuy_merged rispetta internamente AUTOBUY_LIVE_MODE (esegue l'accept
+    # SOLO se e' 'si' e la prenotazione e' riuscita), stessa logica di prima.
     if offer_id:
-        prepared, prepare_category = prepare_accept_offer(offer_id)
-        _t_prep = time.monotonic()
+        prepared, prepare_category, purchase_completed, purchase_error, \
+            _durata_prepare, _durata_esecuzione = _run_autobuy_merged(player_name, offer_id)
         if prepared:
             nonce = (prepared.get('request') or {}).get('nonce')
             log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
@@ -2897,14 +3030,7 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
         else:
             log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
 
-    purchase_completed = False
-    purchase_error = None
     if AUTOBUY_LIVE_MODE and offer_id and prepared:
-        try:
-            purchase_completed, purchase_error = execute_live_purchase(offer_id, prepared)
-        except Exception as e:
-            purchase_error = f"eccezione imprevista: {e}"
-            log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
         if purchase_completed:
             log(f"{player_name}: ACQUISTO COMPLETATO CON SUCCESSO")
             if player_slug:
@@ -2927,9 +3053,9 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
         _t0, _t_scan, _t_liq = timing
         _t_fine = time.monotonic()
         _parti = [f"scan_prezzi={_t_scan - _t0:.3f}s", f"liquidita+ultimo_prezzo={_t_liq - _t_scan:.3f}s"]
-        if _t_prep is not None:
-            _parti.append(f"prepare_accept_offer={_t_prep - _t_liq:.3f}s")
-            _parti.append(f"esecuzione_finale={_t_fine - _t_prep:.3f}s")
+        if _durata_prepare is not None:
+            _parti.append(f"prepare_accept_offer={_durata_prepare:.3f}s")
+            _parti.append(f"esecuzione_finale={_durata_esecuzione:.3f}s")
         log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s")
 
     send_autobuy_alert(player_name, player_slug, true_min_price, second_min_price,
@@ -2991,23 +3117,15 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
         f"(minimo {true_min_price:.2f}EUR - sconto {OFFER_DISCOUNT_FRACTION:.0%}), "
         f"durata {OFFER_DURATION_DAYS} giorni")
 
-    prepared = prepare_offer(card_asset_id, seller_slug, offer_amount_eur)
-    _t_prep = time.monotonic()
+    prepared, offer_sent, offer_error, _durata_prepare, _durata_esecuzione = \
+        _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_eur)
     if prepared:
         nonce = (prepared.get('request') or {}).get('nonce')
         log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
     else:
         log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
 
-    offer_sent = False
-    offer_error = None
     if MAKEOFFER_LIVE_MODE and prepared:
-        try:
-            offer_sent, offer_error = execute_live_offer(
-                card_asset_id, seller_slug, offer_amount_eur, prepared)
-        except Exception as e:
-            offer_error = f"eccezione imprevista: {e}"
-            log(f"{player_name}: ECCEZIONE IMPREVISTA durante offerta live -- {e}")
         if offer_sent:
             log(f"{player_name}: OFFERTA INVIATA CON SUCCESSO")
             if via_trigger_non_allineato and MIN_NON_TRIGGER_LOG:
@@ -3043,8 +3161,8 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
         _t_fine = time.monotonic()
         _parti = [f"scan_prezzi={_t_scan - _t0:.3f}s", f"liquidita+ultimo_prezzo={_t_liq - _t_scan:.3f}s",
                   f"dettagli_carta={_t_card_details - _t_liq:.3f}s",
-                  f"prepare_offer={_t_prep - _t_card_details:.3f}s",
-                  f"esecuzione_finale={_t_fine - _t_prep:.3f}s"]
+                  f"prepare_offer={_durata_prepare:.3f}s",
+                  f"esecuzione_finale={_durata_esecuzione:.3f}s"]
         log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s")
 
     send_makeoffer_alert(player_name, player_slug, true_min_price, second_min_price,
@@ -3500,7 +3618,8 @@ def _try_periodic_bid(candidato, eth_rate):
         f"(minimo registrato {true_min_price:.2f}EUR - sconto "
         f"{PERIODIC_BID_DISCOUNT_FRACTION:.0%}), durata {OFFER_DURATION_DAYS} giorni")
 
-    prepared = prepare_offer(card_asset_id, seller_slug, offer_amount_eur)
+    prepared, offer_sent, offer_error, _durata_prepare, _durata_esecuzione = \
+        _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_eur)
     if not prepared:
         log(f"[bid periodico] {player_name}: prenotazione offerta non riuscita, "
             f"salto questo ciclo")
@@ -3516,13 +3635,6 @@ def _try_periodic_bid(candidato, eth_rate):
 
     if not MAKEOFFER_LIVE_MODE:
         log(f"[bid periodico] {player_name}: MAKEOFFER_LIVE_MODE spento, offerta non inviata")
-        return False
-
-    try:
-        offer_sent, offer_error = execute_live_offer(card_asset_id, seller_slug,
-                                                      offer_amount_eur, prepared)
-    except Exception as e:
-        log(f"[bid periodico] {player_name}: ECCEZIONE IMPREVISTA durante l'invio -- {e}")
         return False
 
     if offer_sent:
