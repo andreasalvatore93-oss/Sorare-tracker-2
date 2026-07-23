@@ -581,9 +581,9 @@ AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
 # Due soglie SEPARATE per fascia, nessuna sovrapponibile per costruzione:
 # MAKEOFFER_MARGIN_FRACTION <= margine < MAKEOFFER_MAX_MARGIN_FRACTION -> ramo MakeOffer
 # margine >= AUTOBUY_MARGIN_FRACTION -> ramo AutoBuy (deve essere >= al tetto MakeOffer)
-MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.15'))
-MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.25'))
-AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.26'))
+MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.10'))
+MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.20'))
+AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'))
 
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
@@ -598,14 +598,14 @@ RANDOM_PAUSE_MAX_SECONDS = float(os.environ.get('RANDOM_PAUSE_MAX_SECONDS', '10'
 
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
-AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '20'))
+AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '10'))
 AUTOBUY_TARGET_MATCHES = max(1, min(20, AUTOBUY_TARGET_MATCHES))
 
 AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
 # Parametri MakeOffer (ramo offerta scontata)
-OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.25'))
+OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'))
 OFFER_DURATION_DAYS = max(1, min(7, int(os.environ.get('OFFER_DURATION_DAYS', '1'))))
 OFFER_DURATION_SECONDS = OFFER_DURATION_DAYS * 86400
 MAX_PENDING_OFFERS = int(os.environ.get('MAX_PENDING_OFFERS', '10'))
@@ -3536,11 +3536,11 @@ COMMIT_INTERVAL_SECONDS = int(os.environ.get('COMMIT_INTERVAL_SECONDS', '300'))
 # momento -- bypassando la sola soglia minima di margine. SOLO offerte (MakeOffer),
 # MAI acquisto diretto. Fascia prezzo e sconto FISSI nel codice (non configurabili),
 # solo l'attivazione e' un input del workflow (default 'si').
-PERIODIC_BID_ENABLED = os.environ.get('PERIODIC_BID_ENABLED', 'si').strip().lower() == 'si'
-PERIODIC_BID_INTERVAL_SECONDS = 120
+PERIODIC_BID_ENABLED = os.environ.get('PERIODIC_BID_ENABLED', 'no').strip().lower() == 'si'
+PERIODIC_BID_INTERVAL_SECONDS = 180
 PERIODIC_BID_MIN_PRICE_EUR = 2.0
 PERIODIC_BID_MAX_PRICE_EUR = 30.0
-PERIODIC_BID_DISCOUNT_FRACTION = 0.30
+PERIODIC_BID_DISCOUNT_FRACTION = 0.25
 
 # Stato condiviso tra i thread worker di evaluate_event (che scrivono il candidato
 # migliore del ciclo corrente) e il thread del timer periodico (che legge e svuota).
