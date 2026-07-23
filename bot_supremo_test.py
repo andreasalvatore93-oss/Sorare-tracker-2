@@ -587,14 +587,6 @@ AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
 
-# Pausa random periodica (20/07, richiesta esplicita utente: "non martellare Sorare di
-# richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_SECONDS di
-# attivita' continua, il bot si ferma per un tempo casuale tra RANDOM_PAUSE_MIN_SECONDS
-# e RANDOM_PAUSE_MAX_SECONDS prima di riprendere.
-RANDOM_PAUSE_INTERVAL_SECONDS = int(os.environ.get('RANDOM_PAUSE_INTERVAL_SECONDS', '180'))
-RANDOM_PAUSE_MIN_SECONDS = float(os.environ.get('RANDOM_PAUSE_MIN_SECONDS', '1'))
-RANDOM_PAUSE_MAX_SECONDS = float(os.environ.get('RANDOM_PAUSE_MAX_SECONDS', '10'))
-
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
 AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '10'))
@@ -3169,7 +3161,7 @@ def run_listener(eth_rate):
         "action": "execute",
     }
 
-    stats = {"received": 0, "processed": 0, "matches_found": 0,
+    stats = {"received": 0, "processed": 0, "matches_found": 0, "price_filtered": 0,
               "_closed_target": False, "_closed_insufficient_funds": False}
     seen_offer_status = set()
     # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07): stats_lock protegge gli
@@ -3182,33 +3174,6 @@ def run_listener(eth_rate):
     # aver sottomesso il lavoro, restando libero di leggere il prossimo evento.
     event_executor = concurrent.futures.ThreadPoolExecutor(
         max_workers=EVENT_WORKER_THREADS, thread_name_prefix='evt')
-
-    # --- Pausa random periodica (20/07, richiesta esplicita utente: "non martellare
-    # Sorare di richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_
-    # SECONDS (default 180s = 3 minuti) di attivita', il bot si ferma per un tempo
-    # casuale tra RANDOM_PAUSE_MIN_SECONDS e RANDOM_PAUSE_MAX_SECONDS (default 1-10s)
-    # prima di riprendere a valutare eventi. Il timer parte dall'avvio dell'ascolto,
-    # non resetta ad ogni evento -- e' un ritmo di fondo, non legato al volume di
-    # eventi ricevuti.
-    pause_state = {"last_pause_at": time.monotonic()}
-    # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07): con piu' thread worker che
-    # possono chiamare maybe_random_pause() quasi insieme, serve un lock -- ma
-    # SOLO per il controllo/marcatura "e' ora di pausare?", non per il time.sleep
-    # vero e proprio (che resta FUORI dal lock, altrimenti un thread in pausa
-    # bloccherebbe anche gli altri dal controllare/aggiornare il proprio stato).
-    _pause_lock = threading.Lock()
-
-    def maybe_random_pause():
-        due = False
-        with _pause_lock:
-            now = time.monotonic()
-            if now - pause_state["last_pause_at"] >= RANDOM_PAUSE_INTERVAL_SECONDS:
-                due = True
-                pause_state["last_pause_at"] = now
-        if due:
-            pause_seconds = random.uniform(RANDOM_PAUSE_MIN_SECONDS, RANDOM_PAUSE_MAX_SECONDS)
-            log(f"[pausa random] fermo {pause_seconds:.1f}s (ritmo di fondo anti-martellamento)")
-            time.sleep(pause_seconds)
 
     def on_open(ws):
         log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
@@ -3321,6 +3286,19 @@ def run_listener(eth_rate):
             if price_eur is None:
                 return
 
+            # OTTIMIZZAZIONE VELOCITA' (23/07, richiesta esplicita utente -- priorita'
+            # alta): scarta QUI, prima del dispatch al thread pool, gli eventi fuori
+            # dalla fascia di prezzo -- stessa identica condizione che evaluate_event
+            # applica comunque come primo controllo sostanziale (subito dopo i check
+            # RAM di blacklist/cooldown), quindi ZERO cambio di comportamento: un
+            # evento fuori range veniva scartato la' dentro, solo DOPO aver gia'
+            # occupato uno dei 6 thread worker per niente. Lasciato ANCHE dentro
+            # evaluate_event (costo di una singola comparazione, trascurabile) come
+            # rete di sicurezza per eventuali altri chiamanti futuri.
+            if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
+                stats["price_filtered"] += 1
+                return
+
             sender_cards = sender_side.get('anyCards') or []
             if len(sender_cards) > 1:
                 return  # bundle multi-carta, prezzo per-carta non ricavabile
@@ -3363,7 +3341,8 @@ def run_listener(eth_rate):
 
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). Eventi ricevuti: "
-            f"{stats['received']}, carte in season elaborate: {stats['processed']}, "
+            f"{stats['received']}, scartati per fascia prezzo (pre-dispatch): "
+            f"{stats['price_filtered']}, carte in season elaborate: {stats['processed']}, "
             f"casi validi trovati: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
 
     ws = websocket.WebSocketApp(
