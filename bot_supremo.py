@@ -575,7 +575,7 @@ if _extra_blacklisted_leagues.strip():
 LEAGUE_BLACKLIST_VERBOSE_LOG = os.environ.get('LEAGUE_BLACKLIST_VERBOSE_LOG', 'no').strip().lower() in ('si', 'true', '1', 'yes')
 
 # --- Parametri regolabili ---
-AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1.50'))
+AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1.00'))
 AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
 
 # Due soglie SEPARATE per fascia, nessuna sovrapponibile per costruzione:
@@ -599,7 +599,7 @@ RANDOM_PAUSE_MAX_SECONDS = float(os.environ.get('RANDOM_PAUSE_MAX_SECONDS', '10'
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
 AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '10'))
-AUTOBUY_TARGET_MATCHES = max(1, min(20, AUTOBUY_TARGET_MATCHES))
+AUTOBUY_TARGET_MATCHES = max(1, min(100, AUTOBUY_TARGET_MATCHES))
 
 AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
@@ -1075,7 +1075,7 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
 """
 
 PAGE_SIZE = 50
-MAX_PAGES = 20
+MAX_PAGES = 2
 
 
 def fetch_all_live_offers(player_slug):
@@ -3785,10 +3785,8 @@ def main():
     log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
         f"MakeOffer {MAKEOFFER_MARGIN_FRACTION:.0%}-{MAKEOFFER_MAX_MARGIN_FRACTION:.0%}, "
         f"AutoBuy >= {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: {AUTOBUY_TARGET_MATCHES}")
-    log(f"Giocatori in blacklist unita ({len(BLACKLISTED_PLAYER_SLUGS)}): "
-        f"{sorted(BLACKLISTED_PLAYER_SLUGS)}")
-    log(f"Manager in blacklist unita ({len(BLACKLISTED_MANAGER_SLUGS)}): "
-        f"{sorted(BLACKLISTED_MANAGER_SLUGS)}")
+    log(f"Giocatori in blacklist unita: {len(BLACKLISTED_PLAYER_SLUGS)}")
+    log(f"Manager in blacklist unita: {len(BLACKLISTED_MANAGER_SLUGS)}")
     if AUTOBUY_LIVE_MODE or MAKEOFFER_LIVE_MODE:
         log("[playwright] pre-apertura browser all'avvio (ottimizzazione velocita')...")
         # FIX 22/07 v2: la creazione della pagina Playwright DEVE avvenire sullo
