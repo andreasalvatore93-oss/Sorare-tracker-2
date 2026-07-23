@@ -1,17 +1,17 @@
 # 🔍 MLS SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:56:44.178602Z
-**Run totali:** 125
+**Data analisi:** 2026-07-23T00:06:45.869998Z
+**Run totali:** 126
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/mls/mls_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio MLS:** 6.19 EUR
-- **Trend mercato:** ➡️ STABLE (+0.3%)
-- **Sentiment:** ⚪ Stabile
+- **Prezzo medio MLS:** 6.29 EUR
+- **Trend mercato:** 📈 ASCENDING (+1.6%)
+- **Sentiment:** 🟢 In Crescita
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (+0.3%)**
-Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
+**📈 TREND GLOBALE: ASCENDING (+1.6%)**
+I prezzi stanno salendo. Se hai carte in portafoglio, potrebbe essere buon momento per vendere.
 
 **🥇 FORTE OPPORTUNITÀ — Zackary Steffen (Colorado Rapids)**
 Prezzo: **0.99 EUR** | Media: **6.55 EUR** | Sconto: **-84.9%**
@@ -84,10 +84,10 @@ Carte trovate: 22 | Prezzo medio: 5.98 EUR | Volatilità (σ): 10.50
 Carte trovate: 22 | Prezzo medio: 5.18 EUR | Volatilità (σ): 12.65
 
 **Minnesota United**
-Carte trovate: 19 | Prezzo medio: 2.06 EUR | Volatilità (σ): 2.46
+Carte trovate: 20 | Prezzo medio: 2.11 EUR | Volatilità (σ): 2.40
 
 **Orlando City SC**
-Carte trovate: 17 | Prezzo medio: 2.81 EUR | Volatilità (σ): 3.94
+Carte trovate: 18 | Prezzo medio: 4.32 EUR | Volatilità (σ): 7.46
 
 **Nashville SC**
 Carte trovate: 22 | Prezzo medio: 7.82 EUR | Volatilità (σ): 11.76
@@ -111,7 +111,7 @@ Carte trovate: 15 | Prezzo medio: 3.46 EUR | Volatilità (σ): 2.88
 Carte trovate: 20 | Prezzo medio: 1.64 EUR | Volatilità (σ): 1.73
 
 **New York Red Bulls**
-Carte trovate: 16 | Prezzo medio: 2.82 EUR | Volatilità (σ): 3.27
+Carte trovate: 17 | Prezzo medio: 2.86 EUR | Volatilità (σ): 3.17
 
 **Atlanta United**
 Carte trovate: 16 | Prezzo medio: 1.68 EUR | Volatilità (σ): 1.64

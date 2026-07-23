@@ -1,16 +1,16 @@
 # 🔍 K LEAGUE 1 SENTIMENT ANALYSIS
-**Data analisi:** 2026-07-22T23:56:44.195174Z
-**Run totali:** 32
+**Data analisi:** 2026-07-23T00:06:45.886404Z
+**Run totali:** 33
 
 📊 **[Apri i grafici interattivi](https://htmlpreview.github.io/?https://raw.githubusercontent.com/andreasalvatore93-oss/Sorare-tracker-2/main/korea/korea_sentiment_chart.html)**
 
 ## 📈 RIEPILOGO GLOBALE
-- **Prezzo medio K League 1:** 3.22 EUR
-- **Trend mercato:** ➡️ STABLE (-0.3%)
+- **Prezzo medio K League 1:** 3.20 EUR
+- **Trend mercato:** ➡️ STABLE (-0.5%)
 - **Sentiment:** 🟨 Quasi Fermo
 
 ## 💡 CONSIGLI INTELLIGENTI
-**➡️ TREND GLOBALE: STABLE (-0.3%)**
+**➡️ TREND GLOBALE: STABLE (-0.5%)**
 Mercato equilibrato. Aspetta opportunità chiarissime prima di entrare.
 
 **🥇 FORTE OPPORTUNITÀ — Lee Seung-Woo (Jeonbuk Hyundai Motors FC)**
@@ -45,12 +45,12 @@ Liquidità bassa. Aspetta conferma prima di comprare grosse quantità.
 2. Yu Je-Ho (Gwangju FC) — **+0.0%** vs media (1.20 EUR vs 1.20 EUR)
 3. Kim Dong-Hyun (Incheon United FC) — **+0.0%** vs media (8.14 EUR vs 8.14 EUR)
 4. Juan Ibiza (Incheon United FC) — **+0.0%** vs media (3.85 EUR vs 3.85 EUR)
-5. Lee Dong-Ryul (Incheon United FC) — **+0.0%** vs media (2.38 EUR vs 2.38 EUR)
-6. Kim Myung-Sun (Incheon United FC) — **+0.0%** vs media (1.95 EUR vs 1.95 EUR)
-7. Kim Seung-Bin (Bucheon FC 1995) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
-8. Hong Sung-Wook (Bucheon FC 1995) — **+0.0%** vs media (2.03 EUR vs 2.03 EUR)
-9. GABRIEL (Bucheon FC 1995) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
-10. Uh Dam (Bucheon FC 1995) — **+0.0%** vs media (2.36 EUR vs 2.36 EUR)
+5. Kim Myung-Sun (Incheon United FC) — **+0.0%** vs media (1.95 EUR vs 1.95 EUR)
+6. Kim Seung-Bin (Bucheon FC 1995) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
+7. Hong Sung-Wook (Bucheon FC 1995) — **+0.0%** vs media (2.03 EUR vs 2.03 EUR)
+8. GABRIEL (Bucheon FC 1995) — **+0.0%** vs media (2.60 EUR vs 2.60 EUR)
+9. Uh Dam (Bucheon FC 1995) — **+0.0%** vs media (2.36 EUR vs 2.36 EUR)
+10. Baek Dong-Gyu (Bucheon FC 1995) — **+0.0%** vs media (0.92 EUR vs 0.92 EUR)
 
 ## 🏟️ SENTIMENT PER SQUADRA
 **Jeonbuk Hyundai Motors FC**
@@ -84,7 +84,7 @@ Carte trovate: 7 | Prezzo medio: 4.22 EUR | Volatilità (σ): 4.93
 Carte trovate: 6 | Prezzo medio: 2.25 EUR | Volatilità (σ): 0.73
 
 **Incheon United FC**
-Carte trovate: 4 | Prezzo medio: 4.08 EUR | Volatilità (σ): 2.83
+Carte trovate: 4 | Prezzo medio: 4.05 EUR | Volatilità (σ): 2.85
 
 **Gwangju FC**
 Carte trovate: 3 | Prezzo medio: 1.33 EUR | Volatilità (σ): 0.31
