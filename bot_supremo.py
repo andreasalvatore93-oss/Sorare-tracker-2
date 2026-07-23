@@ -1422,7 +1422,7 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
 # separazione per stagione del resto della logica: MLS/K-League confrontano SOLO la
 # stagione giusta (season vs season, classic vs classic), gli altri campionati
 # mescolano in_season+classic come sempre.
-MIN_LISTED_CARDS_FOR_PURCHASE = int(os.environ.get('MIN_LISTED_CARDS_FOR_PURCHASE', '4'))
+MIN_LISTED_CARDS_FOR_PURCHASE = int(os.environ.get('MIN_LISTED_CARDS_FOR_PURCHASE', '3'))
 MIN_LISTED_CARDS_DIAGNOSTIC = os.environ.get('MIN_LISTED_CARDS_DIAGNOSTIC', 'no').strip().lower() == 'si'
 
 # NUOVO 22/07 (richiesta esplicita utente): log dedicato opt-in (default spento) per
