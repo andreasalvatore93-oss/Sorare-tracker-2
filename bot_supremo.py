@@ -1343,8 +1343,8 @@ query RecentTransactionsBySeasonQuery($p: String!, $n: Int!, $cursor: String) {
 # una finestra piu' lunga (30gg) come controllo incrociato. ENTRAMBE le condizioni devono
 # essere soddisfatte perche' il giocatore passi (basta che UNA delle due fallisca per
 # scartare il caso).
-MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '4'))
-RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '7'))
+MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '3'))
+RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '3'))
 MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '6'))
 TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
@@ -1504,7 +1504,7 @@ def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None, 
 
 
 TRANSACTIONS_PAGE_SIZE = 50
-TRANSACTIONS_MAX_PAGES = 10
+TRANSACTIONS_MAX_PAGES = 2
 
 
 def _fetch_paginated_transaction_nodes(player_slug):
@@ -1828,6 +1828,12 @@ _lista_nera_lock = threading.Lock()
 # (.result()) da qualunque thread la richieda, cosi' Playwright vede sempre lo
 # stesso identico thread dall'inizio alla fine della run.
 _browser_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix='browser')
+# OTTIMIZZAZIONE VELOCITA' 23/07 (stessa idea del parallelismo prepare_accept_offer/
+# liquidita', estesa al ramo MakeOffer): pool DEDICATO e leggero per chiamate non-
+# Playwright che possono partire in anticipo (get_card_offer_details) in parallelo
+# alla query di liquidita' -- separato da _browser_executor (riservato a Playwright)
+# e da event_executor (per non contendere con la valutazione di altri eventi in corso).
+_speculative_executor = concurrent.futures.ThreadPoolExecutor(max_workers=6, thread_name_prefix='speculative')
 
 
 def _run_on_browser_thread(fn, *args, **kwargs):
@@ -2889,13 +2895,29 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # firma nulla e non muove soldi (solo prenotazione/validazione), quindi non c'e'
     # nulla da annullare. Costo accettato: un prepare_accept_offer "sprecato" in piu'
     # nei rari casi in cui liquidita' scarta un candidato gia' qualificato per AutoBuy.
+    # STESSA IDEA estesa al ramo MakeOffer (dati reali 23/07: dettagli_carta pesa
+    # 0.16-0.31s SEMPRE dopo liquidita', mai in parallelo) -- se il margine e' gia'
+    # noto e NON portera' ad AutoBuy, a questo punto sappiamo GIA' con certezza che
+    # andra' a MakeOffer (il caso margine < soglia MakeOffer e' gia' stato scartato
+    # sopra), quindi get_card_offer_details puo' partire subito, in parallelo alla
+    # stessa query di liquidita' -- e' una chiamata indipendente (curl_cffi, non
+    # Playwright), nessun conflitto di thread. Stesso costo accettato: sprecata se
+    # liquidita' scarta il caso.
     _prepare_future = None
     _t_prepare_fired = None
-    if (not trigger_su_minimo_non_allineato and margin_percent >= AUTOBUY_MARGIN_FRACTION
-            and offer_id):
+    _card_details_future = None
+    _t_card_details_fired = None
+    _va_verso_autobuy = (not trigger_su_minimo_non_allineato
+                          and margin_percent >= AUTOBUY_MARGIN_FRACTION)
+    if _va_verso_autobuy and offer_id:
         _t_prepare_fired = time.monotonic()
         _prepare_future = _browser_executor.submit(
             prepare_accept_offer, offer_id, _call_fn=_graphql_call_via_browser_raw)
+    elif not _va_verso_autobuy:
+        _makeoffer_target_card_slug = true_min_card_slug if trigger_su_minimo_non_allineato else card_slug
+        _t_card_details_fired = time.monotonic()
+        _card_details_future = _speculative_executor.submit(
+            get_card_offer_details, _makeoffer_target_card_slug)
 
     count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione = \
         get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
@@ -2958,7 +2980,9 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                                          margin_percent, true_min_card_slug, excluded_league,
                                          is_in_season, true_min_seller_slug,
-                                         via_trigger_non_allineato=True, timing=_timing)
+                                         via_trigger_non_allineato=True, timing=_timing,
+                                         card_details_future=_card_details_future,
+                                         card_details_started_at=_t_card_details_fired)
 
     if margin_percent >= AUTOBUY_MARGIN_FRACTION:
         return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
@@ -2967,7 +2991,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                                        prepare_started_at=_t_prepare_fired)
     return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                                      margin_percent, card_slug, excluded_league, is_in_season,
-                                     seller_slug, timing=_timing)
+                                     seller_slug, timing=_timing, card_details_future=_card_details_future,
+                                     card_details_started_at=_t_card_details_fired)
 
 
 def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_started_at=None):
@@ -3120,7 +3145,8 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
 
 def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                               margin_percent, card_slug, excluded_league, is_in_season, seller_slug,
-                              via_trigger_non_allineato=False, timing=None):
+                              via_trigger_non_allineato=False, timing=None, card_details_future=None,
+                              card_details_started_at=None):
     if via_trigger_non_allineato:
         log(f"MAKEOFFER [trigger su minimo non allineato]: {player_name} -- TROVATO AFFARE "
             f"({true_min_price:.2f}EUR, margine {margin_percent:.1%}) -- valuto se fare un'offerta "
@@ -3130,7 +3156,13 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
         log(f"MAKEOFFER: {player_name} -- TROVATO AFFARE ({true_min_price:.2f}EUR, "
             f"margine {margin_percent:.1%}) -- valuto se fare un'offerta")
 
-    card_details = get_card_offer_details(card_slug)
+    # OTTIMIZZAZIONE VELOCITA' 23/07: se card_details_future e' gia' stata lanciata in
+    # parallelo alla query di liquidita' (vedi evaluate_event), la riusiamo qui invece
+    # di rifare la chiamata da capo. Fallback (nessuna future) = comportamento di prima.
+    if card_details_future is not None:
+        card_details = card_details_future.result()
+    else:
+        card_details = get_card_offer_details(card_slug)
     _t_card_details = time.monotonic()
     if not card_details:
         log(f"{player_name}: scarto -- impossibile recuperare i dettagli della carta "
@@ -3212,11 +3244,14 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
     if EVENT_TIMING_DIAGNOSTIC and timing:
         _t0, _t_scan, _t_liq = timing
         _t_fine = time.monotonic()
+        _base_dettagli = card_details_started_at if card_details_started_at is not None else _t_liq
         _parti = [f"scan_prezzi={_t_scan - _t0:.3f}s", f"liquidita+ultimo_prezzo={_t_liq - _t_scan:.3f}s",
-                  f"dettagli_carta={_t_card_details - _t_liq:.3f}s",
+                  f"dettagli_carta={_t_card_details - _base_dettagli:.3f}s",
                   f"prepare_offer={_durata_prepare:.3f}s",
                   f"esecuzione_finale={_durata_esecuzione:.3f}s"]
-        log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s")
+        _nota_parallelo = " [dettagli_carta in parallelo con liquidita']" \
+            if card_details_started_at is not None else ""
+        log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s{_nota_parallelo}")
 
     send_makeoffer_alert(player_name, player_slug, true_min_price, second_min_price,
                           margin_percent, card_slug, excluded_league, prepared, is_in_season,
