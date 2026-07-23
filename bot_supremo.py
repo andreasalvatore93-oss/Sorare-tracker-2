@@ -2878,6 +2878,25 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
         return False
 
+    # OTTIMIZZAZIONE VELOCITA' 23/07 (richiesta esplicita utente -- casi Edier Ocampo/
+    # Alex Roldan persi a prepare_accept_offer per "Too late"): se questo evento
+    # portera' comunque al ramo AutoBuy (margine gia' sufficiente, non e' un caso
+    # "trigger su minimo non allineato" che e' sempre MakeOffer), lanciamo
+    # prepare_accept_offer ORA, in parallelo alla query di liquidita' che segue,
+    # invece di aspettare che liquidita' finisca prima di partire. Nessun controllo
+    # rimosso: se liquidita' (o i controlli successivi) scartano il caso, il
+    # risultato speculativo viene semplicemente ignorato -- prepare_accept_offer non
+    # firma nulla e non muove soldi (solo prenotazione/validazione), quindi non c'e'
+    # nulla da annullare. Costo accettato: un prepare_accept_offer "sprecato" in piu'
+    # nei rari casi in cui liquidita' scarta un candidato gia' qualificato per AutoBuy.
+    _prepare_future = None
+    _t_prepare_fired = None
+    if (not trigger_su_minimo_non_allineato and margin_percent >= AUTOBUY_MARGIN_FRACTION
+            and offer_id):
+        _t_prepare_fired = time.monotonic()
+        _prepare_future = _browser_executor.submit(
+            prepare_accept_offer, offer_id, _call_fn=_graphql_call_via_browser_raw)
+
     count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione = \
         get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
     _t_liquidita = time.monotonic()
@@ -2944,33 +2963,45 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     if margin_percent >= AUTOBUY_MARGIN_FRACTION:
         return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                                        margin_percent, card_slug, excluded_league, is_in_season,
-                                       offer_id, timing=_timing)
+                                       offer_id, timing=_timing, prepare_future=_prepare_future,
+                                       prepare_started_at=_t_prepare_fired)
     return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                                      margin_percent, card_slug, excluded_league, is_in_season,
                                      seller_slug, timing=_timing)
 
 
-def _run_autobuy_merged(player_name, offer_id):
-    """OTTIMIZZAZIONE VELOCITA' 22/07 v6 (richiesta esplicita utente -- casi Angus
-    Gunn/Hrvoje Babec, tempi raddoppiati rispetto ai casi migliori dopo il fix
-    del thread singolo Playwright): prima, prepare_accept_offer ed execute_live_
-    purchase (che include accept_offer) facevano CIASCUNO il proprio dispatch
-    separato a _run_on_browser_thread -- due 'andirivieni' verso il thread
-    dedicato invece di uno, ciascuno con un costo reale di cross-thread hop
-    (submit+attesa+risveglio) che PRIMA del fix multi-thread non esisteva
-    (tutto girava gia' su un unico thread). Qui l'intera sequenza
-    prepare->firma->accept gira DENTRO UN SOLO dispatch (le funzioni interne
-    ricevono _graphql_call_via_browser_raw invece della versione che
-    si auto-dispatcherebbe di nuovo -- evitare l'auto-dispatch e' essenziale,
-    altrimenti si genera un doppio submit annidato sullo stesso worker unico,
-    quindi un deadlock certo). La firma (sign_authorization_via_node) resta
-    invariata: usa il canale IPC verso Node, gia' thread-safe di suo, nessun
-    problema a chiamarla da dentro questo dispatch.
-    Cattura i tempi INTERNAMENTE (prepare vs esecuzione) per preservare lo
-    stesso dettaglio nel log [timing] di prima, anche se ora e' un solo
-    dispatch invece di due checkpoint esterni.
+def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_started_at=None):
+    """OTTIMIZZAZIONE VELOCITA' 22/07 v6 + 23/07 (richiesta esplicita utente -- casi
+    Edier Ocampo/Alex Roldan persi a prepare_accept_offer per "Too late"):
+    prepare_accept_offer puo' ora arrivare GIA' lanciata (prepare_future, sottomessa
+    da evaluate_event in parallelo alla query di liquidita') -- la riusiamo qui invece
+    di rifare la chiamata da capo. Questo riporta execute_live_purchase a un dispatch
+    SEPARATO (invece del singolo dispatch fuso del 22/07 v6) SOLO quando prepare e'
+    stata pre-lanciata: costa un hop in piu' (~0.25-0.3s) ma SOLO DOPO aver gia' vinto
+    la prenotazione (prepare riuscita = carta gia' assicurata), quindi non costa piu'
+    la corsa contro altri bot. prepare_started_at preserva il tempo REALE di durata
+    di prepare_accept_offer nel log [timing] anche se il .result() qui sotto ritorna
+    subito perche' il lavoro era gia' in corso da prima. Se prepare_future non e'
+    stata lanciata (fallback), stesso comportamento di prima (fusa in un dispatch).
     Ritorna (prepared, prepare_category, purchase_completed, purchase_error,
     durata_prepare, durata_esecuzione)."""
+    if prepare_future is not None:
+        _t_a = prepare_started_at if prepare_started_at is not None else time.monotonic()
+        prepared, prepare_category = prepare_future.result()
+        _t_b = time.monotonic()
+        if not prepared or not AUTOBUY_LIVE_MODE:
+            return prepared, prepare_category, False, None, _t_b - _t_a, 0.0
+        try:
+            purchase_completed, purchase_error = _browser_executor.submit(
+                execute_live_purchase, offer_id, prepared,
+                _call_fn=_graphql_call_via_browser_raw).result()
+        except Exception as e:
+            log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
+            return prepared, prepare_category, False, f"eccezione imprevista: {e}", \
+                _t_b - _t_a, time.monotonic() - _t_b
+        return (prepared, prepare_category, purchase_completed, purchase_error,
+                _t_b - _t_a, time.monotonic() - _t_b)
+
     def _sequenza_completa():
         _t_a = time.monotonic()
         prepared, prepare_category = prepare_accept_offer(
@@ -3019,7 +3050,7 @@ def _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_
 
 def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                             margin_percent, card_slug, excluded_league, is_in_season, offer_id,
-                            timing=None):
+                            timing=None, prepare_future=None, prepare_started_at=None):
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
 
@@ -3030,14 +3061,17 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
     _durata_prepare = None
     _durata_esecuzione = None
 
-    # FIX 22/07 v6 (ottimizzazione velocita'): prepare_accept_offer + execute_live_
-    # purchase ora fusi in UN SOLO dispatch al thread browser (_run_autobuy_merged),
-    # invece di due chiamate separate -- dimezza l'overhead di cross-thread hop.
-    # _run_autobuy_merged rispetta internamente AUTOBUY_LIVE_MODE (esegue l'accept
-    # SOLO se e' 'si' e la prenotazione e' riuscita), stessa logica di prima.
+    # FIX 22/07 v6 + 23/07 (ottimizzazione velocita'): se prepare_future e' gia' stata
+    # lanciata in parallelo al controllo di liquidita' (vedi evaluate_event), la
+    # riusiamo qui -- nessuna doppia chiamata prepareAcceptOffer. In quel caso
+    # execute_live_purchase parte come dispatch SEPARATO (un hop in piu', ma solo
+    # DOPO aver gia' vinto la prenotazione, quindi non costa piu' la corsa). Se
+    # prepare_future non e' stata lanciata (fallback), stessa fusione di prima.
     if offer_id:
         prepared, prepare_category, purchase_completed, purchase_error, \
-            _durata_prepare, _durata_esecuzione = _run_autobuy_merged(player_name, offer_id)
+            _durata_prepare, _durata_esecuzione = _run_autobuy_merged(
+                player_name, offer_id, prepare_future=prepare_future,
+                prepare_started_at=prepare_started_at)
         if prepared:
             nonce = (prepared.get('request') or {}).get('nonce')
             log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
@@ -3074,7 +3108,8 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
         if _durata_prepare is not None:
             _parti.append(f"prepare_accept_offer={_durata_prepare:.3f}s")
             _parti.append(f"esecuzione_finale={_durata_esecuzione:.3f}s")
-        log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s")
+        _nota_parallelo = " [prepare in parallelo con liquidita']" if prepare_started_at is not None else ""
+        log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s{_nota_parallelo}")
 
     send_autobuy_alert(player_name, player_slug, true_min_price, second_min_price,
                         margin_percent, card_slug, excluded_league, prepared, is_in_season,
