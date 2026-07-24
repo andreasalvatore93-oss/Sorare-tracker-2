@@ -46,7 +46,7 @@ PLAYER_SLUGS = [
     'kristoffer-velde',
 ]
 
-WINDOW_SIZE = 30
+WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per giocatore, budget complessita' API limitato)
 HALF_LIFE_GAMES = 12.0  # calibrato su Owusu (24/07): stessi parametri fissi per tutti in questo test
 RANGE_MULTIPLIER = 1.4
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
@@ -95,11 +95,23 @@ def log(msg):
     print(f"[{ts}] [test_owusu] {msg}")
 
 
+MIN_QUERY_INTERVAL_SECONDS = 0.5  # pausa minima tra chiamate GraphQL consecutive, per non concentrare troppe richieste ravvicinate
+_last_query_ts = [0.0]
+
+
+def _throttle_query():
+    elapsed = time.time() - _last_query_ts[0]
+    if elapsed < MIN_QUERY_INTERVAL_SECONDS:
+        time.sleep(MIN_QUERY_INTERVAL_SECONDS - elapsed)
+    _last_query_ts[0] = time.time()
+
+
 def graphql_query(query, variables=None, operation_name=None):
     """Esegue una query GraphQL contro l'API Sorare, con retry/backoff su 429.
     Diagnostica COMPLETA: ogni chiamata (richiesta + risposta integrale, o
     eccezione) viene salvata su disco in test_owusu/.debug/, indipendentemente
     dall'esito, per poter analizzare in dettaglio eventuali errori 4xx/5xx."""
+    _throttle_query()
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -136,7 +148,18 @@ def graphql_query(query, variables=None, operation_name=None):
 
             data = resp.json()
             if data.get('errors'):
-                log(f"[GraphQL ERRORE-APPLICATIVO] {label} -> {json.dumps(data['errors'], ensure_ascii=False)[:1500]} "
+                error_msgs = json.dumps(data['errors'], ensure_ascii=False)
+                # L'errore "exceeds max complexity" e' un rate-limit mascherato da
+                # errore applicativo (arriva con HTTP 200, non 429) — va ritentato
+                # con backoff come un vero 429, non trattato come fallimento definitivo.
+                if 'exceeds max complexity' in error_msgs or 'complexity' in error_msgs.lower():
+                    sleep_s = backoff * 3  # attesa piu' lunga di un 429 normale, il limite e' cumulativo
+                    log(f"[GraphQL COMPLEXITY LIMIT] {label} tentativo {attempt+1}/5, "
+                        f"attesa {sleep_s:.1f}s prima di ritentare (dump: {debug_file})")
+                    time.sleep(sleep_s)
+                    backoff *= 2
+                    continue
+                log(f"[GraphQL ERRORE-APPLICATIVO] {label} -> {error_msgs[:1500]} "
                     f"| dump completo: {debug_file}")
             else:
                 log(f"[GraphQL OK] {label} risposta ricevuta correttamente.")
@@ -642,7 +665,7 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
 
 def build_prediction(player_slug):
     log("[FASE 1/4] Avvio recupero game log...")
-    past_games, future_games = fetch_game_log(player_slug, first=60)
+    past_games, future_games = fetch_game_log(player_slug, first=30)
     if not past_games:
         log("[FASE 1/4] INTERROTTO: nessuna partita passata trovata, impossibile procedere oltre.")
         return None
@@ -1126,27 +1149,64 @@ def main():
     summary_rows = []
 
     for idx, slug in enumerate(PLAYER_SLUGS, 1):
+        if idx > 1:
+            pause_s = 10.0  # pausa base tra giocatori
+            log(f"Pausa di {pause_s}s prima del prossimo giocatore...")
+            time.sleep(pause_s)
+
         log(f"\n{'='*70}\n[{idx}/{len(PLAYER_SLUGS)}] Elaborazione giocatore: {slug}\n{'='*70}")
 
-        try:
-            result = build_prediction(slug)
-        except Exception:
-            import traceback
-            tb = traceback.format_exc()
+        # Retry progressivo se il primo tentativo fallisce (es. per il limite di
+        # complessita' dell'API): 10s, poi 20s, poi 40s di attesa tra i tentativi,
+        # fino a un totale cumulativo di attesa di circa 60s, poi si desiste e si
+        # passa comunque al giocatore successivo (senza bloccare l'intero test).
+        result = None
+        last_exception = None
+        retry_delays = [10.0, 20.0, 40.0]
+        attempt = 0
+        cumulative_wait = 0.0
+
+        while True:
+            attempt += 1
+            try:
+                result = build_prediction(slug)
+                last_exception = None
+            except Exception:
+                import traceback
+                last_exception = traceback.format_exc()
+                result = None
+
+            # Successo (anche se escluso per starterOdds, quello NON e' un fallimento
+            # tecnico e non va ritentato) o eccezione irrecuperabile: esci dal ciclo.
+            if result is not None or attempt > len(retry_delays):
+                break
+
+            delay = retry_delays[attempt - 1]
+            if cumulative_wait + delay > 60.0:
+                log(f"[{slug}] Tetto di attesa cumulativa (~60s) raggiunto, "
+                    f"nessun altro tentativo.")
+                break
+
+            log(f"[{slug}] Tentativo {attempt} fallito (risultato vuoto/eccezione), "
+                f"riprovo tra {delay:.0f}s (attesa cumulativa finora: {cumulative_wait:.0f}s)...")
+            time.sleep(delay)
+            cumulative_wait += delay
+
+        if last_exception:
             log(f"[ECCEZIONE FATALE per {slug}] Vedi traceback completo sotto:")
-            print(tb)
+            print(last_exception)
             err_path = os.path.join(OUTPUT_DIR, f'ERRORE_{slug}_{datetime.datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")}.txt')
             with open(err_path, 'w', encoding='utf-8') as f:
-                f.write(tb)
+                f.write(last_exception)
             log(f"Traceback salvato in: {err_path}")
-            summary_rows.append((slug, 'ERRORE', None, None, str(tb).splitlines()[-1][:60]))
+            summary_rows.append((slug, 'ERRORE', None, None, str(last_exception).splitlines()[-1][:60]))
             all_sections.append(f"\n{'#'*70}\n# {slug}: ERRORE (vedi log/traceback)\n{'#'*70}\n")
             continue
 
         if result is None:
-            log(f"[{slug}] Impossibile generare la predizione (dati insufficienti).")
-            summary_rows.append((slug, 'DATI INSUFFICIENTI', None, None, ''))
-            all_sections.append(f"\n{'#'*70}\n# {slug}: DATI INSUFFICIENTI\n{'#'*70}\n")
+            log(f"[{slug}] Impossibile generare la predizione (dati insufficienti dopo {attempt} tentativi).")
+            summary_rows.append((slug, 'DATI INSUFFICIENTI', None, None, f'{attempt} tentativi'))
+            all_sections.append(f"\n{'#'*70}\n# {slug}: DATI INSUFFICIENTI (dopo {attempt} tentativi)\n{'#'*70}\n")
             continue
 
         if result.get('excluded'):
