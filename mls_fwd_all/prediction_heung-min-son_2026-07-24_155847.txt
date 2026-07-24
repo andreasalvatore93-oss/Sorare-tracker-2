@@ -1,0 +1,94 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-24T15:58:47.656479Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) heung-min-son: 60 pt attesi (37-83)
+======================================================================
+
+######################################################################
+# GIOCATORE: heung-min-son
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: heung-min-son (squadra: los-angeles-fc-los-angeles-california)
+Generato: 2026-07-24T15:58:47.656346Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-01 | HOU vs LAFC | mlspa | score=71.2 | peso=0.530
+  2026-03-08 | LAFC vs DAL | mlspa | score=42.6 | peso=0.561
+  2026-03-15 | LAFC vs STL | mlspa | score=44.1 | peso=0.595
+  2026-03-22 | ATX vs LAFC | mlspa | score=36.4 | peso=0.630
+  2026-04-19 | LAFC vs SJ | mlspa | score=46.3 | peso=0.667
+  2026-04-23 | LAFC vs RAP | mlspa | score=35.9 | peso=0.707
+  2026-05-11 | LAFC vs HOU | mlspa | score=47.9 | peso=0.749
+  2026-05-14 | STL vs LAFC | mlspa | score=61.3 | peso=0.794
+  2026-05-18 | NSH vs LAFC | mlspa | score=81.0 | peso=0.841
+  2026-05-25 | LAFC vs SEA | mlspa | score=39.2 | peso=0.891
+  2026-07-18 | LA vs LAFC | mlspa | score=79.3 | peso=0.944
+  2026-07-23 | LAFC vs RSL | mlspa | score=70.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 56.09
+Deviazione standard pesata: 16.62
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.95 (differenza: +1.67)
+Media score in casa: 46.60 | Media score fuori casa: 65.84
+Fattore casa/trasferta applicato: 0.829 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.9
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.279
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.990
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.982
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 66.2 vs media ultime 10: 54.2): 1.156
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T02:30
+Casa: Los Angeles FC | Trasferta: Sporting Kansas City 
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 59.9 +/- 23.3
+  (range: 36.7 - 83.2)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.31
+Punteggio REALE ottenuto in quella partita: 70.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      38.9    47.9     +9.0    15.9        SI
+   7        7      50.1    61.3    +11.2    14.5        SI
+   8        8      42.7    81.0    +38.3    15.5        NO
+   9        9      40.5    39.2     -1.3    21.5        SI
+  10       10      72.1    79.3     +7.2    21.0        SI
+  11       11      41.9    70.2    +28.3    23.5        NO
+
+MAE (errore assoluto medio): 15.88
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
