@@ -48,12 +48,12 @@ jobs:
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
-            if [ $attempt -ge 8 ]; then
-              echo "Impossibile salvare dopo 8 tentativi, abbandono."
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
               exit 1
             fi
             echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
-            sleep $((RANDOM % 8 + 3))
+            sleep $((RANDOM % 12 + 5))
             git fetch origin main
             git merge --no-edit -X ours origin/main
           done
@@ -68,7 +68,12 @@ jobs:
       # Parallelismo elevato (GitHub Actions Standard Free: max 20 job
       # concorrenti/account). 15 lascia margine per altri workflow che
       # potrebbero girare in parallelo (es. track.py schedulato).
-      max-parallel: 15
+      # Ridotto da 15 a 5 (25/07): con parallelismo alto troppi job facevano
+      # commit+push nella stessa finestra, causando fallimenti dopo aver
+      # esaurito gli 8 tentativi di retry sul push (contesa sul ref main,
+      # non un problema di query/modello). 5 job in parallelo e' un buon
+      # compromesso tra velocita' e affidabilita' del commit.
+      max-parallel: 5
       matrix:
         player_slug: ${{ fromJson(needs.discover.outputs.player_slugs) }}
 
@@ -105,12 +110,12 @@ jobs:
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
-            if [ $attempt -ge 8 ]; then
-              echo "Impossibile salvare dopo 8 tentativi, abbandono."
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
               exit 1
             fi
             echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
-            sleep $((RANDOM % 8 + 3))
+            sleep $((RANDOM % 12 + 5))
             git fetch origin main
             git merge --no-edit -X ours origin/main
           done
@@ -146,12 +151,12 @@ jobs:
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
-            if [ $attempt -ge 8 ]; then
-              echo "Impossibile salvare dopo 8 tentativi, abbandono."
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
               exit 1
             fi
             echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
-            sleep $((RANDOM % 8 + 3))
+            sleep $((RANDOM % 12 + 5))
             git fetch origin main
             git merge --no-edit -X ours origin/main
           done
