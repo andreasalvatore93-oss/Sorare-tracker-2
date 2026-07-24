@@ -1150,10 +1150,17 @@ def format_output(result):
 
 
 def main():
+    # Se TARGET_SLUG e' impostata (uso in job matrix separati, uno per giocatore,
+    # cosi' ognuno riparte con un budget di complessita' API fresco), elabora
+    # SOLO quel giocatore. Altrimenti usa la lista completa PLAYER_SLUGS.
+    target_slug = os.environ.get('TARGET_SLUG', '').strip()
+    slugs_to_process = [target_slug] if target_slug else PLAYER_SLUGS
+
     log("Avvio test multi-giocatore Tool_formazione...")
-    log(f"Config: {len(PLAYER_SLUGS)} giocatori, WINDOW_SIZE={WINDOW_SIZE} "
-        f"HALF_LIFE_GAMES={HALF_LIFE_GAMES} RANGE_MULTIPLIER={RANGE_MULTIPLIER} "
-        f"MIN_STARTER_ODDS={MIN_STARTER_ODDS:.0%}")
+    log(f"Config: {len(slugs_to_process)} giocatori da processare "
+        f"({'modalita\' job singolo: ' + target_slug if target_slug else 'lista completa'}), "
+        f"WINDOW_SIZE={WINDOW_SIZE} HALF_LIFE_GAMES={HALF_LIFE_GAMES} "
+        f"RANGE_MULTIPLIER={RANGE_MULTIPLIER} MIN_STARTER_ODDS={MIN_STARTER_ODDS:.0%}")
     log(f"SORARE_COOKIE presente: {bool(COOKIES)} (lunghezza: {len(COOKIES)})")
     log(f"curl_cffi disponibile: {_HAS_CURL_CFFI}")
 
@@ -1163,13 +1170,13 @@ def main():
     all_sections = []
     summary_rows = []
 
-    for idx, slug in enumerate(PLAYER_SLUGS, 1):
+    for idx, slug in enumerate(slugs_to_process, 1):
         if idx > 1:
             pause_s = 10.0  # pausa base tra giocatori
             log(f"Pausa di {pause_s}s prima del prossimo giocatore...")
             time.sleep(pause_s)
 
-        log(f"\n{'='*70}\n[{idx}/{len(PLAYER_SLUGS)}] Elaborazione giocatore: {slug}\n{'='*70}")
+        log(f"\n{'='*70}\n[{idx}/{len(slugs_to_process)}] Elaborazione giocatore: {slug}\n{'='*70}")
 
         # Retry progressivo se il primo tentativo fallisce (es. per il limite di
         # complessita' dell'API): 10s, poi 20s, poi 40s di attesa tra i tentativi,
@@ -1254,7 +1261,8 @@ def main():
     final_text = "\n".join(summary_lines) + "\n" + "\n".join(all_sections)
 
     ts = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H%M%S')
-    out_path = os.path.join(OUTPUT_DIR, f'multi_prediction_{ts}.txt')
+    file_suffix = target_slug if target_slug else 'all'
+    out_path = os.path.join(OUTPUT_DIR, f'prediction_{file_suffix}_{ts}.txt')
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(final_text)
 
