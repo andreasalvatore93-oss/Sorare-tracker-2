@@ -34,7 +34,7 @@ except ImportError:
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 PLAYER_SLUG = 'prince-osei-owusu'
 PLAYER_POSITION = 'Forward'
-WINDOW_SIZE = 14
+WINDOW_SIZE = 30
 HALF_LIFE_GAMES = 6.5  # decadimento esponenziale: peso si dimezza ogni ~6.5 partite indietro
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 
@@ -333,6 +333,27 @@ def weighted_stddev(values, weights, mean):
     return math.sqrt(variance)
 
 
+def trimmed_weighted_stddev(values, weights):
+    """Deviazione standard pesata calcolata ESCLUDENDO il valore minimo e massimo
+    della serie (trimmed statistics) — riduce l'influenza di 1-2 partite outlier
+    estreme sul range di confidenza, senza alterare la media pesata principale
+    (che resta calcolata su tutti i dati, inclusi gli estremi, per non falsare
+    la stima centrale). Richiede almeno 5 valori per avere senso statistico;
+    sotto quella soglia ritorna None (il chiamante fara' fallback alla versione
+    non trimmed)."""
+    if len(values) < 5:
+        return None
+    idx_min = values.index(min(values))
+    idx_max = values.index(max(values))
+    if idx_min == idx_max:
+        return None
+    keep_idx = [i for i in range(len(values)) if i not in (idx_min, idx_max)]
+    trimmed_values = [values[i] for i in keep_idx]
+    trimmed_weights = [weights[i] for i in keep_idx]
+    trimmed_mean = weighted_mean(trimmed_values, trimmed_weights)
+    return weighted_stddev(trimmed_values, trimmed_weights, trimmed_mean)
+
+
 def team_ranking_from_game(game, player_team_slug):
     """Estrae ranking squadra giocatore e ranking avversario da un blocco anyGame
     (funziona sia per partite passate che future, stessa struttura)."""
@@ -409,11 +430,37 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     return max(0.7, min(1.3, fattore))  # limitato per evitare correzioni estreme
 
 
+def compute_trend_factor(scores, short_window=5, long_window=10):
+    """Confronta la media delle ultime 'short_window' partite con la media delle
+    ultime 'long_window' partite (stesso pool gia' filtrato per competizione e
+    minutaggio) per rilevare un trend di forma (in crescita o in calo). Ritorna
+    un fattore moltiplicativo centrato su 1.0: se le partite piu' recenti hanno
+    una media piu' alta della finestra piu' ampia, il fattore e' > 1 (forma in
+    crescita), viceversa < 1. Scala conservativa e limitata (max +-20%), per non
+    lasciare che poche partite recenti dominino la predizione.
+    Richiede almeno 'long_window' partite; ritorna 1.0 (neutro) altrimenti."""
+    if len(scores) < long_window:
+        return 1.0, None, None
+
+    recent_short = scores[-short_window:]
+    recent_long = scores[-long_window:]
+
+    avg_short = sum(recent_short) / len(recent_short)
+    avg_long = sum(recent_long) / len(recent_long)
+
+    if avg_long == 0:
+        return 1.0, avg_short, avg_long
+
+    ratio = avg_short / avg_long
+    fattore = max(0.8, min(1.2, ratio))
+    return fattore, avg_short, avg_long
+
+
 def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                        half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0,
                        fouls_values=None, duels_values=None, offensive_values=None,
                        rare_events_values=None, passing_values=None, defense_rare_values=None,
-                       use_granular_factors=False):
+                       use_granular_factors=False, use_trend=False):
     """Backtest rigoroso: per ogni partita a partire da 'min_history' partite di
     storico disponibile, ricalcola l'INTERA formula (media pesata esponenziale +
     fattore casa/trasferta + fattore forza avversario [+ fattori granulari se
@@ -479,7 +526,11 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                     f = compute_split_factor(hist_values, hist_home_flags, target_is_home)
                     fattore_granulare_totale *= f
 
-        predetto = 1.0 * media * fattore_ct * fattore_fa * fattore_granulare_totale
+        fattore_trend_bt = 1.0
+        if use_trend:
+            fattore_trend_bt, _, _ = compute_trend_factor(hist_scores, short_window=5, long_window=10)
+
+        predetto = 1.0 * media * fattore_ct * fattore_fa * fattore_granulare_totale * fattore_trend_bt
         reale = scores[i]
         errore = reale - predetto
         range_conf = dev_std * range_multiplier
@@ -510,19 +561,34 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 
 
 # Combinazioni di parametri da testare nel grid search. Ogni tupla e':
-# (half_life, range_multiplier, opponent_sensitivity, use_granular_factors, etichetta_descrittiva)
-GRID_SEARCH_COMBINATIONS = [
-    (6.5, 1.0, 29.0, False, "baseline attuale (v1, senza fattori granulari)"),
-    (3.0, 1.0, 29.0, False, "half-life corta (piu' reattivo alle ultime partite)"),
-    (10.0, 1.0, 29.0, False, "half-life lunga (piu' stabile, meno reattivo)"),
-    (6.5, 1.3, 29.0, False, "range allargato 1.3x"),
-    (6.5, 1.5, 29.0, False, "range allargato 1.5x"),
-    (6.5, 1.0, 15.0, False, "fattore avversario piu' sensibile"),
-    (6.5, 1.0, 45.0, False, "fattore avversario meno sensibile"),
-    (6.5, 1.0, 29.0, True, "baseline + fattori granulari (falli/duelli/offensivo/eventi rari)"),
-    (6.5, 1.3, 29.0, True, "range allargato 1.3x + fattori granulari"),
-    (9.0, 1.4, 29.0, True, "stabile + range largo + fattori granulari"),
-]
+# (half_life, range_multiplier, opponent_sensitivity, use_granular_factors, use_trend, etichetta)
+# Generate programmaticamente (griglia di valori chiave x flag) per arrivare a
+# ~50 combinazioni, reso possibile dalla finestra allargata a 30 partite (che
+# offre piu' punti di backtest e riduce il rischio di overfitting rispetto
+# alla versione precedente a 14 partite/8 punti di test).
+def _build_grid_combinations():
+    half_lives = [4.0, 6.5, 9.0, 12.0]
+    range_mults = [1.0, 1.2, 1.4]
+    opp_sens_values = [20.0, 29.0]
+    combos = []
+    for hl in half_lives:
+        for rm in range_mults:
+            for os_ in opp_sens_values:
+                # Solo 2 varianti di flag per combinazione base (non tutte e 4
+                # le combinazioni gran/trend), per restare a ~48 righe totali
+                # invece di 144 (4x3x3x4) ed evitare overfitting su troppe
+                # combinazioni rispetto ai punti di backtest disponibili.
+                for gran, trend in ((False, False), (True, True)):
+                    label_parts = [f"hl={hl}", f"range={rm}x", f"opp_sens={os_}"]
+                    if gran:
+                        label_parts.append("granulari")
+                    if trend:
+                        label_parts.append("trend")
+                    combos.append((hl, rm, os_, gran, trend, "+".join(label_parts)))
+    return combos
+
+
+GRID_SEARCH_COMBINATIONS = _build_grid_combinations()
 
 
 def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
@@ -533,7 +599,7 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
     (il migliore per primo). Il 'punteggio' finale usato per il ranking bilancia
     MAE (peggio se alto) e distanza dalla copertura ideale del range (~68%)."""
     results = []
-    for half_life, range_mult, opp_sens, use_granular, label in GRID_SEARCH_COMBINATIONS:
+    for half_life, range_mult, opp_sens, use_granular, use_trend, label in GRID_SEARCH_COMBINATIONS:
         bt = rigorous_backtest(scores, is_home_flags, opponent_rankings,
                                 min_history=min_history, half_life=half_life,
                                 range_multiplier=range_mult, opponent_sensitivity=opp_sens,
@@ -542,7 +608,8 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                                 rare_events_values=rare_events_values,
                                 passing_values=passing_values,
                                 defense_rare_values=defense_rare_values,
-                                use_granular_factors=use_granular)
+                                use_granular_factors=use_granular,
+                                use_trend=use_trend)
         bt['label'] = label
         if bt['mae'] is not None:
             # Punteggio composito: MAE conta come errore diretto; la distanza dalla
@@ -561,7 +628,7 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
 
 def build_prediction():
     log("[FASE 1/4] Avvio recupero game log...")
-    past_games, future_games = fetch_game_log(PLAYER_SLUG, first=50)
+    past_games, future_games = fetch_game_log(PLAYER_SLUG, first=60)
     if not past_games:
         log("[FASE 1/4] INTERROTTO: nessuna partita passata trovata, impossibile procedere oltre.")
         return None
@@ -713,6 +780,7 @@ def build_prediction():
 
     media_pesata = weighted_mean(scores, weights)
     dev_std_pesata = weighted_stddev(scores, weights, media_pesata)
+    dev_std_trimmed = trimmed_weighted_stddev(scores, weights)
 
     # --- Fattore casa/trasferta (score totale, gia' esistente) ---
     home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
@@ -786,9 +854,12 @@ def build_prediction():
         p_gioca = presence_rate
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
+    # --- Fattore trend (ultime 5 vs ultime 10, stesso pool gia' filtrato) ---
+    fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(scores, short_window=5, long_window=10)
+
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_falli * fattore_duelli * fattore_offensivo * fattore_eventi_rari
-                    * fattore_passaggio * fattore_difesa_rari)
+                    * fattore_passaggio * fattore_difesa_rari * fattore_trend)
     range_conf = dev_std_pesata  # stessa dev std pesata, non ri-scalata da P(gioca): scelta v1 semplice
 
     # --- Backtest SEMPLICE: riapplica solo la componente media "a ritroso" sull'ultima partita nota ---
@@ -829,6 +900,7 @@ def build_prediction():
         'weights_used': weights,
         'media_pesata': media_pesata,
         'dev_std_pesata': dev_std_pesata,
+        'dev_std_trimmed': dev_std_trimmed,
         'home_avg': home_avg,
         'away_avg': away_avg,
         'fattore_casa_trasferta': fattore_casa_trasferta,
@@ -843,6 +915,9 @@ def build_prediction():
         'fattore_eventi_rari': fattore_eventi_rari,
         'fattore_passaggio': fattore_passaggio,
         'fattore_difesa_rari': fattore_difesa_rari,
+        'fattore_trend': fattore_trend,
+        'trend_avg_short': trend_avg_short,
+        'trend_avg_long': trend_avg_long,
         'p_gioca': p_gioca,
         'p_source': p_source,
         'score_atteso': score_atteso,
@@ -885,6 +960,12 @@ def format_output(result):
     lines.append("--- CALCOLO FATTORI ---")
     lines.append(f"Media pesata esponenziale (half-life {HALF_LIFE_GAMES} partite): {result['media_pesata']:.2f}")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
+    if result['dev_std_trimmed'] is not None:
+        lines.append(f"Deviazione standard pesata TRIMMED (esclusi min/max della finestra): "
+                     f"{result['dev_std_trimmed']:.2f} (differenza: "
+                     f"{result['dev_std_pesata'] - result['dev_std_trimmed']:+.2f})")
+    else:
+        lines.append("Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)")
     lines.append(f"Media score in casa: {result['home_avg']:.2f} | Media score fuori casa: {result['away_avg']:.2f}")
     lines.append(f"Fattore casa/trasferta applicato: {result['fattore_casa_trasferta']:.3f} "
                  f"({'CASA' if result['next_is_home'] else 'TRASFERTA'} nella prossima partita)")
@@ -898,6 +979,11 @@ def format_output(result):
     lines.append(f"Fattore eventi rari (rigori/autogol/errori, con cap): {result['fattore_eventi_rari']:.3f}")
     lines.append(f"Fattore passaggio (accurate_pass/final_third/att_assist): {result['fattore_passaggio']:.3f}")
     lines.append(f"Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): {result['fattore_difesa_rari']:.3f}")
+    if result['trend_avg_short'] is not None:
+        lines.append(f"Fattore trend (media ultime 5: {result['trend_avg_short']:.1f} vs "
+                     f"media ultime 10: {result['trend_avg_long']:.1f}): {result['fattore_trend']:.3f}")
+    else:
+        lines.append("Fattore trend: N/D (servono almeno 10 partite nella finestra)")
     lines.append(f"P(gioca): {result['p_gioca']:.2%} (fonte: {result['p_source']})")
 
     lines.append("")
