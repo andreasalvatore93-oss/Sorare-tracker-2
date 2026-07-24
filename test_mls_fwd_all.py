@@ -1281,19 +1281,55 @@ def main():
                               result.get('target_competition', '')))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} +/- {result.get('range_conf'):.1f}")
 
+        # NUOVO (25/07): salva il grid search COMPLETO (tutte le combinazioni,
+        # non solo la top 10 stampata nel .txt) in JSON separato per giocatore.
+        # Serve per l'aggregazione cross-player della combinazione vincente
+        # (MAE medio su tutti i giocatori, non solo il migliore per singolo).
+        grid_dir = os.path.join(OUTPUT_DIR, 'grid_search_full')
+        if not os.path.exists(grid_dir):
+            os.makedirs(grid_dir)
+        grid_export = [
+            {
+                'label': r.get('label'),
+                'half_life': r.get('half_life'),
+                'range_multiplier': r.get('range_multiplier'),
+                'opponent_sensitivity': r.get('opponent_sensitivity'),
+                'trend_intensity': r.get('trend_intensity'),
+                'mae': r.get('mae'),
+                'pct_dentro_range': r.get('pct_dentro_range'),
+                'composite_score': r.get('composite_score'),
+            }
+            for r in result.get('grid_results', [])
+        ]
+        grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
+        with open(grid_path, 'w', encoding='utf-8') as f:
+            json.dump(grid_export, f, ensure_ascii=False, indent=2)
+
     # --- Riepilogo comparativo in cima al file ---
+    # NUOVO (25/07): tiering ordinato per score atteso decrescente, con
+    # "projected score" in formato compatto (arrotondato + range) invece del
+    # semplice atteso/range separati — numero secco e leggibile a colpo
+    # d'occhio, come richiesto dall'utente.
+    ok_rows = [r for r in summary_rows if r[1] == 'OK']
+    other_rows = [r for r in summary_rows if r[1] != 'OK']
+    ok_rows.sort(key=lambda r: r[2] if r[2] is not None else -1, reverse=True)
+
     summary_lines = []
     summary_lines.append("=" * 70)
-    summary_lines.append("RIEPILOGO COMPARATIVO — TEST MULTI-GIOCATORE")
+    summary_lines.append("CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE")
     summary_lines.append(f"Generato: {datetime.datetime.utcnow().isoformat()}Z")
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
     summary_lines.append("=" * 70)
-    summary_lines.append(f"{'giocatore':<22} {'stato':<20} {'atteso':>8} {'range':>8} {'note':<30}")
-    for slug, status, atteso, rng, note in summary_rows:
-        atteso_str = f"{atteso:.1f}" if atteso is not None else "—"
-        rng_str = f"±{rng:.1f}" if rng is not None else "—"
-        summary_lines.append(f"{slug:<22} {status:<20} {atteso_str:>8} {rng_str:>8} {note:<30}")
+    for idx, (slug, status, atteso, rng, note) in enumerate(ok_rows, 1):
+        low = round(atteso - rng)
+        high = round(atteso + rng)
+        summary_lines.append(f"{idx}) {slug}: {round(atteso)} pt attesi ({low}-{high})")
+    if other_rows:
+        summary_lines.append("")
+        summary_lines.append("--- Esclusi / non disponibili ---")
+        for slug, status, atteso, rng, note in other_rows:
+            summary_lines.append(f"{slug}: {status} — {note}")
     summary_lines.append("=" * 70)
 
     final_text = "\n".join(summary_lines) + "\n" + "\n".join(all_sections)
