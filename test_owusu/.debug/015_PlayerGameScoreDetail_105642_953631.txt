@@ -1,0 +1,38 @@
+=== RICHIESTA (PlayerGameScoreDetail) ===
+operationName: PlayerGameScoreDetail
+variables: {"id": "e317ad92-737d-4946-b3df-48c1685e7380"}
+query:
+
+query PlayerGameScoreDetail($id: String!) {
+  so5 {
+    playerGameScore(id: $id) {
+      id
+      score
+      scoreStatus
+      position
+      anyGame {
+        date
+        statusTyped
+        homeTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        awayTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        competition { slug }
+      }
+      detailedScore { category stat statValue totalScore }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Fri, 24 Jul 2026 10:56:42 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '0', 'x-gql-depth': '0', 'x-server-timestamp': '1784890602', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'nNkHZIfstncHugCJlUtfUcZNSSb0zA3jouCyHEGRAHtRCL8trSdod51elVR2pleR1y7NsBEzPr7gPndkXofbCg', 'etag': 'W/"db314dcec12e084ff75c942e1f6f8f43"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=koTm0biwz3XDvviJvsrpqRcasOUv15%2BnmuqoVjkQrLs6WUcb04sAnrbWjMWXeOJFEpTl7z44j5pLGY7wh9CLq1hbyRlxLaAMG1hEcz2HfR2x7kwBg7OFcCiv6qXwSavJTlxX8s%2Bi9LyZSV7vCWrJmbpiKxYOjweMediIPwgwmoIkxtSWMaaTWo5Eujq3BxHj3V5%2BCrZjaNqk303uF7kvrwz9Favq99hMWsrn89zJVNiuwRMNIlJciTKuQK0XQfciNfWolHVBiK4KcP%2BoIskVPx2nOsooiKD2KlsaXV%2FgEcxEunBuPw2lHoux4cqo9%2FvU--HnCISrS%2Fzal91IMr--M3wa9SCADlJQb%2B4TQMv%2BPw%3D%3D; domain=.sorare.com; path=/; expires=Sat, 24 Jul 2027 10:56:42 GMT; secure; httponly; samesite=none', 'x-request-id': '9f2de308-4591-4aec-a01c-995e429158d6', 'x-runtime': '0.010492', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 70bb7fd797792ff677b4ec2e2a0ad742.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'K_5k5QUWdy0OWvohIFlE-Tui3Jux-dx04rHmdkHtHQie3XelWkLy7g=='}
+body (integrale):
+{"errors":[{"message":"Type mismatch on variable $id and argument id (String! / ID!)","locations":[{"line":4,"column":21}],"path":["query PlayerGameScoreDetail","so5","playerGameScore","id"],"extensions":{"code":"variableMismatch","variableName":"id","typeName":"String!","argumentName":"id","errorMessage":"Type mismatch"}}]}
