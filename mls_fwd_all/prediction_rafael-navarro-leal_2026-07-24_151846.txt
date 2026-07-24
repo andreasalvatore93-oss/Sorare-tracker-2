@@ -1,0 +1,174 @@
+======================================================================
+RIEPILOGO COMPARATIVO — TEST MULTI-GIOCATORE
+Generato: 2026-07-24T15:18:46.636213Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.6, min_starter_odds=70%
+======================================================================
+giocatore              stato                  atteso    range note                          
+rafael-navarro-leal    OK                       36.2    ±27.3 mlspa                         
+======================================================================
+
+######################################################################
+# GIOCATORE: rafael-navarro-leal
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rafael-navarro-leal (squadra: colorado-rapids-denver-colorado)
+Generato: 2026-07-24T15:18:46.635749Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-28 | RAP vs POR | mlspa | score=53.4 | peso=0.445
+  2026-03-08 | RAP vs LA | mlspa | score=81.0 | peso=0.472
+  2026-03-14 | NYC vs RAP | mlspa | score=68.8 | peso=0.500
+  2026-03-22 | SKC vs RAP | mlspa | score=85.8 | peso=0.530
+  2026-04-04 | TOR vs RAP | mlspa | score=51.2 | peso=0.561
+  2026-04-12 | RAP vs HOU | mlspa | score=80.0 | peso=0.595
+  2026-04-18 | RAP vs MIA | mlspa | score=77.7 | peso=0.630
+  2026-04-23 | LAFC vs RAP | mlspa | score=51.3 | peso=0.667
+  2026-04-26 | VAN vs RAP | mlspa | score=63.0 | peso=0.707
+  2026-05-03 | HOU vs RAP | mlspa | score=35.7 | peso=0.749
+  2026-05-10 | RAP vs STL | mlspa | score=40.1 | peso=0.794
+  2026-05-14 | MIN vs RAP | mlspa | score=61.9 | peso=0.841
+  2026-05-17 | RSL vs RAP | mlspa | score=33.8 | peso=0.891
+  2026-05-24 | RAP vs DAL | mlspa | score=50.0 | peso=0.944
+  2026-07-23 | RAP vs SD | mlspa | score=35.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 55.09
+Deviazione standard pesata: 17.03
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.33 (differenza: +1.71)
+Media score in casa: 59.60 | Media score fuori casa: 56.44
+Fattore casa/trasferta applicato: 0.973 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.6
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.014
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.010
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore trend (media ultime 5: 44.2 vs media ultime 10: 52.9): 0.836
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T00:30
+Casa: St. Louis City SC | Trasferta: Colorado Rapids
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 36.2 +/- 27.3
+  (range: 8.9 - 63.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.24
+Punteggio REALE ottenuto in quella partita: 35.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -22.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- GRID SEARCH: CLASSIFICA 10 COMBINAZIONI DI PARAMETRI ---
+ # half_life  range_x opp_sens     MAE copertura%  etichetta
+ 1       9.0      1.6     29.0   16.10       66.7  hl=9.0+range=1.6x+opp_sens=29.0+trend_int=1.0
+ 2       9.0      1.4     29.0   16.11       66.7  hl=9.0+range=1.4x+opp_sens=29.0+trend_int=1.3
+ 3       9.0      1.6     29.0   16.11       66.7  hl=9.0+range=1.6x+opp_sens=29.0+trend_int=1.3
+ 4      12.0      1.6     29.0   16.15       66.7  hl=12.0+range=1.6x+opp_sens=29.0+trend_int=1.0
+ 5      12.0      1.6     29.0   16.17       66.7  hl=12.0+range=1.6x+opp_sens=29.0+trend_int=1.3
+ 6       9.0      1.6     29.0   16.39       66.7  hl=9.0+range=1.6x+opp_sens=29.0+trend_int=1.0+granulari
+ 7      12.0      1.6     29.0   16.45       66.7  hl=12.0+range=1.6x+opp_sens=29.0+trend_int=1.0+granulari
+ 8      12.0      1.6     29.0   16.46       66.7  hl=12.0+range=1.6x+opp_sens=29.0+trend_int=1.3+granulari
+ 9       9.0      1.6     29.0   16.41       77.8  hl=9.0+range=1.6x+opp_sens=29.0+trend_int=1.3+granulari
+10       9.0      1.2     29.0   16.10       55.6  hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.0
+11       9.0      1.4     29.0   16.10       55.6  hl=9.0+range=1.4x+opp_sens=29.0+trend_int=1.0
+12       9.0      1.2     29.0   16.11       55.6  hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3
+13      12.0      1.2     29.0   16.15       55.6  hl=12.0+range=1.2x+opp_sens=29.0+trend_int=1.0
+14      12.0      1.4     29.0   16.15       55.6  hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0
+15      12.0      1.2     29.0   16.17       55.6  hl=12.0+range=1.2x+opp_sens=29.0+trend_int=1.3
+16      12.0      1.4     29.0   16.17       55.6  hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.3
+17       9.0      1.2     29.0   16.29       55.6  hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7
+18       9.0      1.4     29.0   16.29       55.6  hl=9.0+range=1.4x+opp_sens=29.0+trend_int=0.7
+19       9.0      1.6     29.0   16.29       55.6  hl=9.0+range=1.6x+opp_sens=29.0+trend_int=0.7
+20      12.0      1.2     29.0   16.35       55.6  hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7
+21      12.0      1.4     29.0   16.35       55.6  hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7
+22      12.0      1.6     29.0   16.35       55.6  hl=12.0+range=1.6x+opp_sens=29.0+trend_int=0.7
+23       9.0      1.2     29.0   16.39       55.6  hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.0+granulari
+24       9.0      1.4     29.0   16.39       55.6  hl=9.0+range=1.4x+opp_sens=29.0+trend_int=1.0+granulari
+25       9.0      1.2     29.0   16.41       55.6  hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3+granulari
+26       9.0      1.4     29.0   16.41       55.6  hl=9.0+range=1.4x+opp_sens=29.0+trend_int=1.3+granulari
+27      12.0      1.2     29.0   16.45       55.6  hl=12.0+range=1.2x+opp_sens=29.0+trend_int=1.0+granulari
+28      12.0      1.4     29.0   16.45       55.6  hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0+granulari
+29      12.0      1.2     29.0   16.46       55.6  hl=12.0+range=1.2x+opp_sens=29.0+trend_int=1.3+granulari
+30      12.0      1.4     29.0   16.46       55.6  hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.3+granulari
+31       9.0      1.2     29.0   16.59       55.6  hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari
+32       9.0      1.4     29.0   16.59       55.6  hl=9.0+range=1.4x+opp_sens=29.0+trend_int=0.7+granulari
+33       9.0      1.6     29.0   16.59       55.6  hl=9.0+range=1.6x+opp_sens=29.0+trend_int=0.7+granulari
+34      12.0      1.2     29.0   16.66       55.6  hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari
+35      12.0      1.4     29.0   16.66       55.6  hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7+granulari
+36      12.0      1.6     29.0   16.66       55.6  hl=12.0+range=1.6x+opp_sens=29.0+trend_int=0.7+granulari
+37       9.0      1.6     20.0   18.16       55.6  hl=9.0+range=1.6x+opp_sens=20.0+trend_int=1.0+granulari
+38       9.0      1.6     20.0   18.18       55.6  hl=9.0+range=1.6x+opp_sens=20.0+trend_int=1.3+granulari
+39      12.0      1.6     20.0   18.24       55.6  hl=12.0+range=1.6x+opp_sens=20.0+trend_int=1.0+granulari
+40      12.0      1.6     20.0   18.26       55.6  hl=12.0+range=1.6x+opp_sens=20.0+trend_int=1.3+granulari
+41       9.0      1.6     20.0   18.38       55.6  hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7+granulari
+42      12.0      1.6     20.0   18.46       55.6  hl=12.0+range=1.6x+opp_sens=20.0+trend_int=0.7+granulari
+43       9.0      1.2     20.0   18.16       44.4  hl=9.0+range=1.2x+opp_sens=20.0+trend_int=1.0+granulari
+44       9.0      1.4     20.0   18.16       44.4  hl=9.0+range=1.4x+opp_sens=20.0+trend_int=1.0+granulari
+45       9.0      1.2     20.0   18.18       44.4  hl=9.0+range=1.2x+opp_sens=20.0+trend_int=1.3+granulari
+46       9.0      1.4     20.0   18.18       44.4  hl=9.0+range=1.4x+opp_sens=20.0+trend_int=1.3+granulari
+47       9.0      1.2     20.0   18.19       44.4  hl=9.0+range=1.2x+opp_sens=20.0+trend_int=1.0
+48       9.0      1.4     20.0   18.19       44.4  hl=9.0+range=1.4x+opp_sens=20.0+trend_int=1.0
+49       9.0      1.6     20.0   18.19       44.4  hl=9.0+range=1.6x+opp_sens=20.0+trend_int=1.0
+50       9.0      1.2     20.0   18.20       44.4  hl=9.0+range=1.2x+opp_sens=20.0+trend_int=1.3
+51       9.0      1.4     20.0   18.20       44.4  hl=9.0+range=1.4x+opp_sens=20.0+trend_int=1.3
+52       9.0      1.6     20.0   18.20       44.4  hl=9.0+range=1.6x+opp_sens=20.0+trend_int=1.3
+53      12.0      1.2     20.0   18.24       44.4  hl=12.0+range=1.2x+opp_sens=20.0+trend_int=1.0+granulari
+54      12.0      1.4     20.0   18.24       44.4  hl=12.0+range=1.4x+opp_sens=20.0+trend_int=1.0+granulari
+55      12.0      1.2     20.0   18.26       44.4  hl=12.0+range=1.2x+opp_sens=20.0+trend_int=1.3+granulari
+56      12.0      1.4     20.0   18.26       44.4  hl=12.0+range=1.4x+opp_sens=20.0+trend_int=1.3+granulari
+57      12.0      1.2     20.0   18.27       44.4  hl=12.0+range=1.2x+opp_sens=20.0+trend_int=1.0
+58      12.0      1.4     20.0   18.27       44.4  hl=12.0+range=1.4x+opp_sens=20.0+trend_int=1.0
+59      12.0      1.6     20.0   18.27       44.4  hl=12.0+range=1.6x+opp_sens=20.0+trend_int=1.0
+60      12.0      1.2     20.0   18.29       44.4  hl=12.0+range=1.2x+opp_sens=20.0+trend_int=1.3
+61      12.0      1.4     20.0   18.29       44.4  hl=12.0+range=1.4x+opp_sens=20.0+trend_int=1.3
+62      12.0      1.6     20.0   18.29       44.4  hl=12.0+range=1.6x+opp_sens=20.0+trend_int=1.3
+63       9.0      1.2     20.0   18.38       44.4  hl=9.0+range=1.2x+opp_sens=20.0+trend_int=0.7+granulari
+64       9.0      1.4     20.0   18.38       44.4  hl=9.0+range=1.4x+opp_sens=20.0+trend_int=0.7+granulari
+65       9.0      1.2     20.0   18.40       44.4  hl=9.0+range=1.2x+opp_sens=20.0+trend_int=0.7
+66       9.0      1.4     20.0   18.40       44.4  hl=9.0+range=1.4x+opp_sens=20.0+trend_int=0.7
+67       9.0      1.6     20.0   18.40       44.4  hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7
+68      12.0      1.2     20.0   18.46       44.4  hl=12.0+range=1.2x+opp_sens=20.0+trend_int=0.7+granulari
+69      12.0      1.4     20.0   18.46       44.4  hl=12.0+range=1.4x+opp_sens=20.0+trend_int=0.7+granulari
+70      12.0      1.2     20.0   18.49       44.4  hl=12.0+range=1.2x+opp_sens=20.0+trend_int=0.7
+71      12.0      1.4     20.0   18.49       44.4  hl=12.0+range=1.4x+opp_sens=20.0+trend_int=0.7
+72      12.0      1.6     20.0   18.49       44.4  hl=12.0+range=1.6x+opp_sens=20.0+trend_int=0.7
+
+Ordinate per punteggio composito (MAE + penalita' di distanza dalla copertura ideale ~68%). La combinazione #1 e' quella usata per il BACKTEST RIGOROSO dettagliato qui sotto.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=29.0+trend_int=1.0' (half_life=9.0, range_mult=1.6, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.2    77.7    +26.5    21.7        NO
+   7        7      54.7    51.3     -3.4    20.2        SI
+   8        8      47.8    63.0    +15.2    22.0        SI
+   9        9      62.0    35.7    -26.3    20.6        NO
+  10       10      67.4    40.1    -27.3    26.0        NO
+  11       11      50.3    61.9    +11.6    27.2        SI
+  12       12      40.9    33.8     -7.1    25.5        SI
+  13       13      45.9    50.0     +4.1    27.6        SI
+  14       14      58.4    35.0    -23.4    26.3        SI
+
+MAE (errore assoluto medio): 16.10
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. NOTA: i parametri di DEFAULT della predizione principale (sezione PREDIZIONE sopra) sono stati AGGIORNATI il 24/07 in base ai risultati di questo grid search (half-life 12.0, range 1.6x, granulari+trend sempre attivi). Il grid search continua a girare ad ogni esecuzione per verificare se emergono combinazioni ancora migliori nel tempo.
+
+======================================================================
