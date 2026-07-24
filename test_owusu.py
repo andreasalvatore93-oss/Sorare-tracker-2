@@ -344,14 +344,26 @@ def team_ranking_from_game(game, player_team_slug):
     return None, None, None
 
 
-def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6):
+def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
+                       half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0):
     """Backtest rigoroso: per ogni partita a partire da 'min_history' partite di
     storico disponibile, ricalcola l'INTERA formula (media pesata esponenziale +
     fattore casa/trasferta + fattore forza avversario) usando SOLO i dati
     precedenti a quella partita, poi confronta con lo score reale ottenuto.
     P(gioca) e' fissato a 100% (sappiamo gia' che ha giocato, essendo storico).
+
+    Parametri variabili (per grid search):
+    - half_life: partite per il dimezzamento del peso esponenziale (default HALF_LIFE_GAMES)
+    - range_multiplier: moltiplicatore applicato alla deviazione standard pesata
+      per ottenere il range di confidenza (1.0 = deviazione standard pura)
+    - opponent_sensitivity: costante di normalizzazione per il fattore forza
+      avversario (piu' bassa = il ranking avversario pesa di piu' sul risultato)
+
     Ritorna una lista di dict con dettaglio per ogni partita testata + statistiche
     aggregate (MAE, % di volte in cui il reale rientra nel range di confidenza)."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+
     rows = []
     n = len(scores)
 
@@ -361,7 +373,7 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6):
         hist_opp_ranks = opponent_rankings[:i]
 
         m = len(hist_scores)
-        w = exponential_weights(m, HALF_LIFE_GAMES)
+        w = exponential_weights(m, half_life)
         media = weighted_mean(hist_scores, w)
         dev_std = weighted_stddev(hist_scores, w, media)
 
@@ -384,13 +396,14 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6):
 
         fattore_fa = 1.0
         if avg_rank_hist and target_opp_rank:
-            delta = (target_opp_rank - avg_rank_hist) / 29.0
+            delta = (target_opp_rank - avg_rank_hist) / opponent_sensitivity
             fattore_fa = max(0.5, min(1.5, 1.0 + delta))
 
         predetto = 1.0 * media * fattore_ct * fattore_fa  # P(gioca) fissato a 100%
         reale = scores[i]
         errore = reale - predetto
-        dentro_range = abs(errore) <= dev_std if dev_std > 0 else None
+        range_conf = dev_std * range_multiplier
+        dentro_range = abs(errore) <= range_conf if range_conf > 0 else None
 
         rows.append({
             'indice': i,
@@ -398,18 +411,64 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6):
             'predetto': predetto,
             'reale': reale,
             'errore': errore,
-            'range_conf': dev_std,
+            'range_conf': range_conf,
             'dentro_range': dentro_range,
         })
 
     if not rows:
-        return {'rows': [], 'mae': None, 'pct_dentro_range': None}
+        return {'rows': [], 'mae': None, 'pct_dentro_range': None,
+                'half_life': half_life, 'range_multiplier': range_multiplier,
+                'opponent_sensitivity': opponent_sensitivity}
 
     mae = sum(abs(r['errore']) for r in rows) / len(rows)
     valid_range_checks = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
     pct_dentro_range = (sum(valid_range_checks) / len(valid_range_checks) * 100) if valid_range_checks else None
 
-    return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct_dentro_range}
+    return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct_dentro_range,
+            'half_life': half_life, 'range_multiplier': range_multiplier,
+            'opponent_sensitivity': opponent_sensitivity}
+
+
+# Combinazioni di parametri da testare nel grid search. Ogni tupla e':
+# (half_life, range_multiplier, opponent_sensitivity, etichetta_descrittiva)
+GRID_SEARCH_COMBINATIONS = [
+    (6.5, 1.0, 29.0, "baseline attuale (v1)"),
+    (3.0, 1.0, 29.0, "half-life corta (piu' reattivo alle ultime partite)"),
+    (10.0, 1.0, 29.0, "half-life lunga (piu' stabile, meno reattivo)"),
+    (6.5, 1.3, 29.0, "range allargato 1.3x"),
+    (6.5, 1.5, 29.0, "range allargato 1.5x"),
+    (6.5, 1.0, 15.0, "fattore avversario piu' sensibile"),
+    (6.5, 1.0, 45.0, "fattore avversario meno sensibile"),
+    (4.0, 1.3, 20.0, "reattivo + range largo + avversario sensibile"),
+    (9.0, 1.4, 29.0, "stabile + range largo"),
+    (5.0, 1.2, 25.0, "combinazione intermedia bilanciata"),
+]
+
+
+def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6):
+    """Esegue il backtest rigoroso con tutte le combinazioni di parametri in
+    GRID_SEARCH_COMBINATIONS e ritorna i risultati ordinati per MAE crescente
+    (il migliore per primo). Il 'punteggio' finale usato per il ranking bilancia
+    MAE (peggio se alto) e distanza dalla copertura ideale del range (~68%)."""
+    results = []
+    for half_life, range_mult, opp_sens, label in GRID_SEARCH_COMBINATIONS:
+        bt = rigorous_backtest(scores, is_home_flags, opponent_rankings,
+                                min_history=min_history, half_life=half_life,
+                                range_multiplier=range_mult, opponent_sensitivity=opp_sens)
+        bt['label'] = label
+        if bt['mae'] is not None:
+            # Punteggio composito: MAE conta come errore diretto; la distanza dalla
+            # copertura ideale (68%, corrispondente a +-1 dev std in una normale)
+            # viene sommata con un peso minore, per non premiare range assurdamente
+            # larghi che coprirebbero tutto ma sarebbero inutili in pratica.
+            coverage_penalty = abs((bt['pct_dentro_range'] or 0) - 68.0) * 0.3
+            bt['composite_score'] = bt['mae'] + coverage_penalty
+        else:
+            bt['composite_score'] = float('inf')
+        results.append(bt)
+
+    results.sort(key=lambda r: r['composite_score'])
+    return results
 
 
 def build_prediction():
@@ -586,13 +645,18 @@ def build_prediction():
     backtest_weights = exponential_weights(len(backtest_scores), HALF_LIFE_GAMES) if backtest_scores else []
     backtest_media = weighted_mean(backtest_scores, backtest_weights) if backtest_scores else None
 
-    # --- Backtest RIGOROSO: riapplica l'INTERA formula partita-per-partita nello storico ---
-    log("Esecuzione backtest rigoroso (intera formula riapplicata su ogni partita storica)...")
-    rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6)
+    # --- Backtest RIGOROSO + GRID SEARCH: prova 10 combinazioni di parametri e
+    # tiene quella con MAE piu' basso / copertura range piu' vicina all'ideale ---
+    log("Esecuzione grid search backtest (10 combinazioni di parametri)...")
+    grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6)
+    rigorous_bt = grid_results[0]  # migliore combinazione secondo il punteggio composito
     if rigorous_bt['mae'] is not None:
-        log(f"Backtest rigoroso: {len(rigorous_bt['rows'])} partite testate, MAE={rigorous_bt['mae']:.2f}")
+        log(f"Grid search completato. Migliore: '{rigorous_bt['label']}' "
+            f"(half_life={rigorous_bt['half_life']}, range_mult={rigorous_bt['range_multiplier']}, "
+            f"opp_sens={rigorous_bt['opponent_sensitivity']}) -> MAE={rigorous_bt['mae']:.2f}, "
+            f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
     else:
-        log("Backtest rigoroso: dati insufficienti (serve più storico).")
+        log("Grid search: dati insufficienti (serve più storico).")
 
     result = {
         'player_slug': PLAYER_SLUG,
@@ -620,6 +684,7 @@ def build_prediction():
         'backtest_last_real_score': last_real_score,
         'backtest_media_pesata_precedente': backtest_media,
         'rigorous_backtest': rigorous_bt,
+        'grid_results': grid_results,
         'usable_nodes': usable,
     }
     return result
@@ -693,10 +758,32 @@ def format_output(result):
         lines.append("Dati insufficienti per il backtest.")
 
     lines.append("")
-    lines.append("--- BACKTEST RIGOROSO (intera formula riapplicata partita-per-partita) ---")
+    lines.append("--- GRID SEARCH: CLASSIFICA 10 COMBINAZIONI DI PARAMETRI ---")
+    grid_results = result.get('grid_results', [])
+    if grid_results:
+        lines.append(f"{'#':>2} {'half_life':>9} {'range_x':>8} {'opp_sens':>8} {'MAE':>7} {'copertura%':>10}  etichetta")
+        for idx, g in enumerate(grid_results, 1):
+            if g['mae'] is not None:
+                cov_str = f"{g['pct_dentro_range']:.1f}" if g['pct_dentro_range'] is not None else "N/D"
+                lines.append(f"{idx:>2} {g['half_life']:>9.1f} {g['range_multiplier']:>8.1f} "
+                             f"{g['opponent_sensitivity']:>8.1f} {g['mae']:>7.2f} {cov_str:>10}  {g['label']}")
+            else:
+                lines.append(f"{idx:>2} {'—':>9} {'—':>8} {'—':>8} {'N/D':>7} {'N/D':>10}  {g['label']} (dati insufficienti)")
+        lines.append("")
+        lines.append("Ordinate per punteggio composito (MAE + penalita' di distanza dalla copertura "
+                     "ideale ~68%). La combinazione #1 e' quella usata per il BACKTEST RIGOROSO "
+                     "dettagliato qui sotto.")
+    else:
+        lines.append("Dati insufficienti per il grid search.")
+
+    lines.append("")
+    lines.append("--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---")
     rbt = result.get('rigorous_backtest', {})
     rbt_rows = rbt.get('rows', [])
     if rbt_rows:
+        lines.append(f"Combinazione usata: '{rbt.get('label', '?')}' "
+                     f"(half_life={rbt.get('half_life')}, range_mult={rbt.get('range_multiplier')}, "
+                     f"opp_sens={rbt.get('opponent_sensitivity')})")
         lines.append(f"Partite testate: {len(rbt_rows)} (min. 6 partite di storico richieste per ognuna)")
         lines.append(f"P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)")
         lines.append("")
@@ -715,9 +802,12 @@ def format_output(result):
                      "storica, la formula COMPLETA (media pesata + fattore casa/trasferta + "
                      "fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili "
                      "PRIMA di quella partita, poi confrontata con lo score reale ottenuto. "
-                     "Un MAE basso e una % alta di 'in_range' indicano un modello ben calibrato; "
-                     "il contrario suggerisce di rivedere half-life, pesi dei fattori, o la "
-                     "finestra di analisi.")
+                     "NOTA IMPORTANTE: la predizione finale sulla PROSSIMA partita (sezione "
+                     "PREDIZIONE sopra) usa ancora i parametri di default (half-life "
+                     f"{HALF_LIFE_GAMES}, range 1.0x) e non quelli risultati migliori qui — "
+                     "questo grid search serve a CAPIRE quali parametri funzionano meglio, "
+                     "un aggiornamento dei default va fatto come passo separato dopo aver "
+                     "validato i risultati su più run/giocatori.")
     else:
         lines.append("Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).")
 
