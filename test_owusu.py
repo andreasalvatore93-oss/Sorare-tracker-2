@@ -344,6 +344,74 @@ def team_ranking_from_game(game, player_team_slug):
     return None, None, None
 
 
+def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6):
+    """Backtest rigoroso: per ogni partita a partire da 'min_history' partite di
+    storico disponibile, ricalcola l'INTERA formula (media pesata esponenziale +
+    fattore casa/trasferta + fattore forza avversario) usando SOLO i dati
+    precedenti a quella partita, poi confronta con lo score reale ottenuto.
+    P(gioca) e' fissato a 100% (sappiamo gia' che ha giocato, essendo storico).
+    Ritorna una lista di dict con dettaglio per ogni partita testata + statistiche
+    aggregate (MAE, % di volte in cui il reale rientra nel range di confidenza)."""
+    rows = []
+    n = len(scores)
+
+    for i in range(min_history, n):
+        hist_scores = scores[:i]
+        hist_home_flags = is_home_flags[:i]
+        hist_opp_ranks = opponent_rankings[:i]
+
+        m = len(hist_scores)
+        w = exponential_weights(m, HALF_LIFE_GAMES)
+        media = weighted_mean(hist_scores, w)
+        dev_std = weighted_stddev(hist_scores, w, media)
+
+        # fattore casa/trasferta calcolato SOLO sullo storico precedente
+        h_scores = [s for s, h in zip(hist_scores, hist_home_flags) if h is True]
+        a_scores = [s for s, h in zip(hist_scores, hist_home_flags) if h is False]
+        h_avg = sum(h_scores) / len(h_scores) if h_scores else media
+        a_avg = sum(a_scores) / len(a_scores) if a_scores else media
+        overall_avg = (h_avg + a_avg) / 2 if (h_scores and a_scores) else media
+
+        target_is_home = is_home_flags[i]
+        fattore_ct = 1.0
+        if overall_avg > 0:
+            fattore_ct = (h_avg / overall_avg) if target_is_home else (a_avg / overall_avg)
+
+        # fattore forza avversario calcolato SOLO sullo storico precedente
+        valid_ranks = [r for r in hist_opp_ranks if r is not None]
+        avg_rank_hist = sum(valid_ranks) / len(valid_ranks) if valid_ranks else None
+        target_opp_rank = opponent_rankings[i]
+
+        fattore_fa = 1.0
+        if avg_rank_hist and target_opp_rank:
+            delta = (target_opp_rank - avg_rank_hist) / 29.0
+            fattore_fa = max(0.5, min(1.5, 1.0 + delta))
+
+        predetto = 1.0 * media * fattore_ct * fattore_fa  # P(gioca) fissato a 100%
+        reale = scores[i]
+        errore = reale - predetto
+        dentro_range = abs(errore) <= dev_std if dev_std > 0 else None
+
+        rows.append({
+            'indice': i,
+            'partite_storico_usate': m,
+            'predetto': predetto,
+            'reale': reale,
+            'errore': errore,
+            'range_conf': dev_std,
+            'dentro_range': dentro_range,
+        })
+
+    if not rows:
+        return {'rows': [], 'mae': None, 'pct_dentro_range': None}
+
+    mae = sum(abs(r['errore']) for r in rows) / len(rows)
+    valid_range_checks = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
+    pct_dentro_range = (sum(valid_range_checks) / len(valid_range_checks) * 100) if valid_range_checks else None
+
+    return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct_dentro_range}
+
+
 def build_prediction():
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games = fetch_game_log(PLAYER_SLUG, first=50)
@@ -510,13 +578,21 @@ def build_prediction():
     score_atteso = p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
     range_conf = dev_std_pesata  # stessa dev std pesata, non ri-scalata da P(gioca): scelta v1 semplice
 
-    # --- Backtest: riapplica la stessa formula "a ritroso" sull'ultima partita nota ---
+    # --- Backtest SEMPLICE: riapplica solo la componente media "a ritroso" sull'ultima partita nota ---
     last_real = usable[-1]
     last_real_score = last_real.get('score')
     backtest_prev = usable[:-1]
     backtest_scores = scores[:-1]
     backtest_weights = exponential_weights(len(backtest_scores), HALF_LIFE_GAMES) if backtest_scores else []
     backtest_media = weighted_mean(backtest_scores, backtest_weights) if backtest_scores else None
+
+    # --- Backtest RIGOROSO: riapplica l'INTERA formula partita-per-partita nello storico ---
+    log("Esecuzione backtest rigoroso (intera formula riapplicata su ogni partita storica)...")
+    rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6)
+    if rigorous_bt['mae'] is not None:
+        log(f"Backtest rigoroso: {len(rigorous_bt['rows'])} partite testate, MAE={rigorous_bt['mae']:.2f}")
+    else:
+        log("Backtest rigoroso: dati insufficienti (serve più storico).")
 
     result = {
         'player_slug': PLAYER_SLUG,
@@ -543,6 +619,7 @@ def build_prediction():
         'next_game': next_game,
         'backtest_last_real_score': last_real_score,
         'backtest_media_pesata_precedente': backtest_media,
+        'rigorous_backtest': rigorous_bt,
         'usable_nodes': usable,
     }
     return result
@@ -599,7 +676,7 @@ def format_output(result):
                  f"{result['score_atteso'] + result['range_conf']:.1f})")
 
     lines.append("")
-    lines.append("--- BACKTEST (verifica su ultima partita reale nota) ---")
+    lines.append("--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---")
     if result['backtest_media_pesata_precedente'] is not None:
         lines.append(f"Media pesata calcolata SENZA l'ultima partita: "
                      f"{result['backtest_media_pesata_precedente']:.2f}")
@@ -610,11 +687,39 @@ def format_output(result):
                      f"casa/trasferta/avversario applicati a ritroso): {errore:+.1f}")
         lines.append("NOTA: questo backtest confronta solo la componente 'media pesata' con "
                      "il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta "
-                     "storici a quella specifica partita passata. E' un primo controllo di sanita', "
-                     "un backtest piu' rigoroso (che riapplica l'intera formula partita per partita "
-                     "nel passato) va costruito come step successivo.")
+                     "storici a quella specifica partita passata. Vedi sezione successiva per il "
+                     "backtest rigoroso che applica l'intera formula.")
     else:
         lines.append("Dati insufficienti per il backtest.")
+
+    lines.append("")
+    lines.append("--- BACKTEST RIGOROSO (intera formula riapplicata partita-per-partita) ---")
+    rbt = result.get('rigorous_backtest', {})
+    rbt_rows = rbt.get('rows', [])
+    if rbt_rows:
+        lines.append(f"Partite testate: {len(rbt_rows)} (min. 6 partite di storico richieste per ognuna)")
+        lines.append(f"P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)")
+        lines.append("")
+        lines.append(f"{'idx':>4} {'storico':>8} {'predetto':>9} {'reale':>7} {'errore':>8} {'range':>7} {'in_range':>9}")
+        for r in rbt_rows:
+            in_range_str = ('SI' if r['dentro_range'] else 'NO') if r['dentro_range'] is not None else 'N/D'
+            lines.append(f"{r['indice']:>4} {r['partite_storico_usate']:>8} {r['predetto']:>9.1f} "
+                         f"{r['reale']:>7.1f} {r['errore']:>+8.1f} {r['range_conf']:>7.1f} {in_range_str:>9}")
+        lines.append("")
+        lines.append(f"MAE (errore assoluto medio): {rbt['mae']:.2f}")
+        if rbt['pct_dentro_range'] is not None:
+            lines.append(f"% di volte in cui il punteggio reale rientra nel range di confidenza "
+                         f"predetto: {rbt['pct_dentro_range']:.1f}%")
+        lines.append("")
+        lines.append("NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita "
+                     "storica, la formula COMPLETA (media pesata + fattore casa/trasferta + "
+                     "fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili "
+                     "PRIMA di quella partita, poi confrontata con lo score reale ottenuto. "
+                     "Un MAE basso e una % alta di 'in_range' indicano un modello ben calibrato; "
+                     "il contrario suggerisce di rivedere half-life, pesi dei fattori, o la "
+                     "finestra di analisi.")
+    else:
+        lines.append("Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).")
 
     lines.append("")
     lines.append("=" * 70)
