@@ -1,0 +1,96 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-24T15:49:04.946771Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) marcus-ingvartsen: 38 pt attesi (14-62)
+======================================================================
+
+######################################################################
+# GIOCATORE: marcus-ingvartsen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marcus-ingvartsen (squadra: san-diego-san-diego)
+Generato: 2026-07-24T15:49:04.946666Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | SD vs MTL | mlspa | score=79.9 | peso=0.500
+  2026-03-02 | SD vs STL | mlspa | score=77.5 | peso=0.530
+  2026-03-08 | SKC vs SD | mlspa | score=44.0 | peso=0.561
+  2026-03-15 | DAL vs SD | mlspa | score=71.9 | peso=0.595
+  2026-03-22 | SD vs RSL | mlspa | score=65.9 | peso=0.630
+  2026-04-19 | RSL vs SD | mlspa | score=69.9 | peso=0.667
+  2026-04-26 | SD vs POR | mlspa | score=39.7 | peso=0.707
+  2026-05-03 | SD vs LAFC | mlspa | score=77.3 | peso=0.749
+  2026-05-10 | SEA vs SD | mlspa | score=60.0 | peso=0.794
+  2026-05-14 | SD vs ATX | mlspa | score=67.2 | peso=0.841
+  2026-05-17 | SD vs CIN | mlspa | score=79.6 | peso=0.891
+  2026-05-24 | SD vs VAN | mlspa | score=28.3 | peso=0.944
+  2026-07-23 | RAP vs SD | mlspa | score=47.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 60.82
+Deviazione standard pesata: 16.83
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.39 (differenza: +3.44)
+Media score in casa: 64.42 | Media score fuori casa: 58.74
+Fattore casa/trasferta applicato: 1.046 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.8
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.905
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.984
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 56.6 vs media ultime 10: 60.8): 0.952
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T01:30
+Casa: San Diego FC | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 38.0 +/- 23.6
+  (range: 14.4 - 61.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 62.36
+Punteggio REALE ottenuto in quella partita: 47.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      82.9    39.7    -43.2    16.0        NO
+   7        7      51.7    77.3    +25.6    20.8        NO
+   8        8      58.8    60.0     +1.2    20.4        SI
+   9        9      82.5    67.2    -15.3    19.1        SI
+  10       10      58.6    79.6    +21.0    17.9        NO
+  11       11      53.3    28.3    -25.0    18.1        NO
+  12       12      70.5    47.9    -22.6    24.0        SI
+
+MAE (errore assoluto medio): 21.98
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 42.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
