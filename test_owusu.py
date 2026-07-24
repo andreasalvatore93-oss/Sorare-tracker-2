@@ -36,6 +36,7 @@ PLAYER_SLUG = 'prince-osei-owusu'
 PLAYER_POSITION = 'Forward'
 WINDOW_SIZE = 14
 HALF_LIFE_GAMES = 6.5  # decadimento esponenziale: peso si dimezza ogni ~6.5 partite indietro
+MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 
 OUTPUT_DIR = 'test_owusu'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
@@ -485,10 +486,14 @@ def build_prediction():
     cache, cache_file = load_cache()
     log(f"[FASE 2/4] Cache dettagli caricata da {cache_file} ({len(cache)} voci gia' presenti).")
 
-    # Filtra le partite con punteggio "utilizzabile" (esclude DID_NOT_PLAY) mantenendo
-    # comunque un conteggio separato per il tasso di presenza storico.
+    # Filtra le partite con punteggio "utilizzabile" (esclude DID_NOT_PLAY E le
+    # partite giocate sotto la soglia minima di minutaggio, trattate allo stesso
+    # modo: escluse dalla media ma contate nel tasso di presenza storico, perche'
+    # rappresentano comunque una circostanza in cui il giocatore non sarebbe
+    # stato schierato dall'inizio).
     usable = []
     dnp_count = 0
+    low_minutes_count = 0
     total_considered = 0
     other_status_count = {}
 
@@ -499,6 +504,10 @@ def build_prediction():
             dnp_count += 1
             continue
         if status in ('FINAL', 'REVIEWING'):
+            mins = ((node.get('anyPlayerGameStats') or {}).get('minsPlayed'))
+            if mins is not None and mins < MIN_MINUTES_PLAYED:
+                low_minutes_count += 1
+                continue
             usable.append(node)
         else:
             other_status_count[status] = other_status_count.get(status, 0) + 1
@@ -506,8 +515,10 @@ def build_prediction():
             break
 
     if not usable:
-        log(f"[FASE 2/4] INTERROTTO: nessuna partita con status FINAL/REVIEWING trovata su "
-            f"{total_considered} esaminate ({dnp_count} DID_NOT_PLAY, altri status: {other_status_count}).")
+        log(f"[FASE 2/4] INTERROTTO: nessuna partita con status FINAL/REVIEWING e minutaggio "
+            f">= {MIN_MINUTES_PLAYED}' trovata su {total_considered} esaminate "
+            f"({dnp_count} DID_NOT_PLAY, {low_minutes_count} sotto soglia minutaggio, "
+            f"altri status: {other_status_count}).")
         return None
 
     # Ordine cronologico: allPlayerGameScores arriva dal piu' recente al piu' vecchio,
@@ -516,6 +527,7 @@ def build_prediction():
 
     log(f"[FASE 2/4] OK: finestra di {len(usable)} partite utilizzabili "
         f"(su {total_considered} esaminate, {dnp_count} DID_NOT_PLAY escluse, "
+        f"{low_minutes_count} escluse per minutaggio < {MIN_MINUTES_PLAYED}', "
         f"altri status incontrati: {other_status_count or 'nessuno'}).")
 
     # Scarica il dettaglio granulare per ogni partita della finestra (con cache)
@@ -664,6 +676,7 @@ def build_prediction():
         'window_size_used': n,
         'total_considered': total_considered,
         'dnp_excluded': dnp_count,
+        'low_minutes_excluded': low_minutes_count,
         'scores_used': scores,
         'weights_used': weights,
         'media_pesata': media_pesata,
@@ -702,6 +715,7 @@ def format_output(result):
     lines.append("--- FINESTRA DI ANALISI ---")
     lines.append(f"Partite considerate: {result['total_considered']}")
     lines.append(f"Escluse (DID_NOT_PLAY): {result['dnp_excluded']}")
+    lines.append(f"Escluse (minutaggio < {MIN_MINUTES_PLAYED}', subentri): {result['low_minutes_excluded']}")
     lines.append(f"Partite usate nella media (dalla piu' vecchia alla piu' recente):")
     for node, s, w in zip(result['usable_nodes'], result['scores_used'], result['weights_used']):
         g = node['anyGame']
