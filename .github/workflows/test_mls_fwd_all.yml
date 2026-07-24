@@ -126,49 +126,23 @@ jobs:
         with:
           ref: main
 
-      - name: Unisci tutti i file prediction_*.txt di questo run in un unico output
-        run: |
-          set -e
-          RUN_TS="$(date -u '+%Y-%m-%d_%H%M%S')"
-          MERGED_FILE="mls_fwd_all/merged_prediction_${RUN_TS}.txt"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-          echo "======================================================================" > "$MERGED_FILE"
-          echo "OUTPUT UNIFICATO - TUTTI ATTACCANTI MLS IN_SEASON (merge automatico)" >> "$MERGED_FILE"
-          echo "Generato: $(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> "$MERGED_FILE"
-          echo "======================================================================" >> "$MERGED_FILE"
-          echo "" >> "$MERGED_FILE"
+      - name: Genera SOLO il riepilogo finale compatto (consiglio attaccanti)
+        run: python build_consiglio.py
 
-          # Legge la lista di slug scoperta dal job discover (stesso file
-          # committato in mls_fwd_discovery/player_slugs.json), per ciascuno
-          # prende il prediction_<slug>_*.txt piu' recente e lo accoda.
-          SLUGS=$(python3 -c "import json; print(' '.join(json.load(open('mls_fwd_discovery/player_slugs.json'))))")
-
-          for slug in $SLUGS; do
-            latest=$(ls -1 mls_fwd_all/prediction_${slug}_*.txt 2>/dev/null | sort | tail -n 1 || true)
-            if [ -n "$latest" ]; then
-              echo "Trovato per $slug: $latest"
-              cat "$latest" >> "$MERGED_FILE"
-              echo "" >> "$MERGED_FILE"
-            else
-              echo "" >> "$MERGED_FILE"
-              echo "### $slug: NESSUN OUTPUT TROVATO (job fallito o non ancora eseguito) ###" >> "$MERGED_FILE"
-              echo "" >> "$MERGED_FILE"
-            fi
-          done
-
-          echo "File unificato creato: $MERGED_FILE"
-          wc -l "$MERGED_FILE"
-
-      - name: Commit file unificato
+      - name: Commit riepilogo
         run: |
           git config user.name "mls-fwd-all-bot"
           git config user.email "mls-fwd-all-bot@users.noreply.github.com"
-          git add mls_fwd_all/merged_prediction_*.txt
+          git add mls_fwd_all/consiglio_*.txt
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Test MLS Fwd All: output unificato"
+          git commit -m "Test MLS Fwd All: consiglio attaccanti"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
