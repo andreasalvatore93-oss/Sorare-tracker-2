@@ -153,8 +153,8 @@ query AllPlayerGameScores($slug: String!, $first: Int!) {
           id
           date
           statusTyped
-          homeTeam { ... on Club { slug name code } }
-          awayTeam { ... on Club { slug name code } }
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
           competition { slug }
         }
         anyPlayerGameStats {
@@ -179,8 +179,8 @@ query AllPlayerGameScores($slug: String!, $first: Int!) {
           anyGame {
             id
             date
-            homeTeam { ... on Club { slug name code } }
-            awayTeam { ... on Club { slug name code } }
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
             competition { slug }
           }
           anyPlayerGameStats {
@@ -222,7 +222,6 @@ query PlayerGameScoreDetail($id: String!) {
         competition { slug }
       }
       detailedScore { category stat statValue totalScore }
-      decisiveScore { totalScore }
     }
   }
 }
@@ -577,8 +576,8 @@ def format_output(result):
     lines.append(f"Media score in casa: {result['home_avg']:.2f} | Media score fuori casa: {result['away_avg']:.2f}")
     lines.append(f"Fattore casa/trasferta applicato: {result['fattore_casa_trasferta']:.3f} "
                  f"({'CASA' if result['next_is_home'] else 'TRASFERTA'} nella prossima partita)")
-    lines.append(f"Ranking medio avversari affrontati (storico): "
-                 f"{result['avg_opp_rank_hist']:.1f}" if result['avg_opp_rank_hist'] else "N/D")
+    opp_rank_hist_str = f"{result['avg_opp_rank_hist']:.1f}" if result['avg_opp_rank_hist'] else "N/D"
+    lines.append(f"Ranking medio avversari affrontati (storico): {opp_rank_hist_str}")
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
     lines.append(f"Fattore forza avversario applicato: {result['fattore_forza_avversario']:.3f}")
     lines.append(f"P(gioca): {result['p_gioca']:.2%} (fonte: {result['p_source']})")
