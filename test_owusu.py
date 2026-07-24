@@ -35,7 +35,8 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 PLAYER_SLUG = 'prince-osei-owusu'
 PLAYER_POSITION = 'Forward'
 WINDOW_SIZE = 30
-HALF_LIFE_GAMES = 6.5  # decadimento esponenziale: peso si dimezza ogni ~6.5 partite indietro
+HALF_LIFE_GAMES = 12.0  # aggiornato dal grid search reale (24/07): hl=12 e' risultato migliore su 24 partite testate (MAE 19.18 vs 22.6 con hl=6.5)
+RANGE_MULTIPLIER = 1.4  # aggiornato dal grid search: range piu' ampio riflette meglio la copertura reale (~68% ideale)
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 
 OUTPUT_DIR = 'test_owusu'
@@ -860,7 +861,7 @@ def build_prediction():
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_falli * fattore_duelli * fattore_offensivo * fattore_eventi_rari
                     * fattore_passaggio * fattore_difesa_rari * fattore_trend)
-    range_conf = dev_std_pesata  # stessa dev std pesata, non ri-scalata da P(gioca): scelta v1 semplice
+    range_conf = dev_std_pesata * RANGE_MULTIPLIER  # moltiplicatore aggiornato dal grid search (24/07)
 
     # --- Backtest SEMPLICE: riapplica solo la componente media "a ritroso" sull'ultima partita nota ---
     last_real = usable[-1]
@@ -1064,12 +1065,11 @@ def format_output(result):
                      "storica, la formula COMPLETA (media pesata + fattore casa/trasferta + "
                      "fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili "
                      "PRIMA di quella partita, poi confrontata con lo score reale ottenuto. "
-                     "NOTA IMPORTANTE: la predizione finale sulla PROSSIMA partita (sezione "
-                     "PREDIZIONE sopra) usa ancora i parametri di default (half-life "
-                     f"{HALF_LIFE_GAMES}, range 1.0x) e non quelli risultati migliori qui — "
-                     "questo grid search serve a CAPIRE quali parametri funzionano meglio, "
-                     "un aggiornamento dei default va fatto come passo separato dopo aver "
-                     "validato i risultati su più run/giocatori.")
+                     "NOTA: i parametri di DEFAULT della predizione principale (sezione "
+                     f"PREDIZIONE sopra) sono stati AGGIORNATI il 24/07 in base ai risultati di "
+                     f"questo grid search (half-life {HALF_LIFE_GAMES}, range {RANGE_MULTIPLIER}x, "
+                     "granulari+trend sempre attivi). Il grid search continua a girare ad ogni "
+                     "esecuzione per verificare se emergono combinazioni ancora migliori nel tempo.")
     else:
         lines.append("Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).")
 
