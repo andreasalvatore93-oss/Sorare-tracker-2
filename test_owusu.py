@@ -345,12 +345,70 @@ def team_ranking_from_game(game, player_team_slug):
     return None, None, None
 
 
+# Stat da sommare per ciascun gruppo granulare (nomi come appaiono in detailedScore).
+# Sono fattori SEPARATI (non un indice unico), come richiesto: ognuno produce il
+# proprio fattore casa/trasferta indipendente.
+FOULS_STATS = ('fouls', 'was_fouled')
+DUELS_STATS = ('duel_won', 'duel_lost', 'poss_lost_ctrl')
+OFFENSIVE_STATS = ('ontarget_scoring_att', 'big_chance_created', 'big_chance_missed',
+                    'pen_area_entries', 'won_contest')
+# Eventi rari con peso enorme quando accadono ma situazionali/random: sommati nel
+# totale ma il loro contributo e' limitato da un cap assoluto (in punti Sorare)
+# per non far esplodere la stima su un singolo evento fortuito.
+RARE_EVENTS_STATS = ('penalty_won', 'penalty_conceded', 'own_goals', 'error_lead_to_goal')
+RARE_EVENTS_CAP = 10.0  # punti massimi (positivi o negativi) che questo gruppo puo' contribuire
+
+
+def extract_group_score(detail, stat_names):
+    """Somma il totalScore di detailedScore per le stat indicate. Ritorna 0.0 se
+    il dettaglio non e' disponibile (fallback sicuro, non altera il fattore)."""
+    if not detail:
+        return 0.0
+    total = 0.0
+    for entry in (detail.get('detailedScore') or []):
+        if entry.get('stat') in stat_names:
+            total += entry.get('totalScore', 0.0) or 0.0
+    return total
+
+
+def compute_split_factor(values, is_home_flags, target_is_home):
+    """Dato un elenco di valori granulari (uno per partita, gia' sommati per un
+    gruppo di stat) e i relativi flag casa/trasferta, calcola il fattore
+    casa/trasferta per QUEL gruppo, con la stessa logica del fattore principale:
+    media_contesto_target / media_generale. Fattore neutro (1.0) se non ci sono
+    abbastanza dati in un contesto o se la media generale e' zero/negativa."""
+    home_vals = [v for v, h in zip(values, is_home_flags) if h is True]
+    away_vals = [v for v, h in zip(values, is_home_flags) if h is False]
+    all_vals = values
+
+    if not all_vals:
+        return 1.0
+
+    overall_avg = sum(all_vals) / len(all_vals)
+    home_avg = sum(home_vals) / len(home_vals) if home_vals else overall_avg
+    away_avg = sum(away_vals) / len(away_vals) if away_vals else overall_avg
+
+    context_avg = home_avg if target_is_home else away_avg
+
+    # I valori granulari possono essere negativi (es. falli) o vicini a zero,
+    # quindi non possiamo dividere direttamente come per lo score totale (sempre
+    # positivo). Convertiamo in un DELTA rispetto alla media generale, poi lo
+    # trasformiamo in un moltiplicatore centrato su 1.0 con un fattore di scala
+    # conservativo (ogni punto di delta sposta il moltiplicatore di 0.01 = 1%).
+    delta = context_avg - overall_avg
+    fattore = 1.0 + (delta * 0.01)
+    return max(0.7, min(1.3, fattore))  # limitato per evitare correzioni estreme
+
+
 def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
-                       half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0):
+                       half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0,
+                       fouls_values=None, duels_values=None, offensive_values=None,
+                       rare_events_values=None, use_granular_factors=False):
     """Backtest rigoroso: per ogni partita a partire da 'min_history' partite di
     storico disponibile, ricalcola l'INTERA formula (media pesata esponenziale +
-    fattore casa/trasferta + fattore forza avversario) usando SOLO i dati
-    precedenti a quella partita, poi confronta con lo score reale ottenuto.
+    fattore casa/trasferta + fattore forza avversario [+ fattori granulari se
+    use_granular_factors=True]) usando SOLO i dati precedenti a quella partita,
+    poi confronta con lo score reale ottenuto.
     P(gioca) e' fissato a 100% (sappiamo gia' che ha giocato, essendo storico).
 
     Parametri variabili (per grid search):
@@ -359,6 +417,8 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
       per ottenere il range di confidenza (1.0 = deviazione standard pura)
     - opponent_sensitivity: costante di normalizzazione per il fattore forza
       avversario (piu' bassa = il ranking avversario pesa di piu' sul risultato)
+    - use_granular_factors: se True, include anche falli/duelli/efficacia
+      offensiva/eventi rari nel calcolo (richiede i relativi array)
 
     Ritorna una lista di dict con dettaglio per ogni partita testata + statistiche
     aggregate (MAE, % di volte in cui il reale rientra nel range di confidenza)."""
@@ -400,7 +460,15 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
             delta = (target_opp_rank - avg_rank_hist) / opponent_sensitivity
             fattore_fa = max(0.5, min(1.5, 1.0 + delta))
 
-        predetto = 1.0 * media * fattore_ct * fattore_fa  # P(gioca) fissato a 100%
+        fattore_granulare_totale = 1.0
+        if use_granular_factors:
+            for values in (fouls_values, duels_values, offensive_values, rare_events_values):
+                if values is not None:
+                    hist_values = values[:i]
+                    f = compute_split_factor(hist_values, hist_home_flags, target_is_home)
+                    fattore_granulare_totale *= f
+
+        predetto = 1.0 * media * fattore_ct * fattore_fa * fattore_granulare_totale
         reale = scores[i]
         errore = reale - predetto
         range_conf = dev_std * range_multiplier
@@ -431,31 +499,37 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 
 
 # Combinazioni di parametri da testare nel grid search. Ogni tupla e':
-# (half_life, range_multiplier, opponent_sensitivity, etichetta_descrittiva)
+# (half_life, range_multiplier, opponent_sensitivity, use_granular_factors, etichetta_descrittiva)
 GRID_SEARCH_COMBINATIONS = [
-    (6.5, 1.0, 29.0, "baseline attuale (v1)"),
-    (3.0, 1.0, 29.0, "half-life corta (piu' reattivo alle ultime partite)"),
-    (10.0, 1.0, 29.0, "half-life lunga (piu' stabile, meno reattivo)"),
-    (6.5, 1.3, 29.0, "range allargato 1.3x"),
-    (6.5, 1.5, 29.0, "range allargato 1.5x"),
-    (6.5, 1.0, 15.0, "fattore avversario piu' sensibile"),
-    (6.5, 1.0, 45.0, "fattore avversario meno sensibile"),
-    (4.0, 1.3, 20.0, "reattivo + range largo + avversario sensibile"),
-    (9.0, 1.4, 29.0, "stabile + range largo"),
-    (5.0, 1.2, 25.0, "combinazione intermedia bilanciata"),
+    (6.5, 1.0, 29.0, False, "baseline attuale (v1, senza fattori granulari)"),
+    (3.0, 1.0, 29.0, False, "half-life corta (piu' reattivo alle ultime partite)"),
+    (10.0, 1.0, 29.0, False, "half-life lunga (piu' stabile, meno reattivo)"),
+    (6.5, 1.3, 29.0, False, "range allargato 1.3x"),
+    (6.5, 1.5, 29.0, False, "range allargato 1.5x"),
+    (6.5, 1.0, 15.0, False, "fattore avversario piu' sensibile"),
+    (6.5, 1.0, 45.0, False, "fattore avversario meno sensibile"),
+    (6.5, 1.0, 29.0, True, "baseline + fattori granulari (falli/duelli/offensivo/eventi rari)"),
+    (6.5, 1.3, 29.0, True, "range allargato 1.3x + fattori granulari"),
+    (9.0, 1.4, 29.0, True, "stabile + range largo + fattori granulari"),
 ]
 
 
-def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6):
+def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
+                     fouls_values=None, duels_values=None, offensive_values=None,
+                     rare_events_values=None):
     """Esegue il backtest rigoroso con tutte le combinazioni di parametri in
     GRID_SEARCH_COMBINATIONS e ritorna i risultati ordinati per MAE crescente
     (il migliore per primo). Il 'punteggio' finale usato per il ranking bilancia
     MAE (peggio se alto) e distanza dalla copertura ideale del range (~68%)."""
     results = []
-    for half_life, range_mult, opp_sens, label in GRID_SEARCH_COMBINATIONS:
+    for half_life, range_mult, opp_sens, use_granular, label in GRID_SEARCH_COMBINATIONS:
         bt = rigorous_backtest(scores, is_home_flags, opponent_rankings,
                                 min_history=min_history, half_life=half_life,
-                                range_multiplier=range_mult, opponent_sensitivity=opp_sens)
+                                range_multiplier=range_mult, opponent_sensitivity=opp_sens,
+                                fouls_values=fouls_values, duels_values=duels_values,
+                                offensive_values=offensive_values,
+                                rare_events_values=rare_events_values,
+                                use_granular_factors=use_granular)
         bt['label'] = label
         if bt['mae'] is not None:
             # Punteggio composito: MAE conta come errore diretto; la distanza dalla
@@ -594,6 +668,10 @@ def build_prediction():
     is_home_flags = []
     opponent_rankings = []
     own_rankings = []
+    fouls_values = []
+    duels_values = []
+    offensive_values = []
+    rare_events_values = []
 
     for node, detail in zip(usable, details):
         scores.append(node.get('score', 0.0))
@@ -606,13 +684,19 @@ def build_prediction():
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
 
+        fouls_values.append(extract_group_score(detail, FOULS_STATS))
+        duels_values.append(extract_group_score(detail, DUELS_STATS))
+        offensive_values.append(extract_group_score(detail, OFFENSIVE_STATS))
+        rare_raw = extract_group_score(detail, RARE_EVENTS_STATS)
+        rare_events_values.append(max(-RARE_EVENTS_CAP, min(RARE_EVENTS_CAP, rare_raw)))
+
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
 
     media_pesata = weighted_mean(scores, weights)
     dev_std_pesata = weighted_stddev(scores, weights, media_pesata)
 
-    # --- Fattore casa/trasferta ---
+    # --- Fattore casa/trasferta (score totale, gia' esistente) ---
     home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
     away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
     home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
@@ -647,6 +731,15 @@ def build_prediction():
         else:
             fattore_casa_trasferta = away_avg / overall_avg_for_factor
 
+    # --- Fattori granulari SEPARATI: falli, duelli, efficacia offensiva ---
+    # Ognuno e' un fattore casa/trasferta indipendente, calcolato sui dati REALI
+    # del detailedScore delle 14 partite (non stime). Gli eventi rari (rigori,
+    # autogol, errori-a-gol) sono gia' stati cappati in fase di estrazione.
+    fattore_falli = compute_split_factor(fouls_values, is_home_flags, next_is_home)
+    fattore_duelli = compute_split_factor(duels_values, is_home_flags, next_is_home)
+    fattore_offensivo = compute_split_factor(offensive_values, is_home_flags, next_is_home)
+    fattore_eventi_rari = compute_split_factor(rare_events_values, is_home_flags, next_is_home)
+
     # --- Fattore forza avversario (lineare sul ranking assoluto) ---
     # Ranking medio delle 14 partite (tra gli avversari con dato disponibile)
     valid_opp_ranks = [r for r in opponent_rankings if r is not None]
@@ -673,7 +766,8 @@ def build_prediction():
         p_gioca = presence_rate
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
-    score_atteso = p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
+    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
+                    * fattore_falli * fattore_duelli * fattore_offensivo * fattore_eventi_rari)
     range_conf = dev_std_pesata  # stessa dev std pesata, non ri-scalata da P(gioca): scelta v1 semplice
 
     # --- Backtest SEMPLICE: riapplica solo la componente media "a ritroso" sull'ultima partita nota ---
@@ -687,7 +781,10 @@ def build_prediction():
     # --- Backtest RIGOROSO + GRID SEARCH: prova 10 combinazioni di parametri e
     # tiene quella con MAE piu' basso / copertura range piu' vicina all'ideale ---
     log("Esecuzione grid search backtest (10 combinazioni di parametri)...")
-    grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6)
+    grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
+                                    fouls_values=fouls_values, duels_values=duels_values,
+                                    offensive_values=offensive_values,
+                                    rare_events_values=rare_events_values)
     rigorous_bt = grid_results[0]  # migliore combinazione secondo il punteggio composito
     if rigorous_bt['mae'] is not None:
         log(f"Grid search completato. Migliore: '{rigorous_bt['label']}' "
@@ -717,6 +814,10 @@ def build_prediction():
         'next_own_rank': next_own_rank,
         'next_is_home': next_is_home,
         'fattore_forza_avversario': fattore_forza_avversario,
+        'fattore_falli': fattore_falli,
+        'fattore_duelli': fattore_duelli,
+        'fattore_offensivo': fattore_offensivo,
+        'fattore_eventi_rari': fattore_eventi_rari,
         'p_gioca': p_gioca,
         'p_source': p_source,
         'score_atteso': score_atteso,
@@ -766,6 +867,10 @@ def format_output(result):
     lines.append(f"Ranking medio avversari affrontati (storico): {opp_rank_hist_str}")
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
     lines.append(f"Fattore forza avversario applicato: {result['fattore_forza_avversario']:.3f}")
+    lines.append(f"Fattore falli (casa/trasferta, da dati reali): {result['fattore_falli']:.3f}")
+    lines.append(f"Fattore duelli (casa/trasferta, da dati reali): {result['fattore_duelli']:.3f}")
+    lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali): {result['fattore_offensivo']:.3f}")
+    lines.append(f"Fattore eventi rari (rigori/autogol/errori, con cap): {result['fattore_eventi_rari']:.3f}")
     lines.append(f"P(gioca): {result['p_gioca']:.2%} (fonte: {result['p_source']})")
 
     lines.append("")
