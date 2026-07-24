@@ -113,6 +113,10 @@ TRANSACTIONS_MAX_PAGES = 3
 
 TOP_N_OUTPUT = int(os.environ.get('TOP_N_OUTPUT', '50'))
 
+# Stop automatico anche per numero di carte NUOVE tracciate in questa run,
+# non solo per LISTEN_SECONDS -- default 500.
+MAX_TRACKED_CARDS = int(os.environ.get('MAX_TRACKED_CARDS', '500'))
+
 # FIX 24/07 (richiesta esplicita utente): sotto questa soglia di transazioni nella
 # finestra, il dato e' troppo rumoroso per la classifica (una singola transazione
 # anomala puo' spostare la media intera) -- escluso, non solo dal trim ma dalla
@@ -124,13 +128,6 @@ MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING'
 # niente blacklist (il prezzo puo' risalire, non e' un'esclusione permanente
 # come coverage/L5/nessuna partita). Alleggerisce le chiamate successive.
 MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '1.0'))
-
-# FIX 24/07 (richiesta esplicita utente): sotto questo prezzo minimo attuale,
-# la carta viene scartata SENZA tracciarla e SENZA blacklist (il prezzo puo'
-# risalire sopra soglia in futuro, non e' un'esclusione permanente) -- prima
-# query eseguita per ogni carta, cosi' le carte troppo economiche non arrivano
-# nemmeno a far scattare le query piu' pesanti (snapshot + storico transazioni).
-MIN_PRICE_THRESHOLD_EUR = float(os.environ.get('MIN_PRICE_THRESHOLD_EUR', '1.0'))
 
 OUTPUT_DIR = 'bot_profit'
 OUTPUT_CSV_PATH = os.path.join(OUTPUT_DIR, 'profit_tracking.csv')
