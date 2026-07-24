@@ -794,14 +794,28 @@ _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
 
 
-def _graphql_throttle():
+def _graphql_throttle(critical=False):
+    # OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente -- "velocizzare il
+    # processo da rilevazione ad acquisto"): le chiamate CRITICHE del percorso di
+    # acquisto (prepareAcceptOffer, fetchEncryptedPrivateKey, acceptOffer, e il
+    # fallback exchange rate dentro quel percorso) NON aspettano piu' il throttle.
+    # Prima pagavano SEMPRE il minimo di 50ms di distanza dall'ultima chiamata
+    # qualsiasi (anche uno scan prezzi di un ALTRO evento in parallelo), e fino a
+    # 350ms se un 429 era avvenuto nei 30s precedenti (modalita' SAFE) -- proprio
+    # sull'accept, il passo dove ogni millisecondo decide la corsa contro gli
+    # altri bot. Sono 2-3 chiamate per acquisto, pochi acquisti per run: il
+    # rischio 429 aggiunto e' trascurabile. Il timestamp dell'ultima chiamata
+    # viene comunque aggiornato, cosi' le chiamate NORMALI successive si
+    # distanziano correttamente anche da quelle critiche. Nessun controllo di
+    # business toccato: pura prioritizzazione del traffico.
     with _graphql_throttle_lock:
         now = time.time()
-        recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
-        min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
-        wait = min_interval - (now - _graphql_last_call_ts[0])
-        if wait > 0:
-            time.sleep(wait)
+        if not critical:
+            recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
+            min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
+            wait = min_interval - (now - _graphql_last_call_ts[0])
+            if wait > 0:
+                time.sleep(wait)
         _graphql_last_call_ts[0] = time.time()
 
 
@@ -811,26 +825,26 @@ def _graphql_throttle():
 # get_browser_page/close_browser rimosse (non piu' necessarie).
 
 
-def _graphql_call_via_browser_raw(query, variables=None):
+def _graphql_call_via_browser_raw(query, variables=None, critical=False):
     """VERSIONE NO-PLAYWRIGHT (test): nome mantenuto per non toccare i moltissimi call
     site esistenti (call_fn = _call_fn or graphql_query_via_browser), ma qui delega
     direttamente a graphql_query (curl_cffi + header identificati mesi fa nel percorso
     unknown_fingerprint) -- nessun browser, nessun dispatch necessario. Se Sorare
     dovesse rifiutare queste chiamate con lo stesso errore di allora, e' il segnale che
     il fingerprint via browser resta necessario e si torna alla versione con Playwright."""
-    return graphql_query(query, variables)
+    return graphql_query(query, variables, critical=critical)
 
 
-def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
+def graphql_query_via_browser(query, variables=None, timeout_ms=20000, critical=False):
     """VERSIONE NO-PLAYWRIGHT (test): nome/firma mantenuti per compatibilita' con tutti
     i call site esistenti (call_fn = _call_fn or graphql_query_via_browser) -- delega
     a _graphql_call_via_browser_raw, che a sua volta usa graphql_query. Nessun dispatch
     a thread dedicato necessario (graphql_query/curl_cffi e' gia' thread-safe, usato
     altrove in concorrenza)."""
-    return _graphql_call_via_browser_raw(query, variables)
+    return _graphql_call_via_browser_raw(query, variables, critical=critical)
 
 
-def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
+def graphql_query(query, variables=None, max_retries=3, extra_headers=None, critical=False):
     """Versione semplificata (stessa base di track.py) del client GraphQL con backoff sui
     429 -- niente rilevamento "ban a tempo fisso" qui, il volume di query di questo bot e'
     molto piu' basso (esecuzioni brevi, manuali).
@@ -867,7 +881,7 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
         headers.update(extra_headers)
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(max_retries):
-        _graphql_throttle()
+        _graphql_throttle(critical=critical)
         if _HAS_CURL_CFFI:
             r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         else:
@@ -1469,26 +1483,66 @@ query ExchangeRateQuery {
 """
 
 
-def get_exchange_rate_id():
-    """Recupera l'id del tasso di cambio corrente (serve a PrepareAcceptOfferMutation/
-    PrepareOfferMutation), stessa query ExchangeRateQuery vista nel flusso reale di
-    acquisto in browser.
-    OTTIMIZZAZIONE VELOCITA' (20/07, richiesta esplicita utente -- ogni millisecondo
-    conta nello sniping): CACHATO in memoria per l'intera durata del run, stesso
-    principio gia' usato per fetch_encrypted_private_key. Il tasso di cambio (qui
-    sempre EUR, la valuta di acquisto/offerta e' sempre EUR) non cambia abbastanza in
-    fretta da giustificare una query di rete separata ad OGNI singolo tentativo --
-    prima query del run la recupera, tutte le successive riusano lo stesso valore
-    senza contattare di nuovo il server. Elimina una chiamata di rete intera dal
-    percorso critico di ogni acquisto/offerta.
-    """
+# OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente): l'exchange_rate_id
+# NON viene piu' richiesto in serie DENTRO prepare_accept_offer/prepare_offer (un
+# round-trip di rete intero nel percorso critico di ogni acquisto). Un thread in
+# background lo rinfresca ogni EXCHANGE_RATE_REFRESH_SECONDS e lo tiene pronto in
+# questa cache. LEZIONE DAL BUG 21/07 ('exchange rate has expired' riusando lo
+# stesso id su piu' acquisti): l'id e' trattato come USA E GETTA -- ogni prelievo
+# per un acquisto/offerta lo CONSUMA (rimosso dalla cache) e sveglia subito il
+# refresher perche' ne prepari uno nuovo. Due acquisti ravvicinati non possono
+# quindi mai riusare lo stesso id: il secondo, se il refresher non ha ancora
+# fatto in tempo, ripiega sulla fetch diretta identica a oggi (zero regressione).
+# In piu' l'id in cache non puo' mai essere piu' vecchio del ciclo di refresh,
+# quindi nemmeno la scadenza temporale puo' ripresentarsi.
+EXCHANGE_RATE_REFRESH_SECONDS = 45
+_exchange_rate_cache = {'id': None, 'ts': 0.0}
+_exchange_rate_lock = threading.Lock()
+_stop_exchange_rate_refresh = threading.Event()
+_exchange_rate_refresh_now = threading.Event()
+
+
+def _fetch_exchange_rate_id_from_server(critical=False):
+    """Fetch diretta dell'id dal server (l'unica che contatta la rete). critical=True
+    quando chiamata dal percorso di acquisto (fallback cache vuota) -- salta il
+    throttle come le altre chiamate critiche (vedi _graphql_throttle)."""
     try:
-        data = graphql_query(EXCHANGE_RATE_QUERY)
-        rate_id = (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
-        return rate_id
+        data = graphql_query(EXCHANGE_RATE_QUERY, critical=critical)
+        return (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
     except Exception as e:
         log(f"[prepare accept] errore lettura tasso di cambio: {e}")
         return None
+
+
+def _exchange_rate_refresh_loop():
+    """Thread daemon: tiene sempre pronto un exchange_rate_id fresco e mai usato.
+    Si sveglia ogni EXCHANGE_RATE_REFRESH_SECONDS oppure IMMEDIATAMENTE quando un
+    acquisto/offerta consuma l'id in cache (evento _exchange_rate_refresh_now)."""
+    while not _stop_exchange_rate_refresh.is_set():
+        rate_id = _fetch_exchange_rate_id_from_server(critical=False)
+        if rate_id:
+            with _exchange_rate_lock:
+                _exchange_rate_cache['id'] = rate_id
+                _exchange_rate_cache['ts'] = time.monotonic()
+        _exchange_rate_refresh_now.clear()
+        # attende il prossimo ciclo O un consumo dell'id (whichever first)
+        _exchange_rate_refresh_now.wait(timeout=EXCHANGE_RATE_REFRESH_SECONDS)
+
+
+def get_exchange_rate_id(critical=False):
+    """Restituisce un exchange_rate_id pronto all'uso. Percorso veloce: preleva
+    (e CONSUMA) l'id tenuto fresco dal thread di refresh -- istantaneo, zero rete
+    nel percorso critico. Fallback (cache vuota, refresher non ancora partito o
+    id appena consumato da un altro acquisto): fetch diretta identica al
+    comportamento precedente."""
+    with _exchange_rate_lock:
+        rate_id = _exchange_rate_cache['id']
+        if rate_id:
+            _exchange_rate_cache['id'] = None  # usa e getta: mai riusato due volte
+    if rate_id:
+        _exchange_rate_refresh_now.set()  # sveglia subito il refresher per il prossimo
+        return rate_id
+    return _fetch_exchange_rate_id_from_server(critical=critical)
 
 PREPARE_ACCEPT_OFFER_MUTATION = """
 mutation PrepareAcceptOfferMutation($input: prepareAcceptOfferInput!) {
@@ -1577,7 +1631,7 @@ def prepare_accept_offer(offer_id, _call_fn=None):
     -- passare _graphql_call_via_browser_raw quando gia' dentro un dispatch a
     _run_on_browser_thread, per fondere piu' chiamate in un solo hop."""
     call_fn = _call_fn or graphql_query_via_browser
-    exchange_rate_id = get_exchange_rate_id()
+    exchange_rate_id = get_exchange_rate_id(critical=True)
     if not exchange_rate_id:
         log("[prepare accept] exchange_rate_id non ottenuto, impossibile procedere")
         return None, None
@@ -1595,7 +1649,7 @@ def prepare_accept_offer(offer_id, _call_fn=None):
         }
     }
     try:
-        data = call_fn(PREPARE_ACCEPT_OFFER_MUTATION, variables)
+        data = call_fn(PREPARE_ACCEPT_OFFER_MUTATION, variables, critical=True)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -1792,7 +1846,8 @@ def close_node_sign_process():
                 slot['process'] = None
 
 
-def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
+def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request,
+                                 warmup_only=False):
     """Invia una richiesta di firma a UNO SLOT del pool di processi Node
     PERSISTENTI (vedi _node_pool/_acquire_node_slot sopra) tramite il protocollo a
     righe di sorare-sign/decrypt_and_sign.js: una riga JSON in stdin, una riga
@@ -1824,7 +1879,24 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
     Ritorna la stringa signature (da usare in approvals[0].mangopayWalletTransferApproval)
     oppure None se qualcosa fallisce (password sbagliata, script non trovato, dipendenze
     npm non installate, timeout, processo morto, ecc.) -- logga sempre il motivo."""
-    if 'decrypted_private_key' in _decrypted_key_cache:
+    if warmup_only:
+        # OTTIMIZZAZIONE VELOCITA' 24/07: richiesta di SOLO decrypt (nessuna firma,
+        # nessuna authorization coinvolta) -- usata dal pre-warm all'avvio per
+        # popolare _decrypted_key_cache PRIMA del primo acquisto reale, che
+        # altrimenti pagava da solo il decrypt PBKDF2(50000 iterazioni)+AES-GCM
+        # completo proprio durante la corsa contro gli altri bot. Lo script Node
+        # risponde {decryptedPrivateKey} che viene messo in cache qui sotto dal
+        # ramo comune, come per una firma normale. Ritorna True/None.
+        if 'decrypted_private_key' in _decrypted_key_cache:
+            return True
+        payload = {
+            'password': password,
+            'encryptedPrivateKey': encrypted_private_key,
+            'iv': iv,
+            'salt': salt,
+            'warmupOnly': True,
+        }
+    elif 'decrypted_private_key' in _decrypted_key_cache:
         payload = {
             'decryptedPrivateKey': _decrypted_key_cache['decrypted_private_key'],
             'authorizationRequest': authorization_request,
@@ -1905,6 +1977,8 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
     # la mettiamo in cache per le chiamate successive.
     if output.get('decryptedPrivateKey'):
         _decrypted_key_cache['decrypted_private_key'] = output['decryptedPrivateKey']
+    if warmup_only:
+        return True if output.get('decryptedPrivateKey') else None
     return output.get('signature')
 
 
@@ -1996,7 +2070,7 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
         extra_headers['authorization-id'] = authorization_id
 
     try:
-        data = call_fn(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
+        data = call_fn(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}}, critical=True)
         if data.get('errors'):
             log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
             log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
@@ -2062,7 +2136,7 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id, _cal
         },
     }
     try:
-        data = call_fn(ACCEPT_OFFER_MUTATION, variables)
+        data = call_fn(ACCEPT_OFFER_MUTATION, variables, critical=True)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('acceptOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -2083,7 +2157,7 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id, _cal
         return False, 'eccezione', str(e)
 
 
-def execute_live_purchase(offer_id, prepared, _call_fn=None):
+def execute_live_purchase(offer_id, prepared, _call_fn=None, sign_future=None):
     """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
     AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
     ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
@@ -2127,18 +2201,33 @@ def execute_live_purchase(offer_id, prepared, _call_fn=None):
     log(f"[acquisto live] step 1/3 OK: chiave cifrata recuperata (fetch_key={_t_fetch_key:.3f}s)")
 
     _t1 = time.monotonic()
-    signature = sign_authorization_via_node(
-        SORARE_WALLET_PASSWORD,
-        key_data.get('encryptedPrivateKey'),
-        key_data.get('iv'),
-        key_data.get('salt'),
-        request,
-    )
+    signature = None
+    # OTTIMIZZAZIONE VELOCITA' 24/07: se la firma speculativa (lanciata da
+    # evaluate_event appena prepare e' risolta, in parallelo alla liquidita') e' gia'
+    # pronta, la riusiamo -- il timeout breve e' solo una rete di sicurezza: in
+    # pratica la firma (locale, ~70ms dopo prepare) e' SEMPRE gia' conclusa quando
+    # si arriva qui (dopo liquidita' + controlli). Se per qualunque motivo manca o
+    # e' fallita, fallback: firma rifatta da capo qui, identica a prima.
+    if sign_future is not None:
+        try:
+            signature = sign_future.result(timeout=5)
+        except Exception:
+            signature = None
+    _firma_speculativa = bool(signature)
+    if not signature:
+        signature = sign_authorization_via_node(
+            SORARE_WALLET_PASSWORD,
+            key_data.get('encryptedPrivateKey'),
+            key_data.get('iv'),
+            key_data.get('salt'),
+            request,
+        )
     _t_firma = time.monotonic() - _t1
     if not signature:
         log("[acquisto live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
         return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
-    log(f"[acquisto live] step 2/3 OK: firma generata (firma_node={_t_firma:.3f}s)")
+    log(f"[acquisto live] step 2/3 OK: firma {'speculativa riusata' if _firma_speculativa else 'generata'} "
+        f"(firma_node={_t_firma:.3f}s)")
 
     # FIX 19/07 (velocizzazione sniping): riusiamo l'exchange_rate_id gia' ottenuto da
     # prepare_accept_offer invece di rifare la stessa query GraphQL una seconda volta --
@@ -2595,6 +2684,44 @@ def send_end_msg(matches_found, target_reached):
 # query da parallelizzare).
 
 
+def _speculative_sign_after_prepare(prepare_future):
+    """OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente): appena
+    prepare_accept_offer (gia' speculativa) risolve con successo, calcola SUBITO la
+    firma -- in parallelo alla query di liquidita' ancora in corso -- invece di
+    aspettare che liquidita' e tutti i controlli finiscano. La firma e' un'operazione
+    PURAMENTE LOCALE (fetch_key torna dalla cache in-memory, la firma vera la fa il
+    pool Node sul runner): NULLA viene inviato al server, quindi se i controlli a
+    valle scartano il caso la firma viene semplicemente buttata via, esattamente come
+    gia' avviene per il risultato di prepare. L'accept (l'unico passo che muove soldi)
+    resta rigorosamente DOPO tutti i controlli, invariato. Beneficio: esecuzione_finale
+    si riduce al solo accept. Ritorna la signature (str) o None (in tal caso
+    execute_live_purchase rifa' la firma da capo, fallback identico a prima)."""
+    try:
+        prepared, _categoria = prepare_future.result()
+    except Exception:
+        return None
+    if not prepared or not AUTOBUY_LIVE_MODE or not SORARE_WALLET_PASSWORD:
+        return None
+    _t0 = time.monotonic()
+    key_data = fetch_encrypted_private_key(
+        authorization_id=prepared.get('authorization_id'),
+        fingerprint=prepared.get('fingerprint'),
+        _call_fn=_graphql_call_via_browser_raw)
+    if not key_data:
+        return None
+    signature = sign_authorization_via_node(
+        SORARE_WALLET_PASSWORD,
+        key_data.get('encryptedPrivateKey'),
+        key_data.get('iv'),
+        key_data.get('salt'),
+        prepared.get('request') or {},
+    )
+    if signature:
+        log(f"[firma speculativa] pronta in {time.monotonic() - _t0:.3f}s (calcolata in "
+            f"parallelo alla liquidita', verra' usata SOLO se tutti i controlli passano)")
+    return signature
+
+
 def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
                     offer_id=None, seller_slug=None, is_in_season=True):
     """Valutazione UNICA condivisa (un solo scan di mercato per evento, niente doppio
@@ -2788,10 +2915,17 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     _t_card_details_fired = None
     _va_verso_autobuy = (not trigger_su_minimo_non_allineato
                           and margin_percent >= AUTOBUY_MARGIN_FRACTION)
+    _sign_future = None
     if _va_verso_autobuy and offer_id:
         _t_prepare_fired = time.monotonic()
         _prepare_future = _speculative_executor.submit(
             prepare_accept_offer, offer_id, _call_fn=_graphql_call_via_browser_raw)
+        # OTTIMIZZAZIONE VELOCITA' 24/07: firma speculativa concatenata -- parte da
+        # sola appena prepare risolve, mentre liquidita' gira ancora. Vedi
+        # _speculative_sign_after_prepare per razionale e garanzie di sicurezza.
+        if AUTOBUY_LIVE_MODE and SORARE_WALLET_PASSWORD:
+            _sign_future = _speculative_executor.submit(
+                _speculative_sign_after_prepare, _prepare_future)
     elif not _va_verso_autobuy:
         _makeoffer_target_card_slug = true_min_card_slug if trigger_su_minimo_non_allineato else card_slug
         _t_card_details_fired = time.monotonic()
@@ -2867,14 +3001,15 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                                        margin_percent, card_slug, excluded_league, is_in_season,
                                        offer_id, timing=_timing, prepare_future=_prepare_future,
-                                       prepare_started_at=_t_prepare_fired)
+                                       prepare_started_at=_t_prepare_fired, sign_future=_sign_future)
     return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                                      margin_percent, card_slug, excluded_league, is_in_season,
                                      seller_slug, timing=_timing, card_details_future=_card_details_future,
                                      card_details_started_at=_t_card_details_fired)
 
 
-def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_started_at=None):
+def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_started_at=None,
+                         sign_future=None):
     """OTTIMIZZAZIONE VELOCITA' 22/07 v6 + 23/07 (richiesta esplicita utente -- casi
     Edier Ocampo/Alex Roldan persi a prepare_accept_offer per "Too late"):
     prepare_accept_offer puo' ora arrivare GIA' lanciata (prepare_future, sottomessa
@@ -2896,9 +3031,9 @@ def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_star
         if not prepared or not AUTOBUY_LIVE_MODE:
             return prepared, prepare_category, False, None, _t_b - _t_a, 0.0
         try:
-            purchase_completed, purchase_error = _speculative_executor.submit(
-                execute_live_purchase, offer_id, prepared,
-                _call_fn=_graphql_call_via_browser_raw).result()
+            purchase_completed, purchase_error = execute_live_purchase(
+                offer_id, prepared, _call_fn=_graphql_call_via_browser_raw,
+                sign_future=sign_future)
         except Exception as e:
             log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
             return prepared, prepare_category, False, f"eccezione imprevista: {e}", \
@@ -2954,7 +3089,8 @@ def _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_
 
 def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                             margin_percent, card_slug, excluded_league, is_in_season, offer_id,
-                            timing=None, prepare_future=None, prepare_started_at=None):
+                            timing=None, prepare_future=None, prepare_started_at=None,
+                            sign_future=None):
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
 
@@ -2975,7 +3111,7 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
         prepared, prepare_category, purchase_completed, purchase_error, \
             _durata_prepare, _durata_esecuzione = _run_autobuy_merged(
                 player_name, offer_id, prepare_future=prepare_future,
-                prepare_started_at=prepare_started_at)
+                prepare_started_at=prepare_started_at, sign_future=sign_future)
         if prepared:
             nonce = (prepared.get('request') or {}).get('nonce')
             log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
@@ -3688,6 +3824,25 @@ def main():
                     _ensure_node_pool_slot(_pool_idx)
             log(f"[precarico velocita'] pool di {_NODE_POOL_SIZE} processi Node "
                 f"persistenti per la firma avviato e pronto (restera' vivo per tutta la run)")
+            # OTTIMIZZAZIONE VELOCITA' 24/07: decrypt della chiave del wallet
+            # anticipato QUI (richiesta warmupOnly al processo Node, solo decrypt,
+            # nessuna firma) -- prima il decrypt completo PBKDF2+AES-GCM veniva
+            # pagato dal PRIMO acquisto reale della run, l'unico momento in cui
+            # non possiamo permettercelo. Dopo questo warmup anche il primo
+            # acquisto usa il percorso rapido (chiave gia' in chiaro in cache).
+            if pre_key:
+                _t_warm = time.monotonic()
+                warm_ok = sign_authorization_via_node(
+                    SORARE_WALLET_PASSWORD, pre_key.get('encryptedPrivateKey'),
+                    pre_key.get('iv'), pre_key.get('salt'), None, warmup_only=True)
+                if warm_ok:
+                    log(f"[precarico velocita'] decrypt chiave wallet completato in "
+                        f"{time.monotonic() - _t_warm:.3f}s -- anche il PRIMO acquisto "
+                        f"della run usera' il percorso di firma rapido")
+                else:
+                    log("[precarico velocita'] ATTENZIONE: warmup decrypt fallito "
+                        "(vedi log [firma Node]), il primo acquisto fara' il decrypt "
+                        "completo come prima -- nessuna regressione, solo niente anticipo")
         else:
             log("[precarico velocita'] SORARE_WALLET_PASSWORD non impostata, salto il "
                 "precarico della chiave cifrata e del processo Node di firma")
@@ -3696,6 +3851,13 @@ def main():
             "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
         return
     send_startup_msg()
+    # OTTIMIZZAZIONE VELOCITA' 24/07: refresher exchange_rate_id in background --
+    # vedi nota sopra _exchange_rate_refresh_loop. Avviato SEMPRE (serve sia ad
+    # AutoBuy sia a MakeOffer via prepare_offer, costo: 1 query leggera ogni 45s).
+    exchange_rate_thread = threading.Thread(target=_exchange_rate_refresh_loop, daemon=True)
+    exchange_rate_thread.start()
+    log(f"[precarico velocita'] refresher exchange_rate_id avviato (id sempre fresco, "
+        f"usa-e-getta, refresh ogni {EXCHANGE_RATE_REFRESH_SECONDS}s o subito dopo ogni consumo)")
     commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
     commit_thread.start()
     log(f"[commit periodico] thread avviato, commit+push lista nera ogni "
@@ -3717,6 +3879,8 @@ def main():
     finally:
         _stop_periodic_commit.set()
         _stop_periodic_bid.set()
+        _stop_exchange_rate_refresh.set()
+        _exchange_rate_refresh_now.set()  # sveglia il refresher cosi' vede lo stop subito
         _commit_lista_nera_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
         _speculative_executor.shutdown(wait=True)
         close_node_sign_process()
