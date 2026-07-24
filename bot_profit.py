@@ -10,9 +10,12 @@ due righe distinte, ognuna col proprio storico transazioni e proprio minimo,
 mai mescolati. Per TUTTI gli altri campionati: un giocatore = una riga sola,
 in_season+classic mescolati (stesso identico criterio di Bot Supremo).
 
-Esclusioni (per alleggerire ogni analisi futura), con blacklist dedicata a
-decadenza ISO (sorare_lista_nera_profit.txt), controllata PRIMA di ogni query
-cosi' le carte gia' note vengono saltate a costo zero:
+Esclusioni (per alleggerire ogni analisi futura):
+  - min_attuale < 1 EUR -> scartata SUBITO (prima query in assoluto), NESSUNA
+    blacklist (il prezzo puo' risalire, non e' un'esclusione permanente)
+  con blacklist dedicata a decadenza ISO (sorare_lista_nera_profit.txt),
+  controllata PRIMA di ogni query cosi' le carte gia' note vengono saltate a
+  costo zero:
   - coverageStatus=NOT_COVERED -> blacklist 30 giorni
   - L5 = 0 (o non disponibile)  -> blacklist 30 giorni
   - prossima partita = None     -> blacklist 3 giorni (transitorio, il
@@ -116,9 +119,18 @@ TOP_N_OUTPUT = int(os.environ.get('TOP_N_OUTPUT', '50'))
 # classifica stessa. Probabilmente da alzare in futuro, per ora 15.
 MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING', '15'))
 
-# FIX 24/07 (richiesta esplicita utente): stop automatico anche per numero di
-# carte tracciate, non solo per LISTEN_SECONDS -- default 500.
-MAX_TRACKED_CARDS = int(os.environ.get('MAX_TRACKED_CARDS', '500'))
+# FIX 24/07 (richiesta esplicita utente): sotto questo prezzo minimo la carta
+# viene scartata SUBITO, come prima query in assoluto -- niente tracciamento,
+# niente blacklist (il prezzo puo' risalire, non e' un'esclusione permanente
+# come coverage/L5/nessuna partita). Alleggerisce le chiamate successive.
+MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '1.0'))
+
+# FIX 24/07 (richiesta esplicita utente): sotto questo prezzo minimo attuale,
+# la carta viene scartata SENZA tracciarla e SENZA blacklist (il prezzo puo'
+# risalire sopra soglia in futuro, non e' un'esclusione permanente) -- prima
+# query eseguita per ogni carta, cosi' le carte troppo economiche non arrivano
+# nemmeno a far scattare le query piu' pesanti (snapshot + storico transazioni).
+MIN_PRICE_THRESHOLD_EUR = float(os.environ.get('MIN_PRICE_THRESHOLD_EUR', '1.0'))
 
 OUTPUT_DIR = 'bot_profit'
 OUTPUT_CSV_PATH = os.path.join(OUTPUT_DIR, 'profit_tracking.csv')
@@ -515,12 +527,17 @@ query ProfitPlayerData($slug: String!) {
   anyPlayer(slug: $slug) {
     slug
     displayName
+    activeClub {
+      ... on Club { slug name }
+    }
     lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
     lastTenAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
     lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
     anyFutureGames(first: 1) {
       nodes {
         date
+        homeTeam { ... on Club { slug name } }
+        awayTeam { ... on Club { slug name } }
       }
     }
     allPlayerGameScores(first: 1) {
@@ -550,8 +567,23 @@ def get_player_snapshot(player_slug):
     l10 = player.get('lastTenAvgScore')
     l40 = player.get('lastFortyAvgScore')
 
+    squadra = (player.get('activeClub') or {}).get('name')
+    squadra_slug = (player.get('activeClub') or {}).get('slug')
+
     future_nodes = ((player.get('anyFutureGames') or {}).get('nodes')) or []
-    next_game_date_str = future_nodes[0].get('date') if future_nodes else None
+    next_game_date_str = None
+    prossimo_avversario = None
+    if future_nodes:
+        next_game = future_nodes[0]
+        next_game_date_str = next_game.get('date')
+        home = next_game.get('homeTeam') or {}
+        away = next_game.get('awayTeam') or {}
+        if squadra_slug and home.get('slug') == squadra_slug:
+            prossimo_avversario = f"{away.get('name', '?')} (casa)"
+        elif squadra_slug and away.get('slug') == squadra_slug:
+            prossimo_avversario = f"{home.get('name', '?')} (trasferta)"
+        elif home.get('name') or away.get('name'):
+            prossimo_avversario = f"{home.get('name', '?')} vs {away.get('name', '?')}"
 
     last_game_nodes = ((player.get('allPlayerGameScores') or {}).get('nodes')) or []
     ultima_partita_score = last_game_nodes[0].get('score') if last_game_nodes else None
@@ -560,6 +592,8 @@ def get_player_snapshot(player_slug):
         'l5': l5,
         'l10': l10,
         'l40': l40,
+        'squadra': squadra,
+        'prossimo_avversario': prossimo_avversario,
         'next_game_date_str': next_game_date_str,
         'ultima_partita_score': ultima_partita_score,
     }
@@ -664,6 +698,7 @@ def _upsert_tracked_row(key, row):
 
 CSV_FIELDNAMES = [
     'player_slug', 'player_name', 'tipo_carta', 'potenziale_score',
+    'squadra', 'prossimo_avversario',
     'ultima_partita_score', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
     'sconto_percent', 'prossima_partita_data', 'ore_alla_partita',
@@ -712,6 +747,8 @@ def load_previous_tracked():
                     'player_name': row.get('player_name'),
                     'tipo_carta': row.get('tipo_carta'),
                     'potenziale_score': _parse_float_or_none(row.get('potenziale_score')),
+                    'squadra': row.get('squadra') or None,
+                    'prossimo_avversario': row.get('prossimo_avversario') or None,
                     'ultima_partita_score': _parse_float_or_none(row.get('ultima_partita_score')),
                     'l5': _parse_float_or_none(row.get('l5')),
                     'l10': _parse_float_or_none(row.get('l10')),
@@ -864,7 +901,7 @@ def run_listener(eth_rate):
 
     stats = {"received": 0, "processed": 0, "tracked": 0, "skipped_forma_zero": 0,
               "skipped_coverage": 0, "skipped_nessuna_partita": 0, "skipped_blacklist": 0,
-              "_closed_max_tracked": False}
+              "skipped_prezzo_basso": 0, "_closed_max_tracked": False}
     stats_lock = threading.Lock()
     seen_offer_status = set()
     event_executor = concurrent.futures.ThreadPoolExecutor(
@@ -877,6 +914,15 @@ def run_listener(eth_rate):
             if is_player_blacklisted(player_slug):
                 with stats_lock:
                     stats['skipped_blacklist'] += 1
+                return
+
+            # FIX 24/07 (richiesta esplicita utente): PRIMA query in assoluto --
+            # sotto MIN_PRICE_EUR_THRESHOLD la carta viene scartata subito, senza
+            # nessun'altra chiamata e SENZA blacklist (il prezzo puo' risalire).
+            min_attuale = get_current_minimum(player_slug, is_in_season, league_slug, eth_rate)
+            if min_attuale is None or min_attuale < MIN_PRICE_EUR_THRESHOLD:
+                with stats_lock:
+                    stats['skipped_prezzo_basso'] += 1
                 return
 
             snapshot = get_player_snapshot(player_slug)
@@ -900,7 +946,6 @@ def run_listener(eth_rate):
                     f"blacklistato {NESSUNA_PARTITA_DAYS:.0f}gg")
                 return
 
-            min_attuale = get_current_minimum(player_slug, is_in_season, league_slug, eth_rate)
             tx_prices = get_recent_transaction_prices(player_slug, is_in_season, league_slug, eth_rate)
             avg_trimmed, n_usati, n_totali = trimmed_average(tx_prices)
 
@@ -924,6 +969,8 @@ def run_listener(eth_rate):
                 'player_name': player_name,
                 'tipo_carta': tipo_carta,
                 'potenziale_score': potenziale_score,
+                'squadra': snapshot['squadra'],
+                'prossimo_avversario': snapshot['prossimo_avversario'],
                 'ultima_partita_score': snapshot['ultima_partita_score'],
                 'l5': l5,
                 'l10': snapshot['l10'],
@@ -1070,6 +1117,7 @@ def run_listener(eth_rate):
         log(f"Connessione chiusa (codice {close_status_code}). Eventi ricevuti: {stats['received']}, "
             f"carte elaborate: {stats['processed']}, tracciate: {stats['tracked']}/{MAX_TRACKED_CARDS}, "
             f"scartate per blacklist: {stats['skipped_blacklist']}, "
+            f"scartate per prezzo < {MIN_PRICE_EUR_THRESHOLD}EUR: {stats['skipped_prezzo_basso']}, "
             f"scartate per forma zero/L5 assente: {stats['skipped_forma_zero']}, "
             f"scartate per non-copertura: {stats['skipped_coverage']}, "
             f"scartate per nessuna partita: {stats['skipped_nessuna_partita']}")
@@ -1098,7 +1146,8 @@ def main():
     log(f"Avvio Bot Profit. LISTEN_SECONDS={LISTEN_SECONDS} COMMIT_CHUNK_SECONDS={COMMIT_CHUNK_SECONDS} "
         f"CHECK_CLASSIC={CHECK_CLASSIC} TRANSACTIONS_WINDOW_DAYS={TRANSACTIONS_WINDOW_DAYS} "
         f"TOP_N_OUTPUT={TOP_N_OUTPUT} MAX_TRACKED_CARDS={MAX_TRACKED_CARDS} "
-        f"MIN_TRANSACTIONS_FOR_RANKING={MIN_TRANSACTIONS_FOR_RANKING}")
+        f"MIN_TRANSACTIONS_FOR_RANKING={MIN_TRANSACTIONS_FOR_RANKING} "
+        f"MIN_PRICE_EUR_THRESHOLD={MIN_PRICE_EUR_THRESHOLD}")
 
     if not COOKIES or not CSRF_TOKEN:
         log("ERRORE: SORARE_COOKIE/SORARE_CSRF mancanti, impossibile continuare.")
