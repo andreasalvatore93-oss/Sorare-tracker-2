@@ -172,7 +172,7 @@ query AllPlayerGameScores($slug: String!, $first: Int!) {
       nodes {
         id
         date
-        playerGameScore {
+        playerGameScore(playerSlug: $slug) {
           id
           positionTyped
           projectedScore
