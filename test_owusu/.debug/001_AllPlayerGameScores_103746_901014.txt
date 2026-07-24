@@ -1,0 +1,60 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "prince-osei-owusu", "first": 50}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          status
+          homeTeam { ... on Club { slug name code } }
+          awayTeam { ... on Club { slug name code } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          fieldStatus
+          gameStarted
+          minsPlayed
+          yellowCard
+          footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code } }
+            awayTeam { ... on Club { slug name code } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 422
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Fri, 24 Jul 2026 10:37:46 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'WpxBMDlswjXhO9FewUZFakVWXAOQugMWoZd_LycUsfl4AJkJ9YEzGIqiBJVh4zP7jIz7KBrXkjTYRcRMxP11zg', 'cache-control': 'no-cache', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=3m%2F0ttWOL9Zn5GCSeAZM%2FjDLrmrGy71yneJr6JdFFs9%2FM9klHkWONmrV%2BwxNCezcKx3dr5nafWRsLlS0TMJqfeDhTKRIUrLZMAdkH%2Bc2z1kjtC4wlL55co8dvOzEq1nOoJCV4OpVyYGMH19T6lC8Tc3oJrLXHeTcquOyVk02TTTJWIH5b2bYdkPi5E6mOukw%2B7PacJX%2FZw4JqxTLdoMdLmLC4BUZSyy%2BSpc17xYGJz%2FMYBWKRf7tkQERvhRKfKJ5I7W5TRlcEZG5daTRN3n8C6ACzHfjqsUBlB67puTiMQuqt6LHZrMd4hbiCIZG1sEN--8E1cE4raggDQkRU3--A%2FKaLOQf0mAaNLQKIZOooQ%3D%3D; domain=.sorare.com; path=/; expires=Sat, 24 Jul 2027 10:37:46 GMT; secure; httponly; samesite=none', 'x-request-id': '4b7648ca-7805-4235-9bb5-f5e2378e6101', 'x-runtime': '0.009343', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Error from cloudfront', 'via': '1.1 7b7ed180a68f72f1dd6bcc5c75fd0210.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': 'lAatkkX4rc0ym5KKkV1oNayEQhtQZkUPwzSWPdPginJiB6fRH1tlPg=='}
+body (integrale):
+{"errors":[{"message":"Field 'status' doesn't exist on type 'AnyGameInterface' (Did you mean `statusTyped`?)","extensions":{"code":"UNPROCESSABLE_ENTITY"}}]}
