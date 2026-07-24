@@ -30,6 +30,10 @@ on:
         description: "Sotto questo numero di transazioni nella finestra, la carta e' esclusa dalla classifica (dato troppo rumoroso)"
         required: false
         default: "15"
+      min_price_eur_threshold:
+        description: "Sotto questo prezzo minimo, la carta e' scartata subito (nessun tracciamento, nessuna blacklist)"
+        required: false
+        default: "1.0"
 permissions:
   contents: write
 concurrency:
@@ -62,6 +66,7 @@ jobs:
           MAX_TRACKED_CARDS: ${{ github.event.inputs.max_tracked_cards || '500' }}
           TOP_N_OUTPUT: ${{ github.event.inputs.top_n_output || '50' }}
           MIN_TRANSACTIONS_FOR_RANKING: ${{ github.event.inputs.min_transactions_for_ranking || '15' }}
+          MIN_PRICE_EUR_THRESHOLD: ${{ github.event.inputs.min_price_eur_threshold || '1.0' }}
         run: python bot_profit.py
       - name: Commit CSV + blacklist dedicata (fallback, se il commit periodico non ha gia' salvato tutto)
         if: always()
