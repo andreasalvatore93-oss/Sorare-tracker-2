@@ -16,14 +16,16 @@ Formula (identica a test_owusu.py/test_multi_fwd.py, gia' calibrata):
   range_confidenza = +/- dev_std_pesata * RANGE_MULTIPLIER
 
 NUOVO in questa versione (25/07, richiesta esplicita utente):
-- RANGE_MULTIPLIER di default alzato 1.4 -> 1.6: nel test su 7 giocatori la
-  copertura del range di confidenza risultava sistematicamente sotto il 68%
-  "ideale" (66.7% per 6/7 giocatori, 55.6% per il settimo) — range troppo
-  stretto rispetto alla vera variabilita' degli score.
-- Fattore trend ora PARAMETRIZZATO nel grid search (non piu' solo on/off):
-  nuova dimensione TREND_INTENSITY che scala il ratio ultime-5/ultime-10
-  prima del clamp finale, per testare versioni piu' o meno aggressive del
-  trend invece di un singolo comportamento fisso.
+- PARAMETRI FISSATI: grid search cross-player completato su 14 giocatori,
+  combinazione vincente individuata (MAE medio 18.13, copertura media
+  68.93% — praticamente perfetta). Il grid search NON gira piu' ad ogni
+  esecuzione: i parametri sono ora costanti fisse (HALF_LIFE_GAMES=12.0,
+  RANGE_MULTIPLIER=1.4, OPPONENT_SENSITIVITY=29.0, TREND_INTENSITY=0.7),
+  con un solo backtest rigoroso (non piu' 72 combinazioni) per calcolare
+  MAE/copertura di riferimento per il singolo giocatore — molto piu' veloce.
+- Output riepilogo: "CONSIGLIO ATTACCANTI" ordinato per score atteso
+  decrescente, formato compatto "N) slug: X pt attesi (low-high)" — projected
+  score come numero secco arrotondato + range, non piu' tabella dettagliata.
 - Lista giocatori letta dinamicamente da mls_fwd_discovery/player_slugs.json
   (generata dal job 'discover' in .yml prima di questo job).
 
@@ -77,8 +79,10 @@ def load_player_slugs():
 PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per giocatore, budget complessita' API limitato)
-HALF_LIFE_GAMES = 12.0  # calibrato su Owusu (24/07): stessi parametri fissi per tutti in questo test
-RANGE_MULTIPLIER = 1.6  # alzato da 1.4 (25/07): copertura range sistematicamente sotto il 68% ideale nel test su 7 giocatori
+HALF_LIFE_GAMES = 12.0  # FISSATO (25/07): combinazione vincente aggregata cross-player (14 giocatori, MAE medio 18.13, copertura media 68.93%)
+RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 1.4, non 1.6 come nel tentativo precedente; la copertura ideale viene dalla combinazione GIUSTA di tutti i parametri insieme, non dal range preso da solo
+OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
+TREND_INTENSITY = 0.7  # FISSATO (25/07): idem — trend leggermente attenuato rispetto al comportamento originale (1.0)
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.70  # NUOVO: sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente)
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -946,8 +950,7 @@ def build_prediction(player_slug):
     if avg_opp_rank_hist and next_opp_rank:
         # rank piu' basso = squadra piu' forte. Se il prossimo avversario ha un
         # rank piu' basso (piu' forte) della media storica affrontata, penalizza.
-        # Normalizzato su una scala approssimativa (assumendo ~29 squadre MLS).
-        delta = (next_opp_rank - avg_opp_rank_hist) / 29.0
+        delta = (next_opp_rank - avg_opp_rank_hist) / OPPONENT_SENSITIVITY
         fattore_forza_avversario = max(0.5, min(1.5, 1.0 + delta))
 
     # --- P(gioca) ---
@@ -964,7 +967,8 @@ def build_prediction(player_slug):
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
     # --- Fattore trend (ultime 5 vs ultime 10, stesso pool gia' filtrato) ---
-    fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(scores, short_window=5, long_window=10)
+    fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(
+        scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
 
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_falli * fattore_duelli * fattore_offensivo * fattore_eventi_rari
@@ -979,23 +983,32 @@ def build_prediction(player_slug):
     backtest_weights = exponential_weights(len(backtest_scores), HALF_LIFE_GAMES) if backtest_scores else []
     backtest_media = weighted_mean(backtest_scores, backtest_weights) if backtest_scores else None
 
-    # --- Backtest RIGOROSO + GRID SEARCH: prova N combinazioni di parametri e
-    # tiene quella con MAE piu' basso / copertura range piu' vicina all'ideale ---
-    log(f"Esecuzione grid search backtest ({len(GRID_SEARCH_COMBINATIONS)} combinazioni di parametri)...")
-    grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                                    fouls_values=fouls_values, duels_values=duels_values,
-                                    offensive_values=offensive_values,
-                                    rare_events_values=rare_events_values,
-                                    passing_values=passing_values,
-                                    defense_rare_values=defense_rare_values)
-    rigorous_bt = grid_results[0]  # migliore combinazione secondo il punteggio composito
+    # --- Backtest RIGOROSO sui parametri FISSATI (25/07) ---
+    # Il grid search cross-player ha gia' individuato la combinazione vincente
+    # (vedi costanti HALF_LIFE_GAMES/RANGE_MULTIPLIER/OPPONENT_SENSITIVITY/
+    # TREND_INTENSITY sopra). Non serve piu' rieseguire 72 combinazioni ad ogni
+    # giocatore ad ogni run — un solo backtest sui parametri fissati, molto
+    # piu' veloce, mantenendo comunque MAE/copertura come indicatore di
+    # affidabilita' per QUESTO specifico giocatore.
+    log("Esecuzione backtest rigoroso sui parametri fissati...")
+    rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
+                                     half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
+                                     opponent_sensitivity=OPPONENT_SENSITIVITY,
+                                     fouls_values=fouls_values, duels_values=duels_values,
+                                     offensive_values=offensive_values,
+                                     rare_events_values=rare_events_values,
+                                     passing_values=passing_values,
+                                     defense_rare_values=defense_rare_values,
+                                     use_granular_factors=True, use_trend=True,
+                                     trend_intensity=TREND_INTENSITY)
+    rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
+                            f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA)")
     if rigorous_bt['mae'] is not None:
-        log(f"Grid search completato. Migliore: '{rigorous_bt['label']}' "
-            f"(half_life={rigorous_bt['half_life']}, range_mult={rigorous_bt['range_multiplier']}, "
-            f"opp_sens={rigorous_bt['opponent_sensitivity']}) -> MAE={rigorous_bt['mae']:.2f}, "
+        log(f"Backtest completato: MAE={rigorous_bt['mae']:.2f}, "
             f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
     else:
-        log("Grid search: dati insufficienti (serve più storico).")
+        log("Backtest: dati insufficienti (serve più storico).")
+    grid_results = [rigorous_bt]  # lista con un solo elemento, per compatibilita' col resto del codice
 
     result = {
         'player_slug': player_slug,
@@ -1129,23 +1142,12 @@ def format_output(result):
         lines.append("Dati insufficienti per il backtest.")
 
     lines.append("")
-    lines.append("--- GRID SEARCH: CLASSIFICA 10 COMBINAZIONI DI PARAMETRI ---")
-    grid_results = result.get('grid_results', [])
-    if grid_results:
-        lines.append(f"{'#':>2} {'half_life':>9} {'range_x':>8} {'opp_sens':>8} {'MAE':>7} {'copertura%':>10}  etichetta")
-        for idx, g in enumerate(grid_results, 1):
-            if g['mae'] is not None:
-                cov_str = f"{g['pct_dentro_range']:.1f}" if g['pct_dentro_range'] is not None else "N/D"
-                lines.append(f"{idx:>2} {g['half_life']:>9.1f} {g['range_multiplier']:>8.1f} "
-                             f"{g['opponent_sensitivity']:>8.1f} {g['mae']:>7.2f} {cov_str:>10}  {g['label']}")
-            else:
-                lines.append(f"{idx:>2} {'—':>9} {'—':>8} {'—':>8} {'N/D':>7} {'N/D':>10}  {g['label']} (dati insufficienti)")
-        lines.append("")
-        lines.append("Ordinate per punteggio composito (MAE + penalita' di distanza dalla copertura "
-                     "ideale ~68%). La combinazione #1 e' quella usata per il BACKTEST RIGOROSO "
-                     "dettagliato qui sotto.")
-    else:
-        lines.append("Dati insufficienti per il grid search.")
+    lines.append("--- PARAMETRI DEL MODELLO (fissati, 25/07) ---")
+    lines.append(f"half_life={HALF_LIFE_GAMES}, range_mult={RANGE_MULTIPLIER}, "
+                 f"opp_sens={OPPONENT_SENSITIVITY}, trend_int={TREND_INTENSITY}")
+    lines.append("Combinazione scelta tramite grid search aggregato su 14 giocatori "
+                 "(MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' "
+                 "ad ogni esecuzione: questi valori sono ora costanti nel codice.")
 
     lines.append("")
     lines.append("--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---")
@@ -1173,11 +1175,8 @@ def format_output(result):
                      "storica, la formula COMPLETA (media pesata + fattore casa/trasferta + "
                      "fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili "
                      "PRIMA di quella partita, poi confrontata con lo score reale ottenuto. "
-                     "NOTA: i parametri di DEFAULT della predizione principale (sezione "
-                     f"PREDIZIONE sopra) sono stati AGGIORNATI il 24/07 in base ai risultati di "
-                     f"questo grid search (half-life {HALF_LIFE_GAMES}, range {RANGE_MULTIPLIER}x, "
-                     "granulari+trend sempre attivi). Il grid search continua a girare ad ogni "
-                     "esecuzione per verificare se emergono combinazioni ancora migliori nel tempo.")
+                     "I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 "
+                     "giocatori — non variano piu' da esecuzione a esecuzione.")
     else:
         lines.append("Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).")
 
@@ -1280,30 +1279,6 @@ def main():
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_conf'),
                               result.get('target_competition', '')))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} +/- {result.get('range_conf'):.1f}")
-
-        # NUOVO (25/07): salva il grid search COMPLETO (tutte le combinazioni,
-        # non solo la top 10 stampata nel .txt) in JSON separato per giocatore.
-        # Serve per l'aggregazione cross-player della combinazione vincente
-        # (MAE medio su tutti i giocatori, non solo il migliore per singolo).
-        grid_dir = os.path.join(OUTPUT_DIR, 'grid_search_full')
-        if not os.path.exists(grid_dir):
-            os.makedirs(grid_dir)
-        grid_export = [
-            {
-                'label': r.get('label'),
-                'half_life': r.get('half_life'),
-                'range_multiplier': r.get('range_multiplier'),
-                'opponent_sensitivity': r.get('opponent_sensitivity'),
-                'trend_intensity': r.get('trend_intensity'),
-                'mae': r.get('mae'),
-                'pct_dentro_range': r.get('pct_dentro_range'),
-                'composite_score': r.get('composite_score'),
-            }
-            for r in result.get('grid_results', [])
-        ]
-        grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
-        with open(grid_path, 'w', encoding='utf-8') as f:
-            json.dump(grid_export, f, ensure_ascii=False, indent=2)
 
     # --- Riepilogo comparativo in cima al file ---
     # NUOVO (25/07): tiering ordinato per score atteso decrescente, con
