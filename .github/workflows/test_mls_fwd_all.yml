@@ -1,0 +1,184 @@
+name: Test TUTTI Attaccanti MLS in_season (prototipo)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: test-mls-fwd-all-prediction
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install requests curl_cffi
+
+      - name: Esegui discovery attaccanti MLS in_season
+        id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          PYTHONUNBUFFERED: "1"
+        run: python mls_fwd_discovery.py
+
+      - name: Commit output discovery
+        if: always()
+        run: |
+          git config user.name "mls-fwd-all-bot"
+          git config user.email "mls-fwd-all-bot@users.noreply.github.com"
+          git add mls_fwd_discovery/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "MLS Forward Discovery: nuovo run (pre-predict)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 8 ]; then
+              echo "Impossibile salvare dopo 8 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
+
+  predict:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      # Parallelismo elevato (GitHub Actions Standard Free: max 20 job
+      # concorrenti/account). 15 lascia margine per altri workflow che
+      # potrebbero girare in parallelo (es. track.py schedulato).
+      max-parallel: 15
+      matrix:
+        player_slug: ${{ fromJson(needs.discover.outputs.player_slugs) }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install requests curl_cffi
+
+      - name: Run single-player prediction (job matrix, budget di complessita' API fresco per ognuno)
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python test_mls_fwd_all.py
+
+      - name: Commit output e cache
+        if: always()
+        run: |
+          git config user.name "mls-fwd-all-bot"
+          git config user.email "mls-fwd-all-bot@users.noreply.github.com"
+          git add mls_fwd_all/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Test MLS Fwd All: predizione ${{ matrix.player_slug }}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 8 ]; then
+              echo "Impossibile salvare dopo 8 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
+
+  merge:
+    needs: [discover, predict]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Unisci tutti i file prediction_*.txt di questo run in un unico output
+        run: |
+          set -e
+          RUN_TS="$(date -u '+%Y-%m-%d_%H%M%S')"
+          MERGED_FILE="mls_fwd_all/merged_prediction_${RUN_TS}.txt"
+
+          echo "======================================================================" > "$MERGED_FILE"
+          echo "OUTPUT UNIFICATO - TUTTI ATTACCANTI MLS IN_SEASON (merge automatico)" >> "$MERGED_FILE"
+          echo "Generato: $(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> "$MERGED_FILE"
+          echo "======================================================================" >> "$MERGED_FILE"
+          echo "" >> "$MERGED_FILE"
+
+          # Legge la lista di slug scoperta dal job discover (stesso file
+          # committato in mls_fwd_discovery/player_slugs.json), per ciascuno
+          # prende il prediction_<slug>_*.txt piu' recente e lo accoda.
+          SLUGS=$(python3 -c "import json; print(' '.join(json.load(open('mls_fwd_discovery/player_slugs.json'))))")
+
+          for slug in $SLUGS; do
+            latest=$(ls -1 mls_fwd_all/prediction_${slug}_*.txt 2>/dev/null | sort | tail -n 1 || true)
+            if [ -n "$latest" ]; then
+              echo "Trovato per $slug: $latest"
+              cat "$latest" >> "$MERGED_FILE"
+              echo "" >> "$MERGED_FILE"
+            else
+              echo "" >> "$MERGED_FILE"
+              echo "### $slug: NESSUN OUTPUT TROVATO (job fallito o non ancora eseguito) ###" >> "$MERGED_FILE"
+              echo "" >> "$MERGED_FILE"
+            fi
+          done
+
+          echo "File unificato creato: $MERGED_FILE"
+          wc -l "$MERGED_FILE"
+
+      - name: Commit file unificato
+        run: |
+          git config user.name "mls-fwd-all-bot"
+          git config user.email "mls-fwd-all-bot@users.noreply.github.com"
+          git add mls_fwd_all/merged_prediction_*.txt
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Test MLS Fwd All: output unificato"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 8 ]; then
+              echo "Impossibile salvare dopo 8 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
