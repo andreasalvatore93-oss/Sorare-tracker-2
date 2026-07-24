@@ -55,6 +55,7 @@ HALF_LIFE_GAMES = 12.0  # calibrato su Owusu (24/07): stessi parametri fissi per
 RANGE_MULTIPLIER = 1.4
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.70  # NUOVO: sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente)
+SKIP_GRANULAR_DETAIL = True  # NUOVO (24/07): salta la query PlayerGameScoreDetail per ogni partita, che genera la maggior parte delle chiamate GraphQL per giocatore (~15 su 16) e satura il budget di complessita' cumulativo dell'API dopo il primo giocatore. Con questo flag attivo, i fattori granulari (falli/duelli/passaggio/ecc.) restano neutri (1.0) per TUTTI i giocatori in questo test — si usa solo score + contesto base (casa/trasferta, ranking avversario, trend). La formula completa con tutti i fattori resta in test_owusu.py, non toccata.
 
 OUTPUT_DIR = 'test_multi_fwd'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
@@ -772,21 +773,30 @@ def build_prediction(player_slug):
         f"{low_minutes_count} escluse per minutaggio < {MIN_MINUTES_PLAYED}', "
         f"altri status incontrati: {other_status_count or 'nessuno'}).")
 
-    # Scarica il dettaglio granulare per ogni partita della finestra (con cache)
-    log(f"[FASE 3/4] Recupero dettaglio granulare per {len(usable)} partite (con cache)...")
-    details = []
-    detail_failures = 0
-    for node in usable:
-        score_id = node['id'].replace('So5Score:', '')
-        is_final = node.get('scoreStatus') == 'FINAL'
-        detail = fetch_game_detail(score_id, cache, is_final)
-        if detail is None:
-            detail_failures += 1
-        details.append(detail)
+    # Scarica il dettaglio granulare per ogni partita della finestra (con cache),
+    # OPPURE la salta del tutto se SKIP_GRANULAR_DETAIL e' attivo (per ridurre
+    # drasticamente il numero di chiamate GraphQL per giocatore e non saturare
+    # il budget di complessita' cumulativo dell'API in questo test multi-giocatore).
+    if SKIP_GRANULAR_DETAIL:
+        log(f"[FASE 3/4] SALTATA (SKIP_GRANULAR_DETAIL attivo): nessuna chiamata "
+            f"dettaglio granulare, i fattori granulari resteranno neutri (1.0) "
+            f"per questo test comparativo.")
+        details = [None] * len(usable)
+    else:
+        log(f"[FASE 3/4] Recupero dettaglio granulare per {len(usable)} partite (con cache)...")
+        details = []
+        detail_failures = 0
+        for node in usable:
+            score_id = node['id'].replace('So5Score:', '')
+            is_final = node.get('scoreStatus') == 'FINAL'
+            detail = fetch_game_detail(score_id, cache, is_final)
+            if detail is None:
+                detail_failures += 1
+            details.append(detail)
 
-    save_cache(cache, cache_file)
-    log(f"[FASE 3/4] OK: dettaglio recuperato per {len(usable) - detail_failures}/{len(usable)} partite "
-        f"({detail_failures} falliti, la formula procedera' comunque usando solo score+contesto base per quelle).")
+        save_cache(cache, cache_file)
+        log(f"[FASE 3/4] OK: dettaglio recuperato per {len(usable) - detail_failures}/{len(usable)} partite "
+            f"({detail_failures} falliti, la formula procedera' comunque usando solo score+contesto base per quelle).")
 
     # Determina la squadra del giocatore dalla partita piu' recente
     player_team_slug = None
