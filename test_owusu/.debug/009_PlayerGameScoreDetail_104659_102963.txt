@@ -1,0 +1,39 @@
+=== RICHIESTA (PlayerGameScoreDetail) ===
+operationName: PlayerGameScoreDetail
+variables: {"id": "e8336468-bf85-445c-80c9-9926770807a1"}
+query:
+
+query PlayerGameScoreDetail($id: String!) {
+  so5 {
+    playerGameScore(id: $id) {
+      id
+      score
+      scoreStatus
+      position
+      anyGame {
+        date
+        statusTyped
+        homeTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        awayTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        competition { slug }
+      }
+      detailedScore { category stat statValue totalScore }
+      decisiveScore { totalScore }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 422
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Fri, 24 Jul 2026 10:46:59 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'u23jleNa1a5T4l1pPq0-k7izId6gWL5kBfyVySNp0rzrkmPaclQYW4Mktl-l53v8chnZVuipPiTRMmvkSFf2uQ', 'cache-control': 'no-cache', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=z%2BCVE%2FZhb4W4xKLwxvKdLG54jQp%2F5LFAyEt2fEal%2BpSgdZDfRM8BEDe01e28H7tm9N37HXYmREx%2BATpvE9vLvbRnVE%2FDFUmrktmfv7B%2FR77chuG9ACjv8qaDOSP9znj89cOlHohslX5lhdfZOswXOXa8n9oD%2F4EpbIUilelbwTjCdgi5oudn7pvaTUNDC0EUsJuFachf3dBBxHBnVbCY8v8J8MHTMta6e3xbX3tdq%2Fe17QDCSetrMvNOFlNkYGW3hOH9%2F%2BVIrRfb20T1gTngDJvw4vZ38HbYhJNtk9vMlW2rqn0f%2FCVtfQnRJEKkEnft--2lXZbrQG%2B7QkWunU--GT4QjqAg1ZZgT%2BcByM%2FU%2Fw%3D%3D; domain=.sorare.com; path=/; expires=Sat, 24 Jul 2027 10:46:59 GMT; secure; httponly; samesite=none', 'x-request-id': '86b52490-db4d-4e46-b86b-96b6a5147e2e', 'x-runtime': '0.010266', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Error from cloudfront', 'via': '1.1 6372697bab8e83ab78cd11c2ea750d14.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'ORD58-P3', 'x-amz-cf-id': 'IWasTu2ZFQ4p35IZCW12VLbM552Vt58_YEyxazJoHObLeKNDnHxrug=='}
+body (integrale):
+{"errors":[{"message":"Field 'decisiveScore' doesn't exist on type 'PlayerGameScoreInterface'","extensions":{"code":"UNPROCESSABLE_ENTITY"}}]}
