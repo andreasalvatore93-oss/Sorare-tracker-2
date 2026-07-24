@@ -199,7 +199,7 @@ query AllPlayerGameScores($slug: String!, $first: Int!) {
 # QUERY 5 equivalente: dettaglio punto-per-punto di una partita (per score-id)
 # ---------------------------------------------------------------------------
 GAME_SCORE_DETAIL_QUERY = """
-query PlayerGameScoreDetail($id: String!) {
+query PlayerGameScoreDetail($id: ID!) {
   so5 {
     playerGameScore(id: $id) {
       id
