@@ -115,6 +115,26 @@ async function handleRequest(params) {
     };
   }
 
+  // OTTIMIZZAZIONE VELOCITA' 24/07 (warmup all'avvio, richiesta esplicita utente):
+  // richiesta di SOLO decrypt -- nessuna firma, nessuna authorizationRequest.
+  // Usata dal bot Python durante il pre-warm per pagare il decrypt PBKDF2(50000
+  // iterazioni)+AES-GCM UNA VOLTA all'avvio invece che al primo acquisto reale
+  // (il momento peggiore possibile). Risponde {decryptedPrivateKey} che il
+  // chiamante mette in cache -- le firme successive useranno il ramo rapido
+  // 'decryptedPrivateKey' qui sotto, identico a prima.
+  if (params.warmupOnly) {
+    const { password, encryptedPrivateKey, iv, salt } = params;
+    if (!password || !encryptedPrivateKey || !iv || !salt) {
+      return { error: 'parametri mancanti per warmup (servono password, encryptedPrivateKey, iv, salt)' };
+    }
+    try {
+      const privateKey = await decryptPrivateKey({ password, encryptedPrivateKey, iv, salt });
+      return { decryptedPrivateKey: privateKey };
+    } catch (e) {
+      return { error: `decrypt fallito (password errata o dati corrotti): ${e.message}` };
+    }
+  }
+
   // OTTIMIZZAZIONE VELOCITA' (20/07, invariata): se il payload contiene gia'
   // 'decryptedPrivateKey' (esadecimale, formato "0x..."), SALTIAMO il decrypt
   // PBKDF2(50000 iterazioni)+AES-GCM -- identico ad ogni chiamata nella stessa
