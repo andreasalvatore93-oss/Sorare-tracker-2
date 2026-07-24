@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "prince-osei-owusu", "first": 50}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code } }
+          awayTeam { ... on Club { slug name code } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code } }
+            awayTeam { ... on Club { slug name code } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Fri, 24 Jul 2026 10:45:23 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '0', 'x-gql-depth': '0', 'x-server-timestamp': '1784889923', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'g7Fy7BL4UnIBoAqGegncNr2qyI0CHkSJorvaOScLuy8IQ4gw098YXgiV8VARFp1Nq4Wfb4JPdFcHlF9Goc0leQ', 'etag': 'W/"73244eb8ef24db9e050be29b679a0b2e"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=kApvMEnjsy0rRjx3AzEbjE1HEj62gzsweWXzlX9xHluF%2B%2BanCPgUZM2lvkxwCkOsVw4r5zy%2BOOBOVUoKbvJXVZUjeasi9CU4g9UCdzR4wTJ8E3ttGZiTVBkleyO1%2BPog4IsiuF%2B1nsaE9%2FlJTtv3lZlZCI6ODzp2H44AjLmBAIHYrToH1Mn3SPjCxm8hn0cIRBXZLjQUN17vSOcrJ%2FD%2BAYWVKGDpOSOtkwjSneGkqqs0xPwiLL3%2FcF1veT4yvYq5u39ABBQOg%2Bt0JFJ4MtWoyz0Dd%2Bm0BX4WeC02GHaskfFXjiWIvLDqoJ5XlLMuyHzh--TjyaPGj3ZibeVSXN--ghHI%2Fkxw4O%2B%2BYx%2Fvtsihmw%3D%3D; domain=.sorare.com; path=/; expires=Sat, 24 Jul 2027 10:45:23 GMT; secure; httponly; samesite=none', 'x-request-id': 'c117f525-31e0-4027-937a-9b7eb53a9abe', 'x-runtime': '0.009434', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 4e65e40699a5e85cdc5b08cf225325c4.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'LvOGEWKtOT5--kgpEljn6Gadf75YWfAIwer284e5ATjaMVB-RyXpzA=='}
+body (integrale):
+{"errors":[{"message":"Field 'playerGameScore' is missing required arguments: playerSlug","locations":[{"line":33,"column":9}],"path":["query AllPlayerGameScores","anyPlayer","anyFutureGames","nodes","playerGameScore"],"extensions":{"code":"missingRequiredArguments","className":"Field","name":"playerGameScore","arguments":"playerSlug"}}]}
