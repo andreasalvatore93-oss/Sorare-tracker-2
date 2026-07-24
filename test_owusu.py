@@ -152,7 +152,7 @@ query AllPlayerGameScores($slug: String!, $first: Int!) {
         anyGame {
           id
           date
-          status
+          statusTyped
           homeTeam { ... on Club { slug name code } }
           awayTeam { ... on Club { slug name code } }
           competition { slug }
@@ -204,7 +204,7 @@ query PlayerGameScoreDetail($id: String!) {
       position
       anyGame {
         date
-        status
+        statusTyped
         homeTeam {
           ... on Club {
             slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
