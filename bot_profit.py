@@ -18,10 +18,23 @@ cosi' le carte gia' note vengono saltate a costo zero:
   - prossima partita = None     -> blacklist 3 giorni (transitorio, il
                                     calendario puo' aggiornarsi presto)
 
-Nessuna decisione di acquisto/offerta. Output: CSV in bot_profit/, riscritto
-ad ogni commit periodico (default 2 minuti) con SOLO le prime 50 carte
-tracciate, ordinate per minimo attuale decrescente (la carta piu' costosa e'
-sempre la prima).
+Dati registrati per ogni carta (per iniziare a soppesare il "potenziale
+crescita" -- richiesta esplicita utente 24/07):
+  - punteggio ULTIMA partita giocata (peso maggiore secondo l'esperienza utente)
+  - L5 / L10 / L40 (pesi decrescenti in quest'ordine)
+  - minimo attuale in vendita
+  - media transazioni ultimi 7 GIORNI (non piu' ultime 30 transazioni --
+    cambio richiesto 24/07, ritenuto piu' affidabile), trim di min/max
+  - sconto% tra media 7gg trimmed e minimo attuale
+  - data/ore alla prossima partita
+
+Nessuna decisione di acquisto/offerta, nessun punteggio composito calcolato
+ancora (i pesi relativi vanno concordati prima di tradurli in un unico score).
+
+Output: CSV in bot_profit/, riscritto ad ogni commit periodico (default 2
+minuti) con SOLO le prime 50 carte tracciate, ordinate per minimo attuale
+decrescente. Il bot si ferma automaticamente anche quando raggiunge
+MAX_TRACKED_CARDS (default 500), oltre che a fine LISTEN_SECONDS.
 """
 import csv
 import datetime
@@ -81,9 +94,19 @@ LISTEN_SECONDS = int(os.environ['LISTEN_SECONDS'])
 # Commit periodico dei dati tracciati -- default 2 minuti (richiesta esplicita utente).
 COMMIT_CHUNK_SECONDS = int(os.environ.get('COMMIT_CHUNK_SECONDS', '120'))
 
-TRANSACTIONS_SAMPLE_SIZE = int(os.environ.get('TRANSACTIONS_SAMPLE_SIZE', '30'))
+# FIX 24/07 (richiesta esplicita utente): non piu' un campione fisso di N
+# transazioni, ma una FINESTRA TEMPORALE -- tutte le transazioni reali degli
+# ultimi TRANSACTIONS_WINDOW_DAYS giorni (default 7, prima era 30 su un
+# campione fisso di 30 transazioni). Ritenuto piu' affidabile dall'utente.
+TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_DAYS', '7'))
+TRANSACTIONS_PAGE_SIZE = 50
+TRANSACTIONS_MAX_PAGES = 3
 
 TOP_N_OUTPUT = int(os.environ.get('TOP_N_OUTPUT', '50'))
+
+# FIX 24/07 (richiesta esplicita utente): stop automatico anche per numero di
+# carte tracciate, non solo per LISTEN_SECONDS -- default 500.
+MAX_TRACKED_CARDS = int(os.environ.get('MAX_TRACKED_CARDS', '500'))
 
 OUTPUT_DIR = 'bot_profit'
 OUTPUT_CSV_PATH = os.path.join(OUTPUT_DIR, 'profit_tracking.csv')
@@ -387,28 +410,20 @@ def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
 
 
 # =====================================================================================
-# QUERY COMBINATA: medie voto (L5/L10/L40), prossima partita, ultime N transazioni
+# QUERY: ultime transazioni REALI in una FINESTRA di TRANSACTIONS_WINDOW_DAYS giorni
+# (paginata -- stesso campo/pattern confermato funzionante di Bot Supremo)
 # =====================================================================================
-PROFIT_PLAYER_DATA_QUERY = """
-query ProfitPlayerData($slug: String!, $n: Int!) {
-  anyPlayer(slug: $slug) {
-    slug
-    displayName
-    lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
-    lastTenAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
-    lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
-    anyFutureGames(first: 1) {
-      nodes {
-        date
-      }
-    }
-    tokenPrices(rarity: limited, last: $n) {
+TRANSACTIONS_QUERY = """
+query RecentTransactionsQuery($p: String!, $n: Int!, $cursor: String) {
+  anyPlayer(slug: $p) {
+    tokenPrices(rarity: limited, last: $n, before: $cursor) {
       nodes {
         date
         deal { __typename ... on TokenOffer { type } }
         card { inSeasonEligible }
         amounts { eurCents wei usdCents gbpCents lamport }
       }
+      pageInfo { hasPreviousPage startCursor }
     }
   }
 }
@@ -420,11 +435,98 @@ def _is_countable_transaction(node):
     return bool(deal.get('type')) or deal.get('__typename') in ('TokenAuction', 'TokenPrimaryOffer')
 
 
-def get_player_snapshot(player_slug, is_in_season, league_slug, eth_rate):
-    """Un'unica chiamata: medie voto, prossima partita, ultime N transazioni.
-    Le transazioni seguono la STESSA separazione di get_current_minimum:
-    MLS/K-League solo il tipo della riga, altri campionati mescolati."""
-    data = graphql_query(PROFIT_PLAYER_DATA_QUERY, {"slug": player_slug, "n": TRANSACTIONS_SAMPLE_SIZE})
+def fetch_transaction_nodes_window(player_slug):
+    """Pagina le transazioni finche' il nodo piu' vecchio della pagina esce dalla
+    finestra TRANSACTIONS_WINDOW_DAYS, o finisce le pagine/il limite di sicurezza."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_DAYS)
+    all_nodes = []
+    cursor = None
+    for _ in range(TRANSACTIONS_MAX_PAGES):
+        data = graphql_query(TRANSACTIONS_QUERY, {"p": player_slug, "n": TRANSACTIONS_PAGE_SIZE, "cursor": cursor})
+        if data.get('errors'):
+            log(f"[transazioni {TRANSACTIONS_WINDOW_DAYS}gg] errore paginazione per {player_slug}: {data['errors']}")
+            break
+        conn = ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        page_info = conn.get('pageInfo') or {}
+        oldest_date_str = nodes[-1].get('date') if nodes else None
+        if not nodes:
+            break
+        try:
+            oldest_dt = datetime.datetime.fromisoformat((oldest_date_str or '').replace('Z', '+00:00'))
+            if oldest_dt < cutoff:
+                break
+        except (ValueError, AttributeError):
+            pass
+        if not page_info.get('hasPreviousPage'):
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            break
+    return all_nodes, cutoff
+
+
+def get_recent_transaction_prices(player_slug, is_in_season, league_slug, eth_rate):
+    """Prezzi (EUR) delle transazioni reali negli ultimi TRANSACTIONS_WINDOW_DAYS
+    giorni. MLS/K-League: solo lo stesso tipo (in_season/classic) della riga;
+    altri campionati: mescolati (stesso criterio del minimo attuale)."""
+    nodes, cutoff = fetch_transaction_nodes_window(player_slug)
+    excluded = is_excluded_league(league_slug)
+    prices = []
+    for node in nodes:
+        date_str = node.get('date') or ''
+        try:
+            dt = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            continue
+        if dt < cutoff:
+            continue
+        if excluded:
+            card = node.get('card') or {}
+            if bool(card.get('inSeasonEligible')) != is_in_season:
+                continue
+        if not _is_countable_transaction(node):
+            continue
+        price = eur_price_from_amounts(node.get('amounts'), eth_rate)
+        if price is not None:
+            prices.append(price)
+    return prices
+
+
+# =====================================================================================
+# QUERY: medie voto (L5/L10/L40), punteggio ULTIMA partita giocata, prossima partita
+# =====================================================================================
+PROFIT_PLAYER_DATA_QUERY = """
+query ProfitPlayerData($slug: String!) {
+  anyPlayer(slug: $slug) {
+    slug
+    displayName
+    lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
+    lastTenAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+    lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
+    anyFutureGames(first: 1) {
+      nodes {
+        date
+      }
+    }
+    allPlayerGameScores(first: 1) {
+      nodes {
+        score
+        scoreStatus
+      }
+    }
+  }
+}
+"""
+
+
+def get_player_snapshot(player_slug):
+    """Medie voto, prossima partita, punteggio dell'ULTIMA partita giocata (peso
+    maggiore secondo l'esperienza utente -- un 70+ nell'ultima gara spinge il
+    prezzo piu' in alto di un L5 alto ma con l'ultima gara sottotono)."""
+    data = graphql_query(PROFIT_PLAYER_DATA_QUERY, {"slug": player_slug})
     if data.get('errors'):
         log(f"[snapshot] errore GraphQL per {player_slug}: {data['errors']}")
         return None
@@ -439,26 +541,15 @@ def get_player_snapshot(player_slug, is_in_season, league_slug, eth_rate):
     future_nodes = ((player.get('anyFutureGames') or {}).get('nodes')) or []
     next_game_date_str = future_nodes[0].get('date') if future_nodes else None
 
-    excluded = is_excluded_league(league_slug)
-    tx_nodes = ((player.get('tokenPrices') or {}).get('nodes')) or []
-    tx_prices = []
-    for node in tx_nodes:
-        if excluded:
-            card = node.get('card') or {}
-            if bool(card.get('inSeasonEligible')) != is_in_season:
-                continue
-        if not _is_countable_transaction(node):
-            continue
-        price = eur_price_from_amounts(node.get('amounts'), eth_rate)
-        if price is not None:
-            tx_prices.append(price)
+    last_game_nodes = ((player.get('allPlayerGameScores') or {}).get('nodes')) or []
+    ultima_partita_score = last_game_nodes[0].get('score') if last_game_nodes else None
 
     return {
         'l5': l5,
         'l10': l10,
         'l40': l40,
         'next_game_date_str': next_game_date_str,
-        'tx_prices': tx_prices,
+        'ultima_partita_score': ultima_partita_score,
     }
 
 
@@ -503,13 +594,18 @@ def _row_key(player_slug, is_in_season, league_slug):
 
 
 def _upsert_tracked_row(key, row):
+    """Ritorna il numero totale di carte tracciate DOPO l'inserimento (per lo
+    stop automatico a MAX_TRACKED_CARDS -- una entry NUOVA conta, un
+    aggiornamento di una gia' esistente no)."""
     with _tracked_lock:
+        is_new = key not in _tracked
         _tracked[key] = row
+        return len(_tracked), is_new
 
 
 CSV_FIELDNAMES = [
-    'player_slug', 'player_name', 'tipo_carta', 'l5', 'l10', 'l40',
-    'min_attuale_eur', 'media_transazioni_30gg_trimmed_eur', 'n_transazioni_usate',
+    'player_slug', 'player_name', 'tipo_carta', 'ultima_partita_score', 'l5', 'l10', 'l40',
+    'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
     'sconto_percent', 'prossima_partita_data', 'ore_alla_partita',
 ]
 
@@ -616,76 +712,6 @@ subscription OnTokenOfferUpdated {
 """
 
 
-def _process_one_card_event(player_slug, player_name, league_slug, is_in_season, eth_rate, stats, stats_lock):
-    try:
-        # Ricontrollo blacklist qui (potrebbe essere stata scritta da un altro
-        # thread worker nel frattempo, tra il check in on_message e l'esecuzione).
-        if is_player_blacklisted(player_slug):
-            with stats_lock:
-                stats['skipped_blacklist'] += 1
-            return
-
-        snapshot = get_player_snapshot(player_slug, is_in_season, league_slug, eth_rate)
-        if snapshot is None:
-            return
-
-        l5 = snapshot['l5']
-        if not l5:  # None o 0
-            blacklist_player(player_slug, 'l5_zero_o_assente', NOT_COVERED_O_FORMA_ZERO_DAYS)
-            with stats_lock:
-                stats['skipped_forma_zero'] += 1
-            log(f"[blacklist] {player_name} ({player_slug}): L5 assente/zero -- "
-                f"blacklistato {NOT_COVERED_O_FORMA_ZERO_DAYS:.0f}gg")
-            return
-
-        if not snapshot['next_game_date_str']:
-            blacklist_player(player_slug, 'nessuna_partita', NESSUNA_PARTITA_DAYS)
-            with stats_lock:
-                stats['skipped_nessuna_partita'] += 1
-            log(f"[blacklist] {player_name} ({player_slug}): nessuna prossima partita -- "
-                f"blacklistato {NESSUNA_PARTITA_DAYS:.0f}gg")
-            return
-
-        min_attuale = get_current_minimum(player_slug, is_in_season, league_slug, eth_rate)
-        avg_trimmed, n_usati, n_totali = trimmed_average(snapshot['tx_prices'])
-
-        sconto_percent = None
-        if avg_trimmed and avg_trimmed > 0 and min_attuale is not None:
-            sconto_percent = round((avg_trimmed - min_attuale) / avg_trimmed * 100, 2)
-
-        ore_alla_partita = hours_until(snapshot['next_game_date_str'])
-
-        excluded = is_excluded_league(league_slug)
-        tipo_carta = ('in season' if is_in_season else 'classic') if excluded else 'misto'
-
-        row = {
-            'player_slug': player_slug,
-            'player_name': player_name,
-            'tipo_carta': tipo_carta,
-            'l5': l5,
-            'l10': snapshot['l10'],
-            'l40': snapshot['l40'],
-            'min_attuale_eur': round(min_attuale, 2) if min_attuale is not None else None,
-            'media_transazioni_30gg_trimmed_eur': round(avg_trimmed, 2) if avg_trimmed is not None else None,
-            'n_transazioni_usate': f"{n_usati}/{n_totali}",
-            'sconto_percent': sconto_percent,
-            'prossima_partita_data': snapshot['next_game_date_str'],
-            'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
-        }
-        key = _row_key(player_slug, is_in_season, league_slug)
-        _upsert_tracked_row(key, row)
-
-        with stats_lock:
-            stats['tracked'] += 1
-            tracked_count = stats['tracked']
-        log(f"[tracciata] {player_name} ({tipo_carta}): L5={l5} L10={row['l10']} L40={row['l40']} "
-            f"min={row['min_attuale_eur']}EUR media30gg_trim={row['media_transazioni_30gg_trimmed_eur']}EUR "
-            f"sconto={sconto_percent}% prossima_partita={snapshot['next_game_date_str']} "
-            f"({row['ore_alla_partita']}h) -- totale tracciate finora: {tracked_count}")
-    except Exception as e:
-        log(f"[ERRORE in valutazione evento] {player_name}: eccezione non gestita, la salto: {e}")
-
-
 def run_listener(eth_rate):
     identifier = json.dumps({"channel": "GraphqlChannel"})
     subscription_payload = {
@@ -696,11 +722,93 @@ def run_listener(eth_rate):
     }
 
     stats = {"received": 0, "processed": 0, "tracked": 0, "skipped_forma_zero": 0,
-              "skipped_coverage": 0, "skipped_nessuna_partita": 0, "skipped_blacklist": 0}
+              "skipped_coverage": 0, "skipped_nessuna_partita": 0, "skipped_blacklist": 0,
+              "_closed_max_tracked": False}
     stats_lock = threading.Lock()
     seen_offer_status = set()
     event_executor = concurrent.futures.ThreadPoolExecutor(
         max_workers=EVENT_WORKER_THREADS, thread_name_prefix='evt')
+
+    def _process_one_card_event(player_slug, player_name, league_slug, is_in_season):
+        try:
+            # Ricontrollo blacklist (potrebbe essere stata scritta da un altro
+            # thread worker nel frattempo, tra il check in on_message e l'esecuzione).
+            if is_player_blacklisted(player_slug):
+                with stats_lock:
+                    stats['skipped_blacklist'] += 1
+                return
+
+            snapshot = get_player_snapshot(player_slug)
+            if snapshot is None:
+                return
+
+            l5 = snapshot['l5']
+            if not l5:  # None o 0
+                blacklist_player(player_slug, 'l5_zero_o_assente', NOT_COVERED_O_FORMA_ZERO_DAYS)
+                with stats_lock:
+                    stats['skipped_forma_zero'] += 1
+                log(f"[blacklist] {player_name} ({player_slug}): L5 assente/zero -- "
+                    f"blacklistato {NOT_COVERED_O_FORMA_ZERO_DAYS:.0f}gg")
+                return
+
+            if not snapshot['next_game_date_str']:
+                blacklist_player(player_slug, 'nessuna_partita', NESSUNA_PARTITA_DAYS)
+                with stats_lock:
+                    stats['skipped_nessuna_partita'] += 1
+                log(f"[blacklist] {player_name} ({player_slug}): nessuna prossima partita -- "
+                    f"blacklistato {NESSUNA_PARTITA_DAYS:.0f}gg")
+                return
+
+            min_attuale = get_current_minimum(player_slug, is_in_season, league_slug, eth_rate)
+            tx_prices = get_recent_transaction_prices(player_slug, is_in_season, league_slug, eth_rate)
+            avg_trimmed, n_usati, n_totali = trimmed_average(tx_prices)
+
+            sconto_percent = None
+            if avg_trimmed and avg_trimmed > 0 and min_attuale is not None:
+                sconto_percent = round((avg_trimmed - min_attuale) / avg_trimmed * 100, 2)
+
+            ore_alla_partita = hours_until(snapshot['next_game_date_str'])
+
+            excluded = is_excluded_league(league_slug)
+            tipo_carta = ('in season' if is_in_season else 'classic') if excluded else 'misto'
+
+            row = {
+                'player_slug': player_slug,
+                'player_name': player_name,
+                'tipo_carta': tipo_carta,
+                'ultima_partita_score': snapshot['ultima_partita_score'],
+                'l5': l5,
+                'l10': snapshot['l10'],
+                'l40': snapshot['l40'],
+                'min_attuale_eur': round(min_attuale, 2) if min_attuale is not None else None,
+                'media_transazioni_7gg_trimmed_eur': round(avg_trimmed, 2) if avg_trimmed is not None else None,
+                'n_transazioni_usate': f"{n_usati}/{n_totali}",
+                'sconto_percent': sconto_percent,
+                'prossima_partita_data': snapshot['next_game_date_str'],
+                'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
+            }
+            key = _row_key(player_slug, is_in_season, league_slug)
+            total_tracked, is_new = _upsert_tracked_row(key, row)
+
+            with stats_lock:
+                if is_new:
+                    stats['tracked'] += 1
+                tracked_count = stats['tracked']
+                raggiunto_max = total_tracked >= MAX_TRACKED_CARDS and not stats['_closed_max_tracked']
+                if raggiunto_max:
+                    stats['_closed_max_tracked'] = True
+
+            log(f"[tracciata] {player_name} ({tipo_carta}): ultima_partita={row['ultima_partita_score']} "
+                f"L5={l5} L10={row['l10']} L40={row['l40']} "
+                f"min={row['min_attuale_eur']}EUR media7gg_trim={row['media_transazioni_7gg_trimmed_eur']}EUR "
+                f"sconto={sconto_percent}% prossima_partita={snapshot['next_game_date_str']} "
+                f"({row['ore_alla_partita']}h) -- totale tracciate finora: {tracked_count}/{MAX_TRACKED_CARDS}")
+
+            if raggiunto_max:
+                log(f"STOP: raggiunte {total_tracked}/{MAX_TRACKED_CARDS} carte tracciate, chiudo la connessione")
+                ws.close()
+        except Exception as e:
+            log(f"[ERRORE in valutazione evento] {player_name}: eccezione non gestita, la salto: {e}")
 
     def on_open(ws):
         log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
@@ -796,7 +904,7 @@ def run_listener(eth_rate):
 
                 stats["processed"] += 1
                 event_executor.submit(_process_one_card_event, player_slug, player_name,
-                                       league_slug, is_in_season, eth_rate, stats, stats_lock)
+                                       league_slug, is_in_season)
         except Exception as e:
             log(f"[ERRORE in on_message] eccezione non gestita, la salto e continuo ad ascoltare: {e}")
 
@@ -805,7 +913,7 @@ def run_listener(eth_rate):
 
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). Eventi ricevuti: {stats['received']}, "
-            f"carte elaborate: {stats['processed']}, tracciate: {stats['tracked']}, "
+            f"carte elaborate: {stats['processed']}, tracciate: {stats['tracked']}/{MAX_TRACKED_CARDS}, "
             f"scartate per blacklist: {stats['skipped_blacklist']}, "
             f"scartate per forma zero/L5 assente: {stats['skipped_forma_zero']}, "
             f"scartate per non-copertura: {stats['skipped_coverage']}, "
@@ -833,8 +941,8 @@ def run_listener(eth_rate):
 
 def main():
     log(f"Avvio Bot Profit. LISTEN_SECONDS={LISTEN_SECONDS} COMMIT_CHUNK_SECONDS={COMMIT_CHUNK_SECONDS} "
-        f"CHECK_CLASSIC={CHECK_CLASSIC} TRANSACTIONS_SAMPLE_SIZE={TRANSACTIONS_SAMPLE_SIZE} "
-        f"TOP_N_OUTPUT={TOP_N_OUTPUT}")
+        f"CHECK_CLASSIC={CHECK_CLASSIC} TRANSACTIONS_WINDOW_DAYS={TRANSACTIONS_WINDOW_DAYS} "
+        f"TOP_N_OUTPUT={TOP_N_OUTPUT} MAX_TRACKED_CARDS={MAX_TRACKED_CARDS}")
 
     if not COOKIES or not CSRF_TOKEN:
         log("ERRORE: SORARE_COOKIE/SORARE_CSRF mancanti, impossibile continuare.")
