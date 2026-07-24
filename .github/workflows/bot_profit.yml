@@ -11,7 +11,7 @@ on:
         required: false
         default: "300"
       check_classic:
-        description: "Traccia anche gli annunci CLASSIC oltre a in season"
+        description: "Traccia anche gli annunci CLASSIC oltre a in season (il bot produce comunque sempre 3 file: combinato, solo in season, solo classic)"
         required: false
         default: "si"
       transactions_window_days:
@@ -68,16 +68,17 @@ jobs:
           MIN_TRANSACTIONS_FOR_RANKING: ${{ github.event.inputs.min_transactions_for_ranking || '15' }}
           MIN_PRICE_EUR_THRESHOLD: ${{ github.event.inputs.min_price_eur_threshold || '1.0' }}
         run: python bot_profit.py
-      - name: Commit CSV + blacklist dedicata (fallback, se il commit periodico non ha gia' salvato tutto)
+      - name: Commit CSV (x3) + blacklist dedicata (fallback, se il commit periodico non ha gia' salvato tutto)
         if: always()
         run: |
-          if [ -z "$(git status --porcelain -- bot_profit/profit_tracking.csv sorare_lista_nera_profit.txt)" ]; then
+          FILES="bot_profit/profit_tracking.csv bot_profit/profit_tracking_in_season.csv bot_profit/profit_tracking_classic.csv sorare_lista_nera_profit.txt"
+          if [ -z "$(git status --porcelain -- $FILES)" ]; then
             echo "Nessuna modifica, niente da committare."
           else
             git config user.name "bot-profit"
             git config user.email "bot-profit@users.noreply.github.com"
-            git add bot_profit/profit_tracking.csv sorare_lista_nera_profit.txt
-            git commit -m "Bot Profit: commit finale dati tracciati + blacklist"
+            git add $FILES
+            git commit -m "Bot Profit: commit finale dati tracciati (3 file) + blacklist"
             git pull --rebase --autostash origin main
             git push
           fi
