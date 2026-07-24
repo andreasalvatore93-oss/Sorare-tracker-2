@@ -34,11 +34,12 @@ crescita" -- richiesta esplicita utente 24/07):
 Nessuna decisione di acquisto/offerta, nessun punteggio composito calcolato
 ancora (i pesi relativi vanno concordati prima di tradurli in un unico score).
 
-Output: CSV in bot_profit/, che ora e' una CLASSIFICA PERSISTENTE che si
-aggiorna nel tempo tra una run e l'altra (non piu' uno snapshot che riparte
-vuoto ad ogni avvio) -- ad ogni avvio il CSV precedente viene ricaricato come
-stato di partenza, poi aggiornato con le carte incontrate in questa run.
-Riscritto ad ogni commit periodico (default 5 minuti) con SOLO le prime 50
+Output: 3 CSV in bot_profit/, ognuno una CLASSIFICA PERSISTENTE che si aggiorna
+nel tempo (ricaricata ad ogni avvio, non riparte mai vuota):
+  - profit_tracking.csv           -> tutte le carte (comportamento di sempre)
+  - profit_tracking_in_season.csv -> SOLO carte in season
+  - profit_tracking_classic.csv   -> SOLO carte classic
+Riscritti ad ogni commit periodico (default 5 minuti) con SOLO le prime 50
 carte per potenziale_score decrescente. Il bot si ferma automaticamente anche
 quando raggiunge MAX_TRACKED_CARDS (default 500) di carte NUOVE, oltre che a
 fine LISTEN_SECONDS.
@@ -131,6 +132,13 @@ MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '1.0')
 
 OUTPUT_DIR = 'bot_profit'
 OUTPUT_CSV_PATH = os.path.join(OUTPUT_DIR, 'profit_tracking.csv')
+# FIX 25/07 (richiesta esplicita utente): oltre al file combinato di sempre, due
+# file smistati -- SOLO in season e SOLO classic. Per i campionati MLS/K-League
+# lo smistamento e' gia' ovvio (tipo_carta = 'in season'/'classic'). Per gli
+# altri campionati (tipo_carta = 'misto') si usa il tipo dell'ULTIMO evento che
+# ha aggiornato quella riga (colonna interna 'ultimo_tipo_evento').
+OUTPUT_CSV_PATH_IN_SEASON = os.path.join(OUTPUT_DIR, 'profit_tracking_in_season.csv')
+OUTPUT_CSV_PATH_CLASSIC = os.path.join(OUTPUT_DIR, 'profit_tracking_classic.csv')
 
 EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '2'))
 
@@ -698,7 +706,7 @@ CSV_FIELDNAMES = [
     'squadra', 'prossimo_avversario',
     'ultima_partita_score', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
-    'sconto_percent', 'prossima_partita_data', 'ore_alla_partita',
+    'sconto_percent', 'prossima_partita_data', 'ore_alla_partita', 'ultimo_tipo_evento',
 ]
 
 
@@ -757,14 +765,36 @@ def load_previous_tracked():
                     'sconto_percent': _parse_float_or_none(row.get('sconto_percent')),
                     'prossima_partita_data': row.get('prossima_partita_data') or None,
                     'ore_alla_partita': _parse_float_or_none(row.get('ore_alla_partita')),
+                    'ultimo_tipo_evento': row.get('ultimo_tipo_evento') or None,
                 }
                 caricate += 1
     log(f"[classifica persistente] caricate {caricate} righe dal CSV precedente come stato di partenza")
 
 
+def _write_ranked_csv(rows_liquidi, path, label):
+    """Ordina per potenziale_score decrescente, taglia a TOP_N_OUTPUT e scrive
+    su disco. Fattorizzata per essere riusata sui 3 file (combinato, solo in
+    season, solo classic)."""
+    rows_sorted = sorted(
+        rows_liquidi,
+        key=lambda r: (r['potenziale_score'] if r['potenziale_score'] is not None else -999),
+        reverse=True,
+    )[:TOP_N_OUTPUT]
+    with open(path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
+        writer.writeheader()
+        for r in rows_sorted:
+            writer.writerow(r)
+    log(f"[csv] {label}: scritte {len(rows_sorted)}/{len(rows_liquidi)} carte "
+        f"(top {TOP_N_OUTPUT} per potenziale_score) in {path}")
+    return len(rows_sorted)
+
+
 def write_csv_snapshot():
-    """Riscrive il CSV con SOLO le prime TOP_N_OUTPUT carte tracciate finora,
-    ordinate per minimo attuale decrescente (la piu' costosa e' sempre la prima)."""
+    """Scrive 3 file: quello combinato di sempre (tutte le carte), e due
+    smistati -- SOLO in season e SOLO classic. Per MLS/K-League lo smistamento
+    usa tipo_carta (gia' distinto); per gli altri campionati (tipo_carta=misto)
+    usa il tipo dell'ULTIMO evento che ha aggiornato la riga."""
     with _tracked_lock:
         rows = list(_tracked.values())
     if not os.path.exists(OUTPUT_DIR):
@@ -789,20 +819,23 @@ def write_csv_snapshot():
     rows_liquidi = [r for r in rows_con_storico if _n_totali(r) >= MIN_TRANSACTIONS_FOR_RANKING]
     esclusi_poco_liquidi = len(rows_con_storico) - len(rows_liquidi)
 
-    rows_sorted = sorted(
-        rows_liquidi,
-        key=lambda r: (r['potenziale_score'] if r['potenziale_score'] is not None else -999),
-        reverse=True,
-    )[:TOP_N_OUTPUT]
-    with open(OUTPUT_CSV_PATH, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
-        writer.writeheader()
-        for r in rows_sorted:
-            writer.writerow(r)
-    log(f"[csv] scritte {len(rows_sorted)}/{len(rows)} carte (top {TOP_N_OUTPUT} per potenziale_score, "
-        f"{esclusi_senza_storico} escluse per assenza di storico, "
-        f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni) "
-        f"in {OUTPUT_CSV_PATH}")
+    def _is_in_season_row(r):
+        if r['tipo_carta'] == 'in season':
+            return True
+        if r['tipo_carta'] == 'classic':
+            return False
+        return r.get('ultimo_tipo_evento') == 'in_season'  # tipo_carta == 'misto'
+
+    rows_in_season = [r for r in rows_liquidi if _is_in_season_row(r)]
+    rows_classic = [r for r in rows_liquidi if not _is_in_season_row(r)]
+
+    n_combinato = _write_ranked_csv(rows_liquidi, OUTPUT_CSV_PATH, 'combinato')
+    _write_ranked_csv(rows_in_season, OUTPUT_CSV_PATH_IN_SEASON, 'solo in season')
+    _write_ranked_csv(rows_classic, OUTPUT_CSV_PATH_CLASSIC, 'solo classic')
+
+    log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
+        f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni "
+        f"({n_combinato} nel file combinato)")
 
 
 # =====================================================================================
@@ -814,7 +847,7 @@ _stop_periodic_commit = threading.Event()
 def _commit_output_se_serve():
     try:
         write_csv_snapshot()
-        paths_da_committare = [OUTPUT_CSV_PATH]
+        paths_da_committare = [OUTPUT_CSV_PATH, OUTPUT_CSV_PATH_IN_SEASON, OUTPUT_CSV_PATH_CLASSIC]
         if os.path.exists(LISTA_NERA_PROFIT_PATH):
             paths_da_committare.append(LISTA_NERA_PROFIT_PATH)
         status = subprocess.run(
@@ -978,6 +1011,7 @@ def run_listener(eth_rate):
                 'sconto_percent': sconto_percent,
                 'prossima_partita_data': snapshot['next_game_date_str'],
                 'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
+                'ultimo_tipo_evento': 'in_season' if is_in_season else 'classic',
             }
             key = _row_key(player_slug, is_in_season, league_slug)
             total_tracked, is_new = _upsert_tracked_row(key, row)
@@ -1099,6 +1133,7 @@ def run_listener(eth_rate):
                 is_in_season = bool(card.get('inSeasonEligible'))
                 if not is_in_season and not CHECK_CLASSIC:
                     continue
+
                 league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
 
                 stats["processed"] += 1
@@ -1141,7 +1176,8 @@ def run_listener(eth_rate):
 
 def main():
     log(f"Avvio Bot Profit. LISTEN_SECONDS={LISTEN_SECONDS} COMMIT_CHUNK_SECONDS={COMMIT_CHUNK_SECONDS} "
-        f"CHECK_CLASSIC={CHECK_CLASSIC} TRANSACTIONS_WINDOW_DAYS={TRANSACTIONS_WINDOW_DAYS} "
+        f"CHECK_CLASSIC={CHECK_CLASSIC} "
+        f"TRANSACTIONS_WINDOW_DAYS={TRANSACTIONS_WINDOW_DAYS} "
         f"TOP_N_OUTPUT={TOP_N_OUTPUT} MAX_TRACKED_CARDS={MAX_TRACKED_CARDS} "
         f"MIN_TRANSACTIONS_FOR_RANKING={MIN_TRANSACTIONS_FOR_RANKING} "
         f"MIN_PRICE_EUR_THRESHOLD={MIN_PRICE_EUR_THRESHOLD}")
