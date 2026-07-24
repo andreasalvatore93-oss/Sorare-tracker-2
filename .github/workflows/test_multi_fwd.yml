@@ -13,7 +13,19 @@ concurrency:
 jobs:
   predict:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        player_slug:
+          - prince-osei-owusu
+          - anders-dreyer
+          - zavier-gozo
+          - ahoueke-denkey
+          - heung-min-son
+          - jesus-ferreira
+          - kristoffer-velde
 
     steps:
       - uses: actions/checkout@v4
@@ -26,10 +38,11 @@ jobs:
 
       - run: pip install requests curl_cffi
 
-      - name: Run multi-player prediction prototype
+      - name: Run single-player prediction (job matrix, budget di complessita' API fresco per ognuno)
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
         run: python test_multi_fwd.py
 
@@ -43,12 +56,12 @@ jobs:
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Test Multi Attaccanti: nuova predizione"
+          git commit -m "Test Multi Attaccanti: predizione ${{ matrix.player_slug }}"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
-            if [ $attempt -ge 5 ]; then
-              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+            if [ $attempt -ge 8 ]; then
+              echo "Impossibile salvare dopo 8 tentativi, abbandono."
               exit 1
             fi
             echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
