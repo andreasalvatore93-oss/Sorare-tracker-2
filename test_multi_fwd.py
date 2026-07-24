@@ -55,7 +55,7 @@ HALF_LIFE_GAMES = 12.0  # calibrato su Owusu (24/07): stessi parametri fissi per
 RANGE_MULTIPLIER = 1.4
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.70  # NUOVO: sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente)
-SKIP_GRANULAR_DETAIL = True  # NUOVO (24/07): salta la query PlayerGameScoreDetail per ogni partita, che genera la maggior parte delle chiamate GraphQL per giocatore (~15 su 16) e satura il budget di complessita' cumulativo dell'API dopo il primo giocatore. Con questo flag attivo, i fattori granulari (falli/duelli/passaggio/ecc.) restano neutri (1.0) per TUTTI i giocatori in questo test — si usa solo score + contesto base (casa/trasferta, ranking avversario, trend). La formula completa con tutti i fattori resta in test_owusu.py, non toccata.
+SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
 OUTPUT_DIR = 'test_multi_fwd'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
