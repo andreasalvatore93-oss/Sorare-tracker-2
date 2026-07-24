@@ -4,21 +4,24 @@ punta ne' offre: si limita a tracciare, per ogni carta incontrata (limited, in
 season + classic), i dati necessari a stimare il "potenziale di crescita di
 valore" verso la prossima partita del giocatore.
 
-Per ogni carta valida (esclude solo: coverageStatus=NOT_COVERED e forma-zero,
-cioe' media punti 0 nelle ultime 10 e/o nelle ultime 40 giocate) registra:
-  - L5 / L10 / L40 (medie voto SO5)
-  - media transazioni ultime 30 (esclusi il valore piu' basso e piu' alto, per
-    evitare distorsioni da outlier)
-  - minimo attuale in vendita (stessa separazione season/classic di Bot Supremo:
-    MLS/K-League confrontano solo la stagione giusta, altri campionati misti)
-  - sconto% = (media_transazioni_30gg_trimmed - minimo_attuale) / media_transazioni_30gg_trimmed
-  - data/ore alla prossima partita
+REGOLA CHIAVE campionato MLS/K-League: in_season e classic sono due mercati
+completamente separati (due "giocatori diversi" ai fini del tracciamento) --
+due righe distinte, ognuna col proprio storico transazioni e proprio minimo,
+mai mescolati. Per TUTTI gli altri campionati: un giocatore = una riga sola,
+in_season+classic mescolati (stesso identico criterio di Bot Supremo).
 
-Nessuna decisione di acquisto/offerta. Nessuna blacklist. Output: un CSV in
-bot_profit/, riscritto ad ogni commit periodico (default 2 minuti) con TUTTE
-le carte tracciate dall'inizio della run, ordinate per sconto% decrescente --
-cosi' interrompendo manualmente il workflow in qualsiasi momento il file
-contiene gia' l'intero tracciato fino a quel punto.
+Esclusioni (per alleggerire ogni analisi futura), con blacklist dedicata a
+decadenza ISO (sorare_lista_nera_profit.txt), controllata PRIMA di ogni query
+cosi' le carte gia' note vengono saltate a costo zero:
+  - coverageStatus=NOT_COVERED -> blacklist 30 giorni
+  - L5 = 0 (o non disponibile)  -> blacklist 30 giorni
+  - prossima partita = None     -> blacklist 3 giorni (transitorio, il
+                                    calendario puo' aggiornarsi presto)
+
+Nessuna decisione di acquisto/offerta. Output: CSV in bot_profit/, riscritto
+ad ogni commit periodico (default 2 minuti) con SOLO le prime 50 carte
+tracciate, ordinate per minimo attuale decrescente (la carta piu' costosa e'
+sempre la prima).
 """
 import csv
 import datetime
@@ -65,8 +68,8 @@ SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
 
-# Stessi 2 campionati esclusi dal confronto season+classic misto (MLS, K-League),
-# identico a Bot Supremo -- J League ESCLUSA da questo filtro (logica normale).
+# Stessi 2 campionati "a due mercati separati" (MLS, K-League), identico a Bot
+# Supremo -- J League ESCLUSA da questo filtro (logica normale, mercato unico).
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
@@ -75,16 +78,77 @@ CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', '
 # per questo bot di test (richiesta esplicita utente).
 LISTEN_SECONDS = int(os.environ['LISTEN_SECONDS'])
 
-# Commit periodico dei dati tracciati -- default 2 minuti (richiesta esplicita utente),
-# diverso dal default 5 minuti di Bot Supremo.
+# Commit periodico dei dati tracciati -- default 2 minuti (richiesta esplicita utente).
 COMMIT_CHUNK_SECONDS = int(os.environ.get('COMMIT_CHUNK_SECONDS', '120'))
 
 TRANSACTIONS_SAMPLE_SIZE = int(os.environ.get('TRANSACTIONS_SAMPLE_SIZE', '30'))
+
+TOP_N_OUTPUT = int(os.environ.get('TOP_N_OUTPUT', '50'))
 
 OUTPUT_DIR = 'bot_profit'
 OUTPUT_CSV_PATH = os.path.join(OUTPUT_DIR, 'profit_tracking.csv')
 
 EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '4'))
+
+# =====================================================================================
+# BLACKLIST DEDICATA (decadenza ISO, formato identico a Bot Supremo: righe
+# "tipo,slug,scadenza_iso") -- alleggerisce le analisi future saltando a costo
+# zero le carte gia' note come non trattabili.
+# =====================================================================================
+LISTA_NERA_PROFIT_PATH = os.environ.get('LISTA_NERA_PROFIT_PATH', 'sorare_lista_nera_profit.txt')
+NOT_COVERED_O_FORMA_ZERO_DAYS = float(os.environ.get('NOT_COVERED_O_FORMA_ZERO_DAYS', '30'))
+NESSUNA_PARTITA_DAYS = float(os.environ.get('NESSUNA_PARTITA_DAYS', '3'))
+
+_lista_nera_lock = threading.Lock()
+_lista_nera_cache = None  # dict: slug -> datetime scadenza (solo voci ancora valide)
+
+
+def _lista_nera_leggi():
+    global _lista_nera_cache
+    with _lista_nera_lock:
+        if _lista_nera_cache is not None:
+            return _lista_nera_cache
+        cache = {}
+        if os.path.exists(LISTA_NERA_PROFIT_PATH):
+            with open(LISTA_NERA_PROFIT_PATH, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    parts = line.split(',')
+                    if len(parts) != 3:
+                        continue
+                    _tipo, slug, scadenza_iso = parts
+                    try:
+                        scadenza = datetime.datetime.fromisoformat(scadenza_iso)
+                    except ValueError:
+                        continue
+                    esistente = cache.get(slug)
+                    if esistente is None or scadenza > esistente:
+                        cache[slug] = scadenza
+        _lista_nera_cache = cache
+        return cache
+
+
+def is_player_blacklisted(player_slug):
+    cache = _lista_nera_leggi()
+    scadenza = cache.get(player_slug)
+    if scadenza is None:
+        return False
+    now = datetime.datetime.now(scadenza.tzinfo) if scadenza.tzinfo else datetime.datetime.now()
+    return now < scadenza
+
+
+def blacklist_player(player_slug, motivo, giorni):
+    global _lista_nera_cache
+    with _lista_nera_lock:
+        scadenza = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=giorni)
+        with open(LISTA_NERA_PROFIT_PATH, 'a', encoding='utf-8') as f:
+            f.write(f"{motivo},{player_slug},{scadenza.isoformat()}\n")
+        if _lista_nera_cache is not None:
+            esistente = _lista_nera_cache.get(player_slug)
+            if esistente is None or scadenza > esistente:
+                _lista_nera_cache[player_slug] = scadenza
 
 
 def log(message):
@@ -231,6 +295,7 @@ def graphql_query(query, variables=None, max_retries=3):
 
 
 def is_excluded_league(league_slug):
+    """MLS/K-League: in_season e classic sono due mercati separati."""
     return league_slug in EXCLUDED_LEAGUE_SLUGS
 
 
@@ -284,9 +349,11 @@ def fetch_all_live_offers(player_slug):
 
 
 def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
-    """Minimo attuale in vendita, stessa separazione season/classic di Bot Supremo:
-    MLS/K-League confrontano solo la stagione giusta, altri campionati mescolano
-    in_season+classic."""
+    """Minimo attuale in vendita.
+    - MLS/K-League: SOLO il tipo (in_season o classic) corrispondente alla carta
+      dell'evento -- i due mercati non si toccano mai.
+    - Tutti gli altri campionati: in_season+classic mescolati (stesso identico
+      criterio di Bot Supremo -- un giocatore, un solo mercato)."""
     nodes = fetch_all_live_offers(player_slug)
     excluded = is_excluded_league(league_slug)
     prices_in_season = []
@@ -313,7 +380,7 @@ def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
         else:
             prices_classic.append(price)
     if excluded:
-        candidates = prices_in_season if is_in_season else []
+        candidates = prices_in_season if is_in_season else prices_classic
     else:
         candidates = prices_in_season + prices_classic
     return min(candidates) if candidates else None
@@ -354,8 +421,9 @@ def _is_countable_transaction(node):
 
 
 def get_player_snapshot(player_slug, is_in_season, league_slug, eth_rate):
-    """Un'unica chiamata: medie voto, prossima partita, ultime N transazioni (per la
-    media trimmed). Ritorna None se la query fallisce."""
+    """Un'unica chiamata: medie voto, prossima partita, ultime N transazioni.
+    Le transazioni seguono la STESSA separazione di get_current_minimum:
+    MLS/K-League solo il tipo della riga, altri campionati mescolati."""
     data = graphql_query(PROFIT_PLAYER_DATA_QUERY, {"slug": player_slug, "n": TRANSACTIONS_SAMPLE_SIZE})
     if data.get('errors'):
         log(f"[snapshot] errore GraphQL per {player_slug}: {data['errors']}")
@@ -395,9 +463,8 @@ def get_player_snapshot(player_slug, is_in_season, league_slug, eth_rate):
 
 
 def trimmed_average(prices):
-    """Media delle transazioni escludendo il valore piu' basso e piu' alto (protezione
-    da outlier). Se ci sono meno di 3 valori, niente trim (non abbastanza dati),
-    media semplice su quello che c'e'. Ritorna (media, n_usati_dopo_trim, n_totali)."""
+    """Media transazioni escludendo il valore piu' basso e piu' alto. Se ci sono
+    meno di 3 valori, niente trim, media semplice su quello che c'e'."""
     n_totali = len(prices)
     if n_totali == 0:
         return None, 0, 0
@@ -421,42 +488,50 @@ def hours_until(date_str):
 
 
 # =====================================================================================
-# STATO CONDIVISO (thread-safe) -- una riga per giocatore, sempre l'ultimo snapshot
+# STATO CONDIVISO (thread-safe)
+# Chiave: MLS/K-League -> "slug::in_season" / "slug::classic" (due righe separate);
+#         altri campionati -> "slug" (una riga sola, mercato unico).
 # =====================================================================================
 _tracked_lock = threading.Lock()
-_tracked = {}  # player_slug -> dict di riga CSV
+_tracked = {}
 
 
-def _upsert_tracked_row(player_slug, player_name, row):
+def _row_key(player_slug, is_in_season, league_slug):
+    if is_excluded_league(league_slug):
+        return f"{player_slug}::{'in_season' if is_in_season else 'classic'}"
+    return player_slug
+
+
+def _upsert_tracked_row(key, row):
     with _tracked_lock:
-        _tracked[player_slug] = row
+        _tracked[key] = row
 
 
 CSV_FIELDNAMES = [
-    'player_slug', 'player_name', 'l5', 'l10', 'l40',
+    'player_slug', 'player_name', 'tipo_carta', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_30gg_trimmed_eur', 'n_transazioni_usate',
     'sconto_percent', 'prossima_partita_data', 'ore_alla_partita',
 ]
 
 
 def write_csv_snapshot():
-    """Riscrive il CSV completo con tutte le carte tracciate finora, ordinate per
-    sconto% decrescente (carta piu' sottostimata in cima)."""
+    """Riscrive il CSV con SOLO le prime TOP_N_OUTPUT carte tracciate finora,
+    ordinate per minimo attuale decrescente (la piu' costosa e' sempre la prima)."""
     with _tracked_lock:
         rows = list(_tracked.values())
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
     rows_sorted = sorted(
         rows,
-        key=lambda r: (r['sconto_percent'] if r['sconto_percent'] is not None else -999999),
+        key=lambda r: (r['min_attuale_eur'] if r['min_attuale_eur'] is not None else -1),
         reverse=True,
-    )
+    )[:TOP_N_OUTPUT]
     with open(OUTPUT_CSV_PATH, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
         writer.writeheader()
         for r in rows_sorted:
             writer.writerow(r)
-    log(f"[csv] scritto {len(rows_sorted)} carte tracciate in {OUTPUT_CSV_PATH}")
+    log(f"[csv] scritte {len(rows_sorted)}/{len(rows)} carte (top {TOP_N_OUTPUT} per minimo attuale) in {OUTPUT_CSV_PATH}")
 
 
 # =====================================================================================
@@ -468,8 +543,11 @@ _stop_periodic_commit = threading.Event()
 def _commit_output_se_serve():
     try:
         write_csv_snapshot()
+        paths_da_committare = [OUTPUT_CSV_PATH]
+        if os.path.exists(LISTA_NERA_PROFIT_PATH):
+            paths_da_committare.append(LISTA_NERA_PROFIT_PATH)
         status = subprocess.run(
-            ['git', 'status', '--porcelain', '--', OUTPUT_CSV_PATH],
+            ['git', 'status', '--porcelain', '--'] + paths_da_committare,
             capture_output=True, text=True, timeout=30
         )
         if not status.stdout.strip():
@@ -477,7 +555,7 @@ def _commit_output_se_serve():
         subprocess.run(['git', 'config', 'user.name', 'bot-profit'], timeout=30)
         subprocess.run(['git', 'config', 'user.email',
                          'bot-profit@users.noreply.github.com'], timeout=30)
-        subprocess.run(['git', 'add', OUTPUT_CSV_PATH], timeout=30)
+        subprocess.run(['git', 'add'] + paths_da_committare, timeout=30)
         commit = subprocess.run(
             ['git', 'commit', '-m', 'Bot Profit: commit periodico dati tracciati (run in corso)'],
             capture_output=True, text=True, timeout=30
@@ -540,15 +618,33 @@ subscription OnTokenOfferUpdated {
 
 def _process_one_card_event(player_slug, player_name, league_slug, is_in_season, eth_rate, stats, stats_lock):
     try:
+        # Ricontrollo blacklist qui (potrebbe essere stata scritta da un altro
+        # thread worker nel frattempo, tra il check in on_message e l'esecuzione).
+        if is_player_blacklisted(player_slug):
+            with stats_lock:
+                stats['skipped_blacklist'] += 1
+            return
+
         snapshot = get_player_snapshot(player_slug, is_in_season, league_slug, eth_rate)
         if snapshot is None:
             return
 
-        l5, l10, l40 = snapshot['l5'], snapshot['l10'], snapshot['l40']
-        if l10 == 0.0 or l40 == 0.0:
+        l5 = snapshot['l5']
+        if not l5:  # None o 0
+            blacklist_player(player_slug, 'l5_zero_o_assente', NOT_COVERED_O_FORMA_ZERO_DAYS)
             with stats_lock:
                 stats['skipped_forma_zero'] += 1
-            return  # "carta a forma 0" -- esclusa su richiesta esplicita
+            log(f"[blacklist] {player_name} ({player_slug}): L5 assente/zero -- "
+                f"blacklistato {NOT_COVERED_O_FORMA_ZERO_DAYS:.0f}gg")
+            return
+
+        if not snapshot['next_game_date_str']:
+            blacklist_player(player_slug, 'nessuna_partita', NESSUNA_PARTITA_DAYS)
+            with stats_lock:
+                stats['skipped_nessuna_partita'] += 1
+            log(f"[blacklist] {player_name} ({player_slug}): nessuna prossima partita -- "
+                f"blacklistato {NESSUNA_PARTITA_DAYS:.0f}gg")
+            return
 
         min_attuale = get_current_minimum(player_slug, is_in_season, league_slug, eth_rate)
         avg_trimmed, n_usati, n_totali = trimmed_average(snapshot['tx_prices'])
@@ -559,12 +655,16 @@ def _process_one_card_event(player_slug, player_name, league_slug, is_in_season,
 
         ore_alla_partita = hours_until(snapshot['next_game_date_str'])
 
+        excluded = is_excluded_league(league_slug)
+        tipo_carta = ('in season' if is_in_season else 'classic') if excluded else 'misto'
+
         row = {
             'player_slug': player_slug,
             'player_name': player_name,
+            'tipo_carta': tipo_carta,
             'l5': l5,
-            'l10': l10,
-            'l40': l40,
+            'l10': snapshot['l10'],
+            'l40': snapshot['l40'],
             'min_attuale_eur': round(min_attuale, 2) if min_attuale is not None else None,
             'media_transazioni_30gg_trimmed_eur': round(avg_trimmed, 2) if avg_trimmed is not None else None,
             'n_transazioni_usate': f"{n_usati}/{n_totali}",
@@ -572,12 +672,13 @@ def _process_one_card_event(player_slug, player_name, league_slug, is_in_season,
             'prossima_partita_data': snapshot['next_game_date_str'],
             'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
         }
-        _upsert_tracked_row(player_slug, player_name, row)
+        key = _row_key(player_slug, is_in_season, league_slug)
+        _upsert_tracked_row(key, row)
 
         with stats_lock:
             stats['tracked'] += 1
             tracked_count = stats['tracked']
-        log(f"[tracciata] {player_name} ({player_slug}): L5={l5} L10={l10} L40={l40} "
+        log(f"[tracciata] {player_name} ({tipo_carta}): L5={l5} L10={row['l10']} L40={row['l40']} "
             f"min={row['min_attuale_eur']}EUR media30gg_trim={row['media_transazioni_30gg_trimmed_eur']}EUR "
             f"sconto={sconto_percent}% prossima_partita={snapshot['next_game_date_str']} "
             f"({row['ore_alla_partita']}h) -- totale tracciate finora: {tracked_count}")
@@ -594,7 +695,8 @@ def run_listener(eth_rate):
         "action": "execute",
     }
 
-    stats = {"received": 0, "processed": 0, "tracked": 0, "skipped_forma_zero": 0, "skipped_coverage": 0}
+    stats = {"received": 0, "processed": 0, "tracked": 0, "skipped_forma_zero": 0,
+              "skipped_coverage": 0, "skipped_nessuna_partita": 0, "skipped_blacklist": 0}
     stats_lock = threading.Lock()
     seen_offer_status = set()
     event_executor = concurrent.futures.ThreadPoolExecutor(
@@ -667,14 +769,24 @@ def run_listener(eth_rate):
                 if card.get('sport') != 'FOOTBALL':
                     continue
                 if card.get('coverageStatus') == 'NOT_COVERED':
+                    player_tmp = card.get('anyPlayer') or {}
+                    slug_tmp = player_tmp.get('slug')
+                    if slug_tmp:
+                        blacklist_player(slug_tmp, 'not_covered', NOT_COVERED_O_FORMA_ZERO_DAYS)
                     with stats_lock:
                         stats['skipped_coverage'] += 1
-                    continue  # "carta non coperta da Sorare" -- esclusa su richiesta esplicita
+                    continue
 
                 player = card.get('anyPlayer') or {}
                 player_slug = player.get('slug')
                 player_name = player.get('displayName', player_slug)
                 if not player_slug:
+                    continue
+
+                # Check blacklist SUBITO -- zero query per carte gia' note.
+                if is_player_blacklisted(player_slug):
+                    with stats_lock:
+                        stats['skipped_blacklist'] += 1
                     continue
 
                 is_in_season = bool(card.get('inSeasonEligible'))
@@ -694,8 +806,10 @@ def run_listener(eth_rate):
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). Eventi ricevuti: {stats['received']}, "
             f"carte elaborate: {stats['processed']}, tracciate: {stats['tracked']}, "
-            f"scartate per forma zero: {stats['skipped_forma_zero']}, "
-            f"scartate per non-copertura: {stats['skipped_coverage']}")
+            f"scartate per blacklist: {stats['skipped_blacklist']}, "
+            f"scartate per forma zero/L5 assente: {stats['skipped_forma_zero']}, "
+            f"scartate per non-copertura: {stats['skipped_coverage']}, "
+            f"scartate per nessuna partita: {stats['skipped_nessuna_partita']}")
 
     ws = websocket.WebSocketApp(
         WS_URL,
@@ -719,7 +833,8 @@ def run_listener(eth_rate):
 
 def main():
     log(f"Avvio Bot Profit. LISTEN_SECONDS={LISTEN_SECONDS} COMMIT_CHUNK_SECONDS={COMMIT_CHUNK_SECONDS} "
-        f"CHECK_CLASSIC={CHECK_CLASSIC} TRANSACTIONS_SAMPLE_SIZE={TRANSACTIONS_SAMPLE_SIZE}")
+        f"CHECK_CLASSIC={CHECK_CLASSIC} TRANSACTIONS_SAMPLE_SIZE={TRANSACTIONS_SAMPLE_SIZE} "
+        f"TOP_N_OUTPUT={TOP_N_OUTPUT}")
 
     if not COOKIES or not CSRF_TOKEN:
         log("ERRORE: SORARE_COOKIE/SORARE_CSRF mancanti, impossibile continuare.")
@@ -737,8 +852,6 @@ def main():
     _stop_periodic_commit.set()
     commit_thread.join(timeout=10)
 
-    # Scrittura/commit finale, per non perdere l'ultimo pezzo tra l'ultimo commit
-    # periodico e la chiusura del listener.
     _commit_output_se_serve()
 
     log(f"Bot Profit terminato. Riepilogo: {stats}")
