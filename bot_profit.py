@@ -31,10 +31,14 @@ crescita" -- richiesta esplicita utente 24/07):
 Nessuna decisione di acquisto/offerta, nessun punteggio composito calcolato
 ancora (i pesi relativi vanno concordati prima di tradurli in un unico score).
 
-Output: CSV in bot_profit/, riscritto ad ogni commit periodico (default 2
-minuti) con SOLO le prime 50 carte tracciate, ordinate per minimo attuale
-decrescente. Il bot si ferma automaticamente anche quando raggiunge
-MAX_TRACKED_CARDS (default 500), oltre che a fine LISTEN_SECONDS.
+Output: CSV in bot_profit/, che ora e' una CLASSIFICA PERSISTENTE che si
+aggiorna nel tempo tra una run e l'altra (non piu' uno snapshot che riparte
+vuoto ad ogni avvio) -- ad ogni avvio il CSV precedente viene ricaricato come
+stato di partenza, poi aggiornato con le carte incontrate in questa run.
+Riscritto ad ogni commit periodico (default 5 minuti) con SOLO le prime 50
+carte per potenziale_score decrescente. Il bot si ferma automaticamente anche
+quando raggiunge MAX_TRACKED_CARDS (default 500) di carte NUOVE, oltre che a
+fine LISTEN_SECONDS.
 """
 import csv
 import datetime
@@ -587,6 +591,53 @@ def hours_until(date_str):
 
 
 # =====================================================================================
+# POTENZIALE SCORE (formula concordata 24/07) -- 4 fattori, nessun peso su
+# sconto%/n_transazioni oltre a quanto segue (restano comunque in colonna solo
+# per valutazione finale manuale):
+#   0.40 x peso_timing (prossimita' partita, curva a campana)
+#   0.25 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5)
+#   0.15 x media_generale ((L5+L10+L40)/3)/100
+#   0.20 x sconto_normalizzato (sconto% clampato [-30,100] / 100)
+# =====================================================================================
+TIMING_WEIGHT_BUCKETS = (
+    # (soglia_ore_esclusiva, peso) -- controllate in ordine, la prima che
+    # soddisfa ore < soglia vince.
+    (24, 0.1),
+    (48, 0.3),
+    (96, 1.0),
+    (200, 0.7),
+    (float('inf'), 0.4),
+)
+
+
+def timing_weight(ore_alla_partita):
+    if ore_alla_partita is None:
+        return 0.0
+    for soglia, peso in TIMING_WEIGHT_BUCKETS:
+        if ore_alla_partita < soglia:
+            return peso
+    return 0.4
+
+
+def _clamp(value, lo, hi):
+    return max(lo, min(hi, value))
+
+
+def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent, ore_alla_partita):
+    """Ritorna None se manca un ingrediente essenziale (timing sconosciuto --
+    non dovrebbe succedere, le carte senza prossima partita sono gia' in
+    blacklist prima di arrivare qui)."""
+    if ore_alla_partita is None:
+        return None
+    peso_timing = timing_weight(ore_alla_partita)
+    ultima = (ultima_partita_score or 0.0) / 100.0
+    media_generale = ((l5 or 0.0) + (l10 or 0.0) + (l40 or 0.0)) / 3.0 / 100.0
+    sconto_norm = _clamp(sconto_percent, -30.0, 100.0) / 100.0 if sconto_percent is not None else 0.0
+    score = (0.40 * peso_timing) + (0.25 * ultima) + (0.15 * media_generale) + (0.20 * sconto_norm)
+    return round(score, 4)
+
+
+# =====================================================================================
 # STATO CONDIVISO (thread-safe)
 # Chiave: MLS/K-League -> "slug::in_season" / "slug::classic" (due righe separate);
 #         altri campionati -> "slug" (una riga sola, mercato unico).
@@ -612,10 +663,69 @@ def _upsert_tracked_row(key, row):
 
 
 CSV_FIELDNAMES = [
-    'player_slug', 'player_name', 'tipo_carta', 'ultima_partita_score', 'l5', 'l10', 'l40',
+    'player_slug', 'player_name', 'tipo_carta', 'potenziale_score',
+    'ultima_partita_score', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
     'sconto_percent', 'prossima_partita_data', 'ore_alla_partita',
 ]
+
+
+def _key_from_csv_row(row):
+    """Ricostruisce la stessa chiave di _row_key partendo da una riga GIA' letta
+    dal CSV (dove non abbiamo piu' league_slug, solo l'etichetta tipo_carta gia'
+    scritta in precedenza)."""
+    tipo = row.get('tipo_carta')
+    if tipo == 'in season':
+        return f"{row['player_slug']}::in_season"
+    if tipo == 'classic':
+        return f"{row['player_slug']}::classic"
+    return row['player_slug']
+
+
+def _parse_float_or_none(value):
+    if value is None or value == '':
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def load_previous_tracked():
+    """FIX 24/07 (richiesta esplicita utente): il CSV non e' piu' uno snapshot
+    che riparte vuoto ad ogni run -- e' una CLASSIFICA che si aggiorna nel
+    tempo. Ad ogni avvio, se esiste gia' un profit_tracking.csv nel repo, lo
+    ricarica in _tracked come stato di partenza; le carte incontrate in questa
+    run aggiornano (upsert) le righe esistenti o ne aggiungono di nuove, senza
+    perdere quello che le run precedenti avevano gia' trovato."""
+    if not os.path.exists(OUTPUT_CSV_PATH):
+        log("[classifica persistente] nessun CSV precedente trovato, parto da zero")
+        return
+    caricate = 0
+    with open(OUTPUT_CSV_PATH, 'r', newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        with _tracked_lock:
+            for row in reader:
+                key = _key_from_csv_row(row)
+                _tracked[key] = {
+                    'player_slug': row.get('player_slug'),
+                    'player_name': row.get('player_name'),
+                    'tipo_carta': row.get('tipo_carta'),
+                    'potenziale_score': _parse_float_or_none(row.get('potenziale_score')),
+                    'ultima_partita_score': _parse_float_or_none(row.get('ultima_partita_score')),
+                    'l5': _parse_float_or_none(row.get('l5')),
+                    'l10': _parse_float_or_none(row.get('l10')),
+                    'l40': _parse_float_or_none(row.get('l40')),
+                    'min_attuale_eur': _parse_float_or_none(row.get('min_attuale_eur')),
+                    'media_transazioni_7gg_trimmed_eur': _parse_float_or_none(
+                        row.get('media_transazioni_7gg_trimmed_eur')),
+                    'n_transazioni_usate': row.get('n_transazioni_usate'),
+                    'sconto_percent': _parse_float_or_none(row.get('sconto_percent')),
+                    'prossima_partita_data': row.get('prossima_partita_data') or None,
+                    'ore_alla_partita': _parse_float_or_none(row.get('ore_alla_partita')),
+                }
+                caricate += 1
+    log(f"[classifica persistente] caricate {caricate} righe dal CSV precedente come stato di partenza")
 
 
 def write_csv_snapshot():
@@ -647,7 +757,7 @@ def write_csv_snapshot():
 
     rows_sorted = sorted(
         rows_liquidi,
-        key=lambda r: (r['min_attuale_eur'] if r['min_attuale_eur'] is not None else -1),
+        key=lambda r: (r['potenziale_score'] if r['potenziale_score'] is not None else -999),
         reverse=True,
     )[:TOP_N_OUTPUT]
     with open(OUTPUT_CSV_PATH, 'w', newline='', encoding='utf-8') as f:
@@ -655,7 +765,7 @@ def write_csv_snapshot():
         writer.writeheader()
         for r in rows_sorted:
             writer.writerow(r)
-    log(f"[csv] scritte {len(rows_sorted)}/{len(rows)} carte (top {TOP_N_OUTPUT} per minimo attuale, "
+    log(f"[csv] scritte {len(rows_sorted)}/{len(rows)} carte (top {TOP_N_OUTPUT} per potenziale_score, "
         f"{esclusi_senza_storico} escluse per assenza di storico, "
         f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni) "
         f"in {OUTPUT_CSV_PATH}")
@@ -800,6 +910,12 @@ def run_listener(eth_rate):
 
             ore_alla_partita = hours_until(snapshot['next_game_date_str'])
 
+            potenziale_score = compute_potenziale_score(
+                l5=l5, l10=snapshot['l10'], l40=snapshot['l40'],
+                ultima_partita_score=snapshot['ultima_partita_score'],
+                sconto_percent=sconto_percent, ore_alla_partita=ore_alla_partita,
+            )
+
             excluded = is_excluded_league(league_slug)
             tipo_carta = ('in season' if is_in_season else 'classic') if excluded else 'misto'
 
@@ -807,6 +923,7 @@ def run_listener(eth_rate):
                 'player_slug': player_slug,
                 'player_name': player_name,
                 'tipo_carta': tipo_carta,
+                'potenziale_score': potenziale_score,
                 'ultima_partita_score': snapshot['ultima_partita_score'],
                 'l5': l5,
                 'l10': snapshot['l10'],
@@ -825,18 +942,25 @@ def run_listener(eth_rate):
                 if is_new:
                     stats['tracked'] += 1
                 tracked_count = stats['tracked']
-                raggiunto_max = total_tracked >= MAX_TRACKED_CARDS and not stats['_closed_max_tracked']
+                # FIX 24/07: con la classifica persistente, il conteggio verso
+                # MAX_TRACKED_CARDS deve restare quello delle carte NUOVE
+                # trovate in QUESTA run (stats['tracked']), non la dimensione
+                # totale della classifica (total_tracked), che ora include
+                # anche le righe ricaricate dalle run precedenti.
+                raggiunto_max = tracked_count >= MAX_TRACKED_CARDS and not stats['_closed_max_tracked']
                 if raggiunto_max:
                     stats['_closed_max_tracked'] = True
 
-            log(f"[tracciata] {player_name} ({tipo_carta}): ultima_partita={row['ultima_partita_score']} "
+            log(f"[tracciata] {player_name} ({tipo_carta}): score={potenziale_score} "
+                f"ultima_partita={row['ultima_partita_score']} "
                 f"L5={l5} L10={row['l10']} L40={row['l40']} "
                 f"min={row['min_attuale_eur']}EUR media7gg_trim={row['media_transazioni_7gg_trimmed_eur']}EUR "
                 f"sconto={sconto_percent}% prossima_partita={snapshot['next_game_date_str']} "
                 f"({row['ore_alla_partita']}h) -- totale tracciate finora: {tracked_count}/{MAX_TRACKED_CARDS}")
 
             if raggiunto_max:
-                log(f"STOP: raggiunte {total_tracked}/{MAX_TRACKED_CARDS} carte tracciate, chiudo la connessione")
+                log(f"STOP: raggiunte {tracked_count}/{MAX_TRACKED_CARDS} carte NUOVE tracciate in questa run "
+                    f"(classifica totale: {total_tracked} righe), chiudo la connessione")
                 ws.close()
         except Exception as e:
             log(f"[ERRORE in valutazione evento] {player_name}: eccezione non gestita, la salto: {e}")
@@ -982,6 +1106,8 @@ def main():
 
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
+
+    load_previous_tracked()
 
     commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
     commit_thread.start()
