@@ -482,9 +482,36 @@ def build_prediction():
         log("[FASE 1/4] ATTENZIONE: nessuna partita futura trovata (anyFutureGames vuoto). "
             "Si procedera' comunque con la storia, ma la predizione finale fallira' "
             "in assenza di un target su cui applicare i fattori.")
+        target_competition = None
+    else:
+        target_game = future_games[0]['playerGameScore']['anyGame']
+        target_competition = (target_game.get('competition') or {}).get('slug')
+        log(f"[FASE 1/4] Competizione della partita target: {target_competition or 'N/D'}")
 
     cache, cache_file = load_cache()
     log(f"[FASE 2/4] Cache dettagli caricata da {cache_file} ({len(cache)} voci gia' presenti).")
+
+    # Filtro TIPO COMPETIZIONE: se conosciamo la competizione della partita target,
+    # teniamo prima solo le partite storiche della STESSA competizione (le altre
+    # rappresentano un contesto diverso — MLS vs Leagues Cup vs nazionale hanno
+    # dinamiche di punteggio strutturalmente diverse). Se questo filtro lascia
+    # troppo poche partite (meno di min_history), si fa fallback su tutte le
+    # competizioni per non restare senza dati.
+    MIN_SAME_COMPETITION = 6
+    if target_competition:
+        same_comp_games = [
+            n for n in past_games
+            if (n.get('anyGame', {}).get('competition') or {}).get('slug') == target_competition
+        ]
+        if len(same_comp_games) >= MIN_SAME_COMPETITION:
+            log(f"[FASE 2/4] Filtro competizione applicato: {len(same_comp_games)} partite "
+                f"'{target_competition}' su {len(past_games)} totali (>= soglia minima "
+                f"{MIN_SAME_COMPETITION}, si procede filtrate).")
+            past_games = same_comp_games
+        else:
+            log(f"[FASE 2/4] Filtro competizione NON applicato: solo {len(same_comp_games)} "
+                f"partite '{target_competition}' trovate (< soglia minima {MIN_SAME_COMPETITION}) "
+                f"— si usa lo storico completo multi-competizione come fallback.")
 
     # Filtra le partite con punteggio "utilizzabile" (esclude DID_NOT_PLAY E le
     # partite giocate sotto la soglia minima di minutaggio, trattate allo stesso
@@ -677,6 +704,7 @@ def build_prediction():
         'total_considered': total_considered,
         'dnp_excluded': dnp_count,
         'low_minutes_excluded': low_minutes_count,
+        'target_competition': target_competition,
         'scores_used': scores,
         'weights_used': weights,
         'media_pesata': media_pesata,
@@ -716,6 +744,8 @@ def format_output(result):
     lines.append(f"Partite considerate: {result['total_considered']}")
     lines.append(f"Escluse (DID_NOT_PLAY): {result['dnp_excluded']}")
     lines.append(f"Escluse (minutaggio < {MIN_MINUTES_PLAYED}', subentri): {result['low_minutes_excluded']}")
+    lines.append(f"Competizione partita target: {result['target_competition'] or 'N/D'} "
+                 f"(finestra filtrata per stessa competizione quando ci sono abbastanza dati)")
     lines.append(f"Partite usate nella media (dalla piu' vecchia alla piu' recente):")
     for node, s, w in zip(result['usable_nodes'], result['scores_used'], result['weights_used']):
         g = node['anyGame']
