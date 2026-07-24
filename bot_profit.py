@@ -119,7 +119,7 @@ MAX_TRACKED_CARDS = int(os.environ.get('MAX_TRACKED_CARDS', '500'))
 OUTPUT_DIR = 'bot_profit'
 OUTPUT_CSV_PATH = os.path.join(OUTPUT_DIR, 'profit_tracking.csv')
 
-EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '4'))
+EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '2'))
 
 # =====================================================================================
 # BLACKLIST DEDICATA (decadenza ISO, formato identico a Bot Supremo: righe
@@ -271,9 +271,9 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
-GRAPHQL_MIN_INTERVAL_SECONDS_FAST = 0.05
-GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = 0.35
-GRAPHQL_429_COOLDOWN_SECONDS = 30.0
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.15'))
+GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.6'))
+GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '45.0'))
 _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
@@ -317,7 +317,7 @@ def graphql_query(query, variables=None, max_retries=3):
         r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             _graphql_last_429_ts[0] = time.time()
-            wait_seconds = min((2 ** attempt) * 2, 8.0)
+            wait_seconds = min((2 ** attempt) * 2, 16.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), attendo {wait_seconds:.1f}s...")
             time.sleep(wait_seconds)
             continue
