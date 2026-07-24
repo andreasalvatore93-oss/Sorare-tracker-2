@@ -158,11 +158,13 @@ query AllPlayerGameScores($slug: String!, $first: Int!) {
           competition { slug }
         }
         anyPlayerGameStats {
-          fieldStatus
-          gameStarted
-          minsPlayed
-          yellowCard
-          footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
         }
       }
     }
@@ -182,7 +184,9 @@ query AllPlayerGameScores($slug: String!, $first: Int!) {
             competition { slug }
           }
           anyPlayerGameStats {
-            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
           }
         }
       }
