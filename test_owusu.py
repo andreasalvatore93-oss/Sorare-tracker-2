@@ -347,16 +347,25 @@ def team_ranking_from_game(game, player_team_slug):
 
 # Stat da sommare per ciascun gruppo granulare (nomi come appaiono in detailedScore).
 # Sono fattori SEPARATI (non un indice unico), come richiesto: ognuno produce il
-# proprio fattore casa/trasferta indipendente.
+# proprio fattore casa/trasferta indipendente. Raggruppati per CATEGORIA SORARE
+# (stesse categorie mostrate nella UI Sorare: Generale/Difesa/Possesso/Passaggio/
+# In attacco), come da richiesta esplicita dell'utente.
 FOULS_STATS = ('fouls', 'was_fouled')
-DUELS_STATS = ('duel_won', 'duel_lost', 'poss_lost_ctrl')
+DUELS_STATS = ('duel_won', 'duel_lost', 'poss_lost_ctrl', 'interception_won')
 OFFENSIVE_STATS = ('ontarget_scoring_att', 'big_chance_created', 'big_chance_missed',
                     'pen_area_entries', 'won_contest')
+# Categoria "Passaggio" Sorare: stat frequenti, nessun cap necessario.
+PASSING_STATS = ('accurate_pass', 'successful_final_third_passes', 'adjusted_total_att_assist')
 # Eventi rari con peso enorme quando accadono ma situazionali/random: sommati nel
 # totale ma il loro contributo e' limitato da un cap assoluto (in punti Sorare)
 # per non far esplodere la stima su un singolo evento fortuito.
 RARE_EVENTS_STATS = ('penalty_won', 'penalty_conceded', 'own_goals', 'error_lead_to_goal')
 RARE_EVENTS_CAP = 10.0  # punti massimi (positivi o negativi) che questo gruppo puo' contribuire
+# Categoria "Difesa" Sorare + altri eventi rarissimi: achievement compositi
+# (double/triple) e azioni difensive eccezionali per un Forward, quasi sempre 0.
+DEFENSE_RARE_STATS = ('double_double', 'triple_double', 'triple_triple', 'last_man_tackle',
+                       'clearance_off_line', 'error_lead_to_shot', 'assist_penalty_won')
+DEFENSE_RARE_CAP = 10.0
 
 
 def extract_group_score(detail, stat_names):
@@ -403,7 +412,8 @@ def compute_split_factor(values, is_home_flags, target_is_home):
 def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                        half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0,
                        fouls_values=None, duels_values=None, offensive_values=None,
-                       rare_events_values=None, use_granular_factors=False):
+                       rare_events_values=None, passing_values=None, defense_rare_values=None,
+                       use_granular_factors=False):
     """Backtest rigoroso: per ogni partita a partire da 'min_history' partite di
     storico disponibile, ricalcola l'INTERA formula (media pesata esponenziale +
     fattore casa/trasferta + fattore forza avversario [+ fattori granulari se
@@ -462,7 +472,8 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 
         fattore_granulare_totale = 1.0
         if use_granular_factors:
-            for values in (fouls_values, duels_values, offensive_values, rare_events_values):
+            for values in (fouls_values, duels_values, offensive_values, rare_events_values,
+                           passing_values, defense_rare_values):
                 if values is not None:
                     hist_values = values[:i]
                     f = compute_split_factor(hist_values, hist_home_flags, target_is_home)
@@ -516,7 +527,7 @@ GRID_SEARCH_COMBINATIONS = [
 
 def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                      fouls_values=None, duels_values=None, offensive_values=None,
-                     rare_events_values=None):
+                     rare_events_values=None, passing_values=None, defense_rare_values=None):
     """Esegue il backtest rigoroso con tutte le combinazioni di parametri in
     GRID_SEARCH_COMBINATIONS e ritorna i risultati ordinati per MAE crescente
     (il migliore per primo). Il 'punteggio' finale usato per il ranking bilancia
@@ -529,6 +540,8 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                                 fouls_values=fouls_values, duels_values=duels_values,
                                 offensive_values=offensive_values,
                                 rare_events_values=rare_events_values,
+                                passing_values=passing_values,
+                                defense_rare_values=defense_rare_values,
                                 use_granular_factors=use_granular)
         bt['label'] = label
         if bt['mae'] is not None:
@@ -671,7 +684,9 @@ def build_prediction():
     fouls_values = []
     duels_values = []
     offensive_values = []
+    passing_values = []
     rare_events_values = []
+    defense_rare_values = []
 
     for node, detail in zip(usable, details):
         scores.append(node.get('score', 0.0))
@@ -687,8 +702,11 @@ def build_prediction():
         fouls_values.append(extract_group_score(detail, FOULS_STATS))
         duels_values.append(extract_group_score(detail, DUELS_STATS))
         offensive_values.append(extract_group_score(detail, OFFENSIVE_STATS))
+        passing_values.append(extract_group_score(detail, PASSING_STATS))
         rare_raw = extract_group_score(detail, RARE_EVENTS_STATS)
         rare_events_values.append(max(-RARE_EVENTS_CAP, min(RARE_EVENTS_CAP, rare_raw)))
+        defense_raw = extract_group_score(detail, DEFENSE_RARE_STATS)
+        defense_rare_values.append(max(-DEFENSE_RARE_CAP, min(DEFENSE_RARE_CAP, defense_raw)))
 
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
@@ -739,6 +757,8 @@ def build_prediction():
     fattore_duelli = compute_split_factor(duels_values, is_home_flags, next_is_home)
     fattore_offensivo = compute_split_factor(offensive_values, is_home_flags, next_is_home)
     fattore_eventi_rari = compute_split_factor(rare_events_values, is_home_flags, next_is_home)
+    fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home)
+    fattore_difesa_rari = compute_split_factor(defense_rare_values, is_home_flags, next_is_home)
 
     # --- Fattore forza avversario (lineare sul ranking assoluto) ---
     # Ranking medio delle 14 partite (tra gli avversari con dato disponibile)
@@ -767,7 +787,8 @@ def build_prediction():
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
-                    * fattore_falli * fattore_duelli * fattore_offensivo * fattore_eventi_rari)
+                    * fattore_falli * fattore_duelli * fattore_offensivo * fattore_eventi_rari
+                    * fattore_passaggio * fattore_difesa_rari)
     range_conf = dev_std_pesata  # stessa dev std pesata, non ri-scalata da P(gioca): scelta v1 semplice
 
     # --- Backtest SEMPLICE: riapplica solo la componente media "a ritroso" sull'ultima partita nota ---
@@ -784,7 +805,9 @@ def build_prediction():
     grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                                     fouls_values=fouls_values, duels_values=duels_values,
                                     offensive_values=offensive_values,
-                                    rare_events_values=rare_events_values)
+                                    rare_events_values=rare_events_values,
+                                    passing_values=passing_values,
+                                    defense_rare_values=defense_rare_values)
     rigorous_bt = grid_results[0]  # migliore combinazione secondo il punteggio composito
     if rigorous_bt['mae'] is not None:
         log(f"Grid search completato. Migliore: '{rigorous_bt['label']}' "
@@ -818,6 +841,8 @@ def build_prediction():
         'fattore_duelli': fattore_duelli,
         'fattore_offensivo': fattore_offensivo,
         'fattore_eventi_rari': fattore_eventi_rari,
+        'fattore_passaggio': fattore_passaggio,
+        'fattore_difesa_rari': fattore_difesa_rari,
         'p_gioca': p_gioca,
         'p_source': p_source,
         'score_atteso': score_atteso,
@@ -871,6 +896,8 @@ def format_output(result):
     lines.append(f"Fattore duelli (casa/trasferta, da dati reali): {result['fattore_duelli']:.3f}")
     lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali): {result['fattore_offensivo']:.3f}")
     lines.append(f"Fattore eventi rari (rigori/autogol/errori, con cap): {result['fattore_eventi_rari']:.3f}")
+    lines.append(f"Fattore passaggio (accurate_pass/final_third/att_assist): {result['fattore_passaggio']:.3f}")
+    lines.append(f"Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): {result['fattore_difesa_rari']:.3f}")
     lines.append(f"P(gioca): {result['p_gioca']:.2%} (fonte: {result['p_source']})")
 
     lines.append("")
