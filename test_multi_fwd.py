@@ -37,7 +37,11 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 # Nota: anders-dreyer ha alcune carte CLASSIC giocabili da centrocampista, ma
 # in QUESTA analisi va trattato sempre come attaccante (richiesta esplicita).
 PLAYER_SLUGS = [
-    'prince-osei-owusu',   # incluso per confronto con l'analisi precedente
+    # Owusu RIMOSSO temporaneamente per test diagnostico (24/07): l'utente vuole
+    # verificare se il fallimento su Dreyer & co dipende davvero da un budget
+    # cumulativo consumato da Owusu, o da qualcos'altro nel codice. Se Dreyer
+    # (ora primo della lista) fallisce comunque senza nessun altro giocatore
+    # prima, significa che il problema NON e' legato all'ordine/cumulo.
     'anders-dreyer',
     'zavier-gozo',
     'ahoueke-denkey',
@@ -149,16 +153,17 @@ def graphql_query(query, variables=None, operation_name=None):
             data = resp.json()
             if data.get('errors'):
                 error_msgs = json.dumps(data['errors'], ensure_ascii=False)
-                # L'errore "exceeds max complexity" e' un rate-limit mascherato da
-                # errore applicativo (arriva con HTTP 200, non 429) — va ritentato
-                # con backoff come un vero 429, non trattato come fallimento definitivo.
+                # L'errore "exceeds max complexity" NON viene ritentato qui dentro
+                # (per evitare un doppio livello di retry: questo retry interno,
+                # 5 tentativi con backoff fino a 93s, sommato al retry esterno nel
+                # loop principale di main() portava a tempi totali di 4-5+ minuti
+                # per un singolo giocatore fallito). Fallisce subito, il retry
+                # esterno nel loop principale decide se e quando ritentare l'intero
+                # giocatore, con un unico tetto di attesa chiaro e controllabile.
                 if 'exceeds max complexity' in error_msgs or 'complexity' in error_msgs.lower():
-                    sleep_s = backoff * 3  # attesa piu' lunga di un 429 normale, il limite e' cumulativo
-                    log(f"[GraphQL COMPLEXITY LIMIT] {label} tentativo {attempt+1}/5, "
-                        f"attesa {sleep_s:.1f}s prima di ritentare (dump: {debug_file})")
-                    time.sleep(sleep_s)
-                    backoff *= 2
-                    continue
+                    log(f"[GraphQL COMPLEXITY LIMIT] {label} -> {error_msgs[:300]} "
+                        f"(nessun retry interno, gestito dal loop esterno) | dump: {debug_file}")
+                    return data
                 log(f"[GraphQL ERRORE-APPLICATIVO] {label} -> {error_msgs[:1500]} "
                     f"| dump completo: {debug_file}")
             else:
