@@ -87,12 +87,14 @@ EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
-# Nessun valore di default: la durata dell'ascolto va sempre specificata a mano
-# per questo bot di test (richiesta esplicita utente).
-LISTEN_SECONDS = int(os.environ['LISTEN_SECONDS'])
+# FIX 24/07 (richiesta esplicita utente, promemoria applicato ora): prima nessun
+# default (obbligatorio ad ogni run), ora default 100 minuti -- resta comunque
+# sovrascrivibile dal workflow_dispatch.
+LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '6000'))
 
-# Commit periodico dei dati tracciati -- default 2 minuti (richiesta esplicita utente).
-COMMIT_CHUNK_SECONDS = int(os.environ.get('COMMIT_CHUNK_SECONDS', '120'))
+# Commit periodico dei dati tracciati -- default 5 minuti (era 2, richiesta
+# esplicita utente 24/07).
+COMMIT_CHUNK_SECONDS = int(os.environ.get('COMMIT_CHUNK_SECONDS', '300'))
 
 # FIX 24/07 (richiesta esplicita utente): non piu' un campione fisso di N
 # transazioni, ma una FINESTRA TEMPORALE -- tutte le transazioni reali degli
@@ -103,6 +105,12 @@ TRANSACTIONS_PAGE_SIZE = 50
 TRANSACTIONS_MAX_PAGES = 3
 
 TOP_N_OUTPUT = int(os.environ.get('TOP_N_OUTPUT', '50'))
+
+# FIX 24/07 (richiesta esplicita utente): sotto questa soglia di transazioni nella
+# finestra, il dato e' troppo rumoroso per la classifica (una singola transazione
+# anomala puo' spostare la media intera) -- escluso, non solo dal trim ma dalla
+# classifica stessa. Probabilmente da alzare in futuro, per ora 15.
+MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING', '15'))
 
 # FIX 24/07 (richiesta esplicita utente): stop automatico anche per numero di
 # carte tracciate, non solo per LISTEN_SECONDS -- default 500.
@@ -617,8 +625,28 @@ def write_csv_snapshot():
         rows = list(_tracked.values())
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
+    # FIX 24/07 (richiesta esplicita utente): le carte senza NESSUNA transazione
+    # nella finestra (0/0, media_trimmed=None) non vanno in classifica -- niente
+    # storico prezzo = dato inutilizzabile per il confronto. Vengono escluse PRIMA
+    # del taglio top-N, cosi' la 51esima carta valida prende il loro posto invece
+    # di lasciare un buco.
+    rows_con_storico = [r for r in rows if r['media_transazioni_7gg_trimmed_eur'] is not None]
+    esclusi_senza_storico = len(rows) - len(rows_con_storico)
+
+    def _n_totali(r):
+        try:
+            return int(r['n_transazioni_usate'].split('/')[1])
+        except (ValueError, IndexError, AttributeError):
+            return 0
+
+    # FIX 24/07 (richiesta esplicita utente): sotto MIN_TRANSACTIONS_FOR_RANKING
+    # transazioni nella finestra, il dato resta troppo rumoroso -- escluso anche
+    # questo dalla classifica (non solo lo 0/0 di prima).
+    rows_liquidi = [r for r in rows_con_storico if _n_totali(r) >= MIN_TRANSACTIONS_FOR_RANKING]
+    esclusi_poco_liquidi = len(rows_con_storico) - len(rows_liquidi)
+
     rows_sorted = sorted(
-        rows,
+        rows_liquidi,
         key=lambda r: (r['min_attuale_eur'] if r['min_attuale_eur'] is not None else -1),
         reverse=True,
     )[:TOP_N_OUTPUT]
@@ -627,7 +655,10 @@ def write_csv_snapshot():
         writer.writeheader()
         for r in rows_sorted:
             writer.writerow(r)
-    log(f"[csv] scritte {len(rows_sorted)}/{len(rows)} carte (top {TOP_N_OUTPUT} per minimo attuale) in {OUTPUT_CSV_PATH}")
+    log(f"[csv] scritte {len(rows_sorted)}/{len(rows)} carte (top {TOP_N_OUTPUT} per minimo attuale, "
+        f"{esclusi_senza_storico} escluse per assenza di storico, "
+        f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni) "
+        f"in {OUTPUT_CSV_PATH}")
 
 
 # =====================================================================================
@@ -942,7 +973,8 @@ def run_listener(eth_rate):
 def main():
     log(f"Avvio Bot Profit. LISTEN_SECONDS={LISTEN_SECONDS} COMMIT_CHUNK_SECONDS={COMMIT_CHUNK_SECONDS} "
         f"CHECK_CLASSIC={CHECK_CLASSIC} TRANSACTIONS_WINDOW_DAYS={TRANSACTIONS_WINDOW_DAYS} "
-        f"TOP_N_OUTPUT={TOP_N_OUTPUT} MAX_TRACKED_CARDS={MAX_TRACKED_CARDS}")
+        f"TOP_N_OUTPUT={TOP_N_OUTPUT} MAX_TRACKED_CARDS={MAX_TRACKED_CARDS} "
+        f"MIN_TRANSACTIONS_FOR_RANKING={MIN_TRANSACTIONS_FOR_RANKING}")
 
     if not COOKIES or not CSRF_TOKEN:
         log("ERRORE: SORARE_COOKIE/SORARE_CSRF mancanti, impossibile continuare.")
