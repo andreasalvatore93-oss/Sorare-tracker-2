@@ -1157,8 +1157,8 @@ def main():
     slugs_to_process = [target_slug] if target_slug else PLAYER_SLUGS
 
     log("Avvio test multi-giocatore Tool_formazione...")
-    log(f"Config: {len(slugs_to_process)} giocatori da processare "
-        f"({'modalita\' job singolo: ' + target_slug if target_slug else 'lista completa'}), "
+    mode_str = f"modalita job singolo: {target_slug}" if target_slug else "lista completa"
+    log(f"Config: {len(slugs_to_process)} giocatori da processare ({mode_str}), "
         f"WINDOW_SIZE={WINDOW_SIZE} HALF_LIFE_GAMES={HALF_LIFE_GAMES} "
         f"RANGE_MULTIPLIER={RANGE_MULTIPLIER} MIN_STARTER_ODDS={MIN_STARTER_ODDS:.0%}")
     log(f"SORARE_COOKIE presente: {bool(COOKIES)} (lunghezza: {len(COOKIES)})")
