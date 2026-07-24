@@ -1,0 +1,62 @@
+name: Bot Profit (tracking, no play)
+on:
+  workflow_dispatch:
+    inputs:
+      listen_seconds:
+        description: "Secondi di ascolto -- NESSUN DEFAULT, va sempre specificato a mano per questo test"
+        required: true
+      commit_chunk_seconds:
+        description: "Ogni quanti secondi riscrive e committa il CSV con tutte le carte tracciate finora"
+        required: false
+        default: "120"
+      check_classic:
+        description: "Traccia anche gli annunci CLASSIC oltre a in season"
+        required: false
+        default: "si"
+      transactions_sample_size:
+        description: "Quante transazioni recenti scaricare per la media trimmed (min/max esclusi)"
+        required: false
+        default: "30"
+permissions:
+  contents: write
+concurrency:
+  group: bot-profit
+  cancel-in-progress: false
+jobs:
+  bot-profit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests websocket-client curl_cffi
+      - name: Run Bot Profit
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          PYTHONUNBUFFERED: "1"
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds }}
+          COMMIT_CHUNK_SECONDS: ${{ github.event.inputs.commit_chunk_seconds || '120' }}
+          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
+          TRANSACTIONS_SAMPLE_SIZE: ${{ github.event.inputs.transactions_sample_size || '30' }}
+        run: python bot_profit.py
+      - name: Commit CSV finale (fallback, se il commit periodico non ha gia' salvato tutto)
+        if: always()
+        run: |
+          if [ -z "$(git status --porcelain -- bot_profit/profit_tracking.csv)" ]; then
+            echo "Nessuna modifica al CSV, niente da committare."
+          else
+            git config user.name "bot-profit"
+            git config user.email "bot-profit@users.noreply.github.com"
+            git add bot_profit/profit_tracking.csv
+            git commit -m "Bot Profit: commit finale dati tracciati"
+            git pull --rebase --autostash origin main
+            git push
+          fi
