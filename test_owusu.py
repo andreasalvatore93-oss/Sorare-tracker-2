@@ -48,6 +48,33 @@ else:
     _http_session = requests.Session()
 
 
+DEBUG_DIR = os.path.join(OUTPUT_DIR, '.debug')
+_query_counter = [0]
+
+
+def _dump_debug(label, payload, resp=None, error=None):
+    """Salva su disco un dump completo di ogni chiamata GraphQL (richiesta +
+    risposta, o errore) per diagnostica. File numerati in ordine di chiamata."""
+    if not os.path.exists(DEBUG_DIR):
+        os.makedirs(DEBUG_DIR)
+    _query_counter[0] += 1
+    ts = datetime.datetime.utcnow().strftime('%H%M%S_%f')
+    fname = os.path.join(DEBUG_DIR, f'{_query_counter[0]:03d}_{label}_{ts}.txt')
+    with open(fname, 'w', encoding='utf-8') as f:
+        f.write(f"=== RICHIESTA ({label}) ===\n")
+        f.write(f"operationName: {payload.get('operationName')}\n")
+        f.write(f"variables: {json.dumps(payload.get('variables', {}), ensure_ascii=False)}\n")
+        f.write(f"query:\n{payload.get('query', '')}\n")
+        f.write("\n=== RISPOSTA ===\n")
+        if resp is not None:
+            f.write(f"status_code: {resp.status_code}\n")
+            f.write(f"headers: {dict(resp.headers)}\n")
+            f.write(f"body (integrale):\n{resp.text}\n")
+        if error is not None:
+            f.write(f"eccezione: {error!r}\n")
+    return fname
+
+
 def log(msg):
     ts = datetime.datetime.utcnow().isoformat() + 'Z'
     print(f"[{ts}] [test_owusu] {msg}")
@@ -55,7 +82,9 @@ def log(msg):
 
 def graphql_query(query, variables=None, operation_name=None):
     """Esegue una query GraphQL contro l'API Sorare, con retry/backoff su 429.
-    Stesso schema di throttling/retry usato negli altri bot del repo."""
+    Diagnostica COMPLETA: ogni chiamata (richiesta + risposta integrale, o
+    eccezione) viene salvata su disco in test_owusu/.debug/, indipendentemente
+    dall'esito, per poter analizzare in dettaglio eventuali errori 4xx/5xx."""
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -67,25 +96,44 @@ def graphql_query(query, variables=None, operation_name=None):
     if operation_name:
         payload['operationName'] = operation_name
 
+    label = operation_name or 'query'
+    log(f"[GraphQL] -> {label} | variables={json.dumps(variables or {}, ensure_ascii=False)}")
+
     backoff = 1.0
     for attempt in range(5):
         try:
             resp = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+            debug_file = _dump_debug(label, payload, resp=resp)
+
             if resp.status_code == 429:
                 retry_after = resp.headers.get('Retry-After')
                 sleep_s = float(retry_after) if retry_after else backoff
-                log(f"[429] tentativo {attempt+1}/5, attesa {sleep_s:.1f}s")
+                log(f"[GraphQL 429] {label} tentativo {attempt+1}/5, attesa {sleep_s:.1f}s "
+                    f"(dump: {debug_file})")
                 time.sleep(sleep_s)
                 backoff *= 2
                 continue
-            resp.raise_for_status()
-            return resp.json()
+
+            if resp.status_code >= 400:
+                log(f"[GraphQL ERRORE] {label} HTTP {resp.status_code} | dump completo: {debug_file}")
+                log(f"[GraphQL ERRORE] {label} body (primi 1500 char): {resp.text[:1500]}")
+                return {}
+
+            data = resp.json()
+            if data.get('errors'):
+                log(f"[GraphQL ERRORE-APPLICATIVO] {label} -> {json.dumps(data['errors'], ensure_ascii=False)[:1500]} "
+                    f"| dump completo: {debug_file}")
+            else:
+                log(f"[GraphQL OK] {label} risposta ricevuta correttamente.")
+            return data
+
         except Exception as e:
-            log(f"[Errore GraphQL] {e}")
+            debug_file = _dump_debug(label, payload, error=e)
+            log(f"[GraphQL ECCEZIONE] {label} tentativo {attempt+1}/5: {e!r} | dump: {debug_file}")
             time.sleep(backoff)
             backoff *= 2
 
-    log("[Errore GraphQL] Esauriti i tentativi")
+    log(f"[GraphQL FALLITO] {label} - esauriti i tentativi.")
     return {}
 
 
@@ -179,17 +227,38 @@ query PlayerGameScoreDetail($id: String!) {
 
 def fetch_game_log(slug, first=50):
     """Recupera game log storico + prossime partite programmate per il giocatore."""
-    log(f"Recupero game log per {slug} (ultime {first} richieste)...")
+    log(f"[FASE 1/4] Recupero game log per {slug} (richiesta ultime {first})...")
     data = graphql_query(ALL_GAME_SCORES_QUERY, {"slug": slug, "first": first},
                           operation_name="AllPlayerGameScores")
-    if data.get('errors'):
-        log(f"Errore nella query game log: {data['errors']}")
+
+    if not data:
+        log("[FASE 1/4] FALLITA: graphql_query ha restituito risposta vuota/nulla "
+            "(vedi log ERRORE sopra e i dump in .debug/ per il dettaglio HTTP).")
         return [], []
 
-    player = data.get('data', {}).get('anyPlayer', {}) or {}
+    if data.get('errors'):
+        log(f"[FASE 1/4] FALLITA: la query ha risposto ma con errori applicativi GraphQL: "
+            f"{json.dumps(data['errors'], ensure_ascii=False)}")
+        return [], []
+
+    if 'data' not in data:
+        log(f"[FASE 1/4] SOSPETTO: risposta senza chiave 'data'. Contenuto completo: "
+            f"{json.dumps(data, ensure_ascii=False)[:1500]}")
+        return [], []
+
+    player = data.get('data', {}).get('anyPlayer')
+    if player is None:
+        log(f"[FASE 1/4] FALLITA: 'anyPlayer' e' null nella risposta (slug '{slug}' non trovato "
+            f"o campo diverso da quello atteso). Risposta data completa: "
+            f"{json.dumps(data.get('data', {}), ensure_ascii=False)[:1500]}")
+        return [], []
+
     past = (player.get('allPlayerGameScores', {}) or {}).get('nodes', []) or []
     future = (player.get('anyFutureGames', {}) or {}).get('nodes', []) or []
-    log(f"Trovate {len(past)} partite passate, {len(future)} future.")
+    log(f"[FASE 1/4] OK: trovate {len(past)} partite passate, {len(future)} future.")
+    if not past:
+        log(f"[FASE 1/4] ATTENZIONE: 'allPlayerGameScores.nodes' e' vuoto. "
+            f"Struttura ricevuta per anyPlayer: {json.dumps(player, ensure_ascii=False)[:1500]}")
     return past, future
 
 
@@ -273,18 +342,25 @@ def team_ranking_from_game(game, player_team_slug):
 
 
 def build_prediction():
+    log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games = fetch_game_log(PLAYER_SLUG, first=50)
     if not past_games:
-        log("Nessuna partita trovata, impossibile procedere.")
+        log("[FASE 1/4] INTERROTTO: nessuna partita passata trovata, impossibile procedere oltre.")
         return None
+    if not future_games:
+        log("[FASE 1/4] ATTENZIONE: nessuna partita futura trovata (anyFutureGames vuoto). "
+            "Si procedera' comunque con la storia, ma la predizione finale fallira' "
+            "in assenza di un target su cui applicare i fattori.")
 
     cache, cache_file = load_cache()
+    log(f"[FASE 2/4] Cache dettagli caricata da {cache_file} ({len(cache)} voci gia' presenti).")
 
     # Filtra le partite con punteggio "utilizzabile" (esclude DID_NOT_PLAY) mantenendo
     # comunque un conteggio separato per il tasso di presenza storico.
     usable = []
     dnp_count = 0
     total_considered = 0
+    other_status_count = {}
 
     for node in past_games:
         status = node.get('scoreStatus')
@@ -294,28 +370,39 @@ def build_prediction():
             continue
         if status in ('FINAL', 'REVIEWING'):
             usable.append(node)
+        else:
+            other_status_count[status] = other_status_count.get(status, 0) + 1
         if len(usable) >= WINDOW_SIZE:
             break
 
     if not usable:
-        log("Nessuna partita utilizzabile nella finestra.")
+        log(f"[FASE 2/4] INTERROTTO: nessuna partita con status FINAL/REVIEWING trovata su "
+            f"{total_considered} esaminate ({dnp_count} DID_NOT_PLAY, altri status: {other_status_count}).")
         return None
 
     # Ordine cronologico: allPlayerGameScores arriva dal piu' recente al piu' vecchio,
     # quindi invertiamo per avere indice 0 = piu' vecchia, ultimo = piu' recente
     usable = list(reversed(usable))
 
-    log(f"Finestra di analisi: {len(usable)} partite utilizzabili (su {total_considered} esaminate, {dnp_count} DID_NOT_PLAY escluse).")
+    log(f"[FASE 2/4] OK: finestra di {len(usable)} partite utilizzabili "
+        f"(su {total_considered} esaminate, {dnp_count} DID_NOT_PLAY escluse, "
+        f"altri status incontrati: {other_status_count or 'nessuno'}).")
 
     # Scarica il dettaglio granulare per ogni partita della finestra (con cache)
+    log(f"[FASE 3/4] Recupero dettaglio granulare per {len(usable)} partite (con cache)...")
     details = []
+    detail_failures = 0
     for node in usable:
         score_id = node['id'].replace('So5Score:', '')
         is_final = node.get('scoreStatus') == 'FINAL'
         detail = fetch_game_detail(score_id, cache, is_final)
+        if detail is None:
+            detail_failures += 1
         details.append(detail)
 
     save_cache(cache, cache_file)
+    log(f"[FASE 3/4] OK: dettaglio recuperato per {len(usable) - detail_failures}/{len(usable)} partite "
+        f"({detail_failures} falliti, la formula procedera' comunque usando solo score+contesto base per quelle).")
 
     # Determina la squadra del giocatore dalla partita piu' recente
     player_team_slug = None
@@ -364,11 +451,16 @@ def build_prediction():
     overall_avg_for_factor = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
 
     # --- Prossima partita: contesto target ---
+    log("[FASE 4/4] Calcolo fattori e predizione finale sulla prossima partita target...")
     if not future_games:
-        log("Nessuna partita futura trovata.")
+        log("[FASE 4/4] INTERROTTO: nessuna partita futura trovata (anyFutureGames vuoto), "
+            "impossibile calcolare una predizione senza un target.")
         return None
     next_node = future_games[0]['playerGameScore']
     next_game = next_node['anyGame']
+    log(f"[FASE 4/4] Partita target: {(next_game.get('date') or '')[:16]} - "
+        f"{(next_game.get('homeTeam') or {}).get('name', '?')} vs "
+        f"{(next_game.get('awayTeam') or {}).get('name', '?')}")
     next_own_rank, next_opp_rank, next_is_home = team_ranking_from_game(next_game, player_team_slug)
 
     # se il ranking non e' nel blocco base, scarichiamo il dettaglio (funziona anche per future)
@@ -529,13 +621,31 @@ def format_output(result):
 
 def main():
     log("Avvio prototipo Tool_formazione_owusu...")
+    log(f"Config: PLAYER_SLUG={PLAYER_SLUG} WINDOW_SIZE={WINDOW_SIZE} HALF_LIFE_GAMES={HALF_LIFE_GAMES}")
+    log(f"SORARE_COOKIE presente: {bool(COOKIES)} (lunghezza: {len(COOKIES)})")
+    log(f"curl_cffi disponibile: {_HAS_CURL_CFFI}")
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
-    result = build_prediction()
+    try:
+        result = build_prediction()
+    except Exception:
+        import traceback
+        tb = traceback.format_exc()
+        log(f"[ECCEZIONE FATALE in build_prediction] Vedi traceback completo sotto:")
+        print(tb)
+        # Salva anche su file per non perderlo tra i log CI
+        err_path = os.path.join(OUTPUT_DIR, f'ERRORE_{datetime.datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")}.txt')
+        with open(err_path, 'w', encoding='utf-8') as f:
+            f.write(tb)
+        log(f"Traceback salvato in: {err_path}")
+        return
+
     if result is None:
-        log("Impossibile generare la predizione, dati insufficienti.")
+        log("Impossibile generare la predizione: build_prediction ha restituito None "
+            "(vedi log sopra per capire a quale step si e' fermato, e la cartella "
+            f"{DEBUG_DIR}/ per il dump completo di ogni chiamata GraphQL fatta).")
         return
 
     output_text = format_output(result)
@@ -546,6 +656,7 @@ def main():
         f.write(output_text)
 
     log(f"Output scritto in: {out_path}")
+    log(f"Dump diagnostici di tutte le chiamate GraphQL salvati in: {DEBUG_DIR}/")
     print("\n" + output_text)
 
 
