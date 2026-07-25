@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:42:11.585989Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) maxwell-woledzi: 71 pt attesi (56-85)
+======================================================================
+
+######################################################################
+# GIOCATORE: maxwell-woledzi
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: maxwell-woledzi (squadra: nashville-sc)
+Generato: 2026-07-25T08:42:11.584977Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | NSH vs NE | mlspa | score=45.1 | peso=0.445
+  2026-03-01 | DAL vs NSH | mlspa | score=66.2 | peso=0.472
+  2026-03-08 | NSH vs MIN | mlspa | score=61.1 | peso=0.500
+  2026-03-14 | CLB vs NSH | mlspa | score=94.1 | peso=0.530
+  2026-03-21 | NSH vs ORL | mlspa | score=63.7 | peso=0.561
+  2026-04-05 | CHI vs NSH | mlspa | score=59.1 | peso=0.595
+  2026-04-11 | CLT vs NSH | mlspa | score=55.9 | peso=0.630
+  2026-04-18 | ATL vs NSH | mlspa | score=79.7 | peso=0.667
+  2026-04-26 | NSH vs CLT | mlspa | score=60.2 | peso=0.707
+  2026-05-02 | PHI vs NSH | mlspa | score=65.0 | peso=0.749
+  2026-05-13 | NE vs NSH | mlspa | score=74.2 | peso=0.794
+  2026-05-18 | NSH vs LAFC | mlspa | score=53.3 | peso=0.841
+  2026-05-24 | NSH vs NYC | mlspa | score=74.0 | peso=0.891
+  2026-07-18 | NSH vs ATL | mlspa | score=58.9 | peso=0.944
+  2026-07-23 | NSH vs MTL | mlspa | score=69.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 65.54
+Deviazione standard pesata: 10.67
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.68 (differenza: +2.99)
+Media score in casa: 60.68 | Media score fuori casa: 70.61
+Fattore casa/trasferta applicato: 1.076 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.057
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 1.013
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.023
+Fattore trend (media ultime 5: 65.9 vs media ultime 10: 65.0): 1.015
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: Orlando City SC | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 70.5 +/- 14.9
+  (range: 55.6 - 85.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 65.14
+Punteggio REALE ottenuto in quella partita: 69.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      73.6    55.9    -17.7    17.5        NO
+   7        7      86.8    79.7     -7.1    16.5        SI
+   8        8      56.9    60.2     +3.3    16.7        SI
+   9        9      90.2    65.0    -25.2    15.7        NO
+  10       10      59.9    74.2    +14.3    14.6        SI
+  11       11      48.6    53.3     +4.6    14.2        SI
+  12       12      54.4    74.0    +19.6    14.2        NO
+  13       13      71.7    58.9    -12.8    13.9        SI
+  14       14      70.3    69.3     -1.0    13.4        SI
+
+MAE (errore assoluto medio): 11.75
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
