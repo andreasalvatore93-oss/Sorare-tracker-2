@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T20:49:55.180770Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) moises-castillo-mosquera: 0 pt attesi (-14-14)
+======================================================================
+
+######################################################################
+# GIOCATORE: moises-castillo-mosquera
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: moises-castillo-mosquera (squadra: juarez-ciudad-juarez-chihuahua)
+Generato: 2026-07-25T20:49:55.179847Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-01 | ASL vs JUA | liga-mx | score=55.6 | peso=0.367
+  2025-11-08 | JUA vs QUE | liga-mx | score=34.5 | peso=0.397
+  2026-01-10 | MAZ vs JUA | liga-mx | score=49.3 | peso=0.429
+  2026-01-14 | JUA vs CHI | liga-mx | score=56.1 | peso=0.463
+  2026-01-18 | SAN vs JUA | liga-mx | score=38.4 | peso=0.500
+  2026-01-31 | JUA vs CAZ | liga-mx | score=26.7 | peso=0.540
+  2026-02-08 | PAC vs JUA | liga-mx | score=55.0 | peso=0.583
+  2026-02-15 | JUA vs NEC | liga-mx | score=27.1 | peso=0.630
+  2026-02-28 | JUA vs ATS | liga-mx | score=41.9 | peso=0.680
+  2026-03-05 | AME vs JUA | liga-mx | score=42.9 | peso=0.735
+  2026-03-08 | TOL vs JUA | liga-mx | score=54.8 | peso=0.794
+  2026-03-14 | JUA vs MON | liga-mx | score=34.2 | peso=0.857
+  2026-03-23 | JUA vs TIG | liga-mx | score=38.6 | peso=0.926
+  2026-04-04 | PUE vs JUA | liga-mx | score=62.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 44.40
+Deviazione standard pesata: 11.32
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.26 (differenza: +2.06)
+Media score in casa: 37.03 | Media score fuori casa: 51.23
+Fattore casa/trasferta applicato: 1.018 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.020
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.017
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.029
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.991
+Fattore trend (media ultime 5: 46.6 vs media ultime 10: 42.2): 1.135
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T02:30
+Casa: Los Angeles FC | Trasferta: Sporting Kansas City 
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 0.0 +/- 13.6
+  (range: -13.6 - 13.6)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.10
+Punteggio REALE ottenuto in quella partita: 62.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +20.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.6x+opp_sens=29.0+trend_int=1.0+granulari' (half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=1.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      35.6    55.0    +19.4    17.8        NO
+   7        7      43.3    27.1    -16.1    17.8        SI
+   8        8      28.8    41.9    +13.1    19.3        SI
+   9        9      36.4    42.9     +6.5    17.9        SI
+  10       10      37.2    54.8    +17.6    16.7        NO
+  11       11      44.7    34.2    -10.5    17.0        SI
+  12       12      47.8    38.6     -9.2    16.7        SI
+  13       13      47.4    62.6    +15.2    15.9        SI
+
+MAE (errore assoluto medio): 13.44
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
