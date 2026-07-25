@@ -104,7 +104,7 @@ OPPONENT_SENSITIVITY = 20.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.7  # FISSATO (25/07): idem
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
-MIN_STARTER_ODDS = 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): grid search di calibrazione concluso sui 12 posseduti con dati sufficienti, il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. Se si rifà grid search, riportare a 0.0 temporaneamente.
+MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale che ha causato l'esclusione di 25/27 portieri nel primo batch di grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
 OUTPUT_DIR = 'formazione_mls/output/mls_gk_calibration' if CALIBRATION_MODE else 'formazione_mls/output/mls_gk_all'

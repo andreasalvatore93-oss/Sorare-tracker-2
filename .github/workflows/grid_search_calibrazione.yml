@@ -141,7 +141,6 @@ jobs:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           CALIBRATION_MODE: "si"
-          MIN_STARTER_ODDS: "0.0"
           PYTHONUNBUFFERED: "1"
         run: |
           case "${{ github.event.inputs.ruolo }}" in
