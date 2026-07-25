@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:37:34.308178Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) bode-davis: 0 pt attesi (-13-13)
+======================================================================
+
+######################################################################
+# GIOCATORE: bode-davis
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: bode-davis (squadra: montreal-impact-montreal-quebec)
+Generato: 2026-07-25T08:37:34.307983Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | MTL vs RBNY | mlspa | score=39.8 | peso=0.749
+  2025-09-27 | CLT vs MTL | mlspa | score=39.4 | peso=0.794
+  2025-10-04 | MTL vs NSH | mlspa | score=34.7 | peso=0.841
+  2025-10-18 | CIN vs MTL | mlspa | score=26.5 | peso=0.891
+  2026-02-22 | SD vs MTL | mlspa | score=12.0 | peso=0.944
+  2026-03-22 | CIN vs MTL | mlspa | score=27.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 29.18
+Deviazione standard pesata: 9.61
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.30 (differenza: +4.31)
+Media score in casa: 37.25 | Media score fuori casa: 26.24
+Fattore casa/trasferta applicato: 1.173 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.5
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.845
+Fattore falli (casa/trasferta, da dati reali): 1.010
+Fattore duelli (casa/trasferta, da dati reali): 1.027
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.988
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.986
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.013
+Fattore gol subiti (goals_conceded, con cap): 1.017
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: CF Montreal | Trasferta: Inter Miami CF
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 0.0 +/- 13.5
+  (range: -13.5 - 13.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 29.66
+Punteggio REALE ottenuto in quella partita: 27.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
