@@ -113,7 +113,7 @@ jobs:
           done
           echo "Salvato correttamente."
 
-  aggregate:
+  merge:
     needs: [discover, predict]
     if: always()
     runs-on: ubuntu-latest
@@ -127,19 +127,19 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Aggrega grid search cross-player e individua parametri vincenti
-        run: python aggregate_grid_search_mid.py
+      - name: Genera SOLO il riepilogo finale compatto (consiglio centrocampisti)
+        run: python build_consiglio_mid.py
 
-      - name: Commit aggregazione
+      - name: Commit riepilogo
         run: |
           git config user.name "mls-mid-bot"
           git config user.email "mls-mid-bot@users.noreply.github.com"
-          git add mls_mid_all/grid_search/aggregato_*.txt
+          git add mls_mid_all/consiglio_*.txt
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Grid search centrocampisti: aggregazione cross-player"
+          git commit -m "Test Centrocampisti: consiglio centrocampisti"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
