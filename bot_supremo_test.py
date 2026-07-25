@@ -686,7 +686,7 @@ def record_thin_market_skip(player_slug, is_in_season=True):
 # ultime 5 e' una statistica del GIOCATORE, identica per la sua carta in_season e
 # classic -- lo stesso della logica coverage/media-zero esistente.
 FORMA_BASSA_DEFAULT_DAYS = float(os.environ.get('FORMA_BASSA_DEFAULT_DAYS', '3'))
-LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '0'))
+LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '10'))
 
 
 def is_player_in_forma_bassa(player_slug):
