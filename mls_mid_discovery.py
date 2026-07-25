@@ -20,7 +20,6 @@ import json
 import time
 import datetime
 import requests
-from collections import Counter
 
 try:
     from curl_cffi import requests as curl_requests
@@ -98,13 +97,15 @@ def get_user_uuid(user_slug):
     return user_id
 
 
-def discover_mls_midfielders_in_season(user_slug=USER_SLUG, max_pages=50):
-    """Ritorna la lista deduplicata di slug giocatore (Midfielder, in_season,
-    lega MLS) posseduti da user_slug. Filtro completamente lato server."""
+def discover_mls_midfielders_all(user_slug=USER_SLUG, max_pages=50):
+    """Ritorna la lista deduplicata di slug giocatore (Midfielder, lega MLS)
+    posseduti da user_slug, SIA in_season CHE classic (due passate separate
+    sullo stesso filtro server-side in_season_eligible=true/false, cosi' da
+    coprire l'intera collezione posseduta, non solo le carte in_season)."""
     user_uuid = get_user_uuid(user_slug)
     if not user_uuid:
         log("Impossibile ottenere l'uuid utente, interrompo.")
-        return []
+        return [], {}
 
     advanced_filters = (
         f"user.id:{user_uuid} AND sport:football AND (active_competitions:mlspa) "
@@ -135,50 +136,55 @@ def discover_mls_midfielders_in_season(user_slug=USER_SLUG, max_pages=50):
     }
     """
 
-    refinements = [
-        {"field": "position", "operator": "EQUAL", "values": [{"stringValue": "Midfielder"}]},
-        {"field": "in_season_eligible", "operator": "EQUAL", "values": [{"stringValue": "true"}]},
-    ]
+    # slug -> {'in_season': n, 'classic': n} -- copie possedute per tipo di carta.
+    player_card_counts = {}
+    total_card_count = 0
 
-    player_slug_counts = Counter()  # slug -> numero di carte IN_SEASON possedute per quel giocatore
-    card_count = 0
-    page = 1
-    while page <= max_pages:
-        data = graphql_query(query, {
-            "userSlug": user_slug,
-            "page": page,
-            "pageSize": PAGE_SIZE,
-            "advancedFilters": advanced_filters,
-            "refinements": refinements,
-        }, operation_name="MlsMidfielderDiscovery")
+    for in_season_value, type_key in (("true", "in_season"), ("false", "classic")):
+        refinements = [
+            {"field": "position", "operator": "EQUAL", "values": [{"stringValue": "Midfielder"}]},
+            {"field": "in_season_eligible", "operator": "EQUAL", "values": [{"stringValue": in_season_value}]},
+        ]
 
-        search = ((data.get('data') or {}).get('user') or {}).get('searchCards') or {}
-        hits = search.get('hits') or []
-        if page == 1:
-            log(f"Totale carte Midfielder/in_season/MLS trovate: {search.get('nbHits')} "
-                f"({search.get('nbPages')} pagine)")
-        if not hits:
-            break
+        page = 1
+        while page <= max_pages:
+            data = graphql_query(query, {
+                "userSlug": user_slug,
+                "page": page,
+                "pageSize": PAGE_SIZE,
+                "advancedFilters": advanced_filters,
+                "refinements": refinements,
+            }, operation_name="MlsMidfielderDiscovery")
 
-        for h in hits:
-            card_count += 1
-            p_slug = (h.get('anyPlayer') or {}).get('slug')
-            if p_slug:
-                player_slug_counts[p_slug] += 1
+            search = ((data.get('data') or {}).get('user') or {}).get('searchCards') or {}
+            hits = search.get('hits') or []
+            if page == 1:
+                log(f"Totale carte Midfielder/{type_key}/MLS trovate: {search.get('nbHits')} "
+                    f"({search.get('nbPages')} pagine)")
+            if not hits:
+                break
 
-        nb_pages = search.get('nbPages') or 1
-        if page >= nb_pages:
-            break
-        page += 1
-        time.sleep(0.3)
+            for h in hits:
+                total_card_count += 1
+                p_slug = (h.get('anyPlayer') or {}).get('slug')
+                if p_slug:
+                    player_card_counts.setdefault(p_slug, {'in_season': 0, 'classic': 0})
+                    player_card_counts[p_slug][type_key] += 1
 
-    log(f"Carte scansionate: {card_count} | Giocatori unici (dedup): {len(player_slug_counts)}")
-    return sorted(player_slug_counts), dict(player_slug_counts)
+            nb_pages = search.get('nbPages') or 1
+            if page >= nb_pages:
+                break
+            page += 1
+            time.sleep(0.3)
+
+    slugs = sorted(player_card_counts)
+    log(f"Carte scansionate: {total_card_count} | Giocatori unici (dedup): {len(slugs)}")
+    return slugs, player_card_counts
 
 
 def main():
-    log("Avvio discovery centrocampisti MLS in_season...")
-    slugs, card_counts = discover_mls_midfielders_in_season()
+    log("Avvio discovery centrocampisti MLS (in_season + classic)...")
+    slugs, card_counts = discover_mls_midfielders_all()
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
@@ -187,9 +193,11 @@ def main():
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(slugs, f, ensure_ascii=False, indent=2)
 
-    # NUOVO: numero di carte IN_SEASON possedute per ciascun giocatore (per la
-    # fusione finale multi-formazione: un giocatore puo' essere riusato in una
-    # seconda lineup solo se ne possiedi piu' di una copia).
+    # NUOVO: numero di carte possedute per ciascun giocatore, SEPARATE per
+    # tipo ({'in_season': n, 'classic': m}) -- per la fusione finale
+    # multi-formazione: un giocatore puo' essere riusato in una seconda
+    # lineup solo se ne possiedi piu' di una copia, e la regola "max 1
+    # classic per formazione" richiede di sapere quali copie sono classic.
     counts_path = os.path.join(OUTPUT_DIR, 'player_card_counts.json')
     with open(counts_path, 'w', encoding='utf-8') as f:
         json.dump(card_counts, f, ensure_ascii=False, indent=2)

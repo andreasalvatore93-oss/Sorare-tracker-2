@@ -12,24 +12,40 @@ istantaneo. Va rilanciato dopo ogni aggiornamento dei consigli di ruolo per
 restare aggiornato (i file consiglio_*.txt piu' recenti per cartella sono
 sempre quelli usati).
 
+REGOLA "MAX 1 CLASSIC PER FORMAZIONE, MIN 4 IN_SEASON" (25/07, implementata):
+Le discovery di ruolo scansionano SIA carte IN_SEASON che CLASSIC, e
+player_card_counts.json riporta le copie possedute separate per tipo
+({'in_season': n, 'classic': m}). LA SCELTA DEL GIOCATORE PER OGNI SLOT E'
+GUIDATA SOLO DALLO SCORE ATTESO, MAI DAL TIPO DI CARTA: si scorre la
+classifica del ruolo (gia' ordinata per score decrescente) e si prende il
+primo giocatore disponibile, sia la sua carta migliore IN_SEASON o CLASSIC
+— un giocatore col punteggio piu' alto viene scelto anche se posseduto
+SOLO in classic. Il tipo di carta entra in gioco unicamente per decidere
+QUALE copia dello stesso giocatore consumare: se un giocatore ha sia
+IN_SEASON che CLASSIC disponibili, si consuma prima la copia IN_SEASON
+(irrilevante per lo score, ma preserva l'unico slot CLASSIC della
+formazione per un eventuale altro giocatore che ne ha davvero bisogno).
+Una carta CLASSIC viene usata solo se il giocatore non ha piu' copie
+IN_SEASON disponibili E lo slot CLASSIC della formazione (max 1, quindi
+min 4 IN_SEASON sui 5 totali) e' ancora libero; altrimenti si passa al
+prossimo migliore in classifica.
+NOTA: l'assegnazione dei 5 slot (GK, DEF, MID, FWD, EXTRA) e' greedy in
+quest'ordine fisso — in rari casi di contesa tra piu' ruoli per l'unico
+slot classic disponibile, potrebbe non essere l'allocazione a somma
+assoluta massima (ottimizzazione globale non implementata, complessita'
+non giustificata per un caso limite).
+
 LOGICA MULTI-FORMAZIONE (NUM_FORMAZIONI, default 1):
 Un giocatore usato in una lineup NON puo' essere riusato in una lineup
-successiva, A MENO CHE non si possiedano piu' copie della sua carta
-IN_SEASON. Il numero di copie possedute viene letto da
-mls_<ruolo>_discovery/player_card_counts.json (prodotto dagli script di
-discovery aggiornati il 25/07 -- se il file non esiste ancora, per esempio
-perche' la discovery non e' stata rilanciata dopo l'aggiornamento, si assume
-1 copia di default per ogni giocatore). Ogni copia posseduta = un possibile
-utilizzo in una lineup diversa (stesso giocatore, carta fisica diversa).
+successiva, A MENO CHE non si possiedano piu' copie della sua carta (dello
+stesso tipo o no: ogni copia, in_season o classic, e' un utilizzo possibile
+in una lineup diversa). Se un ruolo esaurisce i candidati disponibili
+(copie finite) prima di raggiungere NUM_FORMAZIONI, la generazione si
+ferma li' e lo segnala.
 
-Se un ruolo esaurisce i candidati disponibili (copie finite) prima di
-raggiungere NUM_FORMAZIONI, la generazione si ferma li' e lo segnala.
-
-LIMITE NOTO (da affrontare in fase di raffinamento): la regola "max 1 carta
-CLASSIC per formazione, resto IN_SEASON" NON e' ancora applicata qui — le
-discovery di ruolo filtrano solo carte in_season_eligible:true, le carte
-CLASSIC non sono ancora scansionate. Per ora ogni formazione e' quindi
-composta solo da carte IN_SEASON.
+Se player_card_counts.json non esiste ancora per un ruolo (discovery non
+rilanciata dopo l'aggiornamento del 25/07), si assume 1 copia IN_SEASON di
+default per ogni giocatore di quel ruolo non presente nel file.
 """
 import os
 import re
@@ -97,10 +113,11 @@ def parse_consiglio(path):
 
 
 def load_card_counts(discovery_dir):
-    """Carica slug -> numero di copie possedute, da player_card_counts.json.
+    """Carica slug -> {'in_season': n, 'classic': m}, da player_card_counts.json.
     Se il file non esiste (discovery non ancora rilanciata dopo l'aggiornamento
-    del 25/07), ritorna un dict vuoto: il chiamante assumera' 1 copia di
-    default per ogni giocatore non presente."""
+    del 25/07 che ha aggiunto lo scan classic), ritorna un dict vuoto: il
+    chiamante assumera' 1 copia IN_SEASON di default per ogni giocatore non
+    presente."""
     path = os.path.join(discovery_dir, 'player_card_counts.json')
     if not os.path.exists(path):
         return {}, path
@@ -128,104 +145,136 @@ def load_all_roles():
 
 
 class CardPool:
-    """Traccia quante copie di ogni giocatore restano disponibili, attraverso
-    tutte le formazioni generate in questa run. Default 1 copia per uno slug
-    non presente nel relativo player_card_counts.json (dato non ancora
-    tracciato, o giocatore con una sola carta posseduta)."""
+    """Traccia quante copie IN_SEASON e CLASSIC di ogni giocatore restano
+    disponibili, attraverso tutte le formazioni generate in questa run.
+    Default: 1 copia IN_SEASON (0 classic) per uno slug non presente nel
+    relativo player_card_counts.json (dato non ancora tracciato per quel
+    ruolo, o giocatore con una sola carta posseduta)."""
 
     def __init__(self, counts_by_role):
         self._total = {}
         for role, counts in counts_by_role.items():
-            for slug, n in counts.items():
-                self._total[slug] = max(self._total.get(slug, 0), n)
+            for slug, breakdown in counts.items():
+                cur = self._total.setdefault(slug, {'in_season': 0, 'classic': 0})
+                cur['in_season'] = max(cur['in_season'], breakdown.get('in_season', 0))
+                cur['classic'] = max(cur['classic'], breakdown.get('classic', 0))
         self._used = {}
 
-    def remaining(self, slug):
-        return self._total.get(slug, 1) - self._used.get(slug, 0)
+    def _total_for(self, slug):
+        return self._total.get(slug, {'in_season': 1, 'classic': 0})
 
-    def use(self, slug):
-        self._used[slug] = self._used.get(slug, 0) + 1
+    def _used_for(self, slug):
+        return self._used.get(slug, {'in_season': 0, 'classic': 0})
+
+    def remaining_in_season(self, slug):
+        return self._total_for(slug)['in_season'] - self._used_for(slug)['in_season']
+
+    def remaining_classic(self, slug):
+        return self._total_for(slug)['classic'] - self._used_for(slug)['classic']
 
     def copies_owned(self, slug):
-        return self._total.get(slug, 1)
+        t = self._total_for(slug)
+        return t['in_season'] + t['classic']
 
-
-def pick_best(pool_rows, card_pool, exclude_slugs):
-    for row in pool_rows:
-        if row['slug'] in exclude_slugs:
-            continue
-        if card_pool.remaining(row['slug']) <= 0:
-            continue
-        return row
-    return None
+    def use(self, slug, card_type):
+        u = self._used.setdefault(slug, {'in_season': 0, 'classic': 0})
+        u[card_type] += 1
 
 
 def build_one_lineup(role_data, card_pool):
     """Costruisce UNA formazione tenendo conto delle copie gia' esaurite nelle
-    formazioni precedenti (tramite card_pool). Ritorna (formazione, errore)."""
+    formazioni precedenti (tramite card_pool) e del vincolo max 1 carta
+    CLASSIC per formazione (classic_budget). Ritorna (formazione, errore);
+    formazione e' una lista di tuple (slot, row, card_type)."""
     used_this_lineup = set()
+    classic_budget = [0]  # 0 o 1: quante carte classic sono gia' state usate in QUESTA lineup
 
-    gk = pick_best(role_data['GK'], card_pool, used_this_lineup)
+    def pick(pool_rows):
+        for row in pool_rows:
+            slug = row['slug']
+            if slug in used_this_lineup:
+                continue
+            if card_pool.remaining_in_season(slug) > 0:
+                return row, 'in_season'
+            if classic_budget[0] < 1 and card_pool.remaining_classic(slug) > 0:
+                return row, 'classic'
+        return None, None
+
+    picks = []
+
+    gk, gk_type = pick(role_data['GK'])
     if gk is None:
         return None, "Nessun portiere disponibile (copie esaurite o consiglio GK vuoto)."
     used_this_lineup.add(gk['slug'])
+    if gk_type == 'classic':
+        classic_budget[0] += 1
+    picks.append(('GK', gk, gk_type))
 
-    def_pick = pick_best(role_data['DEF'], card_pool, used_this_lineup)
+    def_pick, def_type = pick(role_data['DEF'])
     if def_pick is None:
         return None, "Nessun difensore disponibile (copie esaurite o consiglio DEF vuoto)."
     used_this_lineup.add(def_pick['slug'])
+    if def_type == 'classic':
+        classic_budget[0] += 1
+    picks.append(('DEF', def_pick, def_type))
 
-    mid_pick = pick_best(role_data['MID'], card_pool, used_this_lineup)
+    mid_pick, mid_type = pick(role_data['MID'])
     if mid_pick is None:
         return None, "Nessun centrocampista disponibile (copie esaurite o consiglio MID vuoto)."
     used_this_lineup.add(mid_pick['slug'])
+    if mid_type == 'classic':
+        classic_budget[0] += 1
+    picks.append(('MID', mid_pick, mid_type))
 
-    fwd_pick = pick_best(role_data['FWD'], card_pool, used_this_lineup)
+    fwd_pick, fwd_type = pick(role_data['FWD'])
     if fwd_pick is None:
         return None, "Nessun attaccante disponibile (copie esaurite o consiglio FWD vuoto)."
     used_this_lineup.add(fwd_pick['slug'])
+    if fwd_type == 'classic':
+        classic_budget[0] += 1
+    picks.append(('FWD', fwd_pick, fwd_type))
 
     # Extra: il migliore rimanente tra DEF/MID/FWD (esclusi i titolari di
-    # QUESTA lineup e le copie gia' esaurite), a prescindere dal ruolo.
+    # QUESTA lineup, le copie gia' esaurite, e rispettando il classic_budget),
+    # a prescindere dal ruolo.
     combined = []
     for role in ('DEF', 'MID', 'FWD'):
         for row in role_data[role]:
             combined.append((role, row))
     combined.sort(key=lambda rc: rc[1]['atteso'], reverse=True)
 
-    extra_role, extra_pick = None, None
+    extra_role = extra_pick = extra_type = None
     for role, row in combined:
-        if row['slug'] in used_this_lineup:
+        slug = row['slug']
+        if slug in used_this_lineup:
             continue
-        if card_pool.remaining(row['slug']) <= 0:
-            continue
-        extra_role, extra_pick = role, row
-        break
+        if card_pool.remaining_in_season(slug) > 0:
+            extra_role, extra_pick, extra_type = role, row, 'in_season'
+            break
+        if classic_budget[0] < 1 and card_pool.remaining_classic(slug) > 0:
+            extra_role, extra_pick, extra_type = role, row, 'classic'
+            break
 
     if extra_pick is None:
         return None, "Nessun candidato disponibile per lo slot extra (copie esaurite)."
 
-    for row in (gk, def_pick, mid_pick, fwd_pick, extra_pick):
-        card_pool.use(row['slug'])
+    picks.append((f'EXTRA ({extra_role})', extra_pick, extra_type))
 
-    formazione = [
-        ('GK', gk),
-        ('DEF', def_pick),
-        ('MID', mid_pick),
-        ('FWD', fwd_pick),
-        (f'EXTRA ({extra_role})', extra_pick),
-    ]
-    return formazione, None
+    for _slot, row, ctype in picks:
+        card_pool.use(row['slug'], ctype)
+
+    return picks, None
 
 
 def format_lineup(idx, formazione, card_pool):
     lines = []
     lines.append(f"--- Formazione #{idx} ---")
     totale_atteso = totale_low = totale_high = 0
-    for slot, row in formazione:
+    for slot, row, ctype in formazione:
+        tag = " [CLASSIC]" if ctype == 'classic' else ""
         copie = card_pool.copies_owned(row['slug'])
-        nota_copie = f" [{copie} copie possedute]" if copie > 1 else ""
-        lines.append(f"{slot:<12} {row['slug']}: {row['atteso']} pt ({row['low']}-{row['high']}){nota_copie}")
+        nota_copie = f" ({copie} copie possedute)" if copie > 1 else ""
+        lines.append(f"{slot:<12} {row['slug']}: {row['atteso']} pt ({row['low']}-{row['high']}){tag}{nota_copie}")
         totale_atteso += row['atteso']
         totale_low += row['low']
         totale_high += row['high']
@@ -242,7 +291,7 @@ def main():
         n = len(role_data.get(role) or [])
         print(f"[{role}] {path or 'NESSUN FILE TROVATO'} -> {n} giocatori disponibili")
     for role, path in counts_files.items():
-        print(f"[{role}] player_card_counts.json: {path or 'MANCANTE (default 1 copia/giocatore)'}")
+        print(f"[{role}] player_card_counts.json: {path or 'MANCANTE (default 1 copia in_season/giocatore)'}")
 
     if not all(role_data.get(r) for r in ROLES):
         print("\nERRORE: almeno un ruolo non ha consiglio disponibile, impossibile generare formazioni.")
@@ -263,12 +312,13 @@ def main():
     header_lines.append("")
     header_lines.append("Fonte copie possedute per giocatore (player_card_counts.json):")
     for role, path in counts_files.items():
-        header_lines.append(f"  {role}: {path or 'MANCANTE (assunta 1 copia per ogni giocatore)'}")
+        header_lines.append(f"  {role}: {path or 'MANCANTE (assunta 1 copia in_season per ogni giocatore)'}")
     header_lines.append("")
     header_lines.append("-" * 70)
 
     lineup_blocks = []
     grand_total = 0
+    generated = 0
     for idx in range(1, num_formazioni + 1):
         formazione, error = build_one_lineup(role_data, card_pool)
         if error:
@@ -278,19 +328,20 @@ def main():
         block_text, totale = format_lineup(idx, formazione, card_pool)
         lineup_blocks.append(block_text)
         grand_total += totale
+        generated += 1
         print("\n" + block_text)
 
     footer_lines = []
     footer_lines.append("-" * 70)
-    footer_lines.append(f"Formazioni generate: {len([b for b in lineup_blocks if b.startswith('---')])}/{num_formazioni}")
-    if len([b for b in lineup_blocks if b.startswith('---')]) > 1:
+    footer_lines.append(f"Formazioni generate: {generated}/{num_formazioni}")
+    if generated > 1:
         footer_lines.append(f"TOTALE COMPLESSIVO (tutte le formazioni): {grand_total} pt")
     footer_lines.append("=" * 70)
     footer_lines.append("")
-    footer_lines.append("NOTA: formazioni composte solo da carte IN_SEASON (le carte CLASSIC")
-    footer_lines.append("non sono ancora scansionate — regola 'max 1 classic' da implementare")
-    footer_lines.append("in fase di raffinamento). Un giocatore e' riusato in piu' lineup solo")
-    footer_lines.append("se se ne possiedono piu' copie IN_SEASON (player_card_counts.json).")
+    footer_lines.append("NOTA: max 1 carta CLASSIC per formazione (contrassegnata [CLASSIC]),")
+    footer_lines.append("resto IN_SEASON — preferenza automatica per copie IN_SEASON quando")
+    footer_lines.append("disponibili. Un giocatore e' riusato in piu' lineup solo se se ne")
+    footer_lines.append("possiedono piu' copie (player_card_counts.json).")
 
     full_text = "\n".join(header_lines) + "\n\n" + "\n\n".join(lineup_blocks) + "\n\n" + "\n".join(footer_lines)
     print("\n" + "\n".join(footer_lines))

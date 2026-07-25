@@ -1,0 +1,579 @@
+name: Formazione Completa (pipeline unificata GK+DEF+MID+FWD)
+
+# Pipeline unica end-to-end: per ciascuno dei 4 ruoli scopre TUTTE le carte
+# possedute (IN_SEASON + CLASSIC), valuta ogni giocatore, produce il
+# consiglio di ruolo, poi fonde i 4 consigli in N formazioni ottimali
+# (input configurabile). Sostituisce le singole discovery/test/merge per
+# ruolo e il workflow di sola fusione, gia' rimossi per pulizia.
+
+on:
+  workflow_dispatch:
+    inputs:
+      num_formazioni:
+        description: 'Numero di formazioni da generare'
+        required: false
+        default: '1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: formazione-completa
+  cancel-in-progress: false
+
+jobs:
+  # ------------------------------------------------------------------
+  # DISCOVERY: una per ruolo, in parallelo. Ognuna scansiona SIA le carte
+  # IN_SEASON che CLASSIC possedute (due passate lato server per tipo),
+  # cosi' da poter poi applicare la regola "max 1 classic per formazione"
+  # nella fusione finale.
+  # ------------------------------------------------------------------
+  discover_gk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Discovery portieri MLS (in_season + classic)
+        id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          PYTHONUNBUFFERED: "1"
+        run: python mls_gk_discovery.py
+      - name: Commit output discovery
+        if: always()
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_gk_discovery/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: discovery GK"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_def:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Discovery difensori MLS (in_season + classic)
+        id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          PYTHONUNBUFFERED: "1"
+        run: python mls_def_discovery.py
+      - name: Commit output discovery
+        if: always()
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_def_discovery/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: discovery DEF"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_mid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Discovery centrocampisti MLS (in_season + classic)
+        id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          PYTHONUNBUFFERED: "1"
+        run: python mls_mid_discovery.py
+      - name: Commit output discovery
+        if: always()
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_mid_discovery/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: discovery MID"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_fwd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Discovery attaccanti MLS (in_season + classic)
+        id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          PYTHONUNBUFFERED: "1"
+        run: python mls_fwd_discovery.py
+      - name: Commit output discovery
+        if: always()
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_fwd_discovery/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: discovery FWD"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  # ------------------------------------------------------------------
+  # PREDICT: matrix per giocatore, un job runner ciascuno (budget
+  # complessita' API fresco per processo), parametri gia' fissati per
+  # tutti e 4 i ruoli (fase di produzione, non calibrazione).
+  # ------------------------------------------------------------------
+  predict_gk:
+    needs: discover_gk
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_gk.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Predict GK
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python test_gk.py
+      - name: Commit output e cache
+        if: always()
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_gk_all/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: predict GK ${{ matrix.player_slug }}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  predict_def:
+    needs: discover_def
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_def.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Predict DEF
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python test_def.py
+      - name: Commit output e cache
+        if: always()
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_def_all/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: predict DEF ${{ matrix.player_slug }}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  predict_mid:
+    needs: discover_mid
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_mid.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Predict MID
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python test_mid.py
+      - name: Commit output e cache
+        if: always()
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_mid_all/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: predict MID ${{ matrix.player_slug }}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  predict_fwd:
+    needs: discover_fwd
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_fwd.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Predict FWD
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python test_mls_fwd_all.py
+      - name: Commit output e cache
+        if: always()
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_fwd_all/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: predict FWD ${{ matrix.player_slug }}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  # ------------------------------------------------------------------
+  # MERGE: riepilogo compatto per ruolo (consiglio_<ts>.txt).
+  # ------------------------------------------------------------------
+  merge_gk:
+    needs: [discover_gk, predict_gk]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Consiglio GK
+        run: python build_consiglio_gk.py
+      - name: Commit riepilogo
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_gk_all/consiglio_*.txt
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: consiglio GK"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_def:
+    needs: [discover_def, predict_def]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Consiglio DEF
+        run: python build_consiglio_def.py
+      - name: Commit riepilogo
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_def_all/consiglio_*.txt
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: consiglio DEF"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_mid:
+    needs: [discover_mid, predict_mid]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Consiglio MID
+        run: python build_consiglio_mid.py
+      - name: Commit riepilogo
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_mid_all/consiglio_*.txt
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: consiglio MID"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_fwd:
+    needs: [discover_fwd, predict_fwd]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Consiglio FWD
+        run: python build_consiglio.py
+      - name: Commit riepilogo
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add mls_fwd_all/consiglio_*.txt
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: consiglio FWD"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  # ------------------------------------------------------------------
+  # FUSIONE FINALE: legge i 4 consigli appena prodotti e genera N
+  # formazioni ottimali (input num_formazioni).
+  # ------------------------------------------------------------------
+  formazione_finale:
+    needs: [merge_gk, merge_def, merge_mid, merge_fwd]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Genera formazione(i) ottimale(i)
+        env:
+          NUM_FORMAZIONI: ${{ github.event.inputs.num_formazioni }}
+        run: python build_formazione_finale.py
+      - name: Commit formazione(i)
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add formazione_finale_*.txt
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione Completa: formazione finale (${{ github.event.inputs.num_formazioni }})"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
