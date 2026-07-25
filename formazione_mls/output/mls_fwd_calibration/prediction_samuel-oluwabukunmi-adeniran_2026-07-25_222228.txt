@@ -1,0 +1,100 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:22:28.413700Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) samuel-oluwabukunmi-adeniran: 53 pt attesi (24-82)
+======================================================================
+
+######################################################################
+# GIOCATORE: samuel-oluwabukunmi-adeniran
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: samuel-oluwabukunmi-adeniran (squadra: lask-linz)
+Generato: 2026-07-25T22:22:28.412638Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-30 | ASK vs SCR | austrian-bundesliga | score=69.2 | peso=0.445
+  2025-12-06 | HTB vs ASK | austrian-bundesliga | score=40.9 | peso=0.472
+  2025-12-13 | GAK vs ASK | austrian-bundesliga | score=60.0 | peso=0.500
+  2026-02-07 | ASK vs WSG | austrian-bundesliga | score=70.2 | peso=0.530
+  2026-02-14 | SVR vs ASK | austrian-bundesliga | score=38.6 | peso=0.561
+  2026-03-08 | ASK vs WAC | austrian-bundesliga | score=69.6 | peso=0.595
+  2026-03-13 | ASK vs HTB | austrian-bundesliga | score=30.5 | peso=0.630
+  2026-03-22 | SCR vs ASK | austrian-bundesliga | score=81.6 | peso=0.667
+  2026-04-05 | ASK vs FAK | austrian-bundesliga | score=30.5 | peso=0.707
+  2026-04-10 | RBS vs ASK | austrian-bundesliga | score=67.9 | peso=0.749
+  2026-04-19 | ASK vs STU | austrian-bundesliga | score=34.4 | peso=0.794
+  2026-04-22 | STU vs ASK | austrian-bundesliga | score=9.5 | peso=0.841
+  2026-05-04 | ASK vs SCR | austrian-bundesliga | score=62.2 | peso=0.891
+  2026-05-10 | ASK vs RBS | austrian-bundesliga | score=70.9 | peso=0.944
+  2026-05-17 | FAK vs ASK | austrian-bundesliga | score=67.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 53.42
+Deviazione standard pesata: 20.85
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.15 (differenza: +4.70)
+Media score in casa: 54.69 | Media score fuori casa: 52.29
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.3
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.232
+Fattore falli (casa/trasferta, da dati reali): 1.019
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.970
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.027
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 48.9 vs media ultime 10: 52.5): 0.952
+P(gioca): 83.33% (fonte: tasso di presenza storico (15/18))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T17:30
+Casa: LASK | Trasferta: Liebherr Grazer AK
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.1 +/- 29.2
+  (range: 23.9 - 82.3)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.91
+Punteggio REALE ottenuto in quella partita: 67.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=20.0+trend_int=0.7' (half_life=12.0, range_mult=1.4, opp_sens=20.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.0    30.5    -31.5    18.9        NO
+   7        7      51.2    81.6    +30.4    22.5        NO
+   8        8      54.1    30.5    -23.6    25.1        SI
+   9        9      48.0    67.9    +19.9    26.8        SI
+  10       10      44.5    34.4    -10.1    25.8        SI
+  11       11      41.9     9.5    -32.4    26.1        NO
+  12       12      46.8    62.2    +15.4    31.3        SI
+  13       13      40.9    70.9    +30.0    30.2        SI
+  14       14      50.3    67.5    +17.2    30.0        SI
+
+MAE (errore assoluto medio): 23.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
