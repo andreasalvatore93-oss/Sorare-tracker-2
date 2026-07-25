@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T18:50:43.543754Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=70%
+======================================================================
+1) jeisson-andres-palacios-murillo: 59 pt attesi (39-79)
+======================================================================
+
+######################################################################
+# GIOCATORE: jeisson-andres-palacios-murillo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jeisson-andres-palacios-murillo (squadra: nashville-sc)
+Generato: 2026-07-25T18:50:43.543417Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-28 | NSH vs HOU | mlspa | score=56.6 | peso=0.340
+  2025-10-25 | MIA vs NSH | mlspa | score=37.1 | peso=0.367
+  2025-11-01 | NSH vs MIA | mlspa | score=60.6 | peso=0.397
+  2026-02-22 | NSH vs NE | mlspa | score=62.7 | peso=0.429
+  2026-03-01 | DAL vs NSH | mlspa | score=60.1 | peso=0.463
+  2026-03-08 | NSH vs MIN | mlspa | score=66.7 | peso=0.500
+  2026-03-21 | NSH vs ORL | mlspa | score=100.0 | peso=0.540
+  2026-04-05 | CHI vs NSH | mlspa | score=54.0 | peso=0.583
+  2026-04-18 | ATL vs NSH | mlspa | score=61.0 | peso=0.630
+  2026-04-26 | NSH vs CLT | mlspa | score=59.3 | peso=0.680
+  2026-05-10 | NSH vs DC | mlspa | score=47.3 | peso=0.735
+  2026-05-13 | NE vs NSH | mlspa | score=72.4 | peso=0.794
+  2026-05-18 | NSH vs LAFC | mlspa | score=43.3 | peso=0.857
+  2026-05-24 | NSH vs NYC | mlspa | score=79.8 | peso=0.926
+  2026-07-23 | NSH vs MTL | mlspa | score=89.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 65.09
+Deviazione standard pesata: 16.64
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.87 (differenza: +2.76)
+Media score in casa: 66.52 | Media score fuori casa: 56.94
+Fattore casa/trasferta applicato: 0.984 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.5
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.120
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.970
+Fattore eventi rari (rigori/autogol/errori, con cap): 0.987
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.965
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.985
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.989
+Fattore gol subiti (goals_conceded, con cap): 1.016
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.023
+Fattore trend (media ultime 5: 66.4 vs media ultime 10: 67.3): 0.982
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: Orlando City SC | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 59.4 +/- 20.0
+  (range: 39.5 - 79.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 62.18
+Punteggio REALE ottenuto in quella partita: 89.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +26.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      72.6   100.0    +27.4    11.1        NO
+   7        7      48.8    54.0     +5.2    21.7        SI
+   8        8      70.9    61.0     -9.9    20.5        SI
+   9        9      71.6    59.3    -12.3    19.0        SI
+  10       10      84.4    47.3    -37.1    17.7        NO
+  11       11      53.4    72.4    +19.0    17.6        NO
+  12       12      51.2    43.3     -8.0    17.2        SI
+  13       13      54.0    79.8    +25.8    17.7        NO
+  14       14      73.0    89.1    +16.1    18.3        SI
+
+MAE (errore assoluto medio): 17.86
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
