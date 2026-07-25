@@ -1,0 +1,98 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:19:20.803232Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) mateo-bajamich: 16 pt attesi (1-31)
+======================================================================
+
+######################################################################
+# GIOCATORE: mateo-bajamich
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mateo-bajamich (squadra: estudiantes-rio-cuarto-rio-cuarto-provincia-de-cordoba)
+Generato: 2026-07-25T22:19:20.802267Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | TUC vs ROS | superliga-argentina-de-futbol | score=40.2 | peso=0.472
+  2025-09-13 | NOB vs TUC | superliga-argentina-de-futbol | score=48.3 | peso=0.500
+  2025-09-21 | TUC vs RIV | superliga-argentina-de-futbol | score=41.7 | peso=0.530
+  2025-09-29 | VEL vs TUC | superliga-argentina-de-futbol | score=76.2 | peso=0.561
+  2025-10-21 | TUC vs SLO | superliga-argentina-de-futbol | score=32.5 | peso=0.595
+  2026-01-26 | TIG vs ERC | superliga-argentina-de-futbol | score=36.8 | peso=0.630
+  2026-01-30 | ERC vs ARG | superliga-argentina-de-futbol | score=32.0 | peso=0.667
+  2026-02-03 | BAN vs ERC | superliga-argentina-de-futbol | score=37.2 | peso=0.707
+  2026-02-10 | ERC vs IND | superliga-argentina-de-futbol | score=27.1 | peso=0.749
+  2026-02-15 | TUC vs ERC | superliga-argentina-de-futbol | score=29.2 | peso=0.794
+  2026-03-12 | ERC vs BEL | superliga-argentina-de-futbol | score=38.5 | peso=0.841
+  2026-04-04 | ALD vs ERC | superliga-argentina-de-futbol | score=46.7 | peso=0.891
+  2026-04-12 | ERC vs BAC | superliga-argentina-de-futbol | score=40.9 | peso=0.944
+  2026-04-18 | GLP vs ERC | superliga-argentina-de-futbol | score=36.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 39.53
+Deviazione standard pesata: 10.70
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.35 (differenza: +5.35)
+Media score in casa: 34.62 | Media score fuori casa: 37.26
+Fattore casa/trasferta applicato: 0.988 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.8
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.835
+Fattore falli (casa/trasferta, da dati reali): 1.010
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.983
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 38.3 vs media ultime 10: 35.7): 1.051
+P(gioca): 46.67% (fonte: tasso di presenza storico (14/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T00:15
+Casa: Argentinos Juniors | Trasferta: AA Estudiantes de Río Cuarto
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 15.8 +/- 15.0
+  (range: 0.8 - 30.8)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.89
+Punteggio REALE ottenuto in quella partita: 36.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      28.4    32.0     +3.6    17.5        SI
+   7        7      53.2    37.2    -16.0    17.1        SI
+   8        8      33.6    27.1     -6.5    16.0        SI
+   9        9      35.7    29.2     -6.5    16.2        SI
+  10       10      20.6    38.5    +17.9    15.8        NO
+  11       11      29.6    46.7    +17.1    14.8        NO
+  12       12      32.3    40.9     +8.6    14.2        SI
+  13       13      34.4    36.4     +2.0    13.5        SI
+
+MAE (errore assoluto medio): 9.77
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
