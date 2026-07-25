@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:18:58.487183Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) josh-bauer: 17 pt attesi (-9-42)
+======================================================================
+
+######################################################################
+# GIOCATORE: josh-bauer
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: josh-bauer (squadra: nashville-sc)
+Generato: 2026-07-25T21:18:58.486984Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-01 | NSH vs MIA | mlspa | score=83.9 | peso=0.735
+  2026-03-14 | CLB vs NSH | mlspa | score=87.9 | peso=0.794
+  2026-04-11 | CLT vs NSH | mlspa | score=39.5 | peso=0.857
+  2026-05-02 | PHI vs NSH | mlspa | score=38.9 | peso=0.926
+  2026-07-18 | NSH vs ATL | mlspa | score=46.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 57.47
+Deviazione standard pesata: 21.34
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.53 (differenza: +2.81)
+Media score in casa: 65.19 | Media score fuori casa: 55.44
+Fattore casa/trasferta applicato: 0.991 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.007
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.980
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.011
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.987
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.983
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.006
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 30.00% (fonte: starterOddsBasisPoints (3000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: Orlando City SC | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 16.7 +/- 25.6
+  (range: -8.9 - 42.3)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.78
+Punteggio REALE ottenuto in quella partita: 46.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
