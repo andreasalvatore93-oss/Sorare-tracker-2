@@ -645,14 +645,16 @@ AUTOBUY_MIN_MARGIN_BY_PRICE = [
     (3.0, 0.35),
     (5.0, 0.27),
     (8.0, 0.22),
-    (15.0, 0.18),
+    (15.0, 0.16),
 ]
 
 # Regola 3: sconto dell'offerta MakeOffer per fascia di prezzo (lista crescente), piu'
-# l'eccezione giocatore liquido.
+# l'eccezione giocatore liquido. Tarature 27%/19% (26/07, seconda ricalibrazione) --
+# la prima taratura (22.5%/16.5%) risultava sistematicamente troppo mite in entrambe le
+# fasce piu' basse su un secondo giro di casi reali/ipotetici discussi con l'utente.
 OFFER_DISCOUNT_BY_PRICE = [
-    (0.0, 0.225),
-    (4.0, 0.165),
+    (0.0, 0.27),
+    (4.0, 0.19),
     (7.0, 0.115),
     (15.0, 0.10),
 ]
