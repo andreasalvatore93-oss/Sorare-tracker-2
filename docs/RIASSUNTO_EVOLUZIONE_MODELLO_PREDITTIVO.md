@@ -326,3 +326,61 @@ Commit di finalizzazione: `2e9fa0eb`/`f246973e`. Tutto pushato su `origin/main`.
      altri campionati oltre MLS, come test di generalizzazione.
 4. Lavoro indipendente/non correlato in corso su un ALTRO filone (bot di trading
    `bots/bot_definitivo.py`) — vedi sezione 4 sopra, non mischiare.
+
+## 8. Approfondimento robustezza statistica del backtest (26/07, stesso giorno — primo tema del backlog punto 3)
+
+Prima di passare al tema successivo del backlog, l'utente ha voluto approfondire "Robustezza
+statistica del backtest" (B+C+D del menu di opzioni proposto, poi anche una quarta iterazione).
+MLS è **a circa metà campionato** al momento di scrivere questo — informazione rilevante: il
+volume di dati per giocatore crescerà ancora ma non esploderà a breve (al massimo raddoppierà
+entro fine stagione), quindi ha senso sfruttare bene i dati attuali con metodi statistici più
+prudenti invece di aspettare passivamente più partite.
+
+**B. Bootstrap win-rate** (nuovo script `formazione_mls/calibrazione/bootstrap_stability.py`,
+1000 ricampionamenti con sostituzione dei giocatori qualificati, per ruolo): la combinazione
+vincente ufficiale vince solo il **17.4% (FWD)**, **32.8% (DEF)**, **19.2% (MID)** dei
+ricampionamenti — nessun vincitore netto, con un campione leggermente diverso di giocatori MLS
+sarebbe probabilmente uscita una combinazione diversa. Segnale positivo: **`opponent_sensitivity
+=29.0` non cambia MAI** nella top-10 di nessun ruolo — è l'unico parametro davvero stabile; le
+vere zone di incertezza sono half_life (9 vs 12) e il flag granulari.
+
+**C. Intervallo di confidenza bootstrap 95% sul MAE**: bande larghe per tutti i ruoli (es. FWD
+15.84-18.70) — confermano che differenze di 0.1-0.3 MAE tra combinazioni viste durante
+l'aggregazione erano dentro il rumore statistico, non un segnale reale.
+
+**D. Sensitivity check su `MIN_TEST_GAMES`** (soglia minima partite di backtest per essere
+incluso nell'aggregazione, provata a 3/5/7): la combinazione vincente CAMBIA a seconda della
+soglia (es. FWD: trend 0.7→1.3→0.7 a seconda della soglia; DEF: hl 12→9→9) — mai un salto a
+parametri assurdi, ma conferma ulteriore che il segnale è debole rispetto al rumore campionario.
+Solo un check, nessun artefatto prodotto (i JSON ufficiali erano stati temporaneamente sovrascritti
+da questi run di prova e sono stati ripristinati con `git checkout` subito dopo).
+
+**Raccomandazione a media pesata bootstrap** (estensione di `bootstrap_stability.py`, seconda
+iterazione): invece di riportare solo il vincitore secco, calcola una media dei parametri numerici
+pesata per quante volte ogni combinazione vince nei ricampionamenti — un valore continuo che
+riflette l'incertezza invece di un estremo arbitrario della griglia discreta:
+
+| Ruolo | half_life (pesato) | range (pesato) | opp_sens (pesato) | trend (pesato) | granulari nelle vittorie |
+|---|---|---|---|---|---|
+| FWD | 10.48 | 1.40 | 29.00 | 0.92 | 31.1% (NO prevale) |
+| DEF | 10.99 | 1.25 | 28.97 | 0.73 | 29.9% (NO prevale) |
+| MID | 11.14 | 1.32 | 28.98 | 0.86 | 32.4% (NO prevale) |
+
+**Perché è una buona notizia**: la percentuale "granulari" è consistentemente intorno al 30% su
+tutti e tre i ruoli (non vicina al 50%) — la decisione "senza granulari" già presa non è un
+coin-flip casuale, è un segnale debole ma coerente attraverso i ruoli. Gli scarti sui parametri
+numerici rispetto ai valori ufficiali fissati sono modesti (half_life ~10.5-11 pesato vs 12.0
+ufficiale; trend più alto per MID/FWD, 0.86-0.92 pesato vs 0.70 ufficiale — DEF è il più vicino,
+0.73 vs 0.70).
+
+**Decisione presa**: NON cambiare i parametri ufficiali ora (già validati dal caso reale Antino
+Lopez/Carles Gil, e comunque nello stesso "vicinato" statistico di questi valori pesati — nessuno
+scarto scioccante). Questi numeri servono come **riferimento per il prossimo giro di
+ricalibrazione** a stagione più avanzata: se il vincitore secco del prossimo grid search si
+avvicinerà a questi valori pesati, sapremo che la stima si è stabilizzata; se diverge molto,
+sapremo che il segnale è ancora debole anche con più dati.
+
+**Tema chiuso**. Prossimo tema dal backlog (sezione 7E sopra), da scegliere con l'utente uno alla
+volta: condizionamento 2D venue+avversario/correlazione slot formazione (il più maturo ma da
+ridisegnare da zero, task in background non recuperabile), feature aggiuntive, gestione
+outlier/hot-streak, monitoraggio MAE live, estensione ad altri campionati.

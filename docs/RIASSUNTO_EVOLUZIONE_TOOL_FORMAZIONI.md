@@ -253,12 +253,25 @@ quasi sempre) — verificato contro le statistiche Sorare reali dei due giocator
 ora UFFICIALI in produzione (non più sperimentali). Dettaglio completo della sessione in
 `docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` sezione 7.
 
+## 10. Robustezza statistica del backtest (26/07/2026, primo tema del backlog affrontato)
+
+Nuovo script `formazione_mls/calibrazione/bootstrap_stability.py`: ricampiona con sostituzione i
+giocatori qualificati (bootstrap, 1000 iterazioni di default) per verificare quanto è solida la
+combinazione vincente di `aggregate_grid_search.py`. Risultato: nessun vincitore netto (win-rate
+17-33% a seconda del ruolo su MLS a metà stagione) — `opponent_sensitivity=29.0` è l'unico
+parametro sempre stabile, half_life e il flag granulari sono le vere zone di incertezza. Lo
+script calcola anche una **media pesata bootstrap dei parametri** (valore continuo, non vincolato
+alla griglia discreta) come riferimento più prudente: per FWD/DEF/MID conferma che "senza
+granulari" è la scelta giusta in modo consistente (~30% di supporto ai granulari su tutti e tre,
+non un coin-flip), con scarti modesti sui parametri numerici (half_life ~10.5-11 pesato vs 12.0
+ufficiale). Decisione: parametri ufficiali NON cambiati (già validati dal caso reale Antino
+Lopez/Carles Gil), questi valori pesati servono da riferimento per la prossima ricalibrazione a
+stagione più avanzata. Dettaglio completo in `RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` sezione 8.
+
 **Prossimo tema in coda** (da un brainstorm più ampio richiesto dall'utente, "una settimana per
 migliorare il modello", affrontato UN TEMA ALLA VOLTA): il Finding 4 di sezione 5
 (condizionamento 2D venue+avversario, correlazione slot formazione GK-DEF-FWD) resta il più
 maturo/prioritario — c'era un task in background per una proposta di design ma l'utente non è
 riuscito a recuperarlo, quindi si riparte da zero su questo tema quando arriva il suo turno.
-Altri temi in backlog (dettaglio in RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md sezione 7E):
-robustezza statistica del backtest (campioni piccoli per giocatore), feature aggiuntive
-(infortuni, calendario congestionato), gestione outlier/hot-streak, monitoraggio MAE live in
-produzione, estensione ad altri campionati.
+Altri temi in backlog: feature aggiuntive (infortuni, calendario congestionato), gestione
+outlier/hot-streak, monitoraggio MAE live in produzione, estensione ad altri campionati.
