@@ -1,0 +1,74 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:11:07.772450Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) alistair-johnston: 9 pt attesi (-15-33)
+======================================================================
+
+######################################################################
+# GIOCATORE: alistair-johnston
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: alistair-johnston (squadra: celtic-glasgow)
+Generato: 2026-07-25T21:11:07.772290Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 19
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: premiership-gb-sct (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-05-03 | HIB vs CEL | premiership-gb-sct | score=83.9 | peso=0.794
+  2026-05-10 | CEL vs RAN | premiership-gb-sct | score=28.9 | peso=0.857
+  2026-05-13 | MOT vs CEL | premiership-gb-sct | score=43.1 | peso=0.926
+  2026-05-16 | CEL vs HEA | premiership-gb-sct | score=39.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 47.84
+Deviazione standard pesata: 19.98
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 34.37 | Media score fuori casa: 63.50
+Fattore casa/trasferta applicato: 0.966 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.5
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.948
+Fattore falli (casa/trasferta, da dati reali): 0.978
+Fattore duelli (casa/trasferta, da dati reali): 0.952
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.988
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.961
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.029
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.022
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.034
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 21.05% (fonte: tasso di presenza storico (4/19))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-03T18:30
+Casa: Celtic FC | Trasferta: Dundee FC
+Competizione: premiership-gb-sct
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 8.9 +/- 24.0
+  (range: -15.1 - 32.8)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.93
+Punteggio REALE ottenuto in quella partita: 39.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
