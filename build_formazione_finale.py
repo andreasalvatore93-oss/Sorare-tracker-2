@@ -266,19 +266,37 @@ def build_one_lineup(role_data, card_pool):
     return picks, None
 
 
+CAPTAIN_BONUS = 0.5  # il capitano riceve +50% sul proprio punteggio (regola Sorare)
+
+
+def pick_captain(formazione):
+    """Il capitano ottimale e' semplicemente il giocatore con lo score atteso
+    piu' alto della formazione: dato che gli altri 4 punteggi restano fissi
+    a prescindere da chi si nomina capitano, il bonus +50% e' massimizzato
+    scegliendo sempre il punteggio di partenza piu' alto tra i 5."""
+    return max(formazione, key=lambda pick: pick[1]['atteso'])
+
+
 def format_lineup(idx, formazione, card_pool):
     lines = []
     lines.append(f"--- Formazione #{idx} ---")
+    captain_slot, captain_row, _captain_type = pick_captain(formazione)
     totale_atteso = totale_low = totale_high = 0
     for slot, row, ctype in formazione:
         tag = " [CLASSIC]" if ctype == 'classic' else ""
         copie = card_pool.copies_owned(row['slug'])
         nota_copie = f" ({copie} copie possedute)" if copie > 1 else ""
-        lines.append(f"{slot:<12} {row['slug']}: {row['atteso']} pt ({row['low']}-{row['high']}){tag}{nota_copie}")
+        cap_tag = " [C]" if row['slug'] == captain_row['slug'] else ""
+        lines.append(f"{slot:<12} {row['slug']}: {row['atteso']} pt ({row['low']}-{row['high']}){tag}{nota_copie}{cap_tag}")
         totale_atteso += row['atteso']
         totale_low += row['low']
         totale_high += row['high']
+
+    bonus = round(captain_row['atteso'] * CAPTAIN_BONUS)
+    totale_con_capitano = totale_atteso + bonus
     lines.append(f"TOTALE: {totale_atteso} pt ({totale_low}-{totale_high})")
+    lines.append(f"CAPITANO CONSIGLIATO: {captain_row['slug']} (+{bonus} pt, +{CAPTAIN_BONUS:.0%}) "
+                 f"-> TOTALE CON CAPITANO: {totale_con_capitano} pt")
     return "\n".join(lines), totale_atteso
 
 
