@@ -404,7 +404,7 @@ def fetch_game_detail(score_id, cache, is_final):
 # ---------------------------------------------------------------------------
 
 GAME_LOG_CACHE_DIR = os.path.join(OUTPUT_DIR, '.game_log_cache')
-GAME_LOG_REFRESH_COUNT = 5  # partite piu' recenti da riscaricare sempre ad ogni run, per scoprire eventuali novita'
+GAME_LOG_REFRESH_COUNT = 2  # ABBASSATO (25/07): tool usato con cadenza settimanale (1 partita MLS/settimana per squadra), 2 basta a coprire l'ultima giornata + margine, riduce ulteriormente le query rispetto a 5
 
 
 def load_game_log_cache(player_slug):

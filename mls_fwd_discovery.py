@@ -182,9 +182,83 @@ def discover_mls_forwards_all(user_slug=USER_SLUG, max_pages=50):
     return slugs, player_card_counts
 
 
+# ---------------------------------------------------------------------------
+# FILTRO STARTER-ODDS (25/07, SOLO pipeline produzione "miei giocatori"):
+# scartiamo qui, PRIMA di generare la matrix del job 'predict', chi ha
+# starter-odds della prossima partita sotto MIN_STARTER_ODDS_DISCOVERY --
+# cosi' non spawna nemmeno un job CI (checkout+setup+pip install+15-30
+# query di dettaglio) per un giocatore che verrebbe comunque escluso.
+# Dato dinamico per giornata (es. un titolare fermo per turnover questa
+# settimana torna la prossima), quindi va rifatto ad ogni run -- NON
+# applicare questa logica alla discovery GLOBALE (tutti i giocatori MLS,
+# usata per allargare la calibrazione): li' servono anche i giocatori che
+# non partono titolari in una data giornata.
+# Se il dato non e' disponibile (nessuna partita futura programmata,
+# rotazione non ancora nota), il giocatore viene TENUTO per sicurezza
+# invece di essere escluso a priori.
+# ---------------------------------------------------------------------------
+MIN_STARTER_ODDS_DISCOVERY = 0.60
+
+NEXT_GAME_ODDS_QUERY = """
+query NextGameOdds($slug: String!) {
+  anyPlayer(slug: $slug) {
+    anyFutureGames(first: 1) {
+      nodes {
+        playerGameScore(playerSlug: $slug) {
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def get_next_game_starter_odds(slug):
+    """Ritorna la probabilita' (0.0-1.0) di titolarita' alla prossima partita
+    nota per slug, o None se non disponibile (nessuna partita futura
+    programmata, o dato di rotazione non ancora noto)."""
+    data = graphql_query(NEXT_GAME_ODDS_QUERY, {"slug": slug}, operation_name="NextGameOdds")
+    player = (data.get('data') or {}).get('anyPlayer') or {}
+    future = (player.get('anyFutureGames') or {}).get('nodes') or []
+    if not future:
+        return None
+    pgs = future[0].get('playerGameScore') or {}
+    odds = (pgs.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {}
+    bp = odds.get('starterOddsBasisPoints')
+    if bp is None:
+        return None
+    return bp / 10000.0
+
+
+def filter_by_starter_odds(slugs, player_card_counts, min_starter_odds=MIN_STARTER_ODDS_DISCOVERY):
+    kept_slugs = []
+    kept_counts = {}
+    excluded = []
+    for slug in slugs:
+        odds = get_next_game_starter_odds(slug)
+        time.sleep(0.3)
+        if odds is not None and odds < min_starter_odds:
+            excluded.append((slug, odds))
+            continue
+        kept_slugs.append(slug)
+        kept_counts[slug] = player_card_counts[slug]
+
+    log(f"Filtro starter-odds >= {min_starter_odds:.0%}: {len(excluded)} esclusi su {len(slugs)} "
+        f"(dato mancante = tenuto per sicurezza). Esclusi: {excluded}")
+    return kept_slugs, kept_counts
+
+
 def main():
     log("Avvio discovery attaccanti MLS (in_season + classic)...")
     slugs, card_counts = discover_mls_forwards_all()
+
+    log("Filtro starter-odds sulla prossima partita (solo pipeline produzione)...")
+    slugs, card_counts = filter_by_starter_odds(slugs, card_counts)
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
