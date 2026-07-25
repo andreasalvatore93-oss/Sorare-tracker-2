@@ -87,12 +87,12 @@ def load_player_slugs():
 PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per giocatore, budget complessita' API limitato)
-HALF_LIFE_GAMES = 9.0  # PARTENZA (25/07): valore riusato dai difensori come punto di partenza — da ricalibrare con grid search dedicato ai portieri
-RANGE_MULTIPLIER = 1.2  # PARTENZA (25/07): idem
-OPPONENT_SENSITIVITY = 29.0  # PARTENZA (25/07): idem
-TREND_INTENSITY = 1.3  # PARTENZA (25/07): idem
+HALF_LIFE_GAMES = 9.0  # FISSATO (25/07): grid search cross-player su 12 portieri posseduti — combinazione vincente hl=9.0/range=1.6/opp_sens=20.0/trend_int=0.7 (SENZA granulari), MAE medio 21.03, copertura 63.3%.
+RANGE_MULTIPLIER = 1.6  # FISSATO (25/07): idem
+OPPONENT_SENSITIVITY = 20.0  # FISSATO (25/07): idem
+TREND_INTENSITY = 0.7  # FISSATO (25/07): idem
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
-MIN_STARTER_ODDS = 0.0  # DISATTIVATO (25/07) per la fase di GRID SEARCH sui portieri: il filtro escluderebbe i giocatori PRIMA di girare il backtest, riducendo il campione di calibrazione. Riattivare a 0.70 SOLO quando si passa all'uso reale/produzione (dopo aver fissato i parametri).
+MIN_STARTER_ODDS = 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): grid search di calibrazione concluso sui 12 posseduti con dati sufficienti, il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. Se si rifà grid search, riportare a 0.0 temporaneamente.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
 OUTPUT_DIR = 'mls_gk_all'
@@ -1189,30 +1189,32 @@ def build_prediction(player_slug):
     backtest_media = weighted_mean(backtest_scores, backtest_weights) if backtest_scores else None
 
 
-    # --- Grid search per QUESTO giocatore, salvato su disco per aggregazione ---
-    # cross-player (job 'aggregate' separato, stessa strategia gia' usata per
-    # difensori/centrocampisti/attaccanti). Il portiere e' ancora in fase di
-    # CALIBRAZIONE (parametri non ancora fissati), quindi si rieseguono TUTTE
-    # le combinazioni per ogni giocatore.
-    log("Esecuzione grid search completo (72 combinazioni) per aggregazione cross-player...")
-    grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                                    fouls_values=fouls_values, possession_values=possession_values,
-                                    offensive_values=offensive_values,
-                                    rare_events_values=rare_events_values,
-                                    passing_values=passing_values,
-                                    goalkeeping_values=goalkeeping_values,
-                                    goals_conceded_values=goals_conceded_values)
-    rigorous_bt = grid_results[0] if grid_results else None  # migliore per QUESTO giocatore (diagnostica locale)
-    if rigorous_bt and rigorous_bt['mae'] is not None:
-        log(f"Miglior combinazione per questo giocatore: {rigorous_bt['label']} -> "
-            f"MAE={rigorous_bt['mae']:.2f}, copertura={rigorous_bt['pct_dentro_range']:.1f}%")
+    # --- Backtest RIGOROSO sui parametri FISSATI (25/07, uso reale/produzione) ---
+    # Grid search di calibrazione GIA' concluso (12 portieri posseduti con dati
+    # sufficienti, MAE medio 21.03, copertura 63.3% — combinazione vincente SENZA
+    # fattori granulari, che peggioravano sempre il risultato per questo ruolo).
+    # Non serve piu' rieseguire 72 combinazioni ad ogni giocatore in produzione —
+    # un solo backtest sui parametri fissati, molto piu' veloce.
+    log("Esecuzione backtest rigoroso sui parametri fissati...")
+    rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
+                                     half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
+                                     opponent_sensitivity=OPPONENT_SENSITIVITY,
+                                     fouls_values=fouls_values, possession_values=possession_values,
+                                     offensive_values=offensive_values,
+                                     rare_events_values=rare_events_values,
+                                     passing_values=passing_values,
+                                     goalkeeping_values=goalkeeping_values,
+                                     goals_conceded_values=goals_conceded_values,
+                                     use_granular_factors=False, use_trend=True,
+                                     trend_intensity=TREND_INTENSITY)
+    rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
+                            f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA 12 posseduti)")
+    if rigorous_bt['mae'] is not None:
+        log(f"Backtest completato: MAE={rigorous_bt['mae']:.2f}, "
+            f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
     else:
         log("Backtest: dati insufficienti (serve più storico).")
-    # NOTA: grid_results NON va sovrascritto con [rigorous_bt] qui — deve
-    # restare la lista COMPLETA delle 72 combinazioni, altrimenti il file
-    # _grid.json salvato per l'aggregazione cross-player conterra' un solo
-    # elemento invece di 72 (bug gia' commesso e corretto sui centrocampisti,
-    # vedi memoria — non ripeterlo qui).
+    grid_results = [rigorous_bt]  # lista con un solo elemento, per compatibilita' col resto del codice
 
     result = {
         'player_slug': player_slug,
