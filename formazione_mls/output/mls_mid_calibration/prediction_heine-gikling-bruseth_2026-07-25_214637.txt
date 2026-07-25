@@ -1,0 +1,98 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:46:37.163884Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) heine-gikling-bruseth: 21 pt attesi (8-35)
+======================================================================
+
+######################################################################
+# GIOCATORE: heine-gikling-bruseth
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: heine-gikling-bruseth (squadra: kristiansund-kristiansund)
+Generato: 2026-07-25T21:46:37.162903Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: eliteserien (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-26 | SAN vs S08 | eliteserien | score=57.4 | peso=0.500
+  2025-08-10 | HAU vs S08 | eliteserien | score=42.4 | peso=0.530
+  2025-08-25 | S08 vs KRI | eliteserien | score=38.4 | peso=0.561
+  2026-03-15 | KRI vs BRA | eliteserien | score=70.7 | peso=0.595
+  2026-04-06 | KRI vs BOD | eliteserien | score=31.2 | peso=0.630
+  2026-04-11 | TIL vs KRI | eliteserien | score=44.4 | peso=0.667
+  2026-04-19 | KRI vs FFK | eliteserien | score=44.4 | peso=0.707
+  2026-04-26 | AAL vs KRI | eliteserien | score=39.9 | peso=0.749
+  2026-05-03 | KRI vs HAM | eliteserien | score=48.7 | peso=0.794
+  2026-05-10 | SAN vs KRI | eliteserien | score=45.9 | peso=0.841
+  2026-05-16 | MOL vs KRI | eliteserien | score=38.3 | peso=0.891
+  2026-07-18 | KRI vs S08 | eliteserien | score=58.5 | peso=0.944
+  2026-07-25 | KRI vs STA | eliteserien | score=40.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 45.93
+Deviazione standard pesata: 9.65
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.73 (differenza: +2.92)
+Media score in casa: 48.95 | Media score fuori casa: 41.38
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.163
+Fattore falli (casa/trasferta, da dati reali): 0.974
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.968
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.970
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore trend (media ultime 5: 46.3 vs media ultime 10: 46.2): 1.002
+P(gioca): 43.33% (fonte: tasso di presenza storico (13/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T15:00
+Casa: KFUM Fotball | Trasferta: Kristiansund BK
+Competizione: eliteserien
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 21.2 +/- 13.5
+  (range: 7.7 - 34.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.61
+Punteggio REALE ottenuto in quella partita: 40.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.6    44.4    -13.2    18.4        SI
+   7        7      56.3    39.9    -16.4    16.8        SI
+   8        8      45.5    48.7     +3.2    15.9        SI
+   9        9      48.5    45.9     -2.6    14.8        SI
+  10       10      38.1    38.3     +0.2    13.8        SI
+  11       11      44.9    58.5    +13.6    13.5        NO
+  12       12      64.7    40.2    -24.5    14.0        NO
+
+MAE (errore assoluto medio): 10.53
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
