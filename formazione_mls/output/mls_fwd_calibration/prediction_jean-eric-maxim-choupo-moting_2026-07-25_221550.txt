@@ -1,0 +1,90 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:15:50.585337Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jean-eric-maxim-choupo-moting: 0 pt attesi (-30-30)
+======================================================================
+
+######################################################################
+# GIOCATORE: jean-eric-maxim-choupo-moting
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jean-eric-maxim-choupo-moting (squadra: new-york-rb-secaucus-new-jersey)
+Generato: 2026-07-25T22:15:50.584449Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | RBNY vs RSL | mlspa | score=95.0 | peso=0.595
+  2025-08-16 | RBNY vs PHI | mlspa | score=66.8 | peso=0.630
+  2025-08-24 | CLT vs RBNY | mlspa | score=41.5 | peso=0.667
+  2025-08-30 | RBNY vs CLB | mlspa | score=44.1 | peso=0.707
+  2025-09-14 | POR vs RBNY | mlspa | score=21.2 | peso=0.749
+  2025-09-20 | MTL vs RBNY | mlspa | score=70.0 | peso=0.794
+  2025-09-27 | RBNY vs NYC | mlspa | score=83.6 | peso=0.841
+  2025-10-04 | RBNY vs CIN | mlspa | score=38.5 | peso=0.891
+  2025-10-18 | CLB vs RBNY | mlspa | score=60.0 | peso=0.944
+  2026-03-08 | RBNY vs MTL | mlspa | score=39.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 54.96
+Deviazione standard pesata: 21.08
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.04 (differenza: +5.04)
+Media score in casa: 61.25 | Media score fuori casa: 48.17
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.907
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.024
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.025
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 58.3 vs media ultime 10: 56.0): 1.029
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T22:30
+Casa: New York Red Bulls | Trasferta: Charlotte FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 0.0 +/- 29.5
+  (range: -29.5 - 29.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.22
+Punteggio REALE ottenuto in quella partita: 39.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -17.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.9    83.6    +35.7    28.1        NO
+   7        7      51.4    38.5    -12.9    28.6        SI
+   8        8      59.1    60.0     +0.9    28.0        SI
+   9        9      65.0    39.5    -25.5    26.0        SI
+
+MAE (errore assoluto medio): 18.74
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
