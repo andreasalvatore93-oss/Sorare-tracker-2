@@ -71,7 +71,7 @@ def send_telegram_msg(message):
 
 # --- Database (solo per non notificare due volte la stessa asta) ---
 def init_db():
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     conn.execute('''
         CREATE TABLE IF NOT EXISTS notified_auctions (
             auction_id TEXT PRIMARY KEY,
@@ -83,14 +83,14 @@ def init_db():
 
 
 def already_notified(auction_id):
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     row = conn.execute("SELECT 1 FROM notified_auctions WHERE auction_id=?", (auction_id,)).fetchone()
     conn.close()
     return row is not None
 
 
 def mark_notified(auction_id):
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     conn.execute(
         "INSERT OR REPLACE INTO notified_auctions (auction_id, notified_at) VALUES (?, ?)",
         (auction_id, datetime.datetime.now().isoformat())

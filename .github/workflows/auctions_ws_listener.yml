@@ -96,7 +96,7 @@ jobs:
           {
             echo ""
             echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
-            python auctions_ws_listener.py
+            python auctions/auctions_ws_listener.py
           } 2>&1 | tee -a logs/auctions_last_run.log
           # Rete di sicurezza SOLO per non far crescere il file all'infinito se l'utente non
           # pulla mai -- vedi commento gemello in check.yml.
@@ -114,7 +114,7 @@ jobs:
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add auctions.db
+          git add auctions/auctions.db
           if [ -f logs/auctions_last_run.log ]; then
             git add logs/auctions_last_run.log
           fi

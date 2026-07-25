@@ -55,4 +55,4 @@ jobs:
           TEST_MANGOPAY_WALLET_ID: ${{ github.event.inputs.test_mangopay_wallet_id }}
           TEST_NONCE: ${{ github.event.inputs.test_nonce }}
           TEST_OPERATION_HASH: ${{ github.event.inputs.test_operation_hash }}
-        run: python test_signature_isolated.py
+        run: python diagnostics/test_signature_isolated.py

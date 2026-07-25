@@ -19,4 +19,4 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
-        run: python introspect_fetch_key.py
+        run: python diagnostics/introspect_fetch_key.py

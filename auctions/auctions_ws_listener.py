@@ -373,7 +373,7 @@ def send_telegram_msg(message):
 # --- Database (stesso auctions.db/notified_auctions gia' usato dal polling: condivisibile
 #     anche se in futuro girassero entrambi in parallelo durante una transizione) ---
 def init_db():
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     conn.execute('''
         CREATE TABLE IF NOT EXISTS notified_auctions (
             auction_id TEXT PRIMARY KEY,
@@ -428,7 +428,7 @@ def log_decision(auction_id, player_slug, player_name, season_type, decision,
                   reasons=None):
     """Registra una riga per ogni decisione presa su un'asta (notificata o scartata, e perche').
     Stessa idea del log_decision di track.py, tabella gemella in auctions.db."""
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     conn.execute(
         '''INSERT INTO decisions_log
            (ts, auction_id, player_slug, player_name, season_type, current_price, min_next_bid,
@@ -443,14 +443,14 @@ def log_decision(auction_id, player_slug, player_name, season_type, decision,
 
 
 def already_notified(auction_id):
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     row = conn.execute("SELECT 1 FROM notified_auctions WHERE auction_id=?", (auction_id,)).fetchone()
     conn.close()
     return row is not None
 
 
 def mark_notified(auction_id):
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     conn.execute(
         "INSERT OR REPLACE INTO notified_auctions (auction_id, notified_at) VALUES (?, ?)",
         (auction_id, datetime.datetime.now().isoformat())
@@ -462,7 +462,7 @@ def mark_notified(auction_id):
 def get_last_eval_snapshot(auction_id):
     """Ultimo (current_price, min_next_bid) con cui questa asta e' stata valutata per intero,
     o None se non l'abbiamo mai vista. Vedi nota su evaluated_auctions in init_db."""
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     row = conn.execute(
         "SELECT current_price, min_next_bid FROM evaluated_auctions WHERE auction_id=?",
         (auction_id,)
@@ -472,7 +472,7 @@ def get_last_eval_snapshot(auction_id):
 
 
 def save_eval_snapshot(auction_id, current_price_eur, min_next_bid_eur):
-    conn = sqlite3.connect('auctions.db')
+    conn = sqlite3.connect('auctions/auctions.db')
     conn.execute(
         "INSERT OR REPLACE INTO evaluated_auctions (auction_id, current_price, min_next_bid, evaluated_at) "
         "VALUES (?, ?, ?, ?)",

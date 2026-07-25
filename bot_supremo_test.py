@@ -1791,7 +1791,7 @@ def _ensure_node_pool_slot(idx):
             f"attivo (codice uscita {proc.poll()}), lo riavvio -- ultime righe stderr: "
             f"{list(_node_stderr_tail)}")
 
-    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
+    script_path = os.path.join('sorare-sign', 'decrypt_and_sign.js')  # relativo a repo root (cwd), non a __file__: risorsa condivisa
     log(f"[firma Node] avvio processo Node persistente per la firma, slot {idx}/{_NODE_POOL_SIZE - 1} "
         f"(una tantum/riavvio, poi resta vivo e riusato per tutta la run)...")
     proc = subprocess.Popen(
