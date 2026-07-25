@@ -3068,17 +3068,23 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # AutoBuy, non deve MAI finire nel ramo AutoBuy (non stiamo accettando
     # un'offerta esistente su quella carta specifica, stiamo proponendo
     # un'offerta scontata su un'altra carta che risulta essere il vero minimo).
+    # FIX 25/07 (bug scoperto dall'utente su casi reali Rodrigo/Ethan Mbappe': scarto
+    # SILENZIOSO, zero log, zero notifica): il tetto eff_makeoffer_max coincide sempre
+    # con eff_autobuy per costruzione (riga ~2963), quindi un margine sopra la soglia
+    # AutoBuy faceva cadere questo ramo nell'else e tornava False senza fare nulla --
+    # comportamento MAI voluto ("doveva funzionare cosi' anche prima"): un caso
+    # trigger-non-allineato deve SEMPRE tentare un'offerta quando supera almeno il
+    # floor MakeOffer (gia' garantito qui, controllato piu' sopra alla riga ~2970 per
+    # OGNI caso), a prescindere da quanto e' alto il margine -- nessun tetto superiore
+    # per questo ramo, solo il ramo AutoBuy resta escluso per design.
     # Sconto offerta (ramo MakeOffer): calcolato UNA SOLA VOLTA qui col margine gia'
     # noto e riusato identico in _handle_makeoffer_branch (passato come offer_discount)
     # -- evita che la verifica ultima/penultima transazione qui sotto usi un prezzo
     # diverso da quello poi effettivamente offerto.
     effective_discount = None
     if trigger_su_minimo_non_allineato:
-        if eff_makeoffer_min <= margin_percent <= eff_makeoffer_max:
-            effective_discount = compute_price_based_offer_discount(true_min_price, count_7d)
-            prezzo_da_pagare = round(true_min_price * (1 - effective_discount), 2)
-        else:
-            return False
+        effective_discount = compute_price_based_offer_discount(true_min_price, count_7d)
+        prezzo_da_pagare = round(true_min_price * (1 - effective_discount), 2)
     elif _autobuy_eligible:
         prezzo_da_pagare = true_min_price
     elif eff_makeoffer_min <= margin_percent <= eff_makeoffer_max:
