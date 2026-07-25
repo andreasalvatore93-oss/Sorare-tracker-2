@@ -46,8 +46,8 @@ jobs:
           {
             echo ""
             echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
-            python my_cards_underpriced.py
-          } 2>&1 | tee -a logs/my_cards_underpriced_last_run.log
+            python scanners/my_cards_underpriced.py
+          } 2>&1 | tee -a scanners/logs/my_cards_underpriced_last_run.log
           # Rete di sicurezza: mantieni le ultime 200 run intere
           awk -v maxruns=200 '
             /^===== RUN / { runs++; starts[runs]=NR }
@@ -56,15 +56,15 @@ jobs:
               from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
               for (i=from; i<=last; i++) print buf[i]
             }
-          ' logs/my_cards_underpriced_last_run.log > logs/my_cards_underpriced_last_run.log.tmp && mv logs/my_cards_underpriced_last_run.log.tmp logs/my_cards_underpriced_last_run.log
+          ' scanners/logs/my_cards_underpriced_last_run.log > scanners/logs/my_cards_underpriced_last_run.log.tmp && mv scanners/logs/my_cards_underpriced_last_run.log.tmp scanners/logs/my_cards_underpriced_last_run.log
 
       - name: Save log
         if: always()
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          if [ -f logs/my_cards_underpriced_last_run.log ]; then
-            git add logs/my_cards_underpriced_last_run.log
+          if [ -f scanners/logs/my_cards_underpriced_last_run.log ]; then
+            git add scanners/logs/my_cards_underpriced_last_run.log
           fi
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."

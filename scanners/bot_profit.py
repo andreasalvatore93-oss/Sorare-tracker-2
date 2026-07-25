@@ -130,7 +130,7 @@ MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING'
 # come coverage/L5/nessuna partita). Alleggerisce le chiamate successive.
 MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '1.0'))
 
-OUTPUT_DIR = 'bot_profit'
+OUTPUT_DIR = 'scanners/bot_profit_output'
 OUTPUT_CSV_PATH = os.path.join(OUTPUT_DIR, 'profit_tracking.csv')
 # FIX 25/07 (richiesta esplicita utente): oltre al file combinato di sempre, due
 # file smistati -- SOLO in season e SOLO classic. Per i campionati MLS/K-League

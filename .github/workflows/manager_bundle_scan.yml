@@ -103,8 +103,8 @@ jobs:
           {
             echo ""
             echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
-            python manager_bundle_scan.py
-          } 2>&1 | tee -a logs/manager_bundle_scan_last_run.log
+            python scanners/manager_bundle_scan.py
+          } 2>&1 | tee -a scanners/logs/manager_bundle_scan_last_run.log
           # Rete di sicurezza SOLO per non far crescere il file all'infinito -- stesso pattern
           # gemello degli altri tre workflow, tiene le ultime 200 run intere.
           awk -v maxruns=200 '
@@ -114,7 +114,7 @@ jobs:
               from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
               for (i=from; i<=last; i++) print buf[i]
             }
-          ' logs/manager_bundle_scan_last_run.log > logs/manager_bundle_scan_last_run.log.tmp && mv logs/manager_bundle_scan_last_run.log.tmp logs/manager_bundle_scan_last_run.log
+          ' scanners/logs/manager_bundle_scan_last_run.log > scanners/logs/manager_bundle_scan_last_run.log.tmp && mv scanners/logs/manager_bundle_scan_last_run.log.tmp scanners/logs/manager_bundle_scan_last_run.log
 
       # Nessun database da salvare qui (a differenza degli altri tre workflow): questo strumento
       # non ha stato persistente tra un'esecuzione e l'altra, ogni run e' autonomo. Salviamo solo
@@ -124,8 +124,8 @@ jobs:
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          if [ -f logs/manager_bundle_scan_last_run.log ]; then
-            git add logs/manager_bundle_scan_last_run.log
+          if [ -f scanners/logs/manager_bundle_scan_last_run.log ]; then
+            git add scanners/logs/manager_bundle_scan_last_run.log
           fi
           # Se questa run ha aggiunto manager alla blacklist temporanea, salva nel file per sempre
           if [ -n "$BLACKLIST_MANAGERS" ]; then

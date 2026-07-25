@@ -70,8 +70,8 @@ jobs:
           {
             echo ""
             echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
-            python crafted_card_scanner.py
-          } 2>&1 | tee -a logs/crafted_card_scanner_last_run.log
+            python scanners/crafted_card_scanner.py
+          } 2>&1 | tee -a scanners/logs/crafted_card_scanner_last_run.log
           # Rete di sicurezza: mantieni le ultime 200 run intere
           awk -v maxruns=200 '
             /^===== RUN / { runs++; starts[runs]=NR }
@@ -80,15 +80,15 @@ jobs:
               from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
               for (i=from; i<=last; i++) print buf[i]
             }
-          ' logs/crafted_card_scanner_last_run.log > logs/crafted_card_scanner_last_run.log.tmp && mv logs/crafted_card_scanner_last_run.log.tmp logs/crafted_card_scanner_last_run.log
+          ' scanners/logs/crafted_card_scanner_last_run.log > scanners/logs/crafted_card_scanner_last_run.log.tmp && mv scanners/logs/crafted_card_scanner_last_run.log.tmp scanners/logs/crafted_card_scanner_last_run.log
 
       - name: Save log
         if: always()
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          if [ -f logs/crafted_card_scanner_last_run.log ]; then
-            git add logs/crafted_card_scanner_last_run.log
+          if [ -f scanners/logs/crafted_card_scanner_last_run.log ]; then
+            git add scanners/logs/crafted_card_scanner_last_run.log
           fi
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."

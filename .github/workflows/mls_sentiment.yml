@@ -65,7 +65,7 @@ jobs:
             echo "SESSIONE $CHUNK_NUM — ascolto per $THIS_CHUNK secondi (elapsed finora: $ELAPSED / $TOTAL_SECONDS)"
             echo "=================================================================="
 
-            LISTEN_SECONDS=$THIS_CHUNK python mls_sentiment_scanner.py
+            LISTEN_SECONDS=$THIS_CHUNK python scanners/mls_sentiment_scanner.py
 
             if [ -n "$(git status --porcelain -- $OUTPUT_DIRS)" ]; then
               git add $OUTPUT_DIRS
