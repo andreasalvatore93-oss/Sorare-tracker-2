@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:40:46.483585Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) kobe-franklin: 21 pt attesi (2-40)
+======================================================================
+
+######################################################################
+# GIOCATORE: kobe-franklin
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kobe-franklin (squadra: toronto-toronto)
+Generato: 2026-07-25T08:40:46.482621Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | ATL vs TOR | mlspa | score=70.1 | peso=0.445
+  2025-08-30 | TOR vs MTL | mlspa | score=26.1 | peso=0.472
+  2025-09-13 | NE vs TOR | mlspa | score=46.3 | peso=0.500
+  2025-10-05 | CHI vs TOR | mlspa | score=42.8 | peso=0.530
+  2025-10-09 | LAFC vs TOR | mlspa | score=23.7 | peso=0.561
+  2025-10-18 | TOR vs ORL | mlspa | score=51.5 | peso=0.595
+  2026-02-22 | DAL vs TOR | mlspa | score=23.3 | peso=0.630
+  2026-04-18 | TOR vs ATX | mlspa | score=60.0 | peso=0.667
+  2026-04-22 | TOR vs PHI | mlspa | score=60.0 | peso=0.707
+  2026-04-25 | TOR vs ATL | mlspa | score=60.0 | peso=0.749
+  2026-05-02 | TOR vs SJ | mlspa | score=57.0 | peso=0.794
+  2026-05-09 | TOR vs MIA | mlspa | score=60.0 | peso=0.841
+  2026-05-16 | CLT vs TOR | mlspa | score=39.7 | peso=0.891
+  2026-05-24 | CHI vs TOR | mlspa | score=53.1 | peso=0.944
+  2026-07-16 | MTL vs TOR | mlspa | score=65.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 50.53
+Deviazione standard pesata: 13.85
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.02 (differenza: +1.83)
+Media score in casa: 53.52 | Media score fuori casa: 45.53
+Fattore casa/trasferta applicato: 0.919 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.030
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.027
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.011
+Fattore trend (media ultime 5: 55.0 vs media ultime 10: 53.0): 1.038
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: DC United | Trasferta: Toronto FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 21.0 +/- 19.4
+  (range: 1.6 - 40.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.97
+Punteggio REALE ottenuto in quella partita: 65.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +16.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=20.0+trend_int=0.7' (half_life=9.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.8    23.3    -16.4    18.1        SI
+   7        7      50.7    60.0     +9.3    18.7        SI
+   8        8      60.1    60.0     -0.1    19.4        SI
+   9        9      61.6    60.0     -1.6    19.4        SI
+  10       10      35.1    57.0    +22.0    19.0        NO
+  11       11      39.7    60.0    +20.3    18.1        NO
+  12       12      47.2    39.7     -7.5    17.6        SI
+  13       13      34.9    53.1    +18.2    17.0        NO
+  14       14      59.2    65.0     +5.8    16.1        SI
+
+MAE (errore assoluto medio): 11.26
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
