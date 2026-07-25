@@ -1,0 +1,96 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:15:16.646969Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) german-berterame: 56 pt attesi (27-85)
+======================================================================
+
+######################################################################
+# GIOCATORE: german-berterame
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: german-berterame (squadra: inter-miami)
+Generato: 2026-07-25T22:15:16.646128Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | LAFC vs MIA | mlspa | score=30.8 | peso=0.500
+  2026-03-02 | ORL vs MIA | mlspa | score=34.4 | peso=0.530
+  2026-03-07 | DC vs MIA | mlspa | score=51.5 | peso=0.561
+  2026-04-11 | MIA vs RBNY | mlspa | score=64.3 | peso=0.595
+  2026-04-18 | RAP vs MIA | mlspa | score=62.1 | peso=0.630
+  2026-04-23 | RSL vs MIA | mlspa | score=62.8 | peso=0.667
+  2026-04-25 | MIA vs NE | mlspa | score=74.4 | peso=0.707
+  2026-05-02 | MIA vs ORL | mlspa | score=28.5 | peso=0.749
+  2026-05-09 | TOR vs MIA | mlspa | score=30.8 | peso=0.794
+  2026-05-13 | CIN vs MIA | mlspa | score=71.4 | peso=0.841
+  2026-05-17 | MIA vs POR | mlspa | score=65.0 | peso=0.891
+  2026-05-24 | MIA vs PHI | mlspa | score=96.2 | peso=0.944
+  2026-07-22 | MIA vs CHI | mlspa | score=74.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 59.93
+Deviazione standard pesata: 20.59
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.07 (differenza: +4.52)
+Media score in casa: 67.22 | Media score fuori casa: 49.11
+Fattore casa/trasferta applicato: 0.978 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.167
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.972
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 67.7 vs media ultime 10: 63.0): 1.051
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: CF Montreal | Trasferta: Inter Miami CF
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.8 +/- 28.8
+  (range: 26.9 - 84.6)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.15
+Punteggio REALE ottenuto in quella partita: 74.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +16.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7' (half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.7    74.4    +28.7    21.2        NO
+   7        7      67.9    28.5    -39.4    23.4        NO
+   8        8      63.3    30.8    -32.5    27.0        NO
+   9        9      41.3    71.4    +30.1    27.7        NO
+  10       10      66.7    65.0     -1.7    28.5        SI
+  11       11      73.5    96.2    +22.7    27.5        SI
+  12       12      42.4    74.9    +32.5    34.1        SI
+
+MAE (errore assoluto medio): 26.80
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 42.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
