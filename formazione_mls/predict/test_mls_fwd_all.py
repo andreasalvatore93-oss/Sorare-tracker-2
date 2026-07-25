@@ -1102,9 +1102,15 @@ def build_prediction(player_slug):
     fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(
         scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
 
+    # TEST (26/07): granulari rimossi dallo score_atteso reale, come gia' fatto
+    # per GK -- calibrazione allargata pesata per n_test (37 attaccanti,
+    # min 3 partite di backtest) indica che senza granulari generalizza
+    # leggermente meglio (MAE 17.33 vs 17.58 con). I fattori restano calcolati
+    # sopra e nel result dict solo a scopo diagnostico/di visualizzazione
+    # nell'output. Run di confronto in corso, non ancora una decisione
+    # definitiva.
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
-                    * fattore_falli * fattore_duelli * fattore_offensivo * fattore_eventi_rari
-                    * fattore_passaggio * fattore_difesa_rari * fattore_trend)
+                    * fattore_trend)
     range_conf = dev_std_pesata * RANGE_MULTIPLIER  # moltiplicatore aggiornato dal grid search (24/07)
 
     # --- Backtest SEMPLICE: riapplica solo la componente media "a ritroso" sull'ultima partita nota ---
