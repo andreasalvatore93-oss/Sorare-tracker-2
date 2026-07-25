@@ -113,7 +113,7 @@ jobs:
           done
           echo "Salvato correttamente."
 
-  aggregate:
+  merge:
     needs: [discover, predict]
     if: always()
     runs-on: ubuntu-latest
@@ -127,19 +127,19 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Aggrega grid search cross-player e individua parametri vincenti
-        run: python aggregate_grid_search_def.py
+      - name: Genera SOLO il riepilogo finale compatto (consiglio difensori)
+        run: python build_consiglio_def.py
 
-      - name: Commit aggregazione
+      - name: Commit riepilogo
         run: |
           git config user.name "mls-def-bot"
           git config user.email "mls-def-bot@users.noreply.github.com"
-          git add mls_def_all/grid_search/aggregato_*.txt
+          git add mls_def_all/consiglio_*.txt
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Grid search difensori: aggregazione cross-player"
+          git commit -m "Test Difensori: consiglio difensori"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
