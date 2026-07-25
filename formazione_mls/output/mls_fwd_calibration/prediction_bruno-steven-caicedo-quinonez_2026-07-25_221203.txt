@@ -1,0 +1,69 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:12:03.157624Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) bruno-steven-caicedo-quinonez: 5 pt attesi (-21-30)
+======================================================================
+
+######################################################################
+# GIOCATORE: bruno-steven-caicedo-quinonez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: bruno-steven-caicedo-quinonez (squadra: vancouver-whitecaps-vancouver-british-columbia)
+Generato: 2026-07-25T22:12:03.157478Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-18 | VAN vs SKC | mlspa | score=71.7 | peso=0.944
+  2026-05-10 | SJ vs VAN | mlspa | score=35.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 53.08
+Deviazione standard pesata: 18.09
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 71.70 | Media score fuori casa: 35.50
+Fattore casa/trasferta applicato: 0.950 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.017
+Fattore falli (casa/trasferta, da dati reali): 0.950
+Fattore duelli (casa/trasferta, da dati reali): 0.950
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.950
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.050
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T00:30
+Casa: Minnesota United | Trasferta: Vancouver Whitecaps FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 4.6 +/- 25.3
+  (range: -20.7 - 29.9)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 71.70
+Punteggio REALE ottenuto in quella partita: 35.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -36.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
