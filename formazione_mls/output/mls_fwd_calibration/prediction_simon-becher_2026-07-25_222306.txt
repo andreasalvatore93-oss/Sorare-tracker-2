@@ -1,0 +1,100 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:23:06.742163Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) simon-becher: 56 pt attesi (33-80)
+======================================================================
+
+######################################################################
+# GIOCATORE: simon-becher
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: simon-becher (squadra: st-louis-city-st-louis-missouri)
+Generato: 2026-07-25T22:23:06.741224Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-21 | STL vs CLT | mlspa | score=74.1 | peso=0.445
+  2026-03-02 | SD vs STL | mlspa | score=31.0 | peso=0.472
+  2026-03-08 | STL vs SEA | mlspa | score=34.4 | peso=0.500
+  2026-03-15 | LAFC vs STL | mlspa | score=34.5 | peso=0.530
+  2026-03-22 | STL vs NE | mlspa | score=60.0 | peso=0.561
+  2026-04-04 | NYC vs STL | mlspa | score=43.6 | peso=0.595
+  2026-04-12 | DAL vs STL | mlspa | score=38.9 | peso=0.630
+  2026-04-19 | SEA vs STL | mlspa | score=31.8 | peso=0.667
+  2026-04-26 | STL vs SJ | mlspa | score=64.7 | peso=0.707
+  2026-05-03 | ATX vs STL | mlspa | score=28.2 | peso=0.749
+  2026-05-10 | RAP vs STL | mlspa | score=68.6 | peso=0.794
+  2026-05-16 | DC vs STL | mlspa | score=36.5 | peso=0.841
+  2026-05-23 | STL vs ATX | mlspa | score=40.0 | peso=0.891
+  2026-07-17 | STL vs SKC | mlspa | score=64.6 | peso=0.944
+  2026-07-23 | LA vs STL | mlspa | score=76.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 49.75
+Deviazione standard pesata: 17.02
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.92 (differenza: +2.10)
+Media score in casa: 56.30 | Media score fuori casa: 43.30
+Fattore casa/trasferta applicato: 1.027 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.092
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.015
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.011
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 57.3 vs media ultime 10: 49.4): 1.112
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T00:30
+Casa: St. Louis City SC | Trasferta: Colorado Rapids
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.5 +/- 23.8
+  (range: 32.6 - 80.3)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.87
+Punteggio REALE ottenuto in quella partita: 76.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +29.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.6x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.1    38.9     -3.2    24.2        SI
+   7        7      43.0    31.8    -11.2    22.5        SI
+   8        8      38.3    64.7    +26.4    22.0        NO
+   9        9      56.8    28.2    -28.6    23.7        NO
+  10       10      46.5    68.6    +22.1    24.1        SI
+  11       11      50.9    36.5    -14.4    26.0        SI
+  12       12      60.4    40.0    -20.4    25.1        SI
+  13       13      60.6    64.6     +4.0    23.8        SI
+  14       14      48.5    76.6    +28.1    24.5        NO
+
+MAE (errore assoluto medio): 17.58
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
