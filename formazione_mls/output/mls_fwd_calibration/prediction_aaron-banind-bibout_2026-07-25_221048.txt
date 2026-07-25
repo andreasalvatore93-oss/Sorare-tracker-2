@@ -1,0 +1,94 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:10:48.788985Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) aaron-banind-bibout: 15 pt attesi (-8-39)
+======================================================================
+
+######################################################################
+# GIOCATORE: aaron-banind-bibout
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: aaron-banind-bibout (squadra: genk-genk)
+Generato: 2026-07-25T22:10:48.787941Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-25 | GNK vs CER | jupiler-pro-league | score=45.1 | peso=0.530
+  2026-02-01 | DEN vs GNK | jupiler-pro-league | score=35.9 | peso=0.561
+  2026-02-08 | GNK vs AND | jupiler-pro-league | score=26.9 | peso=0.595
+  2026-02-13 | KVM vs GNK | jupiler-pro-league | score=68.9 | peso=0.630
+  2026-04-21 | GNK vs CHA | jupiler-pro-league | score=29.4 | peso=0.667
+  2026-04-25 | GNK vs STA | jupiler-pro-league | score=83.6 | peso=0.707
+  2026-05-02 | CHA vs GNK | jupiler-pro-league | score=32.4 | peso=0.749
+  2026-05-10 | GNK vs WES | jupiler-pro-league | score=60.0 | peso=0.794
+  2026-05-16 | STA vs GNK | jupiler-pro-league | score=31.4 | peso=0.841
+  2026-05-19 | GNK vs ANT | jupiler-pro-league | score=27.7 | peso=0.891
+  2026-05-23 | OHL vs GNK | jupiler-pro-league | score=37.4 | peso=0.944
+  2026-05-31 | GNT vs GNK | jupiler-pro-league | score=39.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 42.59
+Deviazione standard pesata: 17.00
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.50 (differenza: +4.50)
+Media score in casa: 45.45 | Media score fuori casa: 40.83
+Fattore casa/trasferta applicato: 0.990 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.0
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.793
+Fattore falli (casa/trasferta, da dati reali): 1.012
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.979
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 39.1 vs media ultime 10: 43.7): 0.927
+P(gioca): 50.00% (fonte: tasso di presenza storico (12/24))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T14:00
+Casa: SV Zulte-Waregem | Trasferta: KRC Genk
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 15.4 +/- 23.8
+  (range: -8.4 - 39.2)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.05
+Punteggio REALE ottenuto in quella partita: 39.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.6    32.4    -26.2    26.1        NO
+   7        7      41.5    60.0    +18.5    25.0        SI
+   8        8      39.9    31.4     -8.5    23.7        SI
+   9        9      53.5    27.7    -25.8    23.2        NO
+  10       10      53.2    37.4    -15.8    22.9        SI
+  11       11      34.3    39.0     +4.7    21.6        SI
+
+MAE (errore assoluto medio): 16.59
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
