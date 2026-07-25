@@ -1,0 +1,90 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:13:43.351722Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) derrick-etienne-jr: 9 pt attesi (-9-26)
+======================================================================
+
+######################################################################
+# GIOCATORE: derrick-etienne-jr
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: derrick-etienne-jr (squadra: toronto-toronto)
+Generato: 2026-07-25T22:13:43.350763Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 19
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-05 | CHI vs TOR | mlspa | score=36.9 | peso=0.595
+  2025-10-18 | TOR vs ORL | mlspa | score=68.2 | peso=0.630
+  2026-02-22 | DAL vs TOR | mlspa | score=60.2 | peso=0.667
+  2026-03-01 | VAN vs TOR | mlspa | score=26.7 | peso=0.707
+  2026-04-11 | TOR vs CIN | mlspa | score=39.3 | peso=0.749
+  2026-04-18 | TOR vs ATX | mlspa | score=39.9 | peso=0.794
+  2026-04-25 | TOR vs ATL | mlspa | score=35.3 | peso=0.841
+  2026-05-16 | CLT vs TOR | mlspa | score=61.9 | peso=0.891
+  2026-05-24 | CHI vs TOR | mlspa | score=35.1 | peso=0.944
+  2026-07-16 | MTL vs TOR | mlspa | score=37.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 43.59
+Deviazione standard pesata: 12.78
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.34 (differenza: +2.45)
+Media score in casa: 45.67 | Media score fuori casa: 43.08
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.5
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.052
+Fattore falli (casa/trasferta, da dati reali): 0.983
+Fattore duelli (casa/trasferta, da dati reali): 0.988
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.982
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.009
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 42.0 vs media ultime 10: 44.1): 0.966
+P(gioca): 20.00% (fonte: starterOddsBasisPoints (2000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: DC United | Trasferta: Toronto FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 8.5 +/- 17.9
+  (range: -9.4 - 26.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.45
+Punteggio REALE ottenuto in quella partita: 37.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7' (half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.2    35.3    -26.9    22.3        NO
+   7        7      41.8    61.9    +20.1    20.9        SI
+   8        8      36.1    35.1     -1.0    22.2        SI
+   9        9      57.9    37.7    -20.2    21.4        SI
+
+MAE (errore assoluto medio): 17.06
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
