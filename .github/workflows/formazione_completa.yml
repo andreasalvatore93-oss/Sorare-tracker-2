@@ -46,13 +46,13 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           PYTHONUNBUFFERED: "1"
-        run: python mls_gk_discovery.py
+        run: python formazione_mls/discovery/mls_gk_discovery.py
       - name: Commit output discovery
         if: always()
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_gk_discovery/
+          git add formazione_mls/output/mls_gk_discovery/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -88,13 +88,13 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           PYTHONUNBUFFERED: "1"
-        run: python mls_def_discovery.py
+        run: python formazione_mls/discovery/mls_def_discovery.py
       - name: Commit output discovery
         if: always()
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_def_discovery/
+          git add formazione_mls/output/mls_def_discovery/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -130,13 +130,13 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           PYTHONUNBUFFERED: "1"
-        run: python mls_mid_discovery.py
+        run: python formazione_mls/discovery/mls_mid_discovery.py
       - name: Commit output discovery
         if: always()
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_mid_discovery/
+          git add formazione_mls/output/mls_mid_discovery/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -172,13 +172,13 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           PYTHONUNBUFFERED: "1"
-        run: python mls_fwd_discovery.py
+        run: python formazione_mls/discovery/mls_fwd_discovery.py
       - name: Commit output discovery
         if: always()
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_fwd_discovery/
+          git add formazione_mls/output/mls_fwd_discovery/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -224,13 +224,13 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
-        run: python test_gk.py
+        run: python formazione_mls/predict/test_gk.py
       - name: Commit output e cache
         if: always()
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_gk_all/
+          git add formazione_mls/output/mls_gk_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -271,13 +271,13 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
-        run: python test_def.py
+        run: python formazione_mls/predict/test_def.py
       - name: Commit output e cache
         if: always()
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_def_all/
+          git add formazione_mls/output/mls_def_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -318,13 +318,13 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
-        run: python test_mid.py
+        run: python formazione_mls/predict/test_mid.py
       - name: Commit output e cache
         if: always()
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_mid_all/
+          git add formazione_mls/output/mls_mid_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -365,13 +365,13 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
-        run: python test_mls_fwd_all.py
+        run: python formazione_mls/predict/test_mls_fwd_all.py
       - name: Commit output e cache
         if: always()
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_fwd_all/
+          git add formazione_mls/output/mls_fwd_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -405,12 +405,12 @@ jobs:
         with:
           python-version: "3.11"
       - name: Consiglio GK
-        run: python build_consiglio_gk.py
+        run: python formazione_mls/consiglio/build_consiglio_gk.py
       - name: Commit riepilogo
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_gk_all/consiglio_*.txt
+          git add formazione_mls/output/mls_gk_all/consiglio_*.txt
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -441,12 +441,12 @@ jobs:
         with:
           python-version: "3.11"
       - name: Consiglio DEF
-        run: python build_consiglio_def.py
+        run: python formazione_mls/consiglio/build_consiglio_def.py
       - name: Commit riepilogo
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_def_all/consiglio_*.txt
+          git add formazione_mls/output/mls_def_all/consiglio_*.txt
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -477,12 +477,12 @@ jobs:
         with:
           python-version: "3.11"
       - name: Consiglio MID
-        run: python build_consiglio_mid.py
+        run: python formazione_mls/consiglio/build_consiglio_mid.py
       - name: Commit riepilogo
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_mid_all/consiglio_*.txt
+          git add formazione_mls/output/mls_mid_all/consiglio_*.txt
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -513,12 +513,12 @@ jobs:
         with:
           python-version: "3.11"
       - name: Consiglio FWD
-        run: python build_consiglio.py
+        run: python formazione_mls/consiglio/build_consiglio.py
       - name: Commit riepilogo
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add mls_fwd_all/consiglio_*.txt
+          git add formazione_mls/output/mls_fwd_all/consiglio_*.txt
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -555,12 +555,12 @@ jobs:
       - name: Genera formazione(i) ottimale(i)
         env:
           NUM_FORMAZIONI: ${{ github.event.inputs.num_formazioni }}
-        run: python build_formazione_finale.py
+        run: python formazione_mls/build_formazione_finale.py
       - name: Commit formazione(i)
         run: |
           git config user.name "mls-formazione-bot"
           git config user.email "mls-formazione-bot@users.noreply.github.com"
-          git add formazione_finale_*.txt
+          git add formazione_mls/output/formazione_finale_*.txt
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
