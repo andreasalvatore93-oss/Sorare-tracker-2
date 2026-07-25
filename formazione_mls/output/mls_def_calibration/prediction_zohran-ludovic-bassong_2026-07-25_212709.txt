@@ -1,0 +1,89 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:27:09.313476Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) zohran-ludovic-bassong: 28 pt attesi (18-38)
+======================================================================
+
+######################################################################
+# GIOCATORE: zohran-ludovic-bassong
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: zohran-ludovic-bassong (squadra: sporting-kc-kansas-city-kansas)
+Generato: 2026-07-25T21:27:09.312318Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | SKC vs VAN | mlspa | score=45.2 | peso=0.583
+  2025-09-28 | LA vs SKC | mlspa | score=45.3 | peso=0.630
+  2025-10-05 | MIN vs SKC | mlspa | score=52.4 | peso=0.680
+  2025-10-19 | SKC vs HOU | mlspa | score=49.3 | peso=0.735
+  2026-05-14 | SKC vs LA | mlspa | score=55.8 | peso=0.794
+  2026-05-17 | ATX vs SKC | mlspa | score=34.0 | peso=0.857
+  2026-07-17 | STL vs SKC | mlspa | score=37.6 | peso=0.926
+  2026-07-23 | SKC vs MIN | mlspa | score=33.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 43.24
+Deviazione standard pesata: 8.18
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.59 (differenza: +1.59)
+Media score in casa: 45.90 | Media score fuori casa: 42.32
+Fattore casa/trasferta applicato: 0.981 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.810
+Fattore falli (casa/trasferta, da dati reali): 1.036
+Fattore duelli (casa/trasferta, da dati reali): 0.990
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.026
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.018
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.980
+Fattore gol subiti (goals_conceded, con cap): 0.967
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T02:30
+Casa: Los Angeles FC | Trasferta: Sporting Kansas City 
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 27.9 +/- 9.8
+  (range: 18.1 - 37.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.15
+Punteggio REALE ottenuto in quella partita: 33.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.4    37.6     -7.8     8.9        SI
+   7        7      46.7    33.3    -13.4     9.1        NO
+
+MAE (errore assoluto medio): 10.62
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
