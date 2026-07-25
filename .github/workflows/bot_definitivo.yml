@@ -98,6 +98,10 @@ on:
         description: "'si' = attivo il bid periodico ogni 3 minuti (fascia 2-30EUR fissa, sconto 25% fisso sul candidato piu' vicino alla soglia MakeOffer, SOLO offerte mai acquisto diretto). 'no' = disattivato."
         required: false
         default: "no"
+      price_based_thresholds_enabled:
+        description: "'si' = soglie basate sul prezzo (26/07). 'no' = torna alle 3 soglie statiche fisse (makeoffer_margin_percent/makeoffer_max_margin_percent/autobuy_margin_percent) -- utile per test diagnostici mirati (es. forzare molti AutoBuy per analisi timing)."
+        required: false
+        default: "si"
 permissions:
   contents: write
 concurrency:
@@ -159,6 +163,7 @@ jobs:
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: "20"
           PERIODIC_BID_ENABLED: ${{ github.event.inputs.periodic_bid_enabled || 'no' }}
+          PRICE_BASED_THRESHOLDS_ENABLED: ${{ github.event.inputs.price_based_thresholds_enabled || 'si' }}
         run: |
           set -o pipefail
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
