@@ -67,17 +67,18 @@ def _n_test_from_prediction_file(slug):
     return int(m.group(1)) if m else None
 
 
-def load_all_grids():
-    """Ritorna ({label: [{mae, pct_dentro_range, n_test, ...}, ...]}, n_players,
-    n_players_esclusi_per_pochi_test) -- una entry per giocatore per ogni
-    combinazione (label) trovata, SOLO per i giocatori con n_test sufficiente."""
-    per_label = defaultdict(list)
+def load_players():
+    """Ritorna (players, n_excluded) dove players e' una lista con un elemento
+    per giocatore QUALIFICATO (n_test >= MIN_TEST_GAMES): {'slug', 'n_test',
+    'combos': [{mae, pct_dentro_range, n_test, label, ...}, ...]}. Usata sia
+    da load_all_grids() (aggregazione singola) sia dallo script di bootstrap
+    (che deve ricampionare per GIOCATORE, non per combinazione)."""
     files = glob.glob(os.path.join(GRID_DIR, '*_grid.json'))
     if not files:
         print(f"Nessun file trovato in {GRID_DIR}/ -- esegui prima un run completo di test_{RUOLO}.py")
-        return per_label, 0, 0
+        return [], 0
 
-    n_players = 0
+    players = []
     n_excluded = 0
     for fpath in files:
         slug = os.path.basename(fpath)[:-len('_grid.json')]
@@ -100,15 +101,23 @@ def load_all_grids():
             n_excluded += 1
             continue
 
-        n_players += 1
-        for combo in grid:
-            if combo.get('mae') is None:
-                continue
-            entry = dict(combo)
-            entry['n_test'] = n_test
-            per_label[combo['label']].append(entry)
+        combos = [dict(c, n_test=n_test) for c in grid if c.get('mae') is not None]
+        if combos:
+            players.append({'slug': slug, 'n_test': n_test, 'combos': combos})
 
-    return per_label, n_players, n_excluded
+    return players, n_excluded
+
+
+def load_all_grids():
+    """Ritorna ({label: [{mae, pct_dentro_range, n_test, ...}, ...]}, n_players,
+    n_players_esclusi_per_pochi_test) -- una entry per giocatore per ogni
+    combinazione (label) trovata, SOLO per i giocatori con n_test sufficiente."""
+    players, n_excluded = load_players()
+    per_label = defaultdict(list)
+    for player in players:
+        for combo in player['combos']:
+            per_label[combo['label']].append(combo)
+    return per_label, len(players), n_excluded
 
 
 def aggregate(per_label, n_players):
