@@ -1,0 +1,100 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:17:39.488059Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) kerwin-calderon-vargas: 51 pt attesi (28-73)
+======================================================================
+
+######################################################################
+# GIOCATORE: kerwin-calderon-vargas
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kerwin-calderon-vargas (squadra: charlotte-fc-charlotte-north-carolina)
+Generato: 2026-07-25T22:17:39.487111Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-18 | CLT vs PHI | mlspa | score=88.9 | peso=0.445
+  2025-10-28 | CLT vs NYC | mlspa | score=49.5 | peso=0.472
+  2025-11-01 | NYC vs CLT | mlspa | score=34.0 | peso=0.500
+  2025-11-08 | CLT vs NYC | mlspa | score=44.0 | peso=0.530
+  2026-03-01 | LA vs CLT | mlspa | score=35.8 | peso=0.561
+  2026-03-21 | CLT vs RBNY | mlspa | score=65.6 | peso=0.595
+  2026-04-04 | CLT vs PHI | mlspa | score=51.5 | peso=0.630
+  2026-04-11 | CLT vs NSH | mlspa | score=48.1 | peso=0.667
+  2026-04-26 | NSH vs CLT | mlspa | score=63.1 | peso=0.707
+  2026-05-02 | NE vs CLT | mlspa | score=44.4 | peso=0.749
+  2026-05-09 | CLT vs CIN | mlspa | score=52.1 | peso=0.794
+  2026-05-13 | CLT vs NYC | mlspa | score=50.3 | peso=0.841
+  2026-05-16 | CLT vs TOR | mlspa | score=82.9 | peso=0.891
+  2026-05-23 | CLT vs NE | mlspa | score=43.9 | peso=0.944
+  2026-07-23 | CLT vs ATL | mlspa | score=77.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 56.30
+Deviazione standard pesata: 15.82
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.08 (differenza: +1.74)
+Media score in casa: 59.49 | Media score fuori casa: 44.33
+Fattore casa/trasferta applicato: 0.988 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.5
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.016
+Fattore falli (casa/trasferta, da dati reali): 0.974
+Fattore duelli (casa/trasferta, da dati reali): 0.961
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.948
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.962
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore trend (media ultime 5: 61.4 vs media ultime 10: 58.0): 1.041
+P(gioca): 100.00% (fonte: starterOddsBasisPoints (10000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T22:30
+Casa: New York Red Bulls | Trasferta: Charlotte FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.5 +/- 22.1
+  (range: 28.4 - 72.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.01
+Punteggio REALE ottenuto in quella partita: 77.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +23.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      65.2    51.5    -13.7    22.2        SI
+   7        7      37.5    48.1    +10.6    20.2        SI
+   8        8      37.4    63.1    +25.7    18.7        NO
+   9        9      46.5    44.4     -2.1    18.0        SI
+  10       10      49.7    52.1     +2.4    17.2        SI
+  11       11      52.6    50.3     -2.3    16.1        SI
+  12       12      63.4    82.9    +19.5    15.2        NO
+  13       13      52.1    43.9     -8.2    18.4        SI
+  14       14      68.0    77.6     +9.6    17.9        SI
+
+MAE (errore assoluto medio): 10.46
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
