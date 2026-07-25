@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:43:34.308104Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) pedro-miguel-santos-amador: 0 pt attesi (-23-23)
+======================================================================
+
+######################################################################
+# GIOCATORE: pedro-miguel-santos-amador
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: pedro-miguel-santos-amador (squadra: atlanta-united-atlanta-georgia)
+Generato: 2026-07-25T08:43:34.306910Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-26 | ATL vs SEA | mlspa | score=48.1 | peso=0.561
+  2025-08-24 | ATL vs TOR | mlspa | score=54.0 | peso=0.595
+  2025-08-31 | NSH vs ATL | mlspa | score=42.7 | peso=0.630
+  2025-09-13 | ATL vs CLB | mlspa | score=61.9 | peso=0.667
+  2025-09-20 | ATL vs SD | mlspa | score=37.5 | peso=0.707
+  2025-09-27 | NE vs ATL | mlspa | score=29.7 | peso=0.749
+  2025-10-06 | LAFC vs ATL | mlspa | score=28.1 | peso=0.794
+  2025-10-11 | MIA vs ATL | mlspa | score=29.3 | peso=0.841
+  2025-10-18 | ATL vs DC | mlspa | score=57.7 | peso=0.891
+  2026-04-22 | ATL vs NE | mlspa | score=77.4 | peso=0.944
+  2026-05-02 | ATL vs MTL | mlspa | score=31.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 45.25
+Deviazione standard pesata: 16.23
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.00 (differenza: +4.23)
+Media score in casa: 52.61 | Media score fuori casa: 32.44
+Fattore casa/trasferta applicato: 0.763 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.1
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.893
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.960
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.984
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.977
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.991
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.013
+Fattore trend (media ultime 5: 44.9 vs media ultime 10: 45.0): 0.997
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: New England Revolution | Trasferta: Atlanta United
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 0.0 +/- 22.7
+  (range: -22.7 - 22.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.09
+Punteggio REALE ottenuto in quella partita: 31.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -15.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=1.3+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      30.0    28.1     -1.9    13.1        SI
+   7        7      26.3    29.3     +3.0    14.1        SI
+   8        8      55.6    57.7     +2.2    14.1        SI
+   9        9      49.9    77.4    +27.5    15.0        NO
+  10       10      73.1    31.7    -41.4    19.7        NO
+
+MAE (errore assoluto medio): 15.20
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
