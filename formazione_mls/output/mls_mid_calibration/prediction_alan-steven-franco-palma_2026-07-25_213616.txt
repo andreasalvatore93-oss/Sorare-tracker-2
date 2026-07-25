@@ -1,0 +1,94 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:36:16.310147Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) alan-steven-franco-palma: 11 pt attesi (-4-26)
+======================================================================
+
+######################################################################
+# GIOCATORE: alan-steven-franco-palma
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: alan-steven-franco-palma (squadra: atletico-mineiro-belo-horizonte-minas-gerais)
+Generato: 2026-07-25T21:36:16.309138Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-26 | GRE vs CAM | campeonato-brasileiro-serie-a | score=57.4 | peso=0.561
+  2026-03-11 | CAM vs INT | campeonato-brasileiro-serie-a | score=51.9 | peso=0.595
+  2026-03-14 | VIT vs CAM | campeonato-brasileiro-serie-a | score=34.2 | peso=0.630
+  2026-03-18 | CAM vs SPA | campeonato-brasileiro-serie-a | score=64.1 | peso=0.667
+  2026-03-21 | FLU vs CAM | campeonato-brasileiro-serie-a | score=33.4 | peso=0.707
+  2026-04-05 | CAM vs CAP | campeonato-brasileiro-serie-a | score=46.4 | peso=0.749
+  2026-04-11 | SAN vs CAM | campeonato-brasileiro-serie-a | score=42.5 | peso=0.794
+  2026-04-19 | CBA vs CAM | campeonato-brasileiro-serie-a | score=36.8 | peso=0.841
+  2026-05-03 | CRU vs CAM | campeonato-brasileiro-serie-a | score=62.6 | peso=0.891
+  2026-05-16 | CAM vs MIR | campeonato-brasileiro-serie-a | score=39.8 | peso=0.944
+  2026-05-24 | COR vs CAM | campeonato-brasileiro-serie-a | score=34.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 45.12
+Deviazione standard pesata: 10.95
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.75 (differenza: +1.21)
+Media score in casa: 50.55 | Media score fuori casa: 43.03
+Fattore casa/trasferta applicato: 0.981 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.7
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.665
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.985
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.012
+Fattore gol subiti (goals_conceded, con cap): 0.975
+Fattore trend (media ultime 5: 43.2 vs media ultime 10: 44.6): 0.969
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T22:30
+Casa: SE Palmeiras | Trasferta: Atlético Mineiro
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 11.1 +/- 15.3
+  (range: -4.2 - 26.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.59
+Punteggio REALE ottenuto in quella partita: 34.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3+granulari' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.8    42.5     -9.3    13.6        SI
+   7        7      42.6    36.8     -5.8    12.5        SI
+   8        8      38.4    62.6    +24.2    12.3        NO
+   9        9      65.1    39.8    -25.3    13.6        NO
+  10       10      37.1    34.3     -2.8    13.0        SI
+
+MAE (errore assoluto medio): 13.49
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
