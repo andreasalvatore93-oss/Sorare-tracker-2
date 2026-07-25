@@ -1,0 +1,72 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:04:42.154474Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) david-ruiz-2004-02-08: 34 pt attesi (11-56)
+======================================================================
+
+######################################################################
+# GIOCATORE: david-ruiz-2004-02-08
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: david-ruiz-2004-02-08 (squadra: inter-miami)
+Generato: 2026-07-25T08:04:42.154342Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-14 | CLT vs MIA | mlspa | score=37.5 | peso=0.891
+  2026-04-25 | MIA vs NE | mlspa | score=41.9 | peso=0.944
+  2026-07-22 | MIA vs CHI | mlspa | score=73.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 51.66
+Deviazione standard pesata: 16.22
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 57.70 | Media score fuori casa: 37.50
+Fattore casa/trasferta applicato: 0.788 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.7
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.287
+Fattore falli (casa/trasferta, da dati reali): 0.990
+Fattore duelli (casa/trasferta, da dati reali): 0.983
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore eventi rari (rigori/autogol/errori, con cap): 0.990
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.980
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.957
+Fattore gol subiti (goals_conceded, con cap): 1.020
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: CF Montreal | Trasferta: Inter Miami CF
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 33.8 +/- 22.7
+  (range: 11.1 - 56.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.76
+Punteggio REALE ottenuto in quella partita: 73.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +33.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
