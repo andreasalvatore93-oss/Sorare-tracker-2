@@ -73,7 +73,7 @@ RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 TREND_INTENSITY = 0.7  # FISSATO (25/07): idem — trend leggermente attenuato rispetto al comportamento originale (1.0)
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
-MIN_STARTER_ODDS = 0.70  # NUOVO: sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente)
+MIN_STARTER_ODDS = 0.0  # DISATTIVATO (25/07) per la fase di GRID SEARCH: il filtro escludeva i giocatori PRIMA di girare il backtest, riducendo drasticamente il campione (16/52 invece di tutti i 52 disponibili). Il filtro va riattivato SOLO nell'uso reale/finale (predizione per schierare la formazione), non durante la calibrazione dei parametri.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
 OUTPUT_DIR = 'mls_mid_all'
