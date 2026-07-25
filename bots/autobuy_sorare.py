@@ -170,8 +170,143 @@ AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1'))
 AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
 
 # Margine minimo richiesto tra il prezzo minimo attuale e il secondo prezzo minimo attuale
-# (stesso bucket in_season), es. 0.15 = 15%.
+# (stesso bucket in_season), es. 0.15 = 15%. Resta il FALLBACK statico e il centro del
+# clamp usato dalla soglia dinamica qui sotto -- se la logica dinamica viene disattivata
+# (AUTOBUY_DYNAMIC_MARGIN_ENABLED=no) o non ha abbastanza dati, il comportamento e'
+# ESATTAMENTE quello di sempre.
 AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'))
+
+# --- Soglia di margine DINAMICA (analisi log reali, 25/07) ---------------------------
+# Analizzati gli ultimi 10 run del workflow "Bot Supremo test no play" (bot_supremo_test.py,
+# stessa identica logica di ricerca affari di questo file): su 1669 margini calcolati da
+# evaluate_event nei log reali, la distribuzione e' fortemente concentrata sui valori
+# bassi (mediana 1.8%, p90=9.3%, p95=12.7%, p97=16.1%, p99=22.4%, massimo osservato 53%).
+# Una soglia FISSA (0.20 = 20%) puo' risultare troppo permissiva in una fase di mercato
+# calmo (pochi annunci, margini tutti piccoli -> compriamo su un "affare" che in realta'
+# e' solo rumore statistico) o troppo restrittiva in una fase di mercato turbolento
+# (infortuni/svendite di massa, dove un margine "normale" per quel momento e' molto piu'
+# alto del solito e restiamo a guardare). Idea: calibrare la soglia sul percentile 97
+# della distribuzione OSSERVATA DI RECENTE (stessa run + run precedenti, persistita su
+# file), invece che su un numero fisso scelto una volta sola.
+# Fail-safe (bot di trading reale, nessun test end-to-end possibile in questa sessione):
+# - Servono almeno AUTOBUY_MARGIN_HISTORY_MIN_SAMPLES osservazioni recenti prima che la
+#   soglia dinamica si attivi; altrimenti si resta sul valore statico AUTOBUY_MARGIN_FRACTION.
+# - Il risultato e' SEMPRE clampato in un intorno del valore statico (moltiplicatori
+#   AUTOBUY_DYNAMIC_MARGIN_MIN_MULT/MAX_MULT, default 0.6x-2.0x = 12%-40% se lo statico
+#   e' 20%) -- non puo' mai scendere sotto una soglia minima ragionevole ne' esplodere
+#   per un valore anomalo nella storia.
+# - Interruttore AUTOBUY_DYNAMIC_MARGIN_ENABLED (default 'si'): se 'no', comportamento
+#   IDENTICO a prima di questa modifica (soglia sempre = AUTOBUY_MARGIN_FRACTION).
+AUTOBUY_DYNAMIC_MARGIN_ENABLED = os.environ.get(
+    'AUTOBUY_DYNAMIC_MARGIN_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+MARGIN_HISTORY_PATH = os.environ.get('AUTOBUY_MARGIN_HISTORY_PATH', 'autobuy_margin_history.json')
+AUTOBUY_MARGIN_HISTORY_MIN_SAMPLES = int(os.environ.get('AUTOBUY_MARGIN_HISTORY_MIN_SAMPLES', '150'))
+AUTOBUY_MARGIN_HISTORY_MAX_DAYS = int(os.environ.get('AUTOBUY_MARGIN_HISTORY_MAX_DAYS', '14'))
+AUTOBUY_MARGIN_HISTORY_MAX_SAMPLES = int(os.environ.get('AUTOBUY_MARGIN_HISTORY_MAX_SAMPLES', '5000'))
+AUTOBUY_MARGIN_PERCENTILE = float(os.environ.get('AUTOBUY_MARGIN_PERCENTILE', '97'))
+AUTOBUY_DYNAMIC_MARGIN_MIN_MULT = float(os.environ.get('AUTOBUY_DYNAMIC_MARGIN_MIN_MULT', '0.6'))
+AUTOBUY_DYNAMIC_MARGIN_MAX_MULT = float(os.environ.get('AUTOBUY_DYNAMIC_MARGIN_MAX_MULT', '2.0'))
+
+
+def _load_margin_history():
+    """Ritorna una lista di {'ts': iso_timestamp, 'margin': float_percent}. File
+    mancante/corrotto -> lista vuota (fail-safe, stesso principio delle altre cache
+    JSON di questo bot: un file assente non deve mai bloccare l'esecuzione)."""
+    try:
+        with open(MARGIN_HISTORY_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return data
+        return []
+    except FileNotFoundError:
+        return []
+    except Exception as e:
+        log(f"[margine dinamico] errore lettura {MARGIN_HISTORY_PATH}, ignorato: {e}")
+        return []
+
+
+def _save_margin_history(history):
+    try:
+        with open(MARGIN_HISTORY_PATH, 'w', encoding='utf-8') as f:
+            json.dump(history, f)
+    except Exception as e:
+        log(f"[margine dinamico] errore scrittura {MARGIN_HISTORY_PATH}: {e}")
+
+
+def record_margin_observation(margin_percent):
+    """Aggiunge l'ultimo margine calcolato da evaluate_event alla storia persistita
+    (TUTTI i margini validi calcolati, non solo quelli che superano la soglia -- serve
+    la distribuzione completa per calcolare un percentile sensato). Tronca la storia a
+    AUTOBUY_MARGIN_HISTORY_MAX_SAMPLES voci e scarta quelle piu' vecchie di
+    AUTOBUY_MARGIN_HISTORY_MAX_DAYS giorni, cosi' il file non cresce indefinitamente e la
+    soglia riflette il mercato RECENTE, non tutta la storia del bot."""
+    history = _load_margin_history()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff = now - datetime.timedelta(days=AUTOBUY_MARGIN_HISTORY_MAX_DAYS)
+    kept = []
+    for entry in history:
+        try:
+            ts = datetime.datetime.fromisoformat(entry.get('ts', ''))
+        except (ValueError, TypeError):
+            continue
+        if ts >= cutoff:
+            kept.append(entry)
+    kept.append({'ts': now.isoformat(), 'margin': margin_percent})
+    if len(kept) > AUTOBUY_MARGIN_HISTORY_MAX_SAMPLES:
+        kept = kept[-AUTOBUY_MARGIN_HISTORY_MAX_SAMPLES:]
+    _save_margin_history(kept)
+
+
+def _percentile(sorted_values, p):
+    """Percentile semplice per interpolazione lineare (stessa definizione usata da
+    numpy.percentile di default) -- niente dipendenza da numpy solo per questo calcolo,
+    il workflow installa solo requests/websocket-client/curl_cffi."""
+    if not sorted_values:
+        return None
+    if len(sorted_values) == 1:
+        return sorted_values[0]
+    k = (len(sorted_values) - 1) * (p / 100.0)
+    f = int(k)
+    c = min(f + 1, len(sorted_values) - 1)
+    if f == c:
+        return sorted_values[f]
+    return sorted_values[f] + (sorted_values[c] - sorted_values[f]) * (k - f)
+
+
+def compute_dynamic_margin_threshold():
+    """Ritorna (soglia_frazione, n_campioni_usati). Se non ci sono abbastanza
+    osservazioni recenti (< AUTOBUY_MARGIN_HISTORY_MIN_SAMPLES) o la logica dinamica e'
+    disattivata, ritorna (AUTOBUY_MARGIN_FRACTION, n) -- fallback SEMPRE sicuro sul
+    comportamento statico originale. Altrimenti calcola il percentile
+    AUTOBUY_MARGIN_PERCENTILE della distribuzione recente (in punti percentuali, es.
+    16.1 per il 97esimo percentile osservato nei log del 25/07) e lo clampa in un
+    intorno ragionevole del valore statico prima di convertirlo in frazione."""
+    if not AUTOBUY_DYNAMIC_MARGIN_ENABLED:
+        return AUTOBUY_MARGIN_FRACTION, 0
+    history = _load_margin_history()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff = now - datetime.timedelta(days=AUTOBUY_MARGIN_HISTORY_MAX_DAYS)
+    samples = []
+    for entry in history:
+        try:
+            ts = datetime.datetime.fromisoformat(entry.get('ts', ''))
+            margin = float(entry.get('margin'))
+        except (ValueError, TypeError, KeyError):
+            continue
+        if ts >= cutoff:
+            samples.append(margin)
+    n = len(samples)
+    if n < AUTOBUY_MARGIN_HISTORY_MIN_SAMPLES:
+        return AUTOBUY_MARGIN_FRACTION, n
+    samples.sort()
+    percentile_value = _percentile(samples, AUTOBUY_MARGIN_PERCENTILE)
+    if percentile_value is None:
+        return AUTOBUY_MARGIN_FRACTION, n
+    dynamic_fraction = percentile_value / 100.0
+    floor = AUTOBUY_MARGIN_FRACTION * AUTOBUY_DYNAMIC_MARGIN_MIN_MULT
+    ceiling = AUTOBUY_MARGIN_FRACTION * AUTOBUY_DYNAMIC_MARGIN_MAX_MULT
+    clamped = max(floor, min(dynamic_fraction, ceiling))
+    return clamped, n
 
 # Per quanti secondi restare in ascolto ad ogni esecuzione, se non si verifica prima un caso
 # valido (il bot si ferma comunque al primo caso trovato).
@@ -1314,7 +1449,8 @@ def execute_live_purchase(offer_id, prepared):
 
 def send_would_have_bought_alert(player_name, player_slug, price_eur, second_price, margin_percent,
                                   card_slug, excluded_league, prepared=None, is_in_season=True,
-                                  live_mode=False, purchase_completed=False, purchase_error=None):
+                                  live_mode=False, purchase_completed=False, purchase_error=None,
+                                  threshold_used=None):
     link = build_card_link(player_slug, card_slug)
     if not is_in_season:
         categoria = "CLASSIC (modalita' check_classic, confronto su tutti i campionati)"
@@ -1342,7 +1478,7 @@ def send_would_have_bought_alert(player_name, player_slug, price_eur, second_pri
         f"Categoria: {categoria}\n"
         f"Prezzo minimo attuale: {price_eur:.2f}EUR\n"
         f"Secondo prezzo attuale: {second_price:.2f}EUR (margine {margin_percent:.1%}, "
-        f"soglia richiesta {AUTOBUY_MARGIN_FRACTION:.0%})\n\n"
+        f"soglia richiesta {(threshold_used if threshold_used is not None else AUTOBUY_MARGIN_FRACTION):.1%})\n\n"
         f"{prenotazione}"
         f"{esito}"
         f"\U0001F449 <b><a href='{link}'>APRI SU SORARE</a></b> \U0001F448"
@@ -1495,10 +1631,19 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return False
 
     margin_percent = (second_min_price - true_min_price) / second_min_price
-    log(f"{player_name}: minimo {true_min_price:.2f}EUR, secondo {second_min_price:.2f}EUR, "
-        f"margine {margin_percent:.1%} (soglia {AUTOBUY_MARGIN_FRACTION:.0%})")
 
-    if margin_percent < AUTOBUY_MARGIN_FRACTION:
+    # Registra SEMPRE l'osservazione (anche se il caso poi verra' scartato) -- serve la
+    # distribuzione completa dei margini di mercato, non solo quelli che superano la
+    # soglia, per calibrare compute_dynamic_margin_threshold() sui dati reali recenti.
+    record_margin_observation(margin_percent * 100)
+    effective_threshold, dynamic_samples = compute_dynamic_margin_threshold()
+    is_dynamic = AUTOBUY_DYNAMIC_MARGIN_ENABLED and dynamic_samples >= AUTOBUY_MARGIN_HISTORY_MIN_SAMPLES
+    log(f"{player_name}: minimo {true_min_price:.2f}EUR, secondo {second_min_price:.2f}EUR, "
+        f"margine {margin_percent:.1%} (soglia {'dinamica' if is_dynamic else 'statica'} "
+        f"{effective_threshold:.1%}, base statica {AUTOBUY_MARGIN_FRACTION:.0%}, "
+        f"campioni storia={dynamic_samples})")
+
+    if margin_percent < effective_threshold:
         return False
 
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
@@ -1563,7 +1708,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     send_would_have_bought_alert(player_name, player_slug, true_min_price, second_min_price,
                                   margin_percent, card_slug, excluded_league, prepared, is_in_season,
                                   live_mode=AUTOBUY_LIVE_MODE, purchase_completed=purchase_completed,
-                                  purchase_error=purchase_error)
+                                  purchase_error=purchase_error, threshold_used=effective_threshold)
     return True
 
 
@@ -1741,9 +1886,13 @@ def main():
     log(f"[network] curl_cffi (impronta TLS Chrome) {'ATTIVO' if _HAS_CURL_CFFI else 'NON DISPONIBILE, uso requests standard'}")
     csrf_source = "estratto dal cookie (csrftoken=...)" if _extract_csrf_from_cookie(COOKIES) else "da secret SORARE_CSRF (fallback)"
     log(f"[auth] CSRF token in uso: {csrf_source}, valore: {(CSRF_TOKEN or '')[:20]}...")
+    startup_threshold, startup_samples = compute_dynamic_margin_threshold()
     log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
-        f"margine richiesto {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: "
+        f"margine base statico {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: "
         f"{AUTOBUY_TARGET_MATCHES}")
+    log(f"[margine dinamico] {'ATTIVO' if AUTOBUY_DYNAMIC_MARGIN_ENABLED else 'DISATTIVO (uso solo soglia statica)'}"
+        f", campioni storia disponibili: {startup_samples} (minimo richiesto "
+        f"{AUTOBUY_MARGIN_HISTORY_MIN_SAMPLES}), soglia effettiva di partenza: {startup_threshold:.1%}")
     log(f"Giocatori in blacklist manuale ({len(BLACKLISTED_PLAYER_SLUGS)}): "
         f"{sorted(BLACKLISTED_PLAYER_SLUGS)}")
     log(f"Manager in blacklist AutoBuy ({len(BLACKLISTED_AUTOBUY_MANAGER_SLUGS)}): "
