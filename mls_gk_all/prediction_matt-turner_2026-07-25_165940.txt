@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T16:59:40.857120Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.6, min_starter_odds=70%
+======================================================================
+1) matt-turner: 56 pt attesi (24-87)
+======================================================================
+
+######################################################################
+# GIOCATORE: matt-turner
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: matt-turner (squadra: new-england-foxborough-massachusetts)
+Generato: 2026-07-25T16:59:40.856637Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | NSH vs NE | mlspa | score=35.9 | peso=0.340
+  2026-02-28 | RBNY vs NE | mlspa | score=40.9 | peso=0.367
+  2026-03-15 | NE vs CIN | mlspa | score=57.7 | peso=0.397
+  2026-03-22 | STL vs NE | mlspa | score=34.2 | peso=0.429
+  2026-04-04 | NE vs MTL | mlspa | score=78.6 | peso=0.463
+  2026-04-11 | NE vs DC | mlspa | score=76.5 | peso=0.500
+  2026-04-18 | NE vs CLB | mlspa | score=42.2 | peso=0.540
+  2026-04-22 | ATL vs NE | mlspa | score=64.2 | peso=0.583
+  2026-04-25 | MIA vs NE | mlspa | score=62.0 | peso=0.630
+  2026-05-02 | NE vs CLT | mlspa | score=79.0 | peso=0.680
+  2026-05-09 | NE vs PHI | mlspa | score=36.4 | peso=0.735
+  2026-05-13 | NE vs NSH | mlspa | score=9.2 | peso=0.794
+  2026-05-16 | NE vs MIN | mlspa | score=49.4 | peso=0.857
+  2026-05-23 | CLT vs NE | mlspa | score=49.7 | peso=0.926
+  2026-07-22 | NE vs TOR | mlspa | score=70.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 52.55
+Deviazione standard pesata: 19.73
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.33 (differenza: +5.40)
+Media score in casa: 55.52 | Media score fuori casa: 47.82
+Fattore casa/trasferta applicato: 1.075 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.293
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore possesso (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci): 0.972
+Fattore gol subiti (goals_conceded, con cap): 1.013
+Tasso storico clean sheet (porta inviolata nei primi 60'): 26.7% (bonus atteso incorporato nella media pesata: ~6.7pt)
+Fattore trend (media ultime 5: 43.1 vs media ultime 10: 53.9): 0.859
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: New England Revolution | Trasferta: Atlanta United
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.8 +/- 31.6
+  (range: 24.2 - 87.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.34
+Punteggio REALE ottenuto in quella partita: 70.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +20.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      86.9    42.2    -44.7    29.9        NO
+   7        7      51.3    64.2    +12.9    28.4        SI
+   8        8      30.0    62.0    +32.0    26.8        NO
+   9        9      61.6    79.0    +17.4    25.0        SI
+  10       10     103.2    36.4    -66.8    26.4        NO
+  11       11      39.8     9.2    -30.6    27.5        NO
+  12       12      54.2    49.4     -4.8    35.8        SI
+  13       13      41.6    49.7     +8.1    33.6        SI
+  14       14      56.0    70.7    +14.7    31.7        SI
+
+MAE (errore assoluto medio): 25.77
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
