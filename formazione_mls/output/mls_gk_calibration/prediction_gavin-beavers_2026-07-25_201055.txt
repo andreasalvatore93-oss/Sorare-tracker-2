@@ -1,0 +1,72 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T20:10:55.450845Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.6, min_starter_odds=70%
+======================================================================
+1) gavin-beavers: 4 pt attesi (-19-27)
+======================================================================
+
+######################################################################
+# GIOCATORE: gavin-beavers
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gavin-beavers (squadra: brondby-brondby)
+Generato: 2026-07-25T20:10:55.450703Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 27
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: superliga-dk (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-08 | BIF vs RFC | superliga-dk | score=78.2 | peso=0.926
+  2026-02-15 | VFF vs BIF | superliga-dk | score=49.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 63.19
+Deviazione standard pesata: 14.44
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 78.20 | Media score fuori casa: 49.30
+Fattore casa/trasferta applicato: 1.227 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.0
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.800
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere).
+Fattore falli (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.050
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.950
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.050
+Tasso storico clean sheet (porta inviolata nei primi 60'): 50.0% (bonus atteso incorporato nella media pesata: ~12.5pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 6.90% (fonte: tasso di presenza storico (2/29))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T14:00
+Casa: Brøndby IF | Trasferta: Viborg FF
+Competizione: superliga-dk
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 4.3 +/- 23.1
+  (range: -18.8 - 27.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 78.20
+Punteggio REALE ottenuto in quella partita: 49.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -28.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
