@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:38:18.810493Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) david-romney: 5 pt attesi (-18-28)
+======================================================================
+
+######################################################################
+# GIOCATORE: david-romney
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: david-romney (squadra: sj-earthquakes-santa-clara-california)
+Generato: 2026-07-25T08:38:18.809465Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-06 | SJ vs RBNY | mlspa | score=42.1 | peso=0.500
+  2025-07-20 | SEA vs SJ | mlspa | score=30.0 | peso=0.530
+  2025-08-10 | SJ vs VAN | mlspa | score=53.8 | peso=0.561
+  2025-08-17 | SJ vs SD | mlspa | score=30.1 | peso=0.595
+  2025-08-24 | HOU vs SJ | mlspa | score=42.8 | peso=0.630
+  2025-08-31 | ATX vs SJ | mlspa | score=40.6 | peso=0.667
+  2025-09-14 | SJ vs LAFC | mlspa | score=47.0 | peso=0.707
+  2025-09-21 | SJ vs STL | mlspa | score=69.7 | peso=0.749
+  2025-10-19 | SJ vs ATX | mlspa | score=44.7 | peso=0.794
+  2026-04-12 | SKC vs SJ | mlspa | score=67.3 | peso=0.841
+  2026-04-26 | STL vs SJ | mlspa | score=35.9 | peso=0.891
+  2026-05-10 | SJ vs VAN | mlspa | score=44.1 | peso=0.944
+  2026-05-14 | SEA vs SJ | mlspa | score=7.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 42.24
+Deviazione standard pesata: 16.70
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.26 (differenza: +6.44)
+Media score in casa: 47.35 | Media score fuori casa: 37.32
+Fattore casa/trasferta applicato: 1.118 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.069
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.017
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.015
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 39.9 vs media ultime 10: 42.9): 0.928
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T02:30
+Casa: San Jose Earthquakes | Trasferta: LA Galaxy
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 4.9 +/- 23.4
+  (range: -18.5 - 28.3)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.41
+Punteggio REALE ottenuto in quella partita: 7.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -39.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.6x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=0.7)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      34.5    47.0    +12.5    12.9        SI
+   7        7      44.7    69.7    +25.0    12.5        NO
+   8        8      62.5    44.7    -17.8    20.0        SI
+   9        9      49.4    67.3    +18.0    18.6        SI
+  10       10      50.1    35.9    -14.2    21.0        SI
+  11       11      39.5    44.1     +4.6    20.7        SI
+  12       12      43.9     7.2    -36.7    19.5        NO
+
+MAE (errore assoluto medio): 18.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
