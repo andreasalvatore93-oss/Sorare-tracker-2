@@ -1,0 +1,89 @@
+"""
+Genera SOLO il riepilogo finale compatto "Consiglio difensori" leggendo
+i file prediction_<slug>_*.txt gia' prodotti dal job matrix (uno per
+giocatore). Nessun dump completo: poche righe, ordine di schieramento.
+
+Clone esatto di build_consiglio.py (attaccanti), adattato a mls_def_all/ e
+mls_def_discovery/.
+"""
+import os
+import re
+import json
+import glob
+import datetime
+
+OUTPUT_DIR = 'mls_def_all'
+DISCOVERY_FILE = os.path.join('mls_def_discovery', 'player_slugs.json')
+
+# Pattern della riga "N) slug: X pt attesi (low-high)" gia' scritta da
+# test_def.py nel riepilogo di ciascun job (uno per giocatore, quindi
+# sempre riga singola "1) ...").
+CONSIGLIO_RE = re.compile(r'^\d+\)\s+([\w-]+):\s+(-?\d+)\s+pt attesi\s+\((-?\d+)-(-?\d+)\)\s*$')
+ESCLUSO_RE = re.compile(r'^([\w-]+):\s+(ESCLUSO|DATI INSUFFICIENTI)\s+—\s+(.*)$')
+
+
+def latest_file_for_slug(slug):
+    matches = sorted(glob.glob(os.path.join(OUTPUT_DIR, f'prediction_{slug}_*.txt')))
+    return matches[-1] if matches else None
+
+
+def parse_player_file(path):
+    """Estrae dal file di un giocatore la riga consiglio (se OK) o lo stato
+    di esclusione (se escluso/dati insufficienti)."""
+    with open(path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    for line in content.splitlines():
+        m = CONSIGLIO_RE.match(line.strip())
+        if m:
+            slug, atteso, low, high = m.groups()
+            return {'slug': slug, 'status': 'OK', 'atteso': int(atteso),
+                    'low': int(low), 'high': int(high)}
+        m = ESCLUSO_RE.match(line.strip())
+        if m:
+            slug, status, note = m.groups()
+            return {'slug': slug, 'status': status, 'note': note}
+    return None
+
+
+def main():
+    with open(DISCOVERY_FILE, 'r', encoding='utf-8') as f:
+        slugs = json.load(f)
+
+    ok_rows = []
+    excluded_count = 0
+
+    for slug in slugs:
+        fpath = latest_file_for_slug(slug)
+        if not fpath:
+            continue
+        parsed = parse_player_file(fpath)
+        if not parsed:
+            continue
+        if parsed['status'] == 'OK':
+            ok_rows.append(parsed)
+        else:
+            excluded_count += 1
+
+    ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
+
+    lines = []
+    lines.append(f"Consiglio difensori — {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')}Z")
+    lines.append("")
+    for i, r in enumerate(ok_rows, 1):
+        lines.append(f"{i}) {r['slug']}: {r['atteso']} pt ({r['low']}-{r['high']})")
+    lines.append("")
+    lines.append(f"({excluded_count} esclusi/non disponibili questa giornata)")
+
+    text = "\n".join(lines)
+    print(text)
+
+    ts = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H%M%S')
+    out_path = os.path.join(OUTPUT_DIR, f'consiglio_{ts}.txt')
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(text)
+    print(f"\nSalvato in: {out_path}")
+
+
+if __name__ == '__main__':
+    main()
