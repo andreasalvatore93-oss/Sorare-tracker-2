@@ -87,7 +87,7 @@ jobs:
             git push || (git pull --rebase origin main && git push)
           fi
 
-      - name: Estrai il batch richiesto (batch_index/batch_size)
+      - name: Estrai il batch richiesto (batch_index/batch_size, esclusi i gia' analizzati)
         id: slice
         run: |
           python3 - <<'EOF'
@@ -101,15 +101,30 @@ jobs:
           with open(path, encoding="utf-8") as f:
               slugs = json.load(f)
 
+          # ESCLUDE (26/07) i giocatori che hanno gia' un grid.json salvato da un
+          # giro di calibrazione precedente -- utile per rilanciare la discovery
+          # con una soglia qualita' piu' bassa (piu' giocatori ammessi) senza
+          # rifare query API/job CI su chi e' gia' stato processato.
+          grid_dir = f"formazione_mls/output/mls_{ruolo}_calibration/grid_search"
+          already_done = set()
+          if os.path.isdir(grid_dir):
+              already_done = {
+                  fname[:-len("_grid.json")]
+                  for fname in os.listdir(grid_dir) if fname.endswith("_grid.json")
+              }
+          new_slugs = [s for s in slugs if s not in already_done]
+
           start = batch_index * batch_size
           end = start + batch_size
-          batch = slugs[start:end]
+          batch = new_slugs[start:end]
 
-          batch_count = (len(slugs) + batch_size - 1) // batch_size
+          batch_count = (len(new_slugs) + batch_size - 1) // batch_size
 
-          print(f"Totale giocatori qualificati: {len(slugs)}")
+          print(f"Totale giocatori qualificati (soglia attuale): {len(slugs)}")
+          print(f"Gia' analizzati in precedenza (esclusi da questo giro): {len(slugs) - len(new_slugs)}")
+          print(f"Da analizzare: {len(new_slugs)}")
           print(f"Batch {batch_index} (range [{start}:{end}]): {len(batch)} giocatori")
-          print(f"Batch totali necessari per coprire tutti i giocatori: {batch_count}")
+          print(f"Batch totali necessari per coprire i rimanenti: {batch_count}")
 
           github_output = os.environ["GITHUB_OUTPUT"]
           with open(github_output, "a", encoding="utf-8") as f:
