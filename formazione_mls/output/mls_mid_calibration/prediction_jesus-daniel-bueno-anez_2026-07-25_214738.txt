@@ -1,0 +1,73 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:47:38.393810Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jesus-daniel-bueno-anez: 15 pt attesi (-5-35)
+======================================================================
+
+######################################################################
+# GIOCATORE: jesus-daniel-bueno-anez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jesus-daniel-bueno-anez (squadra: philadelphia-union-chester-pennsylvania)
+Generato: 2026-07-25T21:47:38.393677Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | PHI vs NE | mlspa | score=40.5 | peso=0.841
+  2026-04-11 | MTL vs PHI | mlspa | score=72.3 | peso=0.891
+  2026-04-18 | PHI vs DC | mlspa | score=36.4 | peso=0.944
+  2026-04-22 | TOR vs PHI | mlspa | score=39.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 46.88
+Deviazione standard pesata: 14.46
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 38.45 | Media score fuori casa: 55.90
+Fattore casa/trasferta applicato: 0.971 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.879
+Fattore falli (casa/trasferta, da dati reali): 0.962
+Fattore duelli (casa/trasferta, da dati reali): 0.977
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.959
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.024
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 1.041
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: Philadelphia Union | Trasferta: Seattle Sounders FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 15.2 +/- 20.2
+  (range: -5.0 - 35.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.64
+Punteggio REALE ottenuto in quella partita: 39.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
