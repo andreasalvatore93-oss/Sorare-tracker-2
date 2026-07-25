@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T07:32:21.459546Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jeppe-tverskov: 45 pt attesi (12-78)
+======================================================================
+
+######################################################################
+# GIOCATORE: jeppe-tverskov
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jeppe-tverskov (squadra: san-diego-san-diego)
+Generato: 2026-07-25T07:32:21.459256Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 21
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-27 | SD vs POR | mlspa | score=58.8 | peso=0.445
+  2025-11-02 | POR vs SD | mlspa | score=45.2 | peso=0.472
+  2025-11-10 | SD vs POR | mlspa | score=56.7 | peso=0.500
+  2025-11-25 | SD vs MIN | mlspa | score=66.3 | peso=0.530
+  2025-11-30 | SD vs VAN | mlspa | score=78.5 | peso=0.561
+  2026-02-22 | SD vs MTL | mlspa | score=100.0 | peso=0.595
+  2026-03-02 | SD vs STL | mlspa | score=78.6 | peso=0.630
+  2026-03-08 | SKC vs SD | mlspa | score=81.0 | peso=0.667
+  2026-03-22 | SD vs RSL | mlspa | score=39.9 | peso=0.707
+  2026-04-05 | SJ vs SD | mlspa | score=31.3 | peso=0.749
+  2026-04-12 | SD vs MIN | mlspa | score=100.0 | peso=0.794
+  2026-04-19 | RSL vs SD | mlspa | score=62.2 | peso=0.841
+  2026-04-23 | HOU vs SD | mlspa | score=47.0 | peso=0.891
+  2026-04-26 | SD vs POR | mlspa | score=22.2 | peso=0.944
+  2026-07-23 | RAP vs SD | mlspa | score=42.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 58.78
+Deviazione standard pesata: 23.59
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.85 (differenza: +3.74)
+Media score in casa: 66.78 | Media score fuori casa: 51.57
+Fattore casa/trasferta applicato: 1.129 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.871
+Fattore falli (casa/trasferta, da dati reali): 1.006
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.013
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.011
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore trend (media ultime 5: 54.8 vs media ultime 10: 60.5): 0.934
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T01:30
+Casa: San Diego FC | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.0 +/- 33.0
+  (range: 12.0 - 78.1)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.50
+Punteggio REALE ottenuto in quella partita: 42.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -17.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      79.6    78.6     -1.0    21.7        SI
+   7        7      64.1    81.0    +16.9    20.2        SI
+   8        8      60.9    39.9    -21.0    19.2        NO
+   9        9      48.1    31.3    -16.8    22.3        SI
+  10       10      73.9   100.0    +26.1    25.4        NO
+  11       11      46.6    62.2    +15.6    27.8        SI
+  12       12      51.3    47.0     -4.3    26.3        SI
+  13       13      73.5    22.2    -51.3    25.9        NO
+  14       14      50.9    42.7     -8.2    29.0        SI
+
+MAE (errore assoluto medio): 17.90
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
