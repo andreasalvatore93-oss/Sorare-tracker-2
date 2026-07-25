@@ -1073,7 +1073,7 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
         'salt': salt,
         'authorizationRequest': authorization_request,
     })
-    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sorare-sign', 'decrypt_and_sign.js')
+    script_path = os.path.join('bots', 'sorare-sign', 'decrypt_and_sign.js')  # relativo a repo root (cwd), non a __file__: risorsa condivisa
     try:
         result = subprocess.run(
             ['node', script_path],

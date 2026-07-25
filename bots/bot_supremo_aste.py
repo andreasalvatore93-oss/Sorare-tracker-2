@@ -720,7 +720,7 @@ def _ensure_node_sign_process():
         log(f"[firma Node] il processo persistente precedente non e' piu' attivo "
             f"(codice uscita {_node_process.poll()}), lo riavvio -- ultime righe stderr: "
             f"{list(_node_stderr_tail)}")
-    script_path = os.path.join('sorare-sign', 'decrypt_and_sign.js')  # relativo a repo root (cwd), non a __file__: risorsa condivisa
+    script_path = os.path.join('bots', 'sorare-sign', 'decrypt_and_sign.js')  # relativo a repo root (cwd), non a __file__: risorsa condivisa
     log("[firma Node] avvio processo Node persistente per la firma...")
     proc = subprocess.Popen(
         ['node', script_path],

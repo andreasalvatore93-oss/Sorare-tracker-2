@@ -9,7 +9,6 @@ from zoneinfo import ZoneInfo
 
 import requests
 import websocket  # pip install websocket-client
-from playwright.sync_api import sync_playwright
 
 try:
     from curl_cffi import requests as curl_requests
@@ -588,14 +587,6 @@ AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
 
-# Pausa random periodica (20/07, richiesta esplicita utente: "non martellare Sorare di
-# richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_SECONDS di
-# attivita' continua, il bot si ferma per un tempo casuale tra RANDOM_PAUSE_MIN_SECONDS
-# e RANDOM_PAUSE_MAX_SECONDS prima di riprendere.
-RANDOM_PAUSE_INTERVAL_SECONDS = int(os.environ.get('RANDOM_PAUSE_INTERVAL_SECONDS', '180'))
-RANDOM_PAUSE_MIN_SECONDS = float(os.environ.get('RANDOM_PAUSE_MIN_SECONDS', '1'))
-RANDOM_PAUSE_MAX_SECONDS = float(os.environ.get('RANDOM_PAUSE_MAX_SECONDS', '10'))
-
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
 AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '10'))
@@ -695,7 +686,7 @@ def record_thin_market_skip(player_slug, is_in_season=True):
 # ultime 5 e' una statistica del GIOCATORE, identica per la sua carta in_season e
 # classic -- lo stesso della logica coverage/media-zero esistente.
 FORMA_BASSA_DEFAULT_DAYS = float(os.environ.get('FORMA_BASSA_DEFAULT_DAYS', '3'))
-LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '0'))
+LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '10'))
 
 
 def is_player_in_forma_bassa(player_slug):
@@ -803,190 +794,57 @@ _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
 
 
-def _graphql_throttle():
+def _graphql_throttle(critical=False):
+    # OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente -- "velocizzare il
+    # processo da rilevazione ad acquisto"): le chiamate CRITICHE del percorso di
+    # acquisto (prepareAcceptOffer, fetchEncryptedPrivateKey, acceptOffer, e il
+    # fallback exchange rate dentro quel percorso) NON aspettano piu' il throttle.
+    # Prima pagavano SEMPRE il minimo di 50ms di distanza dall'ultima chiamata
+    # qualsiasi (anche uno scan prezzi di un ALTRO evento in parallelo), e fino a
+    # 350ms se un 429 era avvenuto nei 30s precedenti (modalita' SAFE) -- proprio
+    # sull'accept, il passo dove ogni millisecondo decide la corsa contro gli
+    # altri bot. Sono 2-3 chiamate per acquisto, pochi acquisti per run: il
+    # rischio 429 aggiunto e' trascurabile. Il timestamp dell'ultima chiamata
+    # viene comunque aggiornato, cosi' le chiamate NORMALI successive si
+    # distanziano correttamente anche da quelle critiche. Nessun controllo di
+    # business toccato: pura prioritizzazione del traffico.
     with _graphql_throttle_lock:
         now = time.time()
-        recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
-        min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
-        wait = min_interval - (now - _graphql_last_call_ts[0])
-        if wait > 0:
-            time.sleep(wait)
+        if not critical:
+            recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
+            min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
+            wait = min_interval - (now - _graphql_last_call_ts[0])
+            if wait > 0:
+                time.sleep(wait)
         _graphql_last_call_ts[0] = time.time()
 
 
-# FIX 20/07 (decima ipotesi, dopo che tutte le altre 9 sono fallite su unknown_fingerprint):
-# usare un vero browser Chrome headless (Playwright) per le tre chiamate GraphQL
-# CRITICHE dell'acquisto (prepareAcceptOffer, fetchEncryptedPrivateKey, acceptOffer),
-# invece di curl_cffi. Il resto del bot (ricerca carte, prezzi, liquidita') continua a
-# usare curl_cffi via graphql_query() come prima, senza modifiche.
-_playwright_instance = None
-_playwright_browser = None
-_playwright_page = None
+# VERSIONE NO-PLAYWRIGHT (test): niente browser Chrome -- anche le chiamate prima
+# "critiche" (prepareAcceptOffer, fetchEncryptedPrivateKey, acceptOffer, prepareOffer,
+# createDirectOffer) usano ora curl_cffi via graphql_query(), come il resto del bot.
+# get_browser_page/close_browser rimosse (non piu' necessarie).
 
 
-def get_browser_page():
-    """Apre un browser Chrome invisibile (headless) con i cookie di sessione
-    gia' pronti, cosi' sembra un utente vero gia' loggato. Riusa lo stesso
-    browser per tutta la run (non lo riapre ogni volta).
-    FIX 20/07 (undicesima ipotesi, dopo che Playwright puro non ha risolto
-    unknown_fingerprint): oltre a sembrare un browser vero, proviamo a fargli
-    NAVIGARE un po' prima della chiamata critica -- non solo la home, ma
-    anche una pagina di mercato reale, con piccole pause. Ipotesi: un
-    eventuale fingerprint di device/sessione generato da JS potrebbe
-    richiedere che il browser abbia gia' 'vissuto' un minimo di navigazione
-    reale (localStorage/IndexedDB popolati) prima che il server lo consideri
-    legittimo."""
-    global _playwright_instance, _playwright_browser, _playwright_page
-    if _playwright_page is not None:
-        return _playwright_page
-
-    _playwright_instance = sync_playwright().start()
-    _playwright_browser = _playwright_instance.chromium.launch(headless=True)
-    context = _playwright_browser.new_context(
-        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                    '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
-    )
-
-    # Inietta i cookie di Sorare (stessa stringa che usiamo gia' in COOKIES)
-    # trasformandoli nel formato che Playwright vuole (lista di dict)
-    cookie_pairs = []
-    if COOKIES:
-        for pair in COOKIES.split(';'):
-            pair = pair.strip()
-            if '=' not in pair:
-                continue
-            name, value = pair.split('=', 1)
-            cookie_pairs.append({
-                'name': name.strip(),
-                'value': value.strip(),
-                'domain': '.sorare.com',
-                'path': '/',
-            })
-    if cookie_pairs:
-        context.add_cookies(cookie_pairs)
-        log(f"[playwright] iniettati {len(cookie_pairs)} cookie nel context "
-            f"(diagnostica: {[c['name'] for c in cookie_pairs][:5]}...)")
-    else:
-        log("[playwright] ATTENZIONE: nessun cookie iniettato (COOKIES vuoto o malformato)")
-
-    page = context.new_page()
-
-    # Navigazione "riscaldamento" (undicesima ipotesi): home -> pausa -> pagina
-    # di mercato reale -> pausa, prima di essere pronti per la chiamata critica.
-    # FIX 20/07: networkidle andava SEMPRE in timeout (30s) su GitHub Actions --
-    # probabilmente risorse di terze parti (analytics/tracking) che non
-    # completano mai il caricamento in un ambiente headless/datacenter.
-    # Passato a domcontentloaded, molto piu' affidabile e comunque sufficiente
-    # per far eseguire eventuali script di fingerprinting nella pagina.
-    try:
-        log("[playwright] navigazione di riscaldamento: home page...")
-        page.goto('https://sorare.com/', wait_until='domcontentloaded', timeout=20000)
-        time.sleep(3)
-        log("[playwright] navigazione di riscaldamento: pagina di mercato...")
-        page.goto('https://sorare.com/football/market', wait_until='domcontentloaded', timeout=20000)
-        time.sleep(3)
-    except Exception as e:
-        log(f"[playwright] navigazione di riscaldamento fallita parzialmente (non bloccante): {e}")
-
-    # 23/07 (ottimizzazione CDP): pre-registra la funzione di fetch GraphQL UNA
-    # SOLA VOLTA su window -- ogni chiamata successiva (_graphql_call_via_browser_raw)
-    # invia solo un piccolo wrapper invece del corpo intero della funzione, riducendo
-    # l'overhead di trasferimento/parsing per ogni page.evaluate. Stesso identico
-    # fetch() reale dentro Chrome, nessun cambiamento di comportamento/fingerprint.
-    page.evaluate("""
-    () => {
-        window.__sorareGraphqlFetch = async (url, payload, csrfToken, deviceFingerprint) => {
-            try {
-                const headers = {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'x-csrf-token': csrfToken,
-                };
-                if (deviceFingerprint) {
-                    headers['device_fingerprint'] = deviceFingerprint;
-                }
-                const resp = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    credentials: 'include',
-                    body: JSON.stringify(payload),
-                });
-                const text = await resp.text();
-                return { status: resp.status, body: text };
-            } catch (e) {
-                return { status: 0, body: JSON.stringify({error: String(e)}) };
-            }
-        };
-    }
-    """)
-
-    _playwright_page = page
-    return page
+def _graphql_call_via_browser_raw(query, variables=None, critical=False):
+    """VERSIONE NO-PLAYWRIGHT (test): nome mantenuto per non toccare i moltissimi call
+    site esistenti (call_fn = _call_fn or graphql_query_via_browser), ma qui delega
+    direttamente a graphql_query (curl_cffi + header identificati mesi fa nel percorso
+    unknown_fingerprint) -- nessun browser, nessun dispatch necessario. Se Sorare
+    dovesse rifiutare queste chiamate con lo stesso errore di allora, e' il segnale che
+    il fingerprint via browser resta necessario e si torna alla versione con Playwright."""
+    return graphql_query(query, variables, critical=critical)
 
 
-def close_browser():
-    """Chiude il browser alla fine (importante per non lasciare processi
-    appesi e sprecare tempo del workflow GitHub Actions)."""
-    global _playwright_instance, _playwright_browser, _playwright_page
-    try:
-        if _playwright_browser:
-            _playwright_browser.close()
-        if _playwright_instance:
-            _playwright_instance.stop()
-    except Exception as e:
-        log(f"[playwright] errore chiudendo il browser: {e}")
-    _playwright_instance = None
-    _playwright_browser = None
-    _playwright_page = None
+def graphql_query_via_browser(query, variables=None, timeout_ms=20000, critical=False):
+    """VERSIONE NO-PLAYWRIGHT (test): nome/firma mantenuti per compatibilita' con tutti
+    i call site esistenti (call_fn = _call_fn or graphql_query_via_browser) -- delega
+    a _graphql_call_via_browser_raw, che a sua volta usa graphql_query. Nessun dispatch
+    a thread dedicato necessario (graphql_query/curl_cffi e' gia' thread-safe, usato
+    altrove in concorrenza)."""
+    return _graphql_call_via_browser_raw(query, variables, critical=critical)
 
 
-def _graphql_call_via_browser_raw(query, variables=None):
-    """Logica GRAFFA della chiamata GraphQL via browser (get_browser_page +
-    page.evaluate), IDENTICA a prima ma SENZA il dispatch a
-    _run_on_browser_thread -- da chiamare SOLO quando si e' gia' in esecuzione
-    sul thread dedicato al browser (dentro una funzione gia' sottomessa tramite
-    _run_on_browser_thread). Chiamarla da un thread diverso causa il crash
-    Playwright 'Cannot switch to a different thread'. Introdotta 22/07 v6
-    (ottimizzazione velocita', richiesta esplicita utente) per permettere di
-    fondere piu' chiamate browser consecutive (es. prepare+accept) in UN SOLO
-    dispatch al thread dedicato, invece di uno per chiamata -- dimezza
-    l'overhead di cross-thread hop nel percorso critico di acquisto/offerta.
-    Gestisce le proprie eccezioni e ritorna sempre un dict (mai propaga)."""
-    page = get_browser_page()
-    payload = {"query": query, "variables": variables or {}}
-
-    try:
-        result = page.evaluate(
-            "([url, payload, csrfToken, deviceFingerprint]) => "
-            "window.__sorareGraphqlFetch(url, payload, csrfToken, deviceFingerprint)",
-            [GRAPHQL_URL, payload, CSRF_TOKEN, SORARE_DEVICE_FINGERPRINT],
-        )
-        body_text = result.get('body', '')
-        return json.loads(body_text)
-    except Exception as e:
-        log(f"[playwright graphql] eccezione: {e}")
-        return {"errors": [{"message": f"playwright_exception: {e}"}]}
-
-
-def graphql_query_via_browser(query, variables=None, timeout_ms=20000):
-    """Fa una chiamata GraphQL usando fetch() DENTRO un vero browser Chrome
-    (non con curl_cffi/requests) -- cosi' la richiesta esce con l'impronta
-    autentica del browser (TLS, JS engine, eventuali controlli antibot lato
-    client), impossibile da imitare fino in fondo con librerie Python.
-    Usata SOLO per le chiamate critiche dell'acquisto/offerta (prepareAcceptOffer,
-    fetchEncryptedPrivateKey, acceptOffer, prepareOffer, createDirectOffer) --
-    ipotesi 20/07 per unknown_fingerprint.
-    FIX 22/07 v6: ora un thin wrapper -- la logica vera e' in
-    _graphql_call_via_browser_raw (vedi sopra), qui si limita a sottometterla
-    sul thread dedicato tramite _run_on_browser_thread. Usare direttamente
-    _graphql_call_via_browser_raw (MAI questa funzione) quando si e' gia'
-    dentro una funzione sottomessa a _run_on_browser_thread, per evitare un
-    doppio dispatch annidato (deadlock certo: l'unico worker del pool
-    resterebbe bloccato in attesa di se stesso)."""
-    return _run_on_browser_thread(_graphql_call_via_browser_raw, query, variables)
-
-
-def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
+def graphql_query(query, variables=None, max_retries=3, extra_headers=None, critical=False):
     """Versione semplificata (stessa base di track.py) del client GraphQL con backoff sui
     429 -- niente rilevamento "ban a tempo fisso" qui, il volume di query di questo bot e'
     molto piu' basso (esecuzioni brevi, manuali).
@@ -1023,7 +881,7 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None):
         headers.update(extra_headers)
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(max_retries):
-        _graphql_throttle()
+        _graphql_throttle(critical=critical)
         if _HAS_CURL_CFFI:
             r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         else:
@@ -1625,26 +1483,66 @@ query ExchangeRateQuery {
 """
 
 
-def get_exchange_rate_id():
-    """Recupera l'id del tasso di cambio corrente (serve a PrepareAcceptOfferMutation/
-    PrepareOfferMutation), stessa query ExchangeRateQuery vista nel flusso reale di
-    acquisto in browser.
-    OTTIMIZZAZIONE VELOCITA' (20/07, richiesta esplicita utente -- ogni millisecondo
-    conta nello sniping): CACHATO in memoria per l'intera durata del run, stesso
-    principio gia' usato per fetch_encrypted_private_key. Il tasso di cambio (qui
-    sempre EUR, la valuta di acquisto/offerta e' sempre EUR) non cambia abbastanza in
-    fretta da giustificare una query di rete separata ad OGNI singolo tentativo --
-    prima query del run la recupera, tutte le successive riusano lo stesso valore
-    senza contattare di nuovo il server. Elimina una chiamata di rete intera dal
-    percorso critico di ogni acquisto/offerta.
-    """
+# OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente): l'exchange_rate_id
+# NON viene piu' richiesto in serie DENTRO prepare_accept_offer/prepare_offer (un
+# round-trip di rete intero nel percorso critico di ogni acquisto). Un thread in
+# background lo rinfresca ogni EXCHANGE_RATE_REFRESH_SECONDS e lo tiene pronto in
+# questa cache. LEZIONE DAL BUG 21/07 ('exchange rate has expired' riusando lo
+# stesso id su piu' acquisti): l'id e' trattato come USA E GETTA -- ogni prelievo
+# per un acquisto/offerta lo CONSUMA (rimosso dalla cache) e sveglia subito il
+# refresher perche' ne prepari uno nuovo. Due acquisti ravvicinati non possono
+# quindi mai riusare lo stesso id: il secondo, se il refresher non ha ancora
+# fatto in tempo, ripiega sulla fetch diretta identica a oggi (zero regressione).
+# In piu' l'id in cache non puo' mai essere piu' vecchio del ciclo di refresh,
+# quindi nemmeno la scadenza temporale puo' ripresentarsi.
+EXCHANGE_RATE_REFRESH_SECONDS = 45
+_exchange_rate_cache = {'id': None, 'ts': 0.0}
+_exchange_rate_lock = threading.Lock()
+_stop_exchange_rate_refresh = threading.Event()
+_exchange_rate_refresh_now = threading.Event()
+
+
+def _fetch_exchange_rate_id_from_server(critical=False):
+    """Fetch diretta dell'id dal server (l'unica che contatta la rete). critical=True
+    quando chiamata dal percorso di acquisto (fallback cache vuota) -- salta il
+    throttle come le altre chiamate critiche (vedi _graphql_throttle)."""
     try:
-        data = graphql_query(EXCHANGE_RATE_QUERY)
-        rate_id = (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
-        return rate_id
+        data = graphql_query(EXCHANGE_RATE_QUERY, critical=critical)
+        return (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
     except Exception as e:
         log(f"[prepare accept] errore lettura tasso di cambio: {e}")
         return None
+
+
+def _exchange_rate_refresh_loop():
+    """Thread daemon: tiene sempre pronto un exchange_rate_id fresco e mai usato.
+    Si sveglia ogni EXCHANGE_RATE_REFRESH_SECONDS oppure IMMEDIATAMENTE quando un
+    acquisto/offerta consuma l'id in cache (evento _exchange_rate_refresh_now)."""
+    while not _stop_exchange_rate_refresh.is_set():
+        rate_id = _fetch_exchange_rate_id_from_server(critical=False)
+        if rate_id:
+            with _exchange_rate_lock:
+                _exchange_rate_cache['id'] = rate_id
+                _exchange_rate_cache['ts'] = time.monotonic()
+        _exchange_rate_refresh_now.clear()
+        # attende il prossimo ciclo O un consumo dell'id (whichever first)
+        _exchange_rate_refresh_now.wait(timeout=EXCHANGE_RATE_REFRESH_SECONDS)
+
+
+def get_exchange_rate_id(critical=False):
+    """Restituisce un exchange_rate_id pronto all'uso. Percorso veloce: preleva
+    (e CONSUMA) l'id tenuto fresco dal thread di refresh -- istantaneo, zero rete
+    nel percorso critico. Fallback (cache vuota, refresher non ancora partito o
+    id appena consumato da un altro acquisto): fetch diretta identica al
+    comportamento precedente."""
+    with _exchange_rate_lock:
+        rate_id = _exchange_rate_cache['id']
+        if rate_id:
+            _exchange_rate_cache['id'] = None  # usa e getta: mai riusato due volte
+    if rate_id:
+        _exchange_rate_refresh_now.set()  # sveglia subito il refresher per il prossimo
+        return rate_id
+    return _fetch_exchange_rate_id_from_server(critical=critical)
 
 PREPARE_ACCEPT_OFFER_MUTATION = """
 mutation PrepareAcceptOfferMutation($input: prepareAcceptOfferInput!) {
@@ -1733,7 +1631,7 @@ def prepare_accept_offer(offer_id, _call_fn=None):
     -- passare _graphql_call_via_browser_raw quando gia' dentro un dispatch a
     _run_on_browser_thread, per fondere piu' chiamate in un solo hop."""
     call_fn = _call_fn or graphql_query_via_browser
-    exchange_rate_id = get_exchange_rate_id()
+    exchange_rate_id = get_exchange_rate_id(critical=True)
     if not exchange_rate_id:
         log("[prepare accept] exchange_rate_id non ottenuto, impossibile procedere")
         return None, None
@@ -1751,7 +1649,7 @@ def prepare_accept_offer(offer_id, _call_fn=None):
         }
     }
     try:
-        data = call_fn(PREPARE_ACCEPT_OFFER_MUTATION, variables)
+        data = call_fn(PREPARE_ACCEPT_OFFER_MUTATION, variables, critical=True)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -1792,6 +1690,7 @@ def prepare_accept_offer(offer_id, _call_fn=None):
 import subprocess
 import queue
 import collections
+import itertools
 
 # OTTIMIZZAZIONE VELOCITA' SNIPING (21/07, richiesta esplicita utente): il processo
 # Node per la firma non viene piu' avviato da zero ad OGNI acquisto/offerta -- resta
@@ -1803,8 +1702,7 @@ import collections
 # legge le risposte dallo stdout del processo cosi' il chiamante puo' aspettarle
 # con un timeout vero (niente rischio di restare bloccati per sempre se il
 # processo Node si pianta senza rispondere).
-_node_process = None
-_node_process_lock = threading.Lock()
+_NODE_POOL_SIZE = int(os.environ.get('NODE_POOL_SIZE', '3'))
 # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita utente,
 # rischio accettato): con piu' eventi valutati in parallelo (vedi run_listener/
 # on_message piu' sotto), queste risorse condivise NON erano protette prima
@@ -1813,9 +1711,12 @@ _node_process_lock = threading.Lock()
 # leggere lo stesso stato e poi sovrascriversi a vicenda, perdendo un
 # aggiornamento -- "lost update"). _browser_lock protegge l'uso della singola
 # pagina Playwright condivisa (graphql_query_via_browser) -- non e' pensata per
-# essere usata da piu' thread contemporaneamente. _node_process_lock (sopra)
-# esisteva GIA' e protegge gia' correttamente la comunicazione col processo Node
-# di firma, nessuna modifica necessaria li'.
+# essere usata da piu' thread contemporaneamente. Il processo Node di firma NON
+# usa piu' un singolo lock globale -- vedi il pool _node_pool piu' sotto (versione
+# no-playwright, 23/07): con Playwright il lock globale non era mai conteso
+# davvero (la serializzazione la faceva gia' il thread browser unico); rimosso
+# quel vincolo, un solo processo Node avrebbe messo in coda le firme che ora
+# possono arrivare quasi insieme da thread diversi.
 _lista_nera_lock = threading.Lock()
 # FIX 22/07 v2 (bug reale confermato dal vivo, 3 casi -- "Cannot switch to a
 # different thread" / greenlet): un _browser_lock semplice NON basta per
@@ -1823,52 +1724,39 @@ _lista_nera_lock = threading.Lock()
 # ESATTO che l'ha creata/usata, non solo serializzata nell'accesso. Chiamarla da
 # un thread DIVERSO fallisce sempre, anche con un lock che garantisce "un thread
 # alla volta" -- il problema non e' la concorrenza, e' l'identita' del thread.
-# FIX: un ThreadPoolExecutor con un SOLO worker dedicato -- ogni interazione con
-# Playwright (creazione inclusa) passa SEMPRE da li', sottomessa e attesa
-# (.result()) da qualunque thread la richieda, cosi' Playwright vede sempre lo
-# stesso identico thread dall'inizio alla fine della run.
-_browser_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix='browser')
+# VERSIONE NO-PLAYWRIGHT (test): _browser_executor rimosso -- non serve piu' un
+# thread dedicato (era un vincolo esclusivo di Playwright/greenlet). graphql_query()
+# via curl_cffi e' gia' thread-safe (usato altrove in concorrenza senza problemi).
 # OTTIMIZZAZIONE VELOCITA' 23/07 (stessa idea del parallelismo prepare_accept_offer/
-# liquidita', estesa al ramo MakeOffer): pool DEDICATO e leggero per chiamate non-
-# Playwright che possono partire in anticipo (get_card_offer_details) in parallelo
-# alla query di liquidita' -- separato da _browser_executor (riservato a Playwright)
-# e da event_executor (per non contendere con la valutazione di altri eventi in corso).
+# liquidita', estesa al ramo MakeOffer): pool DEDICATO e leggero per chiamate che
+# possono partire in anticipo (get_card_offer_details, e ora anche prepare_accept_offer
+# speculativo) in parallelo alla query di liquidita' -- separato da event_executor per
+# non contendere con la valutazione di altri eventi in corso.
 _speculative_executor = concurrent.futures.ThreadPoolExecutor(max_workers=6, thread_name_prefix='speculative')
 
 
 def _run_on_browser_thread(fn, *args, **kwargs):
-    """Esegue fn(*args, **kwargs) SEMPRE sull'unico thread dedicato al browser
-    Playwright (vedi nota sopra su _browser_executor) -- usare per QUALUNQUE
-    interazione con get_browser_page/pagina/browser/playwright, sia in lettura
-    che in scrittura, chiamata da qualunque altro thread.
+    """VERSIONE NO-PLAYWRIGHT (test): nome mantenuto per non toccare i call site
+    esistenti (es. _run_autobuy_merged/_run_makeoffer_merged chiamano
+    _run_on_browser_thread(_sequenza_completa)), ma qui esegue fn direttamente sul
+    thread chiamante -- nessun dispatch necessario, non c'e' piu' un browser/thread
+    dedicato a cui vincolarsi."""
+    return fn(*args, **kwargs)
+_node_stderr_tail = collections.deque(maxlen=20)  # condiviso tra tutti gli slot, solo diagnostica testuale
 
-    DIAGNOSTICA TEMPORANEA CODA (22/07, richiesta esplicita utente -- capire se
-    piu' candidati valutati in parallelo si mettono in coda su questo unico
-    thread dedicato): misura quanto tempo passa tra la richiesta di questa
-    chiamata e l'inizio effettivo dell'esecuzione sul thread dedicato -- se
-    l'unico worker e' gia' occupato con un'altra chiamata, questo tempo cresce.
-    Log solo se l'attesa e' non trascurabile, per non riempire i log a vuoto.
-    RIMUOVERE (il wrapping + il blocco di log) quando l'indagine e' conclusa."""
-    _t_richiesta = time.monotonic()
-
-    def _con_diagnostica():
-        if EVENT_TIMING_DIAGNOSTIC:
-            _attesa = time.monotonic() - _t_richiesta
-            if _attesa > 0.01:
-                log(f"[diagnostica coda browser] attesa in coda prima di iniziare "
-                    f"{getattr(fn, '__name__', '?')}: {_attesa:.3f}s")
-        return fn(*args, **kwargs)
-
-    return _browser_executor.submit(_con_diagnostica).result()
-_node_stdout_queue = None
-_node_stderr_tail = collections.deque(maxlen=20)
+# POOL di processi Node persistenti (versione no-playwright, 23/07 -- vedi nota
+# sopra su _lista_nera_lock/_browser_lock per il perche'): ogni slot ha il proprio
+# processo/coda/lock, cosi' fino a _NODE_POOL_SIZE firme possono avvenire
+# DAVVERO in parallelo invece di mettersi in coda dietro un processo unico.
+_node_pool = [{'process': None, 'queue': None, 'lock': threading.Lock()} for _ in range(_NODE_POOL_SIZE)]
+_node_pool_rr = itertools.count()  # contatore round-robin per la scelta dello slot di partenza
 
 
 def _node_stdout_reader(proc, q):
-    """Gira in un thread dedicato per tutta la vita del processo Node: legge una
-    riga alla volta dal suo stdout e la mette in coda. Quando lo stdout si chiude
-    (processo terminato/crashato), mette None in coda cosi' chi e' in attesa lo sa
-    subito invece di restare appeso fino al timeout."""
+    """Gira in un thread dedicato per tutta la vita di UN processo Node del pool:
+    legge una riga alla volta dal suo stdout e la mette in coda. Quando lo stdout si
+    chiude (processo terminato/crashato), mette None in coda cosi' chi e' in attesa
+    lo sa subito invece di restare appeso fino al timeout."""
     try:
         for line in proc.stdout:
             q.put(line)
@@ -1878,9 +1766,9 @@ def _node_stdout_reader(proc, q):
 
 
 def _node_stderr_reader(proc, tail):
-    """Thread dedicato per lo stderr del processo Node: lo teniamo solo per
-    diagnostica (ultime righe, utili nei log se una richiesta fallisce o il
-    processo muore), non blocca mai nessuno."""
+    """Thread dedicato per lo stderr di UN processo Node del pool: lo teniamo solo
+    per diagnostica (ultime righe, condivise tra tutti gli slot -- utili nei log se
+    una richiesta fallisce o un processo muore), non blocca mai nessuno."""
     try:
         for line in proc.stderr:
             tail.append(line.rstrip('\n'))
@@ -1888,22 +1776,24 @@ def _node_stderr_reader(proc, tail):
         pass
 
 
-def _ensure_node_sign_process():
-    """Ritorna il processo Node persistente per la firma, avviandolo (o
-    riavviandolo se e' morto) se necessario. Chiamata sempre sotto
-    _node_process_lock dal chiamante."""
-    global _node_process, _node_stdout_queue
-    if _node_process is not None and _node_process.poll() is None:
-        return _node_process
+def _ensure_node_pool_slot(idx):
+    """Ritorna il processo Node persistente dello slot idx del pool, avviandolo (o
+    riavviandolo se e' morto) se necessario. Chiamata sempre col lock di QUELLO
+    slot gia' preso dal chiamante (stessa convenzione di prima, ora per-slot
+    invece che su un unico lock globale)."""
+    slot = _node_pool[idx]
+    proc = slot['process']
+    if proc is not None and proc.poll() is None:
+        return proc
 
-    if _node_process is not None:
-        log(f"[firma Node] il processo persistente precedente non e' piu' attivo "
-            f"(codice uscita {_node_process.poll()}), lo riavvio -- ultime righe stderr: "
+    if proc is not None:
+        log(f"[firma Node] slot {idx}: il processo persistente precedente non e' piu' "
+            f"attivo (codice uscita {proc.poll()}), lo riavvio -- ultime righe stderr: "
             f"{list(_node_stderr_tail)}")
 
-    script_path = os.path.join('sorare-sign', 'decrypt_and_sign.js')  # relativo a repo root (cwd), non a __file__: risorsa condivisa
-    log("[firma Node] avvio processo Node persistente per la firma "
-        "(una tantum/riavvio, poi resta vivo e riusato per tutta la run)...")
+    script_path = os.path.join('bots', 'sorare-sign', 'decrypt_and_sign.js')  # relativo a repo root (cwd), non a __file__: risorsa condivisa
+    log(f"[firma Node] avvio processo Node persistente per la firma, slot {idx}/{_NODE_POOL_SIZE - 1} "
+        f"(una tantum/riavvio, poi resta vivo e riusato per tutta la run)...")
     proc = subprocess.Popen(
         ['node', script_path],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -1912,36 +1802,56 @@ def _ensure_node_sign_process():
     q = queue.Queue()
     threading.Thread(target=_node_stdout_reader, args=(proc, q), daemon=True).start()
     threading.Thread(target=_node_stderr_reader, args=(proc, _node_stderr_tail), daemon=True).start()
-    _node_process = proc
-    _node_stdout_queue = q
+    slot['process'] = proc
+    slot['queue'] = q
     return proc
 
 
+def _acquire_node_slot():
+    """Sceglie uno slot libero del pool Node (round-robin, tentativo NON
+    bloccante prima su tutti gli slot) -- se sono tutti occupati nello stesso
+    istante, aspetta sul primo in sequenza (bloccante). Con un pool piccolo
+    (default 3) la contesa vera resta rara, ma non serializza piu' tutte le firme
+    su un unico processo come prima. Ritorna (idx, secondi_di_attesa) per la
+    diagnostica timing in sign_authorization_via_node."""
+    _t0 = time.monotonic()
+    start = next(_node_pool_rr) % _NODE_POOL_SIZE
+    for offset in range(_NODE_POOL_SIZE):
+        idx = (start + offset) % _NODE_POOL_SIZE
+        if _node_pool[idx]['lock'].acquire(blocking=False):
+            return idx, time.monotonic() - _t0
+    idx = start
+    _node_pool[idx]['lock'].acquire(blocking=True)
+    return idx, time.monotonic() - _t0
+
+
 def close_node_sign_process():
-    """Chiude il processo Node persistente a fine run (chiamata da close_browser/
+    """Chiude TUTTI i processi Node persistenti del pool a fine run (chiamata da
     finally in main()), stesso principio di pulizia gia' applicato al browser
     Playwright -- non lasciare processi appesi al termine del workflow."""
-    global _node_process
-    with _node_process_lock:
-        if _node_process is not None:
-            try:
-                if _node_process.poll() is None:
-                    _node_process.stdin.close()
-                    _node_process.wait(timeout=5)
-            except Exception as e:
-                log(f"[firma Node] errore chiudendo il processo persistente: {e}")
+    for idx, slot in enumerate(_node_pool):
+        with slot['lock']:
+            proc = slot['process']
+            if proc is not None:
                 try:
-                    _node_process.kill()
-                except Exception:
-                    pass
-            _node_process = None
+                    if proc.poll() is None:
+                        proc.stdin.close()
+                        proc.wait(timeout=5)
+                except Exception as e:
+                    log(f"[firma Node] slot {idx}: errore chiudendo il processo persistente: {e}")
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                slot['process'] = None
 
 
-def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request):
-    """Invia una richiesta di firma al processo Node PERSISTENTE (vedi
-    _ensure_node_sign_process sopra) tramite il protocollo a righe di
-    sorare-sign/decrypt_and_sign.js: una riga JSON in stdin, una riga JSON in
-    risposta da stdout, timeout vero via thread separato.
+def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request,
+                                 warmup_only=False):
+    """Invia una richiesta di firma a UNO SLOT del pool di processi Node
+    PERSISTENTI (vedi _node_pool/_acquire_node_slot sopra) tramite il protocollo a
+    righe di sorare-sign/decrypt_and_sign.js: una riga JSON in stdin, una riga
+    JSON in risposta da stdout, timeout vero via thread separato.
 
     Lo script Node decripta la chiave privata (PBKDF2 + AES-GCM, stesso algoritmo usato
     dal sito sorare.com) e poi chiama @sorare/crypto.signAuthorizationRequest per
@@ -1959,11 +1869,34 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
     costo fisso di avvio Node + caricamento di @sorare/crypto da ogni singolo
     tentativo (prima pagato sempre, ora pagato una volta sola).
 
+    VERSIONE NO-PLAYWRIGHT (23/07): il processo unico e' diventato un POOL di
+    _NODE_POOL_SIZE processi persistenti -- ogni chiamata prende uno slot libero
+    (round-robin, _acquire_node_slot) invece di mettersi sempre in coda dietro lo
+    stesso processo. Diagnostica: se acquisire uno slot richiede piu' di 10ms
+    (tutti occupati nello stesso istante), logga l'attesa -- utile per verificare
+    quanto la contesa sia reale con un pool di questa dimensione.
+
     Ritorna la stringa signature (da usare in approvals[0].mangopayWalletTransferApproval)
     oppure None se qualcosa fallisce (password sbagliata, script non trovato, dipendenze
     npm non installate, timeout, processo morto, ecc.) -- logga sempre il motivo."""
-    global _node_process
-    if 'decrypted_private_key' in _decrypted_key_cache:
+    if warmup_only:
+        # OTTIMIZZAZIONE VELOCITA' 24/07: richiesta di SOLO decrypt (nessuna firma,
+        # nessuna authorization coinvolta) -- usata dal pre-warm all'avvio per
+        # popolare _decrypted_key_cache PRIMA del primo acquisto reale, che
+        # altrimenti pagava da solo il decrypt PBKDF2(50000 iterazioni)+AES-GCM
+        # completo proprio durante la corsa contro gli altri bot. Lo script Node
+        # risponde {decryptedPrivateKey} che viene messo in cache qui sotto dal
+        # ramo comune, come per una firma normale. Ritorna True/None.
+        if 'decrypted_private_key' in _decrypted_key_cache:
+            return True
+        payload = {
+            'password': password,
+            'encryptedPrivateKey': encrypted_private_key,
+            'iv': iv,
+            'salt': salt,
+            'warmupOnly': True,
+        }
+    elif 'decrypted_private_key' in _decrypted_key_cache:
         payload = {
             'decryptedPrivateKey': _decrypted_key_cache['decrypted_private_key'],
             'authorizationRequest': authorization_request,
@@ -1976,43 +1909,61 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
             'salt': salt,
             'authorizationRequest': authorization_request,
         }
+        # DIAGNOSTICA (23/07, richiesta esplicita utente -- capire cosa spiega
+        # firma_node piu' lento del solito): questo ramo fa il decrypt COMPLETO
+        # PBKDF2(50000 iterazioni)+AES-GCM, molto piu' lento del percorso rapido
+        # sopra. Dovrebbe scattare UNA SOLA VOLTA per run (prima firma reale --
+        # il pre-warm avvia il processo Node ma non chiama mai sign_authorization_
+        # via_node, quindi la cache resta vuota fino al primo acquisto/offerta
+        # vero). Se compare PIU' di una volta nello stesso run, la cache non sta
+        # reggendo come previsto -- da investigare.
+        log("[firma Node] decrypt completo (prima chiamata della sessione o cache "
+            "non popolata) -- piu' lento delle chiamate successive che useranno "
+            "la chiave gia' in chiaro")
     line = json.dumps(payload)
 
-    with _node_process_lock:
+    idx, wait_s = _acquire_node_slot()
+    if wait_s > 0.01:
+        log(f"[firma Node] slot {idx}: atteso {wait_s:.3f}s per uno slot libero nel pool "
+            f"(diagnostica contesa, {_NODE_POOL_SIZE} slot totali)")
+    slot = _node_pool[idx]
+    try:
         try:
-            proc = _ensure_node_sign_process()
-            q = _node_stdout_queue
+            proc = _ensure_node_pool_slot(idx)
+            q = slot['queue']
             proc.stdin.write(line + '\n')
             proc.stdin.flush()
         except Exception as e:
-            log(f"[firma Node] eccezione scrivendo la richiesta al processo persistente "
-                f"(lo forzo a ripartire al prossimo tentativo): {e}")
+            log(f"[firma Node] slot {idx}: eccezione scrivendo la richiesta al processo "
+                f"persistente (lo forzo a ripartire al prossimo tentativo): {e}")
             try:
-                if _node_process is not None:
-                    _node_process.kill()
+                if slot['process'] is not None:
+                    slot['process'].kill()
             except Exception:
                 pass
-            _node_process = None
+            slot['process'] = None
             return None
 
         try:
             raw = q.get(timeout=30)
         except queue.Empty:
-            log("[firma Node] timeout (30s) in attesa della risposta dal processo "
-                "persistente -- lo forzo a ripartire al prossimo tentativo")
+            log(f"[firma Node] slot {idx}: timeout (30s) in attesa della risposta dal "
+                f"processo persistente -- lo forzo a ripartire al prossimo tentativo")
             try:
                 proc.kill()
             except Exception:
                 pass
-            _node_process = None
+            slot['process'] = None
             return None
 
         if raw is None:
-            log(f"[firma Node] il processo persistente e' terminato mentre aspettavo "
-                f"la risposta (ultime righe stderr: {list(_node_stderr_tail)}) -- "
+            log(f"[firma Node] slot {idx}: il processo persistente e' terminato mentre "
+                f"aspettavo la risposta (ultime righe stderr: {list(_node_stderr_tail)}) -- "
                 f"ripartira' al prossimo tentativo")
-            _node_process = None
+            slot['process'] = None
             return None
+    finally:
+        slot['lock'].release()
 
     try:
         output = json.loads(raw.strip())
@@ -2026,6 +1977,8 @@ def sign_authorization_via_node(password, encrypted_private_key, iv, salt, autho
     # la mettiamo in cache per le chiamate successive.
     if output.get('decryptedPrivateKey'):
         _decrypted_key_cache['decrypted_private_key'] = output['decryptedPrivateKey']
+    if warmup_only:
+        return True if output.get('decryptedPrivateKey') else None
     return output.get('signature')
 
 
@@ -2117,7 +2070,7 @@ def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_i
         extra_headers['authorization-id'] = authorization_id
 
     try:
-        data = call_fn(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}})
+        data = call_fn(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}}, critical=True)
         if data.get('errors'):
             log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
             log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
@@ -2183,7 +2136,7 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id, _cal
         },
     }
     try:
-        data = call_fn(ACCEPT_OFFER_MUTATION, variables)
+        data = call_fn(ACCEPT_OFFER_MUTATION, variables, critical=True)
         root_errors = data.get('errors')
         payload = (data.get('data') or {}).get('acceptOffer') or {}
         payload_errors = payload.get('errors') or []
@@ -2204,7 +2157,7 @@ def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id, _cal
         return False, 'eccezione', str(e)
 
 
-def execute_live_purchase(offer_id, prepared, _call_fn=None):
+def execute_live_purchase(offer_id, prepared, _call_fn=None, sign_future=None):
     """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
     AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
     ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
@@ -2222,8 +2175,8 @@ def execute_live_purchase(offer_id, prepared, _call_fn=None):
     solo hop, vedi _run_autobuy_merged) -- viene passato a sua volta a
     fetch_encrypted_private_key/accept_offer per evitare un doppio dispatch
     annidato. sign_authorization_via_node NON e' toccata: usa il proprio canale
-    IPC verso il processo Node, gia' thread-safe (protetto da _node_process_lock)
-    indipendentemente da quale thread la chiami."""
+    IPC verso il pool di processi Node, gia' thread-safe (ogni slot protetto dal
+    proprio lock) indipendentemente da quale thread la chiami."""
     log(f"[acquisto live] avvio -- offer_id={offer_id}")
 
     if not SORARE_WALLET_PASSWORD:
@@ -2248,18 +2201,33 @@ def execute_live_purchase(offer_id, prepared, _call_fn=None):
     log(f"[acquisto live] step 1/3 OK: chiave cifrata recuperata (fetch_key={_t_fetch_key:.3f}s)")
 
     _t1 = time.monotonic()
-    signature = sign_authorization_via_node(
-        SORARE_WALLET_PASSWORD,
-        key_data.get('encryptedPrivateKey'),
-        key_data.get('iv'),
-        key_data.get('salt'),
-        request,
-    )
+    signature = None
+    # OTTIMIZZAZIONE VELOCITA' 24/07: se la firma speculativa (lanciata da
+    # evaluate_event appena prepare e' risolta, in parallelo alla liquidita') e' gia'
+    # pronta, la riusiamo -- il timeout breve e' solo una rete di sicurezza: in
+    # pratica la firma (locale, ~70ms dopo prepare) e' SEMPRE gia' conclusa quando
+    # si arriva qui (dopo liquidita' + controlli). Se per qualunque motivo manca o
+    # e' fallita, fallback: firma rifatta da capo qui, identica a prima.
+    if sign_future is not None:
+        try:
+            signature = sign_future.result(timeout=5)
+        except Exception:
+            signature = None
+    _firma_speculativa = bool(signature)
+    if not signature:
+        signature = sign_authorization_via_node(
+            SORARE_WALLET_PASSWORD,
+            key_data.get('encryptedPrivateKey'),
+            key_data.get('iv'),
+            key_data.get('salt'),
+            request,
+        )
     _t_firma = time.monotonic() - _t1
     if not signature:
         log("[acquisto live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
         return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
-    log(f"[acquisto live] step 2/3 OK: firma generata (firma_node={_t_firma:.3f}s)")
+    log(f"[acquisto live] step 2/3 OK: firma {'speculativa riusata' if _firma_speculativa else 'generata'} "
+        f"(firma_node={_t_firma:.3f}s)")
 
     # FIX 19/07 (velocizzazione sniping): riusiamo l'exchange_rate_id gia' ottenuto da
     # prepare_accept_offer invece di rifare la stessa query GraphQL una seconda volta --
@@ -2716,6 +2684,44 @@ def send_end_msg(matches_found, target_reached):
 # query da parallelizzare).
 
 
+def _speculative_sign_after_prepare(prepare_future):
+    """OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente): appena
+    prepare_accept_offer (gia' speculativa) risolve con successo, calcola SUBITO la
+    firma -- in parallelo alla query di liquidita' ancora in corso -- invece di
+    aspettare che liquidita' e tutti i controlli finiscano. La firma e' un'operazione
+    PURAMENTE LOCALE (fetch_key torna dalla cache in-memory, la firma vera la fa il
+    pool Node sul runner): NULLA viene inviato al server, quindi se i controlli a
+    valle scartano il caso la firma viene semplicemente buttata via, esattamente come
+    gia' avviene per il risultato di prepare. L'accept (l'unico passo che muove soldi)
+    resta rigorosamente DOPO tutti i controlli, invariato. Beneficio: esecuzione_finale
+    si riduce al solo accept. Ritorna la signature (str) o None (in tal caso
+    execute_live_purchase rifa' la firma da capo, fallback identico a prima)."""
+    try:
+        prepared, _categoria = prepare_future.result()
+    except Exception:
+        return None
+    if not prepared or not AUTOBUY_LIVE_MODE or not SORARE_WALLET_PASSWORD:
+        return None
+    _t0 = time.monotonic()
+    key_data = fetch_encrypted_private_key(
+        authorization_id=prepared.get('authorization_id'),
+        fingerprint=prepared.get('fingerprint'),
+        _call_fn=_graphql_call_via_browser_raw)
+    if not key_data:
+        return None
+    signature = sign_authorization_via_node(
+        SORARE_WALLET_PASSWORD,
+        key_data.get('encryptedPrivateKey'),
+        key_data.get('iv'),
+        key_data.get('salt'),
+        prepared.get('request') or {},
+    )
+    if signature:
+        log(f"[firma speculativa] pronta in {time.monotonic() - _t0:.3f}s (calcolata in "
+            f"parallelo alla liquidita', verra' usata SOLO se tutti i controlli passano)")
+    return signature
+
+
 def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
                     offer_id=None, seller_slug=None, is_in_season=True):
     """Valutazione UNICA condivisa (un solo scan di mercato per evento, niente doppio
@@ -2909,10 +2915,17 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     _t_card_details_fired = None
     _va_verso_autobuy = (not trigger_su_minimo_non_allineato
                           and margin_percent >= AUTOBUY_MARGIN_FRACTION)
+    _sign_future = None
     if _va_verso_autobuy and offer_id:
         _t_prepare_fired = time.monotonic()
-        _prepare_future = _browser_executor.submit(
+        _prepare_future = _speculative_executor.submit(
             prepare_accept_offer, offer_id, _call_fn=_graphql_call_via_browser_raw)
+        # OTTIMIZZAZIONE VELOCITA' 24/07: firma speculativa concatenata -- parte da
+        # sola appena prepare risolve, mentre liquidita' gira ancora. Vedi
+        # _speculative_sign_after_prepare per razionale e garanzie di sicurezza.
+        if AUTOBUY_LIVE_MODE and SORARE_WALLET_PASSWORD:
+            _sign_future = _speculative_executor.submit(
+                _speculative_sign_after_prepare, _prepare_future)
     elif not _va_verso_autobuy:
         _makeoffer_target_card_slug = true_min_card_slug if trigger_su_minimo_non_allineato else card_slug
         _t_card_details_fired = time.monotonic()
@@ -2988,14 +3001,15 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                                        margin_percent, card_slug, excluded_league, is_in_season,
                                        offer_id, timing=_timing, prepare_future=_prepare_future,
-                                       prepare_started_at=_t_prepare_fired)
+                                       prepare_started_at=_t_prepare_fired, sign_future=_sign_future)
     return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
                                      margin_percent, card_slug, excluded_league, is_in_season,
                                      seller_slug, timing=_timing, card_details_future=_card_details_future,
                                      card_details_started_at=_t_card_details_fired)
 
 
-def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_started_at=None):
+def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_started_at=None,
+                         sign_future=None):
     """OTTIMIZZAZIONE VELOCITA' 22/07 v6 + 23/07 (richiesta esplicita utente -- casi
     Edier Ocampo/Alex Roldan persi a prepare_accept_offer per "Too late"):
     prepare_accept_offer puo' ora arrivare GIA' lanciata (prepare_future, sottomessa
@@ -3017,9 +3031,9 @@ def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_star
         if not prepared or not AUTOBUY_LIVE_MODE:
             return prepared, prepare_category, False, None, _t_b - _t_a, 0.0
         try:
-            purchase_completed, purchase_error = _browser_executor.submit(
-                execute_live_purchase, offer_id, prepared,
-                _call_fn=_graphql_call_via_browser_raw).result()
+            purchase_completed, purchase_error = execute_live_purchase(
+                offer_id, prepared, _call_fn=_graphql_call_via_browser_raw,
+                sign_future=sign_future)
         except Exception as e:
             log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
             return prepared, prepare_category, False, f"eccezione imprevista: {e}", \
@@ -3075,7 +3089,8 @@ def _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_
 
 def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                             margin_percent, card_slug, excluded_league, is_in_season, offer_id,
-                            timing=None, prepare_future=None, prepare_started_at=None):
+                            timing=None, prepare_future=None, prepare_started_at=None,
+                            sign_future=None):
     log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%})")
 
@@ -3096,7 +3111,7 @@ def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_
         prepared, prepare_category, purchase_completed, purchase_error, \
             _durata_prepare, _durata_esecuzione = _run_autobuy_merged(
                 player_name, offer_id, prepare_future=prepare_future,
-                prepare_started_at=prepare_started_at)
+                prepare_started_at=prepare_started_at, sign_future=sign_future)
         if prepared:
             nonce = (prepared.get('request') or {}).get('nonce')
             log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
@@ -3293,7 +3308,7 @@ def run_listener(eth_rate):
         "action": "execute",
     }
 
-    stats = {"received": 0, "processed": 0, "matches_found": 0,
+    stats = {"received": 0, "processed": 0, "matches_found": 0, "price_filtered": 0,
               "_closed_target": False, "_closed_insufficient_funds": False}
     seen_offer_status = set()
     # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07): stats_lock protegge gli
@@ -3306,33 +3321,6 @@ def run_listener(eth_rate):
     # aver sottomesso il lavoro, restando libero di leggere il prossimo evento.
     event_executor = concurrent.futures.ThreadPoolExecutor(
         max_workers=EVENT_WORKER_THREADS, thread_name_prefix='evt')
-
-    # --- Pausa random periodica (20/07, richiesta esplicita utente: "non martellare
-    # Sorare di richieste troppo ritmate/prevedibili") -- ogni RANDOM_PAUSE_INTERVAL_
-    # SECONDS (default 180s = 3 minuti) di attivita', il bot si ferma per un tempo
-    # casuale tra RANDOM_PAUSE_MIN_SECONDS e RANDOM_PAUSE_MAX_SECONDS (default 1-10s)
-    # prima di riprendere a valutare eventi. Il timer parte dall'avvio dell'ascolto,
-    # non resetta ad ogni evento -- e' un ritmo di fondo, non legato al volume di
-    # eventi ricevuti.
-    pause_state = {"last_pause_at": time.monotonic()}
-    # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07): con piu' thread worker che
-    # possono chiamare maybe_random_pause() quasi insieme, serve un lock -- ma
-    # SOLO per il controllo/marcatura "e' ora di pausare?", non per il time.sleep
-    # vero e proprio (che resta FUORI dal lock, altrimenti un thread in pausa
-    # bloccherebbe anche gli altri dal controllare/aggiornare il proprio stato).
-    _pause_lock = threading.Lock()
-
-    def maybe_random_pause():
-        due = False
-        with _pause_lock:
-            now = time.monotonic()
-            if now - pause_state["last_pause_at"] >= RANDOM_PAUSE_INTERVAL_SECONDS:
-                due = True
-                pause_state["last_pause_at"] = now
-        if due:
-            pause_seconds = random.uniform(RANDOM_PAUSE_MIN_SECONDS, RANDOM_PAUSE_MAX_SECONDS)
-            log(f"[pausa random] fermo {pause_seconds:.1f}s (ritmo di fondo anti-martellamento)")
-            time.sleep(pause_seconds)
 
     def on_open(ws):
         log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
@@ -3358,8 +3346,6 @@ def run_listener(eth_rate):
             log(f"[ERRORE in valutazione evento] {player_name}: eccezione non gestita "
                 f"durante la valutazione (thread worker), la salto e continuo: {e}")
             found = False
-
-        maybe_random_pause()
 
         if INSUFFICIENT_FUNDS_STOP[0]:
             with stats_lock:
@@ -3447,6 +3433,19 @@ def run_listener(eth_rate):
             if price_eur is None:
                 return
 
+            # OTTIMIZZAZIONE VELOCITA' (23/07, richiesta esplicita utente -- priorita'
+            # alta): scarta QUI, prima del dispatch al thread pool, gli eventi fuori
+            # dalla fascia di prezzo -- stessa identica condizione che evaluate_event
+            # applica comunque come primo controllo sostanziale (subito dopo i check
+            # RAM di blacklist/cooldown), quindi ZERO cambio di comportamento: un
+            # evento fuori range veniva scartato la' dentro, solo DOPO aver gia'
+            # occupato uno dei 6 thread worker per niente. Lasciato ANCHE dentro
+            # evaluate_event (costo di una singola comparazione, trascurabile) come
+            # rete di sicurezza per eventuali altri chiamanti futuri.
+            if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
+                stats["price_filtered"] += 1
+                return
+
             sender_cards = sender_side.get('anyCards') or []
             if len(sender_cards) > 1:
                 return  # bundle multi-carta, prezzo per-carta non ricavabile
@@ -3489,24 +3488,58 @@ def run_listener(eth_rate):
 
     def on_close(ws, close_status_code, close_message):
         log(f"Connessione chiusa (codice {close_status_code}). Eventi ricevuti: "
-            f"{stats['received']}, carte in season elaborate: {stats['processed']}, "
+            f"{stats['received']}, scartati per fascia prezzo (pre-dispatch): "
+            f"{stats['price_filtered']}, carte in season elaborate: {stats['processed']}, "
             f"casi validi trovati: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
 
-    ws = websocket.WebSocketApp(
-        WS_URL,
-        header=[f"Cookie: {COOKIES}"] if COOKIES else [],
-        on_open=on_open,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close,
-    )
+    # FIX 25/07 (richiesta esplicita utente -- run interrotta a 0/10 senza motivo
+    # apparente, causa piu' probabile una disconnessione WebSocket normale, rete o
+    # lato Sorare): prima un singolo ws.run_forever() chiudeva l'intera run non
+    # appena la connessione cadeva per QUALUNQUE motivo, anche molto prima di
+    # LISTEN_SECONDS o di AUTOBUY_TARGET_MATCHES. Ora si riconnette automaticamente
+    # finche' resta tempo sulla deadline totale, fermandosi SOLO per: deadline
+    # raggiunta, target di casi raggiunto, o stop per fondi insufficienti.
+    RECONNECT_DELAY_SECONDS = float(os.environ.get('RECONNECT_DELAY_SECONDS', '5'))
+    deadline = time.monotonic() + LISTEN_SECONDS
+    tentativo = 0
+    while True:
+        tempo_rimanente = deadline - time.monotonic()
+        if tempo_rimanente <= 0:
+            log("[listener] tempo LISTEN_SECONDS esaurito, chiudo.")
+            break
+        if stats["_closed_target"] or stats["_closed_insufficient_funds"]:
+            break
 
-    timer = threading.Timer(LISTEN_SECONDS, ws.close)
-    timer.daemon = True
-    timer.start()
+        tentativo += 1
+        if tentativo > 1:
+            log(f"[riconnessione] tentativo #{tentativo}, tempo rimanente "
+                f"~{tempo_rimanente / 60:.1f} minuti")
 
-    ws.run_forever(ping_interval=60, ping_timeout=45)
-    timer.cancel()
+        ws = websocket.WebSocketApp(
+            WS_URL,
+            header=[f"Cookie: {COOKIES}"] if COOKIES else [],
+            on_open=on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
+        )
+
+        timer = threading.Timer(tempo_rimanente, ws.close)
+        timer.daemon = True
+        timer.start()
+
+        ws.run_forever(ping_interval=60, ping_timeout=45)
+        timer.cancel()
+
+        if stats["_closed_target"] or stats["_closed_insufficient_funds"]:
+            break
+        if deadline - time.monotonic() <= 0:
+            log("[listener] tempo LISTEN_SECONDS esaurito, chiudo.")
+            break
+        log(f"[riconnessione] connessione WebSocket chiusa inaspettatamente (rete o lato "
+            f"Sorare), riconnessione tra {RECONNECT_DELAY_SECONDS:.0f}s...")
+        time.sleep(RECONNECT_DELAY_SECONDS)
+
     # Aspetta che eventuali valutazioni ancora in corso nel pool finiscano
     # (es. un'offerta/acquisto gia' avviato) prima di chiudere -- niente
     # tentativi troncati a meta' solo perche' la connessione WebSocket si e'
@@ -3788,14 +3821,7 @@ def main():
     log(f"Giocatori in blacklist unita: {len(BLACKLISTED_PLAYER_SLUGS)}")
     log(f"Manager in blacklist unita: {len(BLACKLISTED_MANAGER_SLUGS)}")
     if AUTOBUY_LIVE_MODE or MAKEOFFER_LIVE_MODE:
-        log("[playwright] pre-apertura browser all'avvio (ottimizzazione velocita')...")
-        # FIX 22/07 v2: la creazione della pagina Playwright DEVE avvenire sullo
-        # stesso thread dedicato che verra' riusato per ogni chiamata successiva
-        # (vedi _run_on_browser_thread) -- altrimenti il browser nascerebbe sul
-        # thread principale e le chiamate successive (dal thread dedicato)
-        # fallirebbero comunque con "Cannot switch to a different thread".
-        _run_on_browser_thread(get_browser_page)
-        log("[playwright] browser pronto e riscaldato, in attesa di occasioni")
+        log("[no-playwright] nessun browser da aprire -- chiamate dirette via curl_cffi")
 
         # OTTIMIZZAZIONE VELOCITA' SNIPING: exchange_rate_id e la chiave cifrata del
         # wallet sono entrambe cachate in memoria per tutta la run (vedi
@@ -3819,16 +3845,37 @@ def main():
             else:
                 log("[precarico velocita'] ATTENZIONE: precarico chiave cifrata fallito, "
                     "verra' ritentato al primo acquisto/offerta reale")
-            # OTTIMIZZAZIONE VELOCITA' (21/07): avviamo qui anche il processo Node
-            # persistente per la firma (sorare-sign/decrypt_and_sign.js), invece di
-            # lasciare che parta al primo acquisto/offerta reale -- l'avvio di Node
-            # e il caricamento di @sorare/crypto costano qualche centinaio di
-            # millisecondi, e non vogliamo pagarli proprio mentre stiamo
-            # competendo con altri bot sullo stesso annuncio.
-            with _node_process_lock:
-                _ensure_node_sign_process()
-            log("[precarico velocita'] processo Node persistente per la firma avviato "
-                "e pronto (restera' vivo per tutta la run)")
+            # OTTIMIZZAZIONE VELOCITA' (21/07, estesa 23/07 al pool intero): avviamo
+            # qui TUTTI gli slot del pool Node persistente per la firma
+            # (sorare-sign/decrypt_and_sign.js), invece di lasciare che partano al
+            # primo acquisto/offerta reale -- l'avvio di Node e il caricamento di
+            # @sorare/crypto costano qualche centinaio di millisecondi ciascuno, e
+            # non vogliamo pagarli proprio mentre stiamo competendo con altri bot
+            # sullo stesso annuncio.
+            for _pool_idx in range(_NODE_POOL_SIZE):
+                with _node_pool[_pool_idx]['lock']:
+                    _ensure_node_pool_slot(_pool_idx)
+            log(f"[precarico velocita'] pool di {_NODE_POOL_SIZE} processi Node "
+                f"persistenti per la firma avviato e pronto (restera' vivo per tutta la run)")
+            # OTTIMIZZAZIONE VELOCITA' 24/07: decrypt della chiave del wallet
+            # anticipato QUI (richiesta warmupOnly al processo Node, solo decrypt,
+            # nessuna firma) -- prima il decrypt completo PBKDF2+AES-GCM veniva
+            # pagato dal PRIMO acquisto reale della run, l'unico momento in cui
+            # non possiamo permettercelo. Dopo questo warmup anche il primo
+            # acquisto usa il percorso rapido (chiave gia' in chiaro in cache).
+            if pre_key:
+                _t_warm = time.monotonic()
+                warm_ok = sign_authorization_via_node(
+                    SORARE_WALLET_PASSWORD, pre_key.get('encryptedPrivateKey'),
+                    pre_key.get('iv'), pre_key.get('salt'), None, warmup_only=True)
+                if warm_ok:
+                    log(f"[precarico velocita'] decrypt chiave wallet completato in "
+                        f"{time.monotonic() - _t_warm:.3f}s -- anche il PRIMO acquisto "
+                        f"della run usera' il percorso di firma rapido")
+                else:
+                    log("[precarico velocita'] ATTENZIONE: warmup decrypt fallito "
+                        "(vedi log [firma Node]), il primo acquisto fara' il decrypt "
+                        "completo come prima -- nessuna regressione, solo niente anticipo")
         else:
             log("[precarico velocita'] SORARE_WALLET_PASSWORD non impostata, salto il "
                 "precarico della chiave cifrata e del processo Node di firma")
@@ -3837,6 +3884,13 @@ def main():
             "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
         return
     send_startup_msg()
+    # OTTIMIZZAZIONE VELOCITA' 24/07: refresher exchange_rate_id in background --
+    # vedi nota sopra _exchange_rate_refresh_loop. Avviato SEMPRE (serve sia ad
+    # AutoBuy sia a MakeOffer via prepare_offer, costo: 1 query leggera ogni 45s).
+    exchange_rate_thread = threading.Thread(target=_exchange_rate_refresh_loop, daemon=True)
+    exchange_rate_thread.start()
+    log(f"[precarico velocita'] refresher exchange_rate_id avviato (id sempre fresco, "
+        f"usa-e-getta, refresh ogni {EXCHANGE_RATE_REFRESH_SECONDS}s o subito dopo ogni consumo)")
     commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
     commit_thread.start()
     log(f"[commit periodico] thread avviato, commit+push lista nera ogni "
@@ -3858,11 +3912,10 @@ def main():
     finally:
         _stop_periodic_commit.set()
         _stop_periodic_bid.set()
+        _stop_exchange_rate_refresh.set()
+        _exchange_rate_refresh_now.set()  # sveglia il refresher cosi' vede lo stop subito
         _commit_lista_nera_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
-        # FIX 22/07 v2: chiusura anch'essa sullo stesso thread dedicato -- tocca
-        # gli stessi oggetti Playwright creati li'.
-        _run_on_browser_thread(close_browser)
-        _browser_executor.shutdown(wait=True)
+        _speculative_executor.shutdown(wait=True)
         close_node_sign_process()
 
 

@@ -121,9 +121,9 @@ def test_signature(authorization_request, fingerprint):
     })
 
     # Path relativo alla repo root (cwd di GitHub Actions / esecuzione locale
-    # dalla root del repo), NON al file corrente: sorare-sign/ resta in root
-    # come risorsa condivisa, usata anche da bot_supremo*.py.
-    script_path = os.path.join('sorare-sign', 'decrypt_and_sign.js')
+    # dalla root del repo), NON al file corrente: sorare-sign/ vive sotto
+    # bots/ come risorsa condivisa, usata anche da bot_supremo*.py.
+    script_path = os.path.join('bots', 'sorare-sign', 'decrypt_and_sign.js')
     log(f"Chiamo {script_path}...")
     try:
         result = subprocess.run(

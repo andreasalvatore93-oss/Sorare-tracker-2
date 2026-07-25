@@ -177,7 +177,7 @@ jobs:
           # Il workflow espone la percentuale in modo leggibile (es. "15" = 15%), lo script
           # Python vuole invece la frazione (0.15) -- conversione fatta qui.
           export AUTOBUY_MARGIN_FRACTION=$(awk -v p="$MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
-          python autobuy_sorare.py
+          python bots/autobuy_sorare.py
       - name: Commit purchase log (protezione anti-riacquisto 24h)
         # Solo per fase 2 (automazione completa, non ancora attiva): il file
         # autobuy_purchases.json viene scritto da record_player_purchase() SOLO dopo un

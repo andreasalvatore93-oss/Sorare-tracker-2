@@ -86,8 +86,8 @@ jobs:
           {
             echo ""
             echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
-            python track.py
-          } 2>&1 | tee -a logs/track_last_run.log
+            python scanners/track.py
+          } 2>&1 | tee -a scanners/logs/track_last_run.log
           # Rete di sicurezza SOLO per non far crescere il file all'infinito se l'utente non
           # pulla mai (es. dimenticato per giorni): tiene le ultime 200 run INTERE (mai un run a
           # meta'), tagliando solo dal marcatore "===== RUN" -- ~16h+ di storia anche sul
@@ -100,7 +100,7 @@ jobs:
               from = (runs > maxruns) ? starts[runs-maxruns+1] : 1
               for (i=from; i<=last; i++) print buf[i]
             }
-          ' logs/track_last_run.log > logs/track_last_run.log.tmp && mv logs/track_last_run.log.tmp logs/track_last_run.log
+          ' scanners/logs/track_last_run.log > scanners/logs/track_last_run.log.tmp && mv scanners/logs/track_last_run.log.tmp scanners/logs/track_last_run.log
       # if: always() -- vogliamo il log salvato anche se track.py fallisce/va in timeout,
       # e' proprio in quei casi che serve di piu' per capire cosa e' successo.
       - name: Save state
@@ -109,8 +109,8 @@ jobs:
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
           git add tracker.db
-          if [ -f logs/track_last_run.log ]; then
-            git add logs/track_last_run.log
+          if [ -f scanners/logs/track_last_run.log ]; then
+            git add scanners/logs/track_last_run.log
           fi
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."

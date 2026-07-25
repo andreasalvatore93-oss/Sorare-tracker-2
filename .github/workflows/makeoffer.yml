@@ -199,7 +199,7 @@ jobs:
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
           export MAKEOFFER_MAX_MARGIN_FRACTION=$(awk -v p="$MAX_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
           export OFFER_DISCOUNT_FRACTION=$(awk -v p="$OFFER_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
-          python makeoffer_sorare.py
+          python bots/makeoffer_sorare.py
       - name: Commit registro offerte (protezione anti-duplicati 24h)
         # FIX 20/07 (stesso bug trovato in autobuy.yml): "git diff --quiet" non rileva
         # un file MAI tracciato da git prima -- la primissima volta che
