@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:21:21.825888Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) beau-leroux: 48 pt attesi (29-67)
+======================================================================
+
+######################################################################
+# GIOCATORE: beau-leroux
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: beau-leroux (squadra: sj-earthquakes-santa-clara-california)
+Generato: 2026-07-25T08:21:21.825526Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 17
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-19 | SJ vs ATX | mlspa | score=52.8 | peso=0.445
+  2026-02-22 | SJ vs SKC | mlspa | score=78.7 | peso=0.472
+  2026-03-01 | SJ vs ATL | mlspa | score=38.0 | peso=0.500
+  2026-03-08 | PHI vs SJ | mlspa | score=39.2 | peso=0.530
+  2026-03-15 | SJ vs SEA | mlspa | score=57.6 | peso=0.561
+  2026-03-22 | VAN vs SJ | mlspa | score=68.9 | peso=0.595
+  2026-04-05 | SJ vs SD | mlspa | score=85.1 | peso=0.630
+  2026-04-12 | SKC vs SJ | mlspa | score=41.8 | peso=0.667
+  2026-04-19 | LAFC vs SJ | mlspa | score=75.6 | peso=0.707
+  2026-04-23 | SJ vs ATX | mlspa | score=51.1 | peso=0.749
+  2026-05-02 | TOR vs SJ | mlspa | score=63.2 | peso=0.794
+  2026-05-10 | SJ vs VAN | mlspa | score=41.7 | peso=0.841
+  2026-05-17 | SJ vs DAL | mlspa | score=60.0 | peso=0.891
+  2026-05-24 | POR vs SJ | mlspa | score=63.5 | peso=0.944
+  2026-07-23 | SJ vs ORL | mlspa | score=54.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 58.10
+Deviazione standard pesata: 13.40
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.37 (differenza: +2.03)
+Media score in casa: 57.71 | Media score fuori casa: 58.70
+Fattore casa/trasferta applicato: 0.992 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.0
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.983
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.013
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore trend (media ultime 5: 56.6 vs media ultime 10: 60.5): 0.934
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T02:30
+Casa: San Jose Earthquakes | Trasferta: LA Galaxy
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.2 +/- 18.8
+  (range: 29.5 - 67.0)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.50
+Punteggio REALE ottenuto in quella partita: 54.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      63.7    85.1    +21.4    20.4        NO
+   7        7      58.8    41.8    -17.0    24.1        SI
+   8        8      33.7    75.6    +41.9    24.2        NO
+   9        9      73.6    51.1    -22.5    24.0        SI
+  10       10      61.5    63.2     +1.7    22.8        SI
+  11       11      42.9    41.7     -1.2    21.5        SI
+  12       12      46.4    60.0    +13.6    21.8        SI
+  13       13      61.8    63.5     +1.7    20.6        SI
+  14       14      53.0    54.4     +1.4    19.7        SI
+
+MAE (errore assoluto medio): 13.60
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
