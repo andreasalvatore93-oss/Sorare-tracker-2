@@ -679,7 +679,8 @@ GRID_SEARCH_COMBINATIONS = _build_grid_combinations()
 
 def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                      fouls_values=None, duels_values=None, offensive_values=None,
-                     rare_events_values=None, passing_values=None, defense_rare_values=None):
+                     rare_events_values=None, passing_values=None, defense_rare_values=None,
+                     defensive_actions_values=None, goals_conceded_values=None):
     """Esegue il backtest rigoroso con tutte le combinazioni di parametri in
     GRID_SEARCH_COMBINATIONS e ritorna i risultati ordinati per MAE crescente
     (il migliore per primo). Il 'punteggio' finale usato per il ranking bilancia
@@ -694,6 +695,8 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                                 rare_events_values=rare_events_values,
                                 passing_values=passing_values,
                                 defense_rare_values=defense_rare_values,
+                                defensive_actions_values=defensive_actions_values,
+                                goals_conceded_values=goals_conceded_values,
                                 use_granular_factors=use_granular,
                                 use_trend=use_trend,
                                 trend_intensity=trend_intensity)
@@ -993,26 +996,21 @@ def build_prediction(player_slug):
     backtest_weights = exponential_weights(len(backtest_scores), HALF_LIFE_GAMES) if backtest_scores else []
     backtest_media = weighted_mean(backtest_scores, backtest_weights) if backtest_scores else None
 
-    # --- Backtest RIGOROSO sui parametri FISSATI (25/07) ---
-    # Il grid search cross-player ha gia' individuato la combinazione vincente
-    # (vedi costanti HALF_LIFE_GAMES/RANGE_MULTIPLIER/OPPONENT_SENSITIVITY/
-    # TREND_INTENSITY sopra). Non serve piu' rieseguire 72 combinazioni ad ogni
-    # giocatore ad ogni run — un solo backtest sui parametri fissati, molto
-    # piu' veloce, mantenendo comunque MAE/copertura come indicatore di
-    # affidabilita' per QUESTO specifico giocatore.
-    log("Esecuzione backtest rigoroso sui parametri fissati...")
-    rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
-                                     half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
-                                     opponent_sensitivity=OPPONENT_SENSITIVITY,
-                                     fouls_values=fouls_values, duels_values=duels_values,
-                                     offensive_values=offensive_values,
-                                     rare_events_values=rare_events_values,
-                                     passing_values=passing_values,
-                                     defense_rare_values=defense_rare_values,
-                                     defensive_actions_values=defensive_actions_values,
-                                     goals_conceded_values=goals_conceded_values,
-                                     use_granular_factors=True, use_trend=True,
-                                     trend_intensity=TREND_INTENSITY)
+    # --- Grid search per QUESTO giocatore, salvato su disco per aggregazione ---
+    # cross-player (job 'aggregate' separato, come fatto per gli attaccanti).
+    # A differenza della versione "parametri fissati", qui rieseguiamo TUTTE le
+    # combinazioni: servono i risultati grezzi per-giocatore da aggregare dopo
+    # che la matrix ha girato su tutti i centrocampisti posseduti.
+    log("Esecuzione grid search completo (72 combinazioni) per aggregazione cross-player...")
+    grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
+                                    fouls_values=fouls_values, duels_values=duels_values,
+                                    offensive_values=offensive_values,
+                                    rare_events_values=rare_events_values,
+                                    passing_values=passing_values,
+                                    defense_rare_values=defense_rare_values,
+                                    defensive_actions_values=defensive_actions_values,
+                                    goals_conceded_values=goals_conceded_values)
+    rigorous_bt = grid_results[0] if grid_results else None  # migliore per QUESTO giocatore (diagnostica locale)
     rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
                             f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA)")
     if rigorous_bt['mae'] is not None:
@@ -1295,6 +1293,22 @@ def main():
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_conf'),
                               result.get('target_competition', '')))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} +/- {result.get('range_conf'):.1f}")
+
+        # Salvataggio grid_results per QUESTO giocatore, su disco, per il job
+        # 'aggregate' separato che calcolera' la combinazione vincente cross-player
+        # (stessa strategia usata per gli attaccanti).
+        grid_dir = os.path.join(OUTPUT_DIR, 'grid_search')
+        if not os.path.exists(grid_dir):
+            os.makedirs(grid_dir)
+        grid_export = [
+            {'label': r['label'], 'half_life': r['half_life'], 'range_multiplier': r['range_multiplier'],
+             'opponent_sensitivity': r['opponent_sensitivity'], 'trend_intensity': r['trend_intensity'],
+             'mae': r['mae'], 'pct_dentro_range': r['pct_dentro_range']}
+            for r in (result.get('grid_results') or []) if r.get('mae') is not None
+        ]
+        grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
+        with open(grid_path, 'w', encoding='utf-8') as f:
+            json.dump(grid_export, f, ensure_ascii=False, indent=2)
 
     # --- Riepilogo comparativo in cima al file ---
     # NUOVO (25/07): tiering ordinato per score atteso decrescente, con
