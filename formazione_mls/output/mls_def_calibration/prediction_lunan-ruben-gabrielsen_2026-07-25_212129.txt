@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:21:29.180651Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) lunan-ruben-gabrielsen: 32 pt attesi (11-52)
+======================================================================
+
+######################################################################
+# GIOCATORE: lunan-ruben-gabrielsen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lunan-ruben-gabrielsen (squadra: lillestrom-kjeller)
+Generato: 2026-07-25T21:21:29.179623Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 17
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: eliteserien (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2024-11-09 | BRA vs LSK | eliteserien | score=30.5 | peso=0.340
+  2024-11-23 | LSK vs SAN | eliteserien | score=51.2 | peso=0.367
+  2024-12-01 | BOD vs LSK | eliteserien | score=29.4 | peso=0.397
+  2026-04-11 | LSK vs STA | eliteserien | score=38.8 | peso=0.429
+  2026-04-15 | TIL vs LSK | eliteserien | score=51.7 | peso=0.463
+  2026-04-19 | VIF vs LSK | eliteserien | score=65.7 | peso=0.500
+  2026-04-26 | LSK vs BOD | eliteserien | score=52.1 | peso=0.540
+  2026-05-03 | LSK vs S08 | eliteserien | score=65.0 | peso=0.583
+  2026-05-10 | RBK vs LSK | eliteserien | score=85.6 | peso=0.630
+  2026-05-16 | LSK vs SAN | eliteserien | score=49.3 | peso=0.680
+  2026-05-20 | LSK vs KRI | eliteserien | score=70.6 | peso=0.735
+  2026-05-25 | HAM vs LSK | eliteserien | score=20.7 | peso=0.794
+  2026-07-11 | FFK vs LSK | eliteserien | score=71.1 | peso=0.857
+  2026-07-18 | LSK vs KFU | eliteserien | score=47.3 | peso=0.926
+  2026-07-22 | LSK vs VIK | eliteserien | score=51.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 53.23
+Deviazione standard pesata: 17.07
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.35 (differenza: +4.73)
+Media score in casa: 53.18 | Media score fuori casa: 50.66
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.779
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.988
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.009
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.983
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.987
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.017
+Fattore trend (media ultime 5: 52.2 vs media ultime 10: 57.8): 0.872
+P(gioca): 88.24% (fonte: tasso di presenza storico (15/17))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T19:00
+Casa: FK Bodø / Glimt | Trasferta: Lillestrøm SK
+Competizione: eliteserien
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 31.6 +/- 20.5
+  (range: 11.1 - 52.1)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.49
+Punteggio REALE ottenuto in quella partita: 51.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.7    52.1    +14.4    15.7        SI
+   7        7      47.8    65.0    +17.2    14.6        NO
+   8        8      53.0    85.6    +32.6    15.6        NO
+   9        9      60.6    49.3    -11.2    20.9        SI
+  10       10      76.8    70.6     -6.1    19.6        SI
+  11       11      61.9    20.7    -41.2    19.5        NO
+  12       12      62.5    71.1     +8.6    22.7        SI
+  13       13      63.8    47.3    -16.6    22.6        SI
+  14       14      35.8    51.1    +15.3    21.6        SI
+
+MAE (errore assoluto medio): 18.14
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
