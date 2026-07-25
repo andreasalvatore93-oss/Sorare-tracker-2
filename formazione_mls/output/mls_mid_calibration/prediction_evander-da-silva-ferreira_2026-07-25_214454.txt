@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:44:54.362719Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) evander-da-silva-ferreira: 75 pt attesi (48-102)
+======================================================================
+
+######################################################################
+# GIOCATORE: evander-da-silva-ferreira
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: evander-da-silva-ferreira (squadra: cincinnati-cincinnati-ohio)
+Generato: 2026-07-25T21:44:54.361603Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-08 | CIN vs CLB | mlspa | score=53.1 | peso=0.445
+  2025-11-23 | CIN vs MIA | mlspa | score=36.0 | peso=0.472
+  2026-03-15 | NE vs CIN | mlspa | score=70.4 | peso=0.500
+  2026-03-22 | CIN vs MTL | mlspa | score=36.2 | peso=0.530
+  2026-04-04 | RBNY vs CIN | mlspa | score=47.1 | peso=0.561
+  2026-04-11 | TOR vs CIN | mlspa | score=53.4 | peso=0.595
+  2026-04-18 | CIN vs CHI | mlspa | score=91.7 | peso=0.630
+  2026-04-22 | NYC vs CIN | mlspa | score=70.0 | peso=0.667
+  2026-04-25 | CIN vs RBNY | mlspa | score=86.9 | peso=0.707
+  2026-05-03 | CHI vs CIN | mlspa | score=93.1 | peso=0.749
+  2026-05-09 | CLT vs CIN | mlspa | score=75.4 | peso=0.794
+  2026-05-13 | CIN vs MIA | mlspa | score=60.0 | peso=0.841
+  2026-05-17 | SD vs CIN | mlspa | score=84.0 | peso=0.891
+  2026-05-23 | CIN vs ORL | mlspa | score=100.0 | peso=0.944
+  2026-07-22 | CIN vs VAN | mlspa | score=87.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 73.23
+Deviazione standard pesata: 19.62
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.21 (differenza: +2.41)
+Media score in casa: 68.96 | Media score fuori casa: 70.49
+Fattore casa/trasferta applicato: 1.005 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.9
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.143
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 1.015
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.978
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 0.993
+Fattore trend (media ultime 5: 81.4 vs media ultime 10: 80.2): 1.015
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:15
+Casa: Columbus Crew | Trasferta: FC Cincinnati
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 75.0 +/- 27.5
+  (range: 47.5 - 102.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 71.67
+Punteggio REALE ottenuto in quella partita: 87.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +16.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.4x+opp_sens=29.0+trend_int=1.3' (half_life=9.0, range_mult=1.4, opp_sens=29.0, trend_int=1.3)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.4    91.7    +52.3    16.1        NO
+   7        7      54.1    70.0    +15.9    27.0        SI
+   8        8      59.5    86.9    +27.4    25.6        NO
+   9        9      53.7    93.1    +39.4    27.4        NO
+  10       10      81.9    75.4     -6.5    29.3        SI
+  11       11      66.7    60.0     -6.7    27.6        SI
+  12       12      96.6    84.0    -12.6    26.1        SI
+  13       13      89.4   100.0    +10.6    25.6        SI
+  14       14      62.6    87.8    +25.2    27.7        SI
+
+MAE (errore assoluto medio): 21.85
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
