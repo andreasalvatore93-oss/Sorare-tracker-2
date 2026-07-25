@@ -1,4 +1,4 @@
-name: Test Centrocampista MLS (prototipo)
+name: Test Centrocampisti MLS + Grid Search (prototipo)
 
 on:
   workflow_dispatch:
@@ -11,9 +11,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  predict:
+  discover:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,10 +27,64 @@ jobs:
 
       - run: pip install requests curl_cffi
 
-      - name: Run test centrocampista (Marcel Hartel)
+      - name: Esegui discovery centrocampisti MLS in_season
+        id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          PYTHONUNBUFFERED: "1"
+        run: python mls_mid_discovery.py
+
+      - name: Commit output discovery
+        if: always()
+        run: |
+          git config user.name "mls-mid-bot"
+          git config user.email "mls-mid-bot@users.noreply.github.com"
+          git add mls_mid_discovery/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "MLS Midfielder Discovery: nuovo run (pre-predict)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
+
+  predict:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        player_slug: ${{ fromJson(needs.discover.outputs.player_slugs) }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install requests curl_cffi
+
+      - name: Run single-player prediction + grid search (job matrix, budget fresco per ognuno)
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
         run: python test_mid.py
 
@@ -42,7 +98,48 @@ jobs:
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Test centrocampista: predizione"
+          git commit -m "Test Centrocampisti: predizione + grid search ${{ matrix.player_slug }}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
+
+  aggregate:
+    needs: [discover, predict]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Aggrega grid search cross-player e individua parametri vincenti
+        run: python aggregate_grid_search_mid.py
+
+      - name: Commit aggregazione
+        run: |
+          git config user.name "mls-mid-bot"
+          git config user.email "mls-mid-bot@users.noreply.github.com"
+          git add mls_mid_all/grid_search/aggregato_*.txt
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Grid search centrocampisti: aggregazione cross-player"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
