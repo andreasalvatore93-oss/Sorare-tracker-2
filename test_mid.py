@@ -1011,11 +1011,9 @@ def build_prediction(player_slug):
                                     defensive_actions_values=defensive_actions_values,
                                     goals_conceded_values=goals_conceded_values)
     rigorous_bt = grid_results[0] if grid_results else None  # migliore per QUESTO giocatore (diagnostica locale)
-    rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
-                            f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA)")
-    if rigorous_bt['mae'] is not None:
-        log(f"Backtest completato: MAE={rigorous_bt['mae']:.2f}, "
-            f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
+    if rigorous_bt and rigorous_bt['mae'] is not None:
+        log(f"Miglior combinazione per questo giocatore: {rigorous_bt['label']} -> "
+            f"MAE={rigorous_bt['mae']:.2f}, copertura={rigorous_bt['pct_dentro_range']:.1f}%")
     else:
         log("Backtest: dati insufficienti (serve più storico).")
     grid_results = [rigorous_bt]  # lista con un solo elemento, per compatibilita' col resto del codice
