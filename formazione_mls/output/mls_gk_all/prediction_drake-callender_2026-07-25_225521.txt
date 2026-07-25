@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:55:21.091066Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.6, min_starter_odds=70%
+======================================================================
+1) drake-callender: 26 pt attesi (3-50)
+======================================================================
+
+######################################################################
+# GIOCATORE: drake-callender
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: drake-callender (squadra: minnesota-united-minneapolis-saint-paul-minnesota)
+Generato: 2026-07-25T22:55:21.090714Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-28 | MIN vs CIN | mlspa | score=76.9 | peso=0.340
+  2026-03-08 | NSH vs MIN | mlspa | score=32.1 | peso=0.367
+  2026-03-15 | VAN vs MIN | mlspa | score=18.5 | peso=0.397
+  2026-03-22 | MIN vs SEA | mlspa | score=68.5 | peso=0.429
+  2026-04-05 | LA vs MIN | mlspa | score=53.2 | peso=0.463
+  2026-04-12 | SD vs MIN | mlspa | score=50.0 | peso=0.500
+  2026-04-19 | MIN vs POR | mlspa | score=67.1 | peso=0.540
+  2026-04-23 | DAL vs MIN | mlspa | score=62.7 | peso=0.583
+  2026-04-25 | MIN vs LAFC | mlspa | score=54.5 | peso=0.630
+  2026-05-02 | CLB vs MIN | mlspa | score=34.9 | peso=0.680
+  2026-05-10 | MIN vs ATX | mlspa | score=40.5 | peso=0.735
+  2026-05-14 | MIN vs RAP | mlspa | score=31.6 | peso=0.794
+  2026-05-16 | NE vs MIN | mlspa | score=38.2 | peso=0.857
+  2026-05-23 | MIN vs RSL | mlspa | score=29.9 | peso=0.926
+  2026-07-23 | SKC vs MIN | mlspa | score=47.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 45.27
+Deviazione standard pesata: 14.54
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.51 (differenza: +2.04)
+Media score in casa: 52.71 | Media score fuori casa: 42.19
+Fattore casa/trasferta applicato: 1.111 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.667
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere).
+Fattore falli (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.021
+Fattore efficacia offensiva (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.011
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.981
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.026
+Tasso storico clean sheet (porta inviolata nei primi 60'): 26.7% (bonus atteso incorporato nella media pesata: ~6.7pt)
+Fattore trend (media ultime 5: 37.6 vs media ultime 10: 45.7): 0.876
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T00:30
+Casa: Minnesota United | Trasferta: Vancouver Whitecaps FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 26.4 +/- 23.3
+  (range: 3.2 - 49.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.95
+Punteggio REALE ottenuto in quella partita: 47.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +3.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      84.7    67.1    -17.6    30.5        SI
+   7        7      33.7    62.7    +29.0    29.6        SI
+   8        8      55.3    54.5     -0.8    27.8        SI
+   9        9      53.1    34.9    -18.2    25.6        SI
+  10       10      89.2    40.5    -48.7    26.1        NO
+  11       11      74.6    31.6    -43.0    25.1        NO
+  12       12      31.8    38.2     +6.4    25.5        SI
+  13       13      38.6    29.9     -8.7    24.5        SI
+  14       14      45.7    47.9     +2.2    24.6        SI
+
+MAE (errore assoluto medio): 19.39
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
