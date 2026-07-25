@@ -64,7 +64,16 @@ except ImportError:
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
-DISCOVERY_FILE = os.path.join('formazione_mls/output/mls_gk_discovery', 'player_slugs.json')
+# CALIBRATION_MODE (25/07, grid search allargato): se attivo, legge la lista
+# GLOBALE (tutti i portieri MLS di qualita', non solo posseduti) invece di
+# quella dei posseduti, e riesegue il grid search COMPLETO (72 combinazioni)
+# invece del singolo backtest sui parametri gia' fissati -- usato SOLO per
+# la ricalibrazione one-shot su piu' dati, mai in produzione.
+CALIBRATION_MODE = os.environ.get('CALIBRATION_MODE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
+
+DISCOVERY_FILE = os.path.join(
+    'formazione_mls/output/mls_gk_discovery_global' if CALIBRATION_MODE else 'formazione_mls/output/mls_gk_discovery',
+    'player_slugs.json')
 
 # Fallback statico SOLO se mls_gk_discovery/player_slugs.json non esiste
 # ancora (nessuna discovery portieri ancora fatta): singolo giocatore
@@ -98,7 +107,7 @@ MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) esclus
 MIN_STARTER_ODDS = 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): grid search di calibrazione concluso sui 12 posseduti con dati sufficienti, il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. Se si rifà grid search, riportare a 0.0 temporaneamente.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
-OUTPUT_DIR = 'formazione_mls/output/mls_gk_all'
+OUTPUT_DIR = 'formazione_mls/output/mls_gk_calibration' if CALIBRATION_MODE else 'formazione_mls/output/mls_gk_all'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
@@ -1214,26 +1223,40 @@ def build_prediction(player_slug):
     # fattori granulari, che peggioravano sempre il risultato per questo ruolo).
     # Non serve piu' rieseguire 72 combinazioni ad ogni giocatore in produzione —
     # un solo backtest sui parametri fissati, molto piu' veloce.
-    log("Esecuzione backtest rigoroso sui parametri fissati...")
-    rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
-                                     half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
-                                     opponent_sensitivity=OPPONENT_SENSITIVITY,
-                                     fouls_values=fouls_values, possession_values=possession_values,
-                                     offensive_values=offensive_values,
-                                     rare_events_values=rare_events_values,
-                                     passing_values=passing_values,
-                                     goalkeeping_values=goalkeeping_values,
-                                     goals_conceded_values=goals_conceded_values,
-                                     use_granular_factors=False, use_trend=True,
-                                     trend_intensity=TREND_INTENSITY)
-    rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
-                            f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA 12 posseduti)")
-    if rigorous_bt['mae'] is not None:
-        log(f"Backtest completato: MAE={rigorous_bt['mae']:.2f}, "
-            f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
+    if CALIBRATION_MODE:
+        # Grid search allargato (25/07): riesegue tutte le combinazioni su
+        # tutti i portieri MLS di qualita' (non solo i posseduti), per
+        # ricalibrare i parametri su un campione molto piu' ampio.
+        log("CALIBRATION_MODE attivo: esecuzione grid search completo (72 combinazioni)...")
+        grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
+                                        fouls_values=fouls_values, possession_values=possession_values,
+                                        offensive_values=offensive_values,
+                                        rare_events_values=rare_events_values,
+                                        passing_values=passing_values,
+                                        goalkeeping_values=goalkeeping_values,
+                                        goals_conceded_values=goals_conceded_values)
+        rigorous_bt = grid_results[0] if grid_results else None
     else:
-        log("Backtest: dati insufficienti (serve più storico).")
-    grid_results = [rigorous_bt]  # lista con un solo elemento, per compatibilita' col resto del codice
+        log("Esecuzione backtest rigoroso sui parametri fissati...")
+        rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
+                                         half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
+                                         opponent_sensitivity=OPPONENT_SENSITIVITY,
+                                         fouls_values=fouls_values, possession_values=possession_values,
+                                         offensive_values=offensive_values,
+                                         rare_events_values=rare_events_values,
+                                         passing_values=passing_values,
+                                         goalkeeping_values=goalkeeping_values,
+                                         goals_conceded_values=goals_conceded_values,
+                                         use_granular_factors=False, use_trend=True,
+                                         trend_intensity=TREND_INTENSITY)
+        rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
+                                f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA 12 posseduti)")
+        if rigorous_bt['mae'] is not None:
+            log(f"Backtest completato: MAE={rigorous_bt['mae']:.2f}, "
+                f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
+        else:
+            log("Backtest: dati insufficienti (serve più storico).")
+        grid_results = [rigorous_bt]  # lista con un solo elemento, per compatibilita' col resto del codice
 
     result = {
         'player_slug': player_slug,

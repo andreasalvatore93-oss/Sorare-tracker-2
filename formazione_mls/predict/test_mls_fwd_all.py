@@ -56,7 +56,16 @@ except ImportError:
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
-DISCOVERY_FILE = os.path.join('formazione_mls/output/mls_fwd_discovery', 'player_slugs.json')
+# CALIBRATION_MODE (25/07, grid search allargato): se attivo, legge la lista
+# GLOBALE (tutti gli attaccanti MLS di qualita', non solo posseduti) invece
+# di quella dei posseduti, e riesegue il grid search COMPLETO (72
+# combinazioni) invece del singolo backtest sui parametri gia' fissati --
+# usato SOLO per la ricalibrazione one-shot su piu' dati, mai in produzione.
+CALIBRATION_MODE = os.environ.get('CALIBRATION_MODE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
+
+DISCOVERY_FILE = os.path.join(
+    'formazione_mls/output/mls_fwd_discovery_global' if CALIBRATION_MODE else 'formazione_mls/output/mls_fwd_discovery',
+    'player_slugs.json')
 
 # Fallback statico SOLO se mls_fwd_discovery/player_slugs.json non esiste
 # ancora (es. primo run senza aver girato il job discover, o esecuzione
@@ -96,7 +105,7 @@ MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) esclus
 MIN_STARTER_ODDS = 0.70  # NUOVO: sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente)
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
-OUTPUT_DIR = 'formazione_mls/output/mls_fwd_all'
+OUTPUT_DIR = 'formazione_mls/output/mls_fwd_calibration' if CALIBRATION_MODE else 'formazione_mls/output/mls_fwd_all'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
@@ -1113,26 +1122,37 @@ def build_prediction(player_slug):
     # giocatore ad ogni run — un solo backtest sui parametri fissati, molto
     # piu' veloce, mantenendo comunque MAE/copertura come indicatore di
     # affidabilita' per QUESTO specifico giocatore.
-    log("Esecuzione backtest rigoroso sui parametri fissati...")
-    rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
-                                     half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
-                                     opponent_sensitivity=OPPONENT_SENSITIVITY,
-                                     fouls_values=fouls_values, duels_values=duels_values,
-                                     offensive_values=offensive_values,
-                                     rare_events_values=rare_events_values,
-                                     passing_values=passing_values,
-                                     defense_rare_values=defense_rare_values,
-                                     residual_values=residual_values,
-                                     use_granular_factors=True, use_trend=True,
-                                     trend_intensity=TREND_INTENSITY)
-    rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
-                            f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA)")
-    if rigorous_bt['mae'] is not None:
-        log(f"Backtest completato: MAE={rigorous_bt['mae']:.2f}, "
-            f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
+    if CALIBRATION_MODE:
+        log("CALIBRATION_MODE attivo: esecuzione grid search completo (72 combinazioni)...")
+        grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
+                                        fouls_values=fouls_values, duels_values=duels_values,
+                                        offensive_values=offensive_values,
+                                        rare_events_values=rare_events_values,
+                                        passing_values=passing_values,
+                                        defense_rare_values=defense_rare_values,
+                                        residual_values=residual_values)
+        rigorous_bt = grid_results[0] if grid_results else None
     else:
-        log("Backtest: dati insufficienti (serve più storico).")
-    grid_results = [rigorous_bt]  # lista con un solo elemento, per compatibilita' col resto del codice
+        log("Esecuzione backtest rigoroso sui parametri fissati...")
+        rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
+                                         half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
+                                         opponent_sensitivity=OPPONENT_SENSITIVITY,
+                                         fouls_values=fouls_values, duels_values=duels_values,
+                                         offensive_values=offensive_values,
+                                         rare_events_values=rare_events_values,
+                                         passing_values=passing_values,
+                                         defense_rare_values=defense_rare_values,
+                                         residual_values=residual_values,
+                                         use_granular_factors=True, use_trend=True,
+                                         trend_intensity=TREND_INTENSITY)
+        rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
+                                f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA)")
+        if rigorous_bt['mae'] is not None:
+            log(f"Backtest completato: MAE={rigorous_bt['mae']:.2f}, "
+                f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
+        else:
+            log("Backtest: dati insufficienti (serve più storico).")
+        grid_results = [rigorous_bt]  # lista con un solo elemento, per compatibilita' col resto del codice
 
     result = {
         'player_slug': player_slug,
@@ -1403,6 +1423,22 @@ def main():
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_conf'),
                               result.get('target_competition', '')))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} +/- {result.get('range_conf'):.1f}")
+
+        # Salvataggio grid_results per QUESTO giocatore, su disco, per il job
+        # 'aggregate' separato che calcolera' la combinazione vincente cross-player
+        # (stessa strategia usata per gli altri ruoli).
+        grid_dir = os.path.join(OUTPUT_DIR, 'grid_search')
+        if not os.path.exists(grid_dir):
+            os.makedirs(grid_dir)
+        grid_export = [
+            {'label': r['label'], 'half_life': r['half_life'], 'range_multiplier': r['range_multiplier'],
+             'opponent_sensitivity': r['opponent_sensitivity'], 'trend_intensity': r['trend_intensity'],
+             'mae': r['mae'], 'pct_dentro_range': r['pct_dentro_range']}
+            for r in (result.get('grid_results') or []) if r.get('mae') is not None
+        ]
+        grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
+        with open(grid_path, 'w', encoding='utf-8') as f:
+            json.dump(grid_export, f, ensure_ascii=False, indent=2)
 
     # --- Riepilogo comparativo in cima al file ---
     # NUOVO (25/07): tiering ordinato per score atteso decrescente, con

@@ -11,8 +11,13 @@ squadre MLS interroga Club(slug).anyPlayers per il roster completo, poi
 filtra lato client per posizione Forward (anyPositions del giocatore).
 Nessuno scope utente richiesto: query pubblica.
 
+Filtro qualita' (25/07): tenuti solo i giocatori con media (L5+L10+L40)/3 >=
+MIN_AVG_SCORE_QUALITY (default 30.0) -- i giocatori "scarsi" non verrebbero
+comunque comprati e inquinerebbero la calibrazione del modello.
+
 Output: mls_fwd_discovery_global/player_slugs.json -- lista JSON di slug
-giocatore attaccante unici, deduplicati su tutte le 30 squadre.
+giocatore attaccante unici, deduplicati su tutte le 30 squadre, FILTRATI per
+qualita'.
 """
 import os
 import json
@@ -131,6 +136,55 @@ query TeamRoster($slug: String!, $first: Int!) {
 """
 
 
+PLAYER_AVG_SCORES_QUERY = """
+query PlayerAvgScores($slug: String!) {
+  anyPlayer(slug: $slug) {
+    lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
+    lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+    lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
+  }
+}
+"""
+
+# FILTRO QUALITA' (25/07, richiesta esplicita utente): la discovery globale
+# serve a calibrare il modello sui giocatori che l'utente comprerebbe
+# davvero, non su tutti i 300+ tesserati di un ruolo -- i giocatori "scarsi"
+# (media bassa) non li comprerebbe comunque e inquinerebbero la
+# calibrazione. Tenuti solo i giocatori con media (L5+L10+L40)/3 >= soglia.
+# Se uno dei tre valori manca (tipico di chi ha poco storico/esordienti),
+# il giocatore viene ESCLUSO per sicurezza -- coerente con l'intento
+# "solo giocatori affidabili e con storico", non un'approssimazione al ribasso.
+MIN_AVG_SCORE_QUALITY = float(os.environ.get('MIN_AVG_SCORE_QUALITY', '30.0'))
+
+
+def get_quality_average(slug):
+    """Ritorna la media (L5+L10+L40)/3 per slug, o None se uno dei tre valori
+    non e' disponibile (giocatore con storico insufficiente)."""
+    data = graphql_query(PLAYER_AVG_SCORES_QUERY, {"slug": slug}, operation_name="PlayerAvgScores")
+    player = (data.get('data') or {}).get('anyPlayer') or {}
+    l5 = player.get('lastFiveAvgScore')
+    l10 = player.get('lastTenPlayedAvgScore')
+    l40 = player.get('lastFortyAvgScore')
+    if l5 is None or l10 is None or l40 is None:
+        return None
+    return (l5 + l10 + l40) / 3.0
+
+
+def filter_by_quality(slugs, min_avg=MIN_AVG_SCORE_QUALITY):
+    kept = []
+    excluded = []
+    for slug in slugs:
+        avg = get_quality_average(slug)
+        time.sleep(0.3)
+        if avg is None or avg < min_avg:
+            excluded.append((slug, avg))
+            continue
+        kept.append(slug)
+    log(f"Filtro qualita' (media L5/L10/L40 >= {min_avg}): {len(excluded)} esclusi su {len(slugs)} "
+        f"(storico insufficiente o media troppo bassa).")
+    return kept
+
+
 def fetch_team_players_by_position(team_slug, position):
     """Ritorna la lista di slug per una squadra, filtrando lato client su
     anyPositions contenente `position`."""
@@ -163,6 +217,10 @@ def main():
 
     slugs = sorted(all_slugs)
     log(f"Totale attaccanti MLS unici trovati: {len(slugs)}")
+
+    log(f"Filtro qualita' (media L5/L10/L40 >= {MIN_AVG_SCORE_QUALITY})...")
+    slugs = filter_by_quality(slugs)
+    log(f"Totale attaccanti MLS dopo filtro qualita': {len(slugs)}")
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)

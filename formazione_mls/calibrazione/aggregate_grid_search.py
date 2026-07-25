@@ -1,27 +1,34 @@
 """
 Aggregate Grid Search
 
-Legge i file mls_fwd_all/grid_search_full/<slug>_grid.json (uno per
-giocatore, generati da test_mls_fwd_all.py) e calcola, per ogni combinazione
-di parametri, il MAE MEDIO e la copertura media ATTRAVERSO TUTTI i giocatori
--- non la combinazione migliore per un singolo giocatore, ma quella che
-generalizza meglio sull'insieme.
+Legge i file formazione_mls/output/mls_<ruolo>_calibration/grid_search/
+<slug>_grid.json (uno per giocatore, generati dai test_*.py in
+CALIBRATION_MODE) e calcola, per ogni combinazione di parametri, il MAE
+MEDIO e la copertura media ATTRAVERSO TUTTI i giocatori -- non la
+combinazione migliore per un singolo giocatore, ma quella che generalizza
+meglio sull'insieme.
 
 La combinazione con il punteggio composito medio piu' basso (stesso criterio
 usato per-giocatore: MAE + 0.3*|copertura-68%|) diventa il candidato per i
 parametri FISSI del modello finale (fine grid search continuo, un solo set
 di parametri usato sempre).
 
-Uso: eseguito DOPO un run completo di test_mls_fwd_all.py (via git pull della
-cartella mls_fwd_all/grid_search_full/), localmente o in un job GitHub
-Actions dedicato.
+PARAMETRIZZATO PER RUOLO (25/07, grid search allargato multi-ruolo): il
+ruolo si sceglie con la variabile d'ambiente RUOLO (gk/def/mid/fwd, default
+fwd per compatibilita' con l'uso storico di questo script).
+
+Uso: eseguito DOPO uno o piu' run a batch di test_<ruolo>.py in
+CALIBRATION_MODE (i risultati si accumulano nella cartella grid_search/ ad
+ogni batch, quindi puo' essere rilanciato in qualsiasi momento per vedere lo
+stato aggregato parziale), localmente o in un job GitHub Actions dedicato.
 """
 import os
 import json
 import glob
 from collections import defaultdict
 
-GRID_DIR = os.path.join('formazione_mls/output/mls_fwd_all', 'grid_search_full')
+RUOLO = os.environ.get('RUOLO', 'fwd').strip().lower()
+GRID_DIR = os.path.join(f'formazione_mls/output/mls_{RUOLO}_calibration', 'grid_search')
 
 
 def load_all_grids():
@@ -106,7 +113,7 @@ def main():
     print(f"MAE medio: {best['mae_medio']:.2f} | copertura media: {best['copertura_media']:.1f}% "
           f"| basato su {best['n_giocatori']} giocatori")
 
-    out_path = os.path.join('mls_fwd_all', 'combinazione_vincente_aggregata.json')
+    out_path = os.path.join(f'formazione_mls/output/mls_{RUOLO}_calibration', 'combinazione_vincente_aggregata.json')
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(best, f, ensure_ascii=False, indent=2)
     print(f"\nSalvato in: {out_path}")

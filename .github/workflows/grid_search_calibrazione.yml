@@ -1,0 +1,176 @@
+name: Grid Search Calibrazione (allargata, a batch)
+
+# Operazione UNA TANTUM (25/07): riesegue il grid search completo (72
+# combinazioni per giocatore) su tutti i giocatori MLS di qualita' scoperti
+# dalla discovery globale (mls_<ruolo>_discovery_global, gia' filtrati per
+# media L5/L10/L40 >= soglia), non solo i posseduti -- serve a ricalibrare
+# i parametri fissi su un campione molto piu' ampio, con la formula CORRETTA
+# (dopo i fix Finding 2+3 dell'audit logico).
+#
+# GitHub Actions ha un limite di 256 job per matrice: per i ruoli con piu'
+# giocatori (DEF/MID/FWD, anche dopo il filtro qualita' possono superare le
+# poche decine), si lancia questo workflow PIU' VOLTE cambiando batch_index
+# (0, 1, 2, ...) finche' tutti i giocatori del ruolo sono stati processati.
+# I risultati si ACCUMULANO nella cartella grid_search/ (ogni batch aggiunge
+# i suoi file, non sovrascrive quelli dei batch precedenti), quindi l'ordine
+# e il numero di batch non sono critici -- basta coprire tutti i giocatori
+# alla fine. Usare grid_search_aggregate.yml per vedere il risultato
+# aggregato in qualsiasi momento (anche a batch parziali, con un warning se
+# mancano ancora troppi giocatori).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ruolo:
+        description: 'Ruolo da calibrare'
+        required: true
+        type: choice
+        options: [gk, def, mid, fwd]
+      batch_index:
+        description: 'Indice del batch (0-based). Ogni batch copre batch_size giocatori.'
+        required: false
+        default: '0'
+      batch_size:
+        description: 'Giocatori per batch (max 256 per il limite GitHub Actions sulla matrice)'
+        required: false
+        default: '200'
+      min_avg_score_quality:
+        description: 'Soglia minima media (L5+L10+L40)/3 per includere un giocatore'
+        required: false
+        default: '30'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: grid-search-calibrazione-${{ github.event.inputs.ruolo }}
+  cancel-in-progress: false
+
+jobs:
+  discover_batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      player_slugs: ${{ steps.slice.outputs.player_slugs }}
+      batch_count: ${{ steps.slice.outputs.batch_count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+
+      - name: Discovery globale (${{ github.event.inputs.ruolo }}) con filtro qualita'
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_AVG_SCORE_QUALITY: ${{ github.event.inputs.min_avg_score_quality || '30' }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          case "${{ github.event.inputs.ruolo }}" in
+            gk) python formazione_mls/discovery/mls_gk_discovery_global.py ;;
+            def) python formazione_mls/discovery/mls_def_discovery_global.py ;;
+            mid) python formazione_mls/discovery/mls_mid_discovery_global.py ;;
+            fwd) python formazione_mls/discovery/mls_fwd_discovery_global.py ;;
+          esac
+
+      - name: Commit output discovery aggiornato
+        run: |
+          git config user.name "grid-search-calibrazione-bot"
+          git config user.email "grid-search-calibrazione-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_${{ github.event.inputs.ruolo }}_discovery_global/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+          else
+            git commit -m "Grid Search Calibrazione (${{ github.event.inputs.ruolo }}): discovery aggiornata"
+            git push || (git pull --rebase origin main && git push)
+          fi
+
+      - name: Estrai il batch richiesto (batch_index/batch_size)
+        id: slice
+        run: |
+          python3 - <<'EOF'
+          import json, os
+
+          ruolo = "${{ github.event.inputs.ruolo }}"
+          batch_index = int("${{ github.event.inputs.batch_index || '0' }}")
+          batch_size = int("${{ github.event.inputs.batch_size || '200' }}")
+
+          path = f"formazione_mls/output/mls_{ruolo}_discovery_global/player_slugs.json"
+          with open(path, encoding="utf-8") as f:
+              slugs = json.load(f)
+
+          start = batch_index * batch_size
+          end = start + batch_size
+          batch = slugs[start:end]
+
+          batch_count = (len(slugs) + batch_size - 1) // batch_size
+
+          print(f"Totale giocatori qualificati: {len(slugs)}")
+          print(f"Batch {batch_index} (range [{start}:{end}]): {len(batch)} giocatori")
+          print(f"Batch totali necessari per coprire tutti i giocatori: {batch_count}")
+
+          github_output = os.environ["GITHUB_OUTPUT"]
+          with open(github_output, "a", encoding="utf-8") as f:
+              f.write(f"player_slugs={json.dumps(batch)}\n")
+              f.write(f"batch_count={batch_count}\n")
+          EOF
+
+  calibrate:
+    needs: discover_batch
+    if: needs.discover_batch.outputs.player_slugs != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_batch.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+
+      - name: Grid search completo per ${{ matrix.player_slug }}
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          CALIBRATION_MODE: "si"
+          MIN_STARTER_ODDS: "0.0"
+          PYTHONUNBUFFERED: "1"
+        run: |
+          case "${{ github.event.inputs.ruolo }}" in
+            gk) python formazione_mls/predict/test_gk.py ;;
+            def) python formazione_mls/predict/test_def.py ;;
+            mid) python formazione_mls/predict/test_mid.py ;;
+            fwd) python formazione_mls/predict/test_mls_fwd_all.py ;;
+          esac
+
+      - name: Commit risultati grid search (accumulo, non sovrascrive altri batch)
+        if: always()
+        run: |
+          git config user.name "grid-search-calibrazione-bot"
+          git config user.email "grid-search-calibrazione-bot@users.noreply.github.com"
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git add formazione_mls/output/mls_${{ github.event.inputs.ruolo }}_calibration/
+            if git diff --cached --quiet; then
+              echo "Nessuna modifica da salvare."
+              exit 0
+            fi
+            git commit -m "Grid Search Calibrazione (${{ github.event.inputs.ruolo }}): ${{ matrix.player_slug }}"
+            if git push; then
+              echo "Salvato correttamente."
+              exit 0
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Impossibile salvare dopo 8 tentativi, abbandono."
+          exit 1
