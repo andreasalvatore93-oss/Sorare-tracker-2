@@ -1433,7 +1433,8 @@ def main():
         grid_export = [
             {'label': r['label'], 'half_life': r['half_life'], 'range_multiplier': r['range_multiplier'],
              'opponent_sensitivity': r['opponent_sensitivity'], 'trend_intensity': r['trend_intensity'],
-             'mae': r['mae'], 'pct_dentro_range': r['pct_dentro_range']}
+             'mae': r['mae'], 'pct_dentro_range': r['pct_dentro_range'],
+             'n_test': len(r.get('rows') or [])}
             for r in (result.get('grid_results') or []) if r.get('mae') is not None
         ]
         grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
