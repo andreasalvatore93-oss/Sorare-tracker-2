@@ -1016,7 +1016,10 @@ def build_prediction(player_slug):
             f"MAE={rigorous_bt['mae']:.2f}, copertura={rigorous_bt['pct_dentro_range']:.1f}%")
     else:
         log("Backtest: dati insufficienti (serve più storico).")
-    grid_results = [rigorous_bt]  # lista con un solo elemento, per compatibilita' col resto del codice
+    # NOTA: grid_results NON va sovrascritto qui — deve restare la lista COMPLETA
+    # delle 72 combinazioni prodotta da run_grid_search sopra, non solo la
+    # migliore, altrimenti il file _grid.json salvato per l'aggregazione
+    # cross-player conterra' un solo elemento invece di 72 (bug corretto 25/07).
 
     result = {
         'player_slug': player_slug,
