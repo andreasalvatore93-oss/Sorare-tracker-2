@@ -1,0 +1,71 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:46:51.361036Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) ignacio-aliseda: 11 pt attesi (6-17)
+======================================================================
+
+######################################################################
+# GIOCATORE: ignacio-aliseda
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ignacio-aliseda (squadra: cerro-porteno-asuncion)
+Generato: 2026-07-25T21:46:51.360852Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 8
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: conmebol-libertadores (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-13 | CRP vs EST | conmebol-libertadores | score=54.0 | peso=0.944
+  2025-08-20 | EST vs CRP | conmebol-libertadores | score=46.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 49.99
+Deviazione standard pesata: 3.90
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 54.00 | Media score fuori casa: 46.20
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 1.0
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.050
+Fattore duelli (casa/trasferta, da dati reali): 0.950
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.950
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.950
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 25.00% (fonte: tasso di presenza storico (2/8))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-12T22:00
+Casa: SE Palmeiras | Trasferta: Club Cerro Porteño
+Competizione: conmebol-libertadores
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 11.3 +/- 5.5
+  (range: 5.8 - 16.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.00
+Punteggio REALE ottenuto in quella partita: 46.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
