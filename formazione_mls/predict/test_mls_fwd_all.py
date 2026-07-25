@@ -15,6 +15,14 @@ Formula (identica a test_owusu.py/test_multi_fwd.py, gia' calibrata):
                  x fattore_trend
   range_confidenza = +/- dev_std_pesata * RANGE_MULTIPLIER
 
+FIX Finding 3 (25/07, audit logica): fattore_casa_trasferta era calcolato sul
+punteggio TOTALE della partita, che pero' include gia' dentro di se' l'intero
+contributo di falli/duelli/passaggio/ecc. -- risultando in un doppio
+conteggio dell'effetto venue (una volta globale, una volta per ogni gruppo
+granulare). Ora fattore_casa_trasferta si calcola SOLO sul RESIDUO (score
+totale meno la somma di tutti i gruppi granulari tracciati), cosi' l'effetto
+venue viene applicato esattamente una volta per ogni punto di score, mai due.
+
 NUOVO in questa versione (25/07, richiesta esplicita utente):
 - PARAMETRI FISSATI: grid search cross-player completato su 14 giocatori,
   combinazione vincente individuata (MAE medio 18.13, copertura media
@@ -640,6 +648,7 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                        half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0,
                        fouls_values=None, duels_values=None, offensive_values=None,
                        rare_events_values=None, passing_values=None, defense_rare_values=None,
+                       residual_values=None,
                        use_granular_factors=False, use_trend=False, trend_intensity=1.0):
     """Backtest rigoroso: per ogni partita a partire da 'min_history' partite di
     storico disponibile, ricalcola l'INTERA formula (media pesata esponenziale +
@@ -675,17 +684,17 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
         media = weighted_mean(hist_scores, w)
         dev_std = weighted_stddev(hist_scores, w, media)
 
-        # fattore casa/trasferta calcolato SOLO sullo storico precedente
-        h_scores = [s for s, h in zip(hist_scores, hist_home_flags) if h is True]
-        a_scores = [s for s, h in zip(hist_scores, hist_home_flags) if h is False]
-        h_avg = sum(h_scores) / len(h_scores) if h_scores else media
-        a_avg = sum(a_scores) / len(a_scores) if a_scores else media
-        overall_avg = (h_avg + a_avg) / 2 if (h_scores and a_scores) else media
-
+        # fattore casa/trasferta (FIX Finding 3, 25/07): calcolato SOLO sul
+        # RESIDUO (punteggio non coperto da nessun gruppo granulare), non piu'
+        # sul punteggio totale grezzo -- altrimenti l'effetto casa/trasferta
+        # sarebbe contato una volta qui E di nuovo dentro ogni gruppo
+        # granulare che lo attraversa (doppio conteggio). Usando lo stesso
+        # compute_split_factor del resto dei gruppi sul solo residuo, l'intero
+        # punteggio viene aggiustato per venue esattamente una volta per punto.
         target_is_home = is_home_flags[i]
         fattore_ct = 1.0
-        if overall_avg > 0:
-            fattore_ct = (h_avg / overall_avg) if target_is_home else (a_avg / overall_avg)
+        if residual_values is not None:
+            fattore_ct = compute_split_factor(residual_values[:i], hist_home_flags, target_is_home)
 
         # fattore forza avversario calcolato SOLO sullo storico precedente
         valid_ranks = [r for r in hist_opp_ranks if r is not None]
@@ -778,7 +787,8 @@ GRID_SEARCH_COMBINATIONS = _build_grid_combinations()
 
 def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                      fouls_values=None, duels_values=None, offensive_values=None,
-                     rare_events_values=None, passing_values=None, defense_rare_values=None):
+                     rare_events_values=None, passing_values=None, defense_rare_values=None,
+                     residual_values=None):
     """Esegue il backtest rigoroso con tutte le combinazioni di parametri in
     GRID_SEARCH_COMBINATIONS e ritorna i risultati ordinati per MAE crescente
     (il migliore per primo). Il 'punteggio' finale usato per il ranking bilancia
@@ -793,6 +803,7 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                                 rare_events_values=rare_events_values,
                                 passing_values=passing_values,
                                 defense_rare_values=defense_rare_values,
+                                residual_values=residual_values,
                                 use_granular_factors=use_granular,
                                 use_trend=use_trend,
                                 trend_intensity=trend_intensity)
@@ -968,9 +979,11 @@ def build_prediction(player_slug):
     passing_values = []
     rare_events_values = []
     defense_rare_values = []
+    residual_values = []  # NUOVO (FIX Finding 3, 25/07): punteggio totale meno tutti i gruppi granulari tracciati (vedi compute_split_factor/fattore_casa_trasferta piu' sotto)
 
     for node, detail in zip(usable, details):
-        scores.append(node.get('score', 0.0))
+        game_score = node.get('score', 0.0)
+        scores.append(game_score)
         game = node['anyGame']
         own_rank, opp_rank, is_home = team_ranking_from_game(game, player_team_slug)
         # fallback: se il ranking non e' nel game log base, prova dal dettaglio granulare
@@ -980,14 +993,25 @@ def build_prediction(player_slug):
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
 
-        fouls_values.append(extract_group_score(detail, FOULS_STATS))
-        duels_values.append(extract_group_score(detail, DUELS_STATS))
-        offensive_values.append(extract_group_score(detail, OFFENSIVE_STATS))
-        passing_values.append(extract_group_score(detail, PASSING_STATS))
+        fouls_v = extract_group_score(detail, FOULS_STATS)
+        duels_v = extract_group_score(detail, DUELS_STATS)
+        offensive_v = extract_group_score(detail, OFFENSIVE_STATS)
+        passing_v = extract_group_score(detail, PASSING_STATS)
         rare_raw = extract_group_score(detail, RARE_EVENTS_STATS)
-        rare_events_values.append(max(-RARE_EVENTS_CAP, min(RARE_EVENTS_CAP, rare_raw)))
         defense_raw = extract_group_score(detail, DEFENSE_RARE_STATS)
+
+        fouls_values.append(fouls_v)
+        duels_values.append(duels_v)
+        offensive_values.append(offensive_v)
+        passing_values.append(passing_v)
+        rare_events_values.append(max(-RARE_EVENTS_CAP, min(RARE_EVENTS_CAP, rare_raw)))
         defense_rare_values.append(max(-DEFENSE_RARE_CAP, min(DEFENSE_RARE_CAP, defense_raw)))
+
+        # Residuo = tutto cio' che NON e' in nessun gruppo granulare tracciato
+        # sopra (usiamo i valori REALI non cappati per i gruppi con cap, cosi'
+        # il residuo resta coerente con il punteggio reale della partita).
+        covered_total = fouls_v + duels_v + offensive_v + passing_v + rare_raw + defense_raw
+        residual_values.append(game_score - covered_total)
 
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
@@ -996,12 +1020,11 @@ def build_prediction(player_slug):
     dev_std_pesata = weighted_stddev(scores, weights, media_pesata)
     dev_std_trimmed = trimmed_weighted_stddev(scores, weights)
 
-    # --- Fattore casa/trasferta (score totale, gia' esistente) ---
+    # --- Medie casa/trasferta (solo descrittive, per l'output) ---
     home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
     away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
     home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
     away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
-    overall_avg_for_factor = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
 
     # --- Prossima partita: contesto target ---
     log("[FASE 4/4] Calcolo fattori e predizione finale sulla prossima partita target...")
@@ -1024,12 +1047,11 @@ def build_prediction(player_slug):
             next_own_rank, next_opp_rank, next_is_home = team_ranking_from_game(
                 next_detail['anyGame'], player_team_slug)
 
-    fattore_casa_trasferta = 1.0
-    if overall_avg_for_factor > 0:
-        if next_is_home:
-            fattore_casa_trasferta = home_avg / overall_avg_for_factor
-        else:
-            fattore_casa_trasferta = away_avg / overall_avg_for_factor
+    # FIX (Finding 3, 25/07): fattore casa/trasferta calcolato sul RESIDUO
+    # (punteggio non coperto da nessun gruppo granulare), non piu' sul
+    # punteggio totale -- evita di contare l'effetto venue una volta qui e
+    # di nuovo dentro ogni fattore granulare sottostante.
+    fattore_casa_trasferta = compute_split_factor(residual_values, is_home_flags, next_is_home)
 
     # --- Fattori granulari SEPARATI: falli, duelli, efficacia offensiva ---
     # Ognuno e' un fattore casa/trasferta indipendente, calcolato sui dati REALI
@@ -1100,6 +1122,7 @@ def build_prediction(player_slug):
                                      rare_events_values=rare_events_values,
                                      passing_values=passing_values,
                                      defense_rare_values=defense_rare_values,
+                                     residual_values=residual_values,
                                      use_granular_factors=True, use_trend=True,
                                      trend_intensity=TREND_INTENSITY)
     rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
