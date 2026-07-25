@@ -632,20 +632,57 @@ PRICE_BASED_THRESHOLDS_ENABLED = os.environ.get(
     'PRICE_BASED_THRESHOLDS_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
 # Regola 1: margine minimo per considerare un caso, a seconda del prezzo del vero minimo.
-MAKEOFFER_MIN_MARGIN_LOW_PRICE = float(os.environ.get('MAKEOFFER_MIN_MARGIN_LOW_PRICE', '0.13'))
-MAKEOFFER_MIN_MARGIN_HIGH_PRICE = float(os.environ.get('MAKEOFFER_MIN_MARGIN_HIGH_PRICE', '0.07'))
-MAKEOFFER_MIN_MARGIN_PRICE_BREAKPOINT = float(
-    os.environ.get('MAKEOFFER_MIN_MARGIN_PRICE_BREAKPOINT', '4.0'))
+# FIX 25/07 (curva continua): sostituisce il vecchio gradino secco a 2 valori (13%/7% a
+# 4.0EUR). Sessione di calibrazione del 25/07 sera ha trovato piu' coppie reali "stesso
+# margine, prezzo diverso, decisione diversa" DENTRO la vecchia fascia >=4EUR unica --
+# Cherki (11.60EUR/6.8%->agisci) vs Cucurella (6.00EUR/6.8%->scarta), Talisca (3.00EUR/
+# 11.8%->agisci) vs Pedro Neto (1.50EUR/11.8%->scarta), Camavinga (3.80EUR/12.2%->agisci)
+# vs Ansu Fati (1.80EUR/12.2%->scarta), Elliot Anderson (9.50EUR/7.8%->scarta, REALE da
+# log). Il floor decresce con continuita' al crescere del prezzo, non a un singolo
+# gradino. Curva a interpolazione lineare tra i punti sotto (MAKEOFFER_MIN_MARGIN_CURVE),
+# tarata per rispettare TUTTI i casi sopra piu' quelli gia' noti (Bombino, Ferreira,
+# Trossard, Johnson, Gill, Pickford, Isak, Saka, Rodrygo, Chiesa) -- il singolo punto
+# Elliot Anderson resta un'imperfezione accettata (vedi memoria calibrazione): in
+# contrasto diretto con Johnson/Gill gia' piu' volte confermati a margini/prezzi simili,
+# trattato come rumore residuo (l'utente ha spiegato piu' volte che una parte della
+# variabilita' riflette conoscenza personale del giocatore, non modellabile).
+MAKEOFFER_MIN_MARGIN_CURVE = [
+    (1.50, 0.13),
+    (4.00, 0.073),
+    (11.60, 0.068),
+    (30.00, 0.065),
+]
 
 # Regola 2: sotto questo prezzo l'AutoBuy diretto non scatta MAI (sempre MakeOffer se il
-# margine basta). Sopra, il margine minimo per l'AutoBuy diretto scende per fasce di
-# prezzo (lista di (prezzo_minimo_fascia, margine_minimo_richiesto), crescente).
+# margine basta). Sopra, il margine minimo per l'AutoBuy diretto scende con continuita'
+# al crescere del prezzo (FIX 25/07: sostituisce i 4 gradini fissi 3/5/8/15EUR con una
+# curva a interpolazione lineare -- trovato lo stesso pattern "gradiente dentro-fascia"
+# gia' visto sopra, confermato in TRE fasce diverse con coppie stesso-margine-prezzo-
+# diverso: 3-5EUR (Giocatore C 3.20EUR/35.4%->negozia vs Giocatore D 4.80EUR/35.1%->
+# autobuy), 5-8EUR (Giocatore E 5.00-5.20EUR/27-30%->al limite vs Odegaard 6.50EUR/32%->
+# autobuy netto), 15-30EUR (De Jong 18EUR/16.3%->negozia vs Saka bis 20EUR/16%->autobuy
+# "al pelo" vs Thuram 25EUR/13.8%->negozia). La fascia 8-15EUR e' risultata invece
+# GENUINAMENTE piatta (Giocatore A 8.50EUR/22% e Giocatore B 14.00EUR/22%, stesso
+# margine, stessa decisione autobuy in entrambi) -- riflessa qui come un plateau nella
+# curva, non forzata a decrescere anche li'. PRINCIPIO GUIDA esplicito dell'utente per i
+# punti rumorosi/incoerenti (es. 24.50EUR/15.5%->autobuy vs 26.00EUR/15.3%->negozia,
+# riprodotta identica 2 volte, non risolta): "se c'e' incoerenza in una fascia, meglio
+# offrire che comprare" -- i valori 22-30EUR sono stati arrotondati per eccesso (verso
+# un margine richiesto piu' alto, quindi verso MakeOffer) nelle zone piu' rumorose
+# invece di inseguire esattamente ogni singolo punto.
 AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY = float(os.environ.get('AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY', '3.0'))
-AUTOBUY_MIN_MARGIN_BY_PRICE = [
-    (3.0, 0.35),
-    (5.0, 0.27),
-    (8.0, 0.22),
-    (15.0, 0.16),
+AUTOBUY_MIN_MARGIN_CURVE = [
+    (3.00, 0.38),
+    (5.00, 0.30),
+    (6.50, 0.28),
+    (8.00, 0.22),
+    (14.00, 0.22),
+    (15.50, 0.20),
+    (18.00, 0.175),
+    (20.00, 0.165),
+    (22.00, 0.16),
+    (25.00, 0.155),
+    (30.00, 0.15),
 ]
 
 # Regola 3: sconto dell'offerta MakeOffer per fascia di prezzo (lista crescente), piu'
@@ -675,6 +712,23 @@ def _tiered_lookup(price_eur, table):
     return value
 
 
+def _linear_interpolate(price_eur, curve):
+    """curve = lista di (prezzo, valore) ordinata crescente per prezzo. Interpola
+    linearmente tra i due punti che racchiudono price_eur; sotto il primo punto o sopra
+    l'ultimo, ritorna il valore all'estremo piu' vicino (clamp, nessuna estrapolazione)."""
+    if price_eur <= curve[0][0]:
+        return curve[0][1]
+    if price_eur >= curve[-1][0]:
+        return curve[-1][1]
+    for (p1, v1), (p2, v2) in zip(curve, curve[1:]):
+        if p1 <= price_eur <= p2:
+            if p2 == p1:
+                return v1
+            t = (price_eur - p1) / (p2 - p1)
+            return v1 + (v2 - v1) * t
+    return curve[-1][1]  # non raggiungibile, difesa
+
+
 def compute_price_based_thresholds(price_eur):
     """Ritorna (makeoffer_min_margin, autobuy_min_margin_o_None). autobuy_min_margin e'
     None se il prezzo e' sotto AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY -- l'AutoBuy diretto non
@@ -683,13 +737,11 @@ def compute_price_based_thresholds(price_eur):
     if not PRICE_BASED_THRESHOLDS_ENABLED:
         return MAKEOFFER_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION
 
-    makeoffer_min = (MAKEOFFER_MIN_MARGIN_LOW_PRICE
-                      if price_eur < MAKEOFFER_MIN_MARGIN_PRICE_BREAKPOINT
-                      else MAKEOFFER_MIN_MARGIN_HIGH_PRICE)
+    makeoffer_min = _linear_interpolate(price_eur, MAKEOFFER_MIN_MARGIN_CURVE)
     if price_eur < AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:
         autobuy_min = None
     else:
-        autobuy_min = _tiered_lookup(price_eur, AUTOBUY_MIN_MARGIN_BY_PRICE)
+        autobuy_min = _linear_interpolate(price_eur, AUTOBUY_MIN_MARGIN_CURVE)
     return makeoffer_min, autobuy_min
 
 
@@ -3952,10 +4004,10 @@ def main():
     log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
         f"target casi da trovare: {AUTOBUY_TARGET_MATCHES}")
     log(f"[soglie per-prezzo] {'ATTIVO' if PRICE_BASED_THRESHOLDS_ENABLED else 'DISATTIVO (uso solo soglie statiche legacy)'}"
-        f" -- MakeOffer minimo: {MAKEOFFER_MIN_MARGIN_LOW_PRICE:.0%} sotto "
-        f"{MAKEOFFER_MIN_MARGIN_PRICE_BREAKPOINT:.2f}EUR, {MAKEOFFER_MIN_MARGIN_HIGH_PRICE:.0%} sopra. "
-        f"AutoBuy diretto: mai sotto {AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:.2f}EUR, poi "
-        f"{', '.join(f'{p:.0f}EUR->{m:.0%}' for p, m in AUTOBUY_MIN_MARGIN_BY_PRICE)}. "
+        f" -- MakeOffer minimo (curva continua): "
+        f"{', '.join(f'{p:.2f}EUR->{m:.1%}' for p, m in MAKEOFFER_MIN_MARGIN_CURVE)}. "
+        f"AutoBuy diretto (curva continua): mai sotto {AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:.2f}EUR, poi "
+        f"{', '.join(f'{p:.0f}EUR->{m:.0%}' for p, m in AUTOBUY_MIN_MARGIN_CURVE)}. "
         f"Sconto offerta: {', '.join(f'{p:.0f}EUR->{d:.0%}' for p, d in OFFER_DISCOUNT_BY_PRICE)} "
         f"(giocatori liquidi, count_7d>={LIQUID_PLAYER_TRANSACTIONS_7D}: {LIQUID_PLAYER_OFFER_DISCOUNT:.0%})")
     log(f"Giocatori in blacklist unita: {len(BLACKLISTED_PLAYER_SLUGS)}")
