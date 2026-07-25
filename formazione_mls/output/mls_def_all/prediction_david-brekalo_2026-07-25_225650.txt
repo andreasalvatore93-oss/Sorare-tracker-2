@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:56:50.421906Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=70%
+======================================================================
+1) david-brekalo: 37 pt attesi (8-66)
+======================================================================
+
+######################################################################
+# GIOCATORE: david-brekalo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: david-brekalo (squadra: orlando-city-lake-mary-florida)
+Generato: 2026-07-25T22:56:50.421653Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | ORL vs NSH | mlspa | score=55.1 | peso=0.445
+  2025-09-28 | CIN vs ORL | mlspa | score=26.2 | peso=0.472
+  2025-10-04 | ORL vs CLB | mlspa | score=41.3 | peso=0.500
+  2025-10-18 | TOR vs ORL | mlspa | score=87.2 | peso=0.530
+  2025-10-23 | CHI vs ORL | mlspa | score=60.0 | peso=0.561
+  2026-02-22 | ORL vs RBNY | mlspa | score=51.3 | peso=0.595
+  2026-03-02 | ORL vs MIA | mlspa | score=29.5 | peso=0.630
+  2026-03-07 | NYC vs ORL | mlspa | score=24.5 | peso=0.667
+  2026-03-14 | ORL vs MTL | mlspa | score=27.8 | peso=0.707
+  2026-04-05 | LAFC vs ORL | mlspa | score=27.4 | peso=0.749
+  2026-04-12 | CLB vs ORL | mlspa | score=35.2 | peso=0.794
+  2026-05-13 | ORL vs PHI | mlspa | score=44.1 | peso=0.841
+  2026-05-16 | ORL vs ATL | mlspa | score=41.8 | peso=0.891
+  2026-05-23 | CIN vs ORL | mlspa | score=8.2 | peso=0.944
+  2026-07-23 | SJ vs ORL | mlspa | score=96.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 43.49
+Deviazione standard pesata: 24.36
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.01 (differenza: +8.35)
+Media score in casa: 41.55 | Media score fuori casa: 45.59
+Fattore casa/trasferta applicato: 0.979 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.4
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.779
+Fattore falli (casa/trasferta, da dati reali): 1.007
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.989
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.009
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 1.010
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 45.1 vs media ultime 10: 38.6): 1.118
+P(gioca): 100.00% (fonte: starterOddsBasisPoints (10000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: Orlando City SC | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 37.1 +/- 29.2
+  (range: 7.8 - 66.3)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 37.85
+Punteggio REALE ottenuto in quella partita: 96.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +58.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.3    29.5    -18.7    22.1        SI
+   7        7      48.0    24.5    -23.5    23.0        NO
+   8        8      59.9    27.8    -32.1    23.8        NO
+   9        9      37.1    27.4     -9.7    23.4        SI
+  10       10      38.9    35.2     -3.7    22.8        SI
+  11       11      42.7    44.1     +1.4    21.5        SI
+  12       12      42.2    41.8     -0.4    20.3        SI
+  13       13      31.4     8.2    -23.2    19.2        NO
+  14       14      26.9    96.0    +69.2    21.8        NO
+
+MAE (errore assoluto medio): 20.20
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
