@@ -89,7 +89,7 @@ jobs:
           node-version: "20"
       - name: Install sorare-sign dependencies
         run: |
-          cd sorare-sign
+          cd bots/sorare-sign
           npm install
       - run: pip install requests websocket-client curl_cffi playwright
       - run: playwright install --with-deps chromium
