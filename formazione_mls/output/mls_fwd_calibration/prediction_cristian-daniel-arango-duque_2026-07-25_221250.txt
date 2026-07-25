@@ -1,0 +1,71 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:12:50.303027Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) cristian-daniel-arango-duque: 10 pt attesi (-7-27)
+======================================================================
+
+######################################################################
+# GIOCATORE: cristian-daniel-arango-duque
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: cristian-daniel-arango-duque (squadra: atletico-nacional-medellin)
+Generato: 2026-07-25T22:12:50.302840Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: primera-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-21 | NAC vs PET | primera-a | score=65.2 | peso=0.841
+  2026-03-02 | TOL vs NAC | primera-a | score=38.5 | peso=0.891
+  2026-04-02 | NAC vs CUC | primera-a | score=52.1 | peso=0.944
+  2026-04-21 | NAC vs BUC | primera-a | score=69.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 56.48
+Deviazione standard pesata: 12.06
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 62.20 | Media score fuori casa: 38.50
+Fattore casa/trasferta applicato: 0.950 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.8
+Ranking prossimo avversario: 20
+Fattore forza avversario applicato: 1.284
+Fattore falli (casa/trasferta, da dati reali): 1.082
+Fattore duelli (casa/trasferta, da dati reali): 0.960
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.916
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.950
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 16.00% (fonte: tasso di presenza storico (4/25))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T20:45
+Casa: Jaguares de Córdoba FC | Trasferta: Club Atlético Nacional SA
+Competizione: primera-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 10.0 +/- 16.9
+  (range: -6.9 - 26.8)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.69
+Punteggio REALE ottenuto in quella partita: 69.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
