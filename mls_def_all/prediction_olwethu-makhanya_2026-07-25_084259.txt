@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:42:59.293585Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) olwethu-makhanya: 0 pt attesi (-26-26)
+======================================================================
+
+######################################################################
+# GIOCATORE: olwethu-makhanya
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: olwethu-makhanya (squadra: philadelphia-union-chester-pennsylvania)
+Generato: 2026-07-25T08:42:59.292576Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 19
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-01 | CHI vs PHI | mlspa | score=100.0 | peso=0.445
+  2025-11-24 | PHI vs NYC | mlspa | score=77.3 | peso=0.472
+  2026-02-22 | DC vs PHI | mlspa | score=43.0 | peso=0.500
+  2026-03-01 | PHI vs NYC | mlspa | score=27.4 | peso=0.530
+  2026-03-14 | ATL vs PHI | mlspa | score=65.8 | peso=0.561
+  2026-03-21 | PHI vs CHI | mlspa | score=28.6 | peso=0.595
+  2026-04-04 | CLT vs PHI | mlspa | score=54.1 | peso=0.630
+  2026-04-11 | MTL vs PHI | mlspa | score=17.5 | peso=0.667
+  2026-04-18 | PHI vs DC | mlspa | score=68.6 | peso=0.707
+  2026-04-22 | TOR vs PHI | mlspa | score=29.1 | peso=0.749
+  2026-04-25 | CLB vs PHI | mlspa | score=47.8 | peso=0.794
+  2026-05-02 | PHI vs NSH | mlspa | score=56.1 | peso=0.841
+  2026-05-09 | NE vs PHI | mlspa | score=48.2 | peso=0.891
+  2026-05-13 | ORL vs PHI | mlspa | score=52.9 | peso=0.944
+  2026-05-16 | PHI vs CLB | mlspa | score=57.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 50.62
+Deviazione standard pesata: 18.56
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.74 (differenza: +4.82)
+Media score in casa: 52.60 | Media score fuori casa: 50.94
+Fattore casa/trasferta applicato: 1.016 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.9
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.933
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.990
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.972
+Fattore gol subiti (goals_conceded, con cap): 1.021
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.017
+Fattore trend (media ultime 5: 52.6 vs media ultime 10: 46.1): 1.141
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: Philadelphia Union | Trasferta: Seattle Sounders FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 0.0 +/- 26.0
+  (range: -26.0 - 26.0)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.87
+Punteggio REALE ottenuto in quella partita: 57.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +7.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=20.0+trend_int=0.7' (half_life=9.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      67.0    54.1    -12.9    30.9        SI
+   7        7      84.9    17.5    -67.3    28.0        NO
+   8        8      45.8    68.6    +22.8    30.4        SI
+   9        9      65.6    29.1    -36.5    29.3        NO
+  10       10      46.9    47.8     +0.9    28.8        SI
+  11       11      29.0    56.1    +27.2    26.8        NO
+  12       12      39.6    48.2     +8.6    25.3        SI
+  13       13      59.6    52.9     -6.6    23.8        SI
+  14       14      58.0    57.6     -0.4    22.5        SI
+
+MAE (errore assoluto medio): 20.35
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
