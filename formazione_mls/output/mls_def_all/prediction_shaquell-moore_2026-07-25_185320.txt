@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T18:53:20.341834Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=70%
+======================================================================
+1) shaquell-moore: 44 pt attesi (25-62)
+======================================================================
+
+######################################################################
+# GIOCATORE: shaquell-moore
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: shaquell-moore (squadra: dallas-frisco-texas)
+Generato: 2026-07-25T18:53:20.341572Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | DAL vs TOR | mlspa | score=32.6 | peso=0.340
+  2026-03-01 | DAL vs NSH | mlspa | score=67.4 | peso=0.367
+  2026-03-08 | LAFC vs DAL | mlspa | score=32.2 | peso=0.397
+  2026-03-15 | DAL vs SD | mlspa | score=8.9 | peso=0.429
+  2026-03-22 | DAL vs HOU | mlspa | score=60.0 | peso=0.463
+  2026-04-04 | DC vs DAL | mlspa | score=51.2 | peso=0.500
+  2026-04-12 | DAL vs STL | mlspa | score=37.3 | peso=0.540
+  2026-04-19 | DAL vs LA | mlspa | score=46.9 | peso=0.583
+  2026-04-23 | DAL vs MIN | mlspa | score=50.0 | peso=0.630
+  2026-05-02 | RBNY vs DAL | mlspa | score=76.1 | peso=0.680
+  2026-05-10 | DAL vs RSL | mlspa | score=46.0 | peso=0.735
+  2026-05-14 | DAL vs VAN | mlspa | score=45.3 | peso=0.794
+  2026-05-17 | SJ vs DAL | mlspa | score=35.1 | peso=0.857
+  2026-05-24 | RAP vs DAL | mlspa | score=28.4 | peso=0.926
+  2026-07-23 | POR vs DAL | mlspa | score=61.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 45.89
+Deviazione standard pesata: 15.74
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.53 (differenza: +4.21)
+Media score in casa: 43.81 | Media score fuori casa: 47.38
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.3
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.195
+Fattore falli (casa/trasferta, da dati reali): 1.019
+Fattore duelli (casa/trasferta, da dati reali): 1.019
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.974
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.973
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.990
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 1.021
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.020
+Fattore trend (media ultime 5: 43.2 vs media ultime 10: 47.8): 0.877
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T01:30
+Casa: San Diego FC | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.6 +/- 18.9
+  (range: 24.7 - 62.5)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.01
+Punteggio REALE ottenuto in quella partita: 61.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.3    37.3     -6.0    23.6        SI
+   7        7      45.2    46.9     +1.7    21.5        SI
+   8        8      44.4    50.0     +5.6    19.9        SI
+   9        9      41.7    76.1    +34.4    18.6        NO
+  10       10      46.4    46.0     -0.4    21.9        SI
+  11       11      38.9    45.3     +6.4    20.5        SI
+  12       12      51.4    35.1    -16.3    19.2        SI
+  13       13      61.8    28.4    -33.4    18.7        NO
+  14       14      49.0    61.4    +12.3    18.8        SI
+
+MAE (errore assoluto medio): 12.97
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
