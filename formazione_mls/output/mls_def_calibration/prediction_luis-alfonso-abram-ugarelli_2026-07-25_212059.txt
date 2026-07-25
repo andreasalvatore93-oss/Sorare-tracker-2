@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:20:59.819037Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) luis-alfonso-abram-ugarelli: 14 pt attesi (2-27)
+======================================================================
+
+######################################################################
+# GIOCATORE: luis-alfonso-abram-ugarelli
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luis-alfonso-abram-ugarelli (squadra: sporting-cristal-lima)
+Generato: 2026-07-25T21:20:59.818836Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 19
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: primera-division-pe (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-03 | CRI vs UCM | primera-division-pe | score=43.2 | peso=0.680
+  2026-04-19 | CRI vs UTC | primera-division-pe | score=31.2 | peso=0.735
+  2026-04-22 | GRA vs CRI | primera-division-pe | score=39.6 | peso=0.794
+  2026-05-03 | CRI vs GAR | primera-division-pe | score=34.6 | peso=0.857
+  2026-05-15 | FCC vs CRI | primera-division-pe | score=60.0 | peso=0.926
+  2026-05-31 | CIE vs CRI | primera-division-pe | score=30.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 39.92
+Deviazione standard pesata: 10.52
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.45 (differenza: +6.06)
+Media score in casa: 36.35 | Media score fuori casa: 43.30
+Fattore casa/trasferta applicato: 1.020 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.8
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.868
+Fattore falli (casa/trasferta, da dati reali): 1.012
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.022
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.022
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 0.950
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.019
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T01:00
+Casa: FBC Melgar | Trasferta: Club Sporting Cristal SAC
+Competizione: primera-division-pe
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 14.4 +/- 12.6
+  (range: 1.7 - 27.0)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.33
+Punteggio REALE ottenuto in quella partita: 30.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
