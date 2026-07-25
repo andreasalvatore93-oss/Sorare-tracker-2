@@ -1,0 +1,98 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:37:03.095386Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) alvaro-barreal: 33 pt attesi (8-59)
+======================================================================
+
+######################################################################
+# GIOCATORE: alvaro-barreal
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: alvaro-barreal (squadra: santos-santos-sao-paulo)
+Generato: 2026-07-25T21:37:03.094429Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-29 | SAN vs SCR | campeonato-brasileiro-serie-a | score=42.0 | peso=0.500
+  2025-12-03 | JUV vs SAN | campeonato-brasileiro-serie-a | score=33.9 | peso=0.530
+  2025-12-07 | SAN vs CRU | campeonato-brasileiro-serie-a | score=46.0 | peso=0.561
+  2026-02-04 | SAN vs SPA | campeonato-brasileiro-serie-a | score=46.9 | peso=0.595
+  2026-03-15 | SAN vs COR | campeonato-brasileiro-serie-a | score=33.0 | peso=0.630
+  2026-03-19 | SAN vs INT | campeonato-brasileiro-serie-a | score=40.6 | peso=0.667
+  2026-03-22 | CRU vs SAN | campeonato-brasileiro-serie-a | score=35.7 | peso=0.707
+  2026-04-05 | FLA vs SAN | campeonato-brasileiro-serie-a | score=18.4 | peso=0.749
+  2026-04-19 | SAN vs FLU | campeonato-brasileiro-serie-a | score=66.6 | peso=0.794
+  2026-05-02 | PAL vs SAN | campeonato-brasileiro-serie-a | score=24.5 | peso=0.841
+  2026-05-10 | SAN vs BRA | campeonato-brasileiro-serie-a | score=64.3 | peso=0.891
+  2026-05-30 | SAN vs VIT | campeonato-brasileiro-serie-a | score=69.1 | peso=0.944
+  2026-07-16 | BOT vs SAN | campeonato-brasileiro-serie-a | score=73.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 47.71
+Deviazione standard pesata: 18.16
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.34 (differenza: +2.82)
+Media score in casa: 51.06 | Media score fuori casa: 37.16
+Fattore casa/trasferta applicato: 0.974 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.2
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.095
+Fattore falli (casa/trasferta, da dati reali): 0.975
+Fattore duelli (casa/trasferta, da dati reali): 1.018
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.983
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore trend (media ultime 5: 59.6 vs media ultime 10: 47.2): 1.200
+P(gioca): 56.52% (fonte: tasso di presenza storico (13/23))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T00:00
+Casa: São Paulo FC | Trasferta: Santos FC Sao Paulo
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 33.4 +/- 25.4
+  (range: 7.9 - 58.8)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.66
+Punteggio REALE ottenuto in quella partita: 73.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +28.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=29.0+trend_int=1.3' (half_life=9.0, range_mult=1.6, opp_sens=29.0, trend_int=1.3)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      31.1    35.7     +4.6     8.6        SI
+   7        7      23.7    18.4     -5.3     8.3        SI
+   8        8      27.7    66.6    +38.9    14.6        NO
+   9        9      26.3    24.5     -1.8    21.9        SI
+  10       10      31.5    64.3    +32.8    22.2        NO
+  11       11      46.9    69.1    +22.2    25.0        SI
+  12       12      47.7    73.3    +25.6    27.4        SI
+
+MAE (errore assoluto medio): 18.73
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
