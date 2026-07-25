@@ -25,13 +25,15 @@ DIFFERENZE STRUTTURALI CHIAVE rispetto agli altri ruoli:
   fattore/bonus separato nella formula, NON tramite il normale
   extract_group_score sui gruppi granulari (che leggerebbe sempre 0).
 
-Formula (adattata: niente fattore_azioni_difensive/fattore_goalkeeping, che
-richiedevano DEFENDING assente; NUOVO fattore_clean_sheet_bonus dedicato):
+Formula IN PRODUZIONE (FIX 25/07: i fattori granulari sono stati rimossi
+dallo score_atteso -- la calibrazione che ha fissato i parametri li
+escludeva gia' (use_granular_factors=False, peggioravano il MAE per questo
+ruolo), ma la produzione li applicava comunque prima di questo fix. Restano
+calcolati e mostrati in output SOLO a scopo diagnostico):
   score_atteso = P(gioca) x media_pesata_esponenziale(N partite)
                  x fattore_casa_trasferta x fattore_forza_avversario
-                 x fattore_falli x fattore_passaggio x fattore_eventi_rari
-                 x fattore_gol_subiti x fattore_trend
-                 [+ bonus_clean_sheet gestito separatamente, vedi sotto]
+                 x fattore_trend
+                 [+ bonus_clean_sheet gia' incorporato nella media pesata, vedi sotto]
   range_confidenza = +/- dev_std_pesata * RANGE_MULTIPLIER
 
 PARAMETRI: riusati gli stessi valori dei difensori come punto di partenza
@@ -1174,10 +1176,18 @@ def build_prediction(player_slug):
     fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(
         scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
 
+    # FIX (25/07): i fattori granulari NON entrano piu' nello score_atteso di
+    # produzione. La calibrazione che ha fissato i parametri sopra (grid
+    # search su 12 portieri) ha scelto la combinazione vincente SENZA
+    # fattori granulari (use_granular_factors=False in rigorous_backtest,
+    # vedi commento su TREND_INTENSITY), perche' peggioravano sempre il
+    # risultato per questo ruolo. Prima di questo fix la produzione li
+    # includeva comunque, per cui il MAE/copertura mostrati (calcolati sul
+    # backtest senza granulari) non descrivevano la formula realmente usata.
+    # I fattori restano calcolati sopra e nel result dict solo a scopo
+    # diagnostico/di visualizzazione nell'output.
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
-                    * fattore_falli * fattore_possesso * fattore_offensivo * fattore_eventi_rari
-                    * fattore_passaggio * fattore_goalkeeping
-                    * fattore_gol_subiti * fattore_trend)
+                    * fattore_trend)
     range_conf = dev_std_pesata * RANGE_MULTIPLIER  # moltiplicatore aggiornato dal grid search (24/07)
 
     # --- Backtest SEMPLICE: riapplica solo la componente media "a ritroso" sull'ultima partita nota ---
@@ -1304,13 +1314,15 @@ def format_output(result):
     lines.append(f"Ranking medio avversari affrontati (storico): {opp_rank_hist_str}")
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
     lines.append(f"Fattore forza avversario applicato: {result['fattore_forza_avversario']:.3f}")
-    lines.append(f"Fattore falli (casa/trasferta, da dati reali): {result['fattore_falli']:.3f}")
-    lines.append(f"Fattore possesso (casa/trasferta, da dati reali): {result['fattore_possesso']:.3f}")
-    lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali): {result['fattore_offensivo']:.3f}")
-    lines.append(f"Fattore eventi rari (rigori/autogol/errori, con cap): {result['fattore_eventi_rari']:.3f}")
-    lines.append(f"Fattore passaggio (accurate_pass/final_third/att_assist): {result['fattore_passaggio']:.3f}")
-    lines.append(f"Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci): {result['fattore_goalkeeping']:.3f}")
-    lines.append(f"Fattore gol subiti (goals_conceded, con cap): {result['fattore_gol_subiti']:.3f}")
+    lines.append("NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello "
+                 "score atteso (calibrazione 25/07: peggioravano il MAE per il portiere).")
+    lines.append(f"Fattore falli (casa/trasferta, da dati reali, non applicato): {result['fattore_falli']:.3f}")
+    lines.append(f"Fattore possesso (casa/trasferta, da dati reali, non applicato): {result['fattore_possesso']:.3f}")
+    lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali, non applicato): {result['fattore_offensivo']:.3f}")
+    lines.append(f"Fattore eventi rari (rigori/autogol/errori, con cap, non applicato): {result['fattore_eventi_rari']:.3f}")
+    lines.append(f"Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): {result['fattore_passaggio']:.3f}")
+    lines.append(f"Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): {result['fattore_goalkeeping']:.3f}")
+    lines.append(f"Fattore gol subiti (goals_conceded, con cap, non applicato): {result['fattore_gol_subiti']:.3f}")
     lines.append(f"Tasso storico clean sheet (porta inviolata nei primi 60'): {result['clean_sheet_rate']:.1%} "
                  f"(bonus atteso incorporato nella media pesata: ~{result['bonus_clean_sheet_atteso']:.1f}pt)")
     if result['trend_avg_short'] is not None:
