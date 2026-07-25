@@ -82,6 +82,7 @@ WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per gioca
 HALF_LIFE_GAMES = 12.0  # FISSATO (25/07): combinazione vincente aggregata cross-player (14 giocatori, MAE medio 18.13, copertura media 68.93%)
 RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 1.4, non 1.6 come nel tentativo precedente; la copertura ideale viene dalla combinazione GIUSTA di tutti i parametri insieme, non dal range preso da solo
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
+SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.7  # FISSATO (25/07): idem — trend leggermente attenuato rispetto al comportamento originale (1.0)
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.70  # NUOVO: sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente)
@@ -585,13 +586,21 @@ def compute_split_factor(values, is_home_flags, target_is_home):
 
     context_avg = home_avg if target_is_home else away_avg
 
-    # I valori granulari possono essere negativi (es. falli) o vicini a zero,
-    # quindi non possiamo dividere direttamente come per lo score totale (sempre
-    # positivo). Convertiamo in un DELTA rispetto alla media generale, poi lo
-    # trasformiamo in un moltiplicatore centrato su 1.0 con un fattore di scala
-    # conservativo (ogni punto di delta sposta il moltiplicatore di 0.01 = 1%).
+    # FIX (25/07, audit logica): il delta viene normalizzato per la deviazione
+    # standard STORICA del gruppo stesso, invece di una scala fissa "1%/punto"
+    # identica per ogni gruppo -- che rendeva i gruppi a bassa magnitudine
+    # (es. RARE_EVENTS_STATS cappato +-10pt) sostanzialmente inerti (~1.00
+    # sempre) e i gruppi ad alta magnitudine (es. GOALKEEPING_STATS, decine di
+    # punti/partita) sproporzionatamente sensibili. Con la normalizzazione,
+    # ogni gruppo/ruolo ha sensibilita' comparabile: un giocatore che devia
+    # sistematicamente (es. un difensore con molti piu' falli in trasferta)
+    # ottiene un fattore che si muove davvero, il rumore statistico attorno
+    # alla media resta vicino a 1.0.
+    variance = sum((v - overall_avg) ** 2 for v in all_vals) / len(all_vals)
+    std_dev = variance ** 0.5
     delta = context_avg - overall_avg
-    fattore = 1.0 + (delta * 0.01)
+    delta_normalizzato = (delta / std_dev) if std_dev > 0 else 0.0
+    fattore = 1.0 + (delta_normalizzato * SPLIT_FACTOR_SCALE_PER_STD)
     return max(0.7, min(1.3, fattore))  # limitato per evitare correzioni estreme
 
 
