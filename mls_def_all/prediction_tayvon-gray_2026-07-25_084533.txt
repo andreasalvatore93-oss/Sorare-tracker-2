@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:45:33.674885Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) tayvon-gray: 45 pt attesi (20-70)
+======================================================================
+
+######################################################################
+# GIOCATORE: tayvon-gray
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tayvon-gray (squadra: new-york-city-new-york-new-york)
+Generato: 2026-07-25T08:45:33.673779Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-23 | LA vs NYC | mlspa | score=70.9 | peso=0.445
+  2026-03-01 | PHI vs NYC | mlspa | score=78.9 | peso=0.472
+  2026-03-07 | NYC vs ORL | mlspa | score=92.2 | peso=0.500
+  2026-03-14 | NYC vs RAP | mlspa | score=58.5 | peso=0.530
+  2026-03-22 | NYC vs MIA | mlspa | score=56.2 | peso=0.561
+  2026-04-04 | NYC vs STL | mlspa | score=64.9 | peso=0.595
+  2026-04-11 | VAN vs NYC | mlspa | score=36.7 | peso=0.630
+  2026-04-18 | NYC vs CLT | mlspa | score=44.6 | peso=0.667
+  2026-04-22 | NYC vs CIN | mlspa | score=68.3 | peso=0.707
+  2026-04-25 | MTL vs NYC | mlspa | score=18.7 | peso=0.749
+  2026-05-10 | NYC vs CLB | mlspa | score=39.2 | peso=0.794
+  2026-05-13 | CLT vs NYC | mlspa | score=68.0 | peso=0.841
+  2026-05-16 | RBNY vs NYC | mlspa | score=49.3 | peso=0.891
+  2026-05-24 | NSH vs NYC | mlspa | score=47.5 | peso=0.944
+  2026-07-22 | CLB vs NYC | mlspa | score=36.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 52.70
+Deviazione standard pesata: 17.78
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.34 (differenza: +4.44)
+Media score in casa: 60.55 | Media score fuori casa: 50.75
+Fattore casa/trasferta applicato: 1.088 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.828
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.013
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.011
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.016
+Fattore trend (media ultime 5: 48.0 vs media ultime 10: 47.3): 1.014
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: New York City FC | Trasferta: Chicago Fire FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.9 +/- 24.9
+  (range: 20.0 - 69.8)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.49
+Punteggio REALE ottenuto in quella partita: 36.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.0' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.9    36.7    -15.2    14.8        NO
+   7        7      63.8    44.6    -19.2    20.2        SI
+   8        8      54.8    68.3    +13.5    20.3        SI
+   9        9      71.9    18.7    -53.2    19.0        NO
+  10       10      54.3    39.2    -15.2    25.1        SI
+  11       11      37.4    68.0    +30.6    24.3        NO
+  12       12      45.3    49.3     +4.0    23.5        SI
+  13       13      37.1    47.5    +10.3    22.2        SI
+  14       14      50.3    36.0    -14.3    21.1        SI
+
+MAE (errore assoluto medio): 19.51
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
