@@ -1,0 +1,100 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:16:32.425803Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jonathan-bamba: 27 pt attesi (2-52)
+======================================================================
+
+######################################################################
+# GIOCATORE: jonathan-bamba
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jonathan-bamba (squadra: chicago-fire-bridgeview-illinois)
+Generato: 2026-07-25T22:16:32.424689Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | CHI vs NYC | mlspa | score=38.6 | peso=0.445
+  2025-09-21 | MIN vs CHI | mlspa | score=52.7 | peso=0.472
+  2025-09-28 | CHI vs CLB | mlspa | score=46.1 | peso=0.500
+  2025-09-30 | MIA vs CHI | mlspa | score=29.3 | peso=0.530
+  2025-10-23 | CHI vs ORL | mlspa | score=46.0 | peso=0.561
+  2025-10-26 | PHI vs CHI | mlspa | score=86.7 | peso=0.595
+  2025-11-01 | CHI vs PHI | mlspa | score=24.6 | peso=0.630
+  2026-03-08 | CLB vs CHI | mlspa | score=47.6 | peso=0.667
+  2026-03-15 | CHI vs DC | mlspa | score=45.5 | peso=0.707
+  2026-03-21 | PHI vs CHI | mlspa | score=81.1 | peso=0.749
+  2026-04-05 | CHI vs NSH | mlspa | score=72.5 | peso=0.794
+  2026-04-12 | CHI vs ATL | mlspa | score=60.0 | peso=0.841
+  2026-05-09 | CHI vs RBNY | mlspa | score=46.5 | peso=0.891
+  2026-05-13 | DC vs CHI | mlspa | score=26.5 | peso=0.944
+  2026-07-22 | MIA vs CHI | mlspa | score=50.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 50.61
+Deviazione standard pesata: 17.79
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.07 (differenza: +2.73)
+Media score in casa: 47.47 | Media score fuori casa: 53.41
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.1
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.892
+Fattore falli (casa/trasferta, da dati reali): 0.991
+Fattore duelli (casa/trasferta, da dati reali): 1.017
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.022
+Fattore trend (media ultime 5: 51.1 vs media ultime 10: 54.1): 0.961
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: New York City FC | Trasferta: Chicago Fire FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 27.2 +/- 24.9
+  (range: 2.3 - 52.1)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.68
+Punteggio REALE ottenuto in quella partita: 50.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.6x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.5    24.6    -35.9    30.2        NO
+   7        7      49.8    47.6     -2.2    31.7        SI
+   8        8      44.5    45.5     +1.0    29.2        SI
+   9        9      55.9    81.1    +25.2    27.1        SI
+  10       10      37.3    72.5    +35.2    31.4        NO
+  11       11      62.0    60.0     -2.0    31.5        SI
+  12       12      55.3    46.5     -8.8    29.8        SI
+  13       13      57.6    26.5    -31.1    28.5        NO
+  14       14      39.3    50.0    +10.7    30.0        SI
+
+MAE (errore assoluto medio): 16.90
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
