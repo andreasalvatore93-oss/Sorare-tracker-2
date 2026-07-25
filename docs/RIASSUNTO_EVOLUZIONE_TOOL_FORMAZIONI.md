@@ -82,14 +82,14 @@ Tutti i parametri (`HALF_LIFE_GAMES`, `RANGE_MULTIPLIER`, `OPPONENT_SENSITIVITY`
 `TREND_INTENSITY`) sono FISSI in produzione, decisi da un grid search di calibrazione (72
 combinazioni testate in backtest rigoroso, min. 6 partite di storico per ogni punto testato).
 
-### Parametri fissati attuali (calibrati sui soli posseduti, campione piccolo — vedi sezione 6)
+### Parametri fissati attuali (aggiornato 26/07/2026 — vedi sezione 7)
 
 | Ruolo | half_life | range_mult | opp_sens | trend_int | granulari? | Campione calibrazione |
 |---|---|---|---|---|---|---|
-| GK | 9.0 | 1.6 | 20.0 | 0.7 | NO | 12 posseduti |
-| DEF | 9.0 | 1.2 | 29.0 | 1.3 | SÌ | 45 posseduti |
-| MID | 12.0 | 1.4 | 29.0 | 0.7 | SÌ | 19 posseduti |
-| FWD | 12.0 | 1.4 | 29.0 | 0.7 | SÌ | 14 posseduti |
+| GK | 9.0 | 1.6 | 20.0 | 0.7 | NO | 12 posseduti (non ancora aggiornato: campione allargato ancora insufficiente, 2-3 giocatori) |
+| DEF | 12.0 | 1.2 | 29.0 | 0.7 | NO | 68 giocatori MLS qualificati (calibrazione allargata pesata per n_test) |
+| MID | 12.0 | 1.4 | 29.0 | 0.7 | NO | 65 giocatori MLS qualificati (idem) |
+| FWD | 12.0 | 1.4 | 29.0 | 0.7 | NO | 37 giocatori MLS qualificati (idem) |
 
 ## 4. Storia evolutiva
 
@@ -221,3 +221,44 @@ formazione) prima di considerare chiusa questa fase di affinamento del modello.
 L'intera infrastruttura (discovery globale, filtro qualità, calibrazione a batch) è pensata per
 essere riusabile su altri campionati in futuro, usando l'esperienza MLS come riferimento — non
 implementato, solo l'intento dichiarato dall'utente.
+
+## 9. Calibrazione allargata conclusa e pesata per n_test (26/07/2026)
+
+Dopo la sezione 7, la calibrazione allargata è stata portata a termine per tutti e 4 i ruoli e
+**pesata per numero di partite di backtest disponibili per giocatore** (fix importante: un
+giocatore con 1 sola partita testata pesava nell'aggregazione quanto uno con 9, pur essendo il
+suo MAE l'errore di un singolo evento anziché una stima stabile — scoperto analizzando un caso
+FWD dove l'effetto dei granulari per singolo giocatore variava da -5 a +5 di MAE ma la media si
+cancellava quasi a zero). Fix in `aggregate_grid_search.py`: esclude giocatori con
+`n_test < MIN_TEST_GAMES` (default 3), pesa il resto per n_test. Campo `n_test` ora salvato
+direttamente nel `grid.json` di ogni giocatore (nuovi run) per non dipendere più dal parsing dei
+file di testo.
+
+**Risultato**: DEF/MID/FWD convergono tutti su `half_life=12.0, opponent_sensitivity=29.0,
+trend_intensity=0.7`, **senza fattori granulari** — molto più coerente tra ruoli di quanto
+suggerisse la prima aggregazione non pesata. GK non aggiornato (campione insufficiente, solo 2-3
+giocatori con abbastanza storico).
+
+**Scoperta tecnica collaterale importante**: il flag "granulari sì/no" non era in realtà un vero
+interruttore in produzione — controllava solo il backtest diagnostico mostrato in output, mentre
+la formula reale di `score_atteso` (quella che costruisce le formazioni) moltiplicava SEMPRE tutti
+i fattori granulari per DEF/MID/FWD, a differenza di GK dove erano già correttamente rimossi
+(hardcoded). Corretto: i granulari sono ora rimossi anche dallo `score_atteso` reale di DEF/MID/FWD.
+
+**Decisione presa e validata con un confronto A/B reale** (5 formazioni vecchio vs nuovo modello
+sui posseduti dell'utente): caso Antino Lopez (DEF che gioca il 25% delle ultime 40 partite ma con
+picchi isolati) sovrappesato a capitano dal vecchio modello (86pt), riportato a un valore più
+realistico dal nuovo (75pt, non più capitano) a favore di Carles Gil (centrocampista stabile, gioca
+quasi sempre) — verificato contro le statistiche Sorare reali dei due giocatori. Parametri sopra
+ora UFFICIALI in produzione (non più sperimentali). Dettaglio completo della sessione in
+`docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` sezione 7.
+
+**Prossimo tema in coda** (da un brainstorm più ampio richiesto dall'utente, "una settimana per
+migliorare il modello", affrontato UN TEMA ALLA VOLTA): il Finding 4 di sezione 5
+(condizionamento 2D venue+avversario, correlazione slot formazione GK-DEF-FWD) resta il più
+maturo/prioritario — c'era un task in background per una proposta di design ma l'utente non è
+riuscito a recuperarlo, quindi si riparte da zero su questo tema quando arriva il suo turno.
+Altri temi in backlog (dettaglio in RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md sezione 7E):
+robustezza statistica del backtest (campioni piccoli per giocatore), feature aggiuntive
+(infortuni, calendario congestionato), gestione outlier/hot-streak, monitoraggio MAE live in
+produzione, estensione ad altri campionati.

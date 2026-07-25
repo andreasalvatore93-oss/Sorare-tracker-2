@@ -4,6 +4,12 @@
 lavoro** (l'utente alterna due account, poca/nessuna memoria condivisa tra sessioni). Non
 presupporre nessun contesto pregresso: tutto quello che serve è qui dentro.
 
+**Aggiornato 26/07/2026**: la sessione del 25/07 descritta nelle sezioni 1-6 sotto si è conclusa
+con la decisione presa in una sessione successiva (26/07) — vedi sezione 7 in fondo per lo stato
+CORRENTE (parametri di produzione FINALIZZATI per DEF/MID/FWD, non più "da decidere"). Le sezioni
+1-6 restano come cronistoria di come ci si è arrivati, ma se cerchi solo "qual è lo stato adesso"
+salta direttamente alla sezione 7.
+
 Repo: `Sorare-tracker-2` (github.com/andreasalvatore93-oss/Sorare-tracker-2), cartella locale
 `C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2`, branch `main`. Stato scritto qui: **tutto
 già pushato su GitHub** salvo diversa indicazione esplicita più sotto — verificare comunque con
@@ -210,3 +216,113 @@ git push origin main
 - `.github/workflows/grid_search_calibrazione.yml` — batch grid search allargato
 - `.github/workflows/grid_search_aggregate.yml` — aggregazione via CI (opzionale, si può fare in locale)
 - `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md` — storia/architettura completa del tool (documento vivo)
+
+## 7. Aggiornamento 26/07/2026 — decisione presa, parametri di produzione FINALIZZATI
+
+Continuazione della sessione sopra, in un account diverso. Riepilogo di quello che è successo,
+in ordine:
+
+### A. Batch FWD completato + aggregazione (chiudeva il punto 1-2 della sezione 3)
+
+Lanciato il batch mancante (139 attaccanti qualificati, 0 job falliti). Aggregazione (non pesata,
+prima versione): hl=9.0, range=1.4x, opp_sens=29.0, trend=1.0, senza granulari, MAE 16.76,
+copertura 68.0%, 41 giocatori. Committato (`11016946`).
+
+### B. Scoperto e corretto un bug di fondo nell'aggregazione: media non pesata per n_test
+
+Analizzando il caso FWD, l'effetto dei fattori granulari per SINGOLO giocatore variava da -5 a +5
+di MAE tra combinazioni con/senza — ma la media aggregata su 41 giocatori si cancellava quasi a
+zero (+0.07 medio, std 1.42). Causa: il MAE per-giocatore viene da un backtest rigoroso con
+`min_history=6`, e la finestra di partite testate per giocatore è spesso minuscola (mediana 7,
+alcuni con solo 1-3 partite) — un giocatore con 1 sola partita testata pesava nella media quanto
+uno con 9, ma il suo "MAE" è di fatto l'errore di un singolo evento, non una stima stabile.
+Verificato con dati: i 2 casi più estremi (`osvaldo-pedro-capemba` -5.1, `matias-coccaro-ferreira`
+-1.57) avevano entrambi `n_test=1`; correlazione moderata (-0.39) tra n_test e ampiezza dell'effetto.
+
+**Fix** in `formazione_mls/calibrazione/aggregate_grid_search.py`: esclude i giocatori con meno di
+`MIN_TEST_GAMES` (env, default 3) partite di backtest dall'aggregazione, e pesa MAE/copertura dei
+rimanenti per `n_test` invece di una media semplice per-giocatore. `n_test` ora salvato
+direttamente nel campo `n_test` del `grid.json` di ogni giocatore in tutti e 4 gli script
+`test_<ruolo>.py` (per i run futuri); fallback al parsing di "Partite testate" dal
+`prediction_<slug>_*.txt` per i dati già raccolti del 25/07 (che non avevano ancora questo campo).
+Rieseguita l'aggregazione pesata su DEF/MID/FWD con i dati già su disco (nessun nuovo run GitHub
+necessario). Commit `ee16fd44`/`a3afc2dc`.
+
+**Risultato pesato (min 3 partite di backtest), molto più coerente del non pesato**:
+
+| Ruolo | half_life | range | opp_sens | trend | granulari | MAE | copertura | n_gioc (partite pesate) |
+|---|---|---|---|---|---|---|---|---|
+| GK (invariato, campione insufficiente: solo 2 con n_test>=3) | 12.0 | 1.2 | 29.0 | 0.7 | NO | 18.42 | 69.4% | 3 |
+| DEF | 12.0 | 1.2 | 29.0 | 0.7 | NO | 16.28 | 67.5% | 68 (517 partite) |
+| MID | 12.0 | 1.4 | 29.0 | 0.7 | NO | 15.55 | 70.9% | 65 (492 partite) |
+| FWD | 12.0 | 1.4 | 29.0 | 0.7 | NO | 17.33 | 68.2% | 37 (255 partite) |
+
+Tutti e tre i ruoli con dati sufficienti (DEF/MID/FWD) convergono sugli STESSI parametri
+(`hl=12.0, opp_sens=29.0, trend=0.7`, senza granulari) — molto più coerente del risultato non
+pesato precedente (che per FWD divergeva su hl=9.0/trend=1.0, inquinato da singoli match).
+
+### C. Scoperta tecnica importante: il flag "granulari sì/no" non esisteva davvero in produzione
+
+Il flag `use_granular_factors` passato a `rigorous_backtest` controllava SOLO il backtest
+diagnostico mostrato nell'output testuale — la formula REALE di `score_atteso` usata per
+costruire le formazioni (in DEF/MID/FWD) moltiplicava SEMPRE tutti i fattori granulari
+incondizionatamente, indipendentemente da cosa diceva la calibrazione. GK invece li aveva già
+rimossi correttamente dalla formula reale (hardcoded). **Fix**: rimossi i fattori granulari anche
+dallo `score_atteso` reale di DEF/MID/FWD (stesso pattern di GK) — senza questo fix, applicare i
+nuovi parametri "senza granulari" non avrebbe avuto alcun effetto pratico sulle formazioni.
+
+### D. Confronto A/B su formazioni reali + decisione dell'utente
+
+Applicati i parametri pesati a DEF/MID/FWD (GK invariato) e lanciata una run reale
+(`formazione_completa.yml`, num_formazioni=5), confrontata con l'ultima run precedente col vecchio
+modello (anch'essa 5 formazioni). Risultato: TOTALE COMPLESSIVO 1577 -> 1653 pt (+4.8%), con
+riordinamenti interessanti — caso più chiaro: **Antino Lopez** (DEF che gioca solo il 25% delle
+ultime 40 partite storiche, ma con picchi isolati come 86/81) era capitano nel vecchio modello a
+86pt (sovrappesato dagli half_life/trend più reattivi e dai granulari non normalizzati), nel nuovo
+modello scende a un più realistico 75pt/non più capitano; **Carles Gil** (centrocampista che gioca
+quasi sempre, 100% presenze ultime 5/10, media stabile 67-70) sale correttamente a capitano.
+Verificato contro le statistiche Sorare reali dei due giocatori (screenshot diretto dall'utente) —
+il nuovo modello descrive meglio "chi performa in modo affidabile" vs "chi ha avuto un picco
+isolato di fortuna". **Nota**: le due run distano ~5 ore con partite MLS in corso nel mezzo, quindi
+parte della differenza numerica potrebbe venire da dati aggiornati (starter odds/nuove partite),
+non solo dal cambio di parametri — ma il caso Antino Lopez/Carles Gil è un confronto diretto,
+concettualmente pulito, e ha convinto l'utente.
+
+**Decisione presa (26/07)**: parametri UFFICIALI (non più "test") in produzione:
+- **DEF**: `hl=12.0, range=1.2, opp_sens=29.0, trend=0.7`, SENZA granulari (era hl=9.0/trend=1.3/CON granulari)
+- **MID**: `hl=12.0, range=1.4, opp_sens=29.0, trend=0.7`, SENZA granulari (era trend=1.0/CON granulari, resto invariato)
+- **FWD**: `hl=12.0, range=1.4, opp_sens=29.0, trend=0.7`, SENZA granulari (numeri invariati, solo granulari rimossi)
+- **GK**: INVARIATO (`hl=9.0, range=1.6, opp_sens=20.0, trend=0.7`, senza granulari) — campione
+  troppo piccolo (2-3 giocatori) per fidarsi di un'aggregazione pesata, da rivedere quando si avrà
+  più storico.
+
+Commit di finalizzazione: `2e9fa0eb`/`f246973e`. Tutto pushato su `origin/main`.
+
+### E. Prossimi passi (in ordine, sostituisce la sezione 3 sopra)
+
+1. **Finding 3+F** dell'audit logico (condizionamento 2D venue+forza avversario invece che
+   separati; correlazione tra slot della formazione: bonus sinergia GK+DEF stessa partita,
+   penalità anti-sinergia GK vs FWD avversario) — vedi `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`
+   sezione 5. C'era un task in background (`task_c858ec41`, lanciato dall'utente in un'altra
+   sessione locale) per una proposta di design — **mai verificato se ha prodotto un output**,
+   l'utente non sa come controllarlo da qui: chiedere se l'ha trovato, altrimenti si riparte da
+   zero su questo tema quando arriva il suo turno.
+2. **GK**: ricalibrare quando si avrà un campione più ampio di giocatori con storico sufficiente
+   (oggi solo 2-3 qualificati con n_test>=3) — non prioritario, resta backlog.
+3. **Backlog di idee più ampio** (26/07, l'utente ha dichiarato "una settimana di tempo per
+   implementare e migliorare il modello", da affrontare UNA ALLA VOLTA, scegliendo insieme
+   l'approccio prima di implementare — non procedere in autonomia su più fronti):
+   - Robustezza statistica del backtest: campioni piccoli per giocatore (vedi punto B sopra),
+     possibile cross-validation temporale o bootstrap sui giocatori per capire quanto è stabile
+     la "combinazione vincente", split train/validation espliciti.
+   - Feature aggiuntive non sfruttate: infortuni/squalifiche imminenti, calendario congestionato
+     (rotazione/turnover), modulo tattico (bassa priorità).
+   - Gestione outlier/hot-streak non sostenibili: pesare la media storica anche per "affidabilità"
+     (numero di presenze recenti, non solo half-life), rilevamento automatico di picchi isolati
+     da attenuare (caso Antino Lopez come esempio concreto).
+   - Monitoraggio continuo: MAE "live" calcolato in produzione (score_atteso pubblicato vs score
+     reale ottenuto), non solo backtest retrospettivo.
+   - Estensione dell'infrastruttura (discovery globale + filtro qualità + calibrazione a batch) ad
+     altri campionati oltre MLS, come test di generalizzazione.
+4. Lavoro indipendente/non correlato in corso su un ALTRO filone (bot di trading
+   `bots/bot_definitivo.py`) — vedi sezione 4 sopra, non mischiare.
