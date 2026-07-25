@@ -177,7 +177,7 @@ AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
 AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'))
 
 # --- Soglia di margine DINAMICA (analisi log reali, 25/07) ---------------------------
-# Analizzati gli ultimi 10 run del workflow "Bot Supremo test no play" (bot_supremo_test.py,
+# Analizzati gli ultimi 10 run del workflow "Bot definitivo" (bots/bot_definitivo.py,
 # stessa identica logica di ricerca affari di questo file): su 1669 margini calcolati da
 # evaluate_event nei log reali, la distribuzione e' fortemente concentrata sui valori
 # bassi (mediana 1.8%, p90=9.3%, p95=12.7%, p97=16.1%, p99=22.4%, massimo osservato 53%).

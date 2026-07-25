@@ -175,7 +175,7 @@ MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACT
 
 # --- Soglie di margine DINAMICHE (analisi log reali, 25/07) ---------------------------
 # Stessa analisi fatta per autobuy_sorare.py (vedi commento gemello li'): analizzati gli
-# ultimi 10 run del workflow "Bot Supremo test no play" (bot_supremo_test.py, stessa
+# ultimi 10 run del workflow "Bot definitivo" (bots/bot_definitivo.py, stessa
 # identica logica di ricerca affari di questo file). Su 1669 margini calcolati nei log
 # reali: mediana 1.8%, p85~7%, p90=9.3%, p95=12.7%, p97=16.1%, p99=22.4%. Le soglie
 # statiche attuali (10%-19%) cadono gia' in una zona ragionevole della distribuzione
@@ -998,7 +998,7 @@ OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'
 # NON e' calibrato su un tasso di accettazione storico delle offerte: i log Actions
 # disponibili in questa sessione mostrano solo "OFFERTA INVIATA CON SUCCESSO" (l'invio e'
 # riuscito lato server), MAI se il venditore l'ha poi accettata, rifiutata o lasciata
-# scadere -- quel dato non e' osservabile dai log del workflow "Bot Supremo test no play"
+# scadere -- quel dato non e' osservabile dai log del workflow "Bot definitivo"
 # analizzati (servirebbe interrogare lo storico offerte giorni dopo, fuori scope di
 # questa sessione). Questa e' quindi una logica di MERCATO, non un pattern osservato:
 # un "affare" con margine appena sopra la soglia minima (caso limite, il piu' fragile --
