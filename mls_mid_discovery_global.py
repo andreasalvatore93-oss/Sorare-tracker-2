@@ -1,0 +1,183 @@
+"""
+mls_mid_discovery_global.py
+
+Discovery GLOBALE di tutti i centrocampisti MLS in_season attivi (NON solo
+quelli posseduti dall'utente) — usata per allargare il campione del grid
+search di calibrazione, non per l'uso finale (schierare la formazione, che
+resta sui soli giocatori posseduti via mls_mid_discovery.py).
+
+Approccio: per ognuna delle 30 squadre MLS (slug Sorare confermati dal vivo
+via query Competition/stages, 25/07), interroga Club(slug).anyPlayers per
+ottenere il roster completo, poi filtra lato client per posizione Midfielder
+(anyPositions/cardPositions del giocatore). Nessuno scope utente richiesto:
+questa query e' pubblica.
+
+Output: mls_mid_discovery_global/player_slugs.json — lista JSON di slug
+giocatore centrocampista unici, deduplicati su tutte le 30 squadre.
+"""
+import os
+import json
+import time
+import datetime
+import requests
+
+try:
+    from curl_cffi import requests as curl_requests
+    _HAS_CURL_CFFI = True
+except ImportError:
+    _HAS_CURL_CFFI = False
+
+GRAPHQL_URL = 'https://api.sorare.com/graphql'
+OUTPUT_DIR = 'mls_mid_discovery_global'
+
+# Slug ufficiali confermati dal vivo (query Competition/stages, 25/07) — 30/30
+MLS_TEAM_SLUGS = [
+    # Eastern Conference (15)
+    'nashville-sc',
+    'inter-miami',
+    'chicago-fire-bridgeview-illinois',
+    'new-england-foxborough-massachusetts',
+    'cincinnati-cincinnati-ohio',
+    'new-york-city-new-york-new-york',
+    'charlotte-fc-charlotte-north-carolina',
+    'new-york-rb-secaucus-new-jersey',
+    'dc-united-washington-district-of-columbia',
+    'orlando-city-lake-mary-florida',
+    'columbus-crew-columbus-ohio',
+    'toronto-toronto',
+    'montreal-impact-montreal-quebec',
+    'atlanta-united-atlanta-georgia',
+    'philadelphia-union-chester-pennsylvania',
+    # Western Conference (15)
+    'vancouver-whitecaps-vancouver-british-columbia',
+    'sj-earthquakes-santa-clara-california',
+    'los-angeles-fc-los-angeles-california',
+    'real-salt-lake-salt-lake-city-utah',
+    'dallas-frisco-texas',
+    'seattle-sounders-renton-washington',
+    'houston-dynamo-houston-texas',
+    'st-louis-city-st-louis-missouri',
+    'minnesota-united-minneapolis-saint-paul-minnesota',
+    'la-galaxy-los-angeles-california',
+    'colorado-rapids-denver-colorado',
+    'portland-timbers-portland-oregon',
+    'san-diego-san-diego',
+    'austin-austin-texas',
+    'sporting-kc-kansas-city-kansas',
+]
+
+COOKIES = os.environ.get('SORARE_COOKIE', '')
+
+if _HAS_CURL_CFFI:
+    _http_session = curl_requests.Session(impersonate="chrome")
+else:
+    _http_session = requests.Session()
+
+
+def log(msg):
+    ts = datetime.datetime.utcnow().isoformat() + 'Z'
+    print(f"[{ts}] [mls_mid_discovery_global] {msg}")
+
+
+def graphql_query(query, variables=None, operation_name=None):
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    if COOKIES:
+        headers['Cookie'] = COOKIES
+    payload = {'query': query, 'variables': variables or {}}
+    if operation_name:
+        payload['operationName'] = operation_name
+
+    backoff = 1.0
+    for attempt in range(5):
+        try:
+            resp = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+            if resp.status_code == 429:
+                retry_after = resp.headers.get('Retry-After')
+                sleep_s = float(retry_after) if retry_after else backoff
+                log(f"[429] tentativo {attempt+1}/5, attesa {sleep_s:.1f}s")
+                time.sleep(sleep_s)
+                backoff *= 2
+                continue
+            if resp.status_code >= 400:
+                log(f"[ERRORE HTTP {resp.status_code}] body (primi 1500 char): {resp.text[:1500]}")
+                return {}
+            data = resp.json()
+            if data.get('errors'):
+                log(f"[ERRORE GraphQL] {json.dumps(data['errors'], ensure_ascii=False)[:1500]}")
+            return data
+        except Exception as e:
+            log(f"[ECCEZIONE] {e}")
+            time.sleep(backoff)
+            backoff *= 2
+    return {}
+
+
+# Query per una singola squadra: roster completo (anyPlayers, che include sia
+# giocatori con card Sorare "Player" che eventuali altri sport-agnostic — per
+# il calcio e' sempre Player). anyPositions per filtrare lato client.
+TEAM_ROSTER_QUERY = """
+query TeamRoster($slug: String!, $first: Int!) {
+  club(slug: $slug) {
+    slug
+    name
+    anyPlayers(first: $first) {
+      nodes {
+        slug
+        displayName
+        anyPositions
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_team_midfielders(team_slug):
+    """Ritorna la lista di slug centrocampista per una squadra, filtrando
+    lato client su anyPositions contenente 'Midfielder'."""
+    data = graphql_query(TEAM_ROSTER_QUERY, {"slug": team_slug, "first": 50},
+                          operation_name="TeamRoster")
+    club = (data.get('data') or {}).get('club')
+    if not club:
+        log(f"[{team_slug}] ATTENZIONE: nessun dato club restituito. "
+            f"Risposta: {json.dumps(data, ensure_ascii=False)[:500]}")
+        return []
+
+    nodes = (club.get('anyPlayers') or {}).get('nodes') or []
+    midfielders = [
+        n['slug'] for n in nodes
+        if n.get('slug') and 'Midfielder' in (n.get('anyPositions') or [])
+    ]
+    log(f"[{team_slug}] {len(nodes)} giocatori totali, {len(midfielders)} centrocampisti.")
+    return midfielders
+
+
+def main():
+    log(f"Avvio discovery GLOBALE centrocampisti MLS su {len(MLS_TEAM_SLUGS)} squadre...")
+
+    all_slugs = set()
+    for idx, team_slug in enumerate(MLS_TEAM_SLUGS, 1):
+        log(f"[{idx}/{len(MLS_TEAM_SLUGS)}] Squadra: {team_slug}")
+        mids = fetch_team_midfielders(team_slug)
+        all_slugs.update(mids)
+        time.sleep(0.3)
+
+    slugs = sorted(all_slugs)
+    log(f"Totale centrocampisti MLS unici trovati: {len(slugs)}")
+
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+    out_path = os.path.join(OUTPUT_DIR, 'player_slugs.json')
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump(slugs, f, ensure_ascii=False, indent=2)
+
+    log(f"Salvati {len(slugs)} slug in {out_path}")
+
+    github_output = os.environ.get('GITHUB_OUTPUT')
+    if github_output:
+        with open(github_output, 'a', encoding='utf-8') as f:
+            f.write(f"player_slugs={json.dumps(slugs)}\n")
+
+
+if __name__ == '__main__':
+    main()
