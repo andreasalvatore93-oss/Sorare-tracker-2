@@ -42,10 +42,6 @@ on:
         description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-100)"
         required: false
         default: "10"
-      autobuy_diagnostic:
-        description: "Log extra sul confronto in_season/classic per lega, di default spento"
-        required: false
-        default: "no"
       blacklisted_player_slugs:
         description: "Slug giocatori da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
         required: false
@@ -64,10 +60,6 @@ on:
         default: "3"
       min_listed_cards_diagnostic:
         description: "'si' = logga anche quando il controllo 'carte in vendita minime' PASSA (utile per verificare che il controllo giri su ogni candidato durante il test). 'no' = logga solo gli scarti, come tutti gli altri controlli."
-        required: false
-        default: "no"
-      min_non_trigger_log:
-        description: "'si' = log dedicato per il meccanismo 'trigger su minimo non allineato' (offerta sul vero minimo di mercato quando l'annuncio che ha fatto scattare l'evento non e' il minimo) -- solo ramo MakeOffer. 'no' = meccanismo attivo comunque, ma silenzioso."
         required: false
         default: "no"
       blacklisted_manager_slugs:
@@ -147,13 +139,11 @@ jobs:
           LIQUIDITY_DIAGNOSTIC: "no"
           RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS: ${{ github.event.inputs.rate_limit_notify_cooldown_seconds || '300' }}
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '10' }}
-          AUTOBUY_DIAGNOSTIC: ${{ github.event.inputs.autobuy_diagnostic || 'no' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
           MIN_LISTED_CARDS_FOR_PURCHASE: ${{ github.event.inputs.min_listed_cards_for_purchase || '3' }}
           MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
-          MIN_NON_TRIGGER_LOG: ${{ github.event.inputs.min_non_trigger_log || 'no' }}
           BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
           BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
