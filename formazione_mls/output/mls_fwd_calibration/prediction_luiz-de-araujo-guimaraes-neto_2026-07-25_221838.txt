@@ -1,0 +1,71 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:18:38.465085Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) luiz-de-araujo-guimaraes-neto: 0 pt attesi (-32-32)
+======================================================================
+
+######################################################################
+# GIOCATORE: luiz-de-araujo-guimaraes-neto
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luiz-de-araujo-guimaraes-neto (squadra: flamengo-rio-de-janeiro-rio-de-janeiro)
+Generato: 2026-07-25T22:18:38.464892Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-26 | CAM vs FLA | campeonato-brasileiro-serie-a | score=45.6 | peso=0.841
+  2026-03-19 | FLA vs REM | campeonato-brasileiro-serie-a | score=97.4 | peso=0.891
+  2026-05-03 | FLA vs VAS | campeonato-brasileiro-serie-a | score=42.1 | peso=0.944
+  2026-05-30 | FLA vs CBA | campeonato-brasileiro-serie-a | score=46.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 57.42
+Deviazione standard pesata: 22.67
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 61.90 | Media score fuori casa: 45.60
+Fattore casa/trasferta applicato: 1.009 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 14.8
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 0.905
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.013
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.010
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T21:30
+Casa: CR Flamengo | Trasferta: São Paulo FC
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 0.0 +/- 31.7
+  (range: -31.7 - 31.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.61
+Punteggio REALE ottenuto in quella partita: 46.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -15.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
