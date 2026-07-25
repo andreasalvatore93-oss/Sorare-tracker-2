@@ -378,6 +378,98 @@ def fetch_game_detail(score_id, cache, is_final):
 
 
 # ---------------------------------------------------------------------------
+# CACHE INCREMENTALE DEL GAME LOG (25/07, retrofit dal ruolo difensore dove
+# e' stata introdotta per prima). Cache separata da quella dei DETTAGLI
+# granulari (fetch_game_detail sopra, gia' esistente) — questa e' per il
+# game log BASE (score, data, status, minutaggio, teams), non il
+# detailedScore. Una volta che una partita e' FINAL viene salvata su disco e
+# non richiede piu' una query completa nelle run successive.
+# ---------------------------------------------------------------------------
+
+GAME_LOG_CACHE_DIR = os.path.join(OUTPUT_DIR, '.game_log_cache')
+GAME_LOG_REFRESH_COUNT = 5  # partite piu' recenti da riscaricare sempre ad ogni run, per scoprire eventuali novita'
+
+
+def load_game_log_cache(player_slug):
+    if not os.path.exists(GAME_LOG_CACHE_DIR):
+        os.makedirs(GAME_LOG_CACHE_DIR)
+    cache_file = os.path.join(GAME_LOG_CACHE_DIR, f'{player_slug}_gamelog.json')
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            try:
+                return json.load(f), cache_file
+            except json.JSONDecodeError:
+                return {}, cache_file
+    return {}, cache_file
+
+
+def save_game_log_cache(cache, cache_file):
+    with open(cache_file, 'w', encoding='utf-8') as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+
+
+def fetch_game_log_incremental(slug, target_window_size):
+    """Versione incrementale di fetch_game_log: usa una cache su disco per
+    evitare di riscaricare partite storiche gia' note e concluse (FINAL).
+    Vedi test_def.py per la documentazione completa della strategia."""
+    cache, cache_file = load_game_log_cache(slug)
+    n_cached_final = sum(1 for v in cache.values() if v.get('scoreStatus') == 'FINAL')
+
+    log(f"[FASE 1/4] Cache game log per {slug}: {len(cache)} partite in cache "
+        f"({n_cached_final} FINAL).")
+
+    if n_cached_final >= target_window_size:
+        fetch_count = GAME_LOG_REFRESH_COUNT
+        log(f"[FASE 1/4] Cache sufficiente ({n_cached_final} >= {target_window_size}), "
+            f"refresh leggero: richiesta solo ultime {fetch_count} partite.")
+    else:
+        fetch_count = max(target_window_size * 2, 30)
+        log(f"[FASE 1/4] Cache insufficiente ({n_cached_final} < {target_window_size}), "
+            f"fetch ampio: richiesta ultime {fetch_count} partite (fallback non-incrementale).")
+
+    data = graphql_query(ALL_GAME_SCORES_QUERY, {"slug": slug, "first": fetch_count},
+                          operation_name="AllPlayerGameScores")
+
+    if not data or data.get('errors') or 'data' not in data:
+        log("[FASE 1/4] ATTENZIONE: query fallita o con errori — uso SOLO la cache esistente "
+            "come fallback (se presente).")
+        past_from_cache = sorted(cache.values(), key=lambda n: (n.get('anyGame') or {}).get('date', ''),
+                                  reverse=True)
+        return past_from_cache, []
+
+    player = data.get('data', {}).get('anyPlayer')
+    if player is None:
+        log(f"[FASE 1/4] FALLITA: 'anyPlayer' e' null per slug '{slug}'.")
+        past_from_cache = sorted(cache.values(), key=lambda n: (n.get('anyGame') or {}).get('date', ''),
+                                  reverse=True)
+        return past_from_cache, []
+
+    fetched_past = (player.get('allPlayerGameScores', {}) or {}).get('nodes', []) or []
+    future = (player.get('anyFutureGames', {}) or {}).get('nodes', []) or []
+
+    updated_count = 0
+    for node in fetched_past:
+        node_id = node.get('id')
+        if not node_id:
+            continue
+        was_final_before = cache.get(node_id, {}).get('scoreStatus') == 'FINAL'
+        cache[node_id] = node
+        if not was_final_before:
+            updated_count += 1
+
+    save_game_log_cache(cache, cache_file)
+    log(f"[FASE 1/4] Cache aggiornata: {updated_count} partite nuove/aggiornate, "
+        f"{len(cache)} totali in cache ora.")
+
+    past_from_cache = sorted(cache.values(), key=lambda n: (n.get('anyGame') or {}).get('date', ''),
+                              reverse=True)
+
+    log(f"[FASE 1/4] OK: {len(past_from_cache)} partite passate (da cache+fetch), "
+        f"{len(future)} future.")
+    return past_from_cache, future
+
+
+# ---------------------------------------------------------------------------
 # Logica di calcolo
 # ---------------------------------------------------------------------------
 
@@ -713,7 +805,7 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
 
 def build_prediction(player_slug):
     log("[FASE 1/4] Avvio recupero game log...")
-    past_games, future_games = fetch_game_log(player_slug, first=30)
+    past_games, future_games = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
     if not past_games:
         log("[FASE 1/4] INTERROTTO: nessuna partita passata trovata, impossibile procedere oltre.")
         return None
