@@ -1,0 +1,100 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:17:04.534721Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) juan-luis-anangono-leon: 64 pt attesi (39-89)
+======================================================================
+
+######################################################################
+# GIOCATORE: juan-luis-anangono-leon
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: juan-luis-anangono-leon (squadra: leones-del-norte-atuntaqui)
+Generato: 2026-07-25T22:17:04.533699Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: liga-pro (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-23 | GUA vs LEO | liga-pro | score=37.2 | peso=0.445
+  2026-04-05 | LEO vs DEL | liga-pro | score=38.2 | peso=0.472
+  2026-04-11 | BAR vs LEO | liga-pro | score=48.6 | peso=0.500
+  2026-04-17 | LEO vs AUC | liga-pro | score=43.2 | peso=0.530
+  2026-04-22 | LEO vs MAN | liga-pro | score=75.9 | peso=0.561
+  2026-04-25 | IVA vs LEO | liga-pro | score=29.2 | peso=0.595
+  2026-05-03 | LEO vs EME | liga-pro | score=31.6 | peso=0.630
+  2026-05-17 | LEO vs MUS | liga-pro | score=65.0 | peso=0.667
+  2026-05-24 | TUN vs LEO | liga-pro | score=35.8 | peso=0.707
+  2026-06-01 | LEO vs MAC | liga-pro | score=64.5 | peso=0.749
+  2026-07-04 | LIB vs LEO | liga-pro | score=85.5 | peso=0.794
+  2026-07-10 | LEO vs UCA | liga-pro | score=33.2 | peso=0.841
+  2026-07-15 | LEO vs CUE | liga-pro | score=73.4 | peso=0.891
+  2026-07-18 | LDU vs LEO | liga-pro | score=49.3 | peso=0.944
+  2026-07-23 | LEO vs GUA | liga-pro | score=38.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 50.82
+Deviazione standard pesata: 17.92
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.18 (differenza: +2.74)
+Media score in casa: 51.49 | Media score fuori casa: 47.60
+Fattore casa/trasferta applicato: 0.985 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.223
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.019
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.020
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 56.0 vs media ultime 10: 50.6): 1.074
+P(gioca): 93.75% (fonte: tasso di presenza storico (15/16))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T18:15
+Casa: Delfín SC | Trasferta: CD Leones del Norte
+Competizione: liga-pro
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 64.4 +/- 25.1
+  (range: 39.3 - 89.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.15
+Punteggio REALE ottenuto in quella partita: 38.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -13.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=20.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.6    31.6    -16.0    18.5        SI
+   7        7      53.0    65.0    +12.0    18.0        SI
+   8        8      56.3    35.8    -20.5    19.1        NO
+   9        9      37.0    64.5    +27.5    18.2        NO
+  10       10      53.1    85.5    +32.4    18.7        NO
+  11       11      35.1    33.2     -1.9    22.9        SI
+  12       12      53.9    73.4    +19.5    22.8        SI
+  13       13      49.2    49.3     +0.1    23.2        SI
+  14       14      60.3    38.4    -21.9    22.0        SI
+
+MAE (errore assoluto medio): 16.85
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
