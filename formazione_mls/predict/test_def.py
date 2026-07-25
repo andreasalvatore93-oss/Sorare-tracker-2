@@ -93,11 +93,11 @@ def load_player_slugs():
 PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per giocatore, budget complessita' API limitato)
-HALF_LIFE_GAMES = 12.0  # TEST (26/07): calibrazione allargata pesata per n_test (68 difensori, min 3 partite di backtest) -- combinazione vincente hl=12.0/range=1.2/opp_sens=29.0/trend_int=0.7 SENZA granulari, MAE medio 16.28, copertura 67.5%. Sostituisce il valore precedente (hl=9.0/trend=1.3, 45 posseduti, prima del fix Finding 3 e della pesatura per n_test). Run di confronto in corso, non ancora una decisione definitiva.
+HALF_LIFE_GAMES = 12.0  # FISSATO (26/07): calibrazione allargata pesata per n_test (68 difensori, min 3 partite di backtest) -- combinazione vincente hl=12.0/range=1.2/opp_sens=29.0/trend_int=0.7 SENZA granulari, MAE medio 16.28, copertura 67.5%. Sostituisce il valore precedente (hl=9.0/trend=1.3, 45 posseduti, prima del fix Finding 3 e della pesatura per n_test). Confermato dall'utente dopo confronto A/B su formazioni reali (caso Antino Lopez, vedi git log).
 RANGE_MULTIPLIER = 1.2  # invariato
 OPPONENT_SENSITIVITY = 29.0  # invariato
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto) -- non piu' applicato in produzione per DEF (granulari rimossi da score_atteso, vedi sotto), resta per il grid search/diagnostica
-TREND_INTENSITY = 0.7  # TEST (26/07): idem, vedi HALF_LIFE_GAMES sopra
+TREND_INTENSITY = 0.7  # FISSATO (26/07): idem, vedi HALF_LIFE_GAMES sopra
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale, causava esclusioni indesiderate nel grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1182,12 +1182,12 @@ def build_prediction(player_slug):
     fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(
         scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
 
-    # TEST (26/07): granulari rimossi dallo score_atteso reale, come gia' fatto
-    # per GK -- calibrazione allargata pesata per n_test (68 difensori,
+    # FISSATO (26/07): granulari rimossi dallo score_atteso reale, come gia'
+    # fatto per GK -- calibrazione allargata pesata per n_test (68 difensori,
     # min 3 partite di backtest) indica che senza granulari generalizza meglio
     # (MAE 16.28 vs 16.35 con). I fattori restano calcolati sopra e nel result
-    # dict solo a scopo diagnostico/di visualizzazione nell'output. Run di
-    # confronto in corso, non ancora una decisione definitiva.
+    # dict solo a scopo diagnostico/di visualizzazione nell'output. Confermato
+    # dall'utente dopo confronto A/B su formazioni reali.
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_trend)
     range_conf = dev_std_pesata * RANGE_MULTIPLIER  # moltiplicatore aggiornato dal grid search (24/07)
