@@ -3492,21 +3492,54 @@ def run_listener(eth_rate):
             f"{stats['price_filtered']}, carte in season elaborate: {stats['processed']}, "
             f"casi validi trovati: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
 
-    ws = websocket.WebSocketApp(
-        WS_URL,
-        header=[f"Cookie: {COOKIES}"] if COOKIES else [],
-        on_open=on_open,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close,
-    )
+    # FIX 25/07 (richiesta esplicita utente -- run interrotta a 0/10 senza motivo
+    # apparente, causa piu' probabile una disconnessione WebSocket normale, rete o
+    # lato Sorare): prima un singolo ws.run_forever() chiudeva l'intera run non
+    # appena la connessione cadeva per QUALUNQUE motivo, anche molto prima di
+    # LISTEN_SECONDS o di AUTOBUY_TARGET_MATCHES. Ora si riconnette automaticamente
+    # finche' resta tempo sulla deadline totale, fermandosi SOLO per: deadline
+    # raggiunta, target di casi raggiunto, o stop per fondi insufficienti.
+    RECONNECT_DELAY_SECONDS = float(os.environ.get('RECONNECT_DELAY_SECONDS', '5'))
+    deadline = time.monotonic() + LISTEN_SECONDS
+    tentativo = 0
+    while True:
+        tempo_rimanente = deadline - time.monotonic()
+        if tempo_rimanente <= 0:
+            log("[listener] tempo LISTEN_SECONDS esaurito, chiudo.")
+            break
+        if stats["_closed_target"] or stats["_closed_insufficient_funds"]:
+            break
 
-    timer = threading.Timer(LISTEN_SECONDS, ws.close)
-    timer.daemon = True
-    timer.start()
+        tentativo += 1
+        if tentativo > 1:
+            log(f"[riconnessione] tentativo #{tentativo}, tempo rimanente "
+                f"~{tempo_rimanente / 60:.1f} minuti")
 
-    ws.run_forever(ping_interval=60, ping_timeout=45)
-    timer.cancel()
+        ws = websocket.WebSocketApp(
+            WS_URL,
+            header=[f"Cookie: {COOKIES}"] if COOKIES else [],
+            on_open=on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
+        )
+
+        timer = threading.Timer(tempo_rimanente, ws.close)
+        timer.daemon = True
+        timer.start()
+
+        ws.run_forever(ping_interval=60, ping_timeout=45)
+        timer.cancel()
+
+        if stats["_closed_target"] or stats["_closed_insufficient_funds"]:
+            break
+        if deadline - time.monotonic() <= 0:
+            log("[listener] tempo LISTEN_SECONDS esaurito, chiudo.")
+            break
+        log(f"[riconnessione] connessione WebSocket chiusa inaspettatamente (rete o lato "
+            f"Sorare), riconnessione tra {RECONNECT_DELAY_SECONDS:.0f}s...")
+        time.sleep(RECONNECT_DELAY_SECONDS)
+
     # Aspetta che eventuali valutazioni ancora in corso nel pool finiscano
     # (es. un'offerta/acquisto gia' avviato) prima di chiudere -- niente
     # tentativi troncati a meta' solo perche' la connessione WebSocket si e'
