@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T21:52:39.350439Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) noel-caliskan: 54 pt attesi (36-72)
+======================================================================
+
+######################################################################
+# GIOCATORE: noel-caliskan
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: noel-caliskan (squadra: real-salt-lake-salt-lake-city-utah)
+Generato: 2026-07-25T21:52:39.349430Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 17
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-19 | STL vs RSL | mlspa | score=38.6 | peso=0.445
+  2026-02-22 | VAN vs RSL | mlspa | score=62.6 | peso=0.472
+  2026-03-01 | RSL vs SEA | mlspa | score=38.8 | peso=0.500
+  2026-03-08 | ATL vs RSL | mlspa | score=48.3 | peso=0.530
+  2026-03-15 | RSL vs ATX | mlspa | score=53.7 | peso=0.561
+  2026-03-22 | SD vs RSL | mlspa | score=53.9 | peso=0.595
+  2026-04-04 | RSL vs SKC | mlspa | score=78.9 | peso=0.630
+  2026-04-19 | RSL vs SD | mlspa | score=51.4 | peso=0.667
+  2026-04-23 | RSL vs MIA | mlspa | score=49.4 | peso=0.707
+  2026-04-26 | LA vs RSL | mlspa | score=44.2 | peso=0.749
+  2026-05-02 | RSL vs POR | mlspa | score=65.8 | peso=0.794
+  2026-05-10 | DAL vs RSL | mlspa | score=61.9 | peso=0.841
+  2026-05-17 | RSL vs RAP | mlspa | score=60.6 | peso=0.891
+  2026-05-23 | MIN vs RSL | mlspa | score=44.3 | peso=0.944
+  2026-07-23 | LAFC vs RSL | mlspa | score=82.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 56.95
+Deviazione standard pesata: 12.98
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.24 (differenza: +2.75)
+Media score in casa: 56.94 | Media score fuori casa: 54.48
+Fattore casa/trasferta applicato: 0.981 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.1
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.101
+Fattore falli (casa/trasferta, da dati reali): 1.017
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.015
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.019
+Fattore gol subiti (goals_conceded, con cap): 0.979
+Fattore trend (media ultime 5: 62.9 vs media ultime 10: 59.2): 1.062
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T02:30
+Casa: Portland Timbers | Trasferta: Real Salt Lake
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.1 +/- 18.2
+  (range: 35.9 - 72.3)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.26
+Punteggio REALE ottenuto in quella partita: 82.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +27.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.6    78.9    +18.3     9.8        NO
+   7        7      62.0    51.4    -10.6    16.1        SI
+   8        8      39.2    49.4    +10.2    14.8        SI
+   9        9      53.3    44.2     -9.1    13.8        SI
+  10       10      63.0    65.8     +2.8    13.4        SI
+  11       11      47.5    61.9    +14.4    13.7        NO
+  12       12      59.0    60.6     +1.6    13.2        SI
+  13       13      53.1    44.3     -8.8    12.5        SI
+  14       14      40.4    82.0    +41.6    12.6        NO
+
+MAE (errore assoluto medio): 13.03
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
