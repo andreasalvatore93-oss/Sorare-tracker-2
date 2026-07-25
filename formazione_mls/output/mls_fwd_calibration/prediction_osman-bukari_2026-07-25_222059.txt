@@ -1,0 +1,100 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:20:59.272546Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) osman-bukari: 29 pt attesi (13-45)
+======================================================================
+
+######################################################################
+# GIOCATORE: osman-bukari
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: osman-bukari (squadra: austin-austin-texas)
+Generato: 2026-07-25T22:20:59.271586Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 21
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-06-01 | SD vs ATX | mlspa | score=36.0 | peso=0.445
+  2025-06-08 | RAP vs ATX | mlspa | score=58.1 | peso=0.472
+  2025-06-15 | ATX vs RBNY | mlspa | score=67.1 | peso=0.500
+  2025-07-13 | ATX vs NE | mlspa | score=52.5 | peso=0.530
+  2025-07-17 | LA vs ATX | mlspa | score=38.0 | peso=0.561
+  2025-07-26 | DC vs ATX | mlspa | score=71.6 | peso=0.595
+  2025-08-10 | ATX vs HOU | mlspa | score=60.4 | peso=0.630
+  2025-08-17 | ATX vs DAL | mlspa | score=43.0 | peso=0.667
+  2025-08-23 | MTL vs ATX | mlspa | score=41.6 | peso=0.707
+  2025-08-31 | ATX vs SJ | mlspa | score=64.5 | peso=0.749
+  2025-09-07 | SKC vs ATX | mlspa | score=40.0 | peso=0.794
+  2025-09-14 | DAL vs ATX | mlspa | score=35.3 | peso=0.841
+  2025-10-05 | ATX vs STL | mlspa | score=43.3 | peso=0.891
+  2025-10-12 | ATX vs LAFC | mlspa | score=44.1 | peso=0.944
+  2025-10-30 | LAFC vs ATX | mlspa | score=36.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 47.56
+Deviazione standard pesata: 11.62
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.19 (differenza: +1.43)
+Media score in casa: 53.56 | Media score fuori casa: 44.61
+Fattore casa/trasferta applicato: 0.984 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 1.022
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.987
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.988
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 39.8 vs media ultime 10: 48.0): 0.880
+P(gioca): 71.43% (fonte: tasso di presenza storico (15/21))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T18:00
+Casa: FK Crvena Zvezda Beograd | Trasferta: Larne FC
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 29.1 +/- 16.3
+  (range: 12.8 - 45.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.77
+Punteggio REALE ottenuto in quella partita: 36.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.0' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.4    60.4     +9.0    16.3        SI
+   7        7      49.3    43.0     -6.3    15.0        SI
+   8        8      61.3    41.6    -19.7    14.8        NO
+   9        9      40.2    64.5    +24.3    14.6        NO
+  10       10      68.3    40.0    -28.3    14.5        NO
+  11       11      40.9    35.3     -5.6    14.6        SI
+  12       12      43.9    43.3     -0.6    15.1        SI
+  13       13      37.2    44.1     +6.9    14.4        SI
+  14       14      37.1    36.3     -0.8    13.7        SI
+
+MAE (errore assoluto medio): 11.28
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
