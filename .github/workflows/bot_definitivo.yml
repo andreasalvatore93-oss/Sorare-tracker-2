@@ -1,4 +1,4 @@
-name: Bot Supremo test no play
+name: Bot definitivo
 on:
   workflow_dispatch:
     inputs:
@@ -165,7 +165,7 @@ jobs:
           export MAKEOFFER_MAX_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MAX_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
           export AUTOBUY_MARGIN_FRACTION=$(awk -v p="$AUTOBUY_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
           export OFFER_DISCOUNT_FRACTION=$(awk -v p="$OFFER_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
-          python bots/bot_supremo_test.py
+          python bots/bot_definitivo.py
       - name: Commit lista nera unica (manager, giocatori, thin market, cooldown acquisti)
         if: always()
         run: |
