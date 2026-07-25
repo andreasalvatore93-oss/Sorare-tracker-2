@@ -1,0 +1,74 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T08:04:52.527142Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) gustav-berggren: 15 pt attesi (3-27)
+======================================================================
+
+######################################################################
+# GIOCATORE: gustav-berggren
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gustav-berggren (squadra: new-york-rb-secaucus-new-jersey)
+Generato: 2026-07-25T08:04:52.526946Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-27 | RBNY vs NYC | mlspa | score=32.2 | peso=0.794
+  2025-10-04 | RBNY vs CIN | mlspa | score=45.7 | peso=0.841
+  2025-10-18 | CLB vs RBNY | mlspa | score=45.6 | peso=0.891
+  2026-04-25 | CIN vs RBNY | mlspa | score=46.9 | peso=0.944
+  2026-05-24 | SKC vs RBNY | mlspa | score=60.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 46.74
+Deviazione standard pesata: 8.80
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 0.60 (differenza: +8.20)
+Media score in casa: 38.95 | Media score fuori casa: 50.83
+Fattore casa/trasferta applicato: 0.868 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.952
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.984
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.025
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.985
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T22:30
+Casa: New York Red Bulls | Trasferta: Charlotte FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 15.1 +/- 12.3
+  (range: 2.7 - 27.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.91
+Punteggio REALE ottenuto in quella partita: 60.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
