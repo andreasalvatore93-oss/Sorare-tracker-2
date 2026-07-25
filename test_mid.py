@@ -1154,16 +1154,16 @@ def format_output(result):
         lines.append("Dati insufficienti per il backtest.")
 
     lines.append("")
-    lines.append("--- PARAMETRI DEL MODELLO (fissati, 25/07) ---")
+    lines.append("--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---")
     lines.append(f"half_life={HALF_LIFE_GAMES}, range_mult={RANGE_MULTIPLIER}, "
-                 f"opp_sens={OPPONENT_SENSITIVITY}, trend_int={TREND_INTENSITY}")
-    lines.append("Combinazione scelta tramite grid search aggregato su 14 giocatori "
-                 "(MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' "
-                 "ad ogni esecuzione: questi valori sono ora costanti nel codice.")
+                 f"opp_sens={OPPONENT_SENSITIVITY}, trend_int={TREND_INTENSITY} (usati per la predizione sopra)")
+    lines.append("Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati "
+                 "vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — "
+                 "i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.")
 
     lines.append("")
     lines.append("--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---")
-    rbt = result.get('rigorous_backtest', {})
+    rbt = result.get('rigorous_backtest') or {}
     rbt_rows = rbt.get('rows', [])
     if rbt_rows:
         lines.append(f"Combinazione usata: '{rbt.get('label', '?')}' "
@@ -1187,8 +1187,9 @@ def format_output(result):
                      "storica, la formula COMPLETA (media pesata + fattore casa/trasferta + "
                      "fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili "
                      "PRIMA di quella partita, poi confrontata con lo score reale ottenuto. "
-                     "I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 "
-                     "giocatori — non variano piu' da esecuzione a esecuzione.")
+                     "Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO "
+                     "giocatore — la combinazione vincente definitiva emergera' dall'aggregazione "
+                     "cross-player nel job 'aggregate'.")
     else:
         lines.append("Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).")
 
