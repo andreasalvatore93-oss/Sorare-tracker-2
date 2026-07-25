@@ -1,6 +1,8 @@
 # Handoff sessione 25/07 (seconda parte) — per continuare su un altro account Claude Code
 
-Repo: `Sorare-tracker-2`, branch `main`. Tutto lo stato descritto qui è già **committato e pushato** su GitHub (ultimo commit `bbcbd257`), quindi la nuova sessione può ripartire semplicemente con `git pull` — non c'è lavoro locale non salvato da recuperare.
+**AGGIORNATO — versione finale prima del passaggio di sessione (utente al 94% di utilizzo).**
+
+Repo: `Sorare-tracker-2`, branch `main`. Tutto lo stato descritto qui è già **committato e pushato** su GitHub (ultimo commit `5753070f`), quindi la nuova sessione può ripartire semplicemente con `git pull` — non c'è lavoro locale non salvato da recuperare.
 
 ## 1. Cosa NON interrompere subito
 
@@ -42,30 +44,48 @@ Root passata da ~65 file sparsi a una struttura per cartelle:
 - **Bug reale trovato e corretto DOPO il push**: lo step "Install sorare-sign dependencies" in 6 workflow (`autobuy.yml`, `bot_supremo.yml`, `bot_supremo_aste.yml`, `bot_supremo_test.yml`, `makeoffer.yml`, `test_signature.yml`) faceva ancora `cd sorare-sign` invece di `cd bots/sorare-sign` — scoperto dal primo run reale post-riorganizzazione (fallito), corretto e ripushato, poi ri-verificato con un nuovo run (quello attualmente in corso, vedi punto 1).
 - **Lezione per la prossima riorganizzazione**: quando si sposta una cartella, cercare SEMPRE anche riferimenti `cd <cartella>` dentro gli step shell dei workflow, non solo `run: python <script>` — è facile che sfuggano.
 
-### E. Audit logico del modello (agente worktree, completato)
-Lanciato un agente in un worktree isolato per revisionare la formula di scoring dei 4 ruoli (`formazione_mls/predict/test_*.py`) cercando errori di logica nel peso dei fattori. **Findings principali** (per impatto):
+### E. Audit logico del modello (agente worktree, completato) + 2 fix applicati
 
-1. **[CORRETTO in questa sessione]** GK: la produzione applicava 7 fattori granulari che la calibrazione aveva scartato (peggioravano il MAE). Fix applicato: rimossi dallo `score_atteso`, restano solo diagnostici in output con nota "non applicato". Commit `cc489748`.
-2. **[DA VALUTARE]** La scala fissa "1%/punto" in `compute_split_factor` (identica per ogni gruppo granulare, ogni ruolo) rende quasi tutti i fattori granulari inerti (0.98-1.01) tranne `fattore_goalkeeping` del GK — probabilmente perché i gruppi hanno scale di valori molto diverse (RARE_EVENTS ±10pt cap vs GOALKEEPING senza cap, decine di punti). I cap ±10 sono di fatto ridondanti con questa scala. Proposta agente: normalizzare la scala per la variabilità tipica di ogni gruppo (es. delta/deviazione standard storica invece di 1% assoluto), o eliminare i gruppi strutturalmente inerti.
-3. **[DA VALUTARE]** L'effetto casa/trasferta viene contato più volte: una volta sul totale (`fattore_casa_trasferta`) e di nuovo dentro OGNI fattore granulare correlato (moltiplicati insieme). Impatto reale contenuto (perché i granulari sono quasi inerti, punto 2) ma sistematico.
-4. **[MINORE]** Mix di medie pesate (base esponenziale) e non pesate (fattori casa/trasferta e granulari) — incoerenza concettuale, impatto modesto.
-5. **[MINORE]** P(gioca) di fallback (quando manca starterOddsBasisPoints) ha il denominatore troncato dal `break` che riempie la finestra — lieve sovrastima della presenza storica, scatta raramente.
-- **Verificato CORRETTO** (nessun bug): segno del fattore forza avversario (coerente nei 4 ruoli), clamp del trend applicato dopo la scalatura per `trend_intensity`, nessun doppio conteggio del bonus clean sheet portiere. Il "rischio di prodotto esplosivo" (0.7^7 per troppi fattori clampati moltiplicati) **non si verifica mai** nei dati reali.
+Lanciato un agente in un worktree isolato per revisionare la formula di scoring dei 4 ruoli (`formazione_mls/predict/test_*.py`) cercando errori di logica nel peso dei fattori. **Stato dei findings** (per impatto):
 
-**Prossimo passo suggerito dall'utente**: prima di lanciare la discovery globale (punto F), affinare il modello sui dati che già abbiamo — quindi valutare/implementare i Finding 2-5 insieme all'utente, uno alla volta, PRIMA di ricalibrare con più dati (la ricalibrazione con la discovery globale è un'attività separata e successiva).
+1. **✅ CORRETTO (commit `cc489748`)** — GK: la produzione applicava 7 fattori granulari che la calibrazione aveva scartato (peggioravano il MAE). Fix: rimossi dallo `score_atteso` di `test_gk.py`, restano solo diagnostici in output con nota esplicita "non applicato".
+
+2. **✅ CORRETTO (commit `ae95d460`)** — La scala fissa "1%/punto" in `compute_split_factor` (identica per ogni gruppo granulare, ogni ruolo — funzione BYTE-IDENTICA nei 4 file, verificato con md5sum prima di modificare) rendeva quasi tutti i fattori granulari inerti (0.98-1.01, verificato sui dati reali) tranne `fattore_goalkeeping` del GK, per via delle scale di valori molto diverse tra gruppi (RARE_EVENTS ±10pt cap vs GOALKEEPING senza cap, decine di punti).
+   **Fix applicato**: il delta casa/trasferta ora si normalizza per la deviazione standard STORICA del gruppo stesso (nuova costante `SPLIT_FACTOR_SCALE_PER_STD = 0.05`, cioè 5% per deviazione standard), applicato identicamente nei 4 file. Così ogni gruppo/ruolo ha sensibilità comparabile.
+   **Verifica fatta**: solo `py_compile` (sintassi) + un **test sintetico locale** con dati inventati che conferma la logica matematica (gruppo piccolo con pattern reale ora si muove ±1.4-1.6% invece di restare a 1.000; gruppo grande ha sensibilità comparabile ±4-5%; nessuna variabilità → resta esattamente 1.0 senza crash da divisione per zero; rumore puro senza pattern → resta vicino a 1.0).
+   **⚠️ NON ANCORA VERIFICATO con un run reale end-to-end** (richiede chiamate API live, non fattibile in locale senza SORARE_COOKIE/SORARE_CSRF). **Prossimo passo consigliato per la nuova sessione**: lanciare `formazione_completa.yml` con `num_formazioni=1` e controllare nei `prediction_*.txt` prodotti che i fattori granulari si muovano in modo sensato (non più quasi-sempre 1.000, ma nemmeno valori assurdi/esplosi) prima di fidarsi ciecamente del fix in produzione.
+
+3. **DA VALUTARE (non ancora affrontato)** — L'effetto casa/trasferta viene contato più volte: una volta sul totale (`fattore_casa_trasferta`) e di nuovo dentro OGNI fattore granulare correlato (moltiplicati insieme). **Diventato più rilevante dopo il fix del punto 2** (ora che i granulari si muovono davvero, la duplicazione pesa di più, non è più "quasi innocua"). Discusso con l'utente: la soluzione pulita probabilmente coincide con il punto F qui sotto (condizionare i fattori granulari su casa/trasferta E forza avversario insieme, invece di ricalcolare due volte lo stesso effetto venue) — **valutarli insieme nella prossima sessione**, non separatamente.
+
+4. **MINORE, non affrontato** — Mix di medie pesate (base esponenziale) e non pesate (fattori casa/trasferta e granulari) — incoerenza concettuale, impatto modesto.
+
+5. **MINORE, non affrontato** — P(gioca) di fallback (quando manca starterOddsBasisPoints) ha il denominatore troncato dal `break` che riempie la finestra — lieve sovrastima della presenza storica, scatta raramente.
+
+- **Verificato CORRETTO** (nessun bug, nessuna azione necessaria): segno del fattore forza avversario (coerente nei 4 ruoli), clamp del trend applicato dopo la scalatura per `trend_intensity`, nessun doppio conteggio del bonus clean sheet portiere. Il "rischio di prodotto esplosivo" (0.7^7 per troppi fattori clampati moltiplicati) **non si verifica mai** nei dati reali.
+
+**Domanda importante posta dall'utente e risposta data**: "sappiamo quanto pesa ogni singolo detailed score (es. un fallo, una doppia doppia)?" — Risposta: NON serve una tabella di pesi nostra, perché ogni riga di `detailedScore` dall'API ha già un campo `totalScore` reale assegnato da Sorare stesso; `extract_group_score()` somma questi valori reali, non stime. Il limite vero è che quando un gruppo contiene più stat insieme (es. PASSING_STATS = 3 stat diverse), non si vede il contributo di ciascuna singolarmente — non blocca la normalizzazione del punto 2 (lavora sulla distribuzione storica del gruppo intero), ma limiterebbe un'eventuale analisi futura "quanto pesa esattamente un ingresso in area" (richiederebbe un'analisi statistica separata sui dati grezzi, non fatta).
+
+**Prossimo passo concordato con l'utente**: prima di lanciare la discovery globale (punto F sotto), affinare il modello sui dati che già abbiamo — quindi valutare/implementare i Finding 3-5 insieme all'utente, uno alla volta (punto 3 insieme al punto F), PRIMA di ricalibrare con più dati (la ricalibrazione con la discovery globale è un'attività separata e successiva, esplicitamente rimandata da lui).
 
 ### F. Idea futura registrata (NON ancora progettata, task in background disponibile)
-L'utente ha proposto una logica di **correlazione tra slot della stessa formazione**, basata su chi gioca contro chi quella giornata:
+L'utente ha proposto una logica di **correlazione tra slot della stessa formazione**, basata su chi gioca contro chi quella giornata — e ha anche chiesto di condizionare i fattori granulari su **venue + forza avversario insieme** (es. "falli in trasferta contro squadra forte" come contesto combinato, non due dimensioni separate come oggi):
 - **Bonus sinergia GK+DEF stessa partita**: se giocano nella stessa partita, il bonus clean sheet è correlato (stesso evento), andrebbe pesato come upside aggiuntivo nello sceglierli insieme (oggi ogni giocatore è valutato in isolamento).
 - **Penalità anti-sinergia GK vs FWD avversario**: se il GK scelto gioca quella giornata CONTRO la squadra del FWD scelto, i bonus tendono ad annullarsi (gol per l'attaccante spesso = niente clean sheet per il portiere) — andrebbe penalizzata/segnalata.
+- **Condizionamento 2D dei fattori granulari** (venue + forza avversario combinati, non solo casa/trasferta come oggi in `compute_split_factor`): questo probabilmente risolverebbe ANCHE il Finding 3 (doppio conteggio casa/trasferta) in un colpo solo, se progettato bene — valutarli insieme.
 - È stato lanciato un task in background (`task_c858ec41`, titolo "Progettare bonus/penalità correlazione GK-DEF-FWD") con un prompt dettagliato per un agente che prepari una PROPOSTA DI DESIGN (non il codice) — l'utente lo ha già avviato in una sessione locale separata, indipendente da questa. Se non è ancora arrivato un risultato, verificare lo stato di quel task nella nuova sessione.
+
+### G. Altro
+- Aggiunto manager `gigiz22` alla sezione `## manager` di `sorare_lista_nera.txt` (365 giorni, standard) su richiesta utente — commit `cc489748`. Nessun'altra azione necessaria, era una richiesta puntuale già chiusa.
+- L'utente ha chiesto se è possibile avere una barra di utilizzo sessione visibile senza aprire il profilo — risposto che dipende dall'interfaccia (se app, è una funzione della UI non controllabile da qui; se CLI, esiste una statusline configurabile ma non è confermato che esponga quel dato). L'utente ha detto di lasciar perdere, nessuna azione richiesta.
 
 ## 3. Cose in sospeso / da chiedere all'utente
 
-1. **Discovery globale per gli altri 3 ruoli** (DEF/MID/FWD): fatta finora solo per MID (`mls_mid_discovery_global.py`, 346 giocatori su 30 squadre). L'utente ha detto di volerla lanciare DOPO aver affinato il modello sui dati attuali — quindi non lanciarla finché non si è chiuso il giro sui Finding 2-5.
-2. **Finding 2-5 dell'audit**: aspettano una decisione dell'utente su come/se correggerli (vedi sezione E sopra). Riprendere da lì la conversazione sulla logica del modello.
-3. **Bot Supremo test run in corso**: aspetta `stop`/`s` dall'utente per essere cancellato manualmente.
-4. **Task in background sulla correlazione GK-DEF-FWD**: verificarne lo stato.
+1. **Verifica end-to-end del fix Finding 2** (vedi punto E.2 sopra): lanciare un run reale (`formazione_completa.yml`, `num_formazioni=1` basta) e controllare che i fattori granulari nei `prediction_*.txt` si muovano in modo sensato. Farlo PRIMA di fidarsi del fix in produzione.
+2. **Finding 3** (doppio conteggio casa/trasferta) **+ punto F** (correlazione GK-DEF-FWD e condizionamento 2D venue+avversario): l'utente ha chiesto di valutarli insieme, probabilmente la stessa revisione strutturale risolve entrambi. Aspetta il task in background `task_c858ec41` e/o una discussione di design con l'utente prima di implementare.
+3. **Finding 4-5**: minori, non ancora discussi in dettaglio con l'utente, bassa priorità.
+4. **Discovery globale per gli altri 3 ruoli** (DEF/MID/FWD): fatta finora solo per MID (`mls_mid_discovery_global.py`, 346 giocatori su 30 squadre). L'utente vuole lanciarla DOPO aver chiuso il giro di affinamento sui Finding 3+F — non lanciarla prima.
+5. **Bot Supremo test run in corso**: aspetta `stop`/`s` dall'utente per essere cancellato manualmente (vedi sezione 1).
+6. **Task in background sulla correlazione GK-DEF-FWD** (`task_c858ec41`): verificarne lo stato appena possibile.
 
 ## 4. File chiave per orientarsi rapidamente
 
