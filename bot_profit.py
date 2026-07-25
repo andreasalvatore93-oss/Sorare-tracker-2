@@ -351,6 +351,20 @@ def is_excluded_league(league_slug):
     return league_slug in EXCLUDED_LEAGUE_SLUGS
 
 
+def normalize_league_filename(league_slug):
+    """Converte un league_slug Sorare (es. 'premier-league', 'mlspa') in un nome
+    file sicuro in snake_case (es. 'premier_league', 'mlspa'). Nessuna query
+    aggiuntiva: si usa direttamente lo slug tecnico gia' disponibile, non il
+    displayName leggibile (deciso 25/07 per zero overhead di rete)."""
+    if not league_slug:
+        return None
+    safe = league_slug.strip().lower()
+    safe = safe.replace('-', '_').replace(' ', '_')
+    safe = ''.join(ch for ch in safe if ch.isalnum() or ch == '_')
+    safe = safe.strip('_')
+    return safe or None
+
+
 # =====================================================================================
 # QUERY: annunci live del giocatore -- per il MINIMO attuale (identica a Bot Supremo)
 # =====================================================================================
@@ -702,7 +716,7 @@ def _upsert_tracked_row(key, row):
 
 
 CSV_FIELDNAMES = [
-    'player_slug', 'player_name', 'tipo_carta', 'potenziale_score',
+    'player_slug', 'player_name', 'league_slug', 'tipo_carta', 'potenziale_score',
     'squadra', 'prossimo_avversario',
     'ultima_partita_score', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
@@ -750,6 +764,7 @@ def load_previous_tracked():
                 _tracked[key] = {
                     'player_slug': row.get('player_slug'),
                     'player_name': row.get('player_name'),
+                    'league_slug': row.get('league_slug') or None,
                     'tipo_carta': row.get('tipo_carta'),
                     'potenziale_score': _parse_float_or_none(row.get('potenziale_score')),
                     'squadra': row.get('squadra') or None,
@@ -791,14 +806,27 @@ def _write_ranked_csv(rows_liquidi, path, label):
 
 
 def write_csv_snapshot():
-    """Scrive 3 file: quello combinato di sempre (tutte le carte), e due
-    smistati -- SOLO in season e SOLO classic. Per MLS/K-League lo smistamento
-    usa tipo_carta (gia' distinto); per gli altri campionati (tipo_carta=misto)
-    usa il tipo dell'ULTIMO evento che ha aggiornato la riga."""
+    """Scrive:
+      1) i 3 file GLOBALI di sempre -- combinato, solo in season, solo classic
+         (tutti i campionati mescolati, comportamento invariato);
+      2) un file PER CAMPIONATO in bot_profit/per_campionato/:
+         - MLS/K-League (EXCLUDED_LEAGUE_SLUGS): 2 file ciascuno, in_season e
+           classic separati (stessa regola di sempre per questi 2 campionati) --
+           es. mls_in_season.csv, mls_classic.csv
+         - tutti gli altri campionati: 1 file unico, in_season+classic mescolati
+           -- es. premier_league.csv (contiene sia Haaland classic che Haaland
+           in season nella stessa classifica)
+    Lo smistamento per MLS/K-League usa tipo_carta (gia' distinto); per gli
+    altri campionati (tipo_carta=misto) il file e' unico quindi non serve
+    distinguere in/classic al suo interno."""
     with _tracked_lock:
         rows = list(_tracked.values())
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
+    per_campionato_dir = os.path.join(OUTPUT_DIR, 'per_campionato')
+    if not os.path.exists(per_campionato_dir):
+        os.makedirs(per_campionato_dir)
+
     # FIX 24/07 (richiesta esplicita utente): le carte senza NESSUNA transazione
     # nella finestra (0/0, media_trimmed=None) non vanno in classifica -- niente
     # storico prezzo = dato inutilizzabile per il confronto. Vengono escluse PRIMA
@@ -829,13 +857,53 @@ def write_csv_snapshot():
     rows_in_season = [r for r in rows_liquidi if _is_in_season_row(r)]
     rows_classic = [r for r in rows_liquidi if not _is_in_season_row(r)]
 
+    # --- 1) I 3 file GLOBALI di sempre (invariati) ---
     n_combinato = _write_ranked_csv(rows_liquidi, OUTPUT_CSV_PATH, 'combinato')
     _write_ranked_csv(rows_in_season, OUTPUT_CSV_PATH_IN_SEASON, 'solo in season')
     _write_ranked_csv(rows_classic, OUTPUT_CSV_PATH_CLASSIC, 'solo classic')
 
+    # --- 2) File PER CAMPIONATO ---
+    # Raggruppo per (league_filename, tipo_gruppo) dove tipo_gruppo e':
+    #   - per MLS/K-League: 'in_season' o 'classic' (2 file separati)
+    #   - per tutti gli altri: 'unico' (1 file, in+classic mescolati)
+    gruppi = {}  # (league_filename, tipo_gruppo) -> lista righe
+    senza_league_loggate = 0
+    SENZA_LEAGUE_LOG_MAX = 5  # logga solo le prime N carte senza league leggibile
+
+    for r in rows_liquidi:
+        league_slug_r = r.get('league_slug')
+        league_filename = normalize_league_filename(league_slug_r)
+        if not league_filename:
+            senza_league_loggate += 1
+            if senza_league_loggate <= SENZA_LEAGUE_LOG_MAX:
+                log(f"[per_campionato] SCARTATA dai file per campionato (league_slug mancante/non "
+                    f"leggibile): {r.get('player_name')} ({r.get('player_slug')}) "
+                    f"league_slug={league_slug_r!r} -- resta comunque nei 3 file globali")
+            continue  # scartata SOLO dai file per campionato, resta nei 3 globali
+
+        if league_slug_r in EXCLUDED_LEAGUE_SLUGS:
+            tipo_gruppo = 'in_season' if _is_in_season_row(r) else 'classic'
+        else:
+            tipo_gruppo = 'unico'
+
+        gruppi.setdefault((league_filename, tipo_gruppo), []).append(r)
+
+    if senza_league_loggate > SENZA_LEAGUE_LOG_MAX:
+        log(f"[per_campionato] altre {senza_league_loggate - SENZA_LEAGUE_LOG_MAX} carte scartate "
+            f"per league_slug mancante/non leggibile (log troncato)")
+
+    for (league_filename, tipo_gruppo), gruppo_rows in gruppi.items():
+        if tipo_gruppo == 'unico':
+            filename = f"{league_filename}.csv"
+        else:
+            filename = f"{league_filename}_{tipo_gruppo}.csv"
+        path = os.path.join(per_campionato_dir, filename)
+        _write_ranked_csv(gruppo_rows, path, f'campionato={league_filename} ({tipo_gruppo})')
+
     log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
         f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni "
-        f"({n_combinato} nel file combinato)")
+        f"({n_combinato} nel file combinato, {len(gruppi)} file per campionato scritti in "
+        f"{per_campionato_dir}/)")
 
 
 # =====================================================================================
@@ -848,6 +916,9 @@ def _commit_output_se_serve():
     try:
         write_csv_snapshot()
         paths_da_committare = [OUTPUT_CSV_PATH, OUTPUT_CSV_PATH_IN_SEASON, OUTPUT_CSV_PATH_CLASSIC]
+        per_campionato_dir = os.path.join(OUTPUT_DIR, 'per_campionato')
+        if os.path.exists(per_campionato_dir):
+            paths_da_committare.append(per_campionato_dir)
         if os.path.exists(LISTA_NERA_PROFIT_PATH):
             paths_da_committare.append(LISTA_NERA_PROFIT_PATH)
         status = subprocess.run(
@@ -997,6 +1068,7 @@ def run_listener(eth_rate):
             row = {
                 'player_slug': player_slug,
                 'player_name': player_name,
+                'league_slug': league_slug,
                 'tipo_carta': tipo_carta,
                 'potenziale_score': potenziale_score,
                 'squadra': snapshot['squadra'],
