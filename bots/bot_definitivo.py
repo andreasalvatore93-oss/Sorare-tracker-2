@@ -713,7 +713,6 @@ EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '10'))
 AUTOBUY_TARGET_MATCHES = max(1, min(100, AUTOBUY_TARGET_MATCHES))
 
-AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
 # Parametri MakeOffer (ramo offerta scontata)
@@ -1237,10 +1236,6 @@ def get_in_season_prices(player_slug, eth_rate, league_slug):
         return buckets['in_season'], True
     combined = buckets['in_season'] + buckets['classic']
     combined.sort(key=lambda p: p[0])
-    if AUTOBUY_DIAGNOSTIC and buckets['classic']:
-        log(f"[diagnostica lega] player={player_slug} league_slug={league_slug!r} -- "
-            f"unito in_season ({len(buckets['in_season'])} annunci) con classic "
-            f"({len(buckets['classic'])} annunci) per il confronto sul vero minimo")
     return combined, False
 
 
@@ -1407,11 +1402,6 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
 # mescolano in_season+classic come sempre.
 MIN_LISTED_CARDS_FOR_PURCHASE = int(os.environ.get('MIN_LISTED_CARDS_FOR_PURCHASE', '3'))
 MIN_LISTED_CARDS_DIAGNOSTIC = os.environ.get('MIN_LISTED_CARDS_DIAGNOSTIC', 'no').strip().lower() == 'si'
-
-# NUOVO 22/07 (richiesta esplicita utente): log dedicato opt-in (default spento) per
-# segnalare quando un'offerta e' stata fatta/tentata tramite il meccanismo "trigger su
-# minimo non allineato" -- vedi evaluate_event per la logica completa.
-MIN_NON_TRIGGER_LOG = os.environ.get('MIN_NON_TRIGGER_LOG', 'no').strip().lower() == 'si'
 
 
 def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None, force_log=False):
@@ -2909,18 +2899,11 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     if is_in_season:
         prices, excluded_league = get_in_season_prices(player_slug, eth_rate, league_slug)
-        if AUTOBUY_DIAGNOSTIC:
-            modalita = "SOLO in_season (lega esclusa)" if excluded_league else "in_season + classic uniti"
-            log(f"[diagnostica lega] {player_name}: league_slug={league_slug!r} -> {modalita}, "
-                f"{len(prices)} annunci totali nel confronto")
     else:
         buckets = get_bucket_prices(player_slug, eth_rate)
         prices = buckets['in_season'] + buckets['classic']
         prices.sort(key=lambda p: p[0])
         excluded_league = False
-        if AUTOBUY_DIAGNOSTIC:
-            log(f"[check classic] {player_name}: {len(prices)} annunci totali "
-                f"(in_season {len(buckets['in_season'])} + classic {len(buckets['classic'])})")
     if not prices:
         return False
     _t_scan_prezzi = time.monotonic()
@@ -2934,9 +2917,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # mercato ed e' probabile che sia gia' stato preso da qualcun altro, ma tentare
     # un'offerta scontata su di esso non costa nulla in piu' (stesso identico
     # calcolo/lista prices gia' fatto sopra, zero query extra). Il flag qui sotto
-    # viene riusato piu' avanti per: (a) impedire al router di instradare questo
-    # caso verso AutoBuy anche se il margine risultasse sufficiente, (b) loggare in
-    # modo dedicato quando MIN_NON_TRIGGER_LOG e' attivo.
+    # viene riusato piu' avanti per impedire al router di instradare questo caso
+    # verso AutoBuy anche se il margine risultasse sufficiente.
     trigger_su_minimo_non_allineato = False
     if true_min_card_slug != card_slug:
         if price_eur < true_min_price:
@@ -2945,7 +2927,6 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             true_min_price, true_min_card_slug, true_min_seller_slug = price_eur, card_slug, seller_slug
             prices = [(price_eur, card_slug, seller_slug)] + [p for p in prices if p[1] != card_slug]
         else:
-            categoria = "in_season" if excluded_league else "in_season/classic"
             if not (AUTOBUY_MIN_PRICE_EUR <= true_min_price <= AUTOBUY_MAX_PRICE_EUR):
                 log(f"{player_name}: scarto -- il vero minimo ({true_min_price:.2f}EUR, carta "
                     f"{true_min_card_slug}) e' fuori dal range prezzo consentito "
@@ -2953,12 +2934,6 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                     f"minimo non allineato' non si applica")
                 return False
             trigger_su_minimo_non_allineato = True
-            if MIN_NON_TRIGGER_LOG:
-                log(f"[trigger su minimo non allineato] {player_name}: annuncio a "
-                    f"{price_eur:.2f}EUR ({categoria}) non e' il minimo attuale -- provo "
-                    f"comunque il minimo vero ({true_min_price:.2f}EUR, carta "
-                    f"{true_min_card_slug}) come bersaglio di un'offerta (solo ramo "
-                    f"MakeOffer, mai AutoBuy)")
 
     if true_min_seller_slug in BLACKLISTED_SELLER_SLUGS or \
             true_min_seller_slug in BLACKLISTED_MANAGER_SLUGS:
@@ -3384,10 +3359,6 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
     if MAKEOFFER_LIVE_MODE and prepared:
         if offer_sent:
             log(f"{player_name}: OFFERTA INVIATA CON SUCCESSO")
-            if via_trigger_non_allineato and MIN_NON_TRIGGER_LOG:
-                log(f"[trigger su minimo non allineato] {player_name}: offerta di "
-                    f"{offer_amount_eur:.2f}EUR inviata con successo tramite questo "
-                    f"meccanismo (carta {card_slug})")
             if player_slug:
                 record_player_offer(player_slug, is_in_season)
             pending_offers_count[0] += 1
