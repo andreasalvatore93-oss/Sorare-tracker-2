@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T17:38:24.647041Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.6, min_starter_odds=70%
+======================================================================
+1) yohei-takaoka: 24 pt attesi (-10-57)
+======================================================================
+
+######################################################################
+# GIOCATORE: yohei-takaoka
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yohei-takaoka (squadra: vancouver-whitecaps-vancouver-british-columbia)
+Generato: 2026-07-25T17:38:24.646683Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-06 | MIA vs VAN | mlspa | score=25.0 | peso=0.340
+  2026-02-22 | VAN vs RSL | mlspa | score=70.7 | peso=0.367
+  2026-03-01 | VAN vs TOR | mlspa | score=84.8 | peso=0.397
+  2026-03-08 | POR vs VAN | mlspa | score=32.9 | peso=0.429
+  2026-03-15 | VAN vs MIN | mlspa | score=88.7 | peso=0.463
+  2026-03-22 | VAN vs SJ | mlspa | score=47.7 | peso=0.500
+  2026-04-05 | VAN vs POR | mlspa | score=60.0 | peso=0.540
+  2026-04-11 | VAN vs NYC | mlspa | score=75.5 | peso=0.583
+  2026-04-18 | VAN vs SKC | mlspa | score=62.0 | peso=0.630
+  2026-04-26 | VAN vs RAP | mlspa | score=43.9 | peso=0.680
+  2026-05-03 | LA vs VAN | mlspa | score=14.7 | peso=0.735
+  2026-05-10 | SJ vs VAN | mlspa | score=45.1 | peso=0.794
+  2026-05-14 | DAL vs VAN | mlspa | score=34.3 | peso=0.857
+  2026-05-17 | HOU vs VAN | mlspa | score=54.1 | peso=0.926
+  2026-07-22 | CIN vs VAN | mlspa | score=23.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 47.86
+Deviazione standard pesata: 20.89
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.45 (differenza: +3.44)
+Media score in casa: 66.66 | Media score fuori casa: 32.83
+Fattore casa/trasferta applicato: 0.660 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.6
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.070
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore possesso (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci): 0.971
+Fattore gol subiti (goals_conceded, con cap): 0.979
+Tasso storico clean sheet (porta inviolata nei primi 60'): 40.0% (bonus atteso incorporato nella media pesata: ~10.0pt)
+Fattore trend (media ultime 5: 34.4 vs media ultime 10: 46.1): 0.822
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T00:30
+Casa: Minnesota United | Trasferta: Vancouver Whitecaps FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 23.7 +/- 33.4
+  (range: -9.7 - 57.2)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.79
+Punteggio REALE ottenuto in quella partita: 23.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -27.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6     106.2    60.0    -46.2    38.9        NO
+   7        7      77.2    75.5     -1.7    35.2        SI
+   8        8     121.3    62.0    -59.3    33.7        NO
+   9        9      99.6    43.9    -55.7    31.1        NO
+  10       10      38.0    14.7    -23.3    30.5        SI
+  11       11      17.5    45.1    +27.6    37.2        SI
+  12       12      24.7    34.3     +9.6    35.1        SI
+  13       13      25.8    54.1    +28.3    34.3        SI
+  14       14      24.1    23.7     -0.4    32.4        SI
+
+MAE (errore assoluto medio): 28.02
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
