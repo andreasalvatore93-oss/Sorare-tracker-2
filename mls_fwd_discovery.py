@@ -20,6 +20,7 @@ import json
 import time
 import datetime
 import requests
+from collections import Counter
 
 try:
     from curl_cffi import requests as curl_requests
@@ -139,7 +140,7 @@ def discover_mls_forwards_in_season(user_slug=USER_SLUG, max_pages=50):
         {"field": "in_season_eligible", "operator": "EQUAL", "values": [{"stringValue": "true"}]},
     ]
 
-    player_slugs = set()
+    player_slug_counts = Counter()  # slug -> numero di carte IN_SEASON possedute per quel giocatore
     card_count = 0
     page = 1
     while page <= max_pages:
@@ -163,7 +164,7 @@ def discover_mls_forwards_in_season(user_slug=USER_SLUG, max_pages=50):
             card_count += 1
             p_slug = (h.get('anyPlayer') or {}).get('slug')
             if p_slug:
-                player_slugs.add(p_slug)
+                player_slug_counts[p_slug] += 1
 
         nb_pages = search.get('nbPages') or 1
         if page >= nb_pages:
@@ -171,13 +172,13 @@ def discover_mls_forwards_in_season(user_slug=USER_SLUG, max_pages=50):
         page += 1
         time.sleep(0.3)
 
-    log(f"Carte scansionate: {card_count} | Giocatori unici (dedup): {len(player_slugs)}")
-    return sorted(player_slugs)
+    log(f"Carte scansionate: {card_count} | Giocatori unici (dedup): {len(player_slug_counts)}")
+    return sorted(player_slug_counts), dict(player_slug_counts)
 
 
 def main():
     log("Avvio discovery attaccanti MLS in_season...")
-    slugs = discover_mls_forwards_in_season()
+    slugs, card_counts = discover_mls_forwards_in_season()
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
@@ -185,6 +186,13 @@ def main():
     out_path = os.path.join(OUTPUT_DIR, 'player_slugs.json')
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(slugs, f, ensure_ascii=False, indent=2)
+
+    # NUOVO: numero di carte IN_SEASON possedute per ciascun giocatore (per la
+    # fusione finale multi-formazione: un giocatore puo' essere riusato in una
+    # seconda lineup solo se ne possiedi piu' di una copia).
+    counts_path = os.path.join(OUTPUT_DIR, 'player_card_counts.json')
+    with open(counts_path, 'w', encoding='utf-8') as f:
+        json.dump(card_counts, f, ensure_ascii=False, indent=2)
 
     log(f"Salvati {len(slugs)} slug in {out_path}: {slugs}")
 

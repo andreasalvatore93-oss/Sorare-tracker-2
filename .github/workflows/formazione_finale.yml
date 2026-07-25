@@ -1,0 +1,58 @@
+name: Formazione Finale (fusione GK+DEF+MID+FWD)
+
+on:
+  workflow_dispatch:
+    inputs:
+      num_formazioni:
+        description: 'Numero di formazioni da generare'
+        required: false
+        default: '1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: formazione-finale
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Genera formazione(i) ottimale(i) dai consigli di ruolo gia' prodotti
+        env:
+          NUM_FORMAZIONI: ${{ github.event.inputs.num_formazioni }}
+        run: python build_formazione_finale.py
+
+      - name: Commit formazione(i)
+        run: |
+          git config user.name "mls-formazione-bot"
+          git config user.email "mls-formazione-bot@users.noreply.github.com"
+          git add formazione_finale_*.txt
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Formazione finale: nuovo run (${{ github.event.inputs.num_formazioni }} formazioni)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
