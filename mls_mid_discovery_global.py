@@ -117,14 +117,16 @@ def graphql_query(query, variables=None, operation_name=None):
 # il calcio e' sempre Player). anyPositions per filtrare lato client.
 TEAM_ROSTER_QUERY = """
 query TeamRoster($slug: String!, $first: Int!) {
-  club(slug: $slug) {
-    slug
-    name
-    anyPlayers(first: $first) {
-      nodes {
-        slug
-        displayName
-        anyPositions
+  football {
+    club(slug: $slug) {
+      slug
+      name
+      anyPlayers(first: $first) {
+        nodes {
+          slug
+          displayName
+          anyPositions
+        }
       }
     }
   }
@@ -137,7 +139,7 @@ def fetch_team_midfielders(team_slug):
     lato client su anyPositions contenente 'Midfielder'."""
     data = graphql_query(TEAM_ROSTER_QUERY, {"slug": team_slug, "first": 50},
                           operation_name="TeamRoster")
-    club = (data.get('data') or {}).get('club')
+    club = ((data.get('data') or {}).get('football') or {}).get('club')
     if not club:
         log(f"[{team_slug}] ATTENZIONE: nessun dato club restituito. "
             f"Risposta: {json.dumps(data, ensure_ascii=False)[:500]}")
