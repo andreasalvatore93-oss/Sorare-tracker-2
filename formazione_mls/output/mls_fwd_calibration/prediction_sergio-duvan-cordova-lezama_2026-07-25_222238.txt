@@ -1,0 +1,69 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:22:38.909421Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) sergio-duvan-cordova-lezama: 5 pt attesi (-6-15)
+======================================================================
+
+######################################################################
+# GIOCATORE: sergio-duvan-cordova-lezama
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sergio-duvan-cordova-lezama (squadra: young-boys-bern)
+Generato: 2026-07-25T22:22:38.909253Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 13
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: super-league-ch (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-17 | YBB vs GCZ | super-league-ch | score=61.5 | peso=0.944
+  2026-02-11 | STG vs YBB | super-league-ch | score=46.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 53.68
+Deviazione standard pesata: 7.60
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 61.50 | Media score fuori casa: 46.30
+Fattore casa/trasferta applicato: 1.050 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.5
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.948
+Fattore falli (casa/trasferta, da dati reali): 0.950
+Fattore duelli (casa/trasferta, da dati reali): 0.950
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.950
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.050
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T12:00
+Casa: BSC Young Boys | Trasferta: FC Sion
+Competizione: super-league-ch
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 4.8 +/- 10.6
+  (range: -5.8 - 15.4)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.50
+Punteggio REALE ottenuto in quella partita: 46.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -15.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
