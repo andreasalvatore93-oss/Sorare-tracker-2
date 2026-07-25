@@ -155,21 +155,22 @@ jobs:
         run: |
           git config user.name "grid-search-calibrazione-bot"
           git config user.email "grid-search-calibrazione-bot@users.noreply.github.com"
-          for attempt in 1 2 3 4 5 6 7 8; do
-            git add formazione_mls/output/mls_${{ github.event.inputs.ruolo }}_calibration/
-            if git diff --cached --quiet; then
-              echo "Nessuna modifica da salvare."
-              exit 0
-            fi
-            git commit -m "Grid Search Calibrazione (${{ github.event.inputs.ruolo }}): ${{ matrix.player_slug }}"
-            if git push; then
-              echo "Salvato correttamente."
-              exit 0
+          git add formazione_mls/output/mls_${{ github.event.inputs.ruolo }}_calibration/
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Grid Search Calibrazione (${{ github.event.inputs.ruolo }}): ${{ matrix.player_slug }}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then
+              echo "Impossibile salvare dopo 15 tentativi, abbandono."
+              exit 1
             fi
             echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
-            sleep $((RANDOM % 8 + 3))
+            sleep $((RANDOM % 12 + 5))
             git fetch origin main
             git merge --no-edit -X ours origin/main
           done
-          echo "Impossibile salvare dopo 8 tentativi, abbandono."
-          exit 1
+          echo "Salvato correttamente."
