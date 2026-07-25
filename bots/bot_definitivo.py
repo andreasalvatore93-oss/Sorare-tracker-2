@@ -585,202 +585,122 @@ MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACT
 AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'))
 
 # =====================================================================================
-# SOGLIE DI MARGINE DINAMICHE (25/07) -- porting da un lavoro fatto su un worktree/branch
-# separato direttamente su autobuy_sorare.py/makeoffer_sorare.py (vedi commit "Rende
-# dinamiche le soglie di margine e lo sconto offerta in autobuy/makeoffer"), poi scoperto
-# INUTILE in pratica: bot_definitivo.py (questo file, il bot REALMENTE in produzione, ex
-# "Bot Supremo test no play"/bot_supremo_test.py) NON importa nulla da quei due file --
-# ha una copia INDIPENDENTE della stessa identica logica qui sotto in evaluate_event.
-# Tutto il lavoro di dinamicizzazione andava quindi rifatto QUI, dove conta davvero.
+# SOGLIE BASATE SUL PREZZO (26/07) -- sostituisce il sistema a percentili storici del
+# 25/07 (soglie dinamiche calcolate sulla distribuzione dei margini osservati negli
+# ultimi N giorni). Quel sistema rispondeva alla domanda sbagliata ("quanto e' raro
+# questo margine rispetto al mercato recente") invece di quella che conta davvero
+# ("a questo margine, su una carta di questo prezzo, l'avrei comprata io?"). La
+# risposta a QUELLA domanda e' stata raccolta caso per caso (~45 casi reali e
+# ipotetici, prezzo 0.50-30EUR, discussi uno alla volta con l'utente il 25-26/07 --
+# dettaglio completo nella memoria di progetto "bot_definitivo_margin_calibration").
 #
-# CASO REALE CHE HA MOTIVATO IL LAVORO (run 25/07, vedi log Actions): Jhon Arias, minimo
-# 5.50EUR, secondo prezzo 6.99EUR, margine reale 21.3%. Soglie di quel run (passate da
-# workflow_dispatch): MakeOffer 15%-26%, AutoBuy >=26%. Essendo 21.3% < 26%, il bot ha
-# scelto il ramo MakeOffer (offerta scontata al 15% in meno, poi fallita per un errore
-# tecnico di trasferimento carta, non legato al margine). L'utente avrebbe voluto un
-# AUTOBUY diretto: 1.49EUR di guadagno secco su una carta da 5.50EUR e' un affare da
-# comprare subito, non da tentare con un'offerta ribassata che il venditore puo' ignorare,
-# rifiutare o lasciar scadere.
+# TRE REGOLE INDIPENDENTI EMERSE DAI CASI:
 #
-# ANALISI LOG REALI (10 run del workflow "Bot Supremo test no play"/"Bot definitivo"):
-# 1669 margini calcolati da evaluate_event, distribuzione fortemente concentrata sui
-# valori bassi -- mediana 1.8%, p85~7%, p90=9.3%, p95=12.7%, p97=16.1%, p99=22.4%,
-# massimo osservato 53%. Con una soglia AutoBuy dinamica = percentile 97 (16.1% in
-# quell'analisi, ricalcolato di continuo sulla storia recente persistita), il caso Jhon
-# Arias (21.3%) avrebbe superato una soglia di ~16% -- ben sopra -- facendo scattare
-# l'AUTOBUY diretto, il comportamento desiderato.
+# 1) MARGINE MINIMO PER AGIRE (MakeOffer o AutoBuy) dipende dal PREZZO, non e' un
+#    singolo numero globale: sotto ~4EUR serve un margine alto (~13%, il guadagno
+#    assoluto in EUR e' cosi' piccolo sotto quella soglia che non vale il rischio/
+#    tempo di negoziare -- es. Bombino 2.81EUR/6.5%->scarto, Ferreira 1.50EUR/10.4%->
+#    scarto, contro Trossard 3.49EUR/16.5%->offerta OK); da ~4EUR in su basta un
+#    margine molto piu' basso (~7% -- es. Johnson 5.52EUR/7.3%->OK, Gill 6.00EUR/
+#    7.7%->OK, contro Pickford 10.50EUR/4.5%->scarto).
 #
-# DIFFERENZA CHIAVE rispetto ai due bot separati: qui i due rami (AutoBuy/MakeOffer)
-# condividono UN SOLO evaluate_event e UN SOLO margin_percent calcolato per evento (vedi
-# piu' sotto) -- quindi la storia dei margini osservati e' UNICA e condivisa tra i due
-# rami (un solo file, non due come nei bot standalone che avevano processi/workflow
-# separati e quindi osservazioni di mercato indipendenti tra loro).
+# 2) SPLIT AutoBuy (prezzo pieno, accetta l'offerta esistente) vs MakeOffer (offerta
+#    ribassata) dipende da PREZZO *E* MARGINE insieme, non da una soglia di margine
+#    globale come nella versione precedente: sotto ~3EUR l'utente non vuole MAI il
+#    prezzo pieno, a nessun margine (verificato fino al 44%: Vera 1.50EUR/44.4%,
+#    Reichert 1.00EUR/42.5%, Diaw 1.55EUR/39.9%, Robinson 2.20EUR/30.2% -> sempre
+#    "avrei negoziato piu' basso, non autobuy"). Sopra ~3EUR il margine necessario
+#    per l'autobuy diretto SCENDE al crescere del prezzo (tabella sotto) -- testato
+#    su ~15 casi a margini/prezzi diversi, zero contraddizioni con questa forma.
 #
-# FAIL-SAFE (bot di trading REALE, nessun test end-to-end possibile in questa sessione,
-# niente SORARE_COOKIE/SORARE_CSRF disponibili):
-# - Serve un numero minimo di osservazioni recenti (DYNAMIC_MARGIN_HISTORY_MIN_SAMPLES)
-#   prima che QUALUNQUE soglia dinamica si attivi; sotto quella soglia si resta sui 3
-#   valori statici originali (MAKEOFFER_MARGIN_FRACTION/MAKEOFFER_MAX_MARGIN_FRACTION/
-#   AUTOBUY_MARGIN_FRACTION) -- comportamento IDENTICO a prima di questa modifica.
-# - Ogni soglia dinamica e' clampata in un intorno del proprio valore statico
-#   (moltiplicatori DYNAMIC_MARGIN_MIN_MULT/MAX_MULT, default 0.6x-2.0x -- es. 12%-40%
-#   se lo statico e' 20%) -- non puo' mai scendere sotto un pavimento ragionevole ne'
-#   esplodere per un valore anomalo/outlier nella storia.
-# - Il tetto MakeOffer dinamico e' SEMPRE = alla soglia AutoBuy dinamica (stesso
-#   principio del valore statico di produzione, dove i due sono uguali per costruzione
-#   nella config passata da workflow_dispatch: 26%-26%) -- l'invariante "AutoBuy >= tetto
-#   MakeOffer" e' garantita per COSTRUZIONE, non solo clampata a posteriori.
-# - Se il minimo MakeOffer dinamico risultasse troppo vicino o sopra il tetto (gap minimo
-#   DYNAMIC_MARGIN_MIN_MAX_GAP, default 3 punti percentuali), si ripiega su TUTTI E TRE i
-#   valori statici per quella valutazione -- mai una fascia MakeOffer invertita o degenere.
-# - Interruttore DYNAMIC_MARGIN_ENABLED (default 'si'): se 'no', comportamento IDENTICO a
-#   prima di questa modifica in ogni caso.
-# - Scritture concorrenti: evaluate_event gira su un pool di EVENT_WORKER_THREADS thread
-#   (vedi run_listener/_process_one_card_event), quindi PIU' thread possono chiamare
-#   record_margin_observation quasi in contemporanea -- protetto da _margin_history_lock
-#   (i due bot standalone, a differenza di questo, giravano un solo listener per processo
-#   e non avevano questo problema).
-DYNAMIC_MARGIN_ENABLED = os.environ.get(
-    'DYNAMIC_MARGIN_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
-MARGIN_HISTORY_PATH = os.environ.get('MARGIN_HISTORY_PATH', 'bot_definitivo_margin_history.json')
-DYNAMIC_MARGIN_HISTORY_MIN_SAMPLES = int(os.environ.get('DYNAMIC_MARGIN_HISTORY_MIN_SAMPLES', '150'))
-DYNAMIC_MARGIN_HISTORY_MAX_DAYS = int(os.environ.get('DYNAMIC_MARGIN_HISTORY_MAX_DAYS', '14'))
-DYNAMIC_MARGIN_HISTORY_MAX_SAMPLES = int(os.environ.get('DYNAMIC_MARGIN_HISTORY_MAX_SAMPLES', '5000'))
-MAKEOFFER_MIN_PERCENTILE = float(os.environ.get('MAKEOFFER_MIN_PERCENTILE', '85'))
-AUTOBUY_MARGIN_PERCENTILE = float(os.environ.get('AUTOBUY_MARGIN_PERCENTILE', '97'))
-DYNAMIC_MARGIN_MIN_MULT = float(os.environ.get('DYNAMIC_MARGIN_MIN_MULT', '0.6'))
-DYNAMIC_MARGIN_MAX_MULT = float(os.environ.get('DYNAMIC_MARGIN_MAX_MULT', '2.0'))
-DYNAMIC_MARGIN_MIN_MAX_GAP = float(os.environ.get('DYNAMIC_MARGIN_MIN_MAX_GAP', '0.03'))  # 3 punti percentuali
+# 3) SCONTO DELL'OFFERTA MakeOffer: la versione precedente lo scalava CON il margine
+#    (piu' margine = sconto piu' profondo). I casi raccolti mostrano il contrario:
+#    conta il PREZZO della carta, non il margine -- su carte economiche l'utente
+#    vuole sconti profondi (~20-25%, poco da perdere a chiedere basso), su carte
+#    care bastano sconti miti (~9-11%, il guadagno assoluto e' gia' sostanzioso).
+#    Eccezione: giocatori molto liquidi (tante transazioni recenti, count_7d gia'
+#    calcolato da get_liquidity_and_last_price) -> sconto mite a prescindere dal
+#    prezzo, rivendita quasi garantita (caso reale: Barcola).
+#
+# FAIL-SAFE: interruttore PRICE_BASED_THRESHOLDS_ENABLED (default 'si') -- se 'no',
+# comportamento COMPLETAMENTE statico originale (le 3 costanti fisse sopra piu' lo
+# sconto sempre = OFFER_DISCOUNT_FRACTION). Le tabelle sotto sono tarate su ~45 casi
+# discussi con l'utente -- ragionevole ma non enorme; se il comportamento in
+# produzione si rivela sbagliato su casi reali, l'interruttore permette di tornare
+# indietro senza modificare il codice, poi si ricalibra con altri casi reali.
+PRICE_BASED_THRESHOLDS_ENABLED = os.environ.get(
+    'PRICE_BASED_THRESHOLDS_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
-_margin_history_lock = threading.Lock()
+# Regola 1: margine minimo per considerare un caso, a seconda del prezzo del vero minimo.
+MAKEOFFER_MIN_MARGIN_LOW_PRICE = float(os.environ.get('MAKEOFFER_MIN_MARGIN_LOW_PRICE', '0.13'))
+MAKEOFFER_MIN_MARGIN_HIGH_PRICE = float(os.environ.get('MAKEOFFER_MIN_MARGIN_HIGH_PRICE', '0.07'))
+MAKEOFFER_MIN_MARGIN_PRICE_BREAKPOINT = float(
+    os.environ.get('MAKEOFFER_MIN_MARGIN_PRICE_BREAKPOINT', '4.0'))
 
+# Regola 2: sotto questo prezzo l'AutoBuy diretto non scatta MAI (sempre MakeOffer se il
+# margine basta). Sopra, il margine minimo per l'AutoBuy diretto scende per fasce di
+# prezzo (lista di (prezzo_minimo_fascia, margine_minimo_richiesto), crescente).
+AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY = float(os.environ.get('AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY', '3.0'))
+AUTOBUY_MIN_MARGIN_BY_PRICE = [
+    (3.0, 0.35),
+    (5.0, 0.27),
+    (8.0, 0.22),
+    (15.0, 0.18),
+]
 
-def _load_margin_history():
-    """Ritorna una lista di {'ts': iso_timestamp, 'margin': float_percent}. File
-    mancante/corrotto -> lista vuota (fail-safe, stesso principio delle altre cache
-    JSON/lista nera di questo bot: un file assente o illeggibile non deve mai bloccare
-    l'esecuzione)."""
-    try:
-        with open(MARGIN_HISTORY_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        if isinstance(data, list):
-            return data
-        return []
-    except FileNotFoundError:
-        return []
-    except Exception as e:
-        log(f"[margine dinamico] errore lettura {MARGIN_HISTORY_PATH}, ignorato: {e}")
-        return []
+# Regola 3: sconto dell'offerta MakeOffer per fascia di prezzo (lista crescente), piu'
+# l'eccezione giocatore liquido.
+OFFER_DISCOUNT_BY_PRICE = [
+    (0.0, 0.225),
+    (4.0, 0.165),
+    (7.0, 0.115),
+    (15.0, 0.10),
+]
+LIQUID_PLAYER_TRANSACTIONS_7D = int(os.environ.get('LIQUID_PLAYER_TRANSACTIONS_7D', '15'))
+LIQUID_PLAYER_OFFER_DISCOUNT = float(os.environ.get('LIQUID_PLAYER_OFFER_DISCOUNT', '0.10'))
 
 
-def _save_margin_history(history):
-    try:
-        with open(MARGIN_HISTORY_PATH, 'w', encoding='utf-8') as f:
-            json.dump(history, f)
-    except Exception as e:
-        log(f"[margine dinamico] errore scrittura {MARGIN_HISTORY_PATH}: {e}")
+def _tiered_lookup(price_eur, table):
+    """table = lista di (prezzo_minimo_fascia, valore) ordinata crescente. Ritorna il
+    valore della fascia piu' alta il cui prezzo minimo e' <= price_eur (fascia piu'
+    bassa come fallback se price_eur e' sotto la prima soglia della tabella)."""
+    value = table[0][1]
+    for threshold, v in table:
+        if price_eur >= threshold:
+            value = v
+        else:
+            break
+    return value
 
 
-def record_margin_observation(margin_percent):
-    """Aggiunge l'ultimo margine calcolato da evaluate_event alla storia persistita
-    (TUTTI i margini validi calcolati, non solo quelli che superano una soglia -- serve
-    la distribuzione completa per calcolare percentili sensati). Tronca la storia a
-    DYNAMIC_MARGIN_HISTORY_MAX_SAMPLES voci e scarta quelle piu' vecchie di
-    DYNAMIC_MARGIN_HISTORY_MAX_DAYS giorni, cosi' il file non cresce indefinitamente e le
-    soglie riflettono il mercato RECENTE, non tutta la storia del bot. Protetto da
-    _margin_history_lock: PIU' thread evaluate_event possono chiamare questa funzione
-    quasi in contemporanea (vedi nota sopra)."""
-    with _margin_history_lock:
-        history = _load_margin_history()
-        now = datetime.datetime.now(datetime.timezone.utc)
-        cutoff = now - datetime.timedelta(days=DYNAMIC_MARGIN_HISTORY_MAX_DAYS)
-        kept = []
-        for entry in history:
-            try:
-                ts = datetime.datetime.fromisoformat(entry.get('ts', ''))
-            except (ValueError, TypeError):
-                continue
-            if ts >= cutoff:
-                kept.append(entry)
-        kept.append({'ts': now.isoformat(), 'margin': margin_percent})
-        if len(kept) > DYNAMIC_MARGIN_HISTORY_MAX_SAMPLES:
-            kept = kept[-DYNAMIC_MARGIN_HISTORY_MAX_SAMPLES:]
-        _save_margin_history(kept)
+def compute_price_based_thresholds(price_eur):
+    """Ritorna (makeoffer_min_margin, autobuy_min_margin_o_None). autobuy_min_margin e'
+    None se il prezzo e' sotto AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY -- l'AutoBuy diretto non
+    e' MAI un'opzione a quel prezzo (vedi Regola 2 sopra), qualunque sia il margine.
+    Fallback sui 2 valori statici originali se PRICE_BASED_THRESHOLDS_ENABLED e' 'no'."""
+    if not PRICE_BASED_THRESHOLDS_ENABLED:
+        return MAKEOFFER_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION
+
+    makeoffer_min = (MAKEOFFER_MIN_MARGIN_LOW_PRICE
+                      if price_eur < MAKEOFFER_MIN_MARGIN_PRICE_BREAKPOINT
+                      else MAKEOFFER_MIN_MARGIN_HIGH_PRICE)
+    if price_eur < AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:
+        autobuy_min = None
+    else:
+        autobuy_min = _tiered_lookup(price_eur, AUTOBUY_MIN_MARGIN_BY_PRICE)
+    return makeoffer_min, autobuy_min
 
 
-def _percentile(sorted_values, p):
-    """Percentile semplice per interpolazione lineare (stessa definizione usata da
-    numpy.percentile di default) -- niente dipendenza da numpy solo per questo calcolo,
-    il workflow installa solo requests/websocket-client/curl_cffi."""
-    if not sorted_values:
-        return None
-    if len(sorted_values) == 1:
-        return sorted_values[0]
-    k = (len(sorted_values) - 1) * (p / 100.0)
-    f = int(k)
-    c = min(f + 1, len(sorted_values) - 1)
-    if f == c:
-        return sorted_values[f]
-    return sorted_values[f] + (sorted_values[c] - sorted_values[f]) * (k - f)
-
-
-def _recent_margin_samples():
-    with _margin_history_lock:
-        history = _load_margin_history()
-    now = datetime.datetime.now(datetime.timezone.utc)
-    cutoff = now - datetime.timedelta(days=DYNAMIC_MARGIN_HISTORY_MAX_DAYS)
-    samples = []
-    for entry in history:
-        try:
-            ts = datetime.datetime.fromisoformat(entry.get('ts', ''))
-            margin = float(entry.get('margin'))
-        except (ValueError, TypeError, KeyError):
-            continue
-        if ts >= cutoff:
-            samples.append(margin)
-    samples.sort()
-    return samples
-
-
-def compute_dynamic_margin_thresholds():
-    """Ritorna (makeoffer_min, makeoffer_max, autobuy, n_campioni_usati, is_dynamic).
-    Fallback SEMPRE sicuro sui 3 valori statici (MAKEOFFER_MARGIN_FRACTION,
-    MAKEOFFER_MAX_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION) se: la logica e'
-    disattivata, non ci sono abbastanza campioni recenti, oppure il tetto MakeOffer
-    dinamico (= soglia AutoBuy dinamica) risultasse troppo vicino o sotto il minimo
-    MakeOffer dinamico (invariante di sicurezza DYNAMIC_MARGIN_MIN_MAX_GAP)."""
-    if not DYNAMIC_MARGIN_ENABLED:
-        return MAKEOFFER_MARGIN_FRACTION, MAKEOFFER_MAX_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION, 0, False
-
-    samples = _recent_margin_samples()
-    n = len(samples)
-    if n < DYNAMIC_MARGIN_HISTORY_MIN_SAMPLES:
-        return MAKEOFFER_MARGIN_FRACTION, MAKEOFFER_MAX_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION, n, False
-
-    autobuy_pctl = _percentile(samples, AUTOBUY_MARGIN_PERCENTILE)
-    makeoffer_min_pctl = _percentile(samples, MAKEOFFER_MIN_PERCENTILE)
-    if autobuy_pctl is None or makeoffer_min_pctl is None:
-        return MAKEOFFER_MARGIN_FRACTION, MAKEOFFER_MAX_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION, n, False
-
-    autobuy_floor = AUTOBUY_MARGIN_FRACTION * DYNAMIC_MARGIN_MIN_MULT
-    autobuy_ceiling = AUTOBUY_MARGIN_FRACTION * DYNAMIC_MARGIN_MAX_MULT
-    dynamic_autobuy = max(autobuy_floor, min(autobuy_pctl / 100.0, autobuy_ceiling))
-
-    # Il tetto MakeOffer dinamico e' SEMPRE = alla soglia AutoBuy dinamica -- garantisce
-    # l'invariante "AutoBuy >= tetto MakeOffer" per costruzione (vedi commento sopra).
-    dynamic_makeoffer_max = dynamic_autobuy
-
-    min_floor = MAKEOFFER_MARGIN_FRACTION * DYNAMIC_MARGIN_MIN_MULT
-    min_ceiling = MAKEOFFER_MARGIN_FRACTION * DYNAMIC_MARGIN_MAX_MULT
-    dynamic_makeoffer_min = max(min_floor, min(makeoffer_min_pctl / 100.0, min_ceiling))
-
-    if dynamic_makeoffer_max < dynamic_makeoffer_min + DYNAMIC_MARGIN_MIN_MAX_GAP:
-        # Invariante di sicurezza violata -- non e' un valore affidabile, ripieghiamo su
-        # TUTTI E TRE gli statici invece di rischiare una fascia MakeOffer invertita o
-        # degenere.
-        return MAKEOFFER_MARGIN_FRACTION, MAKEOFFER_MAX_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION, n, False
-
-    return dynamic_makeoffer_min, dynamic_makeoffer_max, dynamic_autobuy, n, True
+def compute_price_based_offer_discount(price_eur, count_7d=None):
+    """Sconto da applicare al vero minimo per calcolare il prezzo dell'offerta MakeOffer.
+    Dipende dal PREZZO della carta (Regola 3 sopra), non dal margine del caso specifico.
+    Un giocatore molto liquido (count_7d >= LIQUID_PLAYER_TRANSACTIONS_7D) usa sempre lo
+    sconto mite LIQUID_PLAYER_OFFER_DISCOUNT, a prescindere dal prezzo."""
+    if not PRICE_BASED_THRESHOLDS_ENABLED:
+        return OFFER_DISCOUNT_FRACTION
+    if count_7d is not None and count_7d >= LIQUID_PLAYER_TRANSACTIONS_7D:
+        return LIQUID_PLAYER_OFFER_DISCOUNT
+    return _tiered_lookup(price_eur, OFFER_DISCOUNT_BY_PRICE)
 # =====================================================================================
 
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
@@ -795,43 +715,10 @@ AUTOBUY_DIAGNOSTIC = os.environ.get('AUTOBUY_DIAGNOSTIC', 'no').strip().lower() 
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
 # Parametri MakeOffer (ramo offerta scontata)
-# Resta il TETTO MASSIMO di sconto e il fallback statico per compute_dynamic_offer_
-# discount() qui sotto -- con la logica dinamica disattivata (o senza abbastanza dati)
-# lo sconto e' ESATTAMENTE questo valore fisso, comportamento identico a prima.
+# Tetto/fallback statico per compute_price_based_offer_discount() -- con
+# PRICE_BASED_THRESHOLDS_ENABLED='no' lo sconto e' ESATTAMENTE questo valore fisso
+# (comportamento originale pre-25/07).
 OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'))
-
-# --- Sconto dell'offerta DINAMICO, basato sul margine del caso specifico (25/07) --------
-# NON e' calibrato su un tasso di accettazione storico delle offerte: i log Actions
-# disponibili in questa sessione mostrano solo "OFFERTA INVIATA CON SUCCESSO" (l'invio e'
-# riuscito lato server), MAI se il venditore l'ha poi accettata, rifiutata o lasciata
-# scadere. Questa e' quindi una logica di MERCATO dichiarata come tale, non un pattern
-# osservato: un "affare" con margine appena sopra la soglia minima MakeOffer (caso limite,
-# il piu' fragile -- potrebbe non essere un vero errore di prezzo) riceve uno sconto
-# ULTERIORE piu' piccolo, per non allontanare troppo il venditore con un'offerta percepita
-# come irrispettosa; un margine gia' ampio (il minimo e' chiaramente fuori mercato) lascia
-# piu' spazio per scontare di piu', fino al tetto statico OFFER_DISCOUNT_FRACTION di oggi
-# (MAI superato: nessuna regressione possibile rispetto al comportamento attuale).
-# Formula: sconto = clamp(margine_del_caso * OFFER_DISCOUNT_SCALE_FACTOR,
-#                          OFFER_DISCOUNT_FLOOR_FRACTION, OFFER_DISCOUNT_FRACTION)
-DYNAMIC_OFFER_DISCOUNT_ENABLED = os.environ.get(
-    'DYNAMIC_OFFER_DISCOUNT_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
-OFFER_DISCOUNT_SCALE_FACTOR = float(os.environ.get('OFFER_DISCOUNT_SCALE_FACTOR', '0.9'))
-OFFER_DISCOUNT_FLOOR_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FLOOR_FRACTION', '0.10'))
-
-
-def compute_dynamic_offer_discount(margin_percent):
-    """Ritorna la frazione di sconto da applicare per QUESTO caso specifico (stesso
-    margin_percent gia' calcolato in evaluate_event, riusato -- niente calcolo
-    duplicato). Se la logica dinamica e' disattivata, ritorna sempre
-    OFFER_DISCOUNT_FRACTION (comportamento originale). Altrimenti scala con il margine
-    osservato sul caso, clampato tra OFFER_DISCOUNT_FLOOR_FRACTION (mai piu' aggressivo
-    di questo, anche su un margine minuscolo) e OFFER_DISCOUNT_FRACTION (mai piu'
-    aggressivo del tetto statico attuale, nessuna regressione possibile)."""
-    if not DYNAMIC_OFFER_DISCOUNT_ENABLED:
-        return OFFER_DISCOUNT_FRACTION
-    raw = margin_percent * OFFER_DISCOUNT_SCALE_FACTOR
-    return max(OFFER_DISCOUNT_FLOOR_FRACTION, min(raw, OFFER_DISCOUNT_FRACTION))
-
 
 OFFER_DURATION_DAYS = max(1, min(7, int(os.environ.get('OFFER_DURATION_DAYS', '1'))))
 OFFER_DURATION_SECONDS = OFFER_DURATION_DAYS * 86400
@@ -2893,10 +2780,15 @@ def send_startup_msg():
     classic_msg = "\nModalita' CLASSIC attiva (tutti i campionati)" if CHECK_CLASSIC else ""
     autobuy_stato = "ATTIVO" if AUTOBUY_LIVE_MODE else "solo diagnostica"
     makeoffer_stato = "ATTIVO" if MAKEOFFER_LIVE_MODE else "solo diagnostica"
+    soglie_msg = (
+        f"Soglie per-prezzo attive (AutoBuy: {autobuy_stato}, MakeOffer: {makeoffer_stato})"
+        if PRICE_BASED_THRESHOLDS_ENABLED else
+        f"AutoBuy: margine >= {AUTOBUY_MARGIN_FRACTION:.0%} ({autobuy_stato})\n"
+        f"MakeOffer: margine >= {MAKEOFFER_MARGIN_FRACTION:.0%} ({makeoffer_stato})"
+    )
     send_telegram_msg(
         f"\U0001F916 <b>Bot Supremo avviato</b>\n"
-        f"AutoBuy: margine >= {AUTOBUY_MARGIN_FRACTION:.0%} ({autobuy_stato})\n"
-        f"MakeOffer: margine {MAKEOFFER_MARGIN_FRACTION:.0%}-{MAKEOFFER_MAX_MARGIN_FRACTION:.0%} ({makeoffer_stato})\n"
+        f"{soglie_msg}\n"
         f"Fascia prezzo: {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR\n"
         f"Ascolto per {LISTEN_SECONDS}s o fino a {AUTOBUY_TARGET_MATCHES} casi trovati.{classic_msg}"
     )
@@ -3086,19 +2978,17 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     margin_percent = (second_min_price - true_min_price) / second_min_price
 
-    # Registra SEMPRE l'osservazione (anche se il caso poi verra' scartato) -- serve la
-    # distribuzione completa dei margini di mercato, non solo quelli che superano una
-    # soglia, per calibrare compute_dynamic_margin_thresholds() sui dati reali recenti.
-    # Vedi la sezione "SOGLIE DI MARGINE DINAMICHE" sopra le costanti statiche per il
-    # razionale completo (caso Jhon Arias, percentili osservati, fail-safe).
-    record_margin_observation(margin_percent * 100)
-    eff_makeoffer_min, eff_makeoffer_max, eff_autobuy, _dyn_n, _is_dynamic = \
-        compute_dynamic_margin_thresholds()
+    # Soglie basate sul PREZZO del vero minimo (vedi sezione "SOGLIE BASATE SUL PREZZO"
+    # sopra le costanti statiche per il razionale completo -- ~45 casi discussi con
+    # l'utente il 25-26/07). eff_autobuy e' None sotto AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:
+    # in quel caso l'AutoBuy diretto non e' mai un'opzione, solo MakeOffer.
+    eff_makeoffer_min, eff_autobuy = compute_price_based_thresholds(true_min_price)
+    eff_makeoffer_max = eff_autobuy if eff_autobuy is not None else float('inf')
+    _autobuy_eligible = eff_autobuy is not None and margin_percent >= eff_autobuy
+    _autobuy_desc = f">= {eff_autobuy:.1%}" if eff_autobuy is not None else "mai (prezzo troppo basso)"
     log(f"{player_name}: minimo {true_min_price:.2f}EUR, secondo {second_min_price:.2f}EUR, "
-        f"margine {margin_percent:.1%} (soglie {'dinamiche' if _is_dynamic else 'statiche'} "
-        f"MakeOffer {eff_makeoffer_min:.1%}-{eff_makeoffer_max:.1%}, AutoBuy >= {eff_autobuy:.1%}"
-        f" -- base statica MakeOffer {MAKEOFFER_MARGIN_FRACTION:.0%}-{MAKEOFFER_MAX_MARGIN_FRACTION:.0%}, "
-        f"AutoBuy >= {AUTOBUY_MARGIN_FRACTION:.0%}, campioni storia={_dyn_n})")
+        f"margine {margin_percent:.1%} (soglie per-prezzo: MakeOffer >= {eff_makeoffer_min:.1%}, "
+        f"AutoBuy {_autobuy_desc})")
 
     if margin_percent < eff_makeoffer_min:
         # BID PERIODICO (22/07, richiesta esplicita utente): prima di scartare per
@@ -3161,8 +3051,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     _t_prepare_fired = None
     _card_details_future = None
     _t_card_details_fired = None
-    _va_verso_autobuy = (not trigger_su_minimo_non_allineato
-                          and margin_percent >= eff_autobuy)
+    _va_verso_autobuy = not trigger_su_minimo_non_allineato and _autobuy_eligible
     _sign_future = None
     if _va_verso_autobuy and offer_id:
         _t_prepare_fired = time.monotonic()
@@ -3209,14 +3098,14 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     effective_discount = None
     if trigger_su_minimo_non_allineato:
         if eff_makeoffer_min <= margin_percent <= eff_makeoffer_max:
-            effective_discount = compute_dynamic_offer_discount(margin_percent)
+            effective_discount = compute_price_based_offer_discount(true_min_price, count_7d)
             prezzo_da_pagare = round(true_min_price * (1 - effective_discount), 2)
         else:
             return False
-    elif margin_percent >= eff_autobuy:
+    elif _autobuy_eligible:
         prezzo_da_pagare = true_min_price
     elif eff_makeoffer_min <= margin_percent <= eff_makeoffer_max:
-        effective_discount = compute_dynamic_offer_discount(margin_percent)
+        effective_discount = compute_price_based_offer_discount(true_min_price, count_7d)
         prezzo_da_pagare = round(true_min_price * (1 - effective_discount), 2)
     else:
         return False
@@ -3254,7 +3143,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                                          offer_discount=effective_discount,
                                          threshold_used=eff_makeoffer_min)
 
-    if margin_percent >= eff_autobuy:
+    if _autobuy_eligible:
         return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
                                        margin_percent, card_slug, excluded_league, is_in_season,
                                        offer_id, timing=_timing, prepare_future=_prepare_future,
@@ -3472,15 +3361,14 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
     # per il controllo ultima/penultima transazione) -- se assente (fallback, es.
     # chiamata diretta senza passare per il router), ricalcola qui col margine noto.
     effective_discount = (offer_discount if offer_discount is not None
-                           else compute_dynamic_offer_discount(margin_percent))
+                           else compute_price_based_offer_discount(true_min_price))
     offer_amount_eur = round(true_min_price * (1 - effective_discount), 2)
     if offer_amount_eur <= 0:
         log(f"{player_name}: scarto -- offerta calcolata non positiva ({offer_amount_eur}EUR)")
         return False
 
     log(f"{player_name}: offerta calcolata: {offer_amount_eur:.2f}EUR "
-        f"(minimo {true_min_price:.2f}EUR - sconto {'dinamico' if DYNAMIC_OFFER_DISCOUNT_ENABLED else 'statico'} "
-        f"{effective_discount:.1%}, tetto statico {OFFER_DISCOUNT_FRACTION:.0%}), "
+        f"(minimo {true_min_price:.2f}EUR - sconto per-prezzo {effective_discount:.1%}), "
         f"durata {OFFER_DURATION_DAYS} giorni")
 
     prepared, offer_sent, offer_error, _durata_prepare, _durata_esecuzione = \
@@ -4083,17 +3971,14 @@ def main():
     csrf_source = "estratto dal cookie (csrftoken=...)" if _extract_csrf_from_cookie(COOKIES) else "da secret SORARE_CSRF (fallback)"
     log(f"[auth] CSRF token in uso: {csrf_source}, valore: {(CSRF_TOKEN or '')[:20]}...")
     log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
-        f"MakeOffer base statica {MAKEOFFER_MARGIN_FRACTION:.0%}-{MAKEOFFER_MAX_MARGIN_FRACTION:.0%}, "
-        f"AutoBuy base statica >= {AUTOBUY_MARGIN_FRACTION:.0%}, target casi da trovare: {AUTOBUY_TARGET_MATCHES}")
-    _startup_min, _startup_max, _startup_autobuy, _startup_n, _startup_dyn = \
-        compute_dynamic_margin_thresholds()
-    log(f"[margine dinamico] {'ATTIVO' if DYNAMIC_MARGIN_ENABLED else 'DISATTIVO (uso solo soglie statiche)'}"
-        f", campioni storia disponibili: {_startup_n} (minimo richiesto "
-        f"{DYNAMIC_MARGIN_HISTORY_MIN_SAMPLES}), fascia effettiva di partenza: "
-        f"MakeOffer {_startup_min:.1%}-{_startup_max:.1%}, AutoBuy >= {_startup_autobuy:.1%}"
-        f" ({'dinamica' if _startup_dyn else 'statica, non ancora abbastanza dati'})")
-    log(f"[sconto offerta dinamico] {'ATTIVO' if DYNAMIC_OFFER_DISCOUNT_ENABLED else 'DISATTIVO (uso solo sconto statico)'}"
-        f", tetto statico {OFFER_DISCOUNT_FRACTION:.0%}, pavimento {OFFER_DISCOUNT_FLOOR_FRACTION:.0%}")
+        f"target casi da trovare: {AUTOBUY_TARGET_MATCHES}")
+    log(f"[soglie per-prezzo] {'ATTIVO' if PRICE_BASED_THRESHOLDS_ENABLED else 'DISATTIVO (uso solo soglie statiche legacy)'}"
+        f" -- MakeOffer minimo: {MAKEOFFER_MIN_MARGIN_LOW_PRICE:.0%} sotto "
+        f"{MAKEOFFER_MIN_MARGIN_PRICE_BREAKPOINT:.2f}EUR, {MAKEOFFER_MIN_MARGIN_HIGH_PRICE:.0%} sopra. "
+        f"AutoBuy diretto: mai sotto {AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:.2f}EUR, poi "
+        f"{', '.join(f'{p:.0f}EUR->{m:.0%}' for p, m in AUTOBUY_MIN_MARGIN_BY_PRICE)}. "
+        f"Sconto offerta: {', '.join(f'{p:.0f}EUR->{d:.0%}' for p, d in OFFER_DISCOUNT_BY_PRICE)} "
+        f"(giocatori liquidi, count_7d>={LIQUID_PLAYER_TRANSACTIONS_7D}: {LIQUID_PLAYER_OFFER_DISCOUNT:.0%})")
     log(f"Giocatori in blacklist unita: {len(BLACKLISTED_PLAYER_SLUGS)}")
     log(f"Manager in blacklist unita: {len(BLACKLISTED_MANAGER_SLUGS)}")
     if AUTOBUY_LIVE_MODE or MAKEOFFER_LIVE_MODE:
