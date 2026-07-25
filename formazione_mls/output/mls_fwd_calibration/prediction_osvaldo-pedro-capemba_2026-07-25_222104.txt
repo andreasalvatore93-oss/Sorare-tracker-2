@@ -1,0 +1,84 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T22:21:04.924096Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) osvaldo-pedro-capemba: 33 pt attesi (19-48)
+======================================================================
+
+######################################################################
+# GIOCATORE: osvaldo-pedro-capemba
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: osvaldo-pedro-capemba (squadra: sporting-kc-kansas-city-kansas)
+Generato: 2026-07-25T22:21:04.923185Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 13
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-18 | VAN vs SKC | mlspa | score=49.7 | peso=0.707
+  2026-04-26 | CHI vs SKC | mlspa | score=40.2 | peso=0.749
+  2026-05-02 | SKC vs SEA | mlspa | score=43.9 | peso=0.794
+  2026-05-10 | POR vs SKC | mlspa | score=32.0 | peso=0.841
+  2026-05-24 | SKC vs RBNY | mlspa | score=54.0 | peso=0.891
+  2026-07-17 | STL vs SKC | mlspa | score=63.2 | peso=0.944
+  2026-07-23 | SKC vs MIN | mlspa | score=60.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 49.76
+Deviazione standard pesata: 10.51
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.25 (differenza: +3.26)
+Media score in casa: 52.67 | Media score fuori casa: 46.28
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.7
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.872
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.989
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.970
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T02:30
+Casa: Los Angeles FC | Trasferta: Sporting Kansas City 
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 33.4 +/- 14.7
+  (range: 18.7 - 48.2)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.66
+Punteggio REALE ottenuto in quella partita: 60.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +12.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=20.0+trend_int=0.7+granulari' (half_life=9.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.4    60.1     +1.7    12.5        SI
+
+MAE (errore assoluto medio): 1.69
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
