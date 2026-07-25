@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-25T16:56:30.094620Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.6, min_starter_odds=70%
+======================================================================
+1) brian-schwake: 63 pt attesi (33-93)
+======================================================================
+
+######################################################################
+# GIOCATORE: brian-schwake
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: brian-schwake (squadra: nashville-sc)
+Generato: 2026-07-25T16:56:30.094296Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-01 | DAL vs NSH | mlspa | score=72.6 | peso=0.340
+  2026-03-08 | NSH vs MIN | mlspa | score=46.9 | peso=0.367
+  2026-03-14 | CLB vs NSH | mlspa | score=68.2 | peso=0.397
+  2026-03-21 | NSH vs ORL | mlspa | score=66.2 | peso=0.429
+  2026-04-05 | CHI vs NSH | mlspa | score=28.6 | peso=0.463
+  2026-04-11 | CLT vs NSH | mlspa | score=37.8 | peso=0.500
+  2026-04-18 | ATL vs NSH | mlspa | score=76.1 | peso=0.540
+  2026-04-26 | NSH vs CLT | mlspa | score=25.5 | peso=0.583
+  2026-05-02 | PHI vs NSH | mlspa | score=85.3 | peso=0.630
+  2026-05-10 | NSH vs DC | mlspa | score=52.7 | peso=0.680
+  2026-05-13 | NE vs NSH | mlspa | score=64.6 | peso=0.735
+  2026-05-18 | NSH vs LAFC | mlspa | score=60.9 | peso=0.794
+  2026-05-24 | NSH vs NYC | mlspa | score=40.3 | peso=0.857
+  2026-07-18 | NSH vs ATL | mlspa | score=81.6 | peso=0.926
+  2026-07-23 | NSH vs MTL | mlspa | score=76.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 60.37
+Deviazione standard pesata: 18.61
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.17 (differenza: +2.45)
+Media score in casa: 56.38 | Media score fuori casa: 61.89
+Fattore casa/trasferta applicato: 1.047 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.067
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore possesso (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci): 0.973
+Fattore gol subiti (goals_conceded, con cap): 1.019
+Tasso storico clean sheet (porta inviolata nei primi 60'): 53.3% (bonus atteso incorporato nella media pesata: ~13.3pt)
+Fattore trend (media ultime 5: 64.9 vs media ultime 10: 60.2): 1.055
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-25T23:30
+Casa: Orlando City SC | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 63.0 +/- 29.8
+  (range: 33.3 - 92.8)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.36
+Punteggio REALE ottenuto in quella partita: 76.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +18.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      65.7    76.1    +10.4    26.8        SI
+   7        7      52.1    25.5    -26.6    28.4        SI
+   8        8      75.5    85.3     +9.8    31.7        SI
+   9        9      48.3    52.7     +4.4    35.1        SI
+  10       10      46.8    64.6    +17.8    32.6        SI
+  11       11      38.4    60.9    +22.5    30.8        SI
+  12       12      46.9    40.3     -6.6    28.9        SI
+  13       13      69.4    81.6    +12.2    28.6        SI
+  14       14      70.6    76.9     +6.3    30.0        SI
+
+MAE (errore assoluto medio): 12.94
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
