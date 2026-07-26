@@ -14,6 +14,20 @@ RARE_EVENTS/GOALS_CONCEDED/GOALKEEPING) -- finisce sempre nel "residuo".
 Questo script verifica se il pattern e' sistematico (su TUTTE le partite in
 cache) o solo un caso isolato, e quanto pesano gli altri gruppi TRA LORO.
 
+NOTA IMPORTANTE (26/07, segnalata dall'utente): 'level_score' NON e' un
+valore continuo puramente legato alla prestazione -- ha una base FISSA di
+35 assegnata a qualunque giocatore che scenda in campo anche un solo
+secondo (poi sale, es. ~60 per un portiere con clean sheet, secondo il
+commento gia' presente in test_gk.py). Questo significa che il peso
+41-63% misurato qui sotto e' gonfiato da questa componente fissa di
+partecipazione, che NON e' predicibile ne' condizionabile (o quasi) da
+venue/avversario -- la vera leva predittiva sfruttabile su level_score e'
+piu' piccola della percentuale grezza, probabilmente riconducibile a poche
+soglie discrete (ha giocato / clean sheet o simili), non un continuo. Da
+tenere presente prima di investire tempo nel modellarlo: verificare prima
+quanto della VARIANZA di level_score (non solo la sua magnitudine media)
+e' davvero spiegabile da fattori conosciuti, sottraendo la base fissa.
+
 Uso: RUOLO=gk python formazione_mls/diagnostics/inspect_granular_weights.py
 Legge da formazione_mls/output/mls_<ruolo>_calibration/.cache/*_detail_cache.json
 (committati nel repo dai run di calibrazione -- nessun nuovo dato scaricato).
