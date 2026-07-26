@@ -45,11 +45,49 @@ GROUPS_BY_ROLE = {
                                   'dive_catch', 'cross_not_claimed', 'six_second_violation',
                                   'gk_smother', 'accurate_keeper_sweeper'),
     },
+    'def': {
+        'Falli': ('fouls',),
+        'Duelli': ('duel_won', 'duel_lost', 'poss_lost_ctrl', 'interception_won'),
+        'Efficacia offensiva': ('ontarget_scoring_att', 'big_chance_created', 'big_chance_missed',
+                                 'pen_area_entries', 'won_contest'),
+        'Passaggio': ('accurate_pass', 'successful_final_third_passes', 'adjusted_total_att_assist',
+                       'accurate_long_balls', 'long_pass_own_to_opp_success'),
+        'Eventi rari': ('penalty_won', 'penalty_conceded', 'own_goals', 'error_lead_to_goal'),
+        'Difesa/eventi rarissimi': ('double_double', 'triple_double', 'triple_triple', 'last_man_tackle',
+                                     'clearance_off_line', 'error_lead_to_shot', 'assist_penalty_won'),
+        'Azioni difensive': ('won_tackle', 'blocked_cross', 'outfielder_block'),
+        'Gol subiti': ('goals_conceded',),
+        'Clean sheet/disimpegni': ('clean_sheet_60', 'effective_clearance'),
+    },
+    'mid': {
+        'Falli': ('fouls', 'was_fouled'),
+        'Duelli': ('duel_won', 'duel_lost', 'poss_lost_ctrl', 'interception_won'),
+        'Efficacia offensiva': ('ontarget_scoring_att', 'big_chance_created', 'big_chance_missed',
+                                 'pen_area_entries', 'won_contest'),
+        'Passaggio': ('accurate_pass', 'successful_final_third_passes', 'adjusted_total_att_assist',
+                       'accurate_long_balls'),
+        'Eventi rari': ('penalty_won', 'penalty_conceded', 'own_goals', 'error_lead_to_goal'),
+        'Difesa/eventi rarissimi': ('double_double', 'triple_double', 'triple_triple', 'last_man_tackle',
+                                     'clearance_off_line', 'error_lead_to_shot', 'assist_penalty_won'),
+        'Azioni difensive': ('won_tackle', 'blocked_cross', 'outfielder_block'),
+        'Gol subiti': ('goals_conceded',),
+    },
+    'fwd': {
+        'Falli': ('fouls', 'was_fouled'),
+        'Duelli': ('duel_won', 'duel_lost', 'poss_lost_ctrl', 'interception_won'),
+        'Efficacia offensiva': ('ontarget_scoring_att', 'big_chance_created', 'big_chance_missed',
+                                 'pen_area_entries', 'won_contest'),
+        'Passaggio': ('accurate_pass', 'successful_final_third_passes', 'adjusted_total_att_assist'),
+        'Eventi rari': ('penalty_won', 'penalty_conceded', 'own_goals', 'error_lead_to_goal'),
+        'Difesa/eventi rarissimi': ('double_double', 'triple_double', 'triple_triple', 'last_man_tackle',
+                                     'clearance_off_line', 'error_lead_to_shot', 'assist_penalty_won'),
+    },
 }
 
 GROUPS = GROUPS_BY_ROLE.get(RUOLO)
 if GROUPS is None:
-    raise SystemExit(f"Gruppi non definiti per il ruolo '{RUOLO}' in questo script (solo 'gk' per ora).")
+    raise SystemExit(f"Gruppi non definiti per il ruolo '{RUOLO}' in questo script "
+                      f"(disponibili: {', '.join(GROUPS_BY_ROLE)}).")
 
 ALL_TRACKED_STATS = {s for stats in GROUPS.values() for s in stats}
 
