@@ -506,19 +506,27 @@ hanno SEMPRE `totalScore=0.0` come riga propria — il loro impatto reale è tut
 `level_score`, non nella riga della singola statistica) contro il valore di `level_score`
 risultante, su tutte le partite in cache di tutti e 4 i ruoli.
 
-**Regola scoperta (100% pulita, zero eccezioni sul caso base, su migliaia di partite)**:
+**Regola CORRETTA E FINALE** (prima versione ipotizzata "primo evento/eventi successivi in ordine
+cronologico" era sbagliata — corretta dall'utente il 26/07 con controesempi reali GK: la vera
+chiave e' il CONTEGGIO NETTO di eventi decisivi, sommando i valori se un evento si ripete, es.
+doppietta=2 gol):
 ```
-level_score = 35 (base, chiunque scenda in campo)
-              + 25 per il PRIMO evento decisivo positivo (gol, assist, clean sheet per GK,
-                last man tackle, rigore parato, disimpegno sulla linea, assist da rigore...)
-              + 10 per ogni evento positivo AGGIUNTIVO nella stessa partita
-              - 20 per ogni evento decisivo negativo (cartellino rosso, autogol, rigore causato,
-                errore che porta a un gol subito)
+netto = sum(statValue di tutte le righe POSITIVE_DECISIVE_STAT)
+      - sum(statValue di tutte le righe NEGATIVE_DECISIVE_STAT)
+
+netto -2 -> level_score  5
+netto -1 -> level_score 15
+netto  0 -> level_score 35  (base)
+netto +1 -> level_score 60
+netto +2 -> level_score 70
+netto +3 -> level_score 80
+netto +4 -> level_score 90
+netto +5 -> level_score 100
 ```
-Eventi positivi e negativi si SOMMANO algebricamente (non si applicano in sequenza indipendente) —
-un gol (+25) e un errore-che-porta-a-un-gol (-20 -- validato piu' precisamente come compensazione
-1 a 1 sulla "scala eventi", vedi sotto) nella stessa partita possono annullarsi e riportare il
-giocatore alla base 35 netta.
+Il salto dal centro (35) al primo scalino e' piu' grande (+-25) di ogni scalino successivo
+(+-10) -- ma la funzione dipende dal CONTEGGIO NETTO, non dall'ordine temporale in cui gli eventi
+sono avvenuti in partita (un gol e un errore-che-porta-a-un-gol nella stessa partita si annullano
+esattamente: netto 1-1=0 -> resta a 35, indipendentemente da quale dei due sia successo prima).
 
 **Validato dall'utente con schermate Sorare reali** (non solo dedotto dai dati):
 1. Aaron Salem Boupendza Pozzi (2 gol + 1 assist, Zhejiang Greentown vs Sichuan FC, 01/04/2025):
@@ -532,6 +540,16 @@ giocatore alla base 35 netta.
    complessivo" (i granulari): -9.9. Totale reale: 35 + (-9.9) = 25.1, esatto.
 3. Antony Alves Santos (1 `penalty_conceded`, Vancouver Whitecaps vs Portland Timbers,
    05/04/2026): `level_score`=15 (35-20), coerente con la regola per un singolo evento negativo.
+4. Andre Blake (GK, clean sheet netto, Philadelphia Union vs DC United, 18/04/2026):
+   `level_score`=60, confermato dall'utente -- la regola vale identica anche per il portiere
+   (clean_sheet_60 conta come 1 evento positivo netto).
+5. Michael Collodi (GK, `last_man_tackle`+`penalty_save`, Seattle Sounders vs FC Dallas,
+   26/04/2026): `level_score`=70 (netto +2: 35+25+10). Confermato dall'utente: "su Sorare il
+   level_score si chiama Punteggio decisivo... con un clean sheet in piu' sarebbe stato 80". Al
+   decisivo 70 si sommano granulari +16 per il totale reale 86.1.
+6. Pablo Sisniega (GK, `own_goals`+`red_card`, San Diego FC vs Vancouver Whitecaps, 30/11/2025):
+   `level_score`=5 (netto -2: 35-20-10). Confermato dall'utente, granulari -3.6 portano il
+   punteggio totale reale a 1.4 ("che partita di merda che ha fatto").
 
 **Scoperta importante collegata**: `level_score` NON e' quindi un misterioso "black box Sorare" --
 è letteralmente il "**Punteggio decisivo**" mostrato nella UI (gauge -3..+5 con soglie
