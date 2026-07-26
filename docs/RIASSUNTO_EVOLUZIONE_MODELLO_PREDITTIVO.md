@@ -497,3 +497,56 @@ muove) — la regola esatta servirebbe più tempo/dati ed è naturalmente colleg
 nella stessa partita, sono esattamente il tipo di correlazione tra slot che il Finding 4/F della
 sezione 5 di `RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md` intendeva modellare). Non implementato,
 solo diagnosticato — nessuna modifica al codice di produzione per questo punto.
+
+## 11. Mattina 26/07 (continua) — REGOLA ESATTA di `level_score` scoperta e validata dall'utente su Sorare
+
+Approfondimento richiesto dall'utente (partendo dagli attaccanti, poi da estendere a tutti i
+ruoli): mappata ogni combinazione di stat `POSITIVE_DECISIVE_STAT`/`NEGATIVE_DECISIVE_STAT` (che
+hanno SEMPRE `totalScore=0.0` come riga propria — il loro impatto reale è tutto dentro
+`level_score`, non nella riga della singola statistica) contro il valore di `level_score`
+risultante, su tutte le partite in cache di tutti e 4 i ruoli.
+
+**Regola scoperta (100% pulita, zero eccezioni sul caso base, su migliaia di partite)**:
+```
+level_score = 35 (base, chiunque scenda in campo)
+              + 25 per il PRIMO evento decisivo positivo (gol, assist, clean sheet per GK,
+                last man tackle, rigore parato, disimpegno sulla linea, assist da rigore...)
+              + 10 per ogni evento positivo AGGIUNTIVO nella stessa partita
+              - 20 per ogni evento decisivo negativo (cartellino rosso, autogol, rigore causato,
+                errore che porta a un gol subito)
+```
+Eventi positivi e negativi si SOMMANO algebricamente (non si applicano in sequenza indipendente) —
+un gol (+25) e un errore-che-porta-a-un-gol (-20 -- validato piu' precisamente come compensazione
+1 a 1 sulla "scala eventi", vedi sotto) nella stessa partita possono annullarsi e riportare il
+giocatore alla base 35 netta.
+
+**Validato dall'utente con schermate Sorare reali** (non solo dedotto dai dati):
+1. Aaron Salem Boupendza Pozzi (2 gol + 1 assist, Zhejiang Greentown vs Sichuan FC, 01/04/2025):
+   score 91.9 = level_score 80 (35 + 25 primo gol + 10 secondo gol + 10 assist) + granulari 11.9
+   (screenshot UI: Generale -1.5, Possesso -6, Passaggio 7.4, In attacco 12 = 11.9). Conferma
+   ESATTA sia della formula di level_score sia che score_totale = level_score + somma granulari.
+2. Denis Bouanga (1 gol + 1 errore-che-porta-a-un-gol, San Diego FC vs Los Angeles FC, 03/05/2026):
+   `level_score`=35 (netto). Screenshot UI mostra la sezione "Punteggio decisivo" come un GAUGE a
+   scala di EVENTI (non punti diretti): "Positivo decisivo: 1 (Gol)", "Negativo decisivo: -1
+   (Errore che ha causato un gol)" → netto 0 sulla scala eventi → livello resta a 35. "Punteggio
+   complessivo" (i granulari): -9.9. Totale reale: 35 + (-9.9) = 25.1, esatto.
+3. Antony Alves Santos (1 `penalty_conceded`, Vancouver Whitecaps vs Portland Timbers,
+   05/04/2026): `level_score`=15 (35-20), coerente con la regola per un singolo evento negativo.
+
+**Scoperta importante collegata**: `level_score` NON e' quindi un misterioso "black box Sorare" --
+è letteralmente il "**Punteggio decisivo**" mostrato nella UI (gauge -3..+5 con soglie
+0/15/35/60/70/80/90/100), un contatore di EVENTI decisivi (non punti) che poi si traduce in un
+valore di livello secondo tabella fissa. Il "Punteggio complessivo" della UI corrisponde
+esattamente alla somma dei nostri gruppi granulari (Generale/Possesso/Passaggio/In
+attacco/Difesa). `score_totale = level_score (Punteggio decisivo) + somma_granulari (Punteggio
+complessivo)` -- confermato aritmeticamente su piu' casi reali.
+
+**Implicazione per il modello**: la vera leva sfruttabile non è "normalizzare level_score per
+casa/trasferta" (era l'approccio sbagliato, level_score non è un valore continuo con una media
+mobile sensata) — è stimare la **probabilità storica di ciascun evento decisivo per il giocatore**
+(tasso gol/partita, tasso assist, tasso cartellino, tasso clean sheet per GK/DEF) e usarla per
+calcolare un valore atteso di `level_score` per la prossima partita, anziché lasciarlo
+implicitamente dentro la media pesata generica dello score totale (dove il rumore degli eventi
+rari lo confonde con le fluttuazioni "normali" di gioco). Non ancora implementato — prossimo passo
+naturale, da fare per tutti e 4 i ruoli (richiesta esplicita dell'utente: "dobbiamo farlo anche
+sugli altri ruoli").
