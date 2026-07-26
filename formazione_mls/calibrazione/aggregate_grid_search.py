@@ -9,9 +9,26 @@ combinazione migliore per un singolo giocatore, ma quella che generalizza
 meglio sull'insieme.
 
 La combinazione con il punteggio composito medio piu' basso (stesso criterio
-usato per-giocatore: MAE + 0.3*|copertura-68%|) diventa il candidato per i
+usato per-giocatore: MAE + 0.1*|copertura-68%|) diventa il candidato per i
 parametri FISSI del modello finale (fine grid search continuo, un solo set
 di parametri usato sempre).
+
+PESO PENALITA' COPERTURA ABBASSATO 0.3 -> 0.1 (27/07, revisione composite
+score): il target 68% ha fondamento teorico (copertura attesa a +-1 dev std
+in una normale, vedi RANGE_MULTIPLIER/p16/p84 in test_*.py), ma il peso 0.3
+non era mai stato calibrato -- era stato scelto ad occhio. Verificato con i
+dati di calibrazione globale gia' su disco (65-84 giocatori/ruolo): con peso
+0.3 il composite score sceglieva per MID una combinazione con MAE +2.72%
+peggiore del vero minimo MAE (hl=12.0/range=1.4/trend=1.3+granulari invece
+di hl=12.0/range=1.2/trend=0.7 SENZA granulari, gia' identificato a mano in
+docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md come "il vincitore vero" e
+gia' i parametri di produzione attuali). Con peso 0.1 il composite score
+coincide col vincitore per MAE puro su tutti e 4 i ruoli (mid/def/fwd/gk,
+perdita 0.00% ovunque contro dati attuali), pur restando utile come
+tie-breaker quando piu' combinazioni hanno MAE davvero equivalente (es. FWD
+a peso 0 sceglierebbe un tris di combinazioni a pari MAE con copertura
+61.2%, contro 69.5% scelto a peso 0.1). Range di pesi validato [0.08, 0.10];
+0.1 lascia margine. Vedi analisi in cronologia sessione 27/07.
 
 PARAMETRIZZATO PER RUOLO (25/07, grid search allargato multi-ruolo): il
 ruolo si sceglie con la variabile d'ambiente RUOLO (gk/def/mid/fwd, default
@@ -183,7 +200,7 @@ def aggregate(per_label, n_players):
             avg_coverage = sum(e['pct_dentro_range'] * e['n_test'] for e in coverage_entries) / cov_weight
         else:
             avg_coverage = None
-        coverage_penalty = abs((avg_coverage or 0) - 68.0) * 0.3
+        coverage_penalty = abs((avg_coverage or 0) - 68.0) * 0.1  # peso abbassato 0.3->0.1 il 27/07, vedi docstring
         composite = avg_mae + coverage_penalty
         results.append({
             'label': label,
