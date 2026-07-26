@@ -1310,17 +1310,21 @@ def build_prediction(player_slug):
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_trend)
 
-    # --- Stadio D (26/07, tema level_score/correlazione venue-avversario,
-    # DECISO CON L'UTENTE dopo diagnostica su 233 partite GK in cache di
-    # calibrazione): il "Punteggio decisivo" (level_score) e' significativamente
-    # piu' alto contro avversari piu' deboli della media personale del
-    # portiere (38.1 vs 42.4 punti, z=-2.66 -- piu' parate/clean sheet
-    # decisivi contro squadre deboli). Correzione ADDITIVA (non moltiplicativa,
-    # per non toccare/ricalibrare la catena fattore_forza_avversario gia'
-    # validata sul MAE): si aggiunge SOLO la differenza tra la media
-    # condizionata per il prossimo avversario e la media storica generica,
-    # scalata per P(gioca). Con shrinkage forte (pochi bucket per singolo
-    # portiere), la correzione resta piccola quando lo storico e' scarso.
+    # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
+    # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo
+    # backtest walk-forward rigoroso su dati reali (formazione_mls/diagnostics/
+    # validate_stadio_d_mae.py): le correlazioni aggregate erano statisticamente
+    # solide (z fino a -3.49 per Gol subiti), ma applicate per-giocatore con
+    # shrinkage PEGGIORAVANO il MAE reale del +4.21% (129 punti di test walk-
+    # forward, 15 portieri) -- 59% delle partite predette peggio, non meglio.
+    # L'effetto e' probabilmente reale a livello di popolazione ma troppo
+    # "diluito" per essere sfruttato con soli ~10-15 partite di storico per
+    # portiere: lo shrinkage non basta a compensare il rumore campionario
+    # individuale. Confermato solo per GK (unico ruolo dove il backtest ha
+    # mostrato un peggioramento netto, non solo rumore) -- DEF/MID/FWD
+    # restano invariati (variazione MAE sostanzialmente nulla, ne' beneficio
+    # ne' danno misurato). Calcolo lasciato SOLO diagnostico in output,
+    # NON piu' applicato a score_atteso.
     opponent_forte_flags = [
         (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
         for r in opponent_rankings
@@ -1330,20 +1334,7 @@ def build_prediction(player_slug):
     media_level_score_condizionata = media_condizionata(
         level_score_values, weights, opponent_forte_flags, next_forte, media_level_score_pesata)
     delta_condizionamento_avversario = media_level_score_condizionata - media_level_score_pesata
-    score_atteso += p_gioca * delta_condizionamento_avversario
 
-    # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
-    # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
-    # ruoli"): scomponendo il granulare nelle sue sotto-categorie reali
-    # (invece dell'aggregato) emergono segnali MOLTO piu' forti del
-    # level_score-avversario usato sopra: "Gol subiti" (goals_conceded) e'
-    # significativamente piu' alto (= meno negativo, meno gol subiti) in
-    # casa (z=+3.72) e contro avversari deboli (z=-3.49); "Possesso"
-    # (poss_lost_ctrl) piu' alto in casa (z=+2.11); "Goalkeeping" (saves e
-    # affini) piu' basso in casa (z=-2.03, probabile perche' in casa la
-    # squadra difende meglio nel complesso e il portiere e' chiamato in
-    # causa meno spesso, non perche' para peggio). Stessa logica additiva/
-    # shrinkage delle altre correzioni Stadio D, sommata qui.
     media_gol_subiti_condizionata_venue = media_condizionata(
         goals_conceded_values, weights, is_home_flags, next_is_home, weighted_mean(goals_conceded_values, weights))
     media_gol_subiti_condizionata_avversario = media_condizionata(
@@ -1357,9 +1348,7 @@ def build_prediction(player_slug):
     delta_gol_subiti_avversario = media_gol_subiti_condizionata_avversario - weighted_mean(goals_conceded_values, weights)
     delta_possesso_venue = media_possesso_condizionata_venue - weighted_mean(possession_values, weights)
     delta_goalkeeping_venue = media_goalkeeping_condizionata_venue - weighted_mean(goalkeeping_values, weights)
-
-    score_atteso += p_gioca * (delta_gol_subiti_venue + delta_gol_subiti_avversario
-                                + delta_possesso_venue + delta_goalkeeping_venue)
+    # NOTA: nessuno dei delta sopra viene piu' sommato a score_atteso (vedi motivazione).
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
@@ -1513,12 +1502,13 @@ def format_output(result):
                  f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
     lines.append(f"  Punteggio decisivo condizionato per forza prossimo avversario: "
                  f"{result['media_level_score_condizionata']:.2f} (delta {result['delta_condizionamento_avversario']:+.2f} "
-                 f"vs media generica, Stadio D -- APPLICATO a score_atteso, scalato per P(gioca))")
+                 f"vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 "
+                 f"dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)")
     lines.append(f"  Gol subiti condizionato: delta venue {result['delta_gol_subiti_venue']:+.2f}, "
                  f"delta avversario {result['delta_gol_subiti_avversario']:+.2f} | Possesso condizionato per venue: "
                  f"delta {result['delta_possesso_venue']:+.2f} | Goalkeeping condizionato per venue: "
                  f"delta {result['delta_goalkeeping_venue']:+.2f} "
-                 f"(Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))")
+                 f"(Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
     if result['p16_score'] is not None and result['p84_score'] is not None:
         lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
