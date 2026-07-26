@@ -1080,8 +1080,8 @@ def build_prediction(player_slug):
     # --- Stadio B (26/07, tema level_score): range di confidenza a
     # percentili pesati sullo storico REALE, in alternativa a media+deviazione
     # standard -- si adatta alla bimodalita' reale della distribuzione invece
-    # di assumere una campana. Solo diagnostico per ora, non sostituisce
-    # ancora range_conf.
+    # di assumere una campana. Usato dallo Stadio C sotto per costruire il
+    # range di confidenza finale.
     p16_score = weighted_percentile(scores, weights, 16)
     p84_score = weighted_percentile(scores, weights, 84)
 
@@ -1180,7 +1180,24 @@ def build_prediction(player_slug):
     # reali.
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_trend)
-    range_conf = dev_std_pesata * RANGE_MULTIPLIER  # moltiplicatore aggiornato dal grid search (24/07)
+
+    # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
+    # comparativa su 180 casi reali di produzione): range di confidenza finale
+    # = FORMA del range a percentili pesati (Stadio B, si adatta a distribuzioni
+    # reali non a campana) RI-CENTRATA sullo score_atteso corretto per
+    # avversario/trend. Il vecchio range simmetrico (media+dev.std.pesata*
+    # moltiplicatore) applicava una larghezza NON aggiustata a un centro GIA'
+    # aggiustato, producendo un estremo inferiore < 0 (score impossibile, il
+    # minimo reale e' 0) in circa 1/3 dei casi reali analizzati. Qui si prende
+    # la distanza osservata media_pesata->p16 (risp. p84->media_pesata) e la
+    # si trasla sul nuovo centro score_atteso, poi si clippa a un minimo di 0.
+    if p16_score is not None and p84_score is not None:
+        range_low = max(0.0, score_atteso - (media_pesata - p16_score))
+        range_high = score_atteso + (p84_score - media_pesata)
+    else:
+        _range_conf_fallback = dev_std_pesata * RANGE_MULTIPLIER
+        range_low = max(0.0, score_atteso - _range_conf_fallback)
+        range_high = score_atteso + _range_conf_fallback
 
     # --- Backtest SEMPLICE: riapplica solo la componente media "a ritroso" sull'ultima partita nota ---
     last_real = usable[-1]
@@ -1264,7 +1281,8 @@ def build_prediction(player_slug):
         'p_gioca': p_gioca,
         'p_source': p_source,
         'score_atteso': score_atteso,
-        'range_conf': range_conf,
+        'range_low': range_low,
+        'range_high': range_high,
         'next_game': next_game,
         'backtest_last_real_score': last_real_score,
         'backtest_media_pesata_precedente': backtest_media,
@@ -1309,7 +1327,7 @@ def format_output(result):
     if result['p16_score'] is not None and result['p84_score'] is not None:
         lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
                      f"{result['p16_score']:.1f} - {result['p84_score']:.1f} "
-                     f"(Stadio B, solo diagnostico -- non applicato a range_conf)")
+                     f"(Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)")
     if result['dev_std_trimmed'] is not None:
         lines.append(f"Deviazione standard pesata TRIMMED (esclusi min/max della finestra): "
                      f"{result['dev_std_trimmed']:.2f} (differenza: "
@@ -1347,9 +1365,9 @@ def format_output(result):
     lines.append("=" * 70)
     lines.append("PREDIZIONE")
     lines.append("=" * 70)
-    lines.append(f"Score atteso: {result['score_atteso']:.1f} +/- {result['range_conf']:.1f}")
-    lines.append(f"  (range: {result['score_atteso'] - result['range_conf']:.1f} - "
-                 f"{result['score_atteso'] + result['range_conf']:.1f})")
+    lines.append(f"Score atteso: {result['score_atteso']:.1f} "
+                 f"(range {result['range_low']:.1f} - {result['range_high']:.1f}, "
+                 f"Stadio C: percentili pesati ri-centrati sull'avversario/trend)")
 
     lines.append("")
     lines.append("--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---")
@@ -1503,10 +1521,11 @@ def main():
 
         output_text = format_output(result)
         all_sections.append(f"\n{'#'*70}\n# GIOCATORE: {slug}\n{'#'*70}\n" + output_text)
-        summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_conf'),
-                              result.get('target_competition', ''),
+        summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_low'),
+                              result.get('range_high'), result.get('target_competition', ''),
                               result.get('player_team_slug'), result.get('next_opponent_team_slug')))
-        log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} +/- {result.get('range_conf'):.1f}")
+        log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} "
+            f"(range {result.get('range_low'):.1f} - {result.get('range_high'):.1f})")
 
         # Salvataggio grid_results per QUESTO giocatore, su disco, per il job
         # 'aggregate' separato che calcolera' la combinazione vincente cross-player
@@ -1541,9 +1560,9 @@ def main():
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
     summary_lines.append("=" * 70)
-    for idx, (slug, status, atteso, rng, note, team_slug, opp_slug) in enumerate(ok_rows, 1):
-        low = round(atteso - rng)
-        high = round(atteso + rng)
+    for idx, (slug, status, atteso, range_low, range_high, note, team_slug, opp_slug) in enumerate(ok_rows, 1):
+        low = round(range_low)
+        high = round(range_high)
         summary_lines.append(f"{idx}) {slug}: {round(atteso)} pt attesi ({low}-{high})")
         # NUOVO (26/07, tema correlazione GK-DEF): riga parseable con squadra/
         # avversario, letta da build_consiglio.py per portarla fino a
