@@ -20,6 +20,11 @@ DISCOVERY_FILE = os.path.join('formazione_mls/output/mls_gk_discovery', 'player_
 # sempre riga singola "1) ...").
 CONSIGLIO_RE = re.compile(r'^\d+\)\s+([\w-]+):\s+(-?\d+)\s+pt attesi\s+\((-?\d+)-(-?\d+)\)\s*$')
 ESCLUSO_RE = re.compile(r'^([\w-]+):\s+(ESCLUSO|DATI INSUFFICIENTI)\s+—\s+(.*)$')
+# NUOVO (26/07, tema correlazione GK-DEF): riga "SQUADRA: x | AVVERSARIO: y"
+# scritta subito dopo la riga consiglio da test_gk.py -- portata fino a
+# build_formazione_finale.py per evitare di schierare insieme portiere e
+# giocatore di movimento le cui squadre si affrontano.
+TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
 
 
 def latest_file_for_slug(slug):
@@ -28,21 +33,34 @@ def latest_file_for_slug(slug):
 
 
 def parse_player_file(path):
-    """Estrae dal file di un giocatore la riga consiglio (se OK) o lo stato
-    di esclusione (se escluso/dati insufficienti)."""
+    """Estrae dal file di un giocatore la riga consiglio (se OK, con squadra/
+    avversario) o lo stato di esclusione (se escluso/dati insufficienti)."""
     with open(path, 'r', encoding='utf-8') as f:
         content = f.read()
 
+    consiglio = None
+    team_slug = opp_slug = None
     for line in content.splitlines():
-        m = CONSIGLIO_RE.match(line.strip())
+        stripped = line.strip()
+        m = CONSIGLIO_RE.match(stripped)
         if m:
             slug, atteso, low, high = m.groups()
-            return {'slug': slug, 'status': 'OK', 'atteso': int(atteso),
-                    'low': int(low), 'high': int(high)}
-        m = ESCLUSO_RE.match(line.strip())
+            consiglio = {'slug': slug, 'status': 'OK', 'atteso': int(atteso),
+                         'low': int(low), 'high': int(high)}
+            continue
+        m = TEAM_RE.match(stripped)
+        if m:
+            team_slug, opp_slug = m.groups()
+            continue
+        m = ESCLUSO_RE.match(stripped)
         if m:
             slug, status, note = m.groups()
             return {'slug': slug, 'status': status, 'note': note}
+
+    if consiglio:
+        consiglio['team_slug'] = None if team_slug == 'N/D' else team_slug
+        consiglio['opponent_team_slug'] = None if opp_slug == 'N/D' else opp_slug
+        return consiglio
     return None
 
 
@@ -72,6 +90,9 @@ def main():
     lines.append("")
     for i, r in enumerate(ok_rows, 1):
         lines.append(f"{i}) {r['slug']}: {r['atteso']} pt ({r['low']}-{r['high']})")
+        # NUOVO (26/07, tema correlazione GK-DEF): squadra/avversario, per
+        # build_formazione_finale.py.
+        lines.append(f"   SQUADRA: {r.get('team_slug') or 'N/D'} | AVVERSARIO: {r.get('opponent_team_slug') or 'N/D'}")
     lines.append("")
     lines.append(f"({excluded_count} esclusi/non disponibili questa giornata)")
 

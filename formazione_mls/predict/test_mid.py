@@ -1080,6 +1080,20 @@ def build_prediction(player_slug):
         f"{(next_game.get('awayTeam') or {}).get('name', '?')}")
     next_own_rank, next_opp_rank, next_is_home = team_ranking_from_game(next_game, player_team_slug)
 
+    # NUOVO (26/07, tema correlazione GK-DEF/anti-sinergia): slug (non nome)
+    # della squadra avversaria della prossima partita -- dato di calendario,
+    # gia' noto con largo anticipo (a differenza delle starter odds). Serve a
+    # build_formazione_finale.py per evitare di schierare insieme un portiere
+    # e un giocatore di movimento le cui squadre si affrontano.
+    _next_home_team = next_game.get('homeTeam') or {}
+    _next_away_team = next_game.get('awayTeam') or {}
+    if _next_home_team.get('slug') == player_team_slug:
+        next_opponent_team_slug = _next_away_team.get('slug')
+    elif _next_away_team.get('slug') == player_team_slug:
+        next_opponent_team_slug = _next_home_team.get('slug')
+    else:
+        next_opponent_team_slug = None
+
     # se il ranking non e' nel blocco base, scarichiamo il dettaglio (funziona anche per future)
     if next_opp_rank is None:
         next_score_id = next_node['id'].replace('So5Score:', '')
@@ -1215,6 +1229,7 @@ def build_prediction(player_slug):
         'fattore_casa_trasferta': fattore_casa_trasferta,
         'avg_opp_rank_hist': avg_opp_rank_hist,
         'next_opp_rank': next_opp_rank,
+        'next_opponent_team_slug': next_opponent_team_slug,
         'next_own_rank': next_own_rank,
         'next_is_home': next_is_home,
         'fattore_forza_avversario': fattore_forza_avversario,
@@ -1470,7 +1485,8 @@ def main():
         output_text = format_output(result)
         all_sections.append(f"\n{'#'*70}\n# GIOCATORE: {slug}\n{'#'*70}\n" + output_text)
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_conf'),
-                              result.get('target_competition', '')))
+                              result.get('target_competition', ''),
+                              result.get('player_team_slug'), result.get('next_opponent_team_slug')))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} +/- {result.get('range_conf'):.1f}")
 
         # Salvataggio grid_results per QUESTO giocatore, su disco, per il job
@@ -1506,10 +1522,15 @@ def main():
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
     summary_lines.append("=" * 70)
-    for idx, (slug, status, atteso, rng, note) in enumerate(ok_rows, 1):
+    for idx, (slug, status, atteso, rng, note, team_slug, opp_slug) in enumerate(ok_rows, 1):
         low = round(atteso - rng)
         high = round(atteso + rng)
         summary_lines.append(f"{idx}) {slug}: {round(atteso)} pt attesi ({low}-{high})")
+        # NUOVO (26/07, tema correlazione GK-DEF): riga parseable con squadra/
+        # avversario, letta da build_consiglio_mid.py per portarla fino a
+        # build_formazione_finale.py (evitare di schierare insieme portiere
+        # e giocatore di movimento le cui squadre si affrontano).
+        summary_lines.append(f"   SQUADRA: {team_slug or 'N/D'} | AVVERSARIO: {opp_slug or 'N/D'}")
     if other_rows:
         summary_lines.append("")
         summary_lines.append("--- Esclusi / non disponibili ---")
