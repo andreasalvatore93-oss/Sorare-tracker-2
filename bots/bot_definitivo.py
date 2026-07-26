@@ -2595,6 +2595,7 @@ mutation CreateDirectOfferMutation($input: createDirectOfferInput!) {
     errors { message }
     tokenOffer {
       id
+      blockchainId
       senderSide {
         amounts { eurCents }
       }
@@ -2656,7 +2657,7 @@ def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerpr
         if root_errors or payload_errors:
             category, all_errors = classify_prepare_offer_error(root_errors, payload_errors)
             log(f"[create offer] fallita, categoria='{category}', errori={all_errors}")
-            return False, category, str(all_errors)
+            return False, category, str(all_errors), None
         token_offer = payload.get('tokenOffer')
         if not token_offer:
             # FIX 20/07 (prudenza, stesso pattern gia' visto su acceptOffer -- il
@@ -2668,12 +2669,14 @@ def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerpr
                 f"probabile successo (schema Sorare potrebbe non restituire piu' "
                 f"questo campo, vedi caso analogo 'offer' in acceptOffer): "
                 f"{json.dumps(data)[:500]}")
-            return True, None, None
-        log(f"[create offer] successo, offer id={token_offer.get('id')}")
-        return True, None, None
+            return True, None, None, None
+        blockchain_id = token_offer.get('blockchainId')
+        log(f"[create offer] successo, offer id={token_offer.get('id')}, "
+            f"blockchainId={blockchain_id}")
+        return True, None, None, blockchain_id
     except Exception as e:
         log(f"[create offer] eccezione: {e}")
-        return False, 'eccezione', str(e)
+        return False, 'eccezione', str(e), None
 
 
 def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared, _call_fn=None):
@@ -2690,12 +2693,12 @@ def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared,
 
     if not SORARE_WALLET_PASSWORD:
         log("[offerta live] STOP: SORARE_WALLET_PASSWORD non impostata")
-        return False, "SORARE_WALLET_PASSWORD non impostata"
+        return False, "SORARE_WALLET_PASSWORD non impostata", None
 
     key_data = fetch_encrypted_private_key(_call_fn=_call_fn)
     if not key_data:
         log("[offerta live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
-        return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
+        return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)", None
     log("[offerta live] step 1/3 OK: chiave cifrata recuperata")
 
     fingerprint = prepared.get('fingerprint')
@@ -2711,18 +2714,18 @@ def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared,
     )
     if not signature:
         log("[offerta live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
-        return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
+        return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)", None
     log("[offerta live] step 2/3 OK: firma generata")
 
     deal_id = generate_deal_id()
-    success, category, error = create_direct_offer(
+    success, category, error, blockchain_id = create_direct_offer(
         card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature, deal_id,
         _call_fn=_call_fn)
     if not success:
         log(f"[offerta live] STOP: step 3/3 fallito, categoria='{category}'")
-        return False, f"CreateDirectOfferMutation fallita [{category}]: {error}"
+        return False, f"CreateDirectOfferMutation fallita [{category}]: {error}", None
     log("[offerta live] step 3/3 OK: offerta inviata")
-    return True, None
+    return True, None, blockchain_id
 
 CARD_OFFER_DETAILS_QUERY = """
 query CardOfferDetailsQuery($slug: String!) {
@@ -3336,22 +3339,25 @@ def _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_
     (_try_periodic_bid) -- stessa logica di offerta, stesso beneficio.
     Rispetta MAKEOFFER_LIVE_MODE internamente (esegue create_direct_offer SOLO
     se e' 'si' e prepare_offer e' riuscita), stessa logica di prima.
-    Ritorna (prepared, offer_sent, offer_error, durata_prepare, durata_esecuzione)."""
+    Ritorna (prepared, offer_sent, offer_error, blockchain_id, durata_prepare,
+    durata_esecuzione). blockchain_id (FIX 26/07, meccanismo auto-annullamento offerte)
+    e' None a meno che offer_sent sia True."""
     def _sequenza_completa():
         _t_a = time.monotonic()
         prepared = prepare_offer(card_asset_id, seller_slug, offer_amount_eur,
                                   _call_fn=_graphql_call_via_browser_raw)
         _t_b = time.monotonic()
         if not prepared or not MAKEOFFER_LIVE_MODE:
-            return prepared, False, None, _t_b - _t_a, 0.0
+            return prepared, False, None, None, _t_b - _t_a, 0.0
         try:
-            offer_sent, offer_error = execute_live_offer(
+            offer_sent, offer_error, blockchain_id = execute_live_offer(
                 card_asset_id, seller_slug, offer_amount_eur, prepared,
                 _call_fn=_graphql_call_via_browser_raw)
         except Exception as e:
             log(f"{player_name}: ECCEZIONE IMPREVISTA durante offerta live -- {e}")
-            return prepared, False, f"eccezione imprevista: {e}", _t_b - _t_a, time.monotonic() - _t_b
-        return prepared, offer_sent, offer_error, _t_b - _t_a, time.monotonic() - _t_b
+            return (prepared, False, f"eccezione imprevista: {e}", None,
+                    _t_b - _t_a, time.monotonic() - _t_b)
+        return prepared, offer_sent, offer_error, blockchain_id, _t_b - _t_a, time.monotonic() - _t_b
     return _run_on_browser_thread(_sequenza_completa)
 
 
@@ -3491,7 +3497,7 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
         f"(minimo {true_min_price:.2f}EUR - sconto per-prezzo {effective_discount:.1%}), "
         f"durata {OFFER_DURATION_DAYS} giorni")
 
-    prepared, offer_sent, offer_error, _durata_prepare, _durata_esecuzione = \
+    prepared, offer_sent, offer_error, blockchain_id, _durata_prepare, _durata_esecuzione = \
         _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_eur)
     if prepared:
         nonce = (prepared.get('request') or {}).get('nonce')
@@ -3505,6 +3511,7 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
             if player_slug:
                 record_player_offer(player_slug, is_in_season)
             pending_offers_count[0] += 1
+            register_offer_for_auto_cancel(blockchain_id, player_name)
         else:
             log(f"{player_name}: offerta automatica fallita -- {offer_error}")
             if _is_insufficient_funds_error(offer_error):
@@ -3873,6 +3880,108 @@ EVENT_TIMING_DIAGNOSTIC = os.environ.get('EVENT_TIMING_DIAGNOSTIC', 'si').strip(
 _stop_periodic_commit = threading.Event()
 _stop_periodic_bid = threading.Event()
 
+# AUTO-ANNULLAMENTO OFFERTE MAKEOFFER (26/07, richiesta esplicita utente): il venditore
+# spesso non risponde a un'offerta MakeOffer -- se il bot ne accumula molte senza mai
+# annullarle, il budget resta bloccato inutilmente su offerte pendenti che non
+# porteranno mai a un acquisto. Ogni offerta inviata con successo (sia dal ramo
+# MakeOffer normale sia dal bid periodico) viene registrata qui con un timer
+# INDIPENDENTE e proprio -- un thread dedicato controlla ogni OFFER_AUTO_CANCEL_
+# CHECK_INTERVAL_SECONDS e annulla (mutation CancelOfferMutation, blockchainId --
+# recuperato dalla risposta di CreateDirectOfferMutation, confermata dal vivo il
+# 26/07 annullando un'offerta a mano e catturando la request) SOLO le singole offerte
+# che hanno individualmente superato OFFER_AUTO_CANCEL_SECONDS dalla propria
+# creazione -- non un annullamento "a ondata" di tutte insieme.
+OFFER_AUTO_CANCEL_ENABLED = os.environ.get('OFFER_AUTO_CANCEL_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+OFFER_AUTO_CANCEL_SECONDS = int(os.environ.get('OFFER_AUTO_CANCEL_SECONDS', '300'))
+OFFER_AUTO_CANCEL_CHECK_INTERVAL_SECONDS = 30
+_stop_auto_cancel = threading.Event()
+_pending_cancel_lock = threading.Lock()
+_pending_cancel_offers = []  # lista di dict {'blockchain_id', 'player_name', 'creata_a' (monotonic)}
+
+CANCEL_OFFER_MUTATION = """
+mutation CancelOfferMutation($input: cancelOfferInput!) {
+  cancelOffer(input: $input) {
+    errors { message }
+    tokenOffer {
+      id
+      status
+    }
+  }
+}
+"""
+
+
+def register_offer_for_auto_cancel(blockchain_id, player_name):
+    """Aggiunge un'offerta appena inviata al tracker di auto-annullamento, col suo
+    timer che parte da ADESSO (monotonic, non influenzato dall'ora di sistema).
+    Se blockchain_id e' None (risposta della create senza quel campo -- fail-open
+    gia' gestito altrove, caso raro), non c'e' nulla da tracciare: l'offerta resta
+    viva finche' non scade da sola (OFFER_DURATION_DAYS), nessun crash."""
+    if not OFFER_AUTO_CANCEL_ENABLED or not blockchain_id:
+        return
+    with _pending_cancel_lock:
+        _pending_cancel_offers.append({
+            'blockchain_id': blockchain_id,
+            'player_name': player_name,
+            'creata_a': time.monotonic(),
+        })
+
+
+def cancel_direct_offer(blockchain_id):
+    """Un solo tentativo, fail-safe assoluto (MAI eccezione non gestita, MAI retry --
+    stesso principio delle altre mutation critiche). Non richiede firma/approvazione
+    wallet (confermato dalla request reale catturata il 26/07 -- solo blockchainId),
+    quindi usa graphql_query() diretta invece del percorso via browser thread."""
+    try:
+        data = graphql_query(CANCEL_OFFER_MUTATION, {'input': {'blockchainId': blockchain_id}})
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('cancelOffer') or {}
+        payload_errors = payload.get('errors') or []
+        if root_errors or payload_errors:
+            return False, str(root_errors or payload_errors)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
+def _auto_cancel_offers_scan():
+    """Un giro di controllo: sposta fuori dal lock (per non bloccare i thread che
+    registrano nuove offerte durante le chiamate di rete) solo le offerte che HANNO
+    GIA' superato individualmente OFFER_AUTO_CANCEL_SECONDS, poi le annulla una per
+    una. Le altre restano nel tracker col proprio timer intatto."""
+    ora = time.monotonic()
+    da_annullare = []
+    with _pending_cancel_lock:
+        rimaste = []
+        for entry in _pending_cancel_offers:
+            if ora - entry['creata_a'] >= OFFER_AUTO_CANCEL_SECONDS:
+                da_annullare.append(entry)
+            else:
+                rimaste.append(entry)
+        _pending_cancel_offers[:] = rimaste
+    for entry in da_annullare:
+        eta_secondi = ora - entry['creata_a']
+        success, error = cancel_direct_offer(entry['blockchain_id'])
+        if success:
+            log(f"[auto-annulla offerte] {entry['player_name']}: offerta annullata dopo "
+                f"{eta_secondi:.0f}s (nessuna risposta dal venditore), budget liberato")
+            pending_offers_count[0] = max(0, pending_offers_count[0] - 1)
+        else:
+            # Fail-safe: se l'annullamento fallisce (es. offerta gia' accettata/scaduta
+            # nel frattempo), non ritentiamo -- loggato e basta, l'offerta esce
+            # comunque dal tracker per non ritentare all'infinito su un caso morto.
+            log(f"[auto-annulla offerte] {entry['player_name']}: annullamento fallito dopo "
+                f"{eta_secondi:.0f}s ({error}) -- probabile gia' accettata/scaduta, "
+                f"non ritento")
+
+
+def _auto_cancel_offers_loop():
+    while not _stop_auto_cancel.wait(OFFER_AUTO_CANCEL_CHECK_INTERVAL_SECONDS):
+        try:
+            _auto_cancel_offers_scan()
+        except Exception as e:
+            log(f"[auto-annulla offerte] eccezione non bloccante, ritento al prossimo giro: {e}")
+
 
 def _commit_lista_nera_se_serve():
     """Un solo tentativo di commit+push, non bloccante per il resto del bot in
@@ -3885,12 +3994,12 @@ def _commit_lista_nera_se_serve():
         )
         if not status.stdout.strip():
             return  # nessuna modifica, niente da committare
-        subprocess.run(['git', 'config', 'user.name', 'bot-supremo'], timeout=30)
+        subprocess.run(['git', 'config', 'user.name', 'bot-definitivo'], timeout=30)
         subprocess.run(['git', 'config', 'user.email',
-                         'bot-supremo@users.noreply.github.com'], timeout=30)
+                         'bot-definitivo@users.noreply.github.com'], timeout=30)
         subprocess.run(['git', 'add', LISTA_NERA_PATH], timeout=30)
         commit = subprocess.run(
-            ['git', 'commit', '-m', 'Bot Supremo: commit periodico lista nera (run in corso)'],
+            ['git', 'commit', '-m', 'Bot definitivo: commit periodico lista nera (run in corso)'],
             capture_output=True, text=True, timeout=30
         )
         if commit.returncode != 0:
@@ -4011,7 +4120,7 @@ def _try_periodic_bid(candidato, eth_rate):
         f"(minimo registrato {true_min_price:.2f}EUR - sconto "
         f"{PERIODIC_BID_DISCOUNT_FRACTION:.0%}), durata {OFFER_DURATION_DAYS} giorni")
 
-    prepared, offer_sent, offer_error, _durata_prepare, _durata_esecuzione = \
+    prepared, offer_sent, offer_error, blockchain_id, _durata_prepare, _durata_esecuzione = \
         _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_eur)
     if not prepared:
         log(f"[bid periodico] {player_name}: prenotazione offerta non riuscita, "
@@ -4035,6 +4144,7 @@ def _try_periodic_bid(candidato, eth_rate):
         if player_slug:
             record_player_offer(player_slug, is_in_season)
         pending_offers_count[0] += 1
+        register_offer_for_auto_cancel(blockchain_id, player_name)
         send_makeoffer_alert(player_name, player_slug, true_min_price, true_min_price,
                               candidato['margin_percent'], card_slug, candidato['excluded_league'],
                               prepared, is_in_season, live_mode=MAKEOFFER_LIVE_MODE,
@@ -4176,6 +4286,11 @@ def main():
     periodic_bid_thread.start()
     log(f"[bid periodico] thread avviato -- ogni {PERIODIC_BID_INTERVAL_SECONDS}s, "
         f"attivo={PERIODIC_BID_ENABLED}")
+    auto_cancel_thread = threading.Thread(target=_auto_cancel_offers_loop, daemon=True)
+    auto_cancel_thread.start()
+    log(f"[auto-annulla offerte] thread avviato -- controllo ogni "
+        f"{OFFER_AUTO_CANCEL_CHECK_INTERVAL_SECONDS}s, annulla offerte pendenti da piu' di "
+        f"{OFFER_AUTO_CANCEL_SECONDS}s, attivo={OFFER_AUTO_CANCEL_ENABLED}")
     try:
         matches_found = run_listener(eth_rate)
         target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
