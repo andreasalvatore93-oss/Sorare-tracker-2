@@ -121,7 +121,7 @@ LEAGUE_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_BLACKLIST_DEFAULT_D
 LEAGUE_INSEASON_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_INSEASON_BLACKLIST_DEFAULT_DAYS', '15'))
 
 _LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto', 'campionato',
-                           'campionato_inseason_temp', 'forma_bassa_ultime_5')
+                           'campionato_inseason_temp', 'forma_bassa_ultime_5', 'fix_urgente')
 
 # Vecchi file, letti SOLO per la migrazione automatica una tantum (prima run dopo
 # l'aggiornamento). Una volta migrati in sorare_lista_nera.txt possono essere eliminati
@@ -184,9 +184,16 @@ _LISTA_NERA_INTESTAZIONI = {
         "restano in 'giocatore'), perche' questa e' una condizione transitoria che "
         "puo' rientrare -- non merita un blocco di 365gg."
     ),
+    'fix_urgente': (
+        "FIX URGENTI -- sezione SEPARATA dalla blacklist 'giocatore' normale, per casi "
+        "particolari/situazioni impreviste che richiedono uno stop immediato su un "
+        "giocatore specifico (acquisti E offerte bloccati), senza mescolarli con la "
+        "blacklist manuale ordinaria. Scadenza ASSOLUTA in ISO (come thin_market/"
+        "cooldown_acquisto), non una durata testuale rinnovabile."
+    ),
 }
 _LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market', 'campionato',
-                              'campionato_inseason_temp', 'forma_bassa_ultime_5')
+                              'campionato_inseason_temp', 'forma_bassa_ultime_5', 'fix_urgente')
 
 
 def _durata_a_leggibile(delta_secondi):
@@ -332,7 +339,7 @@ def _lista_nera_leggi_righe():
         # mai piu' riscritta non scade mai davvero se il file resta statico tra le
         # letture. giocatore/manager/campionato restano a durata leggibile (l'utente
         # vuole poter scrivere/editare "X giorni" a mano per questi).
-        if tipo_corrente in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5'):
+        if tipo_corrente in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5', 'fix_urgente'):
             try:
                 scadenza = datetime.datetime.fromisoformat(valore_str.replace('Z', '+00:00'))
                 if scadenza.tzinfo is None:
@@ -404,7 +411,7 @@ def _lista_nera_scrivi_righe(righe):
             if not righe_tipo:
                 f.write("# (vuoto)\n")
             for r in righe_tipo:
-                if tipo in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5'):
+                if tipo in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5', 'fix_urgente'):
                     scadenza_roma = r['scadenza'].astimezone(ZoneInfo('Europe/Rome'))
                     f.write(f"{r['slug']},{r['scadenza'].isoformat()}  "
                             f"# scade: {scadenza_roma.strftime('%d/%m/%Y %H:%M')} ora di Roma\n")
@@ -552,6 +559,7 @@ BLACKLISTED_PLAYER_SLUGS = _SetTipoLive('giocatore')
 BLACKLISTED_MANAGER_SLUGS = _SetTipoLive('manager')
 BLACKLISTED_LEAGUE_SLUGS = _SetTipoLive('campionato')
 BLACKLISTED_INSEASON_LEAGUE_SLUGS = _SetTipoLive('campionato_inseason_temp')
+BLACKLISTED_FIX_URGENTE_SLUGS = _SetTipoLive('fix_urgente')
 # Alias per compatibilita' col nome usato nel codice AutoBuy originale.
 BLACKLISTED_AUTOBUY_MANAGER_SLUGS = BLACKLISTED_MANAGER_SLUGS
 
@@ -3071,6 +3079,10 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
 
     if player_slug and player_slug.lower() in BLACKLISTED_PLAYER_SLUGS:
         log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
+        return False
+
+    if player_slug and player_slug.lower() in BLACKLISTED_FIX_URGENTE_SLUGS:
+        log(f"{player_name}: scarto -- giocatore in blacklist 'fix urgenti' ({player_slug})")
         return False
 
     if player_slug and is_player_in_forma_bassa(player_slug.lower()):
