@@ -39,6 +39,38 @@ Sessione a popup (branch di lavoro `claude/bot-evolution-review-34b9a9`, poi mer
    memoria locale di Claude Code (`bot_definitivo_margin_calibration.md`, sezione "Undicesima
    sessione"), non nel repo.
 
+## Aggiornamento 26/27 (notte, tardissimo bis) — decima... nona ricalibrazione soglia
+## AutoBuy da run diagnostica di 1h, prima validazione reale del fix sub-3€
+
+Run diagnostica di 1h (cancellata a ~40 min), sul codice con il fix sub-3€ della sezione
+precedente già live. Commit: `23b7b3280`.
+
+1. **Prima validazione reale del fix sub-3€**: AutoBuy scattato per la prima volta in
+   settimane di test — Bryan Mbeumo, 1.99€, margine 43.3% (soglia 39.2%), **confermato
+   corretto dall'utente**. Prima del fix questo caso sarebbe stato impossibile per
+   design (cutoff assoluto sotto 3€).
+2. **14 match MakeOffer rivisti "in chiave AutoBuy"**: per ognuno chiesto a quale
+   prezzo minimo (a parità di secondo prezzo reale) l'utente sarebbe passato ad
+   AutoBuy — mappa direttamente la curva `AUTOBUY_MIN_MARGIN_CURVE` usando prezzi
+   secondi reali come ancore. 10/14 match confermati esatti su decisione+importo;
+   3 volevano uno sconto più profondo (Guzmán, Sargent, Gibbs-White, tutti sotto i
+   2€ — apre un tema aperto sulla profondità sconto `OFFER_DISCOUNT_CURVE` in quella
+   fascia, non ancora affrontato); 1 (Enzo Fernández, 4.10€/29.9%) voleva AutoBuy
+   invece di MakeOffer.
+3. **Nona ricalibrazione applicata**: punto 1€ abbassato da 60% a 52% (3 conferme),
+   aggiunti punti espliciti 1.50€→48% e 1.70€→45% (un'interpolazione lineare 1-2€
+   basata solo sui due estremi distorceva questi valori intermedi già confermati
+   corretti). Fascia 3-5€: aggiunto 4.10€→30% (Enzo Fernández, caso reale) così che
+   4.10-5€ resti piatto al 30% invece di scendere solo a 5€.
+4. **Non ancora corretto, tenuto in memoria per un pattern futuro** (richiesta esplicita
+   utente di tracciare anche i casi dubbi): 6.50€ ha dato risposte contrastanti tra due
+   carte reali diverse (Van Dijk conferma 28% esistente, Lewandowski vuole 23%) —
+   lasciato invariato. 15.50€ (Godts vuole 16% contro il 20% attuale) riapre una
+   tensione già oscillata più volte in passato tra 16% e 20-22% — serve una terza
+   conferma da un lato o dall'altro prima di deciderlo.
+5. **Dettaglio completo** (inclusi tutti i 12 dati "in chiave AutoBuy" con i valori
+   di curva prima/dopo) nella memoria locale, sezione "Dodicesima sessione".
+
 ## Aggiornamento 26/07 (notte, tardi) — blacklist fix_urgente, annullamento forzato a
 ## chiusura, ottava ricalibrazione sconto 4-6€
 
