@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T00:03:41.497951Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.6, min_starter_odds=0%
+======================================================================
+1) duran-michael-ferree: 20 pt attesi (-14-55)
+======================================================================
+
+######################################################################
+# GIOCATORE: duran-michael-ferree
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: duran-michael-ferree (squadra: san-diego-san-diego)
+Generato: 2026-07-26T00:03:41.496853Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | SD vs MTL | mlspa | score=72.2 | peso=0.429
+  2026-03-02 | SD vs STL | mlspa | score=77.4 | peso=0.463
+  2026-03-08 | SKC vs SD | mlspa | score=83.9 | peso=0.500
+  2026-03-22 | SD vs RSL | mlspa | score=56.7 | peso=0.540
+  2026-04-05 | SJ vs SD | mlspa | score=59.5 | peso=0.583
+  2026-04-12 | SD vs MIN | mlspa | score=50.3 | peso=0.630
+  2026-04-19 | RSL vs SD | mlspa | score=7.5 | peso=0.680
+  2026-04-23 | HOU vs SD | mlspa | score=38.4 | peso=0.735
+  2026-04-26 | SD vs POR | mlspa | score=43.2 | peso=0.794
+  2026-05-10 | SEA vs SD | mlspa | score=51.9 | peso=0.857
+  2026-05-14 | SD vs ATX | mlspa | score=86.4 | peso=0.926
+  2026-05-17 | SD vs CIN | mlspa | score=41.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 53.99
+Deviazione standard pesata: 21.46
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.13 (differenza: +7.33)
+Media score in casa: 61.10 | Media score fuori casa: 48.24
+Fattore casa/trasferta applicato: 1.118 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.838
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere).
+Fattore falli (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.010
+Fattore efficacia offensiva (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.999
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.997
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.001
+Tasso storico clean sheet (porta inviolata nei primi 60'): 33.3% (bonus atteso incorporato nella media pesata: ~8.3pt)
+Fattore trend (media ultime 5: 52.3 vs media ultime 10: 51.9): 1.005
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T01:30
+Casa: San Diego FC | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 20.3 +/- 34.3
+  (range: -14.0 - 54.6)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.74
+Punteggio REALE ottenuto in quella partita: 41.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.3     7.5    -50.8    14.6        NO
+   7        7      47.0    38.4     -8.6    29.7        SI
+   8        8      69.2    43.2    -26.0    28.2        SI
+   9        9      41.6    51.9    +10.3    26.3        SI
+  10       10      54.8    86.4    +31.6    24.4        NO
+  11       11      44.7    41.5     -3.2    26.8        SI
+
+MAE (errore assoluto medio): 21.77
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
