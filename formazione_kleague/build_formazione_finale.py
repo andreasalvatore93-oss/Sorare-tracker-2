@@ -507,12 +507,192 @@ def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_
     return "\n".join(lines), totale_atteso
 
 
-def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup_blocks, print_output=True):
+# --- Report visivo HTML (26/07, seconda sessione, richiesta esplicita
+# dell'utente): oggi l'unico output e' testo puro, funzionale ma poco
+# leggibile a colpo d'occhio. Genera un file .html AUTONOMO (nessuno script/
+# font esterno, apribile con un doppio click da repo locale via file://,
+# nessun server/download necessario) con un layout a "carte" ispirato alla
+# UI reale di Sorare: striscia colorata per ruolo (niente foto/stemmi reali,
+# non disponibili dall'API — iniziali del giocatore al loro posto), punteggio
+# atteso in grande, range sotto, badge capitano, tag Classic/copie multiple.
+# Committato dal workflow accanto al .txt esistente (stesso nome, estensione
+# diversa).
+ROLE_COLORS_HTML = {'GK': '#8b7cf6', 'DEF': '#3aa1e8', 'MID': '#2fbf8f', 'FWD': '#ef5b5b'}
+EXTRA_COLOR_HTML = '#f0a83b'
+
+
+def _slot_role_color(slot_label):
+    for role, color in ROLE_COLORS_HTML.items():
+        if slot_label.startswith(role):
+            return color
+    m = re.search(r'\(([A-Z]+)\)', slot_label)
+    if m and m.group(1) in ROLE_COLORS_HTML:
+        return ROLE_COLORS_HTML[m.group(1)]
+    return EXTRA_COLOR_HTML
+
+
+def _slug_initials(slug):
+    parts = [p for p in slug.split('-') if p and not p.isdigit()]
+    return ''.join(p[0].upper() for p in parts[:2]) or '??'
+
+
+def _slug_display_name(slug):
+    return ' '.join(w[:1].upper() + w[1:] for w in slug.split('-') if w)
+
+
+def render_card_html(slot_label, row, ctype, card_pool, is_captain):
+    color = _slot_role_color(slot_label)
+    role_label = re.sub(r'^EXTRA \(([A-Z]+)\)$', r'EXTRA · \1', slot_label)
+    copie = card_pool.copies_owned(row['slug'])
+    tags = []
+    if ctype == 'classic':
+        tags.append('<span class="tag tag-classic">Classic</span>')
+    if copie > 1:
+        tags.append(f'<span class="tag tag-copies">{copie} copie</span>')
+    captain_badge = '<span class="pcard-captain">C</span>' if is_captain else ''
+    return (
+        f'<div class="pcard" style="--role-color:{color}">'
+        f'<div class="pcard-stripe" style="background:{color}"></div>'
+        f'<span class="pcard-role">{role_label}</span>'
+        f'{captain_badge}'
+        f'<div class="pcard-body">'
+        f'<div class="pcard-avatar">{_slug_initials(row["slug"])}</div>'
+        f'<div class="pcard-name">{_slug_display_name(row["slug"])}</div>'
+        f'<div class="pcard-score">{row["atteso"]}</div>'
+        f'<div class="pcard-range">{row["low"]}–{row["high"]} pt</div>'
+        f'<div class="pcard-tags">{"".join(tags)}</div>'
+        f'</div></div>'
+    )
+
+
+def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True):
+    captain_slot, captain_row, _captain_type = pick_captain(formazione)
+    cards_html = ''.join(
+        render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
+        for slot, row, ctype in formazione
+    )
+    totale_atteso = sum(row['atteso'] for _, row, _ in formazione)
+    bonus = round(captain_row['atteso'] * CAPTAIN_BONUS)
+    totale_con_capitano = totale_atteso + bonus
+    l10_note = ''
+    if l10_cap is not None:
+        totale_l10 = sum(card_pool.l10(row['slug']) or 0.0 for _, row, _ in formazione)
+        stato = 'entro budget' if l10_cap_rispettato else 'budget NON rispettato'
+        l10_note = f'<div class="captain-note">L10: {totale_l10:.1f} / {l10_cap:.1f} ({stato})</div>'
+    return (
+        f'<div class="lineup-block"><div class="lineup-meta">'
+        f'<div class="lineup-title">{tipo_label} <span>#{idx}</span></div></div>'
+        f'<div class="card-strip">{cards_html}</div>'
+        f'<div class="lineup-total">'
+        f'<div><span class="label">Totale</span><span class="figure">{totale_atteso} pt</span></div>'
+        f'<div class="divider"></div>'
+        f'<div><span class="label">Con capitano</span>'
+        f'<span class="figure with-captain">{totale_con_capitano} pt</span></div>'
+        f'<div class="captain-note">Capitano <b>{_slug_display_name(captain_row["slug"])}</b> '
+        f'(+{bonus} pt, +{CAPTAIN_BONUS:.0%})</div>{l10_note}'
+        f'</div></div>'
+    )
+
+
+HTML_REPORT_TEMPLATE = """<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>{page_title}</title>
+<style>
+  :root {{
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530; --stripe: #232d3a;
+    --text: #edf1f6; --muted: #8a93a6; --muted-2: #5f6879; --gold: #f4c542;
+    --border: rgba(255,255,255,0.08);
+  }}
+  @media (prefers-color-scheme: light) {{
+    :root {{
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4; --stripe: #e3e6ec;
+      --text: #1a2029; --muted: #5b6474; --muted-2: #8a93a6; --border: rgba(20,25,35,0.08);
+    }}
+  }}
+  * {{ box-sizing: border-box; }}
+  body {{
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 32px 64px; max-width: 1180px; margin: 0 auto;
+  }}
+  h1 {{ font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }}
+  .subhead {{ color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }}
+  .lineup-block {{ margin-bottom: 40px; }}
+  .lineup-meta {{ margin-bottom: 12px; }}
+  .lineup-title {{ font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }}
+  .lineup-title span {{ color: var(--text); }}
+  .card-strip {{ display: flex; gap: 14px; overflow-x: auto; padding-bottom: 6px; }}
+  .pcard {{
+    position: relative; flex: 0 0 152px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }}
+  .pcard-stripe {{ height: 6px; width: 100%; }}
+  .pcard-body {{ padding: 14px 12px 12px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }}
+  .pcard-role {{
+    position: absolute; top: 12px; left: 12px; font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 16%, transparent);
+    padding: 2px 7px; border-radius: 5px;
+  }}
+  .pcard-captain {{
+    position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--gold); color: #241c00; font-size: 0.68rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+  }}
+  .pcard-avatar {{
+    width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1.05rem; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
+    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 14px;
+  }}
+  .pcard-name {{ font-size: 0.82rem; font-weight: 650; line-height: 1.25; min-height: 2.1em; display: flex; align-items: center; }}
+  .pcard-score {{ font-size: 1.85rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }}
+  .pcard-range {{ font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; }}
+  .pcard-tags {{ display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; min-height: 18px; }}
+  .tag {{ font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }}
+  .tag-classic {{ background: rgba(240,168,59,0.16); color: #f0a83b; }}
+  .tag-copies {{ background: var(--stripe); color: var(--muted); }}
+  .lineup-total {{
+    margin-top: 12px; display: flex; align-items: center; gap: 18px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; flex-wrap: wrap;
+  }}
+  .lineup-total .figure {{ font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }}
+  .lineup-total .figure.with-captain {{ color: var(--gold); }}
+  .lineup-total .label {{ font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }}
+  .lineup-total .divider {{ width: 1px; height: 30px; background: var(--border); }}
+  .lineup-total .captain-note {{ font-size: 0.74rem; color: var(--muted); margin-left: auto; }}
+  .lineup-total .captain-note b {{ color: var(--gold); font-weight: 700; }}
+  .error-block {{ font-size: 0.82rem; color: var(--muted); padding: 12px 0; }}
+  footer {{ margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }}
+</style>
+</head>
+<body>
+<h1>{page_title}</h1>
+<p class="subhead">{page_subhead}</p>
+{lineup_html}
+<footer>{footer}</footer>
+</body>
+</html>
+"""
+
+
+def render_report_html(page_title, page_subhead, lineup_html_blocks, footer):
+    body = "\n".join(lineup_html_blocks) if lineup_html_blocks else '<p class="error-block">Nessuna formazione generata.</p>'
+    return HTML_REPORT_TEMPLATE.format(
+        page_title=page_title, page_subhead=page_subhead, lineup_html=body, footer=footer)
+
+
+def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup_blocks,
+                               lineup_html_blocks, print_output=True):
     """Genera fino a 'count' formazioni del tipo 'tipo' (chiave di
-    FORMATION_SHAPES), aggiungendo i blocchi di testo a lineup_blocks.
-    Ritorna (generate, totale_punti). Si ferma in anticipo (senza errore
-    globale) se il pool si esaurisce per questo tipo, ma NON impedisce la
-    generazione del tipo successivo in ordine di priorita'."""
+    FORMATION_SHAPES), aggiungendo i blocchi di testo a lineup_blocks e i
+    blocchi HTML a lineup_html_blocks. Ritorna (generate, totale_punti). Si
+    ferma in anticipo (senza errore globale) se il pool si esaurisce per
+    questo tipo, ma NON impedisce la generazione del tipo successivo in
+    ordine di priorita'."""
     shape = FORMATION_SHAPES[tipo]
     cap = l10_cap if tipo == 'ARENA' else None
     generated = 0
@@ -524,10 +704,13 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup
             if print_output:
                 print(f"\n{msg}")
             lineup_blocks.append(msg)
+            lineup_html_blocks.append(f'<p class="error-block">{msg}</p>')
             break
         block_text, punti = format_lineup(shape['label'], idx, formazione, card_pool,
                                            l10_cap=cap, l10_cap_rispettato=l10_ok)
         lineup_blocks.append(block_text)
+        lineup_html_blocks.append(render_lineup_html(shape['label'], idx, formazione, card_pool,
+                                                       l10_cap=cap, l10_cap_rispettato=l10_ok))
         totale += punti
         generated += 1
         if print_output:
@@ -586,6 +769,7 @@ def main():
     header_lines.append("-" * 70)
 
     lineup_blocks = []
+    lineup_html_blocks = []
     generated_by_type = {}
     grand_total = 0
     # Ordine di priorita' FISSO (26/07): In Season -> Arena -> All Stars.
@@ -595,7 +779,7 @@ def main():
             generated_by_type[tipo] = 0
             continue
         generated, totale = generate_lineups_for_type(
-            tipo, n_richieste, role_data, card_pool, l10_cap, lineup_blocks)
+            tipo, n_richieste, role_data, card_pool, l10_cap, lineup_blocks, lineup_html_blocks)
         generated_by_type[tipo] = generated
         grand_total += totale
 
@@ -629,6 +813,22 @@ def main():
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(full_text)
     print(f"\nSalvato in: {out_path}")
+
+    # Report visivo HTML (26/07, richiesta esplicita dell'utente): stesso
+    # contenuto del .txt, presentazione a carte -- apribile con un doppio
+    # click, nessun server/download necessario (vedi HTML_REPORT_TEMPLATE).
+    page_title = f"Formazioni{' — run #' + run_number if run_number else ''}"
+    page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
+                    f"totale={num_totale} (In Season={counts['IN_SEASON']}, Arena={counts['ARENA']}, "
+                    f"All Stars={counts['ALLSTARS']})")
+    footer_html = ("Nessuna carta CLASSIC oltre il limite per In Season (max 1) -- Arena e All Stars "
+                   "non hanno questo vincolo. Un giocatore e' riusato in piu' lineup solo se se ne "
+                   "possiedono piu' copie.")
+    html_text = render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)
+    html_path = os.path.join(OUTPUT_DIR, f'formazione_finale{run_suffix}_{ts}.html')
+    with open(html_path, 'w', encoding='utf-8') as f:
+        f.write(html_text)
+    print(f"Report visivo salvato in: {html_path}")
 
 
 if __name__ == '__main__':
