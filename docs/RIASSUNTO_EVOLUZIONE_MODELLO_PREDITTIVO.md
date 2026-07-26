@@ -384,3 +384,70 @@ sapremo che il segnale è ancora debole anche con più dati.
 volta: condizionamento 2D venue+avversario/correlazione slot formazione (il più maturo ma da
 ridisegnare da zero, task in background non recuperabile), feature aggiuntive, gestione
 outlier/hot-streak, monitoraggio MAE live, estensione ad altri campionati.
+
+## 9. Allargamento soglia qualità calibrazione + scoperta `level_score` (26/07, notte)
+
+Emerso dal tema robustezza statistica: il vero collo di bottiglia è il numero totale di partite
+disponibili (37-68 giocatori/255-517 partite per ruolo dopo il filtro qualità=30 + n_test>=3). Il
+filtro qualità serve alla PRODUZIONE (non suggerire giocatori scarsi), non alla calibrazione (che
+cerca parametri strutturali della formula) — deciso di abbassarlo **solo per la calibrazione** a
+**15** (via `min_avg_score_quality` del workflow, produzione invariata a 30).
+
+**Fix preventivo**: `grid_search_calibrazione.yml` ora esclude i giocatori con un `grid.json` già
+presente prima di applicare batch_index/batch_size — permette di riabbassare la soglia e
+processare SOLO i giocatori nuovi, senza rifare query/job sui già analizzati.
+
+**Lanciati batch per tutti e 4 i ruoli** (autorizzato esplicitamente dall'utente per l'esecuzione
+notturna, incluso l'eventuale lancio di batch residui senza chiedere conferma). **Attenzione
+rate-limit gestita**: lanciare i 4 ruoli in PARALLELO avrebbe significato fino a 32 job CI
+contemporanei sullo stesso account Sorare (4 ruoli x max 8 worker) — rischio concreto di 429
+condiviso (incidente reale già documentato in passato). Cancellati i run DEF/MID/FWD lanciati in
+parallelo (erano ancora in fase discover_batch, nessuna query pesante fatta) e rilanciati **in
+sequenza, uno alla volta** (GK→DEF→MID→FWD), tramite uno script di orchestrazione bash in
+background. Tutti e 4 completati con successo, nessun batch residuo necessario (pool
+completamente coperto in un solo batch per ruolo).
+
+Risultati (aggregazione pesata per n_test, min 3 partite):
+
+| Ruolo | Qualificati (soglia 15) | Con n_test>=3 | Combinazione vincente | MAE | Bootstrap win-rate |
+|---|---|---|---|---|---|
+| GK | 29 (+2 vs soglia 30) | 13 (+10) | hl=9.0, range=1.4, opp_sens=29.0, trend=0.7, NO granulari | 18.96 | 12.2% (debole) |
+| DEF | 197 (+41) | 69 (+1) | hl=12.0, range=1.2, opp_sens=29.0, trend=0.7, NO granulari | 16.39 | 34.0% (incerta, la più solida) |
+| MID | 183 (+27) | 68 (+3) | hl=12.0, range=1.2, opp_sens=29.0, trend=0.7, NO granulari | 15.30 | 19.6% (debole) |
+| FWD | 157 (+18) | 38 (+1) | hl=9.0, range=1.4, opp_sens=29.0, trend=0.7, NO granulari | 17.44 | 14.5% (debole) |
+
+**Lezione onesta**: raddoppiare/ampliare il pool di giocatori per DEF/MID/FWD NON ha migliorato
+sostanzialmente il win-rate bootstrap (era 17-33%, ora 14-34%) — il problema non è "poca varietà
+di giocatori", è che le combinazioni vicine sono genuinamente statisticamente equivalenti con
+questo volume di partite per giocatore (limitato dalla metà campionato MLS). Servirà aspettare
+che la stagione avanzi (più partite a testa), non solo più giocatori. `opponent_sensitivity`
+resta l'UNICO parametro sempre stabile (~29.0 ovunque, incluso ora GK). Non applicato alla
+produzione (nessuna decisione presa stanotte, solo dati raccolti per la prossima sessione).
+
+### Scoperta importante: il peso reale dei granulari (approfondimento richiesto dall'utente)
+
+L'utente ha notato (da screenshot Sorare reali di Andre Blake) che alcune categorie di punteggio
+sembravano pesare molto più di altre. Creato `formazione_mls/diagnostics/inspect_granular_weights.py`
+(diagnostico locale, legge solo le cache `.cache/*_detail_cache.json` già scaricate, nessuna
+nuova query) per misurare il peso reale di ogni gruppo granulare sul movimento assoluto del
+punteggio, su TUTTE le partite disponibili (non a campione a mano).
+
+**Scoperta principale**: il campo `level_score` (category=UNKNOWN nel detailedScore, legato al
+bonus clean sheet per il portiere: ~35 se ha subito gol nei primi 60', ~60 se clean sheet) **non è
+incluso in NESSUNO dei gruppi granulari tracciati, in NESSUN ruolo** — e vale da solo la quota più
+grande del punteggio ovunque: **56,2% GK, 40,9% DEF, 48,8% MID, 62,8% FWD** (migliaia di partite
+reali analizzate). **Nota importante segnalata dall'utente**: `level_score` ha una base FISSA di
+35 assegnata a chiunque scenda in campo anche un secondo — quindi il peso misurato è gonfiato da
+questa componente fissa non predicibile; la vera leva sfruttabile è probabilmente più piccola e
+riconducibile a poche soglie discrete (ha giocato/clean sheet), non un continuo — da scorporare
+prima di investire tempo nel modellarlo.
+
+**Altra scoperta utile**: la categoria **"Eventi rari" vale 0,0-0,1% su TUTTI e 4 i ruoli**
+(candidato sicuro per la rimozione dal codice, zero rischio). Il resto dei gruppi ha un mix
+sensato per ruolo (Duelli domina per DEF/MID/FWD 17-23%, Efficacia offensiva cresce avvicinandosi
+all'attacco 0%→2%→5%→9%, Gol subiti si riduce allontanandosi dalla difesa 11%→6%→3%→assente).
+
+**Non implementato stasera** (solo diagnosticato): rimuovere le categorie a peso zero, scorporare
+la base fissa di `level_score` per misurarne la vera varianza sfruttabile, eventualmente
+progettare un modo di condizionare `level_score`/clean-sheet-proneness per venue/avversario.
+Priorità identificata per il prossimo giro sul tema granulari.

@@ -268,10 +268,36 @@ ufficiale). Decisione: parametri ufficiali NON cambiati (già validati dal caso 
 Lopez/Carles Gil), questi valori pesati servono da riferimento per la prossima ricalibrazione a
 stagione più avanzata. Dettaglio completo in `RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` sezione 8.
 
+## 11. Allargamento pool calibrazione (soglia 15) + scoperta peso reale dei granulari (26/07, notte)
+
+Il filtro qualità (30) serve alla PRODUZIONE, non alla calibrazione — abbassato a **15 solo per
+la calibrazione** (workflow invariato per la produzione). Fix preventivo in
+`grid_search_calibrazione.yml`: esclude i giocatori con `grid.json` già presente prima di
+applicare batch_index/batch_size, per non rifare query sui già analizzati quando si allarga la
+soglia. Batch lanciati IN SEQUENZA (mai in parallelo tra ruoli, per non sommare fino a 32 job CI
+concorrenti sullo stesso account Sorare — rischio 429 concreto già documentato in passato).
+
+Risultato: pool quasi raddoppiato per DEF/MID/FWD, GK passato da 3 a 13 giocatori utilizzabili.
+`opponent_sensitivity=29.0` si conferma stabile anche per GK. **Il win-rate bootstrap NON è
+migliorato sostanzialmente** (restava 12-34% anche col pool allargato) — il collo di bottiglia
+non è la varietà di giocatori ma il numero di partite per giocatore (limitato da MLS a metà
+stagione); servirà aspettare che la stagione avanzi. Dettaglio numeri completo in
+`RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` sezione 9.
+
+**Scoperta importante sul peso dei granulari** (nuovo script
+`formazione_mls/diagnostics/inspect_granular_weights.py`, legge le cache già scaricate, nessuna
+nuova query): il campo `level_score` (mai incluso in nessun gruppo granulare, in nessun ruolo)
+vale da solo 41-63% del punteggio a seconda del ruolo — molto più di qualunque gruppo tracciato.
+Ha una base fissa di 35 per chi gioca anche un secondo (segnalato dall'utente) più un bonus
+clean-sheet-correlato, quindi la sua vera varianza sfruttabile è più piccola del peso grezzo
+misurato. "Eventi rari" vale 0,0-0,1% su tutti e 4 i ruoli — rumore puro, rimovibile senza
+rischio. Non ancora implementato: rimuovere le categorie a peso zero, scorporare la base fissa di
+`level_score`, valutare come sfruttarne la parte variabile.
+
 **Prossimo tema in coda** (da un brainstorm più ampio richiesto dall'utente, "una settimana per
-migliorare il modello", affrontato UN TEMA ALLA VOLTA): il Finding 4 di sezione 5
-(condizionamento 2D venue+avversario, correlazione slot formazione GK-DEF-FWD) resta il più
-maturo/prioritario — c'era un task in background per una proposta di design ma l'utente non è
-riuscito a recuperarlo, quindi si riparte da zero su questo tema quando arriva il suo turno.
-Altri temi in backlog: feature aggiuntive (infortuni, calendario congestionato), gestione
-outlier/hot-streak, monitoraggio MAE live in produzione, estensione ad altri campionati.
+migliorare il modello", affrontato UN TEMA ALLA VOLTA): approfondimento granulari (rimozione
+categorie a peso zero + level_score) è ora il più maturo insieme al condizionamento 2D
+venue+avversario/correlazione slot formazione del Finding 4 (sezione 5) — task in background non
+recuperabile, si riparte da zero. Altri temi: feature aggiuntive (infortuni, calendario
+congestionato), gestione outlier/hot-streak, monitoraggio MAE live in produzione, estensione ad
+altri campionati.
