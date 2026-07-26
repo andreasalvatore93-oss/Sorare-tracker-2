@@ -115,9 +115,13 @@ COOLDOWN_ACQUISTO_DEFAULT_DAYS = float(os.environ.get('COOLDOWN_ACQUISTO_DEFAULT
 # FIX 21/07 (richiesta esplicita utente): durata default per la blacklist CAMPIONATI --
 # 15 giorni, rinnovabile/modificabile a mano nel file come tutte le altre sezioni.
 LEAGUE_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_BLACKLIST_DEFAULT_DAYS', '15'))
+# FIX 26/07 (richiesta esplicita utente): durata default per la blacklist TRANSITORIA
+# solo-in_season (sezione 'campionato_inseason_temp') -- stessi 15gg della blacklist
+# campionato totale, ma qui blocca SOLO le carte in_season, non le classic.
+LEAGUE_INSEASON_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_INSEASON_BLACKLIST_DEFAULT_DAYS', '15'))
 
 _LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto', 'campionato',
-                           'forma_bassa_ultime_5')
+                           'campionato_inseason_temp', 'forma_bassa_ultime_5')
 
 # Vecchi file, letti SOLO per la migrazione automatica una tantum (prima run dopo
 # l'aggiornamento). Una volta migrati in sorare_lista_nera.txt possono essere eliminati
@@ -162,6 +166,17 @@ _LISTA_NERA_INTESTAZIONI = {
         "PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default "
         "15 giorni, rinnovabile o modificabile a mano come le altre sezioni."
     ),
+    'campionato_inseason_temp': (
+        "BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte "
+        "in_season di questo campionato vengono ignorate (nessun acquisto, nessuna "
+        "offerta), le carte classic dello stesso campionato restano valutate "
+        "normalmente. Pensata per campionati con carte in_season appena uscite e dal "
+        "prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati "
+        "il confronto di mercato usa lo stesso modello di MLS/K League (classic "
+        "confrontata solo con classic, in_season solo con in_season) -- vedi "
+        "EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni, rinnovabile o "
+        "modificabile a mano come le altre sezioni."
+    ),
     'forma_bassa_ultime_5': (
         "FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite "
         "giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), "
@@ -171,7 +186,7 @@ _LISTA_NERA_INTESTAZIONI = {
     ),
 }
 _LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market', 'campionato',
-                              'forma_bassa_ultime_5')
+                              'campionato_inseason_temp', 'forma_bassa_ultime_5')
 
 
 def _durata_a_leggibile(delta_secondi):
@@ -536,6 +551,7 @@ BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
 BLACKLISTED_PLAYER_SLUGS = _SetTipoLive('giocatore')
 BLACKLISTED_MANAGER_SLUGS = _SetTipoLive('manager')
 BLACKLISTED_LEAGUE_SLUGS = _SetTipoLive('campionato')
+BLACKLISTED_INSEASON_LEAGUE_SLUGS = _SetTipoLive('campionato_inseason_temp')
 # Alias per compatibilita' col nome usato nel codice AutoBuy originale.
 BLACKLISTED_AUTOBUY_MANAGER_SLUGS = BLACKLISTED_MANAGER_SLUGS
 
@@ -783,7 +799,19 @@ def compute_price_based_offer_discount(price_eur):
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
 LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
 
-EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
+# FIX 26/07 (richiesta esplicita utente): aggiunti i 4 campionati con carte in_season
+# appena uscite e ancora troppo instabili di prezzo -- portoghese, austriaco,
+# scozzese, croato. Per tutti i campionati in questo set (confermato dall'utente,
+# vale in ENTRAMBE le direzioni) il confronto di mercato separa sempre in_season e
+# classic: una carta in_season si confronta solo con altre in_season
+# (get_in_season_prices), una carta classic si confronta solo con altre classic
+# (get_classic_prices). Tutti gli altri campionati restano con in_season+classic
+# uniti in un solo confronto, comportamento invariato. Per questi 4 nuovi, inoltre,
+# le in_season sono anche bloccate del tutto dalla blacklist transitoria
+# 'campionato_inseason_temp' (15gg, vedi BLACKLISTED_INSEASON_LEAGUE_SLUGS) --
+# quindi finche' resta attiva viene di fatto valutato solo il ramo classic.
+EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1', 'primeira-liga-pt', 'austrian-bundesliga',
+                          'premiership-gb-sct', '1-hnl'}
 
 AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '10'))
 AUTOBUY_TARGET_MATCHES = max(1, min(100, AUTOBUY_TARGET_MATCHES))
@@ -1309,6 +1337,24 @@ def get_in_season_prices(player_slug, eth_rate, league_slug):
     excluded = is_asia_americas_excluded_league(league_slug)
     if excluded:
         return buckets['in_season'], True
+    combined = buckets['in_season'] + buckets['classic']
+    combined.sort(key=lambda p: p[0])
+    return combined, False
+
+
+def get_classic_prices(player_slug, eth_rate, league_slug):
+    """Simmetrica a get_in_season_prices, ma per la valutazione di una carta CLASSIC.
+    Confermato esplicitamente dall'utente (26/07): la separazione classic/in_season
+    per MLS/K League (e ora anche portoghese/austriaco/scozzese/croato, i 4 campionati
+    aggiunti alla blacklist transitoria in_season) vale in ENTRAMBE le direzioni --
+    non solo quando si valuta una carta in_season (che gia' escludeva il classic dal
+    confronto), ma anche quando si valuta una carta classic (che deve escludere
+    l'in_season dal confronto). Per tutti gli altri campionati resta il comportamento
+    di sempre: in_season+classic uniti in un solo confronto di mercato."""
+    buckets = get_bucket_prices(player_slug, eth_rate)
+    excluded = is_asia_americas_excluded_league(league_slug)
+    if excluded:
+        return buckets['classic'], True
     combined = buckets['in_season'] + buckets['classic']
     combined.sort(key=lambda p: p[0])
     return combined, False
@@ -2716,7 +2762,8 @@ def send_autobuy_alert(player_name, player_slug, price_eur, second_price, margin
                         threshold_used=None):
     link = build_card_link(player_slug, card_slug)
     if not is_in_season:
-        categoria = "CLASSIC (modalita' check_classic, confronto su tutti i campionati)"
+        categoria = ("CLASSIC (solo classic, confronto separato)" if excluded_league
+                     else "CLASSIC (modalita' check_classic, confronto su tutti i campionati)")
     else:
         categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
     prenotazione = (
@@ -2755,7 +2802,8 @@ def send_makeoffer_alert(player_name, player_slug, price_eur, second_price, marg
                           offer_amount_eur=None, via_periodic_bid=False, threshold_used=None):
     link = build_card_link(player_slug, card_slug)
     if not is_in_season:
-        categoria = "CLASSIC (modalita' check_classic, confronto su tutti i campionati)"
+        categoria = ("CLASSIC (solo classic, confronto separato)" if excluded_league
+                     else "CLASSIC (modalita' check_classic, confronto su tutti i campionati)")
     else:
         categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
     prenotazione = (
@@ -2951,6 +2999,15 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
             log(f"{player_name}: scarto -- campionato blacklistato ({league_slug})")
         return False
 
+    # FIX 26/07 (richiesta esplicita utente): blacklist TRANSITORIA solo-in_season --
+    # stesso controllo veloce di quella totale sopra, ma si applica solo se la carta
+    # e' in_season; le classic dello stesso campionato proseguono la valutazione.
+    if is_in_season and league_slug and league_slug.lower() in BLACKLISTED_INSEASON_LEAGUE_SLUGS:
+        if LEAGUE_BLACKLIST_VERBOSE_LOG:
+            log(f"{player_name}: scarto -- campionato in blacklist transitoria in_season "
+                f"({league_slug})")
+        return False
+
     if player_slug and is_player_in_cooldown(player_slug, is_in_season):
         log(f"{player_name}: scarto -- gia' acquistato/offerto ({'in_season' if is_in_season else 'classic'}) "
             f"nelle ultime {PLAYER_COOLDOWN_HOURS}h (protezione anti-svendita/infortunio)")
@@ -2975,10 +3032,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     if is_in_season:
         prices, excluded_league = get_in_season_prices(player_slug, eth_rate, league_slug)
     else:
-        buckets = get_bucket_prices(player_slug, eth_rate)
-        prices = buckets['in_season'] + buckets['classic']
-        prices.sort(key=lambda p: p[0])
-        excluded_league = False
+        prices, excluded_league = get_classic_prices(player_slug, eth_rate, league_slug)
     if not prices:
         return False
     _t_scan_prezzi = time.monotonic()

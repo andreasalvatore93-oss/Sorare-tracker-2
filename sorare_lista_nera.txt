@@ -15,6 +15,7 @@
 ## manager
 # MANAGER BLACKLISTATI -- da questi manager non compriamo carte ne' facciamo offerte, ma le loro carte contano comunque nel calcolo del prezzo minimo di mercato (non vengono escluse dal conteggio, solo dagli acquisti/offerte).
 barren-wuffett,300 giorni
+basilbot,365 giorni
 clem44,300 giorni
 clem44-cc076f45-e23b-403b-8857-b22b51ab57a9,365 giorni
 clem777,300 giorni
@@ -1808,15 +1809,18 @@ yassine-bounou-classic,2026-07-27T21:15:32.111600+00:00  # scade: 27/07/2026 23:
 
 ## campionato
 # CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla con le altre. Ogni carta di un giocatore attivo in uno di questi campionati viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
-1-hnl,15 giorni
-austrian-bundesliga,15 giorni
 global-cup,15 giorni
 j-league,15 giorni
 j1-100-year-vision-league,60 giorni
-premiership-gb-sct,15 giorni
-primeira-liga-pt,15 giorni
 seasonal-contender,15 giorni
 seasonal-contenders,15 giorni
+
+## campionato_inseason_temp
+# BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte in_season di questo campionato vengono ignorate (nessun acquisto, nessuna offerta), le carte classic dello stesso campionato restano valutate normalmente. Pensata per campionati con carte in_season appena uscite e dal prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati il confronto di mercato usa lo stesso modello di MLS/K League (classic confrontata solo con classic, in_season solo con in_season) -- vedi EXCLUDED_LEAGUE_SLUGS in bot_definitivo.py. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
+1-hnl,15 giorni
+austrian-bundesliga,15 giorni
+premiership-gb-sct,15 giorni
+primeira-liga-pt,15 giorni
 
 ## forma_bassa_ultime_5
 # FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), SEZIONE SEPARATA e distinta dai blacklist permanenti (coverage/media-zero restano in 'giocatore'), perche' questa e' una condizione transitoria che puo' rientrare -- non merita un blocco di 365gg.
