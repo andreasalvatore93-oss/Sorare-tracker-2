@@ -160,19 +160,21 @@ FORMATION_SHAPES = {
 ANTI_SYNERGY_PENALTY = 10_000  # abbastanza grande da finire sempre in fondo alla classifica di scelta
 POSITIVE_SYNERGY_BONUS = 3  # piccolo nudge, non ribalta differenze di punteggio importanti
 
-# Bonus anti-stack Sorare (26/07, scoperto dall'utente, SOLO In Season): se
-# una formazione ha MENO di 3 giocatori della stessa squadra, ogni giocatore
-# riceve +2% al proprio punteggio; con 3+ della stessa squadra il bonus
-# salta per TUTTI e 5. La sinergia GK+DEF sopra, da sola, porta al massimo a
-# 2 giocatori della stessa squadra (GK + 1 DEF titolare) -- nessun conflitto,
-# resta "gratis". Il conflitto nasce solo se un ALTRO slot (tipicamente
-# l'extra) porterebbe una squadra al 3o giocatore: li' il costo e' certo
-# (-2% su tutti e 5) mentre il beneficio di correlazione e' incerto, quindi
-# di default scoraggiamo (non vietiamo: a volte, es. capolista contro
-# ultima, puo' valere la pena sacrificare il bonus per un punteggio quasi
-# certo -- scelta che spetta all'utente, non all'algoritmo) il 3o giocatore
-# della stessa squadra. Applicato SOLO per In Season (apply_stack_guard):
-# Arena/All Stars non hanno questo bonus, restano invariate.
+# Bonus anti-stack Sorare (26/07, scoperto dall'utente per In Season, CONFERMATO
+# valido anche per All Stars il 26/07 sera -- stessa soglia, non scalata a 7
+# giocatori): se una formazione ha MENO di 3 giocatori della stessa squadra,
+# ogni giocatore riceve +2% al proprio punteggio; con 3+ della stessa squadra
+# il bonus salta per TUTTI (5 In Season, 7 All Stars). La sinergia GK+DEF
+# sopra, da sola, porta al massimo a 2 giocatori della stessa squadra (GK + 1
+# DEF titolare) -- nessun conflitto, resta "gratis". Il conflitto nasce solo
+# se un ALTRO slot (tipicamente l'extra) porterebbe una squadra al 3o
+# giocatore: li' il costo e' certo (-2% su tutti) mentre il beneficio di
+# correlazione e' incerto, quindi di default scoraggiamo (non vietiamo: a
+# volte, es. capolista contro ultima, puo' valere la pena sacrificare il
+# bonus per un punteggio quasi certo -- scelta che spetta all'utente, non
+# all'algoritmo) il 3o giocatore della stessa squadra. Applicato per In
+# Season e All Stars (apply_stack_guard): Arena NON ha questo bonus (ha il
+# suo cap L10 obbligatorio separato, nessuna % aggiuntiva).
 IN_SEASON_STACK_LIMIT = 2
 STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non esclude
 
@@ -540,8 +542,11 @@ CAPTAIN_BONUS_BY_TYPE = {
 # In Season) rientra o no sotto la soglia, senza cercare attivamente
 # un'alternativa che la rispetti. Nessun impatto sul totale numerico mostrato
 # (stesso trattamento "solo informativo" gia' usato per il bonus anti-stack).
-CAP260_L10_THRESHOLD = 260.0
 CAP260_BONUS = 0.04
+# Soglia L10 per il bonus, per tipo (26/07 -- confermato dall'utente che il
+# bonus esiste ANCHE per All Stars, non solo In Season, con soglia scalata a
+# 7 giocatori invece di 5: 370 invece di 260, stessa % +4%).
+CAP260_L10_THRESHOLD_BY_TYPE = {'IN_SEASON': 260.0, 'ALLSTARS': 370.0}
 
 
 def pick_captain(formazione):
@@ -584,9 +589,10 @@ def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_
         lines.append("ATTENZIONE: 3+ giocatori della stessa squadra -- bonus anti-stack 2%/giocatore NON applicato "
                       "(valuta tu se il contesto della partita giustifica comunque lo stack).")
     if check_cap260:
-        stato260 = "OK" if totale_l10 <= CAP260_L10_THRESHOLD else "NON rispettato"
-        lines.append(f"Cap 260: L10 combinata {totale_l10:.1f} / {CAP260_L10_THRESHOLD:.0f} -- {stato260} "
-                      f"({'+4% bonus formazione attivo' if totale_l10 <= CAP260_L10_THRESHOLD else 'bonus +4% non ottenuto'})")
+        soglia_cap = CAP260_L10_THRESHOLD_BY_TYPE.get(tipo, 260.0)
+        stato260 = "OK" if totale_l10 <= soglia_cap else "NON rispettato"
+        lines.append(f"Cap {soglia_cap:.0f}: L10 combinata {totale_l10:.1f} / {soglia_cap:.0f} -- {stato260} "
+                      f"({'+4% bonus formazione attivo' if totale_l10 <= soglia_cap else 'bonus +4% non ottenuto'})")
     return "\n".join(lines), totale_atteso
 
 
@@ -670,12 +676,13 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
                        'squadra — bonus anti-stack 2%/giocatore NON applicato</div>')
     cap260_note = ''
     if check_cap260:
+        soglia_cap = CAP260_L10_THRESHOLD_BY_TYPE.get(tipo, 260.0)
         totale_l10_c260 = sum(card_pool.l10(row['slug']) or 0.0 for _, row, _ in formazione)
-        ok260 = totale_l10_c260 <= CAP260_L10_THRESHOLD
+        ok260 = totale_l10_c260 <= soglia_cap
         colore = '' if ok260 else ' style="color:#d9534f"'
         esito = '+4% bonus formazione attivo' if ok260 else 'bonus +4% non ottenuto'
-        cap260_note = (f'<div class="captain-note"{colore}>Cap 260: L10 {totale_l10_c260:.1f} / '
-                        f'{CAP260_L10_THRESHOLD:.0f} ({esito})</div>')
+        cap260_note = (f'<div class="captain-note"{colore}>Cap {soglia_cap:.0f}: L10 {totale_l10_c260:.1f} / '
+                        f'{soglia_cap:.0f} ({esito})</div>')
     return (
         f'<div class="lineup-block"><div class="lineup-meta">'
         f'<div class="lineup-title">{tipo_label} <span>#{idx}</span></div></div>'
@@ -797,7 +804,10 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
     ordine di priorita'."""
     shape = FORMATION_SHAPES[tipo]
     cap = FIXED_L10_CAP_BY_TYPE.get(tipo)
-    stack_guard = tipo == 'IN_SEASON'
+    # Anti-stack e cap-bonus (26/07, confermato dall'utente): valgono per
+    # In Season E All Stars (soglie/percentuali diverse ma stesso meccanismo),
+    # non per Arena (che ha il suo cap L10 obbligatorio separato, nessun bonus).
+    stack_guard = tipo in ('IN_SEASON', 'ALLSTARS')
     generated = 0
     totale = 0
     for idx in range(1, count + 1):
@@ -810,7 +820,7 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
             lineup_blocks.append(msg)
             lineup_html_blocks.append(f'<p class="error-block">{msg}</p>')
             break
-        check_cap260 = tipo == 'IN_SEASON'
+        check_cap260 = tipo in CAP260_L10_THRESHOLD_BY_TYPE
         block_text, punti = format_lineup(shape['label'], idx, formazione, card_pool,
                                            l10_cap=cap, l10_cap_rispettato=l10_ok,
                                            stack_bonus_perso=stack_perso, check_cap260=check_cap260,

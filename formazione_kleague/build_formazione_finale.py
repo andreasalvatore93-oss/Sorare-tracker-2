@@ -526,7 +526,9 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
 # non +50% come In Season/All Stars.
 CAPTAIN_BONUS_BY_TYPE = {
     'IN_SEASON': 0.5,
-    'ARENA': 0.2,
+    'ARENA_260': 0.2,
+    'ARENA_220': 0.2,
+    'ARENA_UNCAPPED': 0.2,
     'ALLSTARS': 0.5,
 }
 
@@ -534,6 +536,13 @@ CAPTAIN_BONUS_BY_TYPE = {
 # ARENA_260 e ARENA_220 rispettano il tetto indicato, ARENA_UNCAPPED non e'
 # in mappa -- .get(tipo) ritorna None, cioe' nessun limite.
 FIXED_L10_CAP_BY_TYPE = {'ARENA_260': 260.0, 'ARENA_220': 220.0}
+
+CAP260_BONUS = 0.04
+# Soglia L10 per il bonus "cap" (In Season/All Stars, 26/07 -- confermato
+# dall'utente: soft cap, si puo' sforare, si perde solo il +4%. Diverso dal
+# cap L10 obbligatorio di Arena sopra, che invece vincola attivamente la
+# scelta dei giocatori).
+CAP260_L10_THRESHOLD_BY_TYPE = {'IN_SEASON': 260.0, 'ALLSTARS': 370.0}
 
 
 def pick_captain(formazione):
@@ -546,7 +555,7 @@ def pick_captain(formazione):
 
 
 def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                   stack_bonus_perso=False, tipo=None):
+                   stack_bonus_perso=False, check_cap260=False, tipo=None):
     lines = []
     lines.append(f"--- Formazione {tipo_label} #{idx} ---")
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
@@ -575,6 +584,11 @@ def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_
     if stack_bonus_perso:
         lines.append("ATTENZIONE: 3+ giocatori della stessa squadra -- bonus anti-stack 2%/giocatore NON applicato "
                       "(valuta tu se il contesto della partita giustifica comunque lo stack).")
+    if check_cap260:
+        soglia_cap = CAP260_L10_THRESHOLD_BY_TYPE.get(tipo, 260.0)
+        stato260 = "OK" if totale_l10 <= soglia_cap else "NON rispettato"
+        lines.append(f"Cap {soglia_cap:.0f}: L10 combinata {totale_l10:.1f} / {soglia_cap:.0f} -- {stato260} "
+                      f"({'+4% bonus formazione attivo' if totale_l10 <= soglia_cap else 'bonus +4% non ottenuto'})")
     return "\n".join(lines), totale_atteso
 
 
@@ -637,7 +651,7 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
 
 
 def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                        stack_bonus_perso=False, tipo=None):
+                        stack_bonus_perso=False, check_cap260=False, tipo=None):
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
     cards_html = ''.join(
         render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
@@ -656,6 +670,15 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
     if stack_bonus_perso:
         stack_note = ('<div class="captain-note" style="color:#d9534f">ATTENZIONE: 3+ giocatori della stessa '
                        'squadra — bonus anti-stack 2%/giocatore NON applicato</div>')
+    cap260_note = ''
+    if check_cap260:
+        soglia_cap = CAP260_L10_THRESHOLD_BY_TYPE.get(tipo, 260.0)
+        totale_l10_c260 = sum(card_pool.l10(row['slug']) or 0.0 for _, row, _ in formazione)
+        ok260 = totale_l10_c260 <= soglia_cap
+        colore = '' if ok260 else ' style="color:#d9534f"'
+        esito = '+4% bonus formazione attivo' if ok260 else 'bonus +4% non ottenuto'
+        cap260_note = (f'<div class="captain-note"{colore}>Cap {soglia_cap:.0f}: L10 {totale_l10_c260:.1f} / '
+                        f'{soglia_cap:.0f} ({esito})</div>')
     return (
         f'<div class="lineup-block"><div class="lineup-meta">'
         f'<div class="lineup-title">{tipo_label} <span>#{idx}</span></div></div>'
@@ -666,7 +689,7 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
         f'<div><span class="label">Con capitano</span>'
         f'<span class="figure with-captain">{totale_con_capitano} pt</span></div>'
         f'<div class="captain-note">Capitano <b>{_slug_display_name(captain_row["slug"])}</b> '
-        f'(+{bonus} pt, +{captain_bonus_pct:.0%})</div>{l10_note}{stack_note}'
+        f'(+{bonus} pt, +{captain_bonus_pct:.0%})</div>{l10_note}{stack_note}{cap260_note}'
         f'</div></div>'
     )
 
@@ -772,7 +795,10 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
     ordine di priorita'."""
     shape = FORMATION_SHAPES[tipo]
     cap = FIXED_L10_CAP_BY_TYPE.get(tipo)
-    stack_guard = tipo == 'IN_SEASON'
+    # Anti-stack e cap-bonus (26/07, confermato dall'utente): valgono per
+    # In Season E All Stars (soglie/percentuali diverse ma stesso meccanismo),
+    # non per Arena (che ha il suo cap L10 obbligatorio separato, nessun bonus).
+    stack_guard = tipo in ('IN_SEASON', 'ALLSTARS')
     generated = 0
     totale = 0
     for idx in range(1, count + 1):
@@ -785,13 +811,16 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
             lineup_blocks.append(msg)
             lineup_html_blocks.append(f'<p class="error-block">{msg}</p>')
             break
+        check_cap260 = tipo in CAP260_L10_THRESHOLD_BY_TYPE
         block_text, punti = format_lineup(shape['label'], idx, formazione, card_pool,
                                            l10_cap=cap, l10_cap_rispettato=l10_ok,
-                                           stack_bonus_perso=stack_perso, tipo=tipo)
+                                           stack_bonus_perso=stack_perso, check_cap260=check_cap260,
+                                           tipo=tipo)
         lineup_blocks.append(block_text)
         lineup_html_blocks.append(render_lineup_html(shape['label'], idx, formazione, card_pool,
                                                        l10_cap=cap, l10_cap_rispettato=l10_ok,
-                                                       stack_bonus_perso=stack_perso, tipo=tipo))
+                                                       stack_bonus_perso=stack_perso,
+                                                       check_cap260=check_cap260, tipo=tipo))
         totale += punti
         generated += 1
         if print_output:
