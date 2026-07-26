@@ -731,6 +731,14 @@ AUTOBUY_MIN_MARGIN_CURVE = [
 # corretto lontano dal confine dei 4EUR: Antony (2.32EUR reale, margine 15.7%)-> voluto 35.3%
 # (match esatto col bot), ipotetico 2.00EUR-> voluto 35% (match quasi esatto). Curva a
 # interpolazione lineare, stessa tecnica delle Regole 1/2.
+# FIX 26/07 (sesta ricalibrazione, primo run reale in live mode con la curva sopra):
+# 2 casi reali nella fascia 7-15EUR (Germán Berterame, 12.88EUR/margine 8.4%, offerta
+# 11.00EUR/13.2%) confermati "andava bene" dall'utente -- fascia INVARIATA. Il caso
+# reale Berke Özer (16.00EUR/margine 6.9%, offerta 14.00EUR/12.5%) e' stato ACCETTATO
+# dal venditore -- segnale che si poteva chiedere ancora piu' sconto (utente: "avrei
+# offerto 50 centesimi in meno", ~13.50EUR/15.6%). Aggiunto un nuovo punto a 16EUR per
+# alzare lo sconto SOLO oltre i 15EUR (dove ricade Özer), senza toccare l'interpolazione
+# 7-15EUR gia' confermata corretta.
 OFFER_DISCOUNT_CURVE = [
     (1.50, 0.34),
     (4.00, 0.25),
@@ -738,6 +746,7 @@ OFFER_DISCOUNT_CURVE = [
     (6.00, 0.17),
     (7.00, 0.15),
     (15.00, 0.125),
+    (16.00, 0.156),
 ]
 
 
