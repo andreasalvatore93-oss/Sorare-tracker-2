@@ -2,7 +2,7 @@
 Tool_formazione_mls_fwd_all (test TUTTI gli attaccanti K League in_season posseduti)
 
 Estende test_multi_fwd.py: invece di una lista statica di 7 giocatori, legge
-la lista COMPLETA degli attaccanti MLS in_season posseduti (~42 giocatori,
+la lista COMPLETA degli attaccanti K League in_season posseduti (~42 giocatori,
 generata da kleague_fwd_discovery.py) da kleague_fwd_discovery/player_slugs.json.
 Fallback su una lista statica ridotta se il file non esiste (es. esecuzione
 manuale senza aver ancora girato la discovery).
@@ -59,7 +59,7 @@ except ImportError:
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
 # CALIBRATION_MODE (25/07, grid search allargato): se attivo, legge la lista
-# GLOBALE (tutti gli attaccanti MLS di qualita', non solo posseduti) invece
+# GLOBALE (tutti gli attaccanti K League di qualita', non solo posseduti) invece
 # di quella dei posseduti, e riesegue il grid search COMPLETO (72
 # combinazioni) invece del singolo backtest sui parametri gia' fissati --
 # usato SOLO per la ricalibrazione one-shot su piu' dati, mai in produzione.
@@ -1214,7 +1214,19 @@ def build_prediction(player_slug):
     # sopra e nel result dict solo a scopo diagnostico/di visualizzazione
     # nell'output. Confermato dall'utente dopo confronto A/B su formazioni
     # reali.
-    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
+    # RIMOSSO da score_atteso il 26/07 (terza sessione), DECISO CON L'UTENTE
+    # dopo backtest walk-forward rigoroso (formazione_mls/diagnostics/
+    # validate_team_defense_strength.py): fattore_forza_avversario (ranking
+    # di campionato) PEGGIORA il MAE reale -- rimuoverlo del tutto batte sia
+    # il ranking attuale sia una metrica alternativa piu' specifica (gol
+    # subiti storici dall'avversario, testata con grid search sul
+    # coefficiente di sensibilita'): -9.26% rimuovendolo vs -5.91% con gol
+    # subiti (miglior sensibilita' trovata). Stesso risultato di Stadio D:
+    # con soli 10-15 partite di storico per giocatore, condizionare per
+    # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
+    # Il fattore resta calcolato sopra e nel result dict solo a scopo
+    # diagnostico/di visualizzazione nell'output.
+    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
                     * fattore_trend)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
@@ -1499,7 +1511,7 @@ def main():
     target_slug = os.environ.get('TARGET_SLUG', '').strip()
     slugs_to_process = [target_slug] if target_slug else PLAYER_SLUGS
 
-    log("Avvio test TUTTI attaccanti MLS in_season Tool_formazione...")
+    log("Avvio test TUTTI attaccanti K League in_season Tool_formazione...")
     mode_str = f"modalita job singolo: {target_slug}" if target_slug else "lista completa"
     log(f"Config: {len(slugs_to_process)} giocatori da processare ({mode_str}), "
         f"WINDOW_SIZE={WINDOW_SIZE} HALF_LIFE_GAMES={HALF_LIFE_GAMES} "

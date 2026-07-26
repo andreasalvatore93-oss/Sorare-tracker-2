@@ -1214,7 +1214,19 @@ def build_prediction(player_slug):
     # sopra e nel result dict solo a scopo diagnostico/di visualizzazione
     # nell'output. Confermato dall'utente dopo confronto A/B su formazioni
     # reali.
-    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
+    # RIMOSSO da score_atteso il 26/07 (terza sessione), DECISO CON L'UTENTE
+    # dopo backtest walk-forward rigoroso (formazione_mls/diagnostics/
+    # validate_team_defense_strength.py): fattore_forza_avversario (ranking
+    # di campionato) PEGGIORA il MAE reale -- rimuoverlo del tutto batte sia
+    # il ranking attuale sia una metrica alternativa piu' specifica (gol
+    # subiti storici dall'avversario, testata con grid search sul
+    # coefficiente di sensibilita'): -9.26% rimuovendolo vs -5.91% con gol
+    # subiti (miglior sensibilita' trovata). Stesso risultato di Stadio D:
+    # con soli 10-15 partite di storico per giocatore, condizionare per
+    # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
+    # Il fattore resta calcolato sopra e nel result dict solo a scopo
+    # diagnostico/di visualizzazione nell'output.
+    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
                     * fattore_trend)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
