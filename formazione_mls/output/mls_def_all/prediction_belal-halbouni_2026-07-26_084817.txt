@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T08:48:17.183028Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=70%
+======================================================================
+1) belal-halbouni: 7 pt attesi (2-13)
+======================================================================
+
+######################################################################
+# GIOCATORE: belal-halbouni
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: belal-halbouni (squadra: vancouver-whitecaps-vancouver-british-columbia)
+Generato: 2026-07-26T08:48:17.182806Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-25 | VAN vs POR | mlspa | score=51.1 | peso=0.794
+  2025-10-11 | ORL vs VAN | mlspa | score=53.4 | peso=0.841
+  2025-10-19 | VAN vs DAL | mlspa | score=45.8 | peso=0.891
+  2025-10-26 | VAN vs DAL | mlspa | score=56.1 | peso=0.944
+  2025-11-02 | DAL vs VAN | mlspa | score=44.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 50.12
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 15.12 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+Deviazione standard pesata: 4.48
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 3.27 (differenza: +1.21)
+Media score in casa: 51.00 | Media score fuori casa: 49.10
+Fattore casa/trasferta applicato: 1.017 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.793
+Fattore falli (casa/trasferta, da dati reali): 1.007
+Fattore duelli (casa/trasferta, da dati reali): 1.022
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.015
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.981
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.025
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.991
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.019
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 18.52% (fonte: tasso di presenza storico (5/27))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Vancouver Whitecaps FC | Trasferta: Los Angeles FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 7.5 +/- 5.4
+  (range: 2.1 - 12.9)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.67
+Punteggio REALE ottenuto in quella partita: 44.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
