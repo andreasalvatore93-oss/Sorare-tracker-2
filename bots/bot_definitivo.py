@@ -702,8 +702,6 @@ OFFER_DISCOUNT_BY_PRICE = [
     (7.0, 0.115),
     (15.0, 0.125),
 ]
-LIQUID_PLAYER_TRANSACTIONS_7D = int(os.environ.get('LIQUID_PLAYER_TRANSACTIONS_7D', '15'))
-LIQUID_PLAYER_OFFER_DISCOUNT = float(os.environ.get('LIQUID_PLAYER_OFFER_DISCOUNT', '0.10'))
 
 
 def _tiered_lookup(price_eur, table):
@@ -765,15 +763,17 @@ def _round_offer_to_nice_number(price_eur, ceiling_eur):
     return max(0.0, round(rounded, 2))
 
 
-def compute_price_based_offer_discount(price_eur, count_7d=None):
+def compute_price_based_offer_discount(price_eur):
     """Sconto da applicare al vero minimo per calcolare il prezzo dell'offerta MakeOffer.
     Dipende dal PREZZO della carta (Regola 3 sopra), non dal margine del caso specifico.
-    Un giocatore molto liquido (count_7d >= LIQUID_PLAYER_TRANSACTIONS_7D) usa sempre lo
-    sconto mite LIQUID_PLAYER_OFFER_DISCOUNT, a prescindere dal prezzo."""
+    FIX 26/07 (rimossa l'eccezione "giocatore liquido"): l'override
+    LIQUID_PLAYER_OFFER_DISCOUNT (10% flat per count_7d>=15) e' stato rimosso -- validato
+    su 5 casi reali in 2 run diagnostici consecutivi, 4/5 volte l'utente voleva lo sconto
+    standard della fascia (non quello mite), incluso lo STESSO identico caso reale
+    ripetuto identico in entrambi i run (minimo 20.00EUR, override dava 18.00EUR, utente
+    voleva 17.50EUR = esattamente il valore della fascia 15-30EUR senza eccezione)."""
     if not PRICE_BASED_THRESHOLDS_ENABLED:
         return OFFER_DISCOUNT_FRACTION
-    if count_7d is not None and count_7d >= LIQUID_PLAYER_TRANSACTIONS_7D:
-        return LIQUID_PLAYER_OFFER_DISCOUNT
     return _tiered_lookup(price_eur, OFFER_DISCOUNT_BY_PRICE)
 # =====================================================================================
 
@@ -3155,13 +3155,13 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # diverso da quello poi effettivamente offerto.
     effective_discount = None
     if trigger_su_minimo_non_allineato:
-        effective_discount = compute_price_based_offer_discount(true_min_price, count_7d)
+        effective_discount = compute_price_based_offer_discount(true_min_price)
         prezzo_da_pagare = _round_offer_to_nice_number(
             true_min_price * (1 - effective_discount), true_min_price)
     elif _autobuy_eligible:
         prezzo_da_pagare = true_min_price
     elif eff_makeoffer_min <= margin_percent <= eff_makeoffer_max:
-        effective_discount = compute_price_based_offer_discount(true_min_price, count_7d)
+        effective_discount = compute_price_based_offer_discount(true_min_price)
         prezzo_da_pagare = _round_offer_to_nice_number(
             true_min_price * (1 - effective_discount), true_min_price)
     else:
@@ -4032,8 +4032,7 @@ def main():
         f"{', '.join(f'{p:.2f}EUR->{m:.1%}' for p, m in MAKEOFFER_MIN_MARGIN_CURVE)}. "
         f"AutoBuy diretto (curva continua): mai sotto {AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:.2f}EUR, poi "
         f"{', '.join(f'{p:.0f}EUR->{m:.0%}' for p, m in AUTOBUY_MIN_MARGIN_CURVE)}. "
-        f"Sconto offerta: {', '.join(f'{p:.0f}EUR->{d:.0%}' for p, d in OFFER_DISCOUNT_BY_PRICE)} "
-        f"(giocatori liquidi, count_7d>={LIQUID_PLAYER_TRANSACTIONS_7D}: {LIQUID_PLAYER_OFFER_DISCOUNT:.0%})")
+        f"Sconto offerta: {', '.join(f'{p:.0f}EUR->{d:.0%}' for p, d in OFFER_DISCOUNT_BY_PRICE)}")
     log(f"Giocatori in blacklist unita: {len(BLACKLISTED_PLAYER_SLUGS)}")
     log(f"Manager in blacklist unita: {len(BLACKLISTED_MANAGER_SLUGS)}")
     if AUTOBUY_LIVE_MODE or MAKEOFFER_LIVE_MODE:
