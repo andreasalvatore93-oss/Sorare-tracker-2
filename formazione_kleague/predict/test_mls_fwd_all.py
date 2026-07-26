@@ -44,11 +44,21 @@ MIN_STARTER_ODDS (70%), il giocatore viene ESCLUSO dall'analisi (non solo
 pesato come moltiplicatore graduale in P(gioca)).
 """
 import os
+import sys
 import json
 import math
 import time
 import datetime
 import requests
+
+# NUOVO (26/07, monitoraggio MAE live): modulo condiviso nella stessa
+# cartella, additivo/diagnostico -- vedi formazione_kleague/predict/
+# live_prediction_log.py per motivazione e dettagli. sys.path[0] e' gia'
+# la cartella di questo script quando lanciato come `python
+# formazione_kleague/predict/test_mls_fwd_all.py`, quindi l'import diretto
+# funziona a prescindere dalla cwd.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from live_prediction_log import log_live_prediction
 
 try:
     from curl_cffi import requests as curl_requests
@@ -1593,6 +1603,14 @@ def main():
             continue
 
         output_text = format_output(result)
+
+        # NUOVO (26/07, monitoraggio MAE live): logga la predizione appena
+        # generata (pending) per poterne verificare l'accuratezza reale una
+        # volta giocata la partita -- vedi live_prediction_log.py. No-op in
+        # CALIBRATION_MODE (gestito internamente alla funzione), zero
+        # chiamate API aggiuntive, nessun impatto su score_atteso.
+        log_live_prediction(OUTPUT_DIR, CALIBRATION_MODE, 'fwd', result)
+
         all_sections.append(f"\n{'#'*70}\n# GIOCATORE: {slug}\n{'#'*70}\n" + output_text)
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_low'),
                               result.get('range_high'), result.get('target_competition', ''),
