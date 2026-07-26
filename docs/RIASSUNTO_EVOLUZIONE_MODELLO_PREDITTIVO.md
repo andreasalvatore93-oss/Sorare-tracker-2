@@ -617,3 +617,89 @@ decisivo" per un giocatore non è solo il suo contributo medio ai punti, ma incl
 riduzione del rischio al ribasso — rilevante per qualunque futura stima predittiva di
 `level_score`, non solo per calcolarne il valore medio atteso ma anche per il range di confidenza
 (varianza ridotta sul lato basso quando il giocatore ha buone probabilità di un evento decisivo).
+
+## 12. Sera 26/07/2026 — rimozione `fattore_forza_avversario`, GK, monitoraggio MAE live, bilanciamento anti-stack
+
+Sessione successiva a quella descritta in sezione 11, stesso giorno. In ordine:
+
+**Rimosso `fattore_forza_avversario` da `score_atteso` per tutti e 4 i ruoli, MLS e K League**
+(commit `c7a4b831a`). Backtest walk-forward rigoroso
+(`formazione_mls/diagnostics/validate_team_defense_strength.py`) ha mostrato che questo fattore
+(basato su `domesticLeagueRanking`, generico offesa+difesa) PEGGIORA il MAE del 4-9% su tutti i
+ruoli — testata anche un'alternativa più specifica (gol subiti per squadra, ricostruita a costo
+zero dalle cache esistenti di GK/DEF/MID): batte comunque la rimozione secca, tranne un margine
+minimo per GK non ritenuto sufficiente a giustificare nuove query GraphQL in produzione. Il
+fattore resta calcolato e mostrato in output per diagnostica, solo non più moltiplicato.
+`HALF_LIFE_GAMES` e `fattore_casa_trasferta` sono stati ri-validati con lo stesso rigore
+(`validate_halflife_venue.py`): entrambi confermati validi per tutti i ruoli (delta <0.5%),
+nessuna modifica necessaria.
+
+**GK: tutti i parametri tunabili confermati vicini all'ottimo, nessuna modifica necessaria.**
+Oltre a Stadio D (già rimosso in sessione precedente, +4.21% MAE se tenuto) e all'avversario
+(sopra), validato anche `TREND_INTENSITY` (mai testato prima,
+`formazione_mls/diagnostics/validate_gk_trend.py`): 0.7 è quasi ottimale (alternativa migliore
+-0.08%, rumore), disattivare il trend costa +1.46%. Il problema residuo di GK non è di formula ma
+di dati: campione di calibrazione ancora piccolo (15 giocatori/129 punti test contro 72-178/311-616
+degli altri ruoli) — non ha mai avuto la "calibrazione allargata" che hanno avuto DEF/MID/FWD.
+Backlog aperto, rimandato.
+
+**Testata e SCARTATA la decomposizione level_score/granulare** (esito negativo,
+`formazione_mls/diagnostics/validate_level_score_decomposition.py`): l'ipotesi era prevedere lo
+score totale scomponendo `level_score_atteso + granulare_atteso` con half_life/trend PROPRI per
+ciascun pezzo, invece della media pesata unica sul totale in produzione. Grid search walk-forward
+(8281 combinazioni per ruolo) mostra guadagni marginali e probabilmente rumore (<1.3% su tutti i
+ruoli), con ottimi spesso al bordo della griglia (sintomo di overfitting); il test più onesto
+(decomposizione SENZA ri-tarare nulla) è nullo o leggermente peggiore in 3 ruoli su 4. Non portata
+in produzione.
+
+**Aggiunto monitoraggio MAE live per MLS** (commit `9860c99ff`, implementato da un agente in
+background): ogni run di produzione dei 4 ruoli MLS ora registra (`formazione_mls/predict/
+live_prediction_log.py`) uno "pending log" JSON per giocatore/partita target con lo `score_atteso`
+generato; un nuovo script (`formazione_mls/diagnostics/resolve_live_predictions.py`) confronta
+poi queste previsioni con lo score reale non appena la cache si aggiorna con la partita giocata,
+calcola l'errore e produce un report di MAE live per ruolo (totale e ultime N partite, per
+individuare drift). Zero nuove query API, overhead trascurabile, nessuna modifica alla formula.
+Scope solo MLS per ora (K League può seguire).
+
+**Meccaniche di gioco Sorare chiarite dall'utente (fondamentali, non derivabili dal codice)**:
+- **In Season**: contro un target fisso di Sorare, non contro altri manager.
+- **Arena**: 5 giocatori (anche tutti classic), 1 formazione contro altri 9 manager, premiati i
+  primi 3. **Capitano Arena: bonus +20%, NON +50%** — il codice usa ancora `CAPTAIN_BONUS = 0.5`
+  globale per tutti i tipi di formazione (bug noto, non ancora corretto).
+- **All Stars**: stesso meccanismo di Arena ma su scala globale (~20.000 partecipanti, premiati i
+  primi 1000 — taglio 5%, molto più estremo del 30% di Arena).
+- **Bonus anti-stack (SOLO In Season)**: formazione con MENO di 3 giocatori della stessa squadra →
+  +2% al punteggio di ciascuno dei 5; con 3+ della stessa squadra il bonus salta per tutti.
+  Non esiste in Arena/All Stars.
+- **Bonus "cap 260" (SOLO In Season e All Stars, NON Arena)**: menzionato dall'utente ma non ancora
+  approfondito — probabilmente imparentato con (ma non identico a) l'`ARENA_L10_CAP` già
+  implementato per Arena. Da chiarire in una prossima sessione.
+
+**Fix implementato: bilanciamento sinergia GK-DEF con bonus anti-stack** (commit `e658958ab`,
+MLS+K League). Contesto: `build_formazione_finale.py` aveva già una sinergia GK+DEF (aggiunta in
+sessione precedente per la correlazione clean sheet: schierare il DEF della stessa squadra del GK
+è leggermente incoraggiato) scritta PRIMA di sapere del bonus anti-stack. Analisi: quella sinergia
+da sola porta al massimo a 2 giocatori della stessa squadra (GK + 1 DEF titolare) — nessun
+conflitto col bonus anti-stack (soglia 3), lasciata invariata. Il conflitto nasce solo nello slot
+EXTRA, dove la stessa sinergia poteva spingere verso il 3° giocatore della squadra del GK, perdendo
+il 2% certo su tutti e 5 per un guadagno di correlazione incerto. Aggiunto `apply_stack_guard`
+(parametro nuovo di `build_one_lineup`, attivo SOLO per `tipo == 'IN_SEASON'`): nello slot extra,
+un candidato che farebbe salire una squadra a 3+ viene fortemente deprioritizzato nell'ordine di
+scelta — MAI escluso (se non ci sono alternative valide resta comunque selezionabile: a volte,
+es. capolista contro ultima, può convenire sacrificare il 2% per un punteggio quasi certo, scelta
+che resta dell'utente, non dell'algoritmo). Se una formazione finisce comunque con 3+ della stessa
+squadra, viene segnalato chiaramente in output (testo e HTML: "bonus anti-stack NON applicato").
+Arena/All Stars non toccate (nessun bonus anti-stack lì). Verificato con test locale (candidati
+fittizi): il guard evita il 3° giocatore quando esiste un'alternativa valida, e ripiega sullo
+stack solo quando non ce ne sono (segnalandolo).
+
+**Backlog aperto a fine sessione**:
+1. GK: calibrazione allargata (discovery su tutti i portieri MLS qualificati) — rimandato.
+2. K League: infrastruttura discovery globale equivalente a MLS, per ripetere le analisi
+   cross-league (Stadio D, avversario, ecc.) e confrontare pattern universali vs specifici MLS.
+3. Verificare empiricamente se la correlazione reale tra compagni di squadra nei dati giustifica di
+   spingere DI PIÙ sullo stacking in Arena/All Stars (specialmente All Stars, taglio 5%).
+4. Correggere `CAPTAIN_BONUS` per essere specifico per tipo (Arena 20% vs In Season/All Stars —
+   valore per questi ultimi due mai verificato esplicitamente con l'utente, assunto 50% finora).
+5. Chiarire e implementare il bonus "cap 260".
+6. Outlier/hot-streak (mai affrontato), monitoraggio MAE live esteso a K League.
