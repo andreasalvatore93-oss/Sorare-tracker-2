@@ -231,7 +231,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 10
       matrix:
         player_slug: ${{ fromJson(needs.discover_gk.outputs.player_slugs) }}
     steps:
@@ -267,7 +267,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 10
       matrix:
         player_slug: ${{ fromJson(needs.discover_def.outputs.player_slugs) }}
     steps:
@@ -303,7 +303,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 10
       matrix:
         player_slug: ${{ fromJson(needs.discover_mid.outputs.player_slugs) }}
     steps:
@@ -339,7 +339,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 10
       matrix:
         player_slug: ${{ fromJson(needs.discover_fwd.outputs.player_slugs) }}
     steps:
