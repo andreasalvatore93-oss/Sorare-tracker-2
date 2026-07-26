@@ -6,6 +6,47 @@ descritto qui è già **committato e pushato** su GitHub (ultimo commit di quest
 `6fc87f11`, verificare `git log --oneline -10` per eventuali commit successivi di altri
 workflow automatici) — si può ripartire con `git pull`, non c'è lavoro locale non salvato.
 
+## Aggiornamento 26/07 (sera) — blacklist transitoria in_season + pulizia repo
+
+Sessione separata (branch di lavoro `claude/missing-recent-chats-687m14`, poi riportata
+manualmente su `main` visto il disallineamento — vedi nota sotto). Commit su `main`:
+`ce40c28fb`, `f2ffc3be0`, `cc5df273d`.
+
+1. **Nuova sezione lista nera `campionato_inseason_temp`** (`sorare_lista_nera.txt`,
+   `bots/bot_definitivo.py`): blacklist transitoria (default 15gg) che ignora **solo le
+   carte in_season** di un campionato, lasciando le classic valutate normalmente —
+   diversa dalla blacklist totale `campionato` che ignora tutto. Usata subito per 4
+   campionati con carte in_season appena uscite e ancora troppo instabili di prezzo:
+   portoghese (`primeira-liga-pt`), austriaco (`austrian-bundesliga`), scozzese
+   (`premiership-gb-sct`), croato (`1-hnl`) — rimossi dalla blacklist totale
+   `campionato` e spostati qui.
+2. **Questi 4 campionati aggiunti a `EXCLUDED_LEAGUE_SLUGS`**, lo stesso set usato finora
+   solo per MLS/K League: per questi campionati il confronto di mercato separa sempre
+   in_season e classic (mai mescolati), **in entrambe le direzioni** — confermato
+   esplicitamente dall'utente che la separazione classic-vs-classic per MLS/K League era
+   voluta e va replicata simmetricamente anche quando si valuta una carta classic (non
+   solo quando si valuta una carta in_season, unico caso già coperto prima). Aggiunta
+   `get_classic_prices()`, simmetrica a `get_in_season_prices()` già esistente.
+3. **Manager `basilbot`** aggiunto alla blacklist manager (365gg) — non c'era.
+4. **Pulizia repo (richiesta esplicita utente, "sto cominciando a fare confusione" tra
+   main e altri branch)**: `bot_supremo.py`/`bot_supremo_aste.py` (versione primitiva,
+   superata da `bot_definitivo.py` da fine luglio) e i relativi workflow/file
+   (`.github/workflows/bot_supremo.yml`, `bot_supremo_aste.yml`,
+   `bot_supremo_thin_market_cache.json`, `docs/botsupremo.md`) **rimossi da `main`** e
+   archiviati sul branch **`archive/bot-supremo`** (pushato su GitHub, storico intatto
+   fino al punto della rimozione). Rinominate anche le etichette residue "Bot Supremo"
+   rimaste in `bot_definitivo.yml` (step name, messaggio/identità git del commit
+   automatico della lista nera) — puramente cosmetico. **Da ora in avanti l'unico bot e
+   l'unica architettura operativa vive in `main`**, niente più lavoro sparso su branch
+   secondari per `bot_definitivo`.
+5. **Nota per chi riprende da qui**: durante questa sessione `bot_definitivo.py` era
+   stato modificato per errore su un branch secondario ormai disallineato da `main` (che
+   nel frattempo aveva ricevuto altri commit, es. le curve continue di soglia/sconto del
+   26/07 pomeriggio) — le modifiche sono state **riportate a mano** sulla versione
+   corrente di `main`, non mergiate alla cieca. Se in futuro si lavora di nuovo su un
+   branch secondario per `bot_definitivo`, verificare sempre lo scarto con `main` prima
+   di riportare le modifiche.
+
 ## PROSSIMA AZIONE IMMEDIATA (in ordine)
 
 1. **Rifare il run diagnostico mirato a generare molti AutoBuy** (il tentativo di questa
