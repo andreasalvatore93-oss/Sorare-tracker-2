@@ -249,28 +249,17 @@ jobs:
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
         run: python formazione_kleague/predict/test_gk.py
-      - name: Commit output e cache
+      - name: Upload output come artifact (evita contese di git push tra job paralleli)
         if: always()
-        run: |
-          git config user.name "kleague-formazione-bot"
-          git config user.email "kleague-formazione-bot@users.noreply.github.com"
-          git add formazione_kleague/output/kleague_gk_all/
-          if git diff --cached --quiet; then
-            echo "Nessuna modifica da salvare."
-            exit 0
-          fi
-          git commit -m "Formazione Completa: predict GK ${{ matrix.player_slug }}"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then
-              echo "Impossibile salvare dopo 15 tentativi, abbandono."
-              exit 1
-            fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-          done
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-kleague-gk-${{ matrix.player_slug }}
+          path: |
+            formazione_kleague/output/kleague_gk_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_kleague/output/kleague_gk_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_kleague/output/kleague_gk_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
 
   predict_def:
     needs: discover_def
@@ -296,28 +285,17 @@ jobs:
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
         run: python formazione_kleague/predict/test_def.py
-      - name: Commit output e cache
+      - name: Upload output come artifact (evita contese di git push tra job paralleli)
         if: always()
-        run: |
-          git config user.name "kleague-formazione-bot"
-          git config user.email "kleague-formazione-bot@users.noreply.github.com"
-          git add formazione_kleague/output/kleague_def_all/
-          if git diff --cached --quiet; then
-            echo "Nessuna modifica da salvare."
-            exit 0
-          fi
-          git commit -m "Formazione Completa: predict DEF ${{ matrix.player_slug }}"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then
-              echo "Impossibile salvare dopo 15 tentativi, abbandono."
-              exit 1
-            fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-          done
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-kleague-def-${{ matrix.player_slug }}
+          path: |
+            formazione_kleague/output/kleague_def_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_kleague/output/kleague_def_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_kleague/output/kleague_def_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
 
   predict_mid:
     needs: discover_mid
@@ -343,28 +321,17 @@ jobs:
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
         run: python formazione_kleague/predict/test_mid.py
-      - name: Commit output e cache
+      - name: Upload output come artifact (evita contese di git push tra job paralleli)
         if: always()
-        run: |
-          git config user.name "kleague-formazione-bot"
-          git config user.email "kleague-formazione-bot@users.noreply.github.com"
-          git add formazione_kleague/output/kleague_mid_all/
-          if git diff --cached --quiet; then
-            echo "Nessuna modifica da salvare."
-            exit 0
-          fi
-          git commit -m "Formazione Completa: predict MID ${{ matrix.player_slug }}"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then
-              echo "Impossibile salvare dopo 15 tentativi, abbandono."
-              exit 1
-            fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-          done
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-kleague-mid-${{ matrix.player_slug }}
+          path: |
+            formazione_kleague/output/kleague_mid_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_kleague/output/kleague_mid_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_kleague/output/kleague_mid_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
 
   predict_fwd:
     needs: discover_fwd
@@ -390,28 +357,17 @@ jobs:
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
         run: python formazione_kleague/predict/test_mls_fwd_all.py
-      - name: Commit output e cache
+      - name: Upload output come artifact (evita contese di git push tra job paralleli)
         if: always()
-        run: |
-          git config user.name "kleague-formazione-bot"
-          git config user.email "kleague-formazione-bot@users.noreply.github.com"
-          git add formazione_kleague/output/kleague_fwd_all/
-          if git diff --cached --quiet; then
-            echo "Nessuna modifica da salvare."
-            exit 0
-          fi
-          git commit -m "Formazione Completa: predict FWD ${{ matrix.player_slug }}"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then
-              echo "Impossibile salvare dopo 15 tentativi, abbandono."
-              exit 1
-            fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-          done
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-kleague-fwd-${{ matrix.player_slug }}
+          path: |
+            formazione_kleague/output/kleague_fwd_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_kleague/output/kleague_fwd_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_kleague/output/kleague_fwd_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
 
   # ------------------------------------------------------------------
   # MERGE: riepilogo compatto per ruolo (consiglio_<ts>.txt).
@@ -428,18 +384,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Scarica output predict (artifact aggregati, un solo commit invece di N)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: predict-kleague-gk-*
+          path: formazione_kleague/output/kleague_gk_all
+          merge-multiple: true
+        continue-on-error: true
       - name: Consiglio GK
         run: python formazione_kleague/consiglio/build_consiglio_gk.py
-      - name: Commit riepilogo
+      - name: Commit predict+riepilogo
         run: |
           git config user.name "kleague-formazione-bot"
           git config user.email "kleague-formazione-bot@users.noreply.github.com"
-          git add formazione_kleague/output/kleague_gk_all/consiglio_*.txt
+          git add formazione_kleague/output/kleague_gk_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Formazione Completa: consiglio GK"
+          git commit -m "Formazione Completa: predict+consiglio GK"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -464,18 +427,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Scarica output predict (artifact aggregati, un solo commit invece di N)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: predict-kleague-def-*
+          path: formazione_kleague/output/kleague_def_all
+          merge-multiple: true
+        continue-on-error: true
       - name: Consiglio DEF
         run: python formazione_kleague/consiglio/build_consiglio_def.py
-      - name: Commit riepilogo
+      - name: Commit predict+riepilogo
         run: |
           git config user.name "kleague-formazione-bot"
           git config user.email "kleague-formazione-bot@users.noreply.github.com"
-          git add formazione_kleague/output/kleague_def_all/consiglio_*.txt
+          git add formazione_kleague/output/kleague_def_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Formazione Completa: consiglio DEF"
+          git commit -m "Formazione Completa: predict+consiglio DEF"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -500,18 +470,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Scarica output predict (artifact aggregati, un solo commit invece di N)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: predict-kleague-mid-*
+          path: formazione_kleague/output/kleague_mid_all
+          merge-multiple: true
+        continue-on-error: true
       - name: Consiglio MID
         run: python formazione_kleague/consiglio/build_consiglio_mid.py
-      - name: Commit riepilogo
+      - name: Commit predict+riepilogo
         run: |
           git config user.name "kleague-formazione-bot"
           git config user.email "kleague-formazione-bot@users.noreply.github.com"
-          git add formazione_kleague/output/kleague_mid_all/consiglio_*.txt
+          git add formazione_kleague/output/kleague_mid_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Formazione Completa: consiglio MID"
+          git commit -m "Formazione Completa: predict+consiglio MID"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -536,18 +513,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Scarica output predict (artifact aggregati, un solo commit invece di N)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: predict-kleague-fwd-*
+          path: formazione_kleague/output/kleague_fwd_all
+          merge-multiple: true
+        continue-on-error: true
       - name: Consiglio FWD
         run: python formazione_kleague/consiglio/build_consiglio.py
-      - name: Commit riepilogo
+      - name: Commit predict+riepilogo
         run: |
           git config user.name "kleague-formazione-bot"
           git config user.email "kleague-formazione-bot@users.noreply.github.com"
-          git add formazione_kleague/output/kleague_fwd_all/consiglio_*.txt
+          git add formazione_kleague/output/kleague_fwd_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Formazione Completa: consiglio FWD"
+          git commit -m "Formazione Completa: predict+consiglio FWD"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
