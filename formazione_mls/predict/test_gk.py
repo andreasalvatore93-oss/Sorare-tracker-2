@@ -602,24 +602,20 @@ def team_ranking_from_game(game, player_team_slug):
 # duel_lost/interception_won/poss_won assenti — solo poss_lost_ctrl esiste).
 # NESSUNA categoria DEFENDING (quindi niente GOALKEEPING_STATS/
 # DEFENSIVE_ACTIONS_STATS come nel difensore/centrocampista).
-FOULS_STATS = ('fouls',)
+# RIMOSSI (26/07, diagnostico inspect_granular_weights.py su 268 partite
+# reali/29 portieri): FOULS_STATS, OFFENSIVE_STATS, RARE_EVENTS_STATS
+# pesavano 0.0% sul movimento totale del punteggio -- rumore puro, nessun
+# segnale perso rimuovendoli. Erano gia' solo diagnostici (mai in
+# score_atteso), quindi la rimozione non cambia il comportamento reale del
+# modello, solo pulisce codice/output.
 # Nota: "duelli" per il portiere si riduce a un solo campo (possesso perso),
 # non un vero "duello" come per gli altri ruoli — mantenuto come gruppo a
 # se stante per coerenza di posizione nella formula, ma con un solo campo.
 POSSESSION_STATS = ('poss_lost_ctrl',)
-# Categoria "In attacco" quasi sempre a 0 per un portiere, ma presente nel
-# detailedScore — mantenuta per completezza (contributo atteso trascurabile).
-OFFENSIVE_STATS = ('ontarget_scoring_att', 'big_chance_missed')
 # Categoria "Passaggio": RIDOTTA rispetto al difensore — manca
 # long_pass_own_to_opp_success (quella era specifica del difensore).
 PASSING_STATS = ('accurate_pass', 'successful_final_third_passes', 'adjusted_total_att_assist',
                   'accurate_long_balls', 'missed_pass')
-# Eventi rari: penalty_save ESCLUSO su richiesta esplicita utente (evento
-# troppo raro, +25 standalone o +10 extra se combinato con clean sheet — non
-# vale la complessita' di modellarlo). own_goals/error_lead_to_goal restano
-# (eventi negativi rari ma rilevanti quando accadono).
-RARE_EVENTS_STATS = ('penalty_won', 'penalty_conceded', 'own_goals', 'error_lead_to_goal')
-RARE_EVENTS_CAP = 10.0
 # Gol subiti dalla propria squadra mentre in campo (negativo). Il piu'
 # rilevante di tutti i gruppi granulari per un portiere.
 GOALS_CONCEDED_STATS = ('goals_conceded',)
@@ -738,8 +734,8 @@ def compute_trend_factor(scores, short_window=5, long_window=10, trend_intensity
 
 def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                        half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0,
-                       fouls_values=None, possession_values=None, offensive_values=None,
-                       rare_events_values=None, passing_values=None, goalkeeping_values=None, goals_conceded_values=None,
+                       possession_values=None,
+                       passing_values=None, goalkeeping_values=None, goals_conceded_values=None,
                        use_granular_factors=False, use_trend=False, trend_intensity=1.0):
     """Backtest rigoroso: per ogni partita a partire da 'min_history' partite di
     storico disponibile, ricalcola l'INTERA formula (media pesata esponenziale +
@@ -799,7 +795,7 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 
         fattore_granulare_totale = 1.0
         if use_granular_factors:
-            for values in (fouls_values, possession_values, offensive_values, rare_events_values,
+            for values in (possession_values,
                            passing_values, goalkeeping_values, goals_conceded_values):
                 if values is not None:
                     hist_values = values[:i]
@@ -877,8 +873,8 @@ GRID_SEARCH_COMBINATIONS = _build_grid_combinations()
 
 
 def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                     fouls_values=None, possession_values=None, offensive_values=None,
-                     rare_events_values=None, passing_values=None, goalkeeping_values=None, goals_conceded_values=None):
+                     possession_values=None,
+                     passing_values=None, goalkeeping_values=None, goals_conceded_values=None):
     """Esegue il backtest rigoroso con tutte le combinazioni di parametri in
     GRID_SEARCH_COMBINATIONS e ritorna i risultati ordinati per MAE crescente
     (il migliore per primo). Il 'punteggio' finale usato per il ranking bilancia
@@ -888,9 +884,7 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
         bt = rigorous_backtest(scores, is_home_flags, opponent_rankings,
                                 min_history=min_history, half_life=half_life,
                                 range_multiplier=range_mult, opponent_sensitivity=opp_sens,
-                                fouls_values=fouls_values, possession_values=possession_values,
-                                offensive_values=offensive_values,
-                                rare_events_values=rare_events_values,
+                                possession_values=possession_values,
                                 passing_values=passing_values,
                                 goalkeeping_values=goalkeeping_values,
                                 goals_conceded_values=goals_conceded_values,
@@ -1063,11 +1057,8 @@ def build_prediction(player_slug):
     is_home_flags = []
     opponent_rankings = []
     own_rankings = []
-    fouls_values = []
     possession_values = []
-    offensive_values = []
     passing_values = []
-    rare_events_values = []
     goalkeeping_values = []
     goals_conceded_values = []
     clean_sheet_flag_values = []  # 1.0/0.0 per partita: porta inviolata nei primi 60' (vedi extract_clean_sheet_flag)
@@ -1083,12 +1074,8 @@ def build_prediction(player_slug):
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
 
-        fouls_values.append(extract_group_score(detail, FOULS_STATS))
         possession_values.append(extract_group_score(detail, POSSESSION_STATS))
-        offensive_values.append(extract_group_score(detail, OFFENSIVE_STATS))
         passing_values.append(extract_group_score(detail, PASSING_STATS))
-        rare_raw = extract_group_score(detail, RARE_EVENTS_STATS)
-        rare_events_values.append(max(-RARE_EVENTS_CAP, min(RARE_EVENTS_CAP, rare_raw)))
         goalkeeping_values.append(extract_group_score(detail, GOALKEEPING_STATS))  # nessun cap: e' il cuore del punteggio portiere
         goals_conceded_raw = extract_group_score(detail, GOALS_CONCEDED_STATS)
         goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
@@ -1136,14 +1123,12 @@ def build_prediction(player_slug):
         else:
             fattore_casa_trasferta = away_avg / overall_avg_for_factor
 
-    # --- Fattori granulari SEPARATI: falli, duelli, efficacia offensiva ---
+    # --- Fattori granulari SEPARATI (26/07: falli/efficacia offensiva/eventi
+    # rari rimossi, pesavano 0.0% su 268 partite reali -- vedi
+    # inspect_granular_weights.py) ---
     # Ognuno e' un fattore casa/trasferta indipendente, calcolato sui dati REALI
-    # del detailedScore delle 14 partite (non stime). Gli eventi rari (rigori,
-    # autogol, errori-a-gol) sono gia' stati cappati in fase di estrazione.
-    fattore_falli = compute_split_factor(fouls_values, is_home_flags, next_is_home)
+    # del detailedScore delle 14 partite (non stime).
     fattore_possesso = compute_split_factor(possession_values, is_home_flags, next_is_home)
-    fattore_offensivo = compute_split_factor(offensive_values, is_home_flags, next_is_home)
-    fattore_eventi_rari = compute_split_factor(rare_events_values, is_home_flags, next_is_home)
     fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home)
     fattore_goalkeeping = compute_split_factor(goalkeeping_values, is_home_flags, next_is_home)
     fattore_gol_subiti = compute_split_factor(goals_conceded_values, is_home_flags, next_is_home)
@@ -1229,9 +1214,7 @@ def build_prediction(player_slug):
         # ricalibrare i parametri su un campione molto piu' ampio.
         log("CALIBRATION_MODE attivo: esecuzione grid search completo (72 combinazioni)...")
         grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                                        fouls_values=fouls_values, possession_values=possession_values,
-                                        offensive_values=offensive_values,
-                                        rare_events_values=rare_events_values,
+                                        possession_values=possession_values,
                                         passing_values=passing_values,
                                         goalkeeping_values=goalkeeping_values,
                                         goals_conceded_values=goals_conceded_values)
@@ -1241,9 +1224,7 @@ def build_prediction(player_slug):
         rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                                          half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
                                          opponent_sensitivity=OPPONENT_SENSITIVITY,
-                                         fouls_values=fouls_values, possession_values=possession_values,
-                                         offensive_values=offensive_values,
-                                         rare_events_values=rare_events_values,
+                                         possession_values=possession_values,
                                          passing_values=passing_values,
                                          goalkeeping_values=goalkeeping_values,
                                          goals_conceded_values=goals_conceded_values,
@@ -1279,10 +1260,7 @@ def build_prediction(player_slug):
         'next_own_rank': next_own_rank,
         'next_is_home': next_is_home,
         'fattore_forza_avversario': fattore_forza_avversario,
-        'fattore_falli': fattore_falli,
         'fattore_possesso': fattore_possesso,
-        'fattore_offensivo': fattore_offensivo,
-        'fattore_eventi_rari': fattore_eventi_rari,
         'fattore_passaggio': fattore_passaggio,
         'fattore_goalkeeping': fattore_goalkeeping,
         'fattore_gol_subiti': fattore_gol_subiti,
@@ -1347,11 +1325,10 @@ def format_output(result):
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
     lines.append(f"Fattore forza avversario applicato: {result['fattore_forza_avversario']:.3f}")
     lines.append("NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello "
-                 "score atteso (calibrazione 25/07: peggioravano il MAE per il portiere).")
-    lines.append(f"Fattore falli (casa/trasferta, da dati reali, non applicato): {result['fattore_falli']:.3f}")
+                 "score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). "
+                 "Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 "
+                 "partite reali, vedi inspect_granular_weights.py).")
     lines.append(f"Fattore possesso (casa/trasferta, da dati reali, non applicato): {result['fattore_possesso']:.3f}")
-    lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali, non applicato): {result['fattore_offensivo']:.3f}")
-    lines.append(f"Fattore eventi rari (rigori/autogol/errori, con cap, non applicato): {result['fattore_eventi_rari']:.3f}")
     lines.append(f"Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): {result['fattore_passaggio']:.3f}")
     lines.append(f"Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): {result['fattore_goalkeeping']:.3f}")
     lines.append(f"Fattore gol subiti (goals_conceded, con cap, non applicato): {result['fattore_gol_subiti']:.3f}")

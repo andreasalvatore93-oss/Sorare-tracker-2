@@ -10,13 +10,15 @@ vivo (Mohamed Farsi, score 59.9, ricostruzione esatta):
   - accurate_long_balls (categoria PASSING)
   - goals_conceded (categoria GENERAL, negativo)
 
-Formula (identica nella struttura, gruppi granulari ampliati):
+Formula REALE in produzione (26/07: granulari rimossi da score_atteso dopo
+calibrazione allargata -- restano solo diagnostici nell'output):
   score_atteso = P(gioca) x media_pesata_esponenziale(N partite)
-                 x fattore_casa_trasferta x fattore_forza_avversario
-                 x fattore_falli x fattore_duelli x fattore_offensivo
-                 x fattore_eventi_rari x fattore_passaggio x fattore_difesa_rari
-                 x fattore_azioni_difensive x fattore_trend
+                 x fattore_casa_trasferta x fattore_forza_avversario x fattore_trend
   range_confidenza = +/- dev_std_pesata * RANGE_MULTIPLIER
+
+RARE_EVENTS_STATS (eventi rari) RIMOSSO il 26/07 dai gruppi granulari
+diagnostici: pesava 0.0% sul movimento del punteggio su 1394 partite reali
+(inspect_granular_weights.py) -- rumore puro, nessun segnale perso.
 
 FIX Finding 3 (25/07, audit logica): fattore_casa_trasferta era calcolato sul
 punteggio TOTALE della partita, che pero' include gia' dentro di se' l'intero
@@ -552,11 +554,6 @@ OFFENSIVE_STATS = ('ontarget_scoring_att', 'big_chance_created', 'big_chance_mis
 # rilevante nel gruppo attaccanti, verificato dal vivo su Mohamed Farsi).
 PASSING_STATS = ('accurate_pass', 'successful_final_third_passes', 'adjusted_total_att_assist',
                   'accurate_long_balls')
-# Eventi rari con peso enorme quando accadono ma situazionali/random: sommati nel
-# totale ma il loro contributo e' limitato da un cap assoluto (in punti Sorare)
-# per non far esplodere la stima su un singolo evento fortuito.
-RARE_EVENTS_STATS = ('penalty_won', 'penalty_conceded', 'own_goals', 'error_lead_to_goal')
-RARE_EVENTS_CAP = 10.0  # punti massimi (positivi o negativi) che questo gruppo puo' contribuire
 # Categoria "Difesa" Sorare + altri eventi rarissimi: achievement compositi
 # (double/triple) e azioni difensive eccezionali, quasi sempre 0.
 DEFENSE_RARE_STATS = ('double_double', 'triple_double', 'triple_triple', 'last_man_tackle',
@@ -656,7 +653,7 @@ def compute_trend_factor(scores, short_window=5, long_window=10, trend_intensity
 def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                        half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0,
                        fouls_values=None, duels_values=None, offensive_values=None,
-                       rare_events_values=None, passing_values=None, defense_rare_values=None,
+                       passing_values=None, defense_rare_values=None,
                        defensive_actions_values=None, goals_conceded_values=None,
                        residual_values=None,
                        use_granular_factors=False, use_trend=False, trend_intensity=1.0):
@@ -718,7 +715,7 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 
         fattore_granulare_totale = 1.0
         if use_granular_factors:
-            for values in (fouls_values, duels_values, offensive_values, rare_events_values,
+            for values in (fouls_values, duels_values, offensive_values,
                            passing_values, defense_rare_values, defensive_actions_values,
                            goals_conceded_values):
                 if values is not None:
@@ -798,7 +795,7 @@ GRID_SEARCH_COMBINATIONS = _build_grid_combinations()
 
 def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                      fouls_values=None, duels_values=None, offensive_values=None,
-                     rare_events_values=None, passing_values=None, defense_rare_values=None,
+                     passing_values=None, defense_rare_values=None,
                      defensive_actions_values=None, goals_conceded_values=None,
                      residual_values=None):
     """Esegue il backtest rigoroso con tutte le combinazioni di parametri in
@@ -812,7 +809,6 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                                 range_multiplier=range_mult, opponent_sensitivity=opp_sens,
                                 fouls_values=fouls_values, duels_values=duels_values,
                                 offensive_values=offensive_values,
-                                rare_events_values=rare_events_values,
                                 passing_values=passing_values,
                                 defense_rare_values=defense_rare_values,
                                 defensive_actions_values=defensive_actions_values,
@@ -991,7 +987,6 @@ def build_prediction(player_slug):
     duels_values = []
     offensive_values = []
     passing_values = []
-    rare_events_values = []
     defense_rare_values = []
     defensive_actions_values = []
     goals_conceded_values = []
@@ -1013,7 +1008,6 @@ def build_prediction(player_slug):
         duels_v = extract_group_score(detail, DUELS_STATS)
         offensive_v = extract_group_score(detail, OFFENSIVE_STATS)
         passing_v = extract_group_score(detail, PASSING_STATS)
-        rare_raw = extract_group_score(detail, RARE_EVENTS_STATS)
         defense_raw = extract_group_score(detail, DEFENSE_RARE_STATS)
         defensive_actions_v = extract_group_score(detail, DEFENSIVE_ACTIONS_STATS)
         goals_conceded_raw = extract_group_score(detail, GOALS_CONCEDED_STATS)
@@ -1022,7 +1016,6 @@ def build_prediction(player_slug):
         duels_values.append(duels_v)
         offensive_values.append(offensive_v)
         passing_values.append(passing_v)
-        rare_events_values.append(max(-RARE_EVENTS_CAP, min(RARE_EVENTS_CAP, rare_raw)))
         defense_rare_values.append(max(-DEFENSE_RARE_CAP, min(DEFENSE_RARE_CAP, defense_raw)))
         defensive_actions_values.append(defensive_actions_v)
         goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
@@ -1030,7 +1023,7 @@ def build_prediction(player_slug):
         # Residuo = tutto cio' che NON e' in nessun gruppo granulare tracciato
         # sopra (usiamo i valori REALI non cappati per i gruppi con cap, cosi'
         # il residuo resta coerente con il punteggio reale della partita).
-        covered_total = (fouls_v + duels_v + offensive_v + passing_v + rare_raw
+        covered_total = (fouls_v + duels_v + offensive_v + passing_v
                          + defense_raw + defensive_actions_v + goals_conceded_raw)
         residual_values.append(game_score - covered_total)
 
@@ -1081,7 +1074,6 @@ def build_prediction(player_slug):
     fattore_falli = compute_split_factor(fouls_values, is_home_flags, next_is_home)
     fattore_duelli = compute_split_factor(duels_values, is_home_flags, next_is_home)
     fattore_offensivo = compute_split_factor(offensive_values, is_home_flags, next_is_home)
-    fattore_eventi_rari = compute_split_factor(rare_events_values, is_home_flags, next_is_home)
     fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home)
     fattore_difesa_rari = compute_split_factor(defense_rare_values, is_home_flags, next_is_home)
     fattore_azioni_difensive = compute_split_factor(defensive_actions_values, is_home_flags, next_is_home)
@@ -1147,7 +1139,6 @@ def build_prediction(player_slug):
         grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
                                         fouls_values=fouls_values, duels_values=duels_values,
                                         offensive_values=offensive_values,
-                                        rare_events_values=rare_events_values,
                                         passing_values=passing_values,
                                         defense_rare_values=defense_rare_values,
                                         defensive_actions_values=defensive_actions_values,
@@ -1161,7 +1152,6 @@ def build_prediction(player_slug):
                                          opponent_sensitivity=OPPONENT_SENSITIVITY,
                                          fouls_values=fouls_values, duels_values=duels_values,
                                          offensive_values=offensive_values,
-                                         rare_events_values=rare_events_values,
                                          passing_values=passing_values,
                                          defense_rare_values=defense_rare_values,
                                          defensive_actions_values=defensive_actions_values,
@@ -1202,7 +1192,6 @@ def build_prediction(player_slug):
         'fattore_falli': fattore_falli,
         'fattore_duelli': fattore_duelli,
         'fattore_offensivo': fattore_offensivo,
-        'fattore_eventi_rari': fattore_eventi_rari,
         'fattore_passaggio': fattore_passaggio,
         'fattore_difesa_rari': fattore_difesa_rari,
         'fattore_azioni_difensive': fattore_azioni_difensive,
@@ -1268,7 +1257,6 @@ def format_output(result):
     lines.append(f"Fattore falli (casa/trasferta, da dati reali): {result['fattore_falli']:.3f}")
     lines.append(f"Fattore duelli (casa/trasferta, da dati reali): {result['fattore_duelli']:.3f}")
     lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali): {result['fattore_offensivo']:.3f}")
-    lines.append(f"Fattore eventi rari (rigori/autogol/errori, con cap): {result['fattore_eventi_rari']:.3f}")
     lines.append(f"Fattore passaggio (accurate_pass/final_third/att_assist): {result['fattore_passaggio']:.3f}")
     lines.append(f"Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): {result['fattore_difesa_rari']:.3f}")
     lines.append(f"Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): {result['fattore_azioni_difensive']:.3f}")
