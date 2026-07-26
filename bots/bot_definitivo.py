@@ -687,11 +687,23 @@ MAKEOFFER_MIN_MARGIN_CURVE = [
 # un margine richiesto piu' alto, quindi verso MakeOffer) nelle zone piu' rumorose
 # invece di inseguire esattamente ogni singolo punto.
 AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY = float(os.environ.get('AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY', '3.0'))
+# FIX 26/07 (settima ricalibrazione, notte -- sessione a popup su casi ipotetici/reali,
+# dato che nessun AutoBuy reale era scattato in nessuno dei run di oggi): il plateau
+# 8-14EUR sopra (basato su 2 punti della sessione del 25/07, Giocatore A/B a 22%) non
+# regge piu' contro 9 nuovi punti raccolti oggi -- in particolare 8.00EUR riprodotto
+# IDENTICO due volte (James Pantemis e Guillaume Restes, entrambi ~27.3%, non 22%).
+# Altri punti (3EUR, 15EUR, 17.5EUR, 21EUR) confermano invece la curva esistente quasi
+# esatta (scarto <=1 punto percentuale), quindi corretto solo il punto a 8EUR
+# (22%->27%) -- l'interpolazione sistema da sola anche 7EUR (->27.7%, vicino al 29.6%
+# voluto) e 11EUR (->24.5%, quasi esatto al 24.1% voluto) senza toccare altri punti.
+# Un punto (McGlynn, 22.50EUR-> voluto 19.35% contro il 15.9% attuale) resta fuori
+# pattern -- il vicino 21EUR combacia gia' bene, trattato come rumore isolato non
+# inseguito (stesso principio guida di sempre).
 AUTOBUY_MIN_MARGIN_CURVE = [
     (3.00, 0.38),
     (5.00, 0.30),
     (6.50, 0.28),
-    (8.00, 0.22),
+    (8.00, 0.27),
     (14.00, 0.22),
     (15.50, 0.20),
     (18.00, 0.175),
