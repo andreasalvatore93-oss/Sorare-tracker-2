@@ -759,10 +759,18 @@ AUTOBUY_MIN_MARGIN_CURVE = [
 # offerto 50 centesimi in meno", ~13.50EUR/15.6%). Aggiunto un nuovo punto a 16EUR per
 # alzare lo sconto SOLO oltre i 15EUR (dove ricade Özer), senza toccare l'interpolazione
 # 7-15EUR gia' confermata corretta.
+# FIX 26/07 (settima ricalibrazione, run diagnostico 15min post auto-cancel): fascia
+# 4-6EUR corretta con 3 casi reali/ipotetici mirati. Baumgartl (4.39EUR reale, margine
+# 8.5%)-> voluto ~27% (non 21% come dava la curva); Gallagher (4.50EUR ipotetico)->
+# confermato ~27%, stesso valore, coerente. Jackson (5.20EUR ipotetico)-> ~22%, punto di
+# transizione. Fofana (6.00EUR ipotetico)-> confermato 17% invariato. Tielemans (4.00EUR
+# esatto, ipotetico)-> unico punto fuori pattern (voluto 15-20%, contraddetto dai 2 punti
+# vicini 4.39/4.50 che vogliono 27%), trattato come rumore isolato e non inseguito.
 OFFER_DISCOUNT_CURVE = [
     (1.50, 0.34),
-    (4.00, 0.25),
-    (4.80, 0.17),
+    (4.00, 0.27),
+    (4.50, 0.27),
+    (5.20, 0.22),
     (6.00, 0.17),
     (7.00, 0.15),
     (15.00, 0.125),
@@ -806,13 +814,17 @@ def compute_price_based_thresholds(price_eur):
 def _round_offer_to_nice_number(price_eur, ceiling_eur):
     """FIX 26/07 (richiesta esplicita utente, caso reale 3.00EUR -> offerta 1.98EUR:
     'sempre meglio arrotondare, venditore piu' propenso ad accettare 2 che 1.98'):
-    arrotonda l'offerta calcolata al mezzo euro piu' vicino (i venditori accettano piu'
-    volentieri una cifra tonda). Non arrotonda mai SOPRA ceiling_eur (il vero minimo di
-    mercato -- non ha senso offrire quanto o piu' del minimo) ne' sotto 0. Se
-    l'arrotondamento al piu' vicino supera il ceiling, arrotonda per difetto invece."""
-    rounded = round(price_eur * 2) / 2
+    arrotonda l'offerta calcolata (i venditori accettano piu' volentieri una cifra
+    tonda). Non arrotonda mai SOPRA ceiling_eur (il vero minimo di mercato -- non ha
+    senso offrire quanto o piu' del minimo) ne' sotto 0. Se l'arrotondamento al piu'
+    vicino supera il ceiling, arrotonda per difetto invece.
+    FIX 26/07 (settima ricalibrazione): passo ridotto da 0.50EUR a 0.10EUR -- l'utente ha
+    chiarito che il numero tondo e' solo preferibile, non vincolante, il vero obiettivo
+    e' lo sconto% esatto (caso Heuer Fernandes: calcolo vero 1.36EUR, il vecchio passo da
+    0.50 arrotondava a 1.50EUR, gia' troppo generoso secondo l'utente)."""
+    rounded = round(price_eur * 10) / 10
     if rounded >= ceiling_eur:
-        rounded = (price_eur * 2) // 1 / 2  # arrotonda per difetto al mezzo euro
+        rounded = (price_eur * 10) // 1 / 10  # arrotonda per difetto al decimo di euro
     return max(0.0, round(rounded, 2))
 
 
