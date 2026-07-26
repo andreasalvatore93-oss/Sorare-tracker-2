@@ -686,14 +686,21 @@ AUTOBUY_MIN_MARGIN_CURVE = [
 ]
 
 # Regola 3: sconto dell'offerta MakeOffer per fascia di prezzo (lista crescente), piu'
-# l'eccezione giocatore liquido. Tarature 27%/19% (26/07, seconda ricalibrazione) --
-# la prima taratura (22.5%/16.5%) risultava sistematicamente troppo mite in entrambe le
-# fasce piu' basse su un secondo giro di casi reali/ipotetici discussi con l'utente.
+# l'eccezione giocatore liquido. FIX 25/07 (terza ricalibrazione, sera): dopo il primo
+# run reale di 30 min con le nuove curve di soglia (Regole 1/2), 5 disaccordi su 5 sugli
+# importi offerti andavano TUTTI nella stessa direzione (sconto piu' profondo di quanto
+# calcolato) -- 5.49EUR/fascia 4-7 voleva 23.5% (non 19%), 4.00EUR/fascia 4-7 voleva 25%
+# (non 19%), 2.20EUR/fascia <4 voleva 36.4% (non 27%), 20.00EUR/fascia 15-30 voleva
+# 12.5% (non 10%). Conferma sistematica di un pattern gia' visto piu' volte in sessioni
+# precedenti (Fernandes, Reguilon, Abde, Calum Ward, Gloukh, Mauro Junior, Saibari, Rice
+# bis -- vedi memoria calibrazione) mai completamente risolto dalla seconda ricalibrazione
+# (27%/19%). La fascia 7-15EUR resta INVARIATA (11.5%), confermata a parte dal caso
+# 9.05EUR (~10.5% richiesto, gia' in linea).
 OFFER_DISCOUNT_BY_PRICE = [
-    (0.0, 0.27),
-    (4.0, 0.19),
+    (0.0, 0.34),
+    (4.0, 0.24),
     (7.0, 0.115),
-    (15.0, 0.10),
+    (15.0, 0.125),
 ]
 LIQUID_PLAYER_TRANSACTIONS_7D = int(os.environ.get('LIQUID_PLAYER_TRANSACTIONS_7D', '15'))
 LIQUID_PLAYER_OFFER_DISCOUNT = float(os.environ.get('LIQUID_PLAYER_OFFER_DISCOUNT', '0.10'))
