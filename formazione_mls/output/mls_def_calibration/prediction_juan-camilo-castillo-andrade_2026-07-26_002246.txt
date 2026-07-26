@@ -1,0 +1,73 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T00:22:46.740815Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) juan-camilo-castillo-andrade: 3 pt attesi (-19-26)
+======================================================================
+
+######################################################################
+# GIOCATORE: juan-camilo-castillo-andrade
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: juan-camilo-castillo-andrade (squadra: nizhny-novgorod-nizhny-novgorod)
+Generato: 2026-07-26T00:22:46.740570Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: primera-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-20 | NZN vs KRA | russian-premier-league | score=22.9 | peso=0.891
+  2025-07-25 | KRY vs NZN | russian-premier-league | score=17.8 | peso=0.944
+  2025-08-02 | NZN vs LOK | russian-premier-league | score=59.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 34.24
+Deviazione standard pesata: 19.06
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 41.40 | Media score fuori casa: 17.76
+Fattore casa/trasferta applicato: 0.993 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.939
+Fattore duelli (casa/trasferta, da dati reali): 0.934
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.980
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.941
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.035
+Fattore gol subiti (goals_conceded, con cap): 1.071
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.061
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: tasso di presenza storico (3/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T23:10
+Casa: Alianza Petrolera FC | Trasferta: Fortaleza CEIF FC
+Competizione: primera-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 3.4 +/- 22.9
+  (range: -19.5 - 26.3)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 20.26
+Punteggio REALE ottenuto in quella partita: 59.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +39.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
