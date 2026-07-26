@@ -17,6 +17,13 @@ PARAMETRIZZATO PER RUOLO (25/07, grid search allargato multi-ruolo): il
 ruolo si sceglie con la variabile d'ambiente RUOLO (gk/def/mid/fwd, default
 fwd per compatibilita' con l'uso storico di questo script).
 
+PARAMETRIZZATO PER CAMPIONATO (26/07, supporto K League): il campionato si
+sceglie con la variabile d'ambiente CAMPIONATO (mls/kleague, default mls
+per compatibilita' con l'uso storico -- tutti gli usi esistenti/documentati
+continuano a funzionare identici senza settare nulla). Sceglie solo il
+prefisso della cartella di output (formazione_<campionato>/output/
+<campionato>_<ruolo>_calibration/), la logica di aggregazione e' identica.
+
 PESATURA PER NUMERO DI PARTITE DI BACKTEST (26/07): analizzando il caso FWD
 si e' scoperto che l'effetto dei fattori granulari per singolo giocatore va
 da -5 a +5 di MAE, ma la media aggregata si cancella quasi a zero -- gran
@@ -47,8 +54,9 @@ import glob
 from collections import defaultdict
 
 RUOLO = os.environ.get('RUOLO', 'fwd').strip().lower()
+CAMPIONATO = os.environ.get('CAMPIONATO', 'mls').strip().lower()
 MIN_TEST_GAMES = int(os.environ.get('MIN_TEST_GAMES', '3'))
-CALIBRATION_DIR = f'formazione_mls/output/mls_{RUOLO}_calibration'
+CALIBRATION_DIR = f'formazione_{CAMPIONATO}/output/{CAMPIONATO}_{RUOLO}_calibration'
 GRID_DIR = os.path.join(CALIBRATION_DIR, 'grid_search')
 
 _PARTITE_TESTATE_RE = re.compile(r'Partite testate:\s*(\d+)')
