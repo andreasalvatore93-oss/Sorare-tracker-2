@@ -1,0 +1,71 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T01:07:46.831588Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) dylan-felipe-borrero-caicedo: 10 pt attesi (-6-26)
+======================================================================
+
+######################################################################
+# GIOCATORE: dylan-felipe-borrero-caicedo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: dylan-felipe-borrero-caicedo (squadra: america-de-cali-santiago-de-cali)
+Generato: 2026-07-26T01:07:46.831440Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: primera-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-08 | AME vs NAC | primera-a | score=70.0 | peso=0.841
+  2026-01-25 | CHI vs AME | primera-a | score=40.1 | peso=0.891
+  2026-01-30 | AME vs ONC | primera-a | score=48.7 | peso=0.944
+  2026-02-05 | NAC vs AME | primera-a | score=60.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 54.75
+Deviazione standard pesata: 11.15
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 59.35 | Media score fuori casa: 50.40
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.2
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.060
+Fattore falli (casa/trasferta, da dati reali): 0.966
+Fattore duelli (casa/trasferta, da dati reali): 1.043
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.960
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.971
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 17.39% (fonte: tasso di presenza storico (4/23))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T19:00
+Casa: CD La Equidad Seguros SA | Trasferta: Sociedad Anónima Deportiva América SA
+Competizione: primera-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 10.1 +/- 15.6
+  (range: -5.6 - 25.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.53
+Punteggio REALE ottenuto in quella partita: 60.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
