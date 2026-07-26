@@ -451,3 +451,49 @@ all'attacco 0%→2%→5%→9%, Gol subiti si riduce allontanandosi dalla difesa 
 la base fissa di `level_score` per misurarne la vera varianza sfruttabile, eventualmente
 progettare un modo di condizionare `level_score`/clean-sheet-proneness per venue/avversario.
 Priorità identificata per il prossimo giro sul tema granulari.
+
+## 10. Mattina 26/07 — Punto 1 (rimozione categorie a peso zero) e Punto 2 (scomposizione level_score)
+
+### Punto 1: categorie a peso zero rimosse dal codice
+
+Rimosso da tutti e 4 gli script `test_<ruolo>.py`, basato sui dati di `inspect_granular_weights.py`:
+- **GK**: `FOULS_STATS`, `OFFENSIVE_STATS`, `RARE_EVENTS_STATS` (tutti 0.0% su 268 partite/29
+  portieri). Erano già solo diagnostici (mai in `score_atteso`), quindi il comportamento REALE del
+  modello è invariato — solo pulizia di codice/output/computazione.
+- **DEF/MID/FWD**: rimosso solo `RARE_EVENTS_STATS` (0.0-0.1% su 857-1534 partite). Contribuiva
+  ancora al calcolo del residuo (`covered_total`), impatto trascurabile viste le dimensioni.
+
+Verificato con `py_compile` + smoke test sintetico (`rigorous_backtest`/`run_grid_search` con dati
+finti) su tutti e 4 gli script, nessun errore. Committato e pushato (`e926f208`/`f145fa82`).
+
+### Punto 2: scomposizione della base fissa di `level_score`
+
+Investigazione sulla distribuzione reale di `level_score` (non solo la sua magnitudine media, come
+richiesto). Risultato importante: **`level_score` NON è continuo in nessun ruolo** — è quantizzato
+su soli 5-6 valori distinti in tutti e 4 i ruoli:
+- **GK** (268 partite): 35 (68%), 60 (25%), 15 (5.6%), 5 (0.7%), 70 (0.4%)
+- **DEF** (1534 partite): 35 (84%), 60 (11%), 15 (4.2%), 70 (0.8%), 5 (0.1%)
+- **MID** (1459 partite): 35 (76%), 60 (18%), 70 (3.4%), 15 (2.5%), 80 (0.3%), 100 (0.1%)
+- **FWD** (915 partite): 35 (65%), 60 (28%), 70 (5.0%), 80 (1.2%), 15 (1.1%), 90 (0.1%)
+
+Il valore 35 domina sempre — conferma la nota dell'utente sulla "base fissa". Cross-tabulazione con
+`mins_played`/`goals_conceded`/`clean_sheet_60`/`goals` per capire cosa determina i livelli
+superiori: **la regola NON è la stessa per tutti i ruoli** e non è pulita/deterministica dai soli
+3-4 campi controllati:
+- GK: livello 60 non è spiegato SOLO dal flag clean sheet (trovati casi di livello 60 con gol
+  subiti) — più sporco del previsto, probabilmente altri fattori Sorare non documentati.
+- DEF: sorpresa — il salto a livello 60 correla molto più con **aver segnato un gol** (36% dei
+  casi a livello 60 vs 0.2% a livello 35) che con il clean sheet (24.3% vs 27.0%, quasi
+  indifferente). Per un difensore, `level_score` sembra premiare soprattutto contributi decisivi
+  offensivi, non la fase difensiva.
+
+**Conclusione**: `level_score` è il sistema di bonus "contributo decisivo" di Sorare (probabilmente
+lo stesso mostrato come "Punteggio decisivo" nella UI) — una variabile CATEGORIALE legata a eventi
+rari e decisivi (gol, clean sheet, assist), non un valore da normalizzare per casa/trasferta con
+`compute_split_factor` come gli altri granulari. Punto 2 considerato chiuso per stasera (obiettivo
+raggiunto: sappiamo che non è rumore, sappiamo che è quantizzato, sappiamo grosso modo cosa lo
+muove) — la regola esatta servirebbe più tempo/dati ed è naturalmente collegata al tema successivo
+(la sinergia GK+DEF per il clean sheet condiviso, i contributi decisivi dei compagni di squadra
+nella stessa partita, sono esattamente il tipo di correlazione tra slot che il Finding 4/F della
+sezione 5 di `RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md` intendeva modellare). Non implementato,
+solo diagnosticato — nessuna modifica al codice di produzione per questo punto.
