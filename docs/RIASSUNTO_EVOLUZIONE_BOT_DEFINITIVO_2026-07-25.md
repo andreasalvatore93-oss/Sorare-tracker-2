@@ -6,6 +6,58 @@ descritto qui è già **committato e pushato** su GitHub (ultimo commit di quest
 `6fc87f11`, verificare `git log --oneline -10` per eventuali commit successivi di altri
 workflow automatici) — si può ripartire con `git pull`, non c'è lavoro locale non salvato.
 
+## Aggiornamento 26/07 (notte) — curva sconto continua, auto-annullamento offerte
+
+Sessione a popup (`AskUserQuestion`, un caso alla volta, niente tabelle su richiesta
+esplicita utente) su ~13 casi reali/scarti/ipotetici, poi 2 run reali di verifica.
+Commit su `main`: `2c17deaca`, `a978709b0`, `426e4efda`, `efd38ffea` (oltre a
+`f2ffc3be0`, vedi sezione sopra).
+
+1. **Sconto MakeOffer da tabella a gradini a curva continua** (`OFFER_DISCOUNT_CURVE`,
+   sostituisce `OFFER_DISCOUNT_BY_PRICE`/`_tiered_lookup`, rimossa). Stesso problema di
+   "gradiente dentro la fascia" già risolto per le soglie di margine (Regole 1/2), qui
+   però esteso a quasi tutta la vecchia fascia 4-7€, non solo ai bordi — confermato con
+   coppie reali+ipotetiche ai confini di 4€ e 7€ e a metà fascia (Joseph Paintsil
+   4.80€, Ismael Saibari 6.00€, entrambi reali, volevano ~17% non 24%). Confine dei
+   15€ inizialmente inconcludente/rumoroso su dati ipotetici.
+2. **Sesta ricalibrazione, dopo il primo run reale in live mode con la curva sopra**:
+   fascia 7-15€ confermata corretta (Germán Berterame, 12.88€/margine 8.4%, offerta
+   11.00€ "andava bene"). Fascia ≥15€ invece alzata: Berke Özer (16.00€/margine 6.9%,
+   offerta 14.00€) è stata **accettata dal venditore** — segnale che si poteva scontare
+   di più. Aggiunto un punto a 16€ (15.6%, prima 12.5%) che dà 13.50€ — i "50 centesimi
+   in meno" richiesti esplicitamente dall'utente. Fascia 7-15€ non toccata.
+3. **Nuovo meccanismo: auto-annullamento offerte MakeOffer pendenti.** Il venditore
+   spesso non risponde, e finché l'offerta resta viva il budget corrispondente resta
+   bloccato. Ogni offerta reale inviata (ramo MakeOffer normale + bid periodico) viene
+   ora registrata con un **timer indipendente e proprio** (non un annullamento "a
+   ondata" di tutte insieme); un thread dedicato controlla ogni 30s e annulla
+   (`CancelOfferMutation`, serve solo `blockchainId`, NON richiede firma/approvazione
+   wallet — confermato dal vivo dall'utente annullando un'offerta a mano e catturando
+   la request) le singole offerte più vecchie di `OFFER_AUTO_CANCEL_SECONDS`. Per
+   ottenere il `blockchainId` è stato aggiunto quel campo alla risposta di
+   `CreateDirectOfferMutation` e propagato lungo tutta la catena (`create_direct_offer`
+   → `execute_live_offer` → `_run_makeoffer_merged` → i due call site che inviano
+   offerte reali). **Verificato dal vivo**: offerta Germán Berterame annullata
+   correttamente dopo 315s. Timeout iniziale 5 minuti, **abbassato a 4 minuti**
+   (`OFFER_AUTO_CANCEL_SECONDS=240`) su richiesta esplicita dopo la verifica.
+4. **Trovato ma NON ANCORA implementato**: la regola "mai AutoBuy sotto i 3€" (Regola 2,
+   verificata più volte in sessioni precedenti fino al 44% di margine) sembra troppo
+   rigida secondo l'utente — Salomón Rondón (2.20€, margine 43.4%) → "farei autobuy",
+   mentre Robinson (stesso prezzo 2.20€, margine 30.2%, caso già verificato in
+   passato) → mai autobuy. Quindi non è un taglio netto a 3€, ma il floor di margine
+   scende ulteriormente anche sotto i 3€. Attenzione pero': Vera (1.50€, margine 44.4%,
+   **più alto** di Rondón) era stata rifiutata — il floor sembra dipendere ancora dal
+   prezzo dentro la fascia <3€, non essere un singolo taglio. **Serve raccogliere altri
+   punti prima di toccare `AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY`/`AUTOBUY_MIN_MARGIN_CURVE`.**
+5. **Segnale debole, non ancora modellato**: 2 punti (Stefan Cleveland 3.20€/margine
+   9.7%, appena sopra soglia minima; ipotetico 20€/margine 7.0%, appena sopra soglia)
+   suggeriscono che quando il margine è "al limite" della soglia minima per quel
+   prezzo, l'utente vuole uno sconto più profondo (o scarta) — cosa che la Regola 3
+   oggi esplicitamente NON fa (dipende solo dal prezzo, non dal margine). Solo 2 punti,
+   non abbastanza per agire.
+6. **Cosmetico**: rinominate le ultime etichette residue "Bot Supremo" rimaste nel
+   commit periodico della lista nera durante la run (identità git, messaggio commit).
+
 ## Aggiornamento 26/07 (sera) — blacklist transitoria in_season + pulizia repo
 
 Sessione separata (branch di lavoro `claude/missing-recent-chats-687m14`, poi riportata
