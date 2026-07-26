@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T00:04:53.244555Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.6, min_starter_odds=0%
+======================================================================
+1) roman-burki: 58 pt attesi (34-82)
+======================================================================
+
+######################################################################
+# GIOCATORE: roman-burki
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: roman-burki (squadra: st-louis-city-st-louis-missouri)
+Generato: 2026-07-26T00:04:53.243571Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 17
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-19 | STL vs RSL | mlspa | score=38.0 | peso=0.340
+  2026-02-21 | STL vs CLT | mlspa | score=40.9 | peso=0.367
+  2026-03-02 | SD vs STL | mlspa | score=78.6 | peso=0.397
+  2026-03-08 | STL vs SEA | mlspa | score=47.6 | peso=0.429
+  2026-03-15 | LAFC vs STL | mlspa | score=37.4 | peso=0.463
+  2026-03-22 | STL vs NE | mlspa | score=36.5 | peso=0.500
+  2026-04-04 | NYC vs STL | mlspa | score=55.0 | peso=0.540
+  2026-04-12 | DAL vs STL | mlspa | score=40.6 | peso=0.583
+  2026-04-19 | SEA vs STL | mlspa | score=39.7 | peso=0.630
+  2026-04-26 | STL vs SJ | mlspa | score=19.4 | peso=0.680
+  2026-05-03 | ATX vs STL | mlspa | score=39.0 | peso=0.735
+  2026-05-10 | RAP vs STL | mlspa | score=67.5 | peso=0.794
+  2026-05-14 | STL vs LAFC | mlspa | score=70.5 | peso=0.857
+  2026-05-16 | DC vs STL | mlspa | score=46.5 | peso=0.926
+  2026-07-23 | LA vs STL | mlspa | score=39.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 46.71
+Deviazione standard pesata: 14.93
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.84 (differenza: +3.09)
+Media score in casa: 42.15 | Media score fuori casa: 49.28
+Fattore casa/trasferta applicato: 0.922 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.9
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.207
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere).
+Fattore falli (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.013
+Fattore efficacia offensiva (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore eventi rari (rigori/autogol/errori, con cap, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.974
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 6.7% (bonus atteso incorporato nella media pesata: ~1.7pt)
+Fattore trend (media ultime 5: 52.5 vs media ultime 10: 45.4): 1.110
+P(gioca): 100.00% (fonte: starterOddsBasisPoints (10000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T00:30
+Casa: St. Louis City SC | Trasferta: Colorado Rapids
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.7 +/- 23.9
+  (range: 33.8 - 81.6)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.62
+Punteggio REALE ottenuto in quella partita: 39.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.2    55.0     +3.8    20.5        SI
+   7        7      53.5    40.6    -12.9    19.3        SI
+   8        8      52.3    39.7    -12.6    18.1        SI
+   9        9      35.0    19.4    -15.6    17.2        SI
+  10       10      59.7    39.0    -20.7    20.2        NO
+  11       11      51.9    67.5    +15.6    19.0        SI
+  12       12      29.6    70.5    +40.9    21.2        NO
+  13       13      59.0    46.5    -12.5    22.9        SI
+  14       14      61.4    39.2    -22.2    21.7        NO
+
+MAE (errore assoluto medio): 17.41
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
