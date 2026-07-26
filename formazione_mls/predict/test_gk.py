@@ -609,6 +609,42 @@ def weighted_percentile(values, weights, percentile):
     return pairs[-1][0]
 
 
+def media_condizionata(values, weights, condition_flags, target_condition, fallback_mean, shrink_k=5.0):
+    """Stadio D (26/07, tema level_score/correlazione venue-avversario, DECISO
+    CON L'UTENTE dopo verifica statistica su migliaia di partite reali in
+    cache -- vedi formazione_mls/diagnostics/inspect_decisive_event_conditioning.py
+    e docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md): ricalcola la media
+    pesata SOLO sul sottoinsieme storico del giocatore che condivide la
+    stessa condizione (casa/trasferta, o avversario piu' forte/debole della
+    sua media personale) della prossima partita, invece di usare la media
+    generica che mischia tutti i contesti insieme.
+
+    SHRINKAGE verso fallback_mean (la media generale non condizionata) quando
+    il bucket ha poche partite -- un giocatore ha solo ~10-15 partite di
+    storico, quindi un bucket puo' avere anche solo 2-3 partite: senza
+    shrinkage il rumore campionario dominerebbe. shrink_k rappresenta
+    "partite fittizie" di prior verso la media generale (bucket_mean pesa
+    n_bucket/(n_bucket+shrink_k), fallback_mean pesa il resto) -- piu' alto
+    shrink_k, piu' prudente la correzione su campioni piccoli.
+
+    Ritorna fallback_mean invariato se manca la condizione target o il
+    bucket e' vuoto (nessuna correzione applicata, comportamento invariato)."""
+    if target_condition is None:
+        return fallback_mean
+    bucket_vals, bucket_weights = [], []
+    for val, w, flag in zip(values, weights, condition_flags):
+        if flag is None:
+            continue
+        if flag == target_condition:
+            bucket_vals.append(val)
+            bucket_weights.append(w)
+    if not bucket_vals:
+        return fallback_mean
+    bucket_mean = weighted_mean(bucket_vals, bucket_weights)
+    n_bucket = len(bucket_vals)
+    return (n_bucket * bucket_mean + shrink_k * fallback_mean) / (n_bucket + shrink_k)
+
+
 def team_ranking_from_game(game, player_team_slug):
     """Estrae ranking squadra giocatore e ranking avversario da un blocco anyGame
     (funziona sia per partite passate che future, stessa struttura)."""
@@ -1274,6 +1310,28 @@ def build_prediction(player_slug):
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_trend)
 
+    # --- Stadio D (26/07, tema level_score/correlazione venue-avversario,
+    # DECISO CON L'UTENTE dopo diagnostica su 233 partite GK in cache di
+    # calibrazione): il "Punteggio decisivo" (level_score) e' significativamente
+    # piu' alto contro avversari piu' deboli della media personale del
+    # portiere (38.1 vs 42.4 punti, z=-2.66 -- piu' parate/clean sheet
+    # decisivi contro squadre deboli). Correzione ADDITIVA (non moltiplicativa,
+    # per non toccare/ricalibrare la catena fattore_forza_avversario gia'
+    # validata sul MAE): si aggiunge SOLO la differenza tra la media
+    # condizionata per il prossimo avversario e la media storica generica,
+    # scalata per P(gioca). Con shrinkage forte (pochi bucket per singolo
+    # portiere), la correzione resta piccola quando lo storico e' scarso.
+    opponent_forte_flags = [
+        (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
+        for r in opponent_rankings
+    ]
+    next_forte = (next_opp_rank < avg_opp_rank_hist) if (
+        next_opp_rank is not None and avg_opp_rank_hist is not None) else None
+    media_level_score_condizionata = media_condizionata(
+        level_score_values, weights, opponent_forte_flags, next_forte, media_level_score_pesata)
+    delta_condizionamento_avversario = media_level_score_condizionata - media_level_score_pesata
+    score_atteso += p_gioca * delta_condizionamento_avversario
+
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
     # = FORMA del range a percentili pesati (Stadio B, si adatta a distribuzioni
@@ -1353,6 +1411,8 @@ def build_prediction(player_slug):
         'dev_std_trimmed': dev_std_trimmed,
         'media_level_score_pesata': media_level_score_pesata,
         'media_granulari_pesata': media_granulari_pesata,
+        'media_level_score_condizionata': media_level_score_condizionata,
+        'delta_condizionamento_avversario': delta_condizionamento_avversario,
         'p16_score': p16_score,
         'p84_score': p84_score,
         'home_avg': home_avg,
@@ -1418,6 +1478,9 @@ def format_output(result):
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
                  f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
+    lines.append(f"  Punteggio decisivo condizionato per forza prossimo avversario: "
+                 f"{result['media_level_score_condizionata']:.2f} (delta {result['delta_condizionamento_avversario']:+.2f} "
+                 f"vs media generica, Stadio D -- APPLICATO a score_atteso, scalato per P(gioca))")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
     if result['p16_score'] is not None and result['p84_score'] is not None:
         lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
