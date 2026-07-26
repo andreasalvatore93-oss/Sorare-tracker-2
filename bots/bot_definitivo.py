@@ -715,11 +715,33 @@ MAKEOFFER_MIN_MARGIN_CURVE = [
 # noto a 3EUR. Aggiunto anche un punto a 13EUR (soglia reale ~24.5%, la vecchia
 # interpolazione 8->14EUR dava solo 22.8%, scarto oltre la soglia di rumore accettata).
 # Punto di controllo a 16EUR confermato invariato (scarto <1 punto percentuale, rumore).
+# FIX 26/27 (nona ricalibrazione, run diagnostica di 1h + revisione dei 14 match
+# MakeOffer "in chiave AutoBuy" -- per ognuno chiesto a quale prezzo minimo, a parita'
+# di secondo prezzo, sarebbe scattato l'AutoBuy): il punto 1.00EUR->60% era troppo alto,
+# 3 conferme consistenti (Aktuerkoglu, Guzman, Gibbs-White) vogliono ~50-54% -> abbassato
+# a 52%. Aggiunti anche 1.50EUR->~48% e 1.70EUR->~45% (Sargent/Lee Chang-Min) come punti
+# ESPLICITI invece di lasciarli alla sola interpolazione 1.00->2.00EUR: un singolo
+# aggiustamento del punto 1.00EUR da solo spostava questi due valori fuori dal range
+# osservato (curva troppo dritta su un segmento lungo 1EUR), i 4 punti insieme
+# descrivono meglio la vera forma, leggermente concava. 1.10EUR resta coerente di
+# riflesso (->50.4%, vicino al ~50% osservato). La fascia 3-5EUR scendeva troppo lentamente:
+# Enzo Fernandez (REALE, 4.10EUR/margine 29.9%) conferma di voler AutoBuy la', non
+# MakeOffer -- la vecchia curva richiedeva 33.6%. Pacho (derivato, 4.50EUR/~30%)
+# conferma lo stesso valore. Aggiunto un punto a 4.10EUR (0.30) cosi' che 4.10-5.00EUR
+# resti piatto a 30% invece di continuare a scendere solo a 5EUR. Punti scartati perche'
+# in contraddizione con dati gia' consolidati o rumorosi: 6.50EUR (Van Dijk conferma
+# esattamente il 28% gia' presente, Lewandowski vuole 23% sullo stesso prezzo -- tenuto
+# il valore gia' confermato); 15.50EUR (Godts vuole 16%, ma quella fascia ha gia' oscillato
+# piu' volte tra 16% e 20-22% in sessioni precedenti -- un solo nuovo punto non basta a
+# spostarla di nuovo).
 AUTOBUY_MIN_MARGIN_CURVE = [
     (0.50, 0.58),
-    (1.00, 0.60),
+    (1.00, 0.52),
+    (1.50, 0.48),
+    (1.70, 0.45),
     (2.00, 0.39),
     (3.00, 0.38),
+    (4.10, 0.30),
     (5.00, 0.30),
     (6.50, 0.28),
     (8.00, 0.27),
