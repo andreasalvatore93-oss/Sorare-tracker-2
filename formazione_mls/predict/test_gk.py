@@ -663,6 +663,22 @@ def extract_group_score(detail, stat_names):
     return total
 
 
+def extract_level_score(detail):
+    """Estrae il valore della riga 'level_score' (category=UNKNOWN nel
+    detailedScore) -- il "Punteggio decisivo" mostrato nella UI Sorare.
+    NUOVO (26/07, Stadio A tema level_score): funzione deterministica del
+    conteggio netto di eventi decisivi (positivi meno negativi, floor a 35
+    base) validata su dati reali, vedi docs/RIASSUNTO_EVOLUZIONE_MODELLO_
+    PREDITTIVO.md sezione 11. Ritorna 0.0 se il dettaglio non e' disponibile
+    (fallback sicuro)."""
+    if not detail:
+        return 0.0
+    for entry in (detail.get('detailedScore') or []):
+        if entry.get('stat') == 'level_score':
+            return entry.get('totalScore', 0.0) or 0.0
+    return 0.0
+
+
 def compute_split_factor(values, is_home_flags, target_is_home):
     """Dato un elenco di valori granulari (uno per partita, gia' sommati per un
     gruppo di stat) e i relativi flag casa/trasferta, calcola il fattore
@@ -1062,9 +1078,12 @@ def build_prediction(player_slug):
     goalkeeping_values = []
     goals_conceded_values = []
     clean_sheet_flag_values = []  # 1.0/0.0 per partita: porta inviolata nei primi 60' (vedi extract_clean_sheet_flag)
+    level_score_values = []  # NUOVO (26/07, Stadio A): "Punteggio decisivo" per partita
+    granulari_values = []  # NUOVO (26/07, Stadio A): resto del punteggio (= score - level_score)
 
     for node, detail in zip(usable, details):
-        scores.append(node.get('score', 0.0))
+        game_score = node.get('score', 0.0)
+        scores.append(game_score)
         game = node['anyGame']
         own_rank, opp_rank, is_home = team_ranking_from_game(game, player_team_slug)
         # fallback: se il ranking non e' nel game log base, prova dal dettaglio granulare
@@ -1080,6 +1099,9 @@ def build_prediction(player_slug):
         goals_conceded_raw = extract_group_score(detail, GOALS_CONCEDED_STATS)
         goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
         clean_sheet_flag_values.append(extract_clean_sheet_flag(detail))
+        level_score_v = extract_level_score(detail)
+        level_score_values.append(level_score_v)
+        granulari_values.append(game_score - level_score_v)
 
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
@@ -1087,6 +1109,16 @@ def build_prediction(player_slug):
     media_pesata = weighted_mean(scores, weights)
     dev_std_pesata = weighted_stddev(scores, weights, media_pesata)
     dev_std_trimmed = trimmed_weighted_stddev(scores, weights)
+
+    # --- Stadio A (26/07, tema level_score): media pesata separata per
+    # level_score ("Punteggio decisivo") e resto ("Punteggio complessivo") --
+    # solo diagnostico per ora, non entra ancora in score_atteso. La somma
+    # delle due deve coincidere con media_pesata (stesso half-life, stessa
+    # scomposizione additiva score=level_score+granulari verificata su dati
+    # reali) -- eventuali scarti sono dovuti al floor (level_score>=60 puo'
+    # rendere la scomposizione per-partita non lineare, la media resta valida).
+    media_level_score_pesata = weighted_mean(level_score_values, weights)
+    media_granulari_pesata = weighted_mean(granulari_values, weights)
 
     # --- Fattore casa/trasferta (score totale, gia' esistente) ---
     home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
@@ -1252,6 +1284,8 @@ def build_prediction(player_slug):
         'media_pesata': media_pesata,
         'dev_std_pesata': dev_std_pesata,
         'dev_std_trimmed': dev_std_trimmed,
+        'media_level_score_pesata': media_level_score_pesata,
+        'media_granulari_pesata': media_granulari_pesata,
         'home_avg': home_avg,
         'away_avg': away_avg,
         'fattore_casa_trasferta': fattore_casa_trasferta,
@@ -1310,6 +1344,9 @@ def format_output(result):
     lines.append("")
     lines.append("--- CALCOLO FATTORI ---")
     lines.append(f"Media pesata esponenziale (half-life {HALF_LIFE_GAMES} partite): {result['media_pesata']:.2f}")
+    lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
+                 f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
+                 f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
     if result['dev_std_trimmed'] is not None:
         lines.append(f"Deviazione standard pesata TRIMMED (esclusi min/max della finestra): "
