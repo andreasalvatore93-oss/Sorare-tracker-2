@@ -4079,6 +4079,34 @@ def _auto_cancel_offers_loop():
             log(f"[auto-annulla offerte] eccezione non bloccante, ritento al prossimo giro: {e}")
 
 
+def _cancel_all_pending_offers_on_shutdown():
+    """Chiamata una sola volta in chiusura (finally di main()), PRIMA che il processo
+    esca: il thread _auto_cancel_offers_loop annulla solo le offerte che hanno GIA'
+    superato OFFER_AUTO_CANCEL_SECONDS, quindi qualunque offerta fatta negli ultimi
+    OFFER_AUTO_CANCEL_SECONDS del run (es. a ridosso di LISTEN_SECONDS) resterebbe
+    pendente per sempre col processo morto -- niente piu' thread a controllarla, scade
+    solo da sola dopo OFFER_DURATION_DAYS. Qui annulliamo TUTTE le offerte ancora nel
+    tracker, indipendentemente dalla loro eta'."""
+    with _pending_cancel_lock:
+        da_annullare = list(_pending_cancel_offers)
+        _pending_cancel_offers.clear()
+    if not da_annullare:
+        return
+    log(f"[auto-annulla offerte] chiusura bot: {len(da_annullare)} offerta/e ancora "
+        f"pendente/i, annullamento forzato prima di uscire")
+    for entry in da_annullare:
+        eta_secondi = time.monotonic() - entry['creata_a']
+        success, error = cancel_direct_offer(entry['blockchain_id'])
+        if success:
+            log(f"[auto-annulla offerte] {entry['player_name']}: offerta annullata a "
+                f"chiusura bot dopo {eta_secondi:.0f}s, budget liberato")
+            pending_offers_count[0] = max(0, pending_offers_count[0] - 1)
+        else:
+            log(f"[auto-annulla offerte] {entry['player_name']}: annullamento a chiusura "
+                f"bot fallito dopo {eta_secondi:.0f}s ({error}) -- probabile gia' "
+                f"accettata/scaduta, non ritento")
+
+
 def _commit_lista_nera_se_serve():
     """Un solo tentativo di commit+push, non bloccante per il resto del bot in
     caso di errore (rete, conflitto git, ecc.) -- logga e continua, la prossima
@@ -4405,7 +4433,9 @@ def main():
         _stop_periodic_commit.set()
         _stop_periodic_bid.set()
         _stop_exchange_rate_refresh.set()
+        _stop_auto_cancel.set()
         _exchange_rate_refresh_now.set()  # sveglia il refresher cosi' vede lo stop subito
+        _cancel_all_pending_offers_on_shutdown()  # nessuna offerta lasciata pendente col bot spento
         _commit_lista_nera_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
         _speculative_executor.shutdown(wait=True)
         close_node_sign_process()

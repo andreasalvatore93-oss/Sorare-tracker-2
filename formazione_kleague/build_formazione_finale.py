@@ -11,8 +11,8 @@ diversi (26/07, seconda sessione, richiesta esplicita dell'utente):
   1 FWD, 1 EXTRA (DEF/MID/FWD) — max 1 carta CLASSIC per formazione.
 - **ARENA**: stessa struttura a 5 slot delle In Season, ma SENZA vincolo
   classic (possono essere tutte classic, non obbligatorio ma possibile).
-  Supporta un tuning opzionale: cap sulla L10 combinata dei 5 giocatori
-  (vedi ARENA_L10_CAP sotto).
+  Tre varianti fisse (26/07, seconda revisione): Arena cap260, Arena cap220,
+  Arena uncapped -- vedi FIXED_L10_CAP_BY_TYPE sotto.
 - **ALL STARS**: 7 giocatori, struttura CONFERMATA dall'utente (26/07):
   1 GK, 2 DEF, 2 MID, 1 FWD, 1 EXTRA (DEF/MID/FWD) — nessun vincolo classic.
 
@@ -38,20 +38,22 @@ liberamente, sempre iniziando da in_season per coerenza.
 
 PRIORITA' TRA TIPI (26/07, richiesta esplicita dell'utente):
 I 3 tipi condividono lo STESSO pool di giocatori posseduti (CardPool), quindi
-generarli in ordine di priorita' IN SEASON -> ARENA -> ALL STARS fa si' che,
-se il pool si esaurisce, siano naturalmente le formazioni meno prioritarie
-(prima All Stars, poi Arena) a non essere completate — mai le In Season.
-Ogni tipo puo' essere messo a 0 per disattivarlo del tutto. Il totale
-richiesto (NUM_TOTALE_FORMAZIONI) deve combaciare ESATTAMENTE con la somma
-dei 3 sotto-totali, altrimenti lo script si ferma subito (fail-fast, non
-tronca silenziosamente).
+generarli in ordine di priorita' IN SEASON -> ARENA (cap260 -> cap220 ->
+uncapped) -> ALL STARS fa si' che, se il pool si esaurisce, siano
+naturalmente le formazioni meno prioritarie a non essere completate — mai
+le In Season. Ogni tipo puo' essere messo a 0 per disattivarlo del tutto.
+Il totale richiesto (NUM_TOTALE_FORMAZIONI) deve combaciare ESATTAMENTE con
+la somma dei 5 sotto-totali, altrimenti lo script si ferma subito
+(fail-fast, non tronca silenziosamente).
 
-TUNING ARENA_L10_CAP (26/07, richiesta esplicita dell'utente):
-Se impostato (env ARENA_L10_CAP, es. "260"), le formazioni Arena vengono
-generate rispettando un tetto sulla somma delle L10 (media ultime 10 partite
-GIOCATE, LAST_TEN_PLAYED_SO5_AVERAGE_SCORE) dei 5 giocatori schierati -- non
-solo il punteggio atteso piu' alto in assoluto, ma il migliore CHE rispetta
-il tetto. Implementato come euristica greedy con budget residuo (non un
+TRE TIPI ARENA CON CAP FISSO (26/07, seconda revisione, richiesta esplicita
+dell'utente): il vecchio tuning generico ARENA_L10_CAP e' stato sostituito
+da tre tipi Arena distinti con cap fisso (FIXED_L10_CAP_BY_TYPE): cap260,
+cap220 e uncapped (nessun limite). Ogni tipo rispetta un tetto sulla somma
+delle L10 (media ultime 10 partite GIOCATE,
+LAST_TEN_PLAYED_SO5_AVERAGE_SCORE) dei 5 giocatori schierati -- non solo il
+punteggio atteso piu' alto in assoluto, ma il migliore CHE rispetta il
+tetto. Implementato come euristica greedy con budget residuo (non un
 knapsack esatto): ad ogni slot si sceglie il miglior candidato la cui L10
 (0 se mancante, permissivo) non fa sforare il budget rimasto; se nessun
 candidato rispetta il budget, si prende quello con L10 piu' bassa disponibile
@@ -115,8 +117,20 @@ FORMATION_SHAPES = {
         'extra_roles': ['DEF', 'MID', 'FWD'],
         'max_classic': 1,
     },
-    'ARENA': {
-        'label': 'Arena',
+    'ARENA_260': {
+        'label': 'Arena (cap 260)',
+        'role_slots': ['GK', 'DEF', 'MID', 'FWD'],
+        'extra_roles': ['DEF', 'MID', 'FWD'],
+        'max_classic': None,
+    },
+    'ARENA_220': {
+        'label': 'Arena (cap 220)',
+        'role_slots': ['GK', 'DEF', 'MID', 'FWD'],
+        'extra_roles': ['DEF', 'MID', 'FWD'],
+        'max_classic': None,
+    },
+    'ARENA_UNCAPPED': {
+        'label': 'Arena (uncapped)',
         'role_slots': ['GK', 'DEF', 'MID', 'FWD'],
         'extra_roles': ['DEF', 'MID', 'FWD'],
         'max_classic': None,
@@ -204,17 +218,19 @@ def _read_int_env(name, default):
 
 
 def get_formation_counts():
-    """Legge i 4 parametri di conteggio formazioni (26/07, seconda sessione):
-    NUM_TOTALE_FORMAZIONI, NUM_FORM_IN_SEASON, NUM_FORM_ARENA,
-    NUM_FORM_ALLSTARS -- da env var (input workflow_dispatch). Ognuno dei 3
-    sotto-totali puo' essere 0 (tipo disattivato). Compatibilita' locale:
-    se nessuna delle 4 env var e' impostata, ricade sul vecchio singolo
-    argomento CLI/env NUM_FORMAZIONI (comportamento pre-26/07: tutte In
-    Season). FAIL-FAST: il totale deve combaciare esattamente con la somma
-    dei 3 sotto-totali, altrimenti SystemExit prima di fare qualunque cosa."""
+    """Legge i 6 parametri di conteggio formazioni (26/07, seconda revisione):
+    NUM_TOTALE_FORMAZIONI, NUM_FORM_IN_SEASON, NUM_FORM_ARENA_260,
+    NUM_FORM_ARENA_220, NUM_FORM_ARENA_UNCAPPED, NUM_FORM_ALLSTARS -- da env
+    var (input workflow_dispatch). Ognuno dei 5 sotto-totali puo' essere 0
+    (tipo disattivato). Compatibilita' locale: se nessuna delle 6 env var e'
+    impostata, ricade sul vecchio singolo argomento CLI/env NUM_FORMAZIONI
+    (comportamento pre-26/07: tutte In Season). FAIL-FAST: il totale deve
+    combaciare esattamente con la somma dei 5 sotto-totali, altrimenti
+    SystemExit prima di fare qualunque cosa."""
     has_new_inputs = any(
         os.environ.get(k) not in (None, '')
-        for k in ('NUM_TOTALE_FORMAZIONI', 'NUM_FORM_IN_SEASON', 'NUM_FORM_ARENA', 'NUM_FORM_ALLSTARS')
+        for k in ('NUM_TOTALE_FORMAZIONI', 'NUM_FORM_IN_SEASON', 'NUM_FORM_ARENA_260',
+                   'NUM_FORM_ARENA_220', 'NUM_FORM_ARENA_UNCAPPED', 'NUM_FORM_ALLSTARS')
     )
     if not has_new_inputs:
         # Vecchio comportamento (pre-26/07): un solo numero, tutte In Season.
@@ -235,34 +251,31 @@ def get_formation_counts():
                         n = candidate
                 except ValueError:
                     pass
-        return {'IN_SEASON': n, 'ARENA': 0, 'ALLSTARS': 0}, n
+        return {'IN_SEASON': n, 'ARENA_260': 0, 'ARENA_220': 0, 'ARENA_UNCAPPED': 0, 'ALLSTARS': 0}, n
 
     num_totale = _read_int_env('NUM_TOTALE_FORMAZIONI', 0)
     num_in_season = _read_int_env('NUM_FORM_IN_SEASON', 0)
-    num_arena = _read_int_env('NUM_FORM_ARENA', 0)
+    num_arena_260 = _read_int_env('NUM_FORM_ARENA_260', 0)
+    num_arena_220 = _read_int_env('NUM_FORM_ARENA_220', 0)
+    num_arena_uncapped = _read_int_env('NUM_FORM_ARENA_UNCAPPED', 0)
     num_allstars = _read_int_env('NUM_FORM_ALLSTARS', 0)
 
-    somma = num_in_season + num_arena + num_allstars
+    somma = num_in_season + num_arena_260 + num_arena_220 + num_arena_uncapped + num_allstars
     if num_totale != somma:
         raise SystemExit(
-            f"ERRORE: NUM_TOTALE_FORMAZIONI={num_totale} non combacia con la somma dei 3 tipi "
-            f"(In Season={num_in_season} + Arena={num_arena} + All Stars={num_allstars} = {somma}). "
+            f"ERRORE: NUM_TOTALE_FORMAZIONI={num_totale} non combacia con la somma dei 5 tipi "
+            f"(In Season={num_in_season} + Arena cap260={num_arena_260} + Arena cap220={num_arena_220} + "
+            f"Arena uncapped={num_arena_uncapped} + All Stars={num_allstars} = {somma}). "
             f"Correggi gli input del workflow -- nessuna formazione generata."
         )
 
-    return {'IN_SEASON': num_in_season, 'ARENA': num_arena, 'ALLSTARS': num_allstars}, num_totale
-
-
-def get_arena_l10_cap():
-    """Cap opzionale sulla L10 combinata per le formazioni Arena (26/07,
-    richiesta esplicita dell'utente). None = tuning disattivato (default)."""
-    val = os.environ.get('ARENA_L10_CAP')
-    if val is None or val.strip() == '':
-        return None
-    try:
-        return float(val)
-    except ValueError:
-        return None
+    return {
+        'IN_SEASON': num_in_season,
+        'ARENA_260': num_arena_260,
+        'ARENA_220': num_arena_220,
+        'ARENA_UNCAPPED': num_arena_uncapped,
+        'ALLSTARS': num_allstars,
+    }, num_totale
 
 
 def latest_consiglio(output_dir):
@@ -374,8 +387,8 @@ class CardPool:
 
     def l10(self, slug):
         """L10 (media ultime 10 partite giocate) nota per slug, o None se
-        mai persistita (dato mancante -- vedi ARENA_L10_CAP, trattata come 0
-        nel calcolo del budget, mai come esclusione)."""
+        mai persistita (dato mancante -- vedi FIXED_L10_CAP_BY_TYPE, trattata
+        come 0 nel calcolo del budget, mai come esclusione)."""
         return self._l10.get(slug)
 
 
@@ -516,6 +529,11 @@ CAPTAIN_BONUS_BY_TYPE = {
     'ARENA': 0.2,
     'ALLSTARS': 0.5,
 }
+
+# Cap fisso sulla L10 combinata per tipo Arena (26/07, seconda revisione):
+# ARENA_260 e ARENA_220 rispettano il tetto indicato, ARENA_UNCAPPED non e'
+# in mappa -- .get(tipo) ritorna None, cioe' nessun limite.
+FIXED_L10_CAP_BY_TYPE = {'ARENA_260': 260.0, 'ARENA_220': 220.0}
 
 
 def pick_captain(formazione):
@@ -744,7 +762,7 @@ def render_report_html(page_title, page_subhead, lineup_html_blocks, footer):
         page_title=page_title, page_subhead=page_subhead, lineup_html=body, footer=footer)
 
 
-def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup_blocks,
+def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
                                lineup_html_blocks, print_output=True):
     """Genera fino a 'count' formazioni del tipo 'tipo' (chiave di
     FORMATION_SHAPES), aggiungendo i blocchi di testo a lineup_blocks e i
@@ -753,7 +771,7 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup
     questo tipo, ma NON impedisce la generazione del tipo successivo in
     ordine di priorita'."""
     shape = FORMATION_SHAPES[tipo]
-    cap = l10_cap if tipo == 'ARENA' else None
+    cap = FIXED_L10_CAP_BY_TYPE.get(tipo)
     stack_guard = tipo == 'IN_SEASON'
     generated = 0
     totale = 0
@@ -783,13 +801,12 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup
 
 def main():
     counts, num_totale = get_formation_counts()
-    l10_cap = get_arena_l10_cap()
     role_data, role_files, role_counts, counts_files = load_all_roles()
 
     print(f"Formazioni richieste: totale={num_totale} "
-          f"(In Season={counts['IN_SEASON']}, Arena={counts['ARENA']}, All Stars={counts['ALLSTARS']})")
-    if l10_cap is not None:
-        print(f"Tuning Arena L10 cap attivo: {l10_cap:.1f}")
+          f"(In Season={counts['IN_SEASON']}, Arena cap260={counts['ARENA_260']}, "
+          f"Arena cap220={counts['ARENA_220']}, Arena uncapped={counts['ARENA_UNCAPPED']}, "
+          f"All Stars={counts['ALLSTARS']})")
     print()
     for role, path in role_files.items():
         n = len(role_data.get(role) or [])
@@ -816,9 +833,8 @@ def main():
         header_lines.append(f"Run GitHub Actions: #{run_number}")
     header_lines.append(f"Generato: {datetime.datetime.utcnow().isoformat()}Z")
     header_lines.append(f"Formazioni richieste: totale={num_totale} (In Season={counts['IN_SEASON']}, "
-                         f"Arena={counts['ARENA']}, All Stars={counts['ALLSTARS']})")
-    if l10_cap is not None:
-        header_lines.append(f"Tuning Arena L10 cap: {l10_cap:.1f}")
+                         f"Arena cap260={counts['ARENA_260']}, Arena cap220={counts['ARENA_220']}, "
+                         f"Arena uncapped={counts['ARENA_UNCAPPED']}, All Stars={counts['ALLSTARS']})")
     header_lines.append("=" * 70)
     header_lines.append("")
     header_lines.append("Fonte consigli di ruolo (piu' recenti in repo):")
@@ -835,14 +851,15 @@ def main():
     lineup_html_blocks = []
     generated_by_type = {}
     grand_total = 0
-    # Ordine di priorita' FISSO (26/07): In Season -> Arena -> All Stars.
-    for tipo in ('IN_SEASON', 'ARENA', 'ALLSTARS'):
+    # Ordine di priorita' FISSO (26/07, seconda revisione): In Season ->
+    # Arena cap260 -> Arena cap220 -> Arena uncapped -> All Stars.
+    for tipo in ('IN_SEASON', 'ARENA_260', 'ARENA_220', 'ARENA_UNCAPPED', 'ALLSTARS'):
         n_richieste = counts[tipo]
         if n_richieste <= 0:
             generated_by_type[tipo] = 0
             continue
         generated, totale = generate_lineups_for_type(
-            tipo, n_richieste, role_data, card_pool, l10_cap, lineup_blocks, lineup_html_blocks)
+            tipo, n_richieste, role_data, card_pool, lineup_blocks, lineup_html_blocks)
         generated_by_type[tipo] = generated
         grand_total += totale
 
@@ -852,7 +869,9 @@ def main():
     footer_lines.append("-" * 70)
     footer_lines.append(f"Formazioni generate: {total_generated}/{num_totale} "
                          f"(In Season {generated_by_type.get('IN_SEASON', 0)}/{counts['IN_SEASON']}, "
-                         f"Arena {generated_by_type.get('ARENA', 0)}/{counts['ARENA']}, "
+                         f"Arena cap260 {generated_by_type.get('ARENA_260', 0)}/{counts['ARENA_260']}, "
+                         f"Arena cap220 {generated_by_type.get('ARENA_220', 0)}/{counts['ARENA_220']}, "
+                         f"Arena uncapped {generated_by_type.get('ARENA_UNCAPPED', 0)}/{counts['ARENA_UNCAPPED']}, "
                          f"All Stars {generated_by_type.get('ALLSTARS', 0)}/{counts['ALLSTARS']})")
     if total_generated > 1:
         footer_lines.append(f"TOTALE COMPLESSIVO (tutte le formazioni): {grand_total} pt")
@@ -882,8 +901,9 @@ def main():
     # click, nessun server/download necessario (vedi HTML_REPORT_TEMPLATE).
     page_title = f"Formazioni{' — run #' + run_number if run_number else ''}"
     page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
-                    f"totale={num_totale} (In Season={counts['IN_SEASON']}, Arena={counts['ARENA']}, "
-                    f"All Stars={counts['ALLSTARS']})")
+                    f"totale={num_totale} (In Season={counts['IN_SEASON']}, "
+                    f"Arena cap260={counts['ARENA_260']}, Arena cap220={counts['ARENA_220']}, "
+                    f"Arena uncapped={counts['ARENA_UNCAPPED']}, All Stars={counts['ALLSTARS']})")
     footer_html = ("Nessuna carta CLASSIC oltre il limite per In Season (max 1) -- Arena e All Stars "
                    "non hanno questo vincolo. Un giocatore e' riusato in piu' lineup solo se se ne "
                    "possiedono piu' copie.")
