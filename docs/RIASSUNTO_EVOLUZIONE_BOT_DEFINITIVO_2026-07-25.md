@@ -6,6 +6,39 @@ descritto qui è già **committato e pushato** su GitHub (ultimo commit di quest
 `6fc87f11`, verificare `git log --oneline -10` per eventuali commit successivi di altri
 workflow automatici) — si può ripartire con `git pull`, non c'è lavoro locale non salvato.
 
+## Aggiornamento 26/07 (notte, tardissimo) — nona ricalibrazione: rimosso il cutoff
+## sotto 3€, granularità 8-14€, validazione run diagnostica 4/4
+
+Sessione a popup (branch di lavoro `claude/bot-evolution-review-34b9a9`, poi mergiato su
+`main`). Commit: verrà indicato dopo il merge (vedi in fondo a questa sezione).
+
+1. **Rimosso il cutoff assoluto "mai AutoBuy sotto 3€"** (`AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY`
+   e il ramo `None` in `compute_price_based_thresholds()` eliminati): l'utente ha chiarito che
+   non era una regola fissa, solo un margine minimo molto più alto. Casi ipotetici mirati
+   hanno trovato un plateau ~58-60% tra 0.50€ e 1.00€, che scende fino al 38% già noto a 3€.
+   `AUTOBUY_MIN_MARGIN_CURVE` estesa con `(0.50, 0.58), (1.00, 0.60), (2.00, 0.39)`.
+2. **Granularità 10-16€ verificata**: 10€ e 12€ confermano l'interpolazione esistente (scarto
+   ≤2pp, rumore). 13€ mostrava uno scarto reale di ~1.7pp (soglia vera ~24.5% contro il 22.8%
+   calcolato) — aggiunto un punto esplicito `(13.00, 0.245)`. 16€ confermato invariato.
+3. **Tema arrotondamento offerta chiuso, nessuna modifica**: verificato via sweep numerico
+   dell'intero range di prezzo che lo scarto massimo tra offerta esatta e arrotondata resta
+   0.05€ sopra 1€ (metà del passo 0.10€), nessun salto anomalo dal clamp sul ceiling. L'esempio
+   portato dall'utente per illustrare il problema era ipotetico, non da un log reale — testato
+   col codice vero dà già il risultato che l'utente considera corretto.
+4. **Run diagnostica di verifica (30 min, cancellata a ~26 min)**, eseguita PRIMA che i fix 1-2
+   sopra fossero deployati (girava ancora sul vecchio `main`): controllo media transazioni
+   ancora zero scarti su 11 valutazioni (pattern confermato una quarta volta); AutoBuy ancora
+   zero trigger, gap minimo osservato 10 punti percentuali (Rodrigo Zalazar, margine 20% contro
+   soglia 30% a quel prezzo) — confermato per la terza volta che non è un problema di soglie,
+   il mercato in quella finestra non produce occasioni abbastanza profittevoli. **4 offerte
+   MakeOffer reali generate, tutte e 4 confermate esatte dall'utente** (Manuel Neuer 3.20€/27%,
+   Rodrigo Zalazar 3.80€/23.5%, Phil Foden 3.90€/23.2%, David Soria 2.20€/29.4%) — il miglior
+   risultato di validazione finora (4/4, contro l'8/12 e 9/10 delle sessioni precedenti).
+5. **Nota per chi riprende**: il dettaglio caso-per-caso completo di questa sessione (inclusi
+   tutti i punti ipotetici usati per calibrare il cutoff sub-3€ e i punti 13/16€) vive nella
+   memoria locale di Claude Code (`bot_definitivo_margin_calibration.md`, sezione "Undicesima
+   sessione"), non nel repo.
+
 ## Aggiornamento 26/07 (notte, tardi) — blacklist fix_urgente, annullamento forzato a
 ## chiusura, ottava ricalibrazione sconto 4-6€
 
