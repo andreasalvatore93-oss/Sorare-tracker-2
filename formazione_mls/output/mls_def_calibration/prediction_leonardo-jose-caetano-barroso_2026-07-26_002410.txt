@@ -1,0 +1,89 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T00:24:10.163055Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) leonardo-jose-caetano-barroso: 10 pt attesi (2-18)
+======================================================================
+
+######################################################################
+# GIOCATORE: leonardo-jose-caetano-barroso
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: leonardo-jose-caetano-barroso (squadra: chicago-fire-bridgeview-illinois)
+Generato: 2026-07-26T00:24:10.162072Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | CHI vs LAFC | mlspa | score=43.4 | peso=0.667
+  2025-08-17 | CHI vs STL | mlspa | score=40.5 | peso=0.707
+  2026-02-22 | HOU vs CHI | mlspa | score=39.7 | peso=0.749
+  2026-02-28 | CHI vs MTL | mlspa | score=36.9 | peso=0.794
+  2026-03-15 | CHI vs DC | mlspa | score=39.0 | peso=0.841
+  2026-03-21 | PHI vs CHI | mlspa | score=27.9 | peso=0.891
+  2026-04-05 | CHI vs NSH | mlspa | score=40.2 | peso=0.944
+  2026-04-12 | CHI vs ATL | mlspa | score=52.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 40.12
+Deviazione standard pesata: 6.73
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 1.88 (differenza: +4.85)
+Media score in casa: 42.05 | Media score fuori casa: 33.80
+Fattore casa/trasferta applicato: 0.994 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.8
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.940
+Fattore falli (casa/trasferta, da dati reali): 1.019
+Fattore duelli (casa/trasferta, da dati reali): 1.014
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.013
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 26.67% (fonte: tasso di presenza storico (8/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Chicago Fire FC | Trasferta: Charlotte FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 10.0 +/- 8.1
+  (range: 1.9 - 18.1)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 37.94
+Punteggio REALE ottenuto in quella partita: 52.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +14.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      28.4    40.2    +11.7     6.0        NO
+   7        7      47.6    52.3     +4.7     5.6        SI
+
+MAE (errore assoluto medio): 8.22
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
