@@ -1232,18 +1232,8 @@ def build_prediction(player_slug):
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario,
     # DECISO CON L'UTENTE dopo diagnostica su 1228 partite MID in cache di
-    # calibrazione): sia il "Punteggio decisivo" (level_score) che il
-    # "Punteggio complessivo" (granulari) sono significativamente piu' alti
-    # in casa (level_score 41.4 vs 40.0, z=+2.07; granulari 13.8 vs 10.7,
-    # z=+4.83) e il granulare e' piu' alto contro avversari deboli (13.3 vs
-    # 11.3, z=-2.96 -- non level_score, quel segnale era troppo debole,
-    # z=-1.83, quindi qui si condiziona SOLO level_score per venue e
-    # granulari per venue+avversario). Correzione ADDITIVA (non
-    # moltiplicativa, per non toccare/ricalibrare fattore_casa_trasferta/
-    # fattore_forza_avversario gia' validati sul MAE): si sommano SOLO le
-    # differenze tra le medie condizionate e le medie storiche generiche,
-    # scalate per P(gioca). Con shrinkage forte (pochi bucket per singolo
-    # giocatore), la correzione resta piccola quando lo storico e' scarso.
+    # calibrazione): il "Punteggio decisivo" (level_score) e' significativamente
+    # piu' alto in casa (41.4 vs 40.0, z=+2.07) -- condizionato per venue.
     opponent_forte_flags = [
         (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
         for r in opponent_rankings
@@ -1253,18 +1243,40 @@ def build_prediction(player_slug):
 
     media_level_score_condizionata = media_condizionata(
         level_score_values, weights, is_home_flags, next_is_home, media_level_score_pesata)
-    media_granulari_condizionata_venue = media_condizionata(
-        granulari_values, weights, is_home_flags, next_is_home, media_granulari_pesata)
-    media_granulari_condizionata_avversario = media_condizionata(
-        granulari_values, weights, opponent_forte_flags, next_forte, media_granulari_pesata)
-
     delta_condizionamento_venue_level = media_level_score_condizionata - media_level_score_pesata
-    delta_condizionamento_venue_granulari = media_granulari_condizionata_venue - media_granulari_pesata
-    delta_condizionamento_avversario_granulari = media_granulari_condizionata_avversario - media_granulari_pesata
+
+    # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
+    # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
+    # ruoli"): la versione precedente condizionava il granulare AGGREGATO
+    # (venue z=+4.83, avversario z=-2.96). Scomponendolo nelle sue
+    # sotto-categorie il segnale e' concentrato in 3 categorie specifiche
+    # (Duelli/Falli/Difesa rarissimi/Azioni difensive non mostrano segnale
+    # utile, lasciate NON condizionate):
+    # - "Efficacia offensiva": piu' alta in casa (z=+3.36) e contro
+    #   avversari deboli (z=-2.40).
+    # - "Passaggio": piu' alto in casa (z=+5.20) e contro avversari deboli
+    #   (z=-2.24).
+    # - "Gol subiti": piu' alto/meno negativo in casa (z=+3.01) e contro
+    #   avversari deboli (z=-4.60).
+    # SOSTITUISCE (non si somma a) la conditioning sull'aggregato del
+    # commit precedente. Stessa correzione additiva/shrinkage.
+    def _condiziona_venue_avversario(values):
+        fallback = weighted_mean(values, weights)
+        cond_venue = media_condizionata(values, weights, is_home_flags, next_is_home, fallback)
+        cond_avv = media_condizionata(values, weights, opponent_forte_flags, next_forte, fallback)
+        return cond_venue, cond_avv, cond_venue - fallback, cond_avv - fallback
+
+    (media_offensivo_condizionata_venue, media_offensivo_condizionata_avversario,
+     delta_offensivo_venue, delta_offensivo_avversario) = _condiziona_venue_avversario(offensive_values)
+    (media_passaggio_condizionata_venue, media_passaggio_condizionata_avversario,
+     delta_passaggio_venue, delta_passaggio_avversario) = _condiziona_venue_avversario(passing_values)
+    (media_gol_subiti_condizionata_venue, media_gol_subiti_condizionata_avversario,
+     delta_gol_subiti_venue, delta_gol_subiti_avversario) = _condiziona_venue_avversario(goals_conceded_values)
 
     score_atteso += p_gioca * (delta_condizionamento_venue_level
-                                + delta_condizionamento_venue_granulari
-                                + delta_condizionamento_avversario_granulari)
+                                + delta_offensivo_venue + delta_offensivo_avversario
+                                + delta_passaggio_venue + delta_passaggio_avversario
+                                + delta_gol_subiti_venue + delta_gol_subiti_avversario)
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
@@ -1350,11 +1362,13 @@ def build_prediction(player_slug):
         'media_level_score_pesata': media_level_score_pesata,
         'media_granulari_pesata': media_granulari_pesata,
         'media_level_score_condizionata': media_level_score_condizionata,
-        'media_granulari_condizionata_venue': media_granulari_condizionata_venue,
-        'media_granulari_condizionata_avversario': media_granulari_condizionata_avversario,
         'delta_condizionamento_venue_level': delta_condizionamento_venue_level,
-        'delta_condizionamento_venue_granulari': delta_condizionamento_venue_granulari,
-        'delta_condizionamento_avversario_granulari': delta_condizionamento_avversario_granulari,
+        'delta_offensivo_venue': delta_offensivo_venue,
+        'delta_offensivo_avversario': delta_offensivo_avversario,
+        'delta_passaggio_venue': delta_passaggio_venue,
+        'delta_passaggio_avversario': delta_passaggio_avversario,
+        'delta_gol_subiti_venue': delta_gol_subiti_venue,
+        'delta_gol_subiti_avversario': delta_gol_subiti_avversario,
         'p16_score': p16_score,
         'p84_score': p84_score,
         'home_avg': home_avg,
@@ -1423,11 +1437,12 @@ def format_output(result):
                  f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
     lines.append(f"  Punteggio decisivo condizionato per venue: {result['media_level_score_condizionata']:.2f} "
                  f"(delta {result['delta_condizionamento_venue_level']:+.2f})")
-    lines.append(f"  Punteggio complessivo condizionato per venue: {result['media_granulari_condizionata_venue']:.2f} "
-                 f"(delta {result['delta_condizionamento_venue_granulari']:+.2f}) | per forza avversario: "
-                 f"{result['media_granulari_condizionata_avversario']:.2f} "
-                 f"(delta {result['delta_condizionamento_avversario_granulari']:+.2f}) "
-                 f"(Stadio D -- APPLICATI a score_atteso, scalati per P(gioca))")
+    lines.append(f"  Efficacia offensiva condizionata: delta venue {result['delta_offensivo_venue']:+.2f}, "
+                 f"delta avversario {result['delta_offensivo_avversario']:+.2f} | Passaggio condizionato: "
+                 f"delta venue {result['delta_passaggio_venue']:+.2f}, delta avversario "
+                 f"{result['delta_passaggio_avversario']:+.2f} | Gol subiti condizionato: delta venue "
+                 f"{result['delta_gol_subiti_venue']:+.2f}, delta avversario {result['delta_gol_subiti_avversario']:+.2f} "
+                 f"(Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
     if result['p16_score'] is not None and result['p84_score'] is not None:
         lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
