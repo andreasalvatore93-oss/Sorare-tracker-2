@@ -118,7 +118,7 @@ jobs:
           cd bots/sorare-sign
           npm install
       - run: pip install requests websocket-client curl_cffi
-      - name: Run Bot Supremo
+      - name: Run Bot definitivo
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
@@ -167,10 +167,10 @@ jobs:
           if [ -z "$(git status --porcelain -- sorare_lista_nera.txt)" ]; then
             echo "Nessuna modifica alla lista nera, niente da committare."
           else
-            git config user.name "bot-supremo"
-            git config user.email "bot-supremo@users.noreply.github.com"
+            git config user.name "bot-definitivo"
+            git config user.email "bot-definitivo@users.noreply.github.com"
             git add sorare_lista_nera.txt
-            git commit -m "Bot Supremo: aggiorna lista nera unica"
+            git commit -m "Bot definitivo: aggiorna lista nera unica"
             git pull --rebase --autostash origin main
             git push
           fi
