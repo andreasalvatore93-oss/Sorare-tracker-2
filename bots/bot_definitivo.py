@@ -694,12 +694,15 @@ AUTOBUY_MIN_MARGIN_CURVE = [
 # 12.5% (non 10%). Conferma sistematica di un pattern gia' visto piu' volte in sessioni
 # precedenti (Fernandes, Reguilon, Abde, Calum Ward, Gloukh, Mauro Junior, Saibari, Rice
 # bis -- vedi memoria calibrazione) mai completamente risolto dalla seconda ricalibrazione
-# (27%/19%). La fascia 7-15EUR resta INVARIATA (11.5%), confermata a parte dal caso
-# 9.05EUR (~10.5% richiesto, gia' in linea).
+# (27%/19%).
+# FIX 26/07 (quarta ricalibrazione): la fascia 7-15EUR, rimasta invariata dalla terza
+# ricalibrazione, ha avuto 2 richieste consecutive di sconto piu' profondo in 2 run reali
+# diversi -- 9.00EUR voleva 7.50EUR (16.7%, non 11.5%), 9.90EUR voleva 8.50EUR (14.1%, non
+# 11.5%). Alzata a 15% (media dei due punti, ~15.4%, arrotondata).
 OFFER_DISCOUNT_BY_PRICE = [
     (0.0, 0.34),
     (4.0, 0.24),
-    (7.0, 0.115),
+    (7.0, 0.15),
     (15.0, 0.125),
 ]
 
