@@ -9,10 +9,30 @@ name: Formazione Completa K League (pipeline unificata GK+DEF+MID+FWD)
 on:
   workflow_dispatch:
     inputs:
-      num_formazioni:
-        description: 'Numero di formazioni da generare'
+      num_totale_formazioni:
+        description: 'Numero TOTALE di formazioni da generare (deve combaciare con la somma dei 3 tipi sotto, altrimenti la run fallisce subito)'
         required: false
         default: '1'
+      num_form_in_season:
+        description: 'Numero di formazioni In Season da generare (0 per disattivare questo tipo)'
+        required: false
+        default: '1'
+      num_form_arena:
+        description: 'Numero di formazioni Arena da generare (5 giocatori, classic ammessi, 0 per disattivare)'
+        required: false
+        default: '0'
+      num_form_allstars:
+        description: 'Numero di formazioni All Stars da generare (7 giocatori: 1GK/2DEF/2MID/1FWD/1extra, classic ammessi, 0 per disattivare)'
+        required: false
+        default: '0'
+      arena_l10_cap:
+        description: 'Opzionale: tetto sulla L10 combinata dei 5 giocatori Arena (es. 260). Lascia vuoto per nessun limite.'
+        required: false
+        default: ''
+      starter_odds_min:
+        description: 'Soglia minima starter-odds (0-1) per includere un giocatore nelle formazioni, es. 0.70. Dato mancante = tenuto per sicurezza.'
+        required: false
+        default: '0.60'
 
 permissions:
   contents: write
@@ -45,6 +65,7 @@ jobs:
         id: run_discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           PYTHONUNBUFFERED: "1"
         run: python formazione_kleague/discovery/kleague_gk_discovery.py
       - name: Commit output discovery
@@ -87,6 +108,7 @@ jobs:
         id: run_discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           PYTHONUNBUFFERED: "1"
         run: python formazione_kleague/discovery/kleague_def_discovery.py
       - name: Commit output discovery
@@ -129,6 +151,7 @@ jobs:
         id: run_discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           PYTHONUNBUFFERED: "1"
         run: python formazione_kleague/discovery/kleague_mid_discovery.py
       - name: Commit output discovery
@@ -171,6 +194,7 @@ jobs:
         id: run_discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           PYTHONUNBUFFERED: "1"
         run: python formazione_kleague/discovery/kleague_fwd_discovery.py
       - name: Commit output discovery
@@ -554,7 +578,11 @@ jobs:
           python-version: "3.11"
       - name: Genera formazione(i) ottimale(i)
         env:
-          NUM_FORMAZIONI: ${{ github.event.inputs.num_formazioni }}
+          NUM_TOTALE_FORMAZIONI: ${{ github.event.inputs.num_totale_formazioni }}
+          NUM_FORM_IN_SEASON: ${{ github.event.inputs.num_form_in_season }}
+          NUM_FORM_ARENA: ${{ github.event.inputs.num_form_arena }}
+          NUM_FORM_ALLSTARS: ${{ github.event.inputs.num_form_allstars }}
+          ARENA_L10_CAP: ${{ github.event.inputs.arena_l10_cap }}
         run: python formazione_kleague/build_formazione_finale.py
       - name: Commit formazione(i)
         run: |
@@ -565,7 +593,7 @@ jobs:
             echo "Nessuna modifica da salvare."
             exit 0
           fi
-          git commit -m "Formazione Completa: formazione finale (${{ github.event.inputs.num_formazioni }})"
+          git commit -m "Formazione Completa: formazione finale (totale=${{ github.event.inputs.num_totale_formazioni }})"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
