@@ -2,7 +2,7 @@
 Tool_formazione_mls_fwd_all (test TUTTI gli attaccanti K League in_season posseduti)
 
 Estende test_multi_fwd.py: invece di una lista statica di 7 giocatori, legge
-la lista COMPLETA degli attaccanti K League in_season posseduti (~42 giocatori,
+la lista COMPLETA degli attaccanti MLS in_season posseduti (~42 giocatori,
 generata da kleague_fwd_discovery.py) da kleague_fwd_discovery/player_slugs.json.
 Fallback su una lista statica ridotta se il file non esiste (es. esecuzione
 manuale senza aver ancora girato la discovery).
@@ -59,7 +59,7 @@ except ImportError:
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
 # CALIBRATION_MODE (25/07, grid search allargato): se attivo, legge la lista
-# GLOBALE (tutti gli attaccanti K League di qualita', non solo posseduti) invece
+# GLOBALE (tutti gli attaccanti MLS di qualita', non solo posseduti) invece
 # di quella dei posseduti, e riesegue il grid search COMPLETO (72
 # combinazioni) invece del singolo backtest sui parametri gia' fissati --
 # usato SOLO per la ricalibrazione one-shot su piu' dati, mai in produzione.
@@ -948,7 +948,7 @@ def build_prediction(player_slug):
 
     # Filtro TIPO COMPETIZIONE: se conosciamo la competizione della partita target,
     # teniamo prima solo le partite storiche della STESSA competizione (le altre
-    # rappresentano un contesto diverso — K League vs Leagues Cup vs nazionale hanno
+    # rappresentano un contesto diverso — MLS vs Leagues Cup vs nazionale hanno
     # dinamiche di punteggio strutturalmente diverse). Se questo filtro lascia
     # troppo poche partite (meno di min_history), si fa fallback su tutte le
     # competizioni per non restare senza dati.
@@ -1217,22 +1217,23 @@ def build_prediction(player_slug):
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_trend)
 
-    # --- Stadio D (26/07, tema level_score/correlazione venue-avversario,
-    # DECISO CON L'UTENTE dopo diagnostica su 692 partite FWD in cache di
-    # calibrazione): solo il "Punteggio complessivo" (granulari) condizionato
-    # per venue mostra segnale abbastanza solido (7.7 vs 5.9, z=+2.68) --
-    # level_score per venue/avversario e granulari per avversario sono tutti
-    # sotto la soglia di significativita' (|z|<2, rumore su questo campione),
-    # quindi NON condizionati. Correzione ADDITIVA (non moltiplicativa, per
-    # non toccare/ricalibrare fattore_casa_trasferta gia' validato sul MAE):
-    # si somma SOLO la differenza tra la media condizionata per venue e la
-    # media storica generica, scalata per P(gioca). Con shrinkage forte
-    # (pochi bucket per singolo giocatore), la correzione resta piccola
-    # quando lo storico e' scarso.
-    media_granulari_condizionata_venue = media_condizionata(
-        granulari_values, weights, is_home_flags, next_is_home, media_granulari_pesata)
-    delta_condizionamento_venue_granulari = media_granulari_condizionata_venue - media_granulari_pesata
-    score_atteso += p_gioca * delta_condizionamento_venue_granulari
+    # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
+    # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
+    # ruoli"): la versione precedente condizionava il granulare AGGREGATO
+    # per venue (z=+2.68, l'unico segnale solido per FWD). Scomponendolo
+    # nelle sue sotto-categorie, il segnale e' concentrato (e piu' forte)
+    # nella sola "Passaggio" (z=+3.39, casa 5.05 vs trasferta 4.17) --
+    # Duelli/Falli/Efficacia offensiva/Difesa rarissimi restano sotto
+    # soglia, non condizionati. Nessun segnale per avversario su nessuna
+    # sotto-categoria (tutti |z|<2, rumore su questo campione). SOSTITUISCE
+    # (non si somma a) la conditioning sull'aggregato del commit precedente.
+    # Correzione ADDITIVA (non moltiplicativa, per non toccare/ricalibrare
+    # fattore_casa_trasferta gia' validato sul MAE), stessa logica di
+    # shrinkage delle altre correzioni Stadio D.
+    media_passaggio_condizionata_venue = media_condizionata(
+        passing_values, weights, is_home_flags, next_is_home, weighted_mean(passing_values, weights))
+    delta_passaggio_venue = media_passaggio_condizionata_venue - weighted_mean(passing_values, weights)
+    score_atteso += p_gioca * delta_passaggio_venue
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
@@ -1312,8 +1313,8 @@ def build_prediction(player_slug):
         'dev_std_trimmed': dev_std_trimmed,
         'media_level_score_pesata': media_level_score_pesata,
         'media_granulari_pesata': media_granulari_pesata,
-        'media_granulari_condizionata_venue': media_granulari_condizionata_venue,
-        'delta_condizionamento_venue_granulari': delta_condizionamento_venue_granulari,
+        'media_passaggio_condizionata_venue': media_passaggio_condizionata_venue,
+        'delta_passaggio_venue': delta_passaggio_venue,
         'p16_score': p16_score,
         'p84_score': p84_score,
         'home_avg': home_avg,
@@ -1378,10 +1379,11 @@ def format_output(result):
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
                  f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
-    lines.append(f"  Punteggio complessivo condizionato per venue: {result['media_granulari_condizionata_venue']:.2f} "
-                 f"(delta {result['delta_condizionamento_venue_granulari']:+.2f}) "
-                 f"(Stadio D -- APPLICATO a score_atteso, scalato per P(gioca); level_score e forza avversario "
-                 f"NON condizionati, nessun segnale abbastanza solido per FWD)")
+    lines.append(f"  Passaggio condizionato per venue: {result['media_passaggio_condizionata_venue']:.2f} "
+                 f"(delta {result['delta_passaggio_venue']:+.2f}) "
+                 f"(Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, "
+                 f"forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale "
+                 f"abbastanza solido per FWD)")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
     if result['p16_score'] is not None and result['p84_score'] is not None:
         lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
@@ -1497,7 +1499,7 @@ def main():
     target_slug = os.environ.get('TARGET_SLUG', '').strip()
     slugs_to_process = [target_slug] if target_slug else PLAYER_SLUGS
 
-    log("Avvio test TUTTI attaccanti K League in_season Tool_formazione...")
+    log("Avvio test TUTTI attaccanti MLS in_season Tool_formazione...")
     mode_str = f"modalita job singolo: {target_slug}" if target_slug else "lista completa"
     log(f"Config: {len(slugs_to_process)} giocatori da processare ({mode_str}), "
         f"WINDOW_SIZE={WINDOW_SIZE} HALF_LIFE_GAMES={HALF_LIFE_GAMES} "

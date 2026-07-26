@@ -1,5 +1,5 @@
 """
-test_def (test difensore K League — prototipo, clone adattato da test_mid.py)
+test_def (test difensore MLS — prototipo, clone adattato da test_mid.py)
 
 Terza versione per il ruolo DIFENSORE. Stessa infrastruttura/formula di
 centrocampisti/attaccanti (query GraphQL, backtest rigoroso, parametri
@@ -63,7 +63,7 @@ except ImportError:
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
 # CALIBRATION_MODE (25/07, grid search allargato): se attivo, legge la lista
-# GLOBALE (tutti i difensori K League di qualita', non solo posseduti) invece di
+# GLOBALE (tutti i difensori MLS di qualita', non solo posseduti) invece di
 # quella dei posseduti, e riesegue il grid search COMPLETO (72 combinazioni)
 # invece del singolo backtest sui parametri gia' fissati -- usato SOLO per
 # la ricalibrazione one-shot su piu' dati, mai in produzione.
@@ -1016,7 +1016,7 @@ def build_prediction(player_slug):
 
     # Filtro TIPO COMPETIZIONE: se conosciamo la competizione della partita target,
     # teniamo prima solo le partite storiche della STESSA competizione (le altre
-    # rappresentano un contesto diverso — K League vs Leagues Cup vs nazionale hanno
+    # rappresentano un contesto diverso — MLS vs Leagues Cup vs nazionale hanno
     # dinamiche di punteggio strutturalmente diverse). Se questo filtro lascia
     # troppo poche partite (meno di min_history), si fa fallback su tutte le
     # competizioni per non restare senza dati.
@@ -1297,26 +1297,28 @@ def build_prediction(player_slug):
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta * fattore_forza_avversario
                     * fattore_trend)
 
-    # --- Stadio D (26/07, tema level_score/correlazione venue-avversario,
-    # DECISO CON L'UTENTE dopo diagnostica su 1151 partite DEF in cache di
-    # calibrazione): il level_score NON mostra segnale utile per venue/
-    # avversario per i difensori (z=0.02 e z=-0.30, entrambi rumore) -- NON
-    # condizionato. Il "Punteggio complessivo" (granulari) invece e'
-    # significativamente piu' alto in casa (12.6 vs 8.2, z=+5.10) e PIU'
-    # BASSO contro avversari forti (9.0 vs 11.8, z=-3.21 -- l'ipotesi
-    # dell'utente era il contrario, che un difensore contro una squadra forte
-    # avesse piu' occasioni di fare granulare per il maggior possesso
-    # avversario, ma i dati mostrano il pattern opposto: probabilmente perche'
-    # una squadra forte possiede di piu' palla in generale, riducendo le
-    # occasioni difensive del singolo giocatore invece di aumentarle -- vedi
-    # docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md sezione 11/12). La
-    # correlazione e' comunque solida e sfruttabile nella direzione trovata.
-    # Correzione ADDITIVA (non moltiplicativa, per non toccare/ricalibrare
-    # fattore_casa_trasferta/fattore_forza_avversario gia' validati sul MAE):
-    # si sommano SOLO le differenze tra le medie condizionate e la media
-    # storica generica, scalate per P(gioca). Con shrinkage forte (pochi
-    # bucket per singolo giocatore), la correzione resta piccola quando lo
-    # storico e' scarso.
+    # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
+    # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
+    # ruoli"): la versione precedente di questo Stadio D condizionava il
+    # granulare AGGREGATO (venue z=+5.10, avversario z=-3.21). Scomponendolo
+    # nelle sue sotto-categorie reali il segnale e' molto piu' forte E
+    # concentrato in poche categorie specifiche, mentre altre (Duelli, Falli,
+    # Efficacia offensiva, Difesa/eventi rarissimi, Azioni difensive) non
+    # mostrano nessun segnale utile e vengono lasciate NON condizionate:
+    # - "Gol subiti" (goals_conceded): piu' alto/meno negativo in casa
+    #   (z=+7.02) e contro avversari deboli (z=-4.16) -- il segnale piu'
+    #   forte in assoluto su tutto il modello.
+    # - "Passaggio": piu' alto in casa (z=+4.53) e contro avversari deboli
+    #   (z=-2.71).
+    # - "Clean sheet/disimpegni" (clean_sheet_60+effective_clearance): piu'
+    #   alto in casa (z=+3.17) e contro avversari deboli (z=-2.57).
+    # L'ipotesi iniziale dell'utente (un difensore contro una squadra forte
+    # avrebbe piu' occasioni di fare granulare per il maggior possesso
+    # avversario) NON e' confermata su nessuna sotto-categoria -- vale il
+    # pattern opposto ovunque, vedi docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md
+    # sezione 11/12. SOSTITUISCE (non si somma a) la vecchia conditioning
+    # sull'aggregato, per non contare due volte lo stesso segnale. Stessa
+    # correzione additiva/shrinkage delle altre correzioni Stadio D.
     opponent_forte_flags = [
         (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
         for r in opponent_rankings
@@ -1324,16 +1326,22 @@ def build_prediction(player_slug):
     next_forte = (next_opp_rank < avg_opp_rank_hist) if (
         next_opp_rank is not None and avg_opp_rank_hist is not None) else None
 
-    media_granulari_condizionata_venue = media_condizionata(
-        granulari_values, weights, is_home_flags, next_is_home, media_granulari_pesata)
-    media_granulari_condizionata_avversario = media_condizionata(
-        granulari_values, weights, opponent_forte_flags, next_forte, media_granulari_pesata)
+    def _condiziona_venue_avversario(values):
+        fallback = weighted_mean(values, weights)
+        cond_venue = media_condizionata(values, weights, is_home_flags, next_is_home, fallback)
+        cond_avv = media_condizionata(values, weights, opponent_forte_flags, next_forte, fallback)
+        return cond_venue, cond_avv, cond_venue - fallback, cond_avv - fallback
 
-    delta_condizionamento_venue_granulari = media_granulari_condizionata_venue - media_granulari_pesata
-    delta_condizionamento_avversario_granulari = media_granulari_condizionata_avversario - media_granulari_pesata
+    (media_gol_subiti_condizionata_venue, media_gol_subiti_condizionata_avversario,
+     delta_gol_subiti_venue, delta_gol_subiti_avversario) = _condiziona_venue_avversario(goals_conceded_values)
+    (media_passaggio_condizionata_venue, media_passaggio_condizionata_avversario,
+     delta_passaggio_venue, delta_passaggio_avversario) = _condiziona_venue_avversario(passing_values)
+    (media_clean_sheet_condizionata_venue, media_clean_sheet_condizionata_avversario,
+     delta_clean_sheet_venue, delta_clean_sheet_avversario) = _condiziona_venue_avversario(clean_sheet_values)
 
-    score_atteso += p_gioca * (delta_condizionamento_venue_granulari
-                                + delta_condizionamento_avversario_granulari)
+    score_atteso += p_gioca * (delta_gol_subiti_venue + delta_gol_subiti_avversario
+                                + delta_passaggio_venue + delta_passaggio_avversario
+                                + delta_clean_sheet_venue + delta_clean_sheet_avversario)
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
@@ -1417,10 +1425,12 @@ def build_prediction(player_slug):
         'dev_std_trimmed': dev_std_trimmed,
         'media_level_score_pesata': media_level_score_pesata,
         'media_granulari_pesata': media_granulari_pesata,
-        'media_granulari_condizionata_venue': media_granulari_condizionata_venue,
-        'media_granulari_condizionata_avversario': media_granulari_condizionata_avversario,
-        'delta_condizionamento_venue_granulari': delta_condizionamento_venue_granulari,
-        'delta_condizionamento_avversario_granulari': delta_condizionamento_avversario_granulari,
+        'delta_gol_subiti_venue': delta_gol_subiti_venue,
+        'delta_gol_subiti_avversario': delta_gol_subiti_avversario,
+        'delta_passaggio_venue': delta_passaggio_venue,
+        'delta_passaggio_avversario': delta_passaggio_avversario,
+        'delta_clean_sheet_venue': delta_clean_sheet_venue,
+        'delta_clean_sheet_avversario': delta_clean_sheet_avversario,
         'p16_score': p16_score,
         'p84_score': p84_score,
         'home_avg': home_avg,
@@ -1488,12 +1498,14 @@ def format_output(result):
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
                  f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
-    lines.append(f"  Punteggio complessivo condizionato per venue: {result['media_granulari_condizionata_venue']:.2f} "
-                 f"(delta {result['delta_condizionamento_venue_granulari']:+.2f}) | per forza avversario: "
-                 f"{result['media_granulari_condizionata_avversario']:.2f} "
-                 f"(delta {result['delta_condizionamento_avversario_granulari']:+.2f}) "
-                 f"(Stadio D -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, "
-                 f"nessun segnale utile per DEF)")
+    lines.append(f"  Gol subiti condizionato: delta venue {result['delta_gol_subiti_venue']:+.2f}, "
+                 f"delta avversario {result['delta_gol_subiti_avversario']:+.2f} | Passaggio condizionato: "
+                 f"delta venue {result['delta_passaggio_venue']:+.2f}, delta avversario "
+                 f"{result['delta_passaggio_avversario']:+.2f} | Clean sheet/disimpegni condizionato: "
+                 f"delta venue {result['delta_clean_sheet_venue']:+.2f}, delta avversario "
+                 f"{result['delta_clean_sheet_avversario']:+.2f} "
+                 f"(Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON "
+                 f"condizionato, nessun segnale utile per DEF)")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
     if result['p16_score'] is not None and result['p84_score'] is not None:
         lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
@@ -1613,7 +1625,7 @@ def main():
     target_slug = os.environ.get('TARGET_SLUG', '').strip()
     slugs_to_process = [target_slug] if target_slug else PLAYER_SLUGS
 
-    log("Avvio test centrocampista/i K League in_season Tool_formazione (prototipo)...")
+    log("Avvio test centrocampista/i MLS in_season Tool_formazione (prototipo)...")
     mode_str = f"modalita job singolo: {target_slug}" if target_slug else "lista completa"
     log(f"Config: {len(slugs_to_process)} giocatori da processare ({mode_str}), "
         f"WINDOW_SIZE={WINDOW_SIZE} HALF_LIFE_GAMES={HALF_LIFE_GAMES} "
