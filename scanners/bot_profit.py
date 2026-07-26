@@ -1595,10 +1595,9 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
         return 'squadra_diversa'
 
     l5 = snapshot['l5']
-    if not l5:  # None o 0
-        blacklist_player(player_slug, 'l5_zero_o_assente', NOT_COVERED_O_FORMA_ZERO_DAYS)
-        log(f"[blacklist] {player_name} ({player_slug}): L5 assente/zero -- "
-            f"blacklistato {NOT_COVERED_O_FORMA_ZERO_DAYS:.0f}gg")
+    if not l5:  # None o 0 -- il roster gia' filtra L5 a monte (fetch_team_roster),
+        # qui e' solo rete di sicurezza silenziosa, nessuna blacklist: il prossimo
+        # sweep ricontrolla il roster gratis, un blocco di 30gg non aggiungerebbe nulla.
         return 'forma_zero'
 
     if not snapshot['next_game_date_str']:
