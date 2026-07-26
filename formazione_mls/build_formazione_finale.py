@@ -508,19 +508,27 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
     return picks, None, l10_cap_rispettato[0], stack_bonus_perso
 
 
-CAPTAIN_BONUS = 0.5  # il capitano riceve +50% sul proprio punteggio (regola Sorare)
+# Bonus capitano NON uniforme tra i tipi di formazione (verificato dall'utente
+# il 26/07/2026 su casi reali Sorare): in Arena il capitano riceve solo +20%,
+# non +50% come In Season/All Stars.
+CAPTAIN_BONUS_BY_TYPE = {
+    'IN_SEASON': 0.5,
+    'ARENA': 0.2,
+    'ALLSTARS': 0.5,
+}
 
 
 def pick_captain(formazione):
     """Il capitano ottimale e' semplicemente il giocatore con lo score atteso
     piu' alto della formazione: dato che gli altri punteggi restano fissi
-    a prescindere da chi si nomina capitano, il bonus +50% e' massimizzato
-    scegliendo sempre il punteggio di partenza piu' alto tra i titolari."""
+    a prescindere da chi si nomina capitano, il bonus (che sia +50% o +20%
+    Arena) e' comunque una percentuale, quindi e' sempre massimizzato
+    scegliendo il punteggio di partenza piu' alto tra i titolari."""
     return max(formazione, key=lambda pick: pick[1]['atteso'])
 
 
 def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                   stack_bonus_perso=False):
+                   stack_bonus_perso=False, tipo=None):
     lines = []
     lines.append(f"--- Formazione {tipo_label} #{idx} ---")
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
@@ -537,10 +545,11 @@ def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_
         totale_high += row['high']
         totale_l10 += card_pool.l10(row['slug']) or 0.0
 
-    bonus = round(captain_row['atteso'] * CAPTAIN_BONUS)
+    captain_bonus_pct = CAPTAIN_BONUS_BY_TYPE.get(tipo, 0.5)
+    bonus = round(captain_row['atteso'] * captain_bonus_pct)
     totale_con_capitano = totale_atteso + bonus
     lines.append(f"TOTALE: {totale_atteso} pt ({totale_low}-{totale_high})")
-    lines.append(f"CAPITANO CONSIGLIATO: {captain_row['slug']} (+{bonus} pt, +{CAPTAIN_BONUS:.0%}) "
+    lines.append(f"CAPITANO CONSIGLIATO: {captain_row['slug']} (+{bonus} pt, +{captain_bonus_pct:.0%}) "
                  f"-> TOTALE CON CAPITANO: {totale_con_capitano} pt")
     if l10_cap is not None:
         stato = "OK" if l10_cap_rispettato else "NON RISPETTATO (nessun candidato entro budget, preso il piu' economico disponibile)"
@@ -610,14 +619,15 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
 
 
 def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                        stack_bonus_perso=False):
+                        stack_bonus_perso=False, tipo=None):
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
     cards_html = ''.join(
         render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
         for slot, row, ctype in formazione
     )
     totale_atteso = sum(row['atteso'] for _, row, _ in formazione)
-    bonus = round(captain_row['atteso'] * CAPTAIN_BONUS)
+    captain_bonus_pct = CAPTAIN_BONUS_BY_TYPE.get(tipo, 0.5)
+    bonus = round(captain_row['atteso'] * captain_bonus_pct)
     totale_con_capitano = totale_atteso + bonus
     l10_note = ''
     if l10_cap is not None:
@@ -638,7 +648,7 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
         f'<div><span class="label">Con capitano</span>'
         f'<span class="figure with-captain">{totale_con_capitano} pt</span></div>'
         f'<div class="captain-note">Capitano <b>{_slug_display_name(captain_row["slug"])}</b> '
-        f'(+{bonus} pt, +{CAPTAIN_BONUS:.0%})</div>{l10_note}{stack_note}'
+        f'(+{bonus} pt, +{captain_bonus_pct:.0%})</div>{l10_note}{stack_note}'
         f'</div></div>'
     )
 
@@ -759,11 +769,11 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup
             break
         block_text, punti = format_lineup(shape['label'], idx, formazione, card_pool,
                                            l10_cap=cap, l10_cap_rispettato=l10_ok,
-                                           stack_bonus_perso=stack_perso)
+                                           stack_bonus_perso=stack_perso, tipo=tipo)
         lineup_blocks.append(block_text)
         lineup_html_blocks.append(render_lineup_html(shape['label'], idx, formazione, card_pool,
                                                        l10_cap=cap, l10_cap_rispettato=l10_ok,
-                                                       stack_bonus_perso=stack_perso))
+                                                       stack_bonus_perso=stack_perso, tipo=tipo))
         totale += punti
         generated += 1
         if print_output:
