@@ -1461,6 +1461,28 @@ RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW
 MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '6'))
 TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
 
+# NUOVO CONTROLLO (26/07, richiesta esplicita utente, caso reale André Ferreira --
+# 3 transazioni precedenti tutte intorno a 2.52-2.65EUR, la sua offerta accettata
+# era in linea, ma voleva un tetto esplicito per i casi in cui NON lo sarebbe stata):
+# oltre ai controlli esistenti (ultima/penultima transazione, soglia assoluta), scarta
+# se il prezzo da pagare/offrire supera del RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT% la
+# MEDIA delle ultime fino-a-3 transazioni reali (stesso identico dato gia' fetchato per
+# ultimo/penultimo/terzo prezzo, nessuna query aggiuntiva). Fail-open se non c'e'
+# nessuna transazione recente disponibile (nessun blocco per mancanza dati, stesso
+# principio degli altri controlli su ultimo/penultimo prezzo).
+RECENT_AVG_PRICE_CHECK_ENABLED = os.environ.get(
+    'RECENT_AVG_PRICE_CHECK_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT = float(
+    os.environ.get('RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT', '15'))
+# Diagnostica ESPLICITA (richiesta esplicita utente, run mirata a capire se questo e'
+# un caso raro o scarta molti casi validi): logga il calcolo (prezzi usati, media,
+# deviazione) per OGNI valutazione che arriva a questo punto, non solo quando scarta.
+# Default 'si' VOLUTAMENTE (come EVENT_TIMING_DIAGNOSTIC) cosi' resta acceso finche'
+# non lo si disattiva esplicitamente dopo aver revisionato i risultati -- promemoria
+# per l'utente: spegnere (o rimuovere) dopo la sessione di verifica.
+RECENT_AVG_PRICE_DIAGNOSTIC_LOG = os.environ.get(
+    'RECENT_AVG_PRICE_DIAGNOSTIC_LOG', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+
 
 LIQUIDITY_DIAGNOSTIC = os.environ.get('LIQUIDITY_DIAGNOSTIC', 'no').strip().lower() == 'si'
 
@@ -1479,10 +1501,15 @@ LIQUIDITY_DIAGNOSTIC = os.environ.get('LIQUIDITY_DIAGNOSTIC', 'no').strip().lowe
 
 
 def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate, nodes):
-    """Ritorna una tupla (ultimo_prezzo, penultimo_prezzo) delle transazioni reali
-    (vendita/scambio/asta) piu' recenti di player_slug, in EUR -- ciascuno None se non
-    disponibile/query fallita (fail-safe, il chiamante NON deve bloccare l'acquisto
-    solo per questo).
+    """Ritorna una tupla (ultimo_prezzo, penultimo_prezzo, terzo_prezzo) delle
+    transazioni reali (vendita/scambio/asta) piu' recenti di player_slug, in EUR --
+    ciascuno None se non disponibile/query fallita (fail-safe, il chiamante NON deve
+    bloccare l'acquisto solo per questo).
+
+    FIX 26/07 (richiesta esplicita utente, controllo "prezzo vs media ultime 3
+    transazioni"): aggiunto un terzo prezzo (terzo_prezzo) rispetto alle due gia'
+    presenti -- stessa logica identica di derivazione (nodi gia' ordinati per data
+    decrescente), solo la raccolta si ferma a 3 invece che a 2.
 
     FIX 22/07 v2 (richiesta esplicita utente, secondo layer di protezione): oltre
     all'ultima transazione, ora si guarda anche la PENULTIMA -- protezione in piu'
@@ -1521,11 +1548,12 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
         price = eur_price_from_amounts(node.get('amounts'), eth_rate)
         if price is not None:
             prezzi_trovati.append(price)
-            if len(prezzi_trovati) == 2:
+            if len(prezzi_trovati) == 3:
                 break
     ultimo = prezzi_trovati[0] if len(prezzi_trovati) >= 1 else None
     penultimo = prezzi_trovati[1] if len(prezzi_trovati) >= 2 else None
-    return ultimo, penultimo
+    terzo = prezzi_trovati[2] if len(prezzi_trovati) >= 3 else None
+    return ultimo, penultimo, terzo
 
 # NUOVA PROTEZIONE (22/07, richiesta esplicita utente): oltre alla liquidita' storica
 # (transazioni passate), controlla anche quante carte dello stesso giocatore sono
@@ -1700,7 +1728,7 @@ def get_liquidity_and_last_price(player_slug, is_in_season=True, league_slug=Non
     risulta 0 (sotto soglia -> scarto per mercato sottile, esito sicuro) e
     ultimo/penultimo tornano None (controllo prezzo saltato, non blocca).
 
-    Ritorna (count_7d, count_30d, ultimo_prezzo, penultimo_prezzo)."""
+    Ritorna (count_7d, count_30d, ultimo_prezzo, penultimo_prezzo, terzo_prezzo)."""
     season_filter = is_in_season
     if force_diagnostic:
         excluded_league = is_asia_americas_excluded_league(league_slug)
@@ -1711,17 +1739,49 @@ def get_liquidity_and_last_price(player_slug, is_in_season=True, league_slug=Non
         nodes = _fetch_paginated_transaction_nodes(player_slug)
     except Exception as e:
         log(f"[liquidita'+ultimo prezzo] eccezione per {player_slug}: {e}")
-        return None, None, None, None
+        return None, None, None, None, None
 
     count_7d, count_30d = _count_transactions_from_nodes(
         nodes, season_filter=season_filter, player_slug=player_slug, force_log=force_diagnostic)
-    ultimo, penultimo = get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate, nodes)
+    ultimo, penultimo, terzo = get_last_transaction_prices(
+        player_slug, is_in_season, league_slug, eth_rate, nodes)
 
     if LIQUIDITY_DIAGNOSTIC:
         log(f"[diagnostica fusione] {player_slug}: {len(nodes)} nodi fetched (1 sola query) -- "
-            f"count_7d={count_7d}, count_30d={count_30d}, ultimo={ultimo}, penultimo={penultimo}")
+            f"count_7d={count_7d}, count_30d={count_30d}, ultimo={ultimo}, penultimo={penultimo}, "
+            f"terzo={terzo}")
 
-    return count_7d, count_30d, ultimo, penultimo
+    return count_7d, count_30d, ultimo, penultimo, terzo
+
+
+def check_recent_avg_price(player_name, prezzo_da_pagare, ultimo, penultimo, terzo):
+    """NUOVO CONTROLLO (26/07, richiesta esplicita utente): scarta se prezzo_da_pagare
+    supera del RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT% la media delle transazioni reali
+    disponibili (fino a 3, quante ce ne sono -- fail-open a zero transazioni, stesso
+    principio degli altri controlli su ultimo/penultimo prezzo). Ritorna True se il
+    controllo passa (o e' disattivato/non applicabile), False se deve scartare -- in
+    quel caso ha gia' loggato il motivo, il chiamante deve solo fare 'return False'.
+    Log diagnostico esplicito (RECENT_AVG_PRICE_DIAGNOSTIC_LOG) SEMPRE, anche quando il
+    controllo passa -- richiesto esplicitamente per capire quanto spesso scarterebbe."""
+    prezzi_disponibili = [p for p in (ultimo, penultimo, terzo) if p is not None]
+    if not RECENT_AVG_PRICE_CHECK_ENABLED or not prezzi_disponibili:
+        return True
+    media = sum(prezzi_disponibili) / len(prezzi_disponibili)
+    deviazione_percent = ((prezzo_da_pagare - media) / media) * 100 if media > 0 else 0.0
+    supera_soglia = deviazione_percent > RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT
+    if RECENT_AVG_PRICE_DIAGNOSTIC_LOG:
+        log(f"[media ultime transazioni] {player_name}: prezzo da pagare/offrire "
+            f"{prezzo_da_pagare:.2f}EUR vs media {media:.2f}EUR "
+            f"(da {len(prezzi_disponibili)} transazioni: {[round(p, 2) for p in prezzi_disponibili]}) "
+            f"-- deviazione {deviazione_percent:+.1f}% (soglia {RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT:.0f}%)"
+            f"{' -- SUPERA LA SOGLIA' if supera_soglia else ''}")
+    if supera_soglia:
+        log(f"{player_name}: scarto -- prezzo da pagare/offrire ({prezzo_da_pagare:.2f}EUR) "
+            f"supera del {deviazione_percent:.1f}% la media delle ultime "
+            f"{len(prezzi_disponibili)} transazioni reali ({media:.2f}EUR), soglia "
+            f"{RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT:.0f}%")
+        return False
+    return True
 
 
 EXCHANGE_RATE_QUERY = """
@@ -3192,7 +3252,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         _card_details_future = _speculative_executor.submit(
             get_card_offer_details, _makeoffer_target_card_slug)
 
-    count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione = \
+    count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione, terzo_prezzo_transazione = \
         get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
     _t_liquidita = time.monotonic()
     if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
@@ -3256,6 +3316,9 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         log(f"{player_name}: scarto -- prezzo di acquisto/offerta e' inferiore ad "
             f"ultima/penultima transazione ({prezzo_da_pagare:.2f}EUR >= penultima "
             f"{penultimo_prezzo_transazione:.2f}EUR)")
+        return False
+    if not check_recent_avg_price(player_name, prezzo_da_pagare, ultimo_prezzo_transazione,
+                                   penultimo_prezzo_transazione, terzo_prezzo_transazione):
         return False
 
     _timing = (_t0, _t_scan_prezzi, _t_liquidita)
@@ -4070,7 +4133,7 @@ def _try_periodic_bid(candidato, eth_rate):
             f"troppo sottile di recente, salto questo ciclo")
         return False
 
-    count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione = \
+    count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione, terzo_prezzo_transazione = \
         get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
     if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"[bid periodico] {player_name}: scarto -- solo {count_7d} transazioni "
@@ -4094,6 +4157,10 @@ def _try_periodic_bid(candidato, eth_rate):
         log(f"[bid periodico] {player_name}: scarto -- offerta ({offer_amount_eur:.2f}EUR) "
             f"non inferiore alla penultima transazione ({penultimo_prezzo_transazione:.2f}EUR), "
             f"salto questo ciclo")
+        return False
+    if not check_recent_avg_price(f"[bid periodico] {player_name}", offer_amount_eur,
+                                   ultimo_prezzo_transazione, penultimo_prezzo_transazione,
+                                   terzo_prezzo_transazione):
         return False
 
     # Da qui in poi, IDENTICO a _handle_makeoffer_branch: dettagli carta, offerta
