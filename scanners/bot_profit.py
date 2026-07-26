@@ -827,19 +827,24 @@ def hours_until(date_str):
 # POTENZIALE SCORE (formula concordata 24/07) -- 4 fattori, nessun peso su
 # sconto%/n_transazioni oltre a quanto segue (restano comunque in colonna solo
 # per valutazione finale manuale):
-#   0.40 x peso_timing (prossimita' partita, curva a campana)
+#   0.40 x peso_timing (prossimita' partita, 3 bucket ricalibrati 27/07 sui
+#         dati reali di pattern_giorni_da_partita.csv)
 #   0.25 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5)
 #   0.15 x media_generale ((L5+L10+L40)/3)/100
 #   0.20 x sconto_normalizzato (sconto% clampato [-30,100] / 100)
 # =====================================================================================
 TIMING_WEIGHT_BUCKETS = (
     # (soglia_ore_esclusiva, peso) -- controllate in ordine, la prima che
-    # soddisfa ore < soglia vince.
-    (24, 0.1),
-    (48, 0.3),
+    # soddisfa ore < soglia vince. Ricalibrati 27/07 su dati reali
+    # (pattern_giorni_da_partita.csv, run full-MLS 30201147701, migliaia di
+    # campioni): <48h e 48-96h mostravano pesi diversi (0.1/0.3) ma
+    # scostamento reale IDENTICO (+3.9%/+4.0%, nessuno sconto) -> unificati.
+    # 48-96h prima resta il picco di sconto reale (-9.3%/-15.9%). Oltre le
+    # 96h i dati sono troppo scarsi (11 campioni a -4gg, zero oltre) per
+    # giustificare un peso alto: ridotto a 0.3, prudente invece che assunto.
+    (48, 0.1),
     (96, 1.0),
-    (200, 0.7),
-    (float('inf'), 0.4),
+    (float('inf'), 0.3),
 )
 
 
@@ -849,7 +854,7 @@ def timing_weight(ore_alla_partita):
     for soglia, peso in TIMING_WEIGHT_BUCKETS:
         if ore_alla_partita < soglia:
             return peso
-    return 0.4
+    return TIMING_WEIGHT_BUCKETS[-1][1]
 
 
 def _clamp(value, lo, hi):
