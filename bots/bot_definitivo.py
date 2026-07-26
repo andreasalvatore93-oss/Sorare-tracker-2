@@ -3892,7 +3892,7 @@ _stop_periodic_bid = threading.Event()
 # che hanno individualmente superato OFFER_AUTO_CANCEL_SECONDS dalla propria
 # creazione -- non un annullamento "a ondata" di tutte insieme.
 OFFER_AUTO_CANCEL_ENABLED = os.environ.get('OFFER_AUTO_CANCEL_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
-OFFER_AUTO_CANCEL_SECONDS = int(os.environ.get('OFFER_AUTO_CANCEL_SECONDS', '300'))
+OFFER_AUTO_CANCEL_SECONDS = int(os.environ.get('OFFER_AUTO_CANCEL_SECONDS', '240'))
 OFFER_AUTO_CANCEL_CHECK_INTERVAL_SECONDS = 30
 _stop_auto_cancel = threading.Event()
 _pending_cancel_lock = threading.Lock()
