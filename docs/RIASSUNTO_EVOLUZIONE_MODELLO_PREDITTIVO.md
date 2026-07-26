@@ -693,7 +693,7 @@ Arena/All Stars non toccate (nessun bonus anti-stack lì). Verificato con test l
 fittizi): il guard evita il 3° giocatore quando esiste un'alternativa valida, e ripiega sullo
 stack solo quando non ce ne sono (segnalandolo).
 
-**Backlog aperto a fine sessione**:
+**Backlog aperto a fine sessione (12)**:
 1. GK: calibrazione allargata (discovery su tutti i portieri MLS qualificati) — rimandato.
 2. K League: infrastruttura discovery globale equivalente a MLS, per ripetere le analisi
    cross-league (Stadio D, avversario, ecc.) e confrontare pattern universali vs specifici MLS.
@@ -703,3 +703,134 @@ stack solo quando non ce ne sono (segnalandolo).
    valore per questi ultimi due mai verificato esplicitamente con l'utente, assunto 50% finora).
 5. Chiarire e implementare il bonus "cap 260".
 6. Outlier/hot-streak (mai affrontato), monitoraggio MAE live esteso a K League.
+
+## 13. Sera 26/07/2026 (continua, sessione successiva) — Arena/All Stars bonus reali, K League discovery+calibrazione globale, calibrazione GLOBALE unificata
+
+Sessione lunga, molti filoni gestiti in parallelo con agenti in background (worktree isolati,
+mergiati man mano in questa sessione). In ordine logico (non cronologico):
+
+### A. Punto 3 e 4 del backlog sopra: CHIUSI
+- Punto 3 (stacking Arena/All Stars): **eliminato dal backlog** su richiesta esplicita
+  dell'utente — troppo sforzo per il beneficio atteso.
+- Punto 4 (`CAPTAIN_BONUS` per tipo): implementato. `CAPTAIN_BONUS_BY_TYPE` per tipo di
+  formazione: In Season 50%, Arena 20% (verificato dall'utente su casi reali Sorare),
+  All Stars 50%. **Bug trovato e corretto in K League**: dopo lo split di Arena in
+  ARENA_260/ARENA_220/ARENA_UNCAPPED (vedi sotto), la mappa K League aveva ancora la vecchia
+  chiave singola `'ARENA': 0.2` — le nuove chiavi ricadevano sul default 50% invece di 20%.
+  Bug reale, non solo teorico (avrebbe sballato i totali mostrati per Arena K League).
+
+### B. Bonus formazione reali Sorare (verificati dall'utente con screenshot UI, non dedotti)
+
+Panel "BONUS FORMAZIONE" della UI Sorare mostra due componenti separate, sommate in un totale:
+- **"Multi-club" +2%**: e' lo stesso bonus che chiamavamo "anti-stack" (meno di 3 giocatori della
+  stessa squadra), solo nome diverso in UI. Nessuna nuova meccanica, gia' implementato.
+- **"Cap 260" +4%**: se la somma delle **L10** (non punteggio atteso/reale) dei titolari e'
+  <= soglia, +4% su tutte le carte. **Soglia diversa per tipo**: 260 per In Season, **370 per
+  All Stars** (scalata a 7 giocatori invece di 5). E' un **soft cap** — si puo' sforare, si perde
+  solo il bonus (mai un vincolo che filtra le scelte). Implementato come rilevamento PASSIVO
+  (`check_cap260` in `format_lineup`/`render_lineup_html`): mostra se la formazione gia' scelta
+  (ottimizzata per punteggio atteso, nessuna ricerca vincolata) rientra o no, nessuna modifica
+  alla selezione dei giocatori. Sia il bonus multi-club sia il cap sono confermati validi ANCHE
+  per All Stars (`stack_guard` esteso da `tipo == 'IN_SEASON'` a
+  `tipo in ('IN_SEASON', 'ALLSTARS')`), non solo In Season come si pensava prima.
+
+**IMPORTANTE — da non confondere**: il cap Arena (`ARENA_260`/`ARENA_220`) e' un concetto
+DIVERSO, anche se sulla stessa metrica (somma L10): per Arena e' un **vincolo di formato
+obbligatorio** (non si puo' sforare, filtra attivamente le scelte in `build_one_lineup` via
+`FIXED_L10_CAP_BY_TYPE`), non un bonus opzionale. L'utente gioca sempre Arena a cap fisso, ma
+alcune Arene usano 260, altre 220 — da qui lo split in tre tipi:
+
+- **`ARENA_260`** / **`ARENA_220`**: cap L10 obbligatorio, vincolante.
+- **`ARENA_UNCAPPED`**: nessun limite (terza modalita' Arena reale, richiesta dall'utente).
+
+Sostituito il vecchio tipo generico `'ARENA'` (con tuning opzionale `ARENA_L10_CAP` via env) con
+queste tre chiavi fisse in `FORMATION_SHAPES`. Priorita' di generazione: In Season -> Arena
+cap260 -> Arena cap220 -> Arena uncapped -> All Stars. Implementato prima su MLS, poi
+specchiato su K League (con il fix del bug capitano di cui sopra).
+
+**Verificato sul backtest ("simulate_cap260_tradeoff.py", nuovo script diagnostico)**: rincorrere
+attivamente il cap 260 In Season sacrificando punteggio atteso NON conviene quasi mai nel pool
+testato — sacrificio medio ~47pt contro un break-even teorico di ~12pt (4% del capped), 0/8
+giornate simulate sono riuscite a scendere sotto 260 con giocatori "buoni". Il bonus resta quindi
+solo un extra "gratis" quando capita, non un obiettivo da inseguire attivamente (rilevamento
+passivo confermato come scelta giusta, non serve una Fase 2 di ricerca attiva).
+
+### C. K League: discovery globale + calibrazione allargata COMPLETA (prima volta)
+
+Costruita da zero l'infrastruttura mai esistita (verificato su TUTTI i branch/commit del repo,
+l'utente pensava fosse gia' stata fatta ma si sbagliava): `formazione_kleague/discovery/
+kleague_<ruolo>_discovery_global.py` x4 (clone esatto del pattern MLS) + workflow
+`.github/workflows/kleague_discovery_global.yml`. Squadre K League 1 ottenute con query LIVE
+verificata (`competition(slug:"k-league-1") { clubs }`, 12/12 trovate — nota tecnica: il campo
+giusto e' `clubs`, non `teams`/`currentClubs` che falliscono). Poi costruito anche
+`grid_search_calibrazione_kleague.yml` (clone del workflow MLS) e generalizzato
+`aggregate_grid_search.py` con `CAMPIONATO=mls|kleague` (default mls, retrocompatibile).
+
+Lanciati in sequenza (stessa cautela rate-limit di sempre, un ruolo alla volta) tutti e 4 i batch
+K League. Risultati calibrazione K League (solo, min 3 partite test):
+
+| Ruolo | Giocatori qualificati | Vincitore K League | vs produzione (clonata da MLS) |
+|---|---|---|---|
+| GK | 3/27 | hl=9.0, range=1.2, opp_sens=29.0, trend=0.7 | Campione troppo piccolo da solo, ma stessa direzione di MLS |
+| DEF | 15/114 | hl=12.0, range=1.2, **opp_sens=20.0**, trend=0.7 | **Diverge**: unico caso su 8 ruoli/campionati con segnale opposto a 29.0 |
+| MID | 10/61 | hl=12.0, range=1.4, opp_sens=29.0, trend=0.7 | Identico |
+| FWD | 21/138 | hl=12.0, range=1.4, opp_sens=29.0, trend=0.7 | Identico |
+
+**Il caso DEF K League**: spiegato dall'utente con conoscenza di dominio ("il campionato coreano
+e' famoso per difensori molto forti, pochi gol segnati, e' una loro caratteristica nota") — non
+rumore, ma un vero effetto di contesto. **Deciso di NON creare un parametro diverso per K League**
+(andrebbe contro il principio "un solo modello globale, i campionati servono solo ad accumulare
+dati") — vedi punto E per la direzione scelta invece.
+
+Aggiornato **solo GK**: `opponent_sensitivity` 20.0 -> 29.0, sia MLS che K League (stesso fix,
+stesso giorno, coerente con tutti gli altri ruoli/campionati). MID/FWD gia' allineati. DEF NON
+toccato (vedi sopra).
+
+### D. Calibrazione GLOBALE unificata (MLS+K League combinati, non piu' separati)
+
+Richiesta esplicita dell'utente: "il modello sara' sempre uno solo, globale, usiamo i vari
+campionati solo per accumulare dati". Aggiunta modalita' `GLOBALE=1` ad
+`aggregate_grid_search.py`: combina i giocatori qualificati di TUTTI i campionati noti in un
+unico pool pesato per n_test (un giocatore K League pesa esattamente come uno MLS a parita' di
+partite testate), invece di due aggregazioni separate. Output in
+`calibrazione_globale/output/<ruolo>_calibration/` (nuova cartella dedicata).
+
+Risultati (nessuna modifica di produzione applicata oltre al fix GK di sopra):
+- **GK** (16 giocatori/140 partite) e **DEF** (84 giocatori/640 partite, campione ORA grande):
+  confermano che la produzione attuale e' gia' vicina all'ottimo. Bonus: l'anomalia DEF K League
+  (opp_sens=20) **sparisce** quando si aggregano piu' dati (MLS domina il peso per volume) —
+  coerente col fatto che sia un effetto reale ma di scala minore, non abbastanza forte da
+  spostare la stima globale pesata.
+- **MID** (78/575): il "vincitore" per composite score suggeriva di riaccendere i granulari
+  (trend=1.3) — **verificato e SCARTATO**: riordinando per puro MAE (non composite score, che
+  include una penalita' di copertura arbitraria), il vincitore vero e' un tris a pari merito
+  (range 1.2/1.4/1.6 indifferenti) con `hl=12.0, opp_sens=29.0, trend=0.7, SENZA granulari` —
+  **esattamente i parametri di produzione attuali**. Il segnale "granulari" era un artefatto
+  della penalita' di copertura nel composite score, non un vero guadagno di accuratezza. MID
+  confermato ottimale cosi' com'e'.
+- **FWD** (59/400): segnale debole (trend 0.7->1.0), non applicato.
+
+Fix minore contestuale: il riepilogo finale di `aggregate_grid_search.py` ora mostra
+esplicitamente CON/SENZA granulari nella riga di stampa (prima l'informazione c'era solo nel
+campo `label` del json salvato, non nel testo stampato — ambiguo a colpo d'occhio).
+
+### E. Prossimi passi (in ordine, sessione in corso al momento di scrivere)
+
+Discusse con l'utente due direzioni per "svoltare" il modello, coerenti col principio "un modello
+solo, globale":
+
+1. **Fattore ambientale per `opponent_sensitivity`** (invece di costanti fisse per ruolo/lega):
+   il caso DEF K League suggerisce che "quanto conta l'avversario" potrebbe dipendere da un
+   contesto di punteggio misurabile (es. media gol/partita osservata), non da una costante fissa
+   — permetterebbe al modello di restare unico ma adattarsi automaticamente a qualsiasi
+   campionato futuro, invece di un valore scelto a mano per lega.
+2. **`level_score` atteso**: stimare il tasso storico di eventi decisivi per giocatore (gol/
+   assist/cartellini/clean sheet) per calcolare un valore atteso di `level_score` per la
+   prossima partita (usando la regola netto->livello validata in sezione 11, floor incluso in
+   sezione 11), invece di lasciarlo dentro la media pesata generica dello score totale. Identificato
+   da tempo come probabilmente la leva piu' grossa mai sfruttata (formula validata al 100% con
+   casi reali Sorare, identica in ogni ruolo/campionato).
+
+Entrambe le analisi sono state avviate in background (agenti separati, worktree isolati) subito
+dopo aver scritto questa sezione — risultati non ancora disponibili al momento di scrivere,
+verranno riportati quando pronti.
