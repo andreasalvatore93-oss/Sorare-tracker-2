@@ -144,30 +144,52 @@ FORMATION_SHAPES = {
 ANTI_SYNERGY_PENALTY = 10_000  # abbastanza grande da finire sempre in fondo alla classifica di scelta
 POSITIVE_SYNERGY_BONUS = 3  # piccolo nudge, non ribalta differenze di punteggio importanti
 
+# Bonus anti-stack Sorare (26/07, scoperto dall'utente, SOLO In Season): se
+# una formazione ha MENO di 3 giocatori della stessa squadra, ogni giocatore
+# riceve +2% al proprio punteggio; con 3+ della stessa squadra il bonus
+# salta per TUTTI e 5. La sinergia GK+DEF sopra, da sola, porta al massimo a
+# 2 giocatori della stessa squadra (GK + 1 DEF titolare) -- nessun conflitto,
+# resta "gratis". Il conflitto nasce solo se un ALTRO slot (tipicamente
+# l'extra) porterebbe una squadra al 3o giocatore: li' il costo e' certo
+# (-2% su tutti e 5) mentre il beneficio di correlazione e' incerto, quindi
+# di default scoraggiamo (non vietiamo: a volte, es. capolista contro
+# ultima, puo' valere la pena sacrificare il bonus per un punteggio quasi
+# certo -- scelta che spetta all'utente, non all'algoritmo) il 3o giocatore
+# della stessa squadra. Applicato SOLO per In Season (apply_stack_guard):
+# Arena/All Stars non hanno questo bonus, restano invariate.
+IN_SEASON_STACK_LIMIT = 2
+STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non esclude
 
-def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug):
+
+def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False):
     """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
     dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
-    output) -- vedi commento sopra ANTI_SYNERGY_PENALTY per la logica."""
+    output) -- vedi commento sopra ANTI_SYNERGY_PENALTY per la logica.
+    'team_counts'/'apply_stack_guard': vedi commento sopra IN_SEASON_STACK_LIMIT."""
     adjusted = row['atteso']
     team_slug = row.get('team_slug')
     if role in ('MID', 'FWD') and gk_opponent_slug and team_slug == gk_opponent_slug:
         adjusted -= ANTI_SYNERGY_PENALTY
     elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
         adjusted += POSITIVE_SYNERGY_BONUS
+    if apply_stack_guard and team_slug and team_counts and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT:
+        adjusted -= STACK_GUARD_PENALTY
     return adjusted
 
 
-def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug):
+def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False):
     """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
-    anti-sinergia col portiere scelto (vedi synergy_sort_key). Se il portiere
-    non ha squadra/avversario noti (consiglio generato prima di questo
-    aggiornamento, o dato di calendario mancante), non cambia nulla --
-    comportamento identico a prima."""
-    if not gk_team_slug and not gk_opponent_slug:
+    anti-sinergia col portiere scelto (vedi synergy_sort_key), ed
+    eventualmente per il vincolo anti-stack In Season. Se il portiere non
+    ha squadra/avversario noti (consiglio generato prima di questo
+    aggiornamento, o dato di calendario mancante) e non c'e' vincolo
+    anti-stack da applicare, non cambia nulla -- comportamento identico a
+    prima."""
+    if not gk_team_slug and not gk_opponent_slug and not apply_stack_guard:
         return rows
-    return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug),
+    return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug,
+                                                           team_counts, apply_stack_guard),
                   reverse=True)
 
 
@@ -357,18 +379,25 @@ class CardPool:
         return self._l10.get(slug)
 
 
-def build_one_lineup(shape, role_data, card_pool, l10_cap=None):
+def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False):
     """Costruisce UNA formazione secondo 'shape' (uno dei FORMATION_SHAPES),
     tenendo conto delle copie gia' esaurite (card_pool) e del vincolo
     max_classic della shape (None = nessun vincolo). Se l10_cap e' impostato
     (SOLO Arena), applica l'euristica greedy a budget residuo descritta nel
-    docstring del modulo. Ritorna (formazione, errore, l10_cap_rispettato);
-    formazione e' una lista di tuple (slot_label, row, card_type)."""
+    docstring del modulo. 'apply_stack_guard' (SOLO In Season, vedi commento
+    sopra IN_SEASON_STACK_LIMIT): scoraggia (non vieta) il 3o giocatore della
+    stessa squadra nello slot extra, per non perdere per errore il bonus
+    anti-stack Sorare. Ritorna (formazione, errore, l10_cap_rispettato,
+    stack_bonus_perso); formazione e' una lista di tuple
+    (slot_label, row, card_type). stack_bonus_perso e' True se la
+    formazione finale ha comunque 3+ giocatori della stessa squadra
+    (informativo, sempre False se apply_stack_guard=False)."""
     used_this_lineup = set()
     classic_budget_used = [0]
     max_classic = shape['max_classic']
     l10_used = [0.0]
     l10_cap_rispettato = [True]
+    team_counts = {}
 
     def pick(pool_rows, role_slot_l10_check):
         """role_slot_l10_check: se l10_cap e' impostato, filtra/ordina i
@@ -409,11 +438,12 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None):
         if role == 'GK':
             row, ctype = pick(role_data['GK'], l10_cap is not None)
         else:
-            candidates = synergy_adjusted_rows(role, role_data[role], gk_team_slug, gk_opponent_slug)
+            candidates = synergy_adjusted_rows(role, role_data[role], gk_team_slug, gk_opponent_slug,
+                                                team_counts, apply_stack_guard)
             row, ctype = pick(candidates, l10_cap is not None)
 
         if row is None:
-            return None, f"Nessun candidato disponibile per lo slot {slot_label} (copie esaurite o consiglio vuoto).", l10_cap_rispettato[0]
+            return None, f"Nessun candidato disponibile per lo slot {slot_label} (copie esaurite o consiglio vuoto).", l10_cap_rispettato[0], False
 
         used_this_lineup.add(row['slug'])
         if ctype == 'classic':
@@ -421,6 +451,10 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None):
         if l10_cap is not None:
             l10_used[0] += card_pool.l10(row['slug']) or 0.0
         picks.append((slot_label, row, ctype))
+
+        row_team_slug = row.get('team_slug')
+        if row_team_slug:
+            team_counts[row_team_slug] = team_counts.get(row_team_slug, 0) + 1
 
         if role == 'GK':
             gk_team_slug = row.get('team_slug')
@@ -434,7 +468,8 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None):
     for role in shape['extra_roles']:
         for row in role_data[role]:
             combined.append((role, row))
-    combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug), reverse=True)
+    combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
+                                                    team_counts, apply_stack_guard), reverse=True)
 
     extra_candidates = [(role, row) for role, row in combined if row['slug'] not in used_this_lineup]
     if l10_cap is not None:
@@ -458,14 +493,19 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None):
             break
 
     if extra_pick is None:
-        return None, "Nessun candidato disponibile per lo slot extra (copie esaurite).", l10_cap_rispettato[0]
+        return None, "Nessun candidato disponibile per lo slot extra (copie esaurite).", l10_cap_rispettato[0], False
 
     picks.append((f'EXTRA ({extra_role})', extra_pick, extra_type))
+
+    extra_team_slug = extra_pick.get('team_slug')
+    if extra_team_slug:
+        team_counts[extra_team_slug] = team_counts.get(extra_team_slug, 0) + 1
 
     for _slot, row, ctype in picks:
         card_pool.use(row['slug'], ctype)
 
-    return picks, None, l10_cap_rispettato[0]
+    stack_bonus_perso = apply_stack_guard and any(c >= 3 for c in team_counts.values())
+    return picks, None, l10_cap_rispettato[0], stack_bonus_perso
 
 
 CAPTAIN_BONUS = 0.5  # il capitano riceve +50% sul proprio punteggio (regola Sorare)
@@ -479,7 +519,8 @@ def pick_captain(formazione):
     return max(formazione, key=lambda pick: pick[1]['atteso'])
 
 
-def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True):
+def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
+                   stack_bonus_perso=False):
     lines = []
     lines.append(f"--- Formazione {tipo_label} #{idx} ---")
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
@@ -504,6 +545,9 @@ def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_
     if l10_cap is not None:
         stato = "OK" if l10_cap_rispettato else "NON RISPETTATO (nessun candidato entro budget, preso il piu' economico disponibile)"
         lines.append(f"L10 combinata: {totale_l10:.1f} / cap {l10_cap:.1f} -- {stato}")
+    if stack_bonus_perso:
+        lines.append("ATTENZIONE: 3+ giocatori della stessa squadra -- bonus anti-stack 2%/giocatore NON applicato "
+                      "(valuta tu se il contesto della partita giustifica comunque lo stack).")
     return "\n".join(lines), totale_atteso
 
 
@@ -565,7 +609,8 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
     )
 
 
-def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True):
+def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
+                        stack_bonus_perso=False):
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
     cards_html = ''.join(
         render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
@@ -579,6 +624,10 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
         totale_l10 = sum(card_pool.l10(row['slug']) or 0.0 for _, row, _ in formazione)
         stato = 'entro budget' if l10_cap_rispettato else 'budget NON rispettato'
         l10_note = f'<div class="captain-note">L10: {totale_l10:.1f} / {l10_cap:.1f} ({stato})</div>'
+    stack_note = ''
+    if stack_bonus_perso:
+        stack_note = ('<div class="captain-note" style="color:#d9534f">ATTENZIONE: 3+ giocatori della stessa '
+                       'squadra — bonus anti-stack 2%/giocatore NON applicato</div>')
     return (
         f'<div class="lineup-block"><div class="lineup-meta">'
         f'<div class="lineup-title">{tipo_label} <span>#{idx}</span></div></div>'
@@ -589,7 +638,7 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
         f'<div><span class="label">Con capitano</span>'
         f'<span class="figure with-captain">{totale_con_capitano} pt</span></div>'
         f'<div class="captain-note">Capitano <b>{_slug_display_name(captain_row["slug"])}</b> '
-        f'(+{bonus} pt, +{CAPTAIN_BONUS:.0%})</div>{l10_note}'
+        f'(+{bonus} pt, +{CAPTAIN_BONUS:.0%})</div>{l10_note}{stack_note}'
         f'</div></div>'
     )
 
@@ -695,10 +744,12 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup
     ordine di priorita'."""
     shape = FORMATION_SHAPES[tipo]
     cap = l10_cap if tipo == 'ARENA' else None
+    stack_guard = tipo == 'IN_SEASON'
     generated = 0
     totale = 0
     for idx in range(1, count + 1):
-        formazione, error, l10_ok = build_one_lineup(shape, role_data, card_pool, l10_cap=cap)
+        formazione, error, l10_ok, stack_perso = build_one_lineup(
+            shape, role_data, card_pool, l10_cap=cap, apply_stack_guard=stack_guard)
         if error:
             msg = f"Formazione {shape['label']} #{idx}: NON GENERATA — {error}"
             if print_output:
@@ -707,10 +758,12 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup
             lineup_html_blocks.append(f'<p class="error-block">{msg}</p>')
             break
         block_text, punti = format_lineup(shape['label'], idx, formazione, card_pool,
-                                           l10_cap=cap, l10_cap_rispettato=l10_ok)
+                                           l10_cap=cap, l10_cap_rispettato=l10_ok,
+                                           stack_bonus_perso=stack_perso)
         lineup_blocks.append(block_text)
         lineup_html_blocks.append(render_lineup_html(shape['label'], idx, formazione, card_pool,
-                                                       l10_cap=cap, l10_cap_rispettato=l10_ok))
+                                                       l10_cap=cap, l10_cap_rispettato=l10_ok,
+                                                       stack_bonus_perso=stack_perso))
         totale += punti
         generated += 1
         if print_output:
