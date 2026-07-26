@@ -550,3 +550,34 @@ implicitamente dentro la media pesata generica dello score totale (dove il rumor
 rari lo confonde con le fluttuazioni "normali" di gioco). Non ancora implementato — prossimo passo
 naturale, da fare per tutti e 4 i ruoli (richiesta esplicita dell'utente: "dobbiamo farlo anche
 sugli altri ruoli").
+
+### Regola del FLOOR (segnalata dall'utente con caso reale Erling Haaland, 26/07)
+
+Scoperta aggiuntiva importante, verificata sui dati cache: **quando `level_score >= 60` (almeno un
+evento decisivo positivo netto, nessun negativo che lo compensi), il punteggio finale della
+partita non può MAI scendere sotto `level_score` stesso**, indipendentemente da quanto siano
+negativi i granulari. Caso che ha innescato la scoperta: Erling Haaland (Arsenal 5 - Manchester
+City 1), 1 gol, granulari -3 → punteggio atteso "sulla carta" 57, ma il punteggio FINALE reale
+mostrato da Sorare è 60 (il floor).
+
+**Verificato empiricamente sui nostri dati** (non solo dedotto dallo screenshot):
+- 5 casi reali con `level_score >= 60` e granulari negativi, su FWD/DEF/MID/GK: **in tutti e 5** lo
+  `score` reale restituito dall'API Sorare corrisponde ESATTAMENTE a `level_score` (floor attivo),
+  mai alla somma grezza più bassa.
+- 8 casi reali con `level_score = 35` (nessun decisivo positivo pulito) e granulari molto negativi:
+  **in tutti e 8** lo `score` reale è la somma grezza (`level_score + granulari`), SENZA floor —
+  scende liberamente sotto 35.
+
+**Regola completa e finale**:
+```
+score_totale = level_score + granulari                         se level_score <= 35 (nessun floor)
+score_totale = MAX(level_score, level_score + granulari)        se level_score >= 60 (floor attivo)
+```
+
+**Implicazione pratica**: un evento decisivo positivo funziona come una specie di "assicurazione"
+sul punteggio — garantisce un pavimento (60/70/80...) indipendentemente da una brutta prestazione
+generale nella stessa partita. Questo significa che il valore atteso di "probabilità di un evento
+decisivo" per un giocatore non è solo il suo contributo medio ai punti, ma include anche una
+riduzione del rischio al ribasso — rilevante per qualunque futura stima predittiva di
+`level_score`, non solo per calcolarne il valore medio atteso ma anche per il range di confidenza
+(varianza ridotta sul lato basso quando il giocatore ha buone probabilità di un evento decisivo).
