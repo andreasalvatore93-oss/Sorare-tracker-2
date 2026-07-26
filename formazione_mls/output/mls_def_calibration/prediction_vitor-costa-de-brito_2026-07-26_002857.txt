@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T00:28:57.589905Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) vitor-costa-de-brito: 5 pt attesi (-10-21)
+======================================================================
+
+######################################################################
+# GIOCATORE: vitor-costa-de-brito
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: vitor-costa-de-brito (squadra: sj-earthquakes-santa-clara-california)
+Generato: 2026-07-26T00:28:57.589724Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-06 | SJ vs RBNY | mlspa | score=63.3 | peso=0.749
+  2025-07-13 | MIN vs SJ | mlspa | score=37.4 | peso=0.794
+  2025-08-10 | SJ vs VAN | mlspa | score=70.5 | peso=0.841
+  2025-08-17 | SJ vs SD | mlspa | score=45.6 | peso=0.891
+  2025-09-14 | SJ vs LAFC | mlspa | score=37.3 | peso=0.944
+  2025-09-21 | SJ vs STL | mlspa | score=40.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 48.49
+Deviazione standard pesata: 12.79
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.49 (differenza: +3.29)
+Media score in casa: 51.51 | Media score fuori casa: 37.36
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.0
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.103
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 1.009
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-26T02:30
+Casa: San Jose Earthquakes | Trasferta: LA Galaxy
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 5.4 +/- 15.3
+  (range: -10.0 - 20.7)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.30
+Punteggio REALE ottenuto in quella partita: 40.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
