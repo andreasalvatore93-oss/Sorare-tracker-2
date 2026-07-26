@@ -6,6 +6,54 @@ descritto qui è già **committato e pushato** su GitHub (ultimo commit di quest
 `6fc87f11`, verificare `git log --oneline -10` per eventuali commit successivi di altri
 workflow automatici) — si può ripartire con `git pull`, non c'è lavoro locale non salvato.
 
+## Aggiornamento 26/07 (notte inoltrata) — controllo media transazioni, ricalibrazione AutoBuy
+
+Continuazione della sessione precedente. Commit su `main`: `efd38ffea` (sesta
+ricalibrazione sconto, vedi sezione sotto per dettaglio), `2e5f91319`, `1f99e7beb`.
+
+1. **Nuovo controllo "prezzo vs media ultime transazioni"** (`check_recent_avg_price`,
+   richiesta esplicita utente, caso reale André Ferreira — offerta accettata in linea
+   con le 3 transazioni precedenti, ma voleva un tetto esplicito per i casi in cui NON
+   lo sarebbe stata): scarta se il prezzo da pagare/offrire supera del
+   `RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT`% (default 15, input workflow) la media
+   delle ultime fino-a-3 transazioni reali del giocatore. Riusa il fetch già esistente
+   per ultimo/penultimo prezzo (`get_liquidity_and_last_price`), esteso con un terzo
+   prezzo — zero query aggiuntive. Log diagnostico esplicito
+   (`RECENT_AVG_PRICE_DIAGNOSTIC_LOG`, default 'si', **promemoria: rimettere 'no' dopo
+   la verifica**) stampa il calcolo per OGNI valutazione, non solo sugli scarti.
+   **Verificato con un run diagnostico di 33 casi reali**: zero scarti — ogni prezzo
+   pagato/offerto era sempre SOTTO la media storica (deviazioni da -12% a -56%), mai
+   sopra, quindi il controllo resta silenzioso in condizioni normali di mercato e
+   interviene solo su anomalie come il caso Ferreira. Comportamento confermato corretto.
+2. **Indagine "l'AutoBuy non scatta mai, si sarà rotto qualcosa?"** — non era rotto:
+   verificato che la riga di log `AUTOBUY: ... LO AVREI ACQUISTATO` (stampata
+   incondizionatamente all'inizio del branch, prima di ogni altro controllo) non
+   compare MAI in nessuno dei run di oggi — il branch semplicemente non viene mai
+   raggiunto perché nessun caso reale ha superato la soglia margine richiesta (molto
+   più alta di quella MakeOffer, 22-38% contro 7-13%, per design). Verificato anche il
+   calcolo della soglia stessa contro i log — combacia esattamente, nessun bug
+   aritmetico.
+3. **Settima ricalibrazione AutoBuy**, dato che non c'erano casi reali disponibili:
+   sessione a popup con 9 punti (reali con margine ipotizzato + ipotetici puri, stesso
+   metodo "vero minimo variabile, secondo prezzo fermo" usato più volte). Il plateau
+   8-14€ (fisso al 22%, dalla sessione del 25/07) non regge più: **James Pantemis e
+   Guillaume Restes, indipendentemente, entrambi a 8.00€, hanno dato ~27.3%** (non
+   22%). Altri 4 punti (3€, 15€, 17.5€, 21€) confermano invece la curva quasi esatta
+   (scarto ≤1 punto percentuale) — **corretto solo il punto a 8€ (22%→27%)**,
+   l'interpolazione sistema da sola anche 7€ (→27.7%, vicino al 29.6% voluto) e 11€
+   (→24.5%, quasi esatto al 24.1% voluto). Un punto fuori pattern (McGlynn, 22.50€ →
+   voluto 19.35% contro il 15.9% attuale, mentre il vicino 21€ combaciava già bene)
+   trattato come rumore isolato, non inseguito.
+4. **Lanciato run reale 10 minuti** (`autobuy_live_mode=si`, `makeoffer_live_mode=si`)
+   con la soglia AutoBuy appena ricalibrata — esito da verificare alla prossima
+   sessione (controllare se scatta un AutoBuy vero con margine tra 22% e 27% a ~8€,
+   prima impossibile con la vecchia soglia).
+
+**Nota per chi riprende**: `RECENT_AVG_PRICE_DIAGNOSTIC_LOG` è ancora 'si' di default
+nel workflow — genera una riga di log per OGNI valutazione, utile solo durante la
+verifica. Se il log risulta troppo rumoroso, cambiare il default a 'no' in
+`.github/workflows/bot_definitivo.yml` (input `recent_avg_price_diagnostic_log`).
+
 ## Aggiornamento 26/07 (notte) — curva sconto continua, auto-annullamento offerte
 
 Sessione a popup (`AskUserQuestion`, un caso alla volta, niente tabelle su richiesta
