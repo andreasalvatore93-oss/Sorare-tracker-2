@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T00:21:02.560161Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jake-max-girdwood-reich: 8 pt attesi (-8-25)
+======================================================================
+
+######################################################################
+# GIOCATORE: jake-max-girdwood-reich
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jake-max-girdwood-reich (squadra: st-louis-city-st-louis-missouri)
+Generato: 2026-07-26T00:21:02.559927Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-05-18 | MIN vs STL | mlspa | score=29.4 | peso=0.749
+  2025-05-25 | RAP vs STL | mlspa | score=35.3 | peso=0.794
+  2025-06-29 | HOU vs STL | mlspa | score=71.1 | peso=0.841
+  2025-07-06 | RSL vs STL | mlspa | score=34.9 | peso=0.891
+  2025-07-13 | STL vs POR | mlspa | score=46.6 | peso=0.944
+  2026-07-23 | MOT vs HB | uefa-europa-conference-league | score=35.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 42.13
+Deviazione standard pesata: 13.69
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.07 (differenza: +8.62)
+Media score in casa: 46.60 | Media score fuori casa: 42.67
+Fattore casa/trasferta applicato: 1.007 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.991
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore eventi rari (rigori/autogol/errori, con cap): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.015
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.011
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.017
+Fattore gol subiti (goals_conceded, con cap): 0.977
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.013
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 20.00% (fonte: tasso di presenza storico (6/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T17:00
+Casa: HB Tórshavn | Trasferta: Motherwell FC
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 8.5 +/- 16.4
+  (range: -7.9 - 24.9)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.82
+Punteggio REALE ottenuto in quella partita: 35.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
