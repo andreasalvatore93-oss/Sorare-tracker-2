@@ -266,39 +266,52 @@ def filter_by_starter_odds(slugs, player_card_counts, min_starter_odds=MIN_START
 # stesso principio del filtro starter-odds sopra.
 # ---------------------------------------------------------------------------
 MIN_ACTIVITY_SCORE = float(os.environ.get('MIN_ACTIVITY_SCORE', '0.0'))
+# NUOVO (26/07, richiesta esplicita utente): scarta anche chi ha una media
+# ultime 10 partite GIOCATE <= questa soglia -- non solo le "carte morte"
+# (L5<=0) ma anche chi e' costantemente sottotono, per ridurre ulteriormente
+# il numero di job predict inutili nelle run di produzione ("i miei
+# giocatori"). LAST_TEN_PLAYED (non LAST_TEN semplice) conta solo le partite
+# EFFETTIVAMENTE giocate, evitando che le assenze abbassino artificialmente
+# la media. Stessa logica di sicurezza del filtro L5: dato mancante = tenuto.
+MIN_L10_SCORE = float(os.environ.get('MIN_L10_SCORE', '35.0'))
 
 LAST_FIVE_AVG_QUERY = """
 query LastFiveAvg($slug: String!) {
   anyPlayer(slug: $slug) {
     lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
+    lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
   }
 }
 """
 
 
 def get_last_five_avg(slug):
-    """Ritorna la media punteggio ultime 5 partite per slug, o None se non
-    disponibile (storico insufficiente)."""
+    """Ritorna (media ultime 5, media ultime 10 giocate) per slug -- None per
+    ciascun valore non disponibile (storico insufficiente). Un'unica query
+    per entrambi i dati, per non raddoppiare le chiamate API."""
     data = graphql_query(LAST_FIVE_AVG_QUERY, {"slug": slug}, operation_name="LastFiveAvg")
     player = (data.get('data') or {}).get('anyPlayer') or {}
-    return player.get('lastFiveAvgScore')
+    return player.get('lastFiveAvgScore'), player.get('lastTenPlayedAvgScore')
 
 
-def filter_by_activity(slugs, player_card_counts, min_avg=MIN_ACTIVITY_SCORE):
+def filter_by_activity(slugs, player_card_counts, min_avg=MIN_ACTIVITY_SCORE, min_l10=MIN_L10_SCORE):
     kept_slugs = []
     kept_counts = {}
     excluded = []
     for slug in slugs:
-        avg = get_last_five_avg(slug)
+        avg5, avg10 = get_last_five_avg(slug)
         time.sleep(0.3)
-        if avg is not None and avg <= min_avg:
-            excluded.append((slug, avg))
+        if avg5 is not None and avg5 <= min_avg:
+            excluded.append((slug, 'L5', avg5))
+            continue
+        if avg10 is not None and avg10 <= min_l10:
+            excluded.append((slug, 'L10', avg10))
             continue
         kept_slugs.append(slug)
         kept_counts[slug] = player_card_counts[slug]
 
-    log(f"Filtro attivita' minima (media ultime 5 > {min_avg}): {len(excluded)} esclusi su {len(slugs)} "
-        f"(dato mancante = tenuto per sicurezza). Esclusi: {excluded}")
+    log(f"Filtro attivita' minima (media ultime 5 > {min_avg} E media ultime 10 giocate > {min_l10}): "
+        f"{len(excluded)} esclusi su {len(slugs)} (dato mancante = tenuto per sicurezza). Esclusi: {excluded}")
     return kept_slugs, kept_counts
 
 
@@ -306,7 +319,7 @@ def main():
     log("Avvio discovery attaccanti MLS (in_season + classic)...")
     slugs, card_counts = discover_mls_forwards_all()
 
-    log("Filtro attivita' minima (media ultime 5 partite, taglia le carte morte)...")
+    log("Filtro attivita' minima (media ultime 5 e ultime 10 partite giocate, taglia carte morte e sottotono)...")
     slugs, card_counts = filter_by_activity(slugs, card_counts)
 
     log("Filtro starter-odds sulla prossima partita (solo pipeline produzione)...")
