@@ -677,15 +677,14 @@ MAKEOFFER_MIN_MARGIN_CURVE = [
     (30.00, 0.065),
 ]
 
-# Regola 2: sotto questo prezzo l'AutoBuy diretto non scatta MAI (sempre MakeOffer se il
-# margine basta). Sopra, il margine minimo per l'AutoBuy diretto scende con continuita'
-# al crescere del prezzo (FIX 25/07: sostituisce i 4 gradini fissi 3/5/8/15EUR con una
-# curva a interpolazione lineare -- trovato lo stesso pattern "gradiente dentro-fascia"
-# gia' visto sopra, confermato in TRE fasce diverse con coppie stesso-margine-prezzo-
-# diverso: 3-5EUR (Giocatore C 3.20EUR/35.4%->negozia vs Giocatore D 4.80EUR/35.1%->
-# autobuy), 5-8EUR (Giocatore E 5.00-5.20EUR/27-30%->al limite vs Odegaard 6.50EUR/32%->
-# autobuy netto), 15-30EUR (De Jong 18EUR/16.3%->negozia vs Saka bis 20EUR/16%->autobuy
-# "al pelo" vs Thuram 25EUR/13.8%->negozia). La fascia 8-15EUR e' risultata invece
+# Regola 2: il margine minimo per l'AutoBuy diretto scende con continuita' al crescere
+# del prezzo (FIX 25/07: sostituisce i 4 gradini fissi 3/5/8/15EUR con una curva a
+# interpolazione lineare -- trovato lo stesso pattern "gradiente dentro-fascia" gia'
+# visto sopra, confermato in TRE fasce diverse con coppie stesso-margine-prezzo-diverso:
+# 3-5EUR (Giocatore C 3.20EUR/35.4%->negozia vs Giocatore D 4.80EUR/35.1%->autobuy),
+# 5-8EUR (Giocatore E 5.00-5.20EUR/27-30%->al limite vs Odegaard 6.50EUR/32%->autobuy
+# netto), 15-30EUR (De Jong 18EUR/16.3%->negozia vs Saka bis 20EUR/16%->autobuy "al
+# pelo" vs Thuram 25EUR/13.8%->negozia). La fascia 8-15EUR e' risultata invece
 # GENUINAMENTE piatta (Giocatore A 8.50EUR/22% e Giocatore B 14.00EUR/22%, stesso
 # margine, stessa decisione autobuy in entrambi) -- riflessa qui come un plateau nella
 # curva, non forzata a decrescere anche li'. PRINCIPIO GUIDA esplicito dell'utente per i
@@ -694,7 +693,6 @@ MAKEOFFER_MIN_MARGIN_CURVE = [
 # offrire che comprare" -- i valori 22-30EUR sono stati arrotondati per eccesso (verso
 # un margine richiesto piu' alto, quindi verso MakeOffer) nelle zone piu' rumorose
 # invece di inseguire esattamente ogni singolo punto.
-AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY = float(os.environ.get('AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY', '3.0'))
 # FIX 26/07 (settima ricalibrazione, notte -- sessione a popup su casi ipotetici/reali,
 # dato che nessun AutoBuy reale era scattato in nessuno dei run di oggi): il plateau
 # 8-14EUR sopra (basato su 2 punti della sessione del 25/07, Giocatore A/B a 22%) non
@@ -707,11 +705,47 @@ AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY = float(os.environ.get('AUTOBUY_MIN_PRICE_FOR_D
 # Un punto (McGlynn, 22.50EUR-> voluto 19.35% contro il 15.9% attuale) resta fuori
 # pattern -- il vicino 21EUR combacia gia' bene, trattato come rumore isolato non
 # inseguito (stesso principio guida di sempre).
+# FIX 26/07 (ottava ricalibrazione): rimosso il cutoff assoluto sotto i 3EUR (prima
+# "mai AutoBuy sotto 3EUR" a prescindere dal margine) -- l'utente ha chiarito che non e'
+# una regola fissa, solo un margine minimo molto piu' alto. Casi ipotetici mirati:
+# 1.90EUR/margine 55%->autobuy; 2.00EUR/33%->negozia ma 2.00EUR/44%->autobuy (soglia
+# ~38-40%, in continuita' col punto 3EUR gia' esistente); 1.00EUR/44%->negozia,
+# 1.00EUR/55%->ANCORA negozia, 1.00EUR/67%->autobuy; 0.50EUR/61%->autobuy. Forma
+# risultante: plateau ~58-60% tra 0.50EUR e 1EUR, poi scende rapido verso il 38% gia'
+# noto a 3EUR. Aggiunto anche un punto a 13EUR (soglia reale ~24.5%, la vecchia
+# interpolazione 8->14EUR dava solo 22.8%, scarto oltre la soglia di rumore accettata).
+# Punto di controllo a 16EUR confermato invariato (scarto <1 punto percentuale, rumore).
+# FIX 26/27 (nona ricalibrazione, run diagnostica di 1h + revisione dei 14 match
+# MakeOffer "in chiave AutoBuy" -- per ognuno chiesto a quale prezzo minimo, a parita'
+# di secondo prezzo, sarebbe scattato l'AutoBuy): il punto 1.00EUR->60% era troppo alto,
+# 3 conferme consistenti (Aktuerkoglu, Guzman, Gibbs-White) vogliono ~50-54% -> abbassato
+# a 52%. Aggiunti anche 1.50EUR->~48% e 1.70EUR->~45% (Sargent/Lee Chang-Min) come punti
+# ESPLICITI invece di lasciarli alla sola interpolazione 1.00->2.00EUR: un singolo
+# aggiustamento del punto 1.00EUR da solo spostava questi due valori fuori dal range
+# osservato (curva troppo dritta su un segmento lungo 1EUR), i 4 punti insieme
+# descrivono meglio la vera forma, leggermente concava. 1.10EUR resta coerente di
+# riflesso (->50.4%, vicino al ~50% osservato). La fascia 3-5EUR scendeva troppo lentamente:
+# Enzo Fernandez (REALE, 4.10EUR/margine 29.9%) conferma di voler AutoBuy la', non
+# MakeOffer -- la vecchia curva richiedeva 33.6%. Pacho (derivato, 4.50EUR/~30%)
+# conferma lo stesso valore. Aggiunto un punto a 4.10EUR (0.30) cosi' che 4.10-5.00EUR
+# resti piatto a 30% invece di continuare a scendere solo a 5EUR. Punti scartati perche'
+# in contraddizione con dati gia' consolidati o rumorosi: 6.50EUR (Van Dijk conferma
+# esattamente il 28% gia' presente, Lewandowski vuole 23% sullo stesso prezzo -- tenuto
+# il valore gia' confermato); 15.50EUR (Godts vuole 16%, ma quella fascia ha gia' oscillato
+# piu' volte tra 16% e 20-22% in sessioni precedenti -- un solo nuovo punto non basta a
+# spostarla di nuovo).
 AUTOBUY_MIN_MARGIN_CURVE = [
+    (0.50, 0.58),
+    (1.00, 0.52),
+    (1.50, 0.48),
+    (1.70, 0.45),
+    (2.00, 0.39),
     (3.00, 0.38),
+    (4.10, 0.30),
     (5.00, 0.30),
     (6.50, 0.28),
     (8.00, 0.27),
+    (13.00, 0.245),
     (14.00, 0.22),
     (15.50, 0.20),
     (18.00, 0.175),
@@ -796,18 +830,16 @@ def _linear_interpolate(price_eur, curve):
 
 
 def compute_price_based_thresholds(price_eur):
-    """Ritorna (makeoffer_min_margin, autobuy_min_margin_o_None). autobuy_min_margin e'
-    None se il prezzo e' sotto AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY -- l'AutoBuy diretto non
-    e' MAI un'opzione a quel prezzo (vedi Regola 2 sopra), qualunque sia il margine.
+    """Ritorna (makeoffer_min_margin, autobuy_min_margin). FIX 26/07 (ottava
+    ricalibrazione): l'AutoBuy diretto non ha piu' un cutoff assoluto sotto cui e'
+    impossibile -- e' sempre teoricamente disponibile, solo sempre piu' difficile
+    (margine minimo piu' alto) scendendo di prezzo, vedi AUTOBUY_MIN_MARGIN_CURVE.
     Fallback sui 2 valori statici originali se PRICE_BASED_THRESHOLDS_ENABLED e' 'no'."""
     if not PRICE_BASED_THRESHOLDS_ENABLED:
         return MAKEOFFER_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION
 
     makeoffer_min = _linear_interpolate(price_eur, MAKEOFFER_MIN_MARGIN_CURVE)
-    if price_eur < AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:
-        autobuy_min = None
-    else:
-        autobuy_min = _linear_interpolate(price_eur, AUTOBUY_MIN_MARGIN_CURVE)
+    autobuy_min = _linear_interpolate(price_eur, AUTOBUY_MIN_MARGIN_CURVE)
     return makeoffer_min, autobuy_min
 
 
@@ -3198,16 +3230,14 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     margin_percent = (second_min_price - true_min_price) / second_min_price
 
     # Soglie basate sul PREZZO del vero minimo (vedi sezione "SOGLIE BASATE SUL PREZZO"
-    # sopra le costanti statiche per il razionale completo -- ~45 casi discussi con
-    # l'utente il 25-26/07). eff_autobuy e' None sotto AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:
-    # in quel caso l'AutoBuy diretto non e' mai un'opzione, solo MakeOffer.
+    # sopra le costanti statiche per il razionale completo -- ~45+ casi discussi con
+    # l'utente il 25-26/07).
     eff_makeoffer_min, eff_autobuy = compute_price_based_thresholds(true_min_price)
-    eff_makeoffer_max = eff_autobuy if eff_autobuy is not None else float('inf')
-    _autobuy_eligible = eff_autobuy is not None and margin_percent >= eff_autobuy
-    _autobuy_desc = f">= {eff_autobuy:.1%}" if eff_autobuy is not None else "mai (prezzo troppo basso)"
+    eff_makeoffer_max = eff_autobuy
+    _autobuy_eligible = margin_percent >= eff_autobuy
     log(f"{player_name}: minimo {true_min_price:.2f}EUR, secondo {second_min_price:.2f}EUR, "
         f"margine {margin_percent:.1%} (soglie per-prezzo: MakeOffer >= {eff_makeoffer_min:.1%}, "
-        f"AutoBuy {_autobuy_desc})")
+        f"AutoBuy >= {eff_autobuy:.1%})")
 
     if margin_percent < eff_makeoffer_min:
         # BID PERIODICO (22/07, richiesta esplicita utente): prima di scartare per
@@ -4342,8 +4372,8 @@ def main():
     log(f"[soglie per-prezzo] {'ATTIVO' if PRICE_BASED_THRESHOLDS_ENABLED else 'DISATTIVO (uso solo soglie statiche legacy)'}"
         f" -- MakeOffer minimo (curva continua): "
         f"{', '.join(f'{p:.2f}EUR->{m:.1%}' for p, m in MAKEOFFER_MIN_MARGIN_CURVE)}. "
-        f"AutoBuy diretto (curva continua): mai sotto {AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:.2f}EUR, poi "
-        f"{', '.join(f'{p:.0f}EUR->{m:.0%}' for p, m in AUTOBUY_MIN_MARGIN_CURVE)}. "
+        f"AutoBuy diretto (curva continua, nessun cutoff assoluto): "
+        f"{', '.join(f'{p:.2f}EUR->{m:.0%}' for p, m in AUTOBUY_MIN_MARGIN_CURVE)}. "
         f"Sconto offerta (curva continua): {', '.join(f'{p:.2f}EUR->{d:.1%}' for p, d in OFFER_DISCOUNT_CURVE)}")
     log(f"Giocatori in blacklist unita: {len(BLACKLISTED_PLAYER_SLUGS)}")
     log(f"Manager in blacklist unita: {len(BLACKLISTED_MANAGER_SLUGS)}")

@@ -6,6 +6,99 @@ descritto qui è già **committato e pushato** su GitHub (ultimo commit di quest
 `6fc87f11`, verificare `git log --oneline -10` per eventuali commit successivi di altri
 workflow automatici) — si può ripartire con `git pull`, non c'è lavoro locale non salvato.
 
+## Aggiornamento 26/07 (notte, tardissimo) — nona ricalibrazione: rimosso il cutoff
+## sotto 3€, granularità 8-14€, validazione run diagnostica 4/4
+
+Sessione a popup (branch di lavoro `claude/bot-evolution-review-34b9a9`, poi mergiato su
+`main`). Commit: verrà indicato dopo il merge (vedi in fondo a questa sezione).
+
+1. **Rimosso il cutoff assoluto "mai AutoBuy sotto 3€"** (`AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY`
+   e il ramo `None` in `compute_price_based_thresholds()` eliminati): l'utente ha chiarito che
+   non era una regola fissa, solo un margine minimo molto più alto. Casi ipotetici mirati
+   hanno trovato un plateau ~58-60% tra 0.50€ e 1.00€, che scende fino al 38% già noto a 3€.
+   `AUTOBUY_MIN_MARGIN_CURVE` estesa con `(0.50, 0.58), (1.00, 0.60), (2.00, 0.39)`.
+2. **Granularità 10-16€ verificata**: 10€ e 12€ confermano l'interpolazione esistente (scarto
+   ≤2pp, rumore). 13€ mostrava uno scarto reale di ~1.7pp (soglia vera ~24.5% contro il 22.8%
+   calcolato) — aggiunto un punto esplicito `(13.00, 0.245)`. 16€ confermato invariato.
+3. **Tema arrotondamento offerta chiuso, nessuna modifica**: verificato via sweep numerico
+   dell'intero range di prezzo che lo scarto massimo tra offerta esatta e arrotondata resta
+   0.05€ sopra 1€ (metà del passo 0.10€), nessun salto anomalo dal clamp sul ceiling. L'esempio
+   portato dall'utente per illustrare il problema era ipotetico, non da un log reale — testato
+   col codice vero dà già il risultato che l'utente considera corretto.
+4. **Run diagnostica di verifica (30 min, cancellata a ~26 min)**, eseguita PRIMA che i fix 1-2
+   sopra fossero deployati (girava ancora sul vecchio `main`): controllo media transazioni
+   ancora zero scarti su 11 valutazioni (pattern confermato una quarta volta); AutoBuy ancora
+   zero trigger, gap minimo osservato 10 punti percentuali (Rodrigo Zalazar, margine 20% contro
+   soglia 30% a quel prezzo) — confermato per la terza volta che non è un problema di soglie,
+   il mercato in quella finestra non produce occasioni abbastanza profittevoli. **4 offerte
+   MakeOffer reali generate, tutte e 4 confermate esatte dall'utente** (Manuel Neuer 3.20€/27%,
+   Rodrigo Zalazar 3.80€/23.5%, Phil Foden 3.90€/23.2%, David Soria 2.20€/29.4%) — il miglior
+   risultato di validazione finora (4/4, contro l'8/12 e 9/10 delle sessioni precedenti).
+5. **Nota per chi riprende**: il dettaglio caso-per-caso completo di questa sessione (inclusi
+   tutti i punti ipotetici usati per calibrare il cutoff sub-3€ e i punti 13/16€) vive nella
+   memoria locale di Claude Code (`bot_definitivo_margin_calibration.md`, sezione "Undicesima
+   sessione"), non nel repo.
+
+## Aggiornamento 26/27 (notte, tardissimo bis) — decima... nona ricalibrazione soglia
+## AutoBuy da run diagnostica di 1h, prima validazione reale del fix sub-3€
+
+Run diagnostica di 1h (cancellata a ~40 min), sul codice con il fix sub-3€ della sezione
+precedente già live. Commit: `23b7b3280`.
+
+1. **Prima validazione reale del fix sub-3€**: AutoBuy scattato per la prima volta in
+   settimane di test — Bryan Mbeumo, 1.99€, margine 43.3% (soglia 39.2%), **confermato
+   corretto dall'utente**. Prima del fix questo caso sarebbe stato impossibile per
+   design (cutoff assoluto sotto 3€).
+2. **14 match MakeOffer rivisti "in chiave AutoBuy"**: per ognuno chiesto a quale
+   prezzo minimo (a parità di secondo prezzo reale) l'utente sarebbe passato ad
+   AutoBuy — mappa direttamente la curva `AUTOBUY_MIN_MARGIN_CURVE` usando prezzi
+   secondi reali come ancore. 10/14 match confermati esatti su decisione+importo;
+   3 volevano uno sconto più profondo (Guzmán, Sargent, Gibbs-White, tutti sotto i
+   2€ — apre un tema aperto sulla profondità sconto `OFFER_DISCOUNT_CURVE` in quella
+   fascia, non ancora affrontato); 1 (Enzo Fernández, 4.10€/29.9%) voleva AutoBuy
+   invece di MakeOffer.
+3. **Nona ricalibrazione applicata**: punto 1€ abbassato da 60% a 52% (3 conferme),
+   aggiunti punti espliciti 1.50€→48% e 1.70€→45% (un'interpolazione lineare 1-2€
+   basata solo sui due estremi distorceva questi valori intermedi già confermati
+   corretti). Fascia 3-5€: aggiunto 4.10€→30% (Enzo Fernández, caso reale) così che
+   4.10-5€ resti piatto al 30% invece di scendere solo a 5€.
+4. **Non ancora corretto, tenuto in memoria per un pattern futuro** (richiesta esplicita
+   utente di tracciare anche i casi dubbi): 6.50€ ha dato risposte contrastanti tra due
+   carte reali diverse (Van Dijk conferma 28% esistente, Lewandowski vuole 23%) —
+   lasciato invariato. 15.50€ (Godts vuole 16% contro il 20% attuale) riapre una
+   tensione già oscillata più volte in passato tra 16% e 20-22% — serve una terza
+   conferma da un lato o dall'altro prima di deciderlo.
+5. **Dettaglio completo** (inclusi tutti i 12 dati "in chiave AutoBuy" con i valori
+   di curva prima/dopo) nella memoria locale, sezione "Dodicesima sessione".
+
+## Aggiornamento 26/07 (notte, tardi) — blacklist fix_urgente, annullamento forzato a
+## chiusura, ottava ricalibrazione sconto 4-6€
+
+Commit su `main` non ancora coperti dalle sezioni precedenti: `b300cc43d`, `d5a8b4f6b`,
+`4e65022d2` (tutti verificati presenti nel codice attuale, working tree pulito).
+
+1. **Nuova sezione lista nera `fix_urgente`** (`bots/bot_definitivo.py`,
+   `sorare_lista_nera.txt`): separata dalla blacklist `giocatore` ordinaria, pensata per
+   stop immediati su casi particolari (blocca sia acquisti che offerte). Scadenza assoluta
+   ISO (come `thin_market`/`cooldown_acquisto`), non durata testuale rinnovabile. Aggiunto
+   `matt-turner`, scadenza `2026-08-10T18:48:56Z` (15 giorni).
+2. **Annullamento forzato di tutte le offerte pendenti alla chiusura del bot**
+   (`_cancel_all_pending_offers_on_shutdown()`, chiamata nel `finally` di `main()`): il
+   thread `_auto_cancel_offers_loop` annulla solo le offerte già oltre
+   `OFFER_AUTO_CANCEL_SECONDS`, quindi un'offerta fatta a ridosso della fine di
+   `LISTEN_SECONDS` restava pendente per sempre col processo morto (bug reale: **Nico
+   Schlotterbeck**, run `30214671081`, scaduta solo dopo `OFFER_DURATION_DAYS`). Ora
+   annulla tutto ciò che resta nel tracker, indipendentemente dall'età.
+3. **Ottava ricalibrazione, fascia 4-6€ di `OFFER_DISCOUNT_CURVE`**: il calo da 25% a 17%
+   partiva troppo presto. Corretto con casi reali/ipotetici mirati (Baumgartl 4.39€ reale,
+   più Gallagher/Jackson/Fofana ipotetici): ora resta piatta al 27% fino a 4.50€, poi scende
+   gradualmente a 17% per 6€. Un punto a 4.00€ esatto (Tielemans) fuori pattern, trattato
+   come rumore isolato.
+4. **Arrotondamento offerta più fine**: `_round_offer_to_nice_number` passa da step 0.50€ a
+   0.10€ — l'utente ha chiarito che il numero tondo è solo preferibile, non vincolante; lo
+   step da 0.50 schiacciava lo sconto voluto sotto i 2€ (caso Heuer Fernandes: calcolo vero
+   1.36€ arrotondato a 1.50€, troppo generoso).
+
 ## Aggiornamento 26/07 (notte inoltrata) — controllo media transazioni, ricalibrazione AutoBuy
 
 Continuazione della sessione precedente. Commit su `main`: `efd38ffea` (sesta
