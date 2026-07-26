@@ -70,6 +70,15 @@ precedente già live. Commit: `23b7b3280`.
    conferma da un lato o dall'altro prima di deciderlo.
 5. **Dettaglio completo** (inclusi tutti i 12 dati "in chiave AutoBuy" con i valori
    di curva prima/dopo) nella memoria locale, sezione "Dodicesima sessione".
+6. **Validazione finale della sessione**: 5 scarti "vicini" (entro 0.8-1.6pp dalla
+   soglia MakeOffer) rivisti — **tutti e 5 confermati corretti**, la Regola 1
+   (`MAKEOFFER_MIN_MARGIN_CURVE`) regge bene ai suoi stessi bordi, nessuna modifica.
+   Poi 6 casi ipotetici random sparsi su tutta la fascia 1-30€, ognuno prezzato
+   esattamente alla soglia AutoBuy appena ricalibrata: **5/6 confermati esatti**
+   (7€, 10€, 17€, 21€, 27€); solo 2.50€ ha dato un piccolo scarto (~3pp, soglia
+   vera ~41-42% contro il 38.5% calcolato) — un solo punto, non ancora corretto,
+   serve una seconda conferma prima di aggiungere un punto lì (creerebbe un
+   piccolo rigonfiamento locale tra due punti già solidi a 2€ e 3€).
 
 ## Aggiornamento 26/07 (notte, tardi) — blacklist fix_urgente, annullamento forzato a
 ## chiusura, ottava ricalibrazione sconto 4-6€
