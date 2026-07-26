@@ -146,10 +146,15 @@ BUY_SIGNAL_TOP_N = int(os.environ.get('BUY_SIGNAL_TOP_N', '50'))
 # continuare a tracciare le classic, solo il roster va tagliato).
 ROSTER_MIN_L10 = float(os.environ.get('ROSTER_MIN_L10', '35.0'))
 
-# FIX 26/07 (richiesta esplicita utente): piccola pausa fissa tra un giocatore e
-# l'altro nel giro snapshot, per evitare (non subire con backoff reattivo, che
-# costa di piu') i 429 osservati sul run full-MLS (43/645 falliti dopo 3 retry).
-SNAPSHOT_PLAYER_DELAY_SECONDS = float(os.environ.get('SNAPSHOT_PLAYER_DELAY_SECONDS', '0.2'))
+# FIX 27/07 (richiesta esplicita utente, run troppo lento + 429): la pausa fissa
+# per-giocatore del 26/07 serializzava tutto il giro. _graphql_throttle() e' gia'
+# un rate-limiter GLOBALE condiviso (lock + intervallo minimo tra le richieste,
+# si autoallenta a 0.6s dopo un 429) -- e' lui il vero argine ai 429, non un
+# secondo ritardo sequenziale sopra. Sostituita con un pool di worker che
+# processano piu' giocatori in parallelo: il throttle continua a limitare il
+# RITMO delle richieste in uscita, la concorrenza serve solo a sovrapporre i
+# tempi di attesa risposta invece di sommarli giocatore per giocatore.
+SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '5'))
 
 # FIX 24/07 (richiesta esplicita utente): sotto questa soglia di transazioni nella
 # finestra, il dato e' troppo rumoroso per la classifica (una singola transazione
@@ -550,13 +555,12 @@ def fetch_all_live_offers(player_slug):
     return all_nodes
 
 
-def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
-    """Minimo attuale in vendita.
-    - MLS/K-League: SOLO il tipo (in_season o classic) corrispondente alla carta
-      dell'evento -- i due mercati non si toccano mai.
-    - Tutti gli altri campionati: in_season+classic mescolati (stesso identico
-      criterio di Bot Supremo -- un giocatore, un solo mercato)."""
-    nodes = fetch_all_live_offers(player_slug)
+def _current_minimum_from_nodes(nodes, is_in_season, league_slug, eth_rate):
+    """Nucleo di filtro condiviso, fattorizzato (FIX 27/07) da get_current_minimum
+    per poter riusare GLI STESSI nodi live-offers gia' scaricati sia per il ramo
+    in_season sia per quello classic nel giro snapshot, invece di richiamare
+    fetch_all_live_offers() due volte per lo stesso giocatore (dimezza le
+    richieste di rete per questa parte, indipendentemente dalla concorrenza)."""
     excluded = is_excluded_league(league_slug)
     prices_in_season = []
     prices_classic = []
@@ -586,6 +590,16 @@ def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
     else:
         candidates = prices_in_season + prices_classic
     return min(candidates) if candidates else None
+
+
+def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
+    """Minimo attuale in vendita.
+    - MLS/K-League: SOLO il tipo (in_season o classic) corrispondente alla carta
+      dell'evento -- i due mercati non si toccano mai.
+    - Tutti gli altri campionati: in_season+classic mescolati (stesso identico
+      criterio di Bot Supremo -- un giocatore, un solo mercato)."""
+    nodes = fetch_all_live_offers(player_slug)
+    return _current_minimum_from_nodes(nodes, is_in_season, league_slug, eth_rate)
 
 
 # =====================================================================================
@@ -652,13 +666,12 @@ def fetch_transaction_nodes_window(player_slug):
     return all_nodes, cutoff
 
 
-def _fetch_countable_transactions(player_slug, is_in_season, league_slug, eth_rate):
-    """Nucleo condiviso: transazioni reali (stesso filtro di sempre) con data E
-    prezzo, negli ultimi TRANSACTIONS_WINDOW_DAYS giorni. Fattorizzato (FIX 26/07,
-    richiesta esplicita utente) per riusare la STESSA query/filtro sia per la
-    media prezzi sia per il pattern giorni-da-partita, senza raddoppiare le
-    query GraphQL per carta."""
-    nodes, cutoff = fetch_transaction_nodes_window(player_slug)
+def _countable_transactions_from_nodes(nodes, cutoff, is_in_season, league_slug, eth_rate):
+    """Nucleo di filtro condiviso, fattorizzato (FIX 27/07) da
+    _fetch_countable_transactions per poter riusare GLI STESSI nodi transazione
+    gia' paginati sia per il ramo in_season sia per quello classic nel giro
+    snapshot, invece di richiamare fetch_transaction_nodes_window() due volte
+    per lo stesso giocatore (dimezza le richieste di rete per questa parte)."""
     excluded = is_excluded_league(league_slug)
     out = []
     for node in nodes:
@@ -679,6 +692,16 @@ def _fetch_countable_transactions(player_slug, is_in_season, league_slug, eth_ra
         if price is not None:
             out.append((dt, price))
     return out
+
+
+def _fetch_countable_transactions(player_slug, is_in_season, league_slug, eth_rate):
+    """Nucleo condiviso: transazioni reali (stesso filtro di sempre) con data E
+    prezzo, negli ultimi TRANSACTIONS_WINDOW_DAYS giorni. Fattorizzato (FIX 26/07,
+    richiesta esplicita utente) per riusare la STESSA query/filtro sia per la
+    media prezzi sia per il pattern giorni-da-partita, senza raddoppiare le
+    query GraphQL per carta."""
+    nodes, cutoff = fetch_transaction_nodes_window(player_slug)
+    return _countable_transactions_from_nodes(nodes, cutoff, is_in_season, league_slug, eth_rate)
 
 
 def get_recent_transaction_prices(player_slug, is_in_season, league_slug, eth_rate):
@@ -1614,15 +1637,25 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
     ore_alla_partita = hours_until(snapshot['next_game_date_str'])
     righe_scritte = 0
 
+    # FIX 27/07 (run troppo lento, richiesta esplicita utente): live-offers e
+    # transazioni NON dipendono da is_in_season lato rete (il filtro e' locale,
+    # in Python) -- un fetch solo, riusato per entrambi i rami invece di
+    # richiamare le query due volte per lo stesso giocatore.
+    live_offer_nodes = fetch_all_live_offers(player_slug)
+    tx_nodes_cache = None  # (nodes, cutoff) -- scaricate al bisogno, non se il prezzo scarta subito
+
     for is_in_season in (True, False):
         if not is_in_season and not CHECK_CLASSIC:
             continue
 
-        min_attuale = get_current_minimum(player_slug, is_in_season, league_slug, eth_rate)
+        min_attuale = _current_minimum_from_nodes(live_offer_nodes, is_in_season, league_slug, eth_rate)
         if min_attuale is None or min_attuale < MIN_PRICE_EUR_THRESHOLD:
             continue  # niente blacklist, il prezzo puo' risalire (stesso criterio del percorso a eventi)
 
-        tx_con_date = _fetch_countable_transactions(player_slug, is_in_season, league_slug, eth_rate)
+        if tx_nodes_cache is None:
+            tx_nodes_cache = fetch_transaction_nodes_window(player_slug)
+        tx_nodes, tx_cutoff = tx_nodes_cache
+        tx_con_date = _countable_transactions_from_nodes(tx_nodes, tx_cutoff, is_in_season, league_slug, eth_rate)
         tx_prices = [price for _, price in tx_con_date]
         avg_trimmed, n_usati, n_totali = trimmed_average(tx_prices)
 
@@ -1684,13 +1717,31 @@ def run_snapshot_sweep(eth_rate):
 
     log(f"Roster totale (deduplicato): {len(roster)} giocatori.")
 
+    # FIX 27/07 (run troppo lento, richiesta esplicita utente): pool di worker
+    # invece del giro sequenziale con pausa fissa -- _graphql_throttle() e' gia'
+    # un rate-limiter globale (lock condiviso), quindi la concorrenza qui
+    # sovrappone i tempi di attesa risposta tra giocatori diversi senza
+    # aumentare il ritmo delle richieste in uscita verso Sorare.
     stats = {}
-    for idx, (player_slug, (player_name, expected_team_slug)) in enumerate(roster.items(), 1):
-        log(f"[{idx}/{len(roster)}] {player_name} ({player_slug})...")
+    stats_lock = threading.Lock()
+    total = len(roster)
+    done = [0]
+
+    def _worker(player_slug, player_name, expected_team_slug):
         esito = _process_player_snapshot(player_slug, player_name, expected_team_slug, SNAPSHOT_LEAGUE_SLUG, eth_rate)
-        stats[esito] = stats.get(esito, 0) + 1
-        if SNAPSHOT_PLAYER_DELAY_SECONDS > 0 and idx < len(roster):
-            time.sleep(SNAPSHOT_PLAYER_DELAY_SECONDS)
+        with stats_lock:
+            stats[esito] = stats.get(esito, 0) + 1
+            done[0] += 1
+            log(f"[{done[0]}/{total}] {player_name} ({player_slug}): {esito}")
+
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=SNAPSHOT_WORKER_THREADS, thread_name_prefix='snap') as executor:
+        futures = [
+            executor.submit(_worker, player_slug, player_name, expected_team_slug)
+            for player_slug, (player_name, expected_team_slug) in roster.items()
+        ]
+        for future in concurrent.futures.as_completed(futures):
+            future.result()  # rilancia eventuali eccezioni non gestite dentro _worker
 
     log(f"SNAPSHOT completato. Riepilogo per giocatore: {stats}")
     return stats
