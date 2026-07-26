@@ -6,6 +6,34 @@ descritto qui è già **committato e pushato** su GitHub (ultimo commit di quest
 `6fc87f11`, verificare `git log --oneline -10` per eventuali commit successivi di altri
 workflow automatici) — si può ripartire con `git pull`, non c'è lavoro locale non salvato.
 
+## Aggiornamento 26/07 (notte, tardi) — blacklist fix_urgente, annullamento forzato a
+## chiusura, ottava ricalibrazione sconto 4-6€
+
+Commit su `main` non ancora coperti dalle sezioni precedenti: `b300cc43d`, `d5a8b4f6b`,
+`4e65022d2` (tutti verificati presenti nel codice attuale, working tree pulito).
+
+1. **Nuova sezione lista nera `fix_urgente`** (`bots/bot_definitivo.py`,
+   `sorare_lista_nera.txt`): separata dalla blacklist `giocatore` ordinaria, pensata per
+   stop immediati su casi particolari (blocca sia acquisti che offerte). Scadenza assoluta
+   ISO (come `thin_market`/`cooldown_acquisto`), non durata testuale rinnovabile. Aggiunto
+   `matt-turner`, scadenza `2026-08-10T18:48:56Z` (15 giorni).
+2. **Annullamento forzato di tutte le offerte pendenti alla chiusura del bot**
+   (`_cancel_all_pending_offers_on_shutdown()`, chiamata nel `finally` di `main()`): il
+   thread `_auto_cancel_offers_loop` annulla solo le offerte già oltre
+   `OFFER_AUTO_CANCEL_SECONDS`, quindi un'offerta fatta a ridosso della fine di
+   `LISTEN_SECONDS` restava pendente per sempre col processo morto (bug reale: **Nico
+   Schlotterbeck**, run `30214671081`, scaduta solo dopo `OFFER_DURATION_DAYS`). Ora
+   annulla tutto ciò che resta nel tracker, indipendentemente dall'età.
+3. **Ottava ricalibrazione, fascia 4-6€ di `OFFER_DISCOUNT_CURVE`**: il calo da 25% a 17%
+   partiva troppo presto. Corretto con casi reali/ipotetici mirati (Baumgartl 4.39€ reale,
+   più Gallagher/Jackson/Fofana ipotetici): ora resta piatta al 27% fino a 4.50€, poi scende
+   gradualmente a 17% per 6€. Un punto a 4.00€ esatto (Tielemans) fuori pattern, trattato
+   come rumore isolato.
+4. **Arrotondamento offerta più fine**: `_round_offer_to_nice_number` passa da step 0.50€ a
+   0.10€ — l'utente ha chiarito che il numero tondo è solo preferibile, non vincolante; lo
+   step da 0.50 schiacciava lo sconto voluto sotto i 2€ (caso Heuer Fernandes: calcolo vero
+   1.36€ arrotondato a 1.50€, troppo generoso).
+
 ## Aggiornamento 26/07 (notte inoltrata) — controllo media transazioni, ricalibrazione AutoBuy
 
 Continuazione della sessione precedente. Commit su `main`: `efd38ffea` (sesta
