@@ -510,6 +510,21 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
 
 CAPTAIN_BONUS = 0.5  # il capitano riceve +50% sul proprio punteggio (regola Sorare)
 
+# Bonus "Cap 260" (SOLO In Season, 26/07 -- verificato dall'utente con screenshot
+# reali della UI Sorare, pannello "BONUS FORMAZIONE"): se la somma delle L10 dei
+# 5 titolari e' <= 260, si ottiene un +4% aggiuntivo su tutte le carte della
+# formazione (si somma ad altri bonus formazione come "Multi-club", non ancora
+# implementato/verificato del tutto -- vedi RIASSUNTO). E' una metrica DIVERSA
+# dal cap L10 obbligatorio di Arena (ARENA_L10_CAP): li' e' un vincolo di
+# formato che filtra le scelte durante la costruzione; qui e' solo INFORMATIVO
+# (fase 1, rilevamento passivo) -- si limita a segnalare se la formazione gia'
+# scelta (ottimizzata per punteggio atteso, nessun vincolo L10 attivo per
+# In Season) rientra o no sotto la soglia, senza cercare attivamente
+# un'alternativa che la rispetti. Nessun impatto sul totale numerico mostrato
+# (stesso trattamento "solo informativo" gia' usato per il bonus anti-stack).
+CAP260_L10_THRESHOLD = 260.0
+CAP260_BONUS = 0.04
+
 
 def pick_captain(formazione):
     """Il capitano ottimale e' semplicemente il giocatore con lo score atteso
@@ -520,7 +535,7 @@ def pick_captain(formazione):
 
 
 def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                   stack_bonus_perso=False):
+                   stack_bonus_perso=False, check_cap260=False):
     lines = []
     lines.append(f"--- Formazione {tipo_label} #{idx} ---")
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
@@ -548,6 +563,10 @@ def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_
     if stack_bonus_perso:
         lines.append("ATTENZIONE: 3+ giocatori della stessa squadra -- bonus anti-stack 2%/giocatore NON applicato "
                       "(valuta tu se il contesto della partita giustifica comunque lo stack).")
+    if check_cap260:
+        stato260 = "OK" if totale_l10 <= CAP260_L10_THRESHOLD else "NON rispettato"
+        lines.append(f"Cap 260: L10 combinata {totale_l10:.1f} / {CAP260_L10_THRESHOLD:.0f} -- {stato260} "
+                      f"({'+4% bonus formazione attivo' if totale_l10 <= CAP260_L10_THRESHOLD else 'bonus +4% non ottenuto'})")
     return "\n".join(lines), totale_atteso
 
 
@@ -610,7 +629,7 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
 
 
 def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                        stack_bonus_perso=False):
+                        stack_bonus_perso=False, check_cap260=False):
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
     cards_html = ''.join(
         render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
@@ -628,6 +647,14 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
     if stack_bonus_perso:
         stack_note = ('<div class="captain-note" style="color:#d9534f">ATTENZIONE: 3+ giocatori della stessa '
                        'squadra — bonus anti-stack 2%/giocatore NON applicato</div>')
+    cap260_note = ''
+    if check_cap260:
+        totale_l10_c260 = sum(card_pool.l10(row['slug']) or 0.0 for _, row, _ in formazione)
+        ok260 = totale_l10_c260 <= CAP260_L10_THRESHOLD
+        colore = '' if ok260 else ' style="color:#d9534f"'
+        esito = '+4% bonus formazione attivo' if ok260 else 'bonus +4% non ottenuto'
+        cap260_note = (f'<div class="captain-note"{colore}>Cap 260: L10 {totale_l10_c260:.1f} / '
+                        f'{CAP260_L10_THRESHOLD:.0f} ({esito})</div>')
     return (
         f'<div class="lineup-block"><div class="lineup-meta">'
         f'<div class="lineup-title">{tipo_label} <span>#{idx}</span></div></div>'
@@ -638,7 +665,7 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
         f'<div><span class="label">Con capitano</span>'
         f'<span class="figure with-captain">{totale_con_capitano} pt</span></div>'
         f'<div class="captain-note">Capitano <b>{_slug_display_name(captain_row["slug"])}</b> '
-        f'(+{bonus} pt, +{CAPTAIN_BONUS:.0%})</div>{l10_note}{stack_note}'
+        f'(+{bonus} pt, +{CAPTAIN_BONUS:.0%})</div>{l10_note}{stack_note}{cap260_note}'
         f'</div></div>'
     )
 
@@ -757,13 +784,14 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, l10_cap, lineup
             lineup_blocks.append(msg)
             lineup_html_blocks.append(f'<p class="error-block">{msg}</p>')
             break
+        check_cap260 = tipo == 'IN_SEASON'
         block_text, punti = format_lineup(shape['label'], idx, formazione, card_pool,
                                            l10_cap=cap, l10_cap_rispettato=l10_ok,
-                                           stack_bonus_perso=stack_perso)
+                                           stack_bonus_perso=stack_perso, check_cap260=check_cap260)
         lineup_blocks.append(block_text)
         lineup_html_blocks.append(render_lineup_html(shape['label'], idx, formazione, card_pool,
                                                        l10_cap=cap, l10_cap_rispettato=l10_ok,
-                                                       stack_bonus_perso=stack_perso))
+                                                       stack_bonus_perso=stack_perso, check_cap260=check_cap260))
         totale += punti
         generated += 1
         if print_output:
