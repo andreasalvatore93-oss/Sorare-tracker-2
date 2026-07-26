@@ -7,7 +7,10 @@ per ogni combinazione di parametri il MAE medio e la copertura media su TUTTI
 i giocatori disponibili, e individua la combinazione vincente cross-player
 (stessa logica gia' usata per fissare i parametri degli attaccanti).
 
-Punteggio composito per combinazione = MAE_medio + 0.3 * |copertura_media - 68|
+Punteggio composito per combinazione = MAE_medio + 0.1 * |copertura_media - 68|
+(peso abbassato 0.3->0.1 il 27/07: verificato che con 0.3 il composite score
+poteva scegliere un MAE fino a +2.72% peggiore del vero minimo (caso MID),
+vedi aggregate_grid_search.py per l'analisi completa)
 
 Output: mls_def_all/grid_search/aggregato_<timestamp>.txt con la classifica
 completa delle combinazioni ordinate per punteggio composito crescente (la
@@ -66,7 +69,7 @@ def main():
             continue
         mae_medio = sum(maes) / len(maes)
         coverage_medio = sum(coverages) / len(coverages) if coverages else None
-        coverage_penalty = abs((coverage_medio or 0) - 68.0) * 0.3
+        coverage_penalty = abs((coverage_medio or 0) - 68.0) * 0.1  # peso abbassato 0.3->0.1 il 27/07
         composite = mae_medio + coverage_penalty
         sample = rows[0]
         aggregated.append({

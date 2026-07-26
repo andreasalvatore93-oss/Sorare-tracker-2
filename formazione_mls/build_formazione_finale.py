@@ -178,36 +178,69 @@ POSITIVE_SYNERGY_BONUS = 3  # piccolo nudge, non ribalta differenze di punteggio
 IN_SEASON_STACK_LIMIT = 2
 STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non esclude
 
+# Sinergia da correlazione misurata, SOLO Arena/All Stars (27/07, tema
+# "correlazione slot formazione" del backlog, vedi diagnostics/
+# measure_teammate_correlation.py). Prima di questo tuning i nudge sopra
+# (POSITIVE_SYNERGY_BONUS/ANTI_SYNERGY_PENALTY) erano intuizione mai
+# misurata. Il residuo walk-forward (reale - baseline media/venue/trend) di
+# compagni di squadra nella STESSA partita, sulle cache di calibrazione
+# GK/DEF/MID/FWD, mostra correlazioni positive robuste (permutation test
+# p<0.05, segno stabile split-half): GK-DEF +0.40 (la piu' forte, gia'
+# modellata sopra ma sottostimata), DEF-MID +0.27, GK-MID +0.26, DEF-DEF
+# +0.23. FWD non mostra correlazione same-team significativa con nessun
+# ruolo (ne' come sinergia ne' come anti-sinergia) e resta fuori da questi
+# nudge. Perche' SOLO Arena/All Stars: in In Season il target e' fisso, il
+# valore atteso della somma non dipende dalla correlazione (Finding 3+F,
+# chiuso), quindi spingere la scelta verso compagni correlati costerebbe
+# valore atteso reale senza alcun beneficio -- il beneficio esiste solo dove
+# la varianza conta (taglio premi Arena 30%/All Stars 5%). Valori scalati
+# ~20x la correlazione misurata (stessa logica di "piccolo nudge" di
+# POSITIVE_SYNERGY_BONUS, non un'esclusione).
+GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA = 8  # extra oltre POSITIVE_SYNERGY_BONUS, per un totale di 11 in Arena/All Stars (corr +0.40)
+TEAMMATE_SYNERGY_BONUS_VARIANCE = 5  # GK-MID stessa squadra (corr +0.26) o DEF/MID che raggiunge un compagno gia' scelto (corr +0.23/+0.27)
 
-def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False):
+
+def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
+                      variance_mode=False):
     """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
     dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
     output) -- vedi commento sopra ANTI_SYNERGY_PENALTY per la logica.
-    'team_counts'/'apply_stack_guard': vedi commento sopra IN_SEASON_STACK_LIMIT."""
+    'team_counts'/'apply_stack_guard': vedi commento sopra IN_SEASON_STACK_LIMIT.
+    'variance_mode': vedi commento sopra GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA
+    (SOLO Arena/All Stars -- generate_lineups_for_type decide il valore)."""
     adjusted = row['atteso']
     team_slug = row.get('team_slug')
     if role in ('MID', 'FWD') and gk_opponent_slug and team_slug == gk_opponent_slug:
         adjusted -= ANTI_SYNERGY_PENALTY
     elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
         adjusted += POSITIVE_SYNERGY_BONUS
+    if variance_mode and team_slug:
+        if role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
+            adjusted += GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA
+        elif role == 'MID' and gk_team_slug and team_slug == gk_team_slug:
+            adjusted += TEAMMATE_SYNERGY_BONUS_VARIANCE
+        elif role in ('DEF', 'MID') and team_counts and team_counts.get(team_slug, 0) >= 1:
+            adjusted += TEAMMATE_SYNERGY_BONUS_VARIANCE
     if apply_stack_guard and team_slug and team_counts and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT:
         adjusted -= STACK_GUARD_PENALTY
     return adjusted
 
 
-def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False):
+def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
+                           variance_mode=False):
     """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
-    anti-sinergia col portiere scelto (vedi synergy_sort_key), ed
-    eventualmente per il vincolo anti-stack In Season. Se il portiere non
-    ha squadra/avversario noti (consiglio generato prima di questo
-    aggiornamento, o dato di calendario mancante) e non c'e' vincolo
-    anti-stack da applicare, non cambia nulla -- comportamento identico a
-    prima."""
-    if not gk_team_slug and not gk_opponent_slug and not apply_stack_guard:
+    anti-sinergia col portiere scelto (vedi synergy_sort_key), la sinergia
+    da correlazione misurata (SOLO variance_mode) ed eventualmente per il
+    vincolo anti-stack In Season/All Stars. Se il portiere non ha
+    squadra/avversario noti (consiglio generato prima di questo
+    aggiornamento, o dato di calendario mancante) e non c'e' ne' vincolo
+    anti-stack ne' variance_mode da applicare, non cambia nulla --
+    comportamento identico a prima."""
+    if not gk_team_slug and not gk_opponent_slug and not apply_stack_guard and not variance_mode:
         return rows
     return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug,
-                                                           team_counts, apply_stack_guard),
+                                                           team_counts, apply_stack_guard, variance_mode),
                   reverse=True)
 
 
@@ -390,15 +423,18 @@ class CardPool:
         return self._l10.get(slug)
 
 
-def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False):
+def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False, variance_mode=False):
     """Costruisce UNA formazione secondo 'shape' (uno dei FORMATION_SHAPES),
     tenendo conto delle copie gia' esaurite (card_pool) e del vincolo
     max_classic della shape (None = nessun vincolo). Se l10_cap e' impostato
     (SOLO Arena), applica l'euristica greedy a budget residuo descritta nel
-    docstring del modulo. 'apply_stack_guard' (SOLO In Season, vedi commento
-    sopra IN_SEASON_STACK_LIMIT): scoraggia (non vieta) il 3o giocatore della
-    stessa squadra nello slot extra, per non perdere per errore il bonus
-    anti-stack Sorare. Ritorna (formazione, errore, l10_cap_rispettato,
+    docstring del modulo. 'apply_stack_guard' (SOLO In Season/All Stars, vedi
+    commento sopra IN_SEASON_STACK_LIMIT): scoraggia (non vieta) il 3o
+    giocatore della stessa squadra nello slot extra, per non perdere per
+    errore il bonus anti-stack Sorare. 'variance_mode' (SOLO Arena/All Stars,
+    vedi commento sopra GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA): rafforza la
+    sinergia GK-DEF e aggiunge nudge GK-MID/DEF-MID/DEF-DEF basati sulla
+    correlazione misurata. Ritorna (formazione, errore, l10_cap_rispettato,
     stack_bonus_perso); formazione e' una lista di tuple
     (slot_label, row, card_type). stack_bonus_perso e' True se la
     formazione finale ha comunque 3+ giocatori della stessa squadra
@@ -450,7 +486,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
             row, ctype = pick(role_data['GK'], l10_cap is not None)
         else:
             candidates = synergy_adjusted_rows(role, role_data[role], gk_team_slug, gk_opponent_slug,
-                                                team_counts, apply_stack_guard)
+                                                team_counts, apply_stack_guard, variance_mode)
             row, ctype = pick(candidates, l10_cap is not None)
 
         if row is None:
@@ -480,7 +516,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         for row in role_data[role]:
             combined.append((role, row))
     combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
-                                                    team_counts, apply_stack_guard), reverse=True)
+                                                    team_counts, apply_stack_guard, variance_mode), reverse=True)
 
     extra_candidates = [(role, row) for role, row in combined if row['slug'] not in used_this_lineup]
     if l10_cap is not None:
@@ -808,11 +844,15 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
     # In Season E All Stars (soglie/percentuali diverse ma stesso meccanismo),
     # non per Arena (che ha il suo cap L10 obbligatorio separato, nessun bonus).
     stack_guard = tipo in ('IN_SEASON', 'ALLSTARS')
+    # Sinergia da correlazione misurata (vedi GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA):
+    # SOLO dove la varianza conta, cioe' tutto tranne In Season (target fisso).
+    variance_mode = tipo != 'IN_SEASON'
     generated = 0
     totale = 0
     for idx in range(1, count + 1):
         formazione, error, l10_ok, stack_perso = build_one_lineup(
-            shape, role_data, card_pool, l10_cap=cap, apply_stack_guard=stack_guard)
+            shape, role_data, card_pool, l10_cap=cap, apply_stack_guard=stack_guard,
+            variance_mode=variance_mode)
         if error:
             msg = f"Formazione {shape['label']} #{idx}: NON GENERATA — {error}"
             if print_output:

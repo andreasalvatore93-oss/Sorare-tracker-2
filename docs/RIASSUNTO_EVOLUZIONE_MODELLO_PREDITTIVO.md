@@ -4,12 +4,15 @@
 lavoro** (l'utente alterna due account, poca/nessuna memoria condivisa tra sessioni). Non
 presupporre nessun contesto pregresso: tutto quello che serve è qui dentro.
 
-**Aggiornato 26/07/2026, notte (terza sessione)**: se cerchi solo "qual è lo stato adesso",
-salta direttamente alla **sezione 13** (l'ultima) — è l'handoff più recente e completo. Le
-sezioni 1-12 restano come cronistoria di come ci si è arrivati (parametri di produzione
+**Aggiornato 27/07/2026**: se cerchi solo "qual è lo stato adesso", salta direttamente alla
+**sezione 14** (l'ultima) — è l'handoff più recente e completo, e contiene anche la correzione
+di due falsi allarmi di backlog (K League e GK "da fare" erano in realtà già chiusi in sezioni
+precedenti mai lette per intero — leggi SEMPRE questo documento dall'inizio alla fine prima di
+concludere che qualcosa manca, non fidarti solo dell'ultima sezione o della memoria persistente).
+Le sezioni 1-13 restano come cronistoria di come ci si è arrivati (parametri di produzione
 FINALIZZATI per DEF/MID/FWD/GK, scoperta e validazione della formula `level_score`/floor,
-implementazione Arena/All Stars), utile se serve capire IL PERCHÉ di una decisione, non per
-sapere lo stato attuale.
+implementazione Arena/All Stars, infrastruttura K League completa), utile se serve capire IL
+PERCHÉ di una decisione, non per sapere lo stato attuale.
 
 Repo: `Sorare-tracker-2` (github.com/andreasalvatore93-oss/Sorare-tracker-2), cartella locale
 `C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2`, branch `main`. Stato scritto qui: **tutto
@@ -950,3 +953,112 @@ bloccante):
 6. Starter odds come fattore di rischio continuo nello score_atteso (invece di solo filtro
    binario) — proposto e **SCARTATO il 26/07 notte** su richiesta esplicita dell'utente ("è
    marginale"), riportato qui solo per non riproporlo senza una richiesta nuova.
+
+## 14. Sessione 27/07/2026 — correlazione compagni squadra (misurata e tarata), chiusura outlier/composite score, correzione memoria K League
+
+Ripresa da un account diverso. Punto di partenza: il backlog (punto 0 sezione 13) e la memoria
+persistente dell'account indicavano diversi temi aperti; **due si sono rivelati falsi allarmi da
+memoria non aggiornata** (vedi sezione D sotto) — lezione operativa, non solo di modello.
+
+### A. Correlazione tra slot della formazione — misurata, verificata robusta, tarata SOLO Arena/All Stars
+
+Nuovo script `formazione_mls/diagnostics/measure_teammate_correlation.py`: residuo walk-forward
+(reale − baseline media/venue/trend, stesso approccio di `validate_team_defense_strength.py`) di
+compagni di squadra nella stessa partita, dalle cache di calibrazione GK/DEF/MID/FWD.
+
+**Risultati same-team** (permutation test 999 shuffle + split-half cronologico, tutti p<0.05 e
+segno stabile): GK-DEF **+0.40** (la più forte, già modellata ma sottostimata), DEF-MID +0.27,
+GK-MID +0.26, DEF-DEF +0.23. FWD non mostra correlazione same-team significativa con nessun ruolo.
+
+**Cross-team** (GK vs ruolo della squadra avversaria — verifica diretta dell'anti-sinergia già
+codificata in `synergy_sort_key`): GK vs MID avversario **-0.20, p=0.036** (validata); GK vs FWD
+avversario -0.24 ma p=0.12 (direzione giusta, campione corto).
+
+**Tuning applicato** in `formazione_mls/build_formazione_finale.py` (`variance_mode`, nuove
+costanti `GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA=8`, `TEAMMATE_SYNERGY_BONUS_VARIANCE=5`): bonus
+GK-DEF rafforzato (3→11 totali) + nuovi bonus GK-MID/DEF-MID/DEF-DEF, **SOLO per Arena/All Stars**.
+Motivazione del confine: in In Season il target è fisso, il valore atteso della somma non dipende
+dalla correlazione (Finding 3+F, già chiuso) — spingere la scelta verso compagni correlati
+costerebbe EV reale senza beneficio; il beneficio esiste solo dove la varianza conta (taglio
+premi Arena 30%/All Stars 5%). Anti-sinergia GK-vs-avversario esistente lasciata invariata (era
+già corretta nella direzione). Commit `4193c85ce`.
+
+### B. Outlier/hot-streak (caso Antino Lopez) — CHIUSO, applicato solo per FWD
+
+Due agenti in background hanno finito il lavoro diagnostico mai concluso in sessioni precedenti
+(`validate_outlier_shrinkage.py`/`_tiered.py`, scritti il 26/07 ma senza decisione registrata).
+Risultato: shrinkage Empirical Bayes (media pesata tirata verso il prior di ruolo, pseudo-count
+`k`) migliora il MAE **solo per FWD**, e solo sul segmento a rischio che aveva motivato il tema
+(n<8 partite storiche): **-2.9%** a k=5, con n≥8 invariato. DEF: il guadagno cade sul segmento
+sbagliato (n≥8, fino a -5.3%, ma n<8 resta a -2%) — segno di rumore/overfitting, non applicato.
+MID: <1% ovunque, rumore, non applicato. GK: campione troppo piccolo per decidere.
+
+Applicato in produzione **solo** `formazione_mls/predict/test_mls_fwd_all.py`
+(`SHRINK_K_OUTLIER_FWD=5.0`, `MEDIA_RUOLO_FWD_PRIOR=51.86`, k scelto per coerenza con lo
+`shrink_k=5.0` già usato altrove in `media_condizionata()`).
+
+### C. Penalità di copertura nel composite score dell'aggregatore — CHIUSO, peso corretto
+
+Il target 68% è fondato (approssima ±1 dev std teorica, coerente con `RANGE_MULTIPLIER`/p16-p84),
+ma il peso 0.3 (mai calibrato) faceva scegliere per MID un MAE **+2.72% peggiore** del vero
+minimo. Abbassato a **0.1** in `aggregate_grid_search.py` + le 3 varianti per-ruolo — verificato
+che con 0.1 il composite score coincide col vincitore per MAE puro su tutti e 4 i ruoli. **Nessun
+impatto sui parametri già in produzione** (il vero vincitore MID coincideva già con quanto
+schierato), ma corregge il prossimo giro di ricalibrazione. Entrambi B e C nel commit `e4be6571d`.
+
+### D. Lezione operativa: due falsi allarmi da memoria persistente non aggiornata
+
+Proponendo i "prossimi passi", sono stati segnalati come backlog aperti due temi **già chiusi in
+sessioni precedenti mai recuperate correttamente**:
+1. **"K League: infrastruttura di calibrazione allargata da costruire"** — in realtà completata
+   la sera del 26/07 (sezione 13 di questo stesso documento: discovery globale, calibrazione
+   allargata su tutti e 4 i ruoli, anomalia DEF K League investigata e chiusa come "non
+   procedere"). L'errore: letta solo la memoria persistente (stale, scritta prima che il lavoro
+   fosse fatto) e, separatamente, solo l'ultima sezione di backlog di questo documento — MAI la
+   sezione 13 di mezzo che conteneva la risposta corretta.
+2. **"GK: calibrazione allargata da fare"** — fatta tre volte (sezione 2: 27 giocatori; sezione 9:
+   soglia abbassata a 15, 13 con dati sufficienti; sezione 13D: calibrazione globale MLS+K League,
+   16 giocatori/140 partite, **conclusione esplicita "produzione già vicina all'ottimo"**). Il
+   campione resta piccolo per un limite strutturale (1 GK per squadra), non perché non sia stato
+   cercato — la nota di backlog originale diceva di aspettare che la stagione avanzi, non di
+   rilanciare la discovery.
+
+**Correzione applicata**: memoria `project_kleague_cross_validation_modello.md` riscritta con lo
+stato reale e riferimento a questa sezione; `project_modello_predittivo_formazioni_mls.md`
+corretta con nota esplicita dell'errore. **Regola per il futuro** (salvata anche come feedback
+generale, non solo per questo repo): quando viene chiesto di "prendere visione del riassunto",
+va letto per intero, non solo l'indice di memoria o l'ultima sezione — la memoria persistente può
+essere stale rispetto a lavoro fatto in sessioni successive mai recuperate.
+
+### E. Esplorato e ACCANTONATO: rilevare via GraphQL se una carta è bloccata in una lineup attiva
+
+Obiettivo indagato: sapere, tramite query GraphQL, se una carta è già schierata in una formazione
+Sorare attiva (per evitare che il tool suggerisca in una run separata — es. Arena dopo In Season —
+un giocatore già usato). Scoperto durante l'indagine (con l'utente che incollava risposte
+GraphQL reali): `lockedForLeaderboard` (su `ComposeTeamBenchCard`, scoping per singola
+classifica/gameweek) e `usedIn`/`concurrentSo5Lineups` (su `Card`) restano `null`/`[]` anche
+quando la carta è visibilmente piazzata in uno slot di una formazione ancora in bozza/non
+confermata — quindi non affidabili per lo stato "in bozza". La scadenza di una gameweek è
+condivisa da tutte le formazioni nello stesso istante (`so5Fixture.endDate`, confermato
+dall'utente), quindi la parte "temporale" del problema sarebbe stata semplice; la parte "quali
+carte sono bloccate ORA" avrebbe richiesto query aggiuntive per-carta o per-classifica (non
+disponibili nella query di discovery esistente, che oggi chiede solo `slug`/`anyPlayer.slug`).
+**Costo/complessità non ritenuti utili dall'utente** ("gioco non vale la candela") —
+**non implementato, non riproporre senza una richiesta esplicita nuova.**
+
+### F. Stato repo a fine sessione (27/07)
+
+Pushato su `origin/main`: `4193c85ce` (sinergia Arena/All Stars da correlazione misurata +
+`measure_teammate_correlation.py`), `e4be6571d` (shrinkage outlier FWD + peso composite score).
+Nessun lavoro di codice pendente non committato. Backlog aggiornato:
+
+1. K League: bonus Multi-club/Cap 260-370 mai verificati con screenshot reali K League (solo
+   mirrorati da MLS) — richiede l'utente che gioca attivamente K League, non analizzabile da un
+   agente.
+2. Estensione dell'infrastruttura ad altri campionati oltre MLS/K League — decisione di
+   investimento dell'utente, non un'analisi.
+3. ~~GK calibrazione allargata~~, ~~outlier/hot-streak~~, ~~composite score~~, ~~correlazione
+   compagni squadra~~ — **tutti chiusi in questa sessione o in precedenza** (vedi sezioni A-D
+   sopra), non riaprire senza una richiesta esplicita nuova.
+4. Rilevamento carte bloccate in lineup Sorare via GraphQL (sezione E) — accantonato per
+   complessità/beneficio, non riproporre senza una richiesta esplicita nuova.

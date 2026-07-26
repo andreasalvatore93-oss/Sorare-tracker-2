@@ -113,6 +113,27 @@ RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.7  # FISSATO (25/07): idem — trend leggermente attenuato rispetto al comportamento originale (1.0)
+# FISSATO (27/07, tema backlog "outlier/hot-streak" — caso Antino Lopez, DEF a
+# bassa titolarita' con picchi isolati sovrastimati dalla media pesata):
+# backtest walk-forward rigoroso su tutti i ruoli (formazione_mls/diagnostics/
+# validate_outlier_shrinkage.py) mostra che tirare la media pesata esponenziale
+# verso la media di ruolo (Empirical Bayes, pseudo-count SHRINK_K_OUTLIER_FWD)
+# migliora il MAE reale SOLO per FWD in modo solido: -2.9% proprio sul
+# segmento a rischio n<8 partite storiche (quello che ha motivato il tema),
+# con il segmento n>=8 sostanzialmente invariato (+0.09% a k=7, dentro il
+# rumore) — a differenza di DEF/MID dove il guadagno principale cade sul
+# segmento SBAGLIATO (n>=8) o e' sotto soglia di rumore (<1%), vedi
+# validate_outlier_shrinkage_tiered.py per il dettaglio DEF/MID. k=5 scelto
+# (non il k=7 leggermente migliore sul solo n<8) per coerenza con lo
+# shrink_k=5.0 gia' in produzione in media_condizionata() (Stadio D,
+# level_score) — stesso ordine di grandezza, stessa idea di "partite fittizie"
+# di prior, decisione presa una volta sola per tutte le correzioni di questo
+# tipo. MEDIA_RUOLO_FWD_PRIOR = media grezza di tutti gli score nel pool di
+# calibrazione FWD (599 score, 48 giocatori con >=9 partite) al 26/07 --
+# costante strutturale, non ricalcolata a runtime (stessa semplificazione
+# accettata per gli altri "FISSATO" sopra).
+SHRINK_K_OUTLIER_FWD = 5.0
+MEDIA_RUOLO_FWD_PRIOR = 51.86
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente) in produzione. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale, causava esclusioni indesiderate nel grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1117,6 +1138,18 @@ def build_prediction(player_slug):
     dev_std_pesata = weighted_stddev(scores, weights, media_pesata)
     dev_std_trimmed = trimmed_weighted_stddev(scores, weights)
 
+    # --- Shrinkage outlier/hot-streak (27/07, vedi SHRINK_K_OUTLIER_FWD sopra
+    # per il backtest che lo giustifica): tira media_pesata verso il prior di
+    # ruolo in proporzione inversa a n (partite storiche disponibili) --
+    # riduce il peso di picchi isolati su giocatori a basso storico (n<8),
+    # senza toccare la versione raw usata per range di confidenza/dev.std
+    # (media_pesata resta invariata li' — lo shrinkage si applica SOLO al
+    # pezzo che entra in score_atteso, stessa scelta della diagnostica).
+    media_pesata_corretta = (
+        (n / (n + SHRINK_K_OUTLIER_FWD)) * media_pesata
+        + (SHRINK_K_OUTLIER_FWD / (n + SHRINK_K_OUTLIER_FWD)) * MEDIA_RUOLO_FWD_PRIOR
+    )
+
     # --- Stadio A (26/07, tema level_score): media pesata separata per
     # level_score ("Punteggio decisivo") e resto ("Punteggio complessivo") --
     # solo diagnostico per ora, non entra ancora in score_atteso.
@@ -1236,7 +1269,7 @@ def build_prediction(player_slug):
     # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
     # Il fattore resta calcolato sopra e nel result dict solo a scopo
     # diagnostico/di visualizzazione nell'output.
-    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
+    score_atteso = (p_gioca * media_pesata_corretta * fattore_casa_trasferta
                     * fattore_trend)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
@@ -1331,6 +1364,7 @@ def build_prediction(player_slug):
         'scores_used': scores,
         'weights_used': weights,
         'media_pesata': media_pesata,
+        'media_pesata_corretta': media_pesata_corretta,
         'dev_std_pesata': dev_std_pesata,
         'dev_std_trimmed': dev_std_trimmed,
         'media_level_score_pesata': media_level_score_pesata,
@@ -1398,6 +1432,9 @@ def format_output(result):
     lines.append("")
     lines.append("--- CALCOLO FATTORI ---")
     lines.append(f"Media pesata esponenziale (half-life {HALF_LIFE_GAMES} partite): {result['media_pesata']:.2f}")
+    lines.append(f"  Corretta per shrinkage outlier/hot-streak (k={SHRINK_K_OUTLIER_FWD}, prior ruolo "
+                 f"{MEDIA_RUOLO_FWD_PRIOR}, n={result['window_size_used']}): "
+                 f"{result['media_pesata_corretta']:.2f} (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)")
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
                  f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
