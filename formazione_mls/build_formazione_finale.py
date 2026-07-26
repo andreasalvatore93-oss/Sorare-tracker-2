@@ -71,8 +71,52 @@ DISCOVERY_DIRS = {
 OUTPUT_DIR = 'formazione_mls/output'
 
 CONSIGLIO_LINE_RE = re.compile(r'^\d+\)\s+([\w-]+):\s+(-?\d+)\s+pt\s+\((-?\d+)-(-?\d+)\)\s*$')
+# NUOVO (26/07, tema correlazione GK-DEF): riga "SQUADRA: x | AVVERSARIO: y"
+# scritta subito dopo la riga consiglio da build_consiglio_<ruolo>.py.
+TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
 
 DEFAULT_NUM_FORMAZIONI = 1
+
+# Sinergia/anti-sinergia GK vs giocatori di movimento (26/07, tema
+# correlazione): se il portiere di Squadra A gioca contro Squadra B, un gol
+# subito dalla Squadra B gli toglie il bonus clean sheet -- quindi schierare
+# insieme un MID/FWD di Squadra B e' fortemente scoraggiato (l'attaccante
+# potrebbe comunque prendere un buon voto, ma e' una combinazione meno
+# sensata quando ci sono molte alternative). Per i difensori vale l'opposto,
+# piu' debole: schierare GK+DEF della STESSA squadra e' incoraggiato ma non
+# obbligatorio (uno 0-0 capita, non e' vietato l'avversario). Implementato
+# come riordino dei candidati (penalita'/bonus sul punteggio SOLO per
+# l'ordine di scelta, il punteggio REALE mostrato in output resta quello
+# originale) -- MAI un'esclusione assoluta, sempre "ultima risorsa" se non
+# ci sono alternative valide (richiesta esplicita dell'utente).
+ANTI_SYNERGY_PENALTY = 10_000  # abbastanza grande da finire sempre in fondo alla classifica di scelta
+POSITIVE_SYNERGY_BONUS = 3  # piccolo nudge, non ribalta differenze di punteggio importanti
+
+
+def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug):
+    """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
+    dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
+    Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
+    output) -- vedi commento sopra ANTI_SYNERGY_PENALTY per la logica."""
+    adjusted = row['atteso']
+    team_slug = row.get('team_slug')
+    if role in ('MID', 'FWD') and gk_opponent_slug and team_slug == gk_opponent_slug:
+        adjusted -= ANTI_SYNERGY_PENALTY
+    elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
+        adjusted += POSITIVE_SYNERGY_BONUS
+    return adjusted
+
+
+def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug):
+    """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
+    anti-sinergia col portiere scelto (vedi synergy_sort_key). Se il portiere
+    non ha squadra/avversario noti (consiglio generato prima di questo
+    aggiornamento, o dato di calendario mancante), non cambia nulla --
+    comportamento identico a prima."""
+    if not gk_team_slug and not gk_opponent_slug:
+        return rows
+    return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug),
+                  reverse=True)
 
 
 def get_num_formazioni():
@@ -102,15 +146,32 @@ def latest_consiglio(output_dir):
 
 
 def parse_consiglio(path):
-    """Ritorna lista ordinata di dict {slug, atteso, low, high} nell'ordine
-    gia' presente nel file (score decrescente, come prodotto da build_consiglio_<ruolo>.py)."""
+    """Ritorna lista ordinata di dict {slug, atteso, low, high, team_slug,
+    opponent_team_slug} nell'ordine gia' presente nel file (score decrescente,
+    come prodotto da build_consiglio_<ruolo>.py). team_slug/opponent_team_slug
+    sono None se assenti (consiglio generato prima del 26/07, o dato di
+    calendario "N/D") -- retrocompatibile, la logica di sinergia si disattiva
+    automaticamente in quel caso."""
     rows = []
+    pending = None
     with open(path, 'r', encoding='utf-8') as f:
         for line in f:
-            m = CONSIGLIO_LINE_RE.match(line.strip())
+            stripped = line.strip()
+            m = CONSIGLIO_LINE_RE.match(stripped)
             if m:
+                if pending:
+                    rows.append(pending)
                 slug, atteso, low, high = m.groups()
-                rows.append({'slug': slug, 'atteso': int(atteso), 'low': int(low), 'high': int(high)})
+                pending = {'slug': slug, 'atteso': int(atteso), 'low': int(low), 'high': int(high),
+                           'team_slug': None, 'opponent_team_slug': None}
+                continue
+            m = TEAM_RE.match(stripped)
+            if m and pending:
+                team_slug, opp_slug = m.groups()
+                pending['team_slug'] = None if team_slug == 'N/D' else team_slug
+                pending['opponent_team_slug'] = None if opp_slug == 'N/D' else opp_slug
+        if pending:
+            rows.append(pending)
     return rows
 
 
@@ -212,7 +273,13 @@ def build_one_lineup(role_data, card_pool):
         classic_budget[0] += 1
     picks.append(('GK', gk, gk_type))
 
-    def_pick, def_type = pick(role_data['DEF'])
+    # NUOVO (26/07, tema correlazione GK-DEF): squadra/avversario del
+    # portiere appena scelto, per riordinare (non escludere) i candidati di
+    # movimento in base a sinergia/anti-sinergia -- vedi synergy_adjusted_rows.
+    gk_team_slug = gk.get('team_slug')
+    gk_opponent_slug = gk.get('opponent_team_slug')
+
+    def_pick, def_type = pick(synergy_adjusted_rows('DEF', role_data['DEF'], gk_team_slug, gk_opponent_slug))
     if def_pick is None:
         return None, "Nessun difensore disponibile (copie esaurite o consiglio DEF vuoto)."
     used_this_lineup.add(def_pick['slug'])
@@ -220,7 +287,7 @@ def build_one_lineup(role_data, card_pool):
         classic_budget[0] += 1
     picks.append(('DEF', def_pick, def_type))
 
-    mid_pick, mid_type = pick(role_data['MID'])
+    mid_pick, mid_type = pick(synergy_adjusted_rows('MID', role_data['MID'], gk_team_slug, gk_opponent_slug))
     if mid_pick is None:
         return None, "Nessun centrocampista disponibile (copie esaurite o consiglio MID vuoto)."
     used_this_lineup.add(mid_pick['slug'])
@@ -228,7 +295,7 @@ def build_one_lineup(role_data, card_pool):
         classic_budget[0] += 1
     picks.append(('MID', mid_pick, mid_type))
 
-    fwd_pick, fwd_type = pick(role_data['FWD'])
+    fwd_pick, fwd_type = pick(synergy_adjusted_rows('FWD', role_data['FWD'], gk_team_slug, gk_opponent_slug))
     if fwd_pick is None:
         return None, "Nessun attaccante disponibile (copie esaurite o consiglio FWD vuoto)."
     used_this_lineup.add(fwd_pick['slug'])
@@ -238,12 +305,13 @@ def build_one_lineup(role_data, card_pool):
 
     # Extra: il migliore rimanente tra DEF/MID/FWD (esclusi i titolari di
     # QUESTA lineup, le copie gia' esaurite, e rispettando il classic_budget),
-    # a prescindere dal ruolo.
+    # a prescindere dal ruolo -- stessa sinergia/anti-sinergia applicata
+    # anche qui (richiesta esplicita dell'utente: stessa regola per l'extra).
     combined = []
     for role in ('DEF', 'MID', 'FWD'):
         for row in role_data[role]:
             combined.append((role, row))
-    combined.sort(key=lambda rc: rc[1]['atteso'], reverse=True)
+    combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug), reverse=True)
 
     extra_role = extra_pick = extra_type = None
     for role, row in combined:
