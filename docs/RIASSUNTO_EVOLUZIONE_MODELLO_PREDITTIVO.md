@@ -904,6 +904,32 @@ rilievo in questa sessione (oltre a quanto già elencato nelle sezioni A-F sopra
 
 **Backlog aperto per la prossima sessione** (in ordine di interesse, non di urgenza — nulla è
 bloccante):
+
+0. **PROSSIMO TEMA SCELTO DALL'UTENTE (26/07 notte, fine sessione) — correlazione tra gli slot
+   della formazione.** Oggi ogni giocatore viene scelto in modo indipendente (il migliore per il
+   suo slot/ruolo), a parte una sinergia parziale GK-DEF/GK-vs-FWD-avversario già implementata a
+   mano (bonus/penalità euristici, non misurati sui dati — vedi sezione 12,
+   `synergy_sort_key`/`synergy_adjusted_rows` in `build_formazione_finale.py`). **Non è mai stato
+   misurato quanto REALMENTE correlano i punteggi di compagni di squadra nella stessa partita**
+   (es. se un centrocampista fa una partita ottima, l'attaccante della stessa squadra ha più
+   probabilità del solito di aver fatto bene anche lui — correlazione positiva reale o
+   percepita?). Era già stato segnalato in una sessione precedente come "il tema più maturo ma
+   mai chiuso" — un task di design in background era stato lanciato dall'utente in un'altra
+   sessione locale e mai recuperato/verificato, quindi si riparte sostanzialmente da zero.
+   **Come approcciarlo**: usare le cache di calibrazione già su disco (stesso dato usato da tutti
+   gli script `formazione_mls/diagnostics/validate_*.py` di questa sessione) per ricostruire,
+   partita per partita, chi ha giocato insieme nella stessa squadra (stesso approccio già usato in
+   `validate_team_defense_strength.py` per raggruppare giocatori per squadra/data) e misurare la
+   covarianza reale tra gli score di compagni di squadra nella stessa partita (per ruolo/coppia di
+   ruoli). Se la correlazione e' misurabile e non trascurabile, valutare se un'ottimizzazione
+   congiunta (non piu' greedy indipendente per slot) possa aumentare il punteggio atteso totale o
+   ridurne la varianza in modo utile — MA solo dopo aver misurato la correlazione vera sui dati,
+   non prima: la sinergia GK-DEF esistente oggi è stata implementata su intuizione, non
+   verificata quantitativamente, e potrebbe risultare più debole (o più forte, o diversa) di
+   quanto assunto. Approccio consigliato: nessuna modifica alla produzione finché non si ha un
+   numero reale di correlazione in mano (stesso rigore walk-forward/backtest di tutti gli altri
+   `validate_*.py` di questa sessione).
+
 1. `level_score` atteso: riprendere se si trova un modo di rendere operativo il floor, o se si
    vuole comunque provare il guadagno marginale (-0.5/-1.2% MAE) in produzione nonostante sia
    piccolo — decisione dell'utente, non tecnica.
@@ -921,3 +947,6 @@ bloccante):
    Arena/All Stars: **eliminato dal backlog il 26/07** (troppo sforzo per il beneficio atteso),
    riportato qui solo perché compariva nel backlog precedente — NON riaprirlo senza una richiesta
    esplicita nuova dell'utente.
+6. Starter odds come fattore di rischio continuo nello score_atteso (invece di solo filtro
+   binario) — proposto e **SCARTATO il 26/07 notte** su richiesta esplicita dell'utente ("è
+   marginale"), riportato qui solo per non riproporlo senza una richiesta nuova.
