@@ -715,25 +715,30 @@ AUTOBUY_MIN_MARGIN_CURVE = [
 # ricalibrazione, ha avuto 2 richieste consecutive di sconto piu' profondo in 2 run reali
 # diversi -- 9.00EUR voleva 7.50EUR (16.7%, non 11.5%), 9.90EUR voleva 8.50EUR (14.1%, non
 # 11.5%). Alzata a 15% (media dei due punti, ~15.4%, arrotondata).
-OFFER_DISCOUNT_BY_PRICE = [
-    (0.0, 0.34),
-    (4.0, 0.24),
-    (7.0, 0.15),
-    (15.0, 0.125),
+#
+# FIX 26/07 (quinta ricalibrazione, sera -- curva continua): stesso identico problema
+# "gradiente dentro la fascia" gia' risolto per le Regole 1/2 (MAKEOFFER_MIN_MARGIN_CURVE/
+# AUTOBUY_MIN_MARGIN_CURVE), qui pero' non solo ai bordi -- coinvolge quasi tutta la fascia
+# 4-7EUR. Confermato al confine dei 4EUR con una coppia esatta (3.95EUR/margine 20.9%->
+# voluto ~24%, non 34%; ipotetico 4.05EUR/margine 20.6%-> voluto ~26%, coerente) e al
+# confine dei 7EUR con un'altra coppia (ipotetico 6.95EUR-> voluto ~14%; ipotetico 7.05EUR->
+# voluto ~15%, in linea con la fascia sopra). Ma anche a META' della vecchia fascia 4-7EUR,
+# lontano da ogni confine, lo sconto voluto era gia' molto piu' basso del 24% fisso: Joseph
+# Paintsil (4.80EUR reale, margine 10.3%)-> voluto ~17%; Ismael Saibari (6.00EUR reale,
+# margine 11.8%)-> voluto ~17% (identico). Il confine dei 15EUR e' risultato invece rumoroso/
+# inconcludente (14.90EUR-> ~12.75%, 15.10EUR-> ~9.3%, nessun pattern chiaro su due prezzi
+# quasi identici) -- lasciato invariato. Punti di controllo che CONFERMANO il 34% fisso resta
+# corretto lontano dal confine dei 4EUR: Antony (2.32EUR reale, margine 15.7%)-> voluto 35.3%
+# (match esatto col bot), ipotetico 2.00EUR-> voluto 35% (match quasi esatto). Curva a
+# interpolazione lineare, stessa tecnica delle Regole 1/2.
+OFFER_DISCOUNT_CURVE = [
+    (1.50, 0.34),
+    (4.00, 0.25),
+    (4.80, 0.17),
+    (6.00, 0.17),
+    (7.00, 0.15),
+    (15.00, 0.125),
 ]
-
-
-def _tiered_lookup(price_eur, table):
-    """table = lista di (prezzo_minimo_fascia, valore) ordinata crescente. Ritorna il
-    valore della fascia piu' alta il cui prezzo minimo e' <= price_eur (fascia piu'
-    bassa come fallback se price_eur e' sotto la prima soglia della tabella)."""
-    value = table[0][1]
-    for threshold, v in table:
-        if price_eur >= threshold:
-            value = v
-        else:
-            break
-    return value
 
 
 def _linear_interpolate(price_eur, curve):
@@ -793,7 +798,7 @@ def compute_price_based_offer_discount(price_eur):
     voleva 17.50EUR = esattamente il valore della fascia 15-30EUR senza eccezione)."""
     if not PRICE_BASED_THRESHOLDS_ENABLED:
         return OFFER_DISCOUNT_FRACTION
-    return _tiered_lookup(price_eur, OFFER_DISCOUNT_BY_PRICE)
+    return _linear_interpolate(price_eur, OFFER_DISCOUNT_CURVE)
 # =====================================================================================
 
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
@@ -4089,7 +4094,7 @@ def main():
         f"{', '.join(f'{p:.2f}EUR->{m:.1%}' for p, m in MAKEOFFER_MIN_MARGIN_CURVE)}. "
         f"AutoBuy diretto (curva continua): mai sotto {AUTOBUY_MIN_PRICE_FOR_DIRECT_BUY:.2f}EUR, poi "
         f"{', '.join(f'{p:.0f}EUR->{m:.0%}' for p, m in AUTOBUY_MIN_MARGIN_CURVE)}. "
-        f"Sconto offerta: {', '.join(f'{p:.0f}EUR->{d:.0%}' for p, d in OFFER_DISCOUNT_BY_PRICE)}")
+        f"Sconto offerta (curva continua): {', '.join(f'{p:.2f}EUR->{d:.1%}' for p, d in OFFER_DISCOUNT_CURVE)}")
     log(f"Giocatori in blacklist unita: {len(BLACKLISTED_PLAYER_SLUGS)}")
     log(f"Manager in blacklist unita: {len(BLACKLISTED_MANAGER_SLUGS)}")
     if AUTOBUY_LIVE_MODE or MAKEOFFER_LIVE_MODE:
