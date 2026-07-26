@@ -550,6 +550,24 @@ esattamente: netto 1-1=0 -> resta a 35, indipendentemente da quale dei due sia s
 6. Pablo Sisniega (GK, `own_goals`+`red_card`, San Diego FC vs Vancouver Whitecaps, 30/11/2025):
    `level_score`=5 (netto -2: 35-20-10). Confermato dall'utente, granulari -3.6 portano il
    punteggio totale reale a 1.4 ("che partita di merda che ha fatto").
+7. Akil Watts (DEF, 1 gol, Portland Timbers vs St. Louis City SC, 08/06/2025, MLS):
+   `level_score`=60, granulari +17.6, score reale 77.56. Confermato dall'utente.
+8. Ajani Fortune (MID, 1 gol, Orlando City SC vs Atlanta United, 16/05/2026, MLS):
+   `level_score`=60, granulari +20.8, score reale 80.8. Confermato dall'utente.
+
+**REGOLA VALIDATA SU TUTTI E 4 I RUOLI** (GK, DEF, MID, FWD) con casi reali confrontati su Sorare
+dall'utente — nessuna differenza di meccanismo tra ruoli, stessa tabella netto→livello ovunque.
+Chiarimento importante dell'utente sul floor: **`goals_conceded` (gol subiti) NON è mai un evento
+decisivo negativo per il portiere** — è una statistica GENERAL separata. Se un portiere ha un
+evento decisivo positivo (es. rigore parato) ma subisce molti gol, il floor tiene comunque il
+punteggio al livello raggiunto (es. 60), indipendentemente da quanti gol subisce — questo spiega
+retroattivamente i casi "sporchi" trovati nella prima cross-tabulazione di stamattina (livello 60
+con fino a 6 gol subiti: non erano un'anomalia della regola, erano il floor in azione).
+
+**Tema level_score chiuso.** Prossimo passo naturale: usare questa comprensione per stimare un
+`level_score` atteso per la prossima partita (basato sul tasso storico di eventi decisivi del
+giocatore) invece di lasciarlo dentro la media generica — da progettare insieme quando si riprende
+il lavoro implementativo.
 
 **Scoperta importante collegata**: `level_score` NON e' quindi un misterioso "black box Sorare" --
 è letteralmente il "**Punteggio decisivo**" mostrato nella UI (gauge -3..+5 con soglie
