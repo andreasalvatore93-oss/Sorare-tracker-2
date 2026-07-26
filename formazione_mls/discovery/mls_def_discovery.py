@@ -197,7 +197,7 @@ def discover_mls_defenders_all(user_slug=USER_SLUG, max_pages=50):
 # rotazione non ancora nota), il giocatore viene TENUTO per sicurezza
 # invece di essere escluso a priori.
 # ---------------------------------------------------------------------------
-MIN_STARTER_ODDS_DISCOVERY = 0.60
+MIN_STARTER_ODDS_DISCOVERY = float(os.environ.get('MIN_STARTER_ODDS', '0.60'))
 
 NEXT_GAME_ODDS_QUERY = """
 query NextGameOdds($slug: String!) {
@@ -308,7 +308,11 @@ def filter_by_activity(slugs, player_card_counts, min_avg=MIN_ACTIVITY_SCORE, mi
             excluded.append((slug, 'L10', avg10))
             continue
         kept_slugs.append(slug)
-        kept_counts[slug] = player_card_counts[slug]
+        # NUOVO (26/07, seconda sessione): persiste L10 (media ultime 10
+        # partite giocate) in player_card_counts.json -- serve a
+        # build_formazione_finale.py per il tuning "Arena L10 cap" (opzione
+        # che limita la L10 combinata dei 5 giocatori in formazione Arena).
+        kept_counts[slug] = dict(player_card_counts[slug], l10=avg10)
 
     log(f"Filtro attivita' minima (media ultime 5 > {min_avg} E media ultime 10 giocate > {min_l10}): "
         f"{len(excluded)} esclusi su {len(slugs)} (dato mancante = tenuto per sicurezza). Esclusi: {excluded}")
