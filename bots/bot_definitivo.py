@@ -752,6 +752,19 @@ def compute_price_based_thresholds(price_eur):
     return makeoffer_min, autobuy_min
 
 
+def _round_offer_to_nice_number(price_eur, ceiling_eur):
+    """FIX 26/07 (richiesta esplicita utente, caso reale 3.00EUR -> offerta 1.98EUR:
+    'sempre meglio arrotondare, venditore piu' propenso ad accettare 2 che 1.98'):
+    arrotonda l'offerta calcolata al mezzo euro piu' vicino (i venditori accettano piu'
+    volentieri una cifra tonda). Non arrotonda mai SOPRA ceiling_eur (il vero minimo di
+    mercato -- non ha senso offrire quanto o piu' del minimo) ne' sotto 0. Se
+    l'arrotondamento al piu' vicino supera il ceiling, arrotonda per difetto invece."""
+    rounded = round(price_eur * 2) / 2
+    if rounded >= ceiling_eur:
+        rounded = (price_eur * 2) // 1 / 2  # arrotonda per difetto al mezzo euro
+    return max(0.0, round(rounded, 2))
+
+
 def compute_price_based_offer_discount(price_eur, count_7d=None):
     """Sconto da applicare al vero minimo per calcolare il prezzo dell'offerta MakeOffer.
     Dipende dal PREZZO della carta (Regola 3 sopra), non dal margine del caso specifico.
@@ -3143,12 +3156,14 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     effective_discount = None
     if trigger_su_minimo_non_allineato:
         effective_discount = compute_price_based_offer_discount(true_min_price, count_7d)
-        prezzo_da_pagare = round(true_min_price * (1 - effective_discount), 2)
+        prezzo_da_pagare = _round_offer_to_nice_number(
+            true_min_price * (1 - effective_discount), true_min_price)
     elif _autobuy_eligible:
         prezzo_da_pagare = true_min_price
     elif eff_makeoffer_min <= margin_percent <= eff_makeoffer_max:
         effective_discount = compute_price_based_offer_discount(true_min_price, count_7d)
-        prezzo_da_pagare = round(true_min_price * (1 - effective_discount), 2)
+        prezzo_da_pagare = _round_offer_to_nice_number(
+            true_min_price * (1 - effective_discount), true_min_price)
     else:
         return False
 
@@ -3404,7 +3419,8 @@ def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_mi
     # chiamata diretta senza passare per il router), ricalcola qui col margine noto.
     effective_discount = (offer_discount if offer_discount is not None
                            else compute_price_based_offer_discount(true_min_price))
-    offer_amount_eur = round(true_min_price * (1 - effective_discount), 2)
+    offer_amount_eur = _round_offer_to_nice_number(
+        true_min_price * (1 - effective_discount), true_min_price)
     if offer_amount_eur <= 0:
         log(f"{player_name}: scarto -- offerta calcolata non positiva ({offer_amount_eur}EUR)")
         return False
@@ -3884,7 +3900,8 @@ def _try_periodic_bid(candidato, eth_rate):
             record_thin_market_skip(player_slug, is_in_season)
         return False
 
-    offer_amount_eur = round(true_min_price * (1 - PERIODIC_BID_DISCOUNT_FRACTION), 2)
+    offer_amount_eur = _round_offer_to_nice_number(
+        true_min_price * (1 - PERIODIC_BID_DISCOUNT_FRACTION), true_min_price)
     if offer_amount_eur <= 0:
         log(f"[bid periodico] {player_name}: scarto -- offerta calcolata non positiva")
         return False
