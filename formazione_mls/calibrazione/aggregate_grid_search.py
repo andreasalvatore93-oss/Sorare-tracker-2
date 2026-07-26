@@ -24,6 +24,19 @@ continuano a funzionare identici senza settare nulla). Sceglie solo il
 prefisso della cartella di output (formazione_<campionato>/output/
 <campionato>_<ruolo>_calibration/), la logica di aggregazione e' identica.
 
+MODALITA' GLOBALE (26/07, seconda revisione -- richiesta esplicita
+dell'utente): "il modello sara' sempre uno solo, globale, i vari campionati
+servono solo ad accumulare dati". Con GLOBALE=1 lo script IGNORA CAMPIONATO
+e combina i giocatori qualificati di TUTTI i campionati noti (oggi mls e
+kleague) in un unico pool per l'aggregazione -- una sola combinazione
+vincente per ruolo, pesata per n_test ESATTAMENTE come al solito, senza
+distinzione di provenienza (un giocatore K League con 10 partite pesa
+quanto uno MLS con 10 partite). L'output va in una cartella dedicata
+(calibrazione_globale/output/<ruolo>_calibration/), separata dalle cartelle
+per-campionato (che restano utili come viste diagnostiche/di confronto, non
+piu' come fonte dei parametri di produzione). Uso:
+  RUOLO=def GLOBALE=1 python formazione_mls/calibrazione/aggregate_grid_search.py
+
 PESATURA PER NUMERO DI PARTITE DI BACKTEST (26/07): analizzando il caso FWD
 si e' scoperto che l'effetto dei fattori granulari per singolo giocatore va
 da -5 a +5 di MAE, ma la media aggregata si cancella quasi a zero -- gran
@@ -55,18 +68,24 @@ from collections import defaultdict
 
 RUOLO = os.environ.get('RUOLO', 'fwd').strip().lower()
 CAMPIONATO = os.environ.get('CAMPIONATO', 'mls').strip().lower()
+GLOBALE = os.environ.get('GLOBALE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
+CAMPIONATI_NOTI = ('mls', 'kleague')  # estendere qui quando si aggiunge un nuovo campionato
 MIN_TEST_GAMES = int(os.environ.get('MIN_TEST_GAMES', '3'))
-CALIBRATION_DIR = f'formazione_{CAMPIONATO}/output/{CAMPIONATO}_{RUOLO}_calibration'
-GRID_DIR = os.path.join(CALIBRATION_DIR, 'grid_search')
+
+CALIBRATION_DIR = f'formazione_{CAMPIONATO}/output/{CAMPIONATO}_{RUOLO}_calibration'  # solo per modalita' singolo-campionato
 
 _PARTITE_TESTATE_RE = re.compile(r'Partite testate:\s*(\d+)')
 
 
-def _n_test_from_prediction_file(slug):
+def _calibration_dir_for(campionato):
+    return f'formazione_{campionato}/output/{campionato}_{RUOLO}_calibration'
+
+
+def _n_test_from_prediction_file(calibration_dir, slug):
     """Fallback per i grid.json vecchi (senza campo 'n_test'): legge il numero
     di partite testate dal file prediction_<slug>_*.txt corrispondente, stessa
     cartella di calibrazione. Ritorna None se non trovato/non leggibile."""
-    candidates = glob.glob(os.path.join(CALIBRATION_DIR, f'prediction_{slug}_*.txt'))
+    candidates = glob.glob(os.path.join(calibration_dir, f'prediction_{slug}_*.txt'))
     if not candidates:
         return None
     with open(candidates[0], 'r', encoding='utf-8', errors='ignore') as f:
@@ -75,15 +94,15 @@ def _n_test_from_prediction_file(slug):
     return int(m.group(1)) if m else None
 
 
-def load_players():
-    """Ritorna (players, n_excluded) dove players e' una lista con un elemento
-    per giocatore QUALIFICATO (n_test >= MIN_TEST_GAMES): {'slug', 'n_test',
-    'combos': [{mae, pct_dentro_range, n_test, label, ...}, ...]}. Usata sia
-    da load_all_grids() (aggregazione singola) sia dallo script di bootstrap
-    (che deve ricampionare per GIOCATORE, non per combinazione)."""
-    files = glob.glob(os.path.join(GRID_DIR, '*_grid.json'))
+def load_players_for(campionato):
+    """Ritorna (players, n_excluded) per UN campionato specifico -- stessa
+    struttura di load_players() di prima, ma parametrizzata invece di usare
+    le costanti globali CALIBRATION_DIR/GRID_DIR (necessario per poter
+    caricare piu' campionati nella stessa run, modalita' GLOBALE)."""
+    calibration_dir = _calibration_dir_for(campionato)
+    grid_dir = os.path.join(calibration_dir, 'grid_search')
+    files = glob.glob(os.path.join(grid_dir, '*_grid.json'))
     if not files:
-        print(f"Nessun file trovato in {GRID_DIR}/ -- esegui prima un run completo di test_{RUOLO}.py")
         return [], 0
 
     players = []
@@ -95,15 +114,11 @@ def load_players():
         if not grid:
             continue
 
-        # n_test e' identico per ogni combo dello stesso giocatore (stessa
-        # finestra storica) -- lo si legge dal primo elemento che lo abbia.
         n_test = next((c.get('n_test') for c in grid if c.get('n_test') is not None), None)
         if n_test is None:
-            n_test = _n_test_from_prediction_file(slug)
+            n_test = _n_test_from_prediction_file(calibration_dir, slug)
 
         if n_test is None:
-            # Nessun modo di sapere quante partite -- non lo scartiamo per
-            # non perdere dati, ma non puo' essere pesato: trattato come peso 1.
             n_test = 1
         elif n_test < MIN_TEST_GAMES:
             n_excluded += 1
@@ -111,21 +126,44 @@ def load_players():
 
         combos = [dict(c, n_test=n_test) for c in grid if c.get('mae') is not None]
         if combos:
-            players.append({'slug': slug, 'n_test': n_test, 'combos': combos})
+            players.append({'slug': slug, 'campionato': campionato, 'n_test': n_test, 'combos': combos})
 
     return players, n_excluded
 
 
+def load_players():
+    """Ritorna (players, n_excluded, per_campionato_counts) -- se GLOBALE e'
+    attivo, combina i giocatori qualificati di TUTTI i CAMPIONATI_NOTI in un
+    unico pool (un giocatore K League pesa esattamente come uno MLS con lo
+    stesso n_test); altrimenti solo il CAMPIONATO scelto (comportamento
+    storico). per_campionato_counts e' un dict {campionato: n_giocatori} per
+    trasparenza nell'output, anche in modalita' singola."""
+    if not GLOBALE:
+        players, n_excluded = load_players_for(CAMPIONATO)
+        return players, n_excluded, {CAMPIONATO: len(players)}
+
+    all_players = []
+    total_excluded = 0
+    per_campionato = {}
+    for campionato in CAMPIONATI_NOTI:
+        players, n_excluded = load_players_for(campionato)
+        per_campionato[campionato] = len(players)
+        total_excluded += n_excluded
+        all_players.extend(players)
+    return all_players, total_excluded, per_campionato
+
+
 def load_all_grids():
     """Ritorna ({label: [{mae, pct_dentro_range, n_test, ...}, ...]}, n_players,
-    n_players_esclusi_per_pochi_test) -- una entry per giocatore per ogni
-    combinazione (label) trovata, SOLO per i giocatori con n_test sufficiente."""
-    players, n_excluded = load_players()
+    n_players_esclusi_per_pochi_test, per_campionato_counts) -- una entry per
+    giocatore per ogni combinazione (label) trovata, SOLO per i giocatori con
+    n_test sufficiente."""
+    players, n_excluded, per_campionato = load_players()
     per_label = defaultdict(list)
     for player in players:
         for combo in player['combos']:
             per_label[combo['label']].append(combo)
-    return per_label, len(players), n_excluded
+    return per_label, len(players), n_excluded, per_campionato
 
 
 def aggregate(per_label, n_players):
@@ -165,10 +203,18 @@ def aggregate(per_label, n_players):
 
 
 def main():
-    per_label, n_players, n_excluded = load_all_grids()
+    per_label, n_players, n_excluded, per_campionato = load_all_grids()
     if not per_label:
+        if GLOBALE:
+            print("Nessun dato trovato in nessun campionato -- esegui prima i batch di calibrazione.")
+        else:
+            grid_dir = os.path.join(_calibration_dir_for(CAMPIONATO), 'grid_search')
+            print(f"Nessun file trovato in {grid_dir}/ -- esegui prima un run completo di test_{RUOLO}.py")
         return
 
+    if GLOBALE:
+        breakdown = ", ".join(f"{c}={n}" for c, n in per_campionato.items())
+        print(f"Modalita' GLOBALE: giocatori qualificati per campionato -- {breakdown}")
     print(f"Giocatori con grid search disponibile e >= {MIN_TEST_GAMES} partite di backtest: {n_players}")
     if n_excluded:
         print(f"Giocatori ESCLUSI per meno di {MIN_TEST_GAMES} partite di backtest (troppo rumorosi): {n_excluded}")
@@ -187,16 +233,23 @@ def main():
               f"{r['n_partite_totali_pesate']:>12}  {r['label']}")
 
     best = results[0]
+    granulari_str = "CON granulari" if "+granulari" in best['label'] else "SENZA granulari"
     print(f"\n=== COMBINAZIONE VINCENTE AGGREGATA (pesata per n_test, min {MIN_TEST_GAMES} partite) ===")
     print(f"half_life={best['half_life']}, range_multiplier={best['range_multiplier']}, "
           f"opponent_sensitivity={best['opponent_sensitivity']}, "
-          f"trend_intensity={best['trend_intensity']}")
+          f"trend_intensity={best['trend_intensity']}, {granulari_str}")
     print(f"MAE medio: {best['mae_medio']:.2f} | copertura media: {best['copertura_media']:.1f}% "
           f"| basato su {best['n_giocatori']} giocatori ({best['n_partite_totali_pesate']} partite totali)")
 
-    out_path = os.path.join(CALIBRATION_DIR, 'combinazione_vincente_aggregata.json')
+    if GLOBALE:
+        out_dir = f'calibrazione_globale/output/{RUOLO}_calibration'
+    else:
+        out_dir = CALIBRATION_DIR
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    out_path = os.path.join(out_dir, 'combinazione_vincente_aggregata.json')
     with open(out_path, 'w', encoding='utf-8') as f:
-        json.dump(best, f, ensure_ascii=False, indent=2)
+        json.dump(dict(best, per_campionato=per_campionato), f, ensure_ascii=False, indent=2)
     print(f"\nSalvato in: {out_path}")
 
 
