@@ -579,6 +579,34 @@ def trimmed_weighted_stddev(values, weights):
     return weighted_stddev(trimmed_values, trimmed_weights, trimmed_mean)
 
 
+def weighted_percentile(values, weights, percentile):
+    """Percentile PESATO (0-100) sulla serie storica di punteggi -- NUOVO
+    (26/07, Stadio B tema level_score): a differenza di media+deviazione
+    standard (che assume una distribuzione a campana), il percentile si
+    adatta alla FORMA reale della distribuzione, incluse quelle bimodali
+    (es. un giocatore con un evento decisivo raro che sposta bruscamente il
+    punteggio in un secondo "grappolo" di valori piu' alti -- vedi
+    docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md sezione 11 per il
+    contesto su level_score). Metodo: ordina i valori, trova il primo valore
+    la cui somma cumulativa dei pesi raggiunge la percentuale richiesta
+    (nearest-rank pesato, nessuna interpolazione -- sufficiente per finestre
+    piccole come le nostre, max ~15 partite). Solo diagnostico per ora, non
+    entra in range_conf/score_atteso."""
+    if not values:
+        return None
+    pairs = sorted(zip(values, weights), key=lambda p: p[0])
+    total_weight = sum(w for _, w in pairs)
+    if total_weight <= 0:
+        return pairs[len(pairs) // 2][0]
+    target = percentile / 100.0 * total_weight
+    cumulative = 0.0
+    for value, weight in pairs:
+        cumulative += weight
+        if cumulative >= target:
+            return value
+    return pairs[-1][0]
+
+
 def team_ranking_from_game(game, player_team_slug):
     """Estrae ranking squadra giocatore e ranking avversario da un blocco anyGame
     (funziona sia per partite passate che future, stessa struttura)."""
@@ -1127,6 +1155,14 @@ def build_prediction(player_slug):
     media_level_score_pesata = weighted_mean(level_score_values, weights)
     media_granulari_pesata = weighted_mean(granulari_values, weights)
 
+    # --- Stadio B (26/07, tema level_score): range di confidenza a
+    # percentili pesati sullo storico REALE, in alternativa a media+deviazione
+    # standard -- si adatta alla bimodalita' reale della distribuzione invece
+    # di assumere una campana. Solo diagnostico per ora, non sostituisce
+    # ancora range_conf.
+    p16_score = weighted_percentile(scores, weights, 16)
+    p84_score = weighted_percentile(scores, weights, 84)
+
     # --- Medie casa/trasferta (solo descrittive, per l'output) ---
     home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
     away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
@@ -1290,6 +1326,8 @@ def build_prediction(player_slug):
         'dev_std_trimmed': dev_std_trimmed,
         'media_level_score_pesata': media_level_score_pesata,
         'media_granulari_pesata': media_granulari_pesata,
+        'p16_score': p16_score,
+        'p84_score': p84_score,
         'home_avg': home_avg,
         'away_avg': away_avg,
         'fattore_casa_trasferta': fattore_casa_trasferta,
@@ -1355,6 +1393,10 @@ def format_output(result):
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
                  f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
+    if result['p16_score'] is not None and result['p84_score'] is not None:
+        lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
+                     f"{result['p16_score']:.1f} - {result['p84_score']:.1f} "
+                     f"(Stadio B, solo diagnostico -- non applicato a range_conf)")
     if result['dev_std_trimmed'] is not None:
         lines.append(f"Deviazione standard pesata TRIMMED (esclusi min/max della finestra): "
                      f"{result['dev_std_trimmed']:.2f} (differenza: "
