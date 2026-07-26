@@ -1,0 +1,70 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-26T08:53:32.324070Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) malachi-jones: 7 pt attesi (-18-32)
+======================================================================
+
+######################################################################
+# GIOCATORE: malachi-jones
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: malachi-jones (squadra: new-york-city-new-york-new-york)
+Generato: 2026-07-26T08:53:32.323860Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 23
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-05-03 | NYC vs DC | mlspa | score=33.3 | peso=0.891
+  2026-05-24 | NSH vs NYC | mlspa | score=76.9 | peso=0.944
+  2026-07-25 | NYC vs CHI | mlspa | score=64.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 58.75
+  di cui Punteggio decisivo (level_score) medio: 52.14 | Punteggio complessivo (granulari) medio: 6.61 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+Deviazione standard pesata: 18.00
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 48.80 | Media score fuori casa: 76.90
+Fattore casa/trasferta applicato: 0.979 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.7
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.253
+Fattore falli (casa/trasferta, da dati reali): 0.968
+Fattore duelli (casa/trasferta, da dati reali): 0.971
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.023
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.967
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.965
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 9.68% (fonte: tasso di presenza storico (3/31))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T23:30
+Casa: New York City FC | Trasferta: Toronto FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 7.0 +/- 25.2
+  (range: -18.2 - 32.2)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.73
+Punteggio REALE ottenuto in quella partita: 64.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
