@@ -1332,6 +1332,35 @@ def build_prediction(player_slug):
     delta_condizionamento_avversario = media_level_score_condizionata - media_level_score_pesata
     score_atteso += p_gioca * delta_condizionamento_avversario
 
+    # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
+    # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
+    # ruoli"): scomponendo il granulare nelle sue sotto-categorie reali
+    # (invece dell'aggregato) emergono segnali MOLTO piu' forti del
+    # level_score-avversario usato sopra: "Gol subiti" (goals_conceded) e'
+    # significativamente piu' alto (= meno negativo, meno gol subiti) in
+    # casa (z=+3.72) e contro avversari deboli (z=-3.49); "Possesso"
+    # (poss_lost_ctrl) piu' alto in casa (z=+2.11); "Goalkeeping" (saves e
+    # affini) piu' basso in casa (z=-2.03, probabile perche' in casa la
+    # squadra difende meglio nel complesso e il portiere e' chiamato in
+    # causa meno spesso, non perche' para peggio). Stessa logica additiva/
+    # shrinkage delle altre correzioni Stadio D, sommata qui.
+    media_gol_subiti_condizionata_venue = media_condizionata(
+        goals_conceded_values, weights, is_home_flags, next_is_home, weighted_mean(goals_conceded_values, weights))
+    media_gol_subiti_condizionata_avversario = media_condizionata(
+        goals_conceded_values, weights, opponent_forte_flags, next_forte, weighted_mean(goals_conceded_values, weights))
+    media_possesso_condizionata_venue = media_condizionata(
+        possession_values, weights, is_home_flags, next_is_home, weighted_mean(possession_values, weights))
+    media_goalkeeping_condizionata_venue = media_condizionata(
+        goalkeeping_values, weights, is_home_flags, next_is_home, weighted_mean(goalkeeping_values, weights))
+
+    delta_gol_subiti_venue = media_gol_subiti_condizionata_venue - weighted_mean(goals_conceded_values, weights)
+    delta_gol_subiti_avversario = media_gol_subiti_condizionata_avversario - weighted_mean(goals_conceded_values, weights)
+    delta_possesso_venue = media_possesso_condizionata_venue - weighted_mean(possession_values, weights)
+    delta_goalkeeping_venue = media_goalkeeping_condizionata_venue - weighted_mean(goalkeeping_values, weights)
+
+    score_atteso += p_gioca * (delta_gol_subiti_venue + delta_gol_subiti_avversario
+                                + delta_possesso_venue + delta_goalkeeping_venue)
+
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
     # = FORMA del range a percentili pesati (Stadio B, si adatta a distribuzioni
@@ -1413,6 +1442,10 @@ def build_prediction(player_slug):
         'media_granulari_pesata': media_granulari_pesata,
         'media_level_score_condizionata': media_level_score_condizionata,
         'delta_condizionamento_avversario': delta_condizionamento_avversario,
+        'delta_gol_subiti_venue': delta_gol_subiti_venue,
+        'delta_gol_subiti_avversario': delta_gol_subiti_avversario,
+        'delta_possesso_venue': delta_possesso_venue,
+        'delta_goalkeeping_venue': delta_goalkeeping_venue,
         'p16_score': p16_score,
         'p84_score': p84_score,
         'home_avg': home_avg,
@@ -1481,6 +1514,11 @@ def format_output(result):
     lines.append(f"  Punteggio decisivo condizionato per forza prossimo avversario: "
                  f"{result['media_level_score_condizionata']:.2f} (delta {result['delta_condizionamento_avversario']:+.2f} "
                  f"vs media generica, Stadio D -- APPLICATO a score_atteso, scalato per P(gioca))")
+    lines.append(f"  Gol subiti condizionato: delta venue {result['delta_gol_subiti_venue']:+.2f}, "
+                 f"delta avversario {result['delta_gol_subiti_avversario']:+.2f} | Possesso condizionato per venue: "
+                 f"delta {result['delta_possesso_venue']:+.2f} | Goalkeeping condizionato per venue: "
+                 f"delta {result['delta_goalkeeping_venue']:+.2f} "
+                 f"(Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
     if result['p16_score'] is not None and result['p84_score'] is not None:
         lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
