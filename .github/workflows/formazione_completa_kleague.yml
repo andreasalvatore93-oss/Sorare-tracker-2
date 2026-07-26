@@ -10,25 +10,29 @@ on:
   workflow_dispatch:
     inputs:
       num_totale_formazioni:
-        description: 'Numero TOTALE di formazioni da generare (deve combaciare con la somma dei 3 tipi sotto, altrimenti la run fallisce subito)'
+        description: 'Numero TOTALE di formazioni da generare (deve combaciare con la somma dei 5 tipi sotto, altrimenti la run fallisce subito)'
         required: false
         default: '1'
       num_form_in_season:
         description: 'Numero di formazioni In Season da generare (0 per disattivare questo tipo)'
         required: false
         default: '1'
-      num_form_arena:
-        description: 'Numero di formazioni Arena da generare (5 giocatori, classic ammessi, 0 per disattivare)'
+      num_form_arena_260:
+        description: 'Numero di formazioni Arena (5 giocatori, classic ammessi) con cap fisso 260 sulla L10 combinata, 0 per disattivare'
+        required: false
+        default: '0'
+      num_form_arena_220:
+        description: 'Numero di formazioni Arena (5 giocatori, classic ammessi) con cap fisso 220 sulla L10 combinata, 0 per disattivare'
+        required: false
+        default: '0'
+      num_form_arena_uncapped:
+        description: 'Numero di formazioni Arena (5 giocatori, classic ammessi) senza cap sulla L10 combinata, 0 per disattivare'
         required: false
         default: '0'
       num_form_allstars:
         description: 'Numero di formazioni All Stars da generare (7 giocatori: 1GK/2DEF/2MID/1FWD/1extra, classic ammessi, 0 per disattivare)'
         required: false
         default: '0'
-      arena_l10_cap:
-        description: 'Opzionale: tetto sulla L10 combinata dei 5 giocatori Arena (es. 260). Lascia vuoto per nessun limite.'
-        required: false
-        default: ''
       starter_odds_min:
         description: 'Soglia minima starter-odds (0-1) per includere un giocatore nelle formazioni, es. 0.70. Dato mancante = tenuto per sicurezza.'
         required: false
@@ -564,9 +568,10 @@ jobs:
         env:
           NUM_TOTALE_FORMAZIONI: ${{ github.event.inputs.num_totale_formazioni }}
           NUM_FORM_IN_SEASON: ${{ github.event.inputs.num_form_in_season }}
-          NUM_FORM_ARENA: ${{ github.event.inputs.num_form_arena }}
+          NUM_FORM_ARENA_260: ${{ github.event.inputs.num_form_arena_260 }}
+          NUM_FORM_ARENA_220: ${{ github.event.inputs.num_form_arena_220 }}
+          NUM_FORM_ARENA_UNCAPPED: ${{ github.event.inputs.num_form_arena_uncapped }}
           NUM_FORM_ALLSTARS: ${{ github.event.inputs.num_form_allstars }}
-          ARENA_L10_CAP: ${{ github.event.inputs.arena_l10_cap }}
         run: python formazione_kleague/build_formazione_finale.py
       - name: Commit formazione(i)
         run: |
