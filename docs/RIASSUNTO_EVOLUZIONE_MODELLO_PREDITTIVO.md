@@ -4,11 +4,12 @@
 lavoro** (l'utente alterna due account, poca/nessuna memoria condivisa tra sessioni). Non
 presupporre nessun contesto pregresso: tutto quello che serve è qui dentro.
 
-**Aggiornato 26/07/2026**: la sessione del 25/07 descritta nelle sezioni 1-6 sotto si è conclusa
-con la decisione presa in una sessione successiva (26/07) — vedi sezione 7 in fondo per lo stato
-CORRENTE (parametri di produzione FINALIZZATI per DEF/MID/FWD, non più "da decidere"). Le sezioni
-1-6 restano come cronistoria di come ci si è arrivati, ma se cerchi solo "qual è lo stato adesso"
-salta direttamente alla sezione 7.
+**Aggiornato 26/07/2026, notte (terza sessione)**: se cerchi solo "qual è lo stato adesso",
+salta direttamente alla **sezione 13** (l'ultima) — è l'handoff più recente e completo. Le
+sezioni 1-12 restano come cronistoria di come ci si è arrivati (parametri di produzione
+FINALIZZATI per DEF/MID/FWD/GK, scoperta e validazione della formula `level_score`/floor,
+implementazione Arena/All Stars), utile se serve capire IL PERCHÉ di una decisione, non per
+sapere lo stato attuale.
 
 Repo: `Sorare-tracker-2` (github.com/andreasalvatore93-oss/Sorare-tracker-2), cartella locale
 `C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2`, branch `main`. Stato scritto qui: **tutto
@@ -831,6 +832,92 @@ solo, globale":
    da tempo come probabilmente la leva piu' grossa mai sfruttata (formula validata al 100% con
    casi reali Sorare, identica in ogni ruolo/campionato).
 
-Entrambe le analisi sono state avviate in background (agenti separati, worktree isolati) subito
-dopo aver scritto questa sezione — risultati non ancora disponibili al momento di scrivere,
-verranno riportati quando pronti.
+Entrambe le analisi sono state avviate in background (agenti separati, worktree isolati) —
+risultati in sezione F sotto, stessa sessione, poco dopo.
+
+### F. Risultati delle due direzioni esplorate — ENTRAMBE esito onesto "non procedere per ora"
+
+**Direzione 1 (fattore ambientale per `opponent_sensitivity`)** —
+`formazione_mls/diagnostics/validate_environmental_opponent_sensitivity.py`:
+- **Scoperta preliminare importante**: `OPPONENT_SENSITIVITY` **non è nemmeno usato nello
+  `score_atteso` reale oggi** — verificato nel codice (`test_def.py` e affini): sopravvive solo
+  dentro `rigorous_backtest()`/`run_grid_search()` per un MAE diagnostico in log, MAI nel calcolo
+  che sceglie/ordina i giocatori (il fattore forza-avversario generico è stato rimosso il 26/07,
+  vedi sezione 12). Quindi calibrarne la sensibilità è oggi un esercizio accademico finché non si
+  decide di reintrodurre un fattore avversario in qualche forma (che finora ha sempre perso
+  contro "nessun aggiustamento", vedi sezione 12).
+- Caratterizzazione ambientale: K League ha sì un ambiente di punteggio meno variabile di MLS ma
+  di poco (rapporto deviazione standard gol-subiti K/MLS = 0.91) — troppo mite per spiegare lo
+  scarto 20.0 vs 29.0 trovato dal grid search isolato su DEF K League (che implicherebbe un
+  rapporto ~0.69).
+- Backtest walk-forward: **nessuna delle due formule ambientali testate batte la costante fissa
+  29.0** in modo significativo, né su MLS né su K League, né su DEF né sul ruolo di controllo MID.
+- **Raccomandazione: non procedere.** Il segnale K League DEF (15 giocatori/114 partite) resta
+  probabilmente rumore da campione piccolo — non si spiega con la variabilità ambientale
+  misurabile e non produce un guadagno di MAE riproducibile.
+
+**Direzione 2 (`level_score` atteso da tasso di eventi decisivi)** —
+`formazione_mls/diagnostics/validate_level_score_event_rate.py`:
+- Regola netto→level_score (sezione 11) **confermata esatta al 100%** su tutte le partite in
+  cache di tutti e 4 i ruoli (es. FWD 599/599, DEF 957/957).
+- Approccio (diverso dal tentativo già scartato in sezione 12, che ri-calibrava half_life/trend
+  separati): tasso storico di eventi decisivi (modello Poisson pos/neg, stesso `HALF_LIFE_GAMES`
+  di produzione, **zero ri-taratura**) → valore atteso della distribuzione categoriale di
+  level_score, poi SOSTITUITO (non sommato a fianco) al posto della componente level_score
+  implicita nella media generica attuale.
+- Risultato: **migliora il MAE totale su tutti e 4 i ruoli** (FWD -0.63%, DEF -1.01%, MID -0.51%,
+  GK -1.18%) — direzione consistente, a differenza del tentativo precedente (che peggiorava 3
+  ruoli su 4). Il floor (sezione 11) non scatta mai in questa formulazione: opera su un valore
+  atteso continuo, non su un evento realizzato — nota aperta se si vuole approfondire.
+- **Raccomandazione: segnale più coerente ma ancora troppo piccolo** (sotto l'1.3%, stesso ordine
+  di grandezza del "rumore" già visto altrove in questa sessione) **per giustificare la
+  complessità aggiuntiva in produzione così com'è.** Varrebbe la pena riprendere in mano solo se
+  si trova un modo di rendere operativo il floor (es. sulla coda della distribuzione, non sul
+  valore atteso) o si combina con un'altra leva.
+
+**In sintesi per chi riprende da qui**: la sessione del 26/07 ha validato molto (Arena/All Stars
+completi, K League ora ha infrastruttura globale pari a MLS, calibrazione GLOBALE unificata) ma
+le due idee "grosse" per migliorare ulteriormente l'accuratezza (fattore ambientale, level_score
+atteso) sono risultate entrambe segnali reali ma troppo deboli per la produzione — non è un
+fallimento della sessione, è un buon controllo di rigore: si è verificato con backtest reali
+invece di intuizione, ed entrambe le idee restano documentate/pronte se in futuro emergeranno più
+dati o un'angolazione diversa (es. combinarle, o applicarle solo dove il segnale è più forte).
+
+### G. Stato repo a fine sessione (26/07 notte)
+
+Tutto pushato su `origin/main` (nessun lavoro pendente non pushato). File aggiunti/modificati di
+rilievo in questa sessione (oltre a quanto già elencato nelle sezioni A-F sopra):
+- `formazione_mls/build_formazione_finale.py` / `formazione_kleague/build_formazione_finale.py`
+  — Arena split, cap 260/370, bonus capitano per tipo.
+- `formazione_kleague/discovery/kleague_*_discovery_global.py` (nuovi) +
+  `.github/workflows/kleague_discovery_global.yml` (nuovo).
+- `.github/workflows/grid_search_calibrazione_kleague.yml` +
+  `grid_search_aggregate_kleague.yml` (nuovi).
+- `formazione_mls/calibrazione/aggregate_grid_search.py` — modalità `GLOBALE=1`.
+- `calibrazione_globale/output/<ruolo>_calibration/` (nuova cartella, risultati aggregati
+  MLS+K League combinati).
+- `formazione_mls/predict/test_gk.py` / `formazione_kleague/predict/test_gk.py` —
+  `OPPONENT_SENSITIVITY` 20.0→29.0.
+- `formazione_mls/diagnostics/` — 6 nuovi script diagnostici (outlier reliability/shrinkage
+  x2, simulate_cap260_tradeoff, validate_environmental_opponent_sensitivity,
+  validate_level_score_event_rate) — nessuno in produzione, solo analisi.
+
+**Backlog aperto per la prossima sessione** (in ordine di interesse, non di urgenza — nulla è
+bloccante):
+1. `level_score` atteso: riprendere se si trova un modo di rendere operativo il floor, o se si
+   vuole comunque provare il guadagno marginale (-0.5/-1.2% MAE) in produzione nonostante sia
+   piccolo — decisione dell'utente, non tecnica.
+2. K League: bonus "Multi-club"/"Cap 260-370" mai verificati con screenshot reali K League
+   (solo MLS) — probabilmente identici (stessa piattaforma Sorare) ma da confermare se si gioca
+   K League attivamente.
+3. Il caso "MID vincitore per composite score ≠ vincitore per MAE puro" (sezione D) — l'aggregatore
+   usa un composite score con penalità di copertura arbitraria (0.3×|copertura-68%|); potrebbe
+   valere la pena rivedere quella penalità/soglia 68% per tutti i ruoli, non solo notarlo caso per
+   caso come fatto oggi per MID.
+4. GK resta il ruolo con meno dati anche nella calibrazione globale (16 giocatori/140 partite
+   contro 59-84 degli altri ruoli) — nessuna azione richiesta ora, solo da tenere presente quando
+   si rifà il giro di calibrazione più avanti in stagione.
+5. Bonus anti-stack ("Multi-club") — verificare se ha senso spingere DI PIÙ sullo stacking in
+   Arena/All Stars: **eliminato dal backlog il 26/07** (troppo sforzo per il beneficio atteso),
+   riportato qui solo perché compariva nel backlog precedente — NON riaprirlo senza una richiesta
+   esplicita nuova dell'utente.
