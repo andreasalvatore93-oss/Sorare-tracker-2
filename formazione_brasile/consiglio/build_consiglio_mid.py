@@ -114,6 +114,9 @@ def main():
     text = "\n".join(lines)
     print(text)
 
+    # La cartella puo' non esistere (lega appena creata): crearla evita un
+    # FileNotFoundError che fa fallire tutto il job di merge.
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     ts = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H%M%S')
     out_path = os.path.join(OUTPUT_DIR, f'consiglio_{ts}.txt')
     with open(out_path, 'w', encoding='utf-8') as f:
