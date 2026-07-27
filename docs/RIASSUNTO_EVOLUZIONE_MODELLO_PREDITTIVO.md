@@ -2576,3 +2576,14 @@ venivano mai considerate — e le All Stars accettano qualsiasi campionato.
 questa sessione, e senza rischio di modellazione: sono carte già possedute. Implementato (leghe
 scoperte dal filesystem, `_grow_for('mixed')` cresce una carta alla volta per non moltiplicare per
 20 le query L5/L10/L40).
+
+### J. Backlog aggiornato (27/07 sera)
+
+**SCARTATO su decisione esplicita dell'utente**: estendere le formazioni *In Season* agli altri 18
+campionati nel tool unificato. Non serve. Le In Season restano su MLS + K League
+(`DEDICATED_LEAGUES`), le Arene dedicate sulle 11 leghe di `ARENA_LEAGUES`. Non riproporlo.
+
+Resta invece aperto: Arene dei campionati in pausa (consigli vuoti, si popolano da sole),
+`formazione_resto_mondo` da allineare o dismettere, anti-sinergia cross-team estesa a tutti i ruoli
+(numeri promettenti ma split-half instabile), pulizia repo + scansione secret prima di renderlo
+privato.
