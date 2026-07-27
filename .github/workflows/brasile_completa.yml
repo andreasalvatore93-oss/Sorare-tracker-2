@@ -1,4 +1,4 @@
-name: Formazione Completa Resto del Mondo (pipeline unificata GK+DEF+MID+FWD)
+name: Formazione Completa Brasileirao (pipeline unificata GK+DEF+MID+FWD)
 
 # Pipeline unica end-to-end: per ciascuno dei 4 ruoli scopre TUTTE le carte
 # possedute (IN_SEASON + CLASSIC), valuta ogni giocatore, produce il
@@ -42,7 +42,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: formazione-completa-resto-mondo
+  group: formazione-completa-brasile
   cancel-in-progress: false
 
 jobs:
@@ -65,19 +65,19 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests curl_cffi
-      - name: Discovery portieri Resto del Mondo (in_season + classic)
+      - name: Discovery portieri Brasileirao (in_season + classic)
         id: run_discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           PYTHONUNBUFFERED: "1"
-        run: python formazione_resto_mondo/discovery/resto_mondo_gk_discovery.py
+        run: python formazione_brasile/discovery/brasile_gk_discovery.py
       - name: Commit output discovery
         if: always()
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/resto_mondo_gk_discovery/
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/brasile_gk_discovery/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -108,19 +108,19 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests curl_cffi
-      - name: Discovery difensori Resto del Mondo (in_season + classic)
+      - name: Discovery difensori Brasileirao (in_season + classic)
         id: run_discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           PYTHONUNBUFFERED: "1"
-        run: python formazione_resto_mondo/discovery/resto_mondo_def_discovery.py
+        run: python formazione_brasile/discovery/brasile_def_discovery.py
       - name: Commit output discovery
         if: always()
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/resto_mondo_def_discovery/
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/brasile_def_discovery/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -151,19 +151,19 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests curl_cffi
-      - name: Discovery centrocampisti Resto del Mondo (in_season + classic)
+      - name: Discovery centrocampisti Brasileirao (in_season + classic)
         id: run_discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           PYTHONUNBUFFERED: "1"
-        run: python formazione_resto_mondo/discovery/resto_mondo_mid_discovery.py
+        run: python formazione_brasile/discovery/brasile_mid_discovery.py
       - name: Commit output discovery
         if: always()
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/resto_mondo_mid_discovery/
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/brasile_mid_discovery/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -194,19 +194,19 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests curl_cffi
-      - name: Discovery attaccanti Resto del Mondo (in_season + classic)
+      - name: Discovery attaccanti Brasileirao (in_season + classic)
         id: run_discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           PYTHONUNBUFFERED: "1"
-        run: python formazione_resto_mondo/discovery/resto_mondo_fwd_discovery.py
+        run: python formazione_brasile/discovery/brasile_fwd_discovery.py
       - name: Commit output discovery
         if: always()
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/resto_mondo_fwd_discovery/
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/brasile_fwd_discovery/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -252,16 +252,16 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
-        run: python formazione_resto_mondo/predict/test_gk.py
+        run: python formazione_brasile/predict/test_gk.py
       - name: Upload output come artifact (evita contese di git push tra job paralleli)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: predict-resto-mondo-gk-${{ matrix.player_slug }}
+          name: predict-brasile-gk-${{ matrix.player_slug }}
           path: |
-            formazione_resto_mondo/output/resto_mondo_gk_all/prediction_${{ matrix.player_slug }}_*.txt
-            formazione_resto_mondo/output/resto_mondo_gk_all/.cache/${{ matrix.player_slug }}_detail_cache.json
-            formazione_resto_mondo/output/resto_mondo_gk_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+            formazione_brasile/output/brasile_gk_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_brasile/output/brasile_gk_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_brasile/output/brasile_gk_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: true
@@ -289,16 +289,16 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
-        run: python formazione_resto_mondo/predict/test_def.py
+        run: python formazione_brasile/predict/test_def.py
       - name: Upload output come artifact (evita contese di git push tra job paralleli)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: predict-resto-mondo-def-${{ matrix.player_slug }}
+          name: predict-brasile-def-${{ matrix.player_slug }}
           path: |
-            formazione_resto_mondo/output/resto_mondo_def_all/prediction_${{ matrix.player_slug }}_*.txt
-            formazione_resto_mondo/output/resto_mondo_def_all/.cache/${{ matrix.player_slug }}_detail_cache.json
-            formazione_resto_mondo/output/resto_mondo_def_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+            formazione_brasile/output/brasile_def_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_brasile/output/brasile_def_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_brasile/output/brasile_def_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: true
@@ -326,16 +326,16 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
-        run: python formazione_resto_mondo/predict/test_mid.py
+        run: python formazione_brasile/predict/test_mid.py
       - name: Upload output come artifact (evita contese di git push tra job paralleli)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: predict-resto-mondo-mid-${{ matrix.player_slug }}
+          name: predict-brasile-mid-${{ matrix.player_slug }}
           path: |
-            formazione_resto_mondo/output/resto_mondo_mid_all/prediction_${{ matrix.player_slug }}_*.txt
-            formazione_resto_mondo/output/resto_mondo_mid_all/.cache/${{ matrix.player_slug }}_detail_cache.json
-            formazione_resto_mondo/output/resto_mondo_mid_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+            formazione_brasile/output/brasile_mid_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_brasile/output/brasile_mid_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_brasile/output/brasile_mid_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: true
@@ -363,16 +363,16 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           PYTHONUNBUFFERED: "1"
-        run: python formazione_resto_mondo/predict/test_mls_fwd_all.py
+        run: python formazione_brasile/predict/test_mls_fwd_all.py
       - name: Upload output come artifact (evita contese di git push tra job paralleli)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: predict-resto-mondo-fwd-${{ matrix.player_slug }}
+          name: predict-brasile-fwd-${{ matrix.player_slug }}
           path: |
-            formazione_resto_mondo/output/resto_mondo_fwd_all/prediction_${{ matrix.player_slug }}_*.txt
-            formazione_resto_mondo/output/resto_mondo_fwd_all/.cache/${{ matrix.player_slug }}_detail_cache.json
-            formazione_resto_mondo/output/resto_mondo_fwd_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+            formazione_brasile/output/brasile_fwd_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_brasile/output/brasile_fwd_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_brasile/output/brasile_fwd_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: true
@@ -395,17 +395,17 @@ jobs:
       - name: Scarica output predict (artifact aggregati, un solo commit invece di N)
         uses: actions/download-artifact@v4
         with:
-          pattern: predict-resto-mondo-gk-*
-          path: formazione_resto_mondo/output/resto_mondo_gk_all
+          pattern: predict-brasile-gk-*
+          path: formazione_brasile/output/brasile_gk_all
           merge-multiple: true
         continue-on-error: true
       - name: Consiglio GK
-        run: python formazione_resto_mondo/consiglio/build_consiglio_gk.py
+        run: python formazione_brasile/consiglio/build_consiglio_gk.py
       - name: Commit predict+riepilogo
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/resto_mondo_gk_all/
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/brasile_gk_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -438,17 +438,17 @@ jobs:
       - name: Scarica output predict (artifact aggregati, un solo commit invece di N)
         uses: actions/download-artifact@v4
         with:
-          pattern: predict-resto-mondo-def-*
-          path: formazione_resto_mondo/output/resto_mondo_def_all
+          pattern: predict-brasile-def-*
+          path: formazione_brasile/output/brasile_def_all
           merge-multiple: true
         continue-on-error: true
       - name: Consiglio DEF
-        run: python formazione_resto_mondo/consiglio/build_consiglio_def.py
+        run: python formazione_brasile/consiglio/build_consiglio_def.py
       - name: Commit predict+riepilogo
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/resto_mondo_def_all/
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/brasile_def_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -481,17 +481,17 @@ jobs:
       - name: Scarica output predict (artifact aggregati, un solo commit invece di N)
         uses: actions/download-artifact@v4
         with:
-          pattern: predict-resto-mondo-mid-*
-          path: formazione_resto_mondo/output/resto_mondo_mid_all
+          pattern: predict-brasile-mid-*
+          path: formazione_brasile/output/brasile_mid_all
           merge-multiple: true
         continue-on-error: true
       - name: Consiglio MID
-        run: python formazione_resto_mondo/consiglio/build_consiglio_mid.py
+        run: python formazione_brasile/consiglio/build_consiglio_mid.py
       - name: Commit predict+riepilogo
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/resto_mondo_mid_all/
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/brasile_mid_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -524,17 +524,17 @@ jobs:
       - name: Scarica output predict (artifact aggregati, un solo commit invece di N)
         uses: actions/download-artifact@v4
         with:
-          pattern: predict-resto-mondo-fwd-*
-          path: formazione_resto_mondo/output/resto_mondo_fwd_all
+          pattern: predict-brasile-fwd-*
+          path: formazione_brasile/output/brasile_fwd_all
           merge-multiple: true
         continue-on-error: true
       - name: Consiglio FWD
-        run: python formazione_resto_mondo/consiglio/build_consiglio.py
+        run: python formazione_brasile/consiglio/build_consiglio.py
       - name: Commit predict+riepilogo
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/resto_mondo_fwd_all/
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/brasile_fwd_all/
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
@@ -576,12 +576,12 @@ jobs:
           NUM_FORM_ARENA_220: ${{ github.event.inputs.num_form_arena_220 }}
           NUM_FORM_ARENA_UNCAPPED: ${{ github.event.inputs.num_form_arena_uncapped }}
           NUM_FORM_ALLSTARS: ${{ github.event.inputs.num_form_allstars }}
-        run: python formazione_resto_mondo/build_formazione_finale.py
+        run: python formazione_brasile/build_formazione_finale.py
       - name: Commit formazione(i)
         run: |
-          git config user.name "resto-mondo-formazione-bot"
-          git config user.email "resto-mondo-formazione-bot@users.noreply.github.com"
-          git add formazione_resto_mondo/output/formazione_finale_*.txt formazione_resto_mondo/output/formazione_finale_*.html
+          git config user.name "brasile-formazione-bot"
+          git config user.email "brasile-formazione-bot@users.noreply.github.com"
+          git add formazione_brasile/output/formazione_finale_*.txt formazione_brasile/output/formazione_finale_*.html
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
