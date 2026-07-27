@@ -2465,3 +2465,39 @@ Branch di lavoro `claude/sorare-tracker-predictive-model-88a17f` (worktree), **n
 Commit: `0edaef117` (DEF non-regressione + grid allineato), `8a05feaa6` (FWD), `f2efe6256`
 (selection_quality). Produzione invariata. Lo `git stash` dei flip parametri revertati è ancora lì,
 e ora sappiamo che **non va riapplicato**.
+
+### F. IMPLEMENTATO (27/07, stessa sessione): ordinamento senza shrinkage per DEF
+
+Il punto D.1 è stato **fatto**. Separati i due usi dello score, che prima erano lo stesso numero:
+
+| | a cosa serve | come si calcola | cambiato? |
+|---|---|---|---|
+| `score_atteso` | **mostrato** ("pt attesi"), miglior stima del punteggio | con shrinkage (minimizza il MAE) | **NO, invariato** |
+| `score_ordinamento` | **solo per ordinare** il consiglio | stessa funzione condivisa, `shrink_k=0` | nuovo |
+
+Catena: `test_def.py` scrive la riga `ORDINAMENTO: x.xx` → `build_consiglio_def.py` la legge, ordina
+e la ripropaga → `build_formazione_finale.py` / `build_formazione_globale.py` la usano per ordinare
+i pool. I punti mostrati e sommati restano `atteso`.
+
+**Fallback TUTTO-O-NIENTE**: se anche un solo giocatore non ha la riga, si ordina tutto per pt
+attesi come prima. I due score stanno su scale diverse (senza shrinkage la dispersione fra giocatori
+è più ampia), quindi mescolarli nella stessa `sort` confronterebbe grandezze non omogenee — errore
+che il test di integrazione ha effettivamente scoperto nella prima versione del fallback.
+
+**Verifiche fatte**:
+- Non-regressione su **tutti i 20 campionati allineati**, ognuno col proprio blocco di produzione e
+  i propri `detail_cache`: **2.384 casi, diff massima 7e-15**. Lo score MOSTRATO non cambia in
+  nessun campionato.
+- Test di integrazione della catena predizione→consiglio→formazione sui 3 scenari (tutti con la
+  riga / uno senza / nessuno): ordine e numeri come atteso, retrocompatibile.
+- 61 file modificati, 20 campionati. **`formazione_resto_mondo` ESCLUSA**: copia disallineata (non
+  ha nemmeno `SHRINK_K_OUTLIER_DEF`, formula di produzione diversa) — resta com'era e, grazie al
+  fallback, continua a funzionare.
+
+**LIMITE NOTO**: non verificato su una run reale end-to-end, manca `SORARE_COOKIE` in locale. La
+prima run vera va guardata: deve comparire la riga `ORDINAMENTO:` e l'ordine del consiglio DEF deve
+differire da quello dei pt attesi.
+
+**Da fare ancora**: la stessa separazione per GK/MID/FWD **non** è stata applicata — su FWD la
+misura non era concludente (8/12), su GK/MID non è ancora stata fatta. Prima va misurata con
+`selection_quality.py`, non replicata per analogia.
