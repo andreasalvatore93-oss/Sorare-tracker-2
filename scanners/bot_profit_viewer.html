@@ -337,18 +337,33 @@ function buildColumns(fields, sampleRow) {
   });
 }
 
+// Priorita' per l'ordinamento di default (richiesta esplicita utente: le
+// occasioni 'flat'/'up' (sconto% affidabile) devono stare sopra le 'down'
+// (sconto probabilmente gonfiato da un mercato gia' in calo) invece di essere
+// sepolte in mezzo per via di uno score alto ma inaffidabile.
+const TREND_SORT_RANK = { up: 2, flat: 1, down: 0 };
+
 function loadCSVText(text) {
   const parsed = parseCSV(text);
   const data = parsed.data;
   const fields = parsed.meta.fields || (data[0] ? Object.keys(data[0]) : []);
   COLUMNS = buildColumns(fields, data[0]);
   const numericKeys = COLUMNS.filter(c => c.type === 'number').map(c => c.key);
+  const hasTrend = COLUMNS.some(c => c.key === 'trend_recente');
   rawRows = data.map(r => {
     const row = { ...r };
     numericKeys.forEach(k => { row['_num_' + k] = toNum(r[k]); });
+    if (hasTrend) row['_num_trend_recente'] = TREND_SORT_RANK[r.trend_recente] ?? -1;
     return row;
   });
+  // Ordine di default: prima per trend (flat/up sopra down), poi per score --
+  // trend pinnato cosi' resta fisso anche se l'utente clicca altre colonne per
+  // un sort secondario diverso da Score.
   sortChain = [];
+  if (hasTrend) sortChain.push({ key: 'trend_recente', dir: -1, pinned: true });
+  if (COLUMNS.some(c => c.key === 'potenziale_score')) {
+    sortChain.push({ key: 'potenziale_score', dir: -1, pinned: false });
+  }
   $('loadZone').style.display = 'none';
   $('reloadBtn').style.display = 'inline-block';
   $('toolbar').classList.add('active');
@@ -476,10 +491,12 @@ function applySort(rows) {
     for (const crit of sortChain) {
       const col = COLUMNS.find(c => c.key === crit.key);
       let av, bv;
-      if (col.type === 'number') {
+      // trend_recente e' 'text' per la resa (freccia), ma va ordinato come
+      // rank numerico (vedi TREND_SORT_RANK) -- non alfabeticamente.
+      if (col.type === 'number' || crit.key === 'trend_recente') {
         av = a['_num_' + crit.key]; bv = b['_num_' + crit.key];
-        av = av === null ? -Infinity : av;
-        bv = bv === null ? -Infinity : bv;
+        av = (av === null || av === undefined) ? -Infinity : av;
+        bv = (bv === null || bv === undefined) ? -Infinity : bv;
       } else {
         av = (a[crit.key] || '').toLowerCase(); bv = (b[crit.key] || '').toLowerCase();
       }
