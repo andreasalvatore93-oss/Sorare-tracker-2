@@ -250,7 +250,8 @@ def _raw_view_for(role_data, pool_league, role):
 
 
 def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool, l10_cap,
-                                  apply_stack_guard, variance_mode):
+                                  apply_stack_guard, variance_mode, apply_positive_synergy=True,
+                                  strict_gk_anti_synergy=False):
     """Se il tipo ha un cap L10 obbligatorio (Arena dedicate/All Stars), il
     filtro qualita' NON si applica (27/07, richiesta esplicita utente): sono
     in tensione diretta -- L5/L10/L40>=35 esclude proprio le carte economiche
@@ -268,13 +269,16 @@ def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool
     if l10_cap is not None:
         role_data_view = {role: _raw_view_for(role_data, pool_league, role) for role in ROLES}
         return bff.build_one_lineup(shape, role_data_view, card_pool, l10_cap=l10_cap,
-                                     apply_stack_guard=apply_stack_guard, variance_mode=variance_mode)
+                                     apply_stack_guard=apply_stack_guard, variance_mode=variance_mode,
+                                     apply_positive_synergy=apply_positive_synergy,
+                                     strict_gk_anti_synergy=strict_gk_anti_synergy)
 
     while True:
         role_data_view = {role: _view_for(pools, pool_league, role) for role in ROLES}
         formazione, error, l10_ok, stack_perso = bff.build_one_lineup(
             shape, role_data_view, card_pool, l10_cap=l10_cap,
-            apply_stack_guard=apply_stack_guard, variance_mode=variance_mode)
+            apply_stack_guard=apply_stack_guard, variance_mode=variance_mode,
+            apply_positive_synergy=apply_positive_synergy, strict_gk_anti_synergy=strict_gk_anti_synergy)
         if not error:
             return formazione, None, l10_ok, stack_perso
 
@@ -301,11 +305,24 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool, lineup_h
     variance_mode = tipo in VARIANCE_MODE_TYPES
     check_cap260 = tipo in CHECK_CAP260_TYPES
     label = LABELS[tipo]
+    # 27/07, richiesta esplicita utente, stesso fix identico nei due tool
+    # singoli: con 2+ In Season richieste (MLS o K League, ciascuna lega
+    # conta a se'), solo la prima usa la sinergia GK-DEF soft, le altre sono
+    # greedy puro; in ENTRAMBI i casi il vincolo portiere-vs-avversario
+    # diventa DURO. Con 1 sola In Season di quella lega, comportamento
+    # INVARIATO. Le Arene (dedicate o All Stars) non sono toccate.
+    in_season_multi = tipo in ('MLS_IN_SEASON', 'KLEAGUE_IN_SEASON') and count >= 2
+    # Varianza capitano (27/07, richiesta esplicita utente, stesso fix
+    # identico nei due tool singoli): scope per tipo (uno degli 8 qui).
+    captained_slugs = set()
 
     generated, totale = 0, 0
     for idx in range(1, count + 1):
+        strict_gk_anti_synergy = in_season_multi
+        apply_positive_synergy = not in_season_multi or idx == 1
         formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
-            shape, pool_league, role_data, pools, card_pool, cap, stack_guard, variance_mode)
+            shape, pool_league, role_data, pools, card_pool, cap, stack_guard, variance_mode,
+            apply_positive_synergy, strict_gk_anti_synergy)
         if error:
             msg = f"Formazione {label} #{idx}: NON GENERATA — {error}"
             print(msg)
@@ -314,7 +331,9 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool, lineup_h
         lineup_html_blocks.append(bff.render_lineup_html(
             label, idx, formazione, card_pool, l10_cap=cap, l10_cap_rispettato=l10_ok,
             stack_bonus_perso=stack_perso, check_cap260=check_cap260, tipo=tipo,
-            apply_stack_guard=stack_guard))
+            apply_stack_guard=stack_guard, avoid_captain_slugs=captained_slugs))
+        _cap_slot, cap_row, _cap_type = bff.pick_captain(formazione, captained_slugs)
+        captained_slugs.add(cap_row['slug'])
         totale += sum(row['atteso'] for _, row, _ in formazione)
         generated += 1
         print(f"Formazione {label} #{idx}: generata ({sum(r['atteso'] for _, r, _ in formazione)} pt)")

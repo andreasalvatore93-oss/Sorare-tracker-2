@@ -201,20 +201,32 @@ TEAMMATE_SYNERGY_BONUS_VARIANCE = 5  # GK-MID stessa squadra (corr +0.26) o DEF/
 
 
 def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
-                      variance_mode=False):
+                      variance_mode=False, apply_positive_synergy=True):
     """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
     dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
     output) -- vedi commento sopra ANTI_SYNERGY_PENALTY per la logica.
     'team_counts'/'apply_stack_guard': vedi commento sopra IN_SEASON_STACK_LIMIT.
     'variance_mode': vedi commento sopra GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA
-    (SOLO Arena/All Stars -- generate_lineups_for_type decide il valore)."""
+    (SOLO Arena/All Stars -- generate_lineups_for_type decide il valore).
+    'apply_positive_synergy' (27/07, richiesta esplicita utente per le In
+    Season con 2+ formazioni richieste): gate UNICO sia per il bonus DEF-GK
+    (POSITIVE_SYNERGY_BONUS) sia per la penalita' soft MID/FWD-vs-avversario
+    (ANTI_SYNERGY_PENALTY) -- quest'ultima e' comunque superata da un filtro
+    DURO in build_one_lineup quando serve (strict_gk_anti_synergy), quindi qui
+    resta solo per il caso in cui il filtro duro non e' attivo (Arena/All
+    Stars, o In Season con una sola formazione richiesta, comportamento
+    INVARIATO rispetto a prima). Se False (formazioni "greedy" #2..N delle In
+    Season multiple), niente bonus/penalita' di correlazione: solo punteggio
+    grezzo -- il vincolo di schieramento resta comunque garantito dal filtro
+    duro, applicato a monte, non da qui."""
     adjusted = row['atteso']
     team_slug = row.get('team_slug')
-    if role in ('MID', 'FWD') and gk_opponent_slug and team_slug == gk_opponent_slug:
-        adjusted -= ANTI_SYNERGY_PENALTY
-    elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
-        adjusted += POSITIVE_SYNERGY_BONUS
+    if apply_positive_synergy:
+        if role in ('MID', 'FWD') and gk_opponent_slug and team_slug == gk_opponent_slug:
+            adjusted -= ANTI_SYNERGY_PENALTY
+        elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
+            adjusted += POSITIVE_SYNERGY_BONUS
     if variance_mode and team_slug:
         if role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
             adjusted += GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA
@@ -228,19 +240,20 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
 
 
 def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
-                           variance_mode=False):
+                           variance_mode=False, apply_positive_synergy=True):
     """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
     anti-sinergia col portiere scelto (vedi synergy_sort_key), la sinergia
     da correlazione misurata (SOLO variance_mode) ed eventualmente per il
     vincolo anti-stack In Season/All Stars. Se il portiere non ha
     squadra/avversario noti (consiglio generato prima di questo
     aggiornamento, o dato di calendario mancante) e non c'e' ne' vincolo
-    anti-stack ne' variance_mode da applicare, non cambia nulla --
-    comportamento identico a prima."""
-    if not gk_team_slug and not gk_opponent_slug and not apply_stack_guard and not variance_mode:
+    anti-stack ne' variance_mode ne' sinergia positiva da applicare, non
+    cambia nulla -- comportamento identico a prima."""
+    if not apply_stack_guard and not variance_mode and not (apply_positive_synergy and (gk_team_slug or gk_opponent_slug)):
         return rows
     return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug,
-                                                           team_counts, apply_stack_guard, variance_mode),
+                                                           team_counts, apply_stack_guard, variance_mode,
+                                                           apply_positive_synergy),
                   reverse=True)
 
 
@@ -546,7 +559,8 @@ def _consume_pick(card_pool, slug):
     return 'classic'
 
 
-def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False, variance_mode=False):
+def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False, variance_mode=False,
+                      apply_positive_synergy=True, strict_gk_anti_synergy=False):
     """Costruisce UNA formazione secondo 'shape' (uno dei FORMATION_SHAPES),
     tenendo conto delle copie gia' esaurite (card_pool) e del vincolo
     max_classic della shape (None = nessun vincolo). Se l10_cap e' impostato
@@ -569,6 +583,19 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
     (slot_label, row, card_type). stack_bonus_perso e' True se la
     formazione finale ha comunque 3+ giocatori della stessa squadra
     (informativo, sempre False se apply_stack_guard=False).
+
+    'apply_positive_synergy' / 'strict_gk_anti_synergy' (27/07, richiesta
+    esplicita utente per le In Season con 2+ formazioni richieste): quando
+    strict_gk_anti_synergy=True, i candidati MID/FWD della squadra
+    AVVERSARIA del portiere vengono ESCLUSI del tutto (non solo
+    deprioritizzati) da ogni slot (titolari ed extra) -- un vero vincolo di
+    schieramento, mai piu' un'ultima risorsa. apply_positive_synergy=False
+    disattiva anche il bonus soft DEF-GK (nessuna priorita' di sinergia,
+    solo punteggio grezzo) -- usato per le formazioni "greedy" successive
+    alla prima quando le In Season richieste sono 2+ (vedi
+    generate_lineups_for_type). Con una sola In Season richiesta, o per
+    Arena/All Stars, entrambi i flag restano ai default (comportamento
+    INVARIATO rispetto a prima di questa modifica).
 
     Se il knapsack ESATTO e' applicabile (l10_cap impostato, un ruolo per
     slot senza ripetizioni, max_classic=None, nessuna sinergia da applicare
@@ -659,12 +686,18 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         if role == 'GK':
             row, ctype = pick(role_data['GK'], l10_cap is not None, reserve)
         else:
-            candidates = synergy_adjusted_rows(role, role_data[role], gk_team_slug, gk_opponent_slug,
-                                                team_counts, apply_stack_guard, variance_mode)
+            pool_rows = role_data[role]
+            if strict_gk_anti_synergy and role in ('MID', 'FWD') and gk_opponent_slug:
+                pool_rows = [r for r in pool_rows if r.get('team_slug') != gk_opponent_slug]
+            candidates = synergy_adjusted_rows(role, pool_rows, gk_team_slug, gk_opponent_slug,
+                                                team_counts, apply_stack_guard, variance_mode,
+                                                apply_positive_synergy)
             row, ctype = pick(candidates, l10_cap is not None, reserve)
 
         if row is None:
-            return None, f"Nessun candidato disponibile per lo slot {slot_label} (copie esaurite o consiglio vuoto).", l10_cap_rispettato[0], False
+            reason = ("vincolo di schieramento (portiere vs avversario) + copie esaurite o consiglio vuoto"
+                      if strict_gk_anti_synergy else "copie esaurite o consiglio vuoto")
+            return None, f"Nessun candidato disponibile per lo slot {slot_label} ({reason}).", l10_cap_rispettato[0], False
 
         used_this_lineup.add(row['slug'])
         if ctype == 'classic':
@@ -688,9 +721,13 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
     combined = []
     for role in shape['extra_roles']:
         for row in role_data[role]:
+            if (strict_gk_anti_synergy and role in ('MID', 'FWD') and gk_opponent_slug
+                    and row.get('team_slug') == gk_opponent_slug):
+                continue
             combined.append((role, row))
     combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
-                                                    team_counts, apply_stack_guard, variance_mode), reverse=True)
+                                                    team_counts, apply_stack_guard, variance_mode,
+                                                    apply_positive_synergy), reverse=True)
 
     extra_candidates = [(role, row) for role, row in combined if row['slug'] not in used_this_lineup]
     if l10_cap is not None:
@@ -709,7 +746,8 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
             break
 
     if extra_pick is None:
-        return None, "Nessun candidato disponibile per lo slot extra (copie esaurite).", l10_cap_rispettato[0], False
+        reason = "vincolo di schieramento (portiere vs avversario) + copie esaurite" if strict_gk_anti_synergy else "copie esaurite"
+        return None, f"Nessun candidato disponibile per lo slot extra ({reason}).", l10_cap_rispettato[0], False
 
     picks.append((f'EXTRA ({extra_role})', extra_pick, extra_type))
 
@@ -754,20 +792,32 @@ CAP260_BONUS = 0.04
 CAP260_L10_THRESHOLD_BY_TYPE = {'IN_SEASON': 260.0, 'ALLSTARS': 370.0}
 
 
-def pick_captain(formazione):
+def pick_captain(formazione, avoid_slugs=None):
     """Il capitano ottimale e' semplicemente il giocatore con lo score atteso
     piu' alto della formazione: dato che gli altri punteggi restano fissi
     a prescindere da chi si nomina capitano, il bonus (che sia +50% o +20%
     Arena) e' comunque una percentuale, quindi e' sempre massimizzato
-    scegliendo il punteggio di partenza piu' alto tra i titolari."""
+    scegliendo il punteggio di partenza piu' alto tra i titolari.
+    'avoid_slugs' (27/07, richiesta esplicita utente: varianza capitano tra
+    piu' formazioni della STESSA competizione/tipo, quando esistono 2+ copie
+    di una carta che permettono di riusarla in piu' lineup): se fornito,
+    preferisce il punteggio piu' alto TRA i titolari non ancora capitanati in
+    questo tipo; se sono gia' stati capitanati tutti (nessuna alternativa),
+    ripiega sul punteggio piu' alto assoluto -- mai un peggioramento del
+    punteggio atteso solo per la varianza."""
+    if avoid_slugs:
+        candidates = [p for p in formazione if p[1]['slug'] not in avoid_slugs]
+        if candidates:
+            return max(candidates, key=lambda pick: pick[1]['atteso'])
     return max(formazione, key=lambda pick: pick[1]['atteso'])
 
 
 def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                   stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False):
+                   stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False,
+                   avoid_captain_slugs=None):
     lines = []
     lines.append(f"--- Formazione {tipo_label} #{idx} ---")
-    captain_slot, captain_row, _captain_type = pick_captain(formazione)
+    captain_slot, captain_row, _captain_type = pick_captain(formazione, avoid_captain_slugs)
     totale_atteso = totale_low = totale_high = 0
     totale_l10 = 0.0
     for slot, row, ctype in formazione:
@@ -863,8 +913,9 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
 
 
 def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                        stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False):
-    captain_slot, captain_row, _captain_type = pick_captain(formazione)
+                        stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False,
+                        avoid_captain_slugs=None):
+    captain_slot, captain_row, _captain_type = pick_captain(formazione, avoid_captain_slugs)
     cards_html = ''.join(
         render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
         for slot, row, ctype in formazione
@@ -1023,12 +1074,33 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
     # Sinergia da correlazione misurata (vedi GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA):
     # SOLO dove la varianza conta, cioe' tutto tranne In Season (target fisso).
     variance_mode = tipo != 'IN_SEASON'
+    # 27/07, richiesta esplicita utente: quando si richiedono 2+ In Season,
+    # SOLO la prima usa la sinergia GK-DEF soft (comportamento storico); dalla
+    # seconda in poi e' greedy puro (solo punteggio, nessuna priorita' di
+    # ruolo/sinergia). In ENTRAMBI i casi, se sono 2+, il vincolo di
+    # schieramento portiere-vs-avversario diventa DURO (mai piu' un'ultima
+    # risorsa) invece che un forte scoraggiamento. Con 1 sola In Season
+    # richiesta, o per Arena/All Stars, comportamento INVARIATO.
+    in_season_multi = tipo == 'IN_SEASON' and count >= 2
+    # Varianza capitano (27/07, richiesta esplicita utente): scope PER TIPO,
+    # naturale qui dato che generate_lineups_for_type gia' genera un tipo per
+    # chiamata -- evita di rinominare capitano un giocatore gia' capitanato
+    # in una formazione precedente DELLO STESSO TIPO, a meno che non ci sia
+    # nessuna alternativa valida nella lineup corrente (pick_captain ripiega
+    # sul punteggio piu' alto assoluto in quel caso). Un giocatore con 1 sola
+    # copia non puo' comunque comparire in due lineup dello stesso tipo (il
+    # CardPool lo impedirebbe), quindi non serve un controllo esplicito
+    # "2+ copie": la condizione e' gia' garantita dal pool.
+    captained_slugs = set()
     generated = 0
     totale = 0
     for idx in range(1, count + 1):
+        strict_gk_anti_synergy = in_season_multi
+        apply_positive_synergy = not in_season_multi or idx == 1
         formazione, error, l10_ok, stack_perso = build_one_lineup(
             shape, role_data, card_pool, l10_cap=cap, apply_stack_guard=stack_guard,
-            variance_mode=variance_mode)
+            variance_mode=variance_mode, apply_positive_synergy=apply_positive_synergy,
+            strict_gk_anti_synergy=strict_gk_anti_synergy)
         if error:
             msg = f"Formazione {shape['label']} #{idx}: NON GENERATA — {error}"
             if print_output:
@@ -1040,13 +1112,17 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
         block_text, punti = format_lineup(shape['label'], idx, formazione, card_pool,
                                            l10_cap=cap, l10_cap_rispettato=l10_ok,
                                            stack_bonus_perso=stack_perso, check_cap260=check_cap260,
-                                           tipo=tipo, apply_stack_guard=stack_guard)
+                                           tipo=tipo, apply_stack_guard=stack_guard,
+                                           avoid_captain_slugs=captained_slugs)
         lineup_blocks.append(block_text)
         lineup_html_blocks.append(render_lineup_html(shape['label'], idx, formazione, card_pool,
                                                        l10_cap=cap, l10_cap_rispettato=l10_ok,
                                                        stack_bonus_perso=stack_perso,
+                                                       avoid_captain_slugs=captained_slugs,
                                                        check_cap260=check_cap260, tipo=tipo,
                                                        apply_stack_guard=stack_guard))
+        _cap_slot, cap_row, _cap_type = pick_captain(formazione, captained_slugs)
+        captained_slugs.add(cap_row['slug'])
         totale += punti
         generated += 1
         if print_output:

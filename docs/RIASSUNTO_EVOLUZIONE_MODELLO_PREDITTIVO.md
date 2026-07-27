@@ -1360,15 +1360,90 @@ cap (Arena uncapped, che restano sul vecchio percorso greedy). Stesso test ripet
 K League con esito identico. **Non ancora testato su una run reale GitHub Actions** (solo dati
 sintetici in locale) — da fare alla prima occasione utile prima di considerarlo definitivo.
 
-**Stato repo**: modifiche a `formazione_mls/build_formazione_finale.py` e
-`formazione_kleague/build_formazione_finale.py` pronte per il commit (non ancora pushate al
-momento di scrivere questa sezione, verificare `git status`).
+**Stato repo**: modifiche committate sul branch di lavoro (non su `main`, per richiesta esplicita
+dell'utente di pushare su `main` solo a fine sessione/su richiesta — vedi sezione 17 sotto per
+il seguito della stessa nottata).
 
-**Backlog aggiornato** (sostituisce il punto 1 di 15J, ora chiuso):
-1. **Verificare il knapsack su una run reale** (Arena MLS/K League dedicate, Arena All Stars
-   260/220 nel Generatore Formazioni) — priorità alla prossima occasione di lancio.
-2. Decidere e implementare la rimozione dell'anti-sinergia di base per le In Season (backlog
-   invariato dalla sezione 13/15, mai affrontato).
-3. Varianza capitano tra lineup multiple (backlog invariato, richiede ancora la risposta
-   dell'utente sullo scope: per tipo o sull'intera run).
-4. Tutto il resto del backlog di 13E/14F/15J resta valido e non toccato in questa sessione.
+## 17. Stessa notte (continua) — redesign In Season con 2+ formazioni, varianza capitano
+
+Chiude i punti 2 e 3 del backlog della sezione 16 (discussi con l'utente PRIMA di implementare,
+come da prassi "un tema alla volta").
+
+### A. Redesign logica In Season quando se ne richiedono 2 o più
+
+Punto di partenza diverso dalla proposta iniziale (semplice rimozione dell'anti-sinergia): l'utente
+ha chiesto una logica più articolata perché le In Season sono "le più importanti di tutte le
+formazioni". Nuove regole, attive **solo quando le In Season richieste in un run sono 2 o più**
+(con una sola richiesta, comportamento INVARIATO rispetto a prima):
+
+- **Formazione #1**: comportamento storico invariato — sinergia GK-DEF soft attiva (bonus
+  `POSITIVE_SYNERGY_BONUS`), GK scelto per primo per costruzione (`role_slots` inizia con GK).
+- **Formazioni #2..N**: greedy puro, nessun bonus di sinergia, nessuna priorità di ruolo — ogni
+  slot scelto solo per punteggio grezzo massimo disponibile.
+- **In ENTRAMBI i casi** (novità rispetto a prima): il vincolo "portiere vs attaccante avversario"
+  (prima un forte scoraggiamento — `ANTI_SYNERGY_PENALTY`, comunque selezionabile come ultima
+  risorsa) diventa un'**esclusione assoluta** — quella combinazione non compare mai, a costo di
+  fallire la formazione se non ci sono alternative (stesso principio hard-fail già usato per il
+  cap L10 delle Arene).
+
+**Implementazione** (identica in `formazione_mls/build_formazione_finale.py`,
+`formazione_kleague/build_formazione_finale.py`, e propagata a
+`generatore_formazioni/build_formazione_globale.py` per `MLS_IN_SEASON`/`KLEAGUE_IN_SEASON`):
+- `synergy_sort_key`/`synergy_adjusted_rows`: nuovo parametro `apply_positive_synergy` (gate unico
+  per il bonus DEF-GK e la vecchia penalità soft MID/FWD — quest'ultima ormai ridondante quando il
+  filtro duro è attivo, ma innocua se lasciata).
+- `build_one_lineup`: nuovo parametro `strict_gk_anti_synergy` — quando `True`, filtra COMPLETAMENTE
+  (non solo deprioritizza) i candidati MID/FWD della squadra avversaria del portiere, sia per gli
+  slot titolari sia per lo slot extra, PRIMA di applicare qualunque sinergia soft.
+  `apply_positive_synergy=False` disattiva anche il bonus DEF-GK.
+- `generate_lineups_for_type` (nei 3 file): calcola `in_season_multi = tipo in (...IN_SEASON) and
+  count >= 2`, poi per `idx==1`: `apply_positive_synergy=True`; per `idx>1`:
+  `apply_positive_synergy=False`; `strict_gk_anti_synergy=in_season_multi` sempre.
+
+### B. Varianza capitano tra formazioni multiple, scope PER TIPO/COMPETIZIONE
+
+Confermato dall'utente: scope "intracompetizione" — In Season MLS conta a sé, In Season K League a
+sé, ogni Arena dedicata a sé, Arena All Stars a sé, All Stars a sé. Coincide naturalmente con lo
+scope di ogni singola chiamata a `generate_lineups_for_type` (già un tipo per chiamata), quindi
+nessuna struttura dati aggiuntiva cross-tipo necessaria.
+
+**Implementazione** (identica nei 3 file): `pick_captain(formazione, avoid_slugs=None)` — se
+fornito, preferisce il punteggio più alto TRA i titolari non ancora capitanati in questo tipo;
+ripiega sul punteggio più alto assoluto se non c'è alternativa (mai un peggioramento del punteggio
+atteso solo per la varianza). `format_lineup`/`render_lineup_html` accettano `avoid_captain_slugs`
+e lo passano a `pick_captain`. `generate_lineups_for_type` mantiene un set `captained_slugs` locale
+(resettato ad ogni chiamata, quindi già per-tipo), lo passa a entrambe le funzioni di rendering, poi
+richiama `pick_captain` con lo stesso set per sapere quale slug aggiungere prima della prossima
+iterazione. **Nota implicita**: un giocatore con 1 sola copia non può comunque comparire in due
+lineup dello stesso tipo (il `CardPool` lo impedirebbe strutturalmente) — quindi non serve un
+controllo esplicito "2+ copie", la condizione è già garantita dal pool.
+
+### C. Verificato con test sintetici locali (nessuna rete)
+
+- Con `count==1`: comportamento identico a prima (candidato "vincolato" ancora selezionabile come
+  ultima risorsa se conviene — verificato con un MID che sarebbe stato il punteggio più alto in
+  assoluto ma gioca per la squadra avversaria del GK).
+- Con `count>=2`, formazione #1: GK scelto per primo, DEF con bonus sinergia sceglie il compagno di
+  squadra ANCHE quando ha un punteggio grezzo leggermente più basso di un'alternativa (verificato
+  con uno scarto costruito apposta: 50+3 batte 52 grezzo); il MID della squadra avversaria del GK è
+  escluso del tutto (mai scelto, a differenza del caso `count==1`).
+- Con `count>=2`, formazioni #2+: stesso vincolo dell'esclusione assoluta sul MID, ma il DEF viene
+  scelto per puro punteggio grezzo (52 batte 50+3 quando il bonus è disattivato) — confermata la
+  differenza tra i due modi.
+- Varianza capitano: 3 formazioni In Season generate in sequenza, 3 capitani diversi (nessuna
+  ripetizione quando esistono alternative valide nella lineup).
+
+**Non ancora testato su una run reale GitHub Actions** (solo dati sintetici in locale, stesso
+livello di verifica del knapsack in sezione 16) — da fare insieme al test del knapsack alla
+prossima occasione di lancio.
+
+### D. Stato repo e prossimi passi
+
+Modifiche pronte per il commit (knapsack sezione 16 + redesign In Season/varianza capitano sezione
+17), da pushare su `main` quando richiesto esplicitamente (vedi [[feedback_push_main_solo_a_fine_sessione]]).
+
+**Backlog aggiornato**:
+1. **Verificare TUTTO su una run reale** (knapsack Arene + redesign In Season 2+/varianza capitano)
+   — prossima azione pianificata: 6 In Season MLS, 6 In Season K League, 1 Arena dedicata MLS,
+   1 Arena dedicata K League, 1 Arena mista cap 260, 1 All Stars.
+2. Tutto il resto del backlog di 13E/14F/15J resta valido e non toccato in questa sessione.
