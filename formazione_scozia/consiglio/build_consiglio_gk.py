@@ -25,6 +25,13 @@ ESCLUSO_RE = re.compile(r'^([\w-]+):\s+(ESCLUSO|DATI INSUFFICIENTI)\s+—\s+(.*)
 # build_formazione_finale.py per evitare di schierare insieme portiere e
 # giocatore di movimento le cui squadre si affrontano.
 TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
+# NUOVO (27/07): data/ora di calcio d'inizio della partita TARGET, estratta dalla
+# riga "Data:" gia' presente nel file di predizione. Serve a schierare solo chi
+# gioca DAVVERO nella giornata per cui si costruisce la formazione: senza questa
+# informazione il generatore mescolava giocatori con partita gia' giocata e
+# giocatori con partita fra una settimana (che per giunta non hanno ancora le
+# starter odds, quindi passavano indenni anche il filtro sulla soglia).
+KICKOFF_RE = re.compile(r'^Data:\s+(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\s*$')
 
 
 def latest_file_for_slug(slug):
@@ -40,6 +47,7 @@ def parse_player_file(path):
 
     consiglio = None
     team_slug = opp_slug = None
+    kickoff = None
     for line in content.splitlines():
         stripped = line.strip()
         m = CONSIGLIO_RE.match(stripped)
@@ -47,6 +55,10 @@ def parse_player_file(path):
             slug, atteso, low, high = m.groups()
             consiglio = {'slug': slug, 'status': 'OK', 'atteso': int(atteso),
                          'low': int(low), 'high': int(high)}
+            continue
+        m = KICKOFF_RE.match(stripped)
+        if m:
+            kickoff = m.group(1)
             continue
         m = TEAM_RE.match(stripped)
         if m:
@@ -60,6 +72,7 @@ def parse_player_file(path):
     if consiglio:
         consiglio['team_slug'] = None if team_slug == 'N/D' else team_slug
         consiglio['opponent_team_slug'] = None if opp_slug == 'N/D' else opp_slug
+        consiglio['kickoff'] = kickoff
         return consiglio
     return None
 
@@ -93,6 +106,8 @@ def main():
         # NUOVO (26/07, tema correlazione GK-DEF): squadra/avversario, per
         # build_formazione_finale.py.
         lines.append(f"   SQUADRA: {r.get('team_slug') or 'N/D'} | AVVERSARIO: {r.get('opponent_team_slug') or 'N/D'}")
+        if r.get('kickoff'):
+            lines.append(f"   KICKOFF: {r['kickoff']}")
     lines.append("")
     lines.append(f"({excluded_count} esclusi/non disponibili questa giornata)")
 

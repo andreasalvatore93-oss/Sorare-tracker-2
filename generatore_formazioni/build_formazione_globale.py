@@ -247,6 +247,46 @@ def parse_league_qty(raw, field_name, valid_leagues=DEDICATED_LEAGUES):
     return result
 
 
+# --- FINESTRA GIORNATA (27/07) -------------------------------------------
+# Senza questo filtro il generatore mescolava giocatori la cui partita target
+# era GIA' STATA GIOCATA con giocatori che giocano fra una settimana: entrambi
+# inutili per la formazione di domani. E i secondi non hanno ancora le starter
+# odds (escono a ~24-48h), quindi passavano indenni anche il filtro sulla
+# soglia -- che percio' sembrava non funzionare.
+# MATCH_WINDOW_DAYS = quanti giorni in avanti da ADESSO includere (default 2).
+# Un consiglio SENZA riga KICKOFF e' per definizione generato prima di questo
+# fix, quindi stale: viene SCARTATO. Meglio una formazione incompleta che una
+# piena di giocatori che non scendono in campo. Con MATCH_WINDOW_REQUIRE_KICKOFF=0
+# si torna al comportamento permissivo (utile solo per debug su dati vecchi).
+MATCH_WINDOW_DAYS = float(os.environ.get('MATCH_WINDOW_DAYS', '2'))
+REQUIRE_KICKOFF = os.environ.get('MATCH_WINDOW_REQUIRE_KICKOFF', '1').strip() not in ('0', 'false', 'no')
+
+
+def _within_window(row, now=None):
+    ko = row.get('kickoff')
+    if not ko:
+        return not REQUIRE_KICKOFF
+    now = now or datetime.datetime.utcnow()
+    try:
+        dt = datetime.datetime.fromisoformat(ko[:16]) if 'T' in ko else             datetime.datetime.fromisoformat(ko[:10])
+    except ValueError:
+        return not REQUIRE_KICKOFF
+    if dt < now - datetime.timedelta(hours=2):
+        return False
+    return dt <= now + datetime.timedelta(days=MATCH_WINDOW_DAYS)
+
+
+def filter_by_window(role_data):
+    """Scarta i candidati la cui partita target e' fuori dalla finestra."""
+    out = {}
+    for lg, roles in role_data.items():
+        out[lg] = {}
+        for role, rows in roles.items():
+            kept = [r for r in rows if _within_window(r)]
+            out[lg][role] = kept
+    return out
+
+
 def load_league_role_data():
     """Ritorna (role_data, role_counts) per lega, riusando parse_consiglio/
     load_card_counts/latest_consiglio del modulo importato -- identica
@@ -451,6 +491,18 @@ def main():
           (", ".join(f"{LABELS[t]}={counts[t]}" for t in richiesti) if richiesti else "nessuna"))
 
     role_data, role_counts = load_league_role_data()
+
+    prima = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
+    role_data = filter_by_window(role_data)
+    dopo = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
+    print("")
+    print(f"Finestra giornata: solo partite fra adesso e +{MATCH_WINDOW_DAYS:g} giorni "
+          f"(MATCH_WINDOW_DAYS). Candidati " +
+          ", ".join(f"{r}: {prima[r]}->{dopo[r]}" for r in ROLES))
+    if not any(dopo.values()):
+        raise SystemExit("ERRORE: nessun giocatore ha una partita nella finestra richiesta. "
+                         "Consigli non aggiornati per questa giornata, oppure allarga "
+                         "MATCH_WINDOW_DAYS. Nessuna formazione generata.")
 
     for league in DEDICATED_LEAGUES:
         if not all(role_data.get(league, {}).get(r) for r in ROLES):
