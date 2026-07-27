@@ -1,5 +1,5 @@
 """
-Live prediction log (26/07) -- monitoraggio MAE live per i 4 ruoli pool Brasileirao (giocatori eleggibili SO5 'seasonal-rest_of_the_world').
+Live prediction log (26/07) -- monitoraggio MAE live per i 4 ruoli pool Resto del Mondo (giocatori eleggibili SO5 'seasonal-rest_of_the_world').
 
 Modulo condiviso, importato da test_gk.py / test_def.py / test_mid.py /
 test_mls_fwd_all.py. Puramente ADDITIVO: nessuna chiamata API aggiuntiva
@@ -9,20 +9,20 @@ sul runtime del job (una singola lettura+scrittura di un file JSON piccolo
 per giocatore).
 
 Motivazione: finora il modello viene validato SOLO con backtest walk-forward
-su dati storici in cache (formazione_brasile/diagnostics/validate_*.py). Non
+su dati storici in cache (formazione_resto_mondo/diagnostics/validate_*.py). Non
 c'e' nessun tracciamento di quanto le predizioni REALI di produzione (quelle
-scritte nei file .txt in brasile_<ruolo>_all/) si rivelino accurate una volta
+scritte nei file .txt in resto_mondo_<ruolo>_all/) si rivelino accurate una volta
 giocata la partita. Questo modulo scrive, per ogni predizione generata IN
 PRODUZIONE (mai in CALIBRATION_MODE -- quelle run non sono "live"), una
 entry "pending" in prediction_log.json. Lo script separato
-formazione_brasile/diagnostics/resolve_live_predictions.py si occupa in seguito
+formazione_resto_mondo/diagnostics/resolve_live_predictions.py si occupa in seguito
 di verificare (leggendo la cache gia' presente, zero chiamate API) se la
 partita e' stata giocata, e in caso affermativo di calcolare l'errore reale
 e spostare l'entry in prediction_log_resolved.json.
 
 Uso (da ciascuno dei 4 script predict, SOLO se non CALIBRATION_MODE):
 
-    from formazione_brasile.predict.live_prediction_log import log_live_prediction
+    from formazione_resto_mondo.predict.live_prediction_log import log_live_prediction
     log_live_prediction(OUTPUT_DIR, CALIBRATION_MODE, 'gk', result)
 """
 import os

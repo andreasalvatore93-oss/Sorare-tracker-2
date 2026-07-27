@@ -9,8 +9,8 @@ import json
 import glob
 import datetime
 
-OUTPUT_DIR = 'formazione_brasile/output/brasile_fwd_all'
-DISCOVERY_FILE = os.path.join('formazione_brasile/output/brasile_fwd_discovery', 'player_slugs.json')
+OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_fwd_all'
+DISCOVERY_FILE = os.path.join('formazione_resto_mondo/output/resto_mondo_fwd_discovery', 'player_slugs.json')
 
 # Pattern della riga "N) slug: X pt attesi (low-high)" gia' scritta da
 # test_mls_fwd_all.py nel riepilogo di ciascun job (uno per giocatore, quindi

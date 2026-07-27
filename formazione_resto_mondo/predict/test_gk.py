@@ -1,46 +1,48 @@
 """
-test_def (test difensore MLS — prototipo, clone adattato da test_mid.py)
+test_gk (test portiere MLS — prototipo, clone adattato da test_def.py)
 
-Terza versione per il ruolo DIFENSORE. Stessa infrastruttura/formula di
-centrocampisti/attaccanti (query GraphQL, backtest rigoroso, parametri
-fissati), MA con i gruppi granulari ADATTATI: il detailedScore di un
-Defender e' un superset del centrocampista + 3 stat NUOVE verificate dal
-vivo (Mamadou Fofana, score 69, ricostruzione parziale — schema utente
-ancora in corso di conferma completa via screenshot):
-  - clean_sheet_60, effective_clearance (categoria DEFENDING)
-  - long_pass_own_to_opp_success (categoria PASSING)
-E 1 stat ASSENTE rispetto al centrocampista:
-  - was_fouled NON esiste per il difensore (confermato sia da detailedScore
-    reale che da screenshot UI Sorare, assente completamente non solo a 0)
+Quarto ruolo: PORTIERE. Il piu' diverso strutturalmente dagli altri tre.
+Confermato su 2 detailedScore reali (Hugo Lloris, Matt Turner) + screenshot
+UI: il set del portiere e' un SOTTOINSIEME ridotto rispetto agli altri
+ruoli, con le 8 voci GOALKEEPING finalmente valorizzate (erano sempre
+scartate/a 0 per gli altri ruoli).
 
-NOVITA' RICHIESTA ESPLICITA (25/07): cache incrementale del game log
-storico integrata FIN DA SUBITO in questo script (non aggiunta dopo come
-per gli altri ruoli) — cosi' viene testata gia' durante la calibrazione dei
-parametri. Vedi CACHE INCREMENTALE piu' sotto per i dettagli.
+DIFFERENZE STRUTTURALI CHIAVE rispetto agli altri ruoli:
+- NESSUNA categoria DEFENDING (a differenza di difensore/centrocampista)
+- NESSUN gruppo POSSESSION_STATS (duel_won/duel_lost/interception_won/poss_won
+  ASSENTI — solo poss_lost_ctrl esiste nella categoria POSSESSION)
+- PASSING_STATS ridotto: niente long_pass_own_to_opp_success (quello era
+  solo del difensore)
+- was_fouled ASSENTE (come nel difensore, confermato da UI)
+- penalty_save ESCLUSO dalla formula su richiesta esplicita utente: vale
+  +25 standalone o +10 extra se combinato con clean sheet, ma e' un evento
+  troppo raro per giustificare la complessita' di modellarlo
+- **clean_sheet_60 ha SEMPRE totalScore=0 come riga nel detailedScore** — il
+  bonus (+25 circa) e' incorporato nel level_score stesso (~35 normale,
+  ~60 con clean sheet nei primi 60'). Questo e' l'aspetto PIU' IMPORTANTE
+  da modellare correttamente: va rilevato dalla DIFFERENZA nel level_score
+  storico (o dal flag clean_sheet_60==1 nel dettaglio) e trattato come
+  fattore/bonus separato nella formula, NON tramite il normale
+  extract_group_score sui gruppi granulari (che leggerebbe sempre 0).
 
-Formula REALE in produzione (26/07: granulari rimossi da score_atteso dopo
-calibrazione allargata, vedi HALF_LIFE_GAMES sotto -- i gruppi granulari
-restano calcolati solo a scopo diagnostico nell'output):
+Formula IN PRODUZIONE (FIX 25/07: i fattori granulari sono stati rimossi
+dallo score_atteso -- la calibrazione che ha fissato i parametri li
+escludeva gia' (use_granular_factors=False, peggioravano il MAE per questo
+ruolo), ma la produzione li applicava comunque prima di questo fix. Restano
+calcolati e mostrati in output SOLO a scopo diagnostico):
   score_atteso = P(gioca) x media_pesata_esponenziale(N partite)
-                 x fattore_casa_trasferta x fattore_forza_avversario x fattore_trend
+                 x fattore_casa_trasferta x fattore_forza_avversario
+                 x fattore_trend
+                 [+ bonus_clean_sheet gia' incorporato nella media pesata, vedi sotto]
   range_confidenza = +/- dev_std_pesata * RANGE_MULTIPLIER
 
-RARE_EVENTS_STATS (eventi rari) RIMOSSO il 26/07 dai gruppi granulari
-diagnostici: pesava 0.0% sul movimento del punteggio su 1534 partite reali
-(inspect_granular_weights.py) -- rumore puro, nessun segnale perso.
+PARAMETRI: riusati gli stessi valori dei difensori come punto di partenza
+(HALF_LIFE_GAMES=9.0, RANGE_MULTIPLIER=1.2, OPPONENT_SENSITIVITY=29.0,
+TREND_INTENSITY=1.3) — da ricalibrare con un grid search dedicato ai
+portieri quando avremo piu' giocatori di test.
 
-FIX Finding 3 (25/07, audit logica): fattore_casa_trasferta era calcolato sul
-punteggio TOTALE della partita, che pero' include gia' dentro di se' l'intero
-contributo di falli/duelli/passaggio/ecc. -- risultando in un doppio
-conteggio dell'effetto venue (una volta globale, una volta per ogni gruppo
-granulare). Ora fattore_casa_trasferta si calcola SOLO sul RESIDUO (score
-totale meno la somma di tutti i gruppi granulari tracciati), cosi' l'effetto
-venue viene applicato esattamente una volta per ogni punto di score, mai due.
-
-PARAMETRI: riusati gli stessi valori dei centrocampisti come punto di
-partenza (HALF_LIFE_GAMES=12.0, RANGE_MULTIPLIER=1.4, OPPONENT_SENSITIVITY=29.0,
-TREND_INTENSITY=1.0) — da ricalibrare con un grid search dedicato ai
-difensori quando avremo piu' giocatori di test.
+Cache incrementale del game log integrata (stessa logica di
+centrocampisti/difensori/attaccanti).
 
 Nessun giocatore di test verificato ancora per questo campionato (nessun accesso API in questa sessione) -- fallback vuoto, verra' popolato dalla prima discovery reale.
 
@@ -56,10 +58,10 @@ import datetime
 import requests
 
 # NUOVO (26/07, monitoraggio MAE live): modulo condiviso nella stessa
-# cartella, additivo/diagnostico -- vedi formazione_brasile/predict/
+# cartella, additivo/diagnostico -- vedi formazione_resto_mondo/predict/
 # live_prediction_log.py per motivazione e dettagli. sys.path[0] e' gia'
 # la cartella di questo script quando lanciato come `python
-# formazione_brasile/predict/test_def.py`, quindi l'import diretto funziona a
+# formazione_resto_mondo/predict/test_gk.py`, quindi l'import diretto funziona a
 # prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
@@ -73,18 +75,18 @@ except ImportError:
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
 # CALIBRATION_MODE (25/07, grid search allargato): se attivo, legge la lista
-# GLOBALE (tutti i difensori MLS di qualita', non solo posseduti) invece di
+# GLOBALE (tutti i portieri MLS di qualita', non solo posseduti) invece di
 # quella dei posseduti, e riesegue il grid search COMPLETO (72 combinazioni)
 # invece del singolo backtest sui parametri gia' fissati -- usato SOLO per
 # la ricalibrazione one-shot su piu' dati, mai in produzione.
 CALIBRATION_MODE = os.environ.get('CALIBRATION_MODE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
 
 DISCOVERY_FILE = os.path.join(
-    'formazione_brasile/output/brasile_def_discovery_global' if CALIBRATION_MODE else 'formazione_brasile/output/brasile_def_discovery',
+    'formazione_resto_mondo/output/resto_mondo_gk_discovery_global' if CALIBRATION_MODE else 'formazione_resto_mondo/output/resto_mondo_gk_discovery',
     'player_slugs.json')
 
-# Fallback statico SOLO se brasile_def_discovery/player_slugs.json non esiste
-# ancora (nessuna discovery difensori ancora fatta): nessun giocatore
+# Fallback statico SOLO se resto_mondo_gk_discovery/player_slugs.json non esiste
+# ancora (nessuna discovery portieri ancora fatta): nessun giocatore
 # verificato per questo campionato, lista vuota fino al primo run reale.
 _FALLBACK_PLAYER_SLUGS = []
 
@@ -104,16 +106,16 @@ def load_player_slugs():
 PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per giocatore, budget complessita' API limitato)
-HALF_LIFE_GAMES = 9.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionati, granulari ritestati con i veri array -- vincitore hl=9.0/range=1.2/opp_sens=29.0/trend_int=0.7 SENZA granulari, composite score 15.78 vs 15.80 del valore precedente (hl=12.0) -- scarto piccolo ma applicato su richiesta esplicita dellutente.
-RANGE_MULTIPLIER = 1.2  # invariato
-OPPONENT_SENSITIVITY = 29.0  # invariato
-SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto) -- non piu' applicato in produzione per DEF (granulari rimossi da score_atteso, vedi sotto), resta per il grid search/diagnostica
-TREND_INTENSITY = 0.7  # FISSATO (26/07): idem, vedi HALF_LIFE_GAMES sopra
+HALF_LIFE_GAMES = 12.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionati (MLS+K League+Portogallo+Austria+Scozia+Belgio) -- parametri riusati identici per il pool Resto del Mondo, nessuna calibrazione dedicata ancora fatta, granulari ritestati con i veri array (non piu inerti come in un primo tentativo scartato) -- vincitore hl=12.0/range=1.2/opp_sens=29.0/trend_int=0.7 SENZA granulari, composite score 17.60 vs 17.65 del valore precedente (hl=9.0) -- scarto piccolo ma applicato su richiesta esplicita dellutente.
+RANGE_MULTIPLIER = 1.6  # FISSATO (25/07): idem
+OPPONENT_SENSITIVITY = 29.0  # AGGIORNATO (26/07): grid search allargato K League su 3 portieri qualificati (>=3 partite test, campione MOLTO piccolo -- MAE 17.47 vs 17.6x circa con 20.0). Applicato per coerenza con MLS GK (stesso fix, stesso giorno) e con opp_sens=29.0 confermato su TUTTI gli altri ruoli K League (MID/FWD gia' a 29.0) tranne DEF (vedi nota separata, segnale opposto non applicato).
+SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
+TREND_INTENSITY = 0.7  # FISSATO (25/07): idem
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
-MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale, causava esclusioni indesiderate nel grid search allargato).
+MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale che ha causato l'esclusione di 25/27 portieri nel primo batch di grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
-OUTPUT_DIR = 'formazione_brasile/output/brasile_def_calibration' if CALIBRATION_MODE else 'formazione_brasile/output/brasile_def_all'
+OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_gk_calibration' if CALIBRATION_MODE else 'formazione_resto_mondo/output/resto_mondo_gk_all'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
@@ -153,7 +155,7 @@ def _dump_debug(label, payload, resp=None, error=None):
 
 def log(msg):
     ts = datetime.datetime.utcnow().isoformat() + 'Z'
-    print(f"[{ts}] [test_def] {msg}")
+    print(f"[{ts}] [test_gk] {msg}")
 
 
 MIN_QUERY_INTERVAL_SECONDS = 0.5  # pausa minima tra chiamate GraphQL consecutive, per non concentrare troppe richieste ravvicinate
@@ -405,7 +407,7 @@ def fetch_game_detail(score_id, cache, is_final):
 
 # ---------------------------------------------------------------------------
 # CACHE INCREMENTALE DEL GAME LOG (NUOVO, 25/07, richiesta esplicita utente:
-# integrata di default fin dal primo script difensori, per essere testata
+# integrata di default fin dal primo script portieri, per essere testata
 # gia' durante la calibrazione dei parametri).
 #
 # Problema risolto: fetch_game_log() riscaricava SEMPRE tutte le `first`
@@ -665,41 +667,59 @@ def team_ranking_from_game(game, player_team_slug):
 
 # Stat da sommare per ciascun gruppo granulare (nomi come appaiono in detailedScore).
 # Sono fattori SEPARATI (non un indice unico), come richiesto: ognuno produce il
-# proprio fattore casa/trasferta indipendente. Raggruppati per CATEGORIA SORARE
-# (stesse categorie mostrate nella UI Sorare: Generale/Difesa/Possesso/Passaggio/
-# In attacco), come da richiesta esplicita dell'utente.
-# NOTA DIFENSORE: was_fouled RIMOSSO dal gruppo — confermato ASSENTE dal set
-# di stat del difensore (sia da detailedScore reale che da screenshot UI
-# Sorare), a differenza di attaccante/centrocampista dove esiste sempre.
-FOULS_STATS = ('fouls',)
-DUELS_STATS = ('duel_won', 'duel_lost', 'poss_lost_ctrl', 'interception_won')
-OFFENSIVE_STATS = ('ontarget_scoring_att', 'big_chance_created', 'big_chance_missed',
-                    'pen_area_entries', 'won_contest')
-# Categoria "Passaggio" Sorare: stat frequenti, nessun cap necessario.
-# accurate_long_balls (gia' nel centrocampista) + long_pass_own_to_opp_success
-# (NUOVO, SOLO difensore, verificato dal vivo su Mamadou Fofana).
+# proprio fattore casa/trasferta indipendente. Raggruppati per CATEGORIA SORARE.
+# NOTA PORTIERE: struttura RIDOTTA rispetto agli altri ruoli — confermato su
+# 2 detailedScore reali (Hugo Lloris, Matt Turner) + screenshot UI.
+# was_fouled ASSENTE (come il difensore). NESSUN POSSESSION_STATS (duel_won/
+# duel_lost/interception_won/poss_won assenti — solo poss_lost_ctrl esiste).
+# NESSUNA categoria DEFENDING (quindi niente GOALKEEPING_STATS/
+# DEFENSIVE_ACTIONS_STATS come nel difensore/centrocampista).
+# RIMOSSI (26/07, diagnostico inspect_granular_weights.py su 268 partite
+# reali/29 portieri): FOULS_STATS, OFFENSIVE_STATS, RARE_EVENTS_STATS
+# pesavano 0.0% sul movimento totale del punteggio -- rumore puro, nessun
+# segnale perso rimuovendoli. Erano gia' solo diagnostici (mai in
+# score_atteso), quindi la rimozione non cambia il comportamento reale del
+# modello, solo pulisce codice/output.
+# Nota: "duelli" per il portiere si riduce a un solo campo (possesso perso),
+# non un vero "duello" come per gli altri ruoli — mantenuto come gruppo a
+# se stante per coerenza di posizione nella formula, ma con un solo campo.
+POSSESSION_STATS = ('poss_lost_ctrl',)
+# Categoria "Passaggio": RIDOTTA rispetto al difensore — manca
+# long_pass_own_to_opp_success (quella era specifica del difensore).
 PASSING_STATS = ('accurate_pass', 'successful_final_third_passes', 'adjusted_total_att_assist',
-                  'accurate_long_balls', 'long_pass_own_to_opp_success')
-# Categoria "Difesa" Sorare + altri eventi rarissimi: achievement compositi
-# (double/triple) e azioni difensive eccezionali, quasi sempre 0.
-DEFENSE_RARE_STATS = ('double_double', 'triple_double', 'triple_triple', 'last_man_tackle',
-                       'clearance_off_line', 'error_lead_to_shot', 'assist_penalty_won')
-DEFENSE_RARE_CAP = 10.0
-# Azioni difensive "normali" (non rare/achievement), gia' presenti nel
-# centrocampista — frequenti ogni partita anche per un difensore.
-DEFENSIVE_ACTIONS_STATS = ('won_tackle', 'blocked_cross', 'outfielder_block')
-# Gol subiti dalla propria squadra mentre in campo (negativo). Cappato per
-# non far esplodere la stima su una goleada subita. Ancora piu' rilevante
-# per un difensore che per un centrocampista.
+                  'accurate_long_balls', 'missed_pass')
+# Gol subiti dalla propria squadra mentre in campo (negativo). Il piu'
+# rilevante di tutti i gruppi granulari per un portiere.
 GOALS_CONCEDED_STATS = ('goals_conceded',)
 GOALS_CONCEDED_CAP = 10.0
-# NUOVO gruppo SOLO difensore: clean sheet nei primi 60' + disimpegni riusciti
-# (effective_clearance) — azioni difensive di alto valore specifiche del
-# ruolo, verificate dal vivo su Mamadou Fofana (clean_sheet_60=10pt fisso se
-# porta inviolata nei primi 60', effective_clearance proporzionale al numero
-# di disimpegni riusciti).
-CLEAN_SHEET_STATS = ('clean_sheet_60', 'effective_clearance')
+# NUOVO gruppo SOLO PORTIERE: le 8 voci GOALKEEPING, finalmente valorizzate
+# (per tutti gli altri ruoli erano scartate perche' sempre a 0). Nessun cap:
+# sono il cuore del punteggio di un portiere, non eventi rari da limitare.
+GOALKEEPING_STATS = ('saves', 'saved_ibox', 'good_high_claim', 'punches', 'dive_save',
+                      'dive_catch', 'cross_not_claimed', 'six_second_violation',
+                      'gk_smother', 'accurate_keeper_sweeper')
 
+# ---------------------------------------------------------------------------
+# GESTIONE SPECIALE: bonus clean sheet (25/07)
+# clean_sheet_60 ha SEMPRE totalScore=0 come riga nel detailedScore per il
+# portiere (a differenza del difensore, dove vale 10pt reali) — il bonus
+# (~25 punti) e' incorporato nel level_score stesso: ~35 se ha subito gol
+# nei primi 60', ~60 se ha mantenuto la porta inviolata. NON puo' quindi
+# essere estratto con extract_group_score come gli altri gruppi (leggerebbe
+# sempre 0) — va rilevato dal campo clean_sheet_60.statValue (1.0/0.0) nel
+# detailedScore, che RIMANE un flag valido anche se il suo totalScore e' 0.
+# ---------------------------------------------------------------------------
+
+def extract_clean_sheet_flag(detail):
+    """Ritorna 1.0 se clean_sheet_60 risulta statValue=1 nel detailedScore
+    (porta inviolata nei primi 60'), 0.0 altrimenti. Usa statValue (non
+    totalScore, che per il portiere e' sempre 0 — il bonus e' nel level_score)."""
+    if not detail:
+        return 0.0
+    for entry in (detail.get('detailedScore') or []):
+        if entry.get('stat') == 'clean_sheet_60':
+            return float(entry.get('statValue') or 0.0)
+    return 0.0
 
 
 
@@ -802,10 +822,8 @@ def compute_trend_factor(scores, short_window=5, long_window=10, trend_intensity
 
 def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                        half_life=None, range_multiplier=1.0, opponent_sensitivity=29.0,
-                       fouls_values=None, duels_values=None, offensive_values=None,
-                       passing_values=None, defense_rare_values=None,
-                       defensive_actions_values=None, goals_conceded_values=None,
-                       clean_sheet_values=None, residual_values=None,
+                       possession_values=None,
+                       passing_values=None, goalkeeping_values=None, goals_conceded_values=None,
                        use_granular_factors=False, use_trend=False, trend_intensity=1.0):
     """Backtest rigoroso: per ogni partita a partire da 'min_history' partite di
     storico disponibile, ricalcola l'INTERA formula (media pesata esponenziale +
@@ -841,17 +859,17 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
         media = weighted_mean(hist_scores, w)
         dev_std = weighted_stddev(hist_scores, w, media)
 
-        # fattore casa/trasferta (FIX Finding 3, 25/07): calcolato SOLO sul
-        # RESIDUO (punteggio non coperto da nessun gruppo granulare), non piu'
-        # sul punteggio totale grezzo -- altrimenti l'effetto casa/trasferta
-        # sarebbe contato una volta qui E di nuovo dentro ogni gruppo
-        # granulare che lo attraversa (doppio conteggio). Usando lo stesso
-        # compute_split_factor del resto dei gruppi sul solo residuo, l'intero
-        # punteggio viene aggiustato per venue esattamente una volta per punto.
+        # fattore casa/trasferta calcolato SOLO sullo storico precedente
+        h_scores = [s for s, h in zip(hist_scores, hist_home_flags) if h is True]
+        a_scores = [s for s, h in zip(hist_scores, hist_home_flags) if h is False]
+        h_avg = sum(h_scores) / len(h_scores) if h_scores else media
+        a_avg = sum(a_scores) / len(a_scores) if a_scores else media
+        overall_avg = (h_avg + a_avg) / 2 if (h_scores and a_scores) else media
+
         target_is_home = is_home_flags[i]
         fattore_ct = 1.0
-        if residual_values is not None:
-            fattore_ct = compute_split_factor(residual_values[:i], hist_home_flags, target_is_home)
+        if overall_avg > 0:
+            fattore_ct = (h_avg / overall_avg) if target_is_home else (a_avg / overall_avg)
 
         # fattore forza avversario calcolato SOLO sullo storico precedente
         valid_ranks = [r for r in hist_opp_ranks if r is not None]
@@ -865,9 +883,8 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 
         fattore_granulare_totale = 1.0
         if use_granular_factors:
-            for values in (fouls_values, duels_values, offensive_values,
-                           passing_values, defense_rare_values, defensive_actions_values,
-                           goals_conceded_values, clean_sheet_values):
+            for values in (possession_values,
+                           passing_values, goalkeeping_values, goals_conceded_values):
                 if values is not None:
                     hist_values = values[:i]
                     f = compute_split_factor(hist_values, hist_home_flags, target_is_home)
@@ -944,10 +961,8 @@ GRID_SEARCH_COMBINATIONS = _build_grid_combinations()
 
 
 def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                     fouls_values=None, duels_values=None, offensive_values=None,
-                     passing_values=None, defense_rare_values=None,
-                     defensive_actions_values=None, goals_conceded_values=None,
-                     clean_sheet_values=None, residual_values=None):
+                     possession_values=None,
+                     passing_values=None, goalkeeping_values=None, goals_conceded_values=None):
     """Esegue il backtest rigoroso con tutte le combinazioni di parametri in
     GRID_SEARCH_COMBINATIONS e ritorna i risultati ordinati per MAE crescente
     (il migliore per primo). Il 'punteggio' finale usato per il ranking bilancia
@@ -957,14 +972,10 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
         bt = rigorous_backtest(scores, is_home_flags, opponent_rankings,
                                 min_history=min_history, half_life=half_life,
                                 range_multiplier=range_mult, opponent_sensitivity=opp_sens,
-                                fouls_values=fouls_values, duels_values=duels_values,
-                                offensive_values=offensive_values,
+                                possession_values=possession_values,
                                 passing_values=passing_values,
-                                defense_rare_values=defense_rare_values,
-                                defensive_actions_values=defensive_actions_values,
+                                goalkeeping_values=goalkeeping_values,
                                 goals_conceded_values=goals_conceded_values,
-                                clean_sheet_values=clean_sheet_values,
-                                residual_values=residual_values,
                                 use_granular_factors=use_granular,
                                 use_trend=use_trend,
                                 trend_intensity=trend_intensity)
@@ -1134,15 +1145,11 @@ def build_prediction(player_slug):
     is_home_flags = []
     opponent_rankings = []
     own_rankings = []
-    fouls_values = []
-    duels_values = []
-    offensive_values = []
+    possession_values = []
     passing_values = []
-    defense_rare_values = []
-    defensive_actions_values = []
+    goalkeeping_values = []
     goals_conceded_values = []
-    clean_sheet_values = []
-    residual_values = []  # NUOVO (FIX Finding 3, 25/07): punteggio totale meno tutti i gruppi granulari tracciati (vedi compute_split_factor/fattore_casa_trasferta piu' sotto)
+    clean_sheet_flag_values = []  # 1.0/0.0 per partita: porta inviolata nei primi 60' (vedi extract_clean_sheet_flag)
     level_score_values = []  # NUOVO (26/07, Stadio A): "Punteggio decisivo" per partita
     granulari_values = []  # NUOVO (26/07, Stadio A): resto del punteggio (= score - level_score)
 
@@ -1158,33 +1165,15 @@ def build_prediction(player_slug):
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
 
-        fouls_v = extract_group_score(detail, FOULS_STATS)
-        duels_v = extract_group_score(detail, DUELS_STATS)
-        offensive_v = extract_group_score(detail, OFFENSIVE_STATS)
-        passing_v = extract_group_score(detail, PASSING_STATS)
-        defense_raw = extract_group_score(detail, DEFENSE_RARE_STATS)
-        defensive_actions_v = extract_group_score(detail, DEFENSIVE_ACTIONS_STATS)
+        possession_values.append(extract_group_score(detail, POSSESSION_STATS))
+        passing_values.append(extract_group_score(detail, PASSING_STATS))
+        goalkeeping_values.append(extract_group_score(detail, GOALKEEPING_STATS))  # nessun cap: e' il cuore del punteggio portiere
         goals_conceded_raw = extract_group_score(detail, GOALS_CONCEDED_STATS)
-        clean_sheet_v = extract_group_score(detail, CLEAN_SHEET_STATS)
-
-        fouls_values.append(fouls_v)
-        duels_values.append(duels_v)
-        offensive_values.append(offensive_v)
-        passing_values.append(passing_v)
-        defense_rare_values.append(max(-DEFENSE_RARE_CAP, min(DEFENSE_RARE_CAP, defense_raw)))
-        defensive_actions_values.append(defensive_actions_v)
         goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
-        clean_sheet_values.append(clean_sheet_v)
+        clean_sheet_flag_values.append(extract_clean_sheet_flag(detail))
         level_score_v = extract_level_score(detail)
         level_score_values.append(level_score_v)
         granulari_values.append(game_score - level_score_v)
-
-        # Residuo = tutto cio' che NON e' in nessun gruppo granulare tracciato
-        # sopra (usiamo i valori REALI non cappati per i gruppi con cap, cosi'
-        # il residuo resta coerente con il punteggio reale della partita).
-        covered_total = (fouls_v + duels_v + offensive_v + passing_v
-                         + defense_raw + defensive_actions_v + goals_conceded_raw + clean_sheet_v)
-        residual_values.append(game_score - covered_total)
 
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
@@ -1195,7 +1184,11 @@ def build_prediction(player_slug):
 
     # --- Stadio A (26/07, tema level_score): media pesata separata per
     # level_score ("Punteggio decisivo") e resto ("Punteggio complessivo") --
-    # solo diagnostico per ora, non entra ancora in score_atteso.
+    # solo diagnostico per ora, non entra ancora in score_atteso. La somma
+    # delle due deve coincidere con media_pesata (stesso half-life, stessa
+    # scomposizione additiva score=level_score+granulari verificata su dati
+    # reali) -- eventuali scarti sono dovuti al floor (level_score>=60 puo'
+    # rendere la scomposizione per-partita non lineare, la media resta valida).
     media_level_score_pesata = weighted_mean(level_score_values, weights)
     media_granulari_pesata = weighted_mean(granulari_values, weights)
 
@@ -1207,11 +1200,12 @@ def build_prediction(player_slug):
     p16_score = weighted_percentile(scores, weights, 16)
     p84_score = weighted_percentile(scores, weights, 84)
 
-    # --- Medie casa/trasferta (solo descrittive, per l'output) ---
+    # --- Fattore casa/trasferta (score totale, gia' esistente) ---
     home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
     away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
     home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
     away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
+    overall_avg_for_factor = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
 
     # --- Prossima partita: contesto target ---
     log("[FASE 4/4] Calcolo fattori e predizione finale sulla prossima partita target...")
@@ -1248,24 +1242,39 @@ def build_prediction(player_slug):
             next_own_rank, next_opp_rank, next_is_home = team_ranking_from_game(
                 next_detail['anyGame'], player_team_slug)
 
-    # FIX (Finding 3, 25/07): fattore casa/trasferta calcolato sul RESIDUO
-    # (punteggio non coperto da nessun gruppo granulare), non piu' sul
-    # punteggio totale -- evita di contare l'effetto venue una volta qui e
-    # di nuovo dentro ogni fattore granulare sottostante.
-    fattore_casa_trasferta = compute_split_factor(residual_values, is_home_flags, next_is_home)
+    fattore_casa_trasferta = 1.0
+    if overall_avg_for_factor > 0:
+        if next_is_home:
+            fattore_casa_trasferta = home_avg / overall_avg_for_factor
+        else:
+            fattore_casa_trasferta = away_avg / overall_avg_for_factor
 
-    # --- Fattori granulari SEPARATI: falli, duelli, efficacia offensiva ---
+    # --- Fattori granulari SEPARATI (26/07: falli/efficacia offensiva/eventi
+    # rari rimossi, pesavano 0.0% su 268 partite reali -- vedi
+    # inspect_granular_weights.py) ---
     # Ognuno e' un fattore casa/trasferta indipendente, calcolato sui dati REALI
-    # del detailedScore delle 14 partite (non stime). Gli eventi rari (rigori,
-    # autogol, errori-a-gol) sono gia' stati cappati in fase di estrazione.
-    fattore_falli = compute_split_factor(fouls_values, is_home_flags, next_is_home)
-    fattore_duelli = compute_split_factor(duels_values, is_home_flags, next_is_home)
-    fattore_offensivo = compute_split_factor(offensive_values, is_home_flags, next_is_home)
+    # del detailedScore delle 14 partite (non stime).
+    fattore_possesso = compute_split_factor(possession_values, is_home_flags, next_is_home)
     fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home)
-    fattore_difesa_rari = compute_split_factor(defense_rare_values, is_home_flags, next_is_home)
-    fattore_azioni_difensive = compute_split_factor(defensive_actions_values, is_home_flags, next_is_home)
+    fattore_goalkeeping = compute_split_factor(goalkeeping_values, is_home_flags, next_is_home)
     fattore_gol_subiti = compute_split_factor(goals_conceded_values, is_home_flags, next_is_home)
-    fattore_clean_sheet = compute_split_factor(clean_sheet_values, is_home_flags, next_is_home)
+
+    # --- Bonus clean sheet (25/07, gestione SPECIALE per il portiere) ---
+    # Non e' un fattore moltiplicativo granulare come gli altri (il totalScore
+    # di clean_sheet_60 e' sempre 0 nel detailedScore, il bonus reale e'
+    # incorporato nel level_score). Calcoliamo invece la FREQUENZA storica di
+    # clean sheet (quante volte su N partite ha mantenuto la porta inviolata
+    # nei primi 60') e la usiamo per stimare un BONUS ADDITIVO atteso: se il
+    # giocatore fa clean sheet il 40% delle volte, ci aspettiamo in media
+    # +0.40 * BONUS_CLEAN_SHEET_POINTS punti extra sul level_score rispetto
+    # alla media pesata (che gia' include implicitamente la frequenza storica
+    # di clean sheet passata, ma qui la applichiamo esplicitamente al prossimo
+    # match per trasparenza diagnostica — il valore e' comunque gia' presente
+    # nella media_pesata, quindi bonus_clean_sheet_atteso NON viene sommato
+    # una seconda volta allo score_atteso, resta solo informativo in output).
+    BONUS_CLEAN_SHEET_POINTS = 25.0  # osservato: level_score ~60 con clean sheet vs ~35 senza, delta ~25
+    clean_sheet_rate = sum(clean_sheet_flag_values) / len(clean_sheet_flag_values) if clean_sheet_flag_values else 0.0
+    bonus_clean_sheet_atteso = clean_sheet_rate * BONUS_CLEAN_SHEET_POINTS  # solo diagnostico, vedi nota sopra
 
     # --- Fattore forza avversario (lineare sul ranking assoluto) ---
     # Ranking medio delle 14 partite (tra gli avversari con dato disponibile)
@@ -1296,20 +1305,27 @@ def build_prediction(player_slug):
     fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(
         scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
 
-    # FISSATO (26/07): granulari rimossi dallo score_atteso reale, come gia'
-    # fatto per GK -- calibrazione allargata pesata per n_test (68 difensori,
-    # min 3 partite di backtest) indica che senza granulari generalizza meglio
-    # (MAE 16.28 vs 16.35 con). I fattori restano calcolati sopra e nel result
-    # dict solo a scopo diagnostico/di visualizzazione nell'output. Confermato
-    # dall'utente dopo confronto A/B su formazioni reali.
+    # FIX (25/07): i fattori granulari NON entrano piu' nello score_atteso di
+    # produzione. La calibrazione che ha fissato i parametri sopra (grid
+    # search su 12 portieri) ha scelto la combinazione vincente SENZA
+    # fattori granulari (use_granular_factors=False in rigorous_backtest,
+    # vedi commento su TREND_INTENSITY), perche' peggioravano sempre il
+    # risultato per questo ruolo. Prima di questo fix la produzione li
+    # includeva comunque, per cui il MAE/copertura mostrati (calcolati sul
+    # backtest senza granulari) non descrivevano la formula realmente usata.
+    # I fattori restano calcolati sopra e nel result dict solo a scopo
+    # diagnostico/di visualizzazione nell'output.
     # RIMOSSO da score_atteso il 26/07 (terza sessione), DECISO CON L'UTENTE
     # dopo backtest walk-forward rigoroso (formazione_mls/diagnostics/
     # validate_team_defense_strength.py): fattore_forza_avversario (ranking
     # di campionato) PEGGIORA il MAE reale -- rimuoverlo del tutto batte sia
     # il ranking attuale sia una metrica alternativa piu' specifica (gol
     # subiti storici dall'avversario, testata con grid search sul
-    # coefficiente di sensibilita'): -6.65% rimuovendolo vs -2.84% con gol
-    # subiti (miglior sensibilita' trovata). Stesso risultato di Stadio D:
+    # coefficiente di sensibilita'): -4.02% rimuovendolo vs -6.08% con gol
+    # subiti a sensibilita' quasi nulla per GK (unico ruolo dove
+    # l'alternativa batte la rimozione totale, per margine minimo che non
+    # giustifica la nuova infrastruttura di query team-level richiesta in
+    # produzione -- vedi commento sotto). Stesso risultato di Stadio D:
     # con soli 10-15 partite di storico per giocatore, condizionare per
     # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
     # Il fattore resta calcolato sopra e nel result dict solo a scopo
@@ -1317,51 +1333,45 @@ def build_prediction(player_slug):
     score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
                     * fattore_trend)
 
-    # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
-    # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
-    # ruoli"): la versione precedente di questo Stadio D condizionava il
-    # granulare AGGREGATO (venue z=+5.10, avversario z=-3.21). Scomponendolo
-    # nelle sue sotto-categorie reali il segnale e' molto piu' forte E
-    # concentrato in poche categorie specifiche, mentre altre (Duelli, Falli,
-    # Efficacia offensiva, Difesa/eventi rarissimi, Azioni difensive) non
-    # mostrano nessun segnale utile e vengono lasciate NON condizionate:
-    # - "Gol subiti" (goals_conceded): piu' alto/meno negativo in casa
-    #   (z=+7.02) e contro avversari deboli (z=-4.16) -- il segnale piu'
-    #   forte in assoluto su tutto il modello.
-    # - "Passaggio": piu' alto in casa (z=+4.53) e contro avversari deboli
-    #   (z=-2.71).
-    # - "Clean sheet/disimpegni" (clean_sheet_60+effective_clearance): piu'
-    #   alto in casa (z=+3.17) e contro avversari deboli (z=-2.57).
-    # L'ipotesi iniziale dell'utente (un difensore contro una squadra forte
-    # avrebbe piu' occasioni di fare granulare per il maggior possesso
-    # avversario) NON e' confermata su nessuna sotto-categoria -- vale il
-    # pattern opposto ovunque, vedi docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md
-    # sezione 11/12. SOSTITUISCE (non si somma a) la vecchia conditioning
-    # sull'aggregato, per non contare due volte lo stesso segnale. Stessa
-    # correzione additiva/shrinkage delle altre correzioni Stadio D.
+    # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
+    # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo
+    # backtest walk-forward rigoroso su dati reali (formazione_mls/diagnostics/
+    # validate_stadio_d_mae.py): le correlazioni aggregate erano statisticamente
+    # solide (z fino a -3.49 per Gol subiti), ma applicate per-giocatore con
+    # shrinkage PEGGIORAVANO il MAE reale del +4.21% (129 punti di test walk-
+    # forward, 15 portieri) -- 59% delle partite predette peggio, non meglio.
+    # L'effetto e' probabilmente reale a livello di popolazione ma troppo
+    # "diluito" per essere sfruttato con soli ~10-15 partite di storico per
+    # portiere: lo shrinkage non basta a compensare il rumore campionario
+    # individuale. Confermato solo per GK (unico ruolo dove il backtest ha
+    # mostrato un peggioramento netto, non solo rumore) -- DEF/MID/FWD
+    # restano invariati (variazione MAE sostanzialmente nulla, ne' beneficio
+    # ne' danno misurato). Calcolo lasciato SOLO diagnostico in output,
+    # NON piu' applicato a score_atteso.
     opponent_forte_flags = [
         (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
         for r in opponent_rankings
     ]
     next_forte = (next_opp_rank < avg_opp_rank_hist) if (
         next_opp_rank is not None and avg_opp_rank_hist is not None) else None
+    media_level_score_condizionata = media_condizionata(
+        level_score_values, weights, opponent_forte_flags, next_forte, media_level_score_pesata)
+    delta_condizionamento_avversario = media_level_score_condizionata - media_level_score_pesata
 
-    def _condiziona_venue_avversario(values):
-        fallback = weighted_mean(values, weights)
-        cond_venue = media_condizionata(values, weights, is_home_flags, next_is_home, fallback)
-        cond_avv = media_condizionata(values, weights, opponent_forte_flags, next_forte, fallback)
-        return cond_venue, cond_avv, cond_venue - fallback, cond_avv - fallback
+    media_gol_subiti_condizionata_venue = media_condizionata(
+        goals_conceded_values, weights, is_home_flags, next_is_home, weighted_mean(goals_conceded_values, weights))
+    media_gol_subiti_condizionata_avversario = media_condizionata(
+        goals_conceded_values, weights, opponent_forte_flags, next_forte, weighted_mean(goals_conceded_values, weights))
+    media_possesso_condizionata_venue = media_condizionata(
+        possession_values, weights, is_home_flags, next_is_home, weighted_mean(possession_values, weights))
+    media_goalkeeping_condizionata_venue = media_condizionata(
+        goalkeeping_values, weights, is_home_flags, next_is_home, weighted_mean(goalkeeping_values, weights))
 
-    (media_gol_subiti_condizionata_venue, media_gol_subiti_condizionata_avversario,
-     delta_gol_subiti_venue, delta_gol_subiti_avversario) = _condiziona_venue_avversario(goals_conceded_values)
-    (media_passaggio_condizionata_venue, media_passaggio_condizionata_avversario,
-     delta_passaggio_venue, delta_passaggio_avversario) = _condiziona_venue_avversario(passing_values)
-    (media_clean_sheet_condizionata_venue, media_clean_sheet_condizionata_avversario,
-     delta_clean_sheet_venue, delta_clean_sheet_avversario) = _condiziona_venue_avversario(clean_sheet_values)
-
-    score_atteso += p_gioca * (delta_gol_subiti_venue + delta_gol_subiti_avversario
-                                + delta_passaggio_venue + delta_passaggio_avversario
-                                + delta_clean_sheet_venue + delta_clean_sheet_avversario)
+    delta_gol_subiti_venue = media_gol_subiti_condizionata_venue - weighted_mean(goals_conceded_values, weights)
+    delta_gol_subiti_avversario = media_gol_subiti_condizionata_avversario - weighted_mean(goals_conceded_values, weights)
+    delta_possesso_venue = media_possesso_condizionata_venue - weighted_mean(possession_values, weights)
+    delta_goalkeeping_venue = media_goalkeeping_condizionata_venue - weighted_mean(goalkeeping_values, weights)
+    # NOTA: nessuno dei delta sopra viene piu' sommato a score_atteso (vedi motivazione).
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
@@ -1389,40 +1399,37 @@ def build_prediction(player_slug):
     backtest_weights = exponential_weights(len(backtest_scores), HALF_LIFE_GAMES) if backtest_scores else []
     backtest_media = weighted_mean(backtest_scores, backtest_weights) if backtest_scores else None
 
+
     # --- Backtest RIGOROSO sui parametri FISSATI (25/07, uso reale/produzione) ---
-    # Grid search di calibrazione GIA' concluso (45 difensori posseduti,
-    # MAE medio 15.65, copertura 69.4%). Non serve piu' rieseguire 72
-    # combinazioni ad ogni giocatore in produzione — un solo backtest sui
-    # parametri fissati, molto piu' veloce.
+    # Grid search di calibrazione GIA' concluso (12 portieri posseduti con dati
+    # sufficienti, MAE medio 21.03, copertura 63.3% — combinazione vincente SENZA
+    # fattori granulari, che peggioravano sempre il risultato per questo ruolo).
+    # Non serve piu' rieseguire 72 combinazioni ad ogni giocatore in produzione —
+    # un solo backtest sui parametri fissati, molto piu' veloce.
     if CALIBRATION_MODE:
+        # Grid search allargato (25/07): riesegue tutte le combinazioni su
+        # tutti i portieri MLS di qualita' (non solo i posseduti), per
+        # ricalibrare i parametri su un campione molto piu' ampio.
         log("CALIBRATION_MODE attivo: esecuzione grid search completo (72 combinazioni)...")
         grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                                        fouls_values=fouls_values, duels_values=duels_values,
-                                        offensive_values=offensive_values,
+                                        possession_values=possession_values,
                                         passing_values=passing_values,
-                                        defense_rare_values=defense_rare_values,
-                                        defensive_actions_values=defensive_actions_values,
-                                        goals_conceded_values=goals_conceded_values,
-                                        clean_sheet_values=clean_sheet_values,
-                                        residual_values=residual_values)
+                                        goalkeeping_values=goalkeeping_values,
+                                        goals_conceded_values=goals_conceded_values)
         rigorous_bt = grid_results[0] if grid_results else None
     else:
         log("Esecuzione backtest rigoroso sui parametri fissati...")
         rigorous_bt = rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
                                          half_life=HALF_LIFE_GAMES, range_multiplier=RANGE_MULTIPLIER,
                                          opponent_sensitivity=OPPONENT_SENSITIVITY,
-                                         fouls_values=fouls_values, duels_values=duels_values,
-                                         offensive_values=offensive_values,
+                                         possession_values=possession_values,
                                          passing_values=passing_values,
-                                         defense_rare_values=defense_rare_values,
-                                         defensive_actions_values=defensive_actions_values,
+                                         goalkeeping_values=goalkeeping_values,
                                          goals_conceded_values=goals_conceded_values,
-                                         clean_sheet_values=clean_sheet_values,
-                                         residual_values=residual_values,
-                                         use_granular_factors=True, use_trend=True,
+                                         use_granular_factors=False, use_trend=True,
                                          trend_intensity=TREND_INTENSITY)
         rigorous_bt['label'] = (f"hl={HALF_LIFE_GAMES}+range={RANGE_MULTIPLIER}x+"
-                                f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA 45 posseduti)")
+                                f"opp_sens={OPPONENT_SENSITIVITY}+trend_int={TREND_INTENSITY} (FISSATA 12 posseduti)")
         if rigorous_bt['mae'] is not None:
             log(f"Backtest completato: MAE={rigorous_bt['mae']:.2f}, "
                 f"copertura={rigorous_bt['pct_dentro_range']:.1f}%")
@@ -1445,12 +1452,12 @@ def build_prediction(player_slug):
         'dev_std_trimmed': dev_std_trimmed,
         'media_level_score_pesata': media_level_score_pesata,
         'media_granulari_pesata': media_granulari_pesata,
+        'media_level_score_condizionata': media_level_score_condizionata,
+        'delta_condizionamento_avversario': delta_condizionamento_avversario,
         'delta_gol_subiti_venue': delta_gol_subiti_venue,
         'delta_gol_subiti_avversario': delta_gol_subiti_avversario,
-        'delta_passaggio_venue': delta_passaggio_venue,
-        'delta_passaggio_avversario': delta_passaggio_avversario,
-        'delta_clean_sheet_venue': delta_clean_sheet_venue,
-        'delta_clean_sheet_avversario': delta_clean_sheet_avversario,
+        'delta_possesso_venue': delta_possesso_venue,
+        'delta_goalkeeping_venue': delta_goalkeeping_venue,
         'p16_score': p16_score,
         'p84_score': p84_score,
         'home_avg': home_avg,
@@ -1458,18 +1465,16 @@ def build_prediction(player_slug):
         'fattore_casa_trasferta': fattore_casa_trasferta,
         'avg_opp_rank_hist': avg_opp_rank_hist,
         'next_opp_rank': next_opp_rank,
-        'next_opponent_team_slug': next_opponent_team_slug,
         'next_own_rank': next_own_rank,
+        'next_opponent_team_slug': next_opponent_team_slug,
         'next_is_home': next_is_home,
         'fattore_forza_avversario': fattore_forza_avversario,
-        'fattore_falli': fattore_falli,
-        'fattore_duelli': fattore_duelli,
-        'fattore_offensivo': fattore_offensivo,
+        'fattore_possesso': fattore_possesso,
         'fattore_passaggio': fattore_passaggio,
-        'fattore_difesa_rari': fattore_difesa_rari,
-        'fattore_azioni_difensive': fattore_azioni_difensive,
+        'fattore_goalkeeping': fattore_goalkeeping,
         'fattore_gol_subiti': fattore_gol_subiti,
-        'fattore_clean_sheet': fattore_clean_sheet,
+        'clean_sheet_rate': clean_sheet_rate,
+        'bonus_clean_sheet_atteso': bonus_clean_sheet_atteso,
         'fattore_trend': fattore_trend,
         'trend_avg_short': trend_avg_short,
         'trend_avg_long': trend_avg_long,
@@ -1518,14 +1523,15 @@ def format_output(result):
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
                  f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
+    lines.append(f"  Punteggio decisivo condizionato per forza prossimo avversario: "
+                 f"{result['media_level_score_condizionata']:.2f} (delta {result['delta_condizionamento_avversario']:+.2f} "
+                 f"vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 "
+                 f"dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)")
     lines.append(f"  Gol subiti condizionato: delta venue {result['delta_gol_subiti_venue']:+.2f}, "
-                 f"delta avversario {result['delta_gol_subiti_avversario']:+.2f} | Passaggio condizionato: "
-                 f"delta venue {result['delta_passaggio_venue']:+.2f}, delta avversario "
-                 f"{result['delta_passaggio_avversario']:+.2f} | Clean sheet/disimpegni condizionato: "
-                 f"delta venue {result['delta_clean_sheet_venue']:+.2f}, delta avversario "
-                 f"{result['delta_clean_sheet_avversario']:+.2f} "
-                 f"(Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON "
-                 f"condizionato, nessun segnale utile per DEF)")
+                 f"delta avversario {result['delta_gol_subiti_avversario']:+.2f} | Possesso condizionato per venue: "
+                 f"delta {result['delta_possesso_venue']:+.2f} | Goalkeeping condizionato per venue: "
+                 f"delta {result['delta_goalkeeping_venue']:+.2f} "
+                 f"(Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)")
     lines.append(f"Deviazione standard pesata: {result['dev_std_pesata']:.2f}")
     if result['p16_score'] is not None and result['p84_score'] is not None:
         lines.append(f"  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): "
@@ -1544,14 +1550,16 @@ def format_output(result):
     lines.append(f"Ranking medio avversari affrontati (storico): {opp_rank_hist_str}")
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
     lines.append(f"Fattore forza avversario applicato: {result['fattore_forza_avversario']:.3f}")
-    lines.append(f"Fattore falli (casa/trasferta, da dati reali): {result['fattore_falli']:.3f}")
-    lines.append(f"Fattore duelli (casa/trasferta, da dati reali): {result['fattore_duelli']:.3f}")
-    lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali): {result['fattore_offensivo']:.3f}")
-    lines.append(f"Fattore passaggio (accurate_pass/final_third/att_assist): {result['fattore_passaggio']:.3f}")
-    lines.append(f"Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): {result['fattore_difesa_rari']:.3f}")
-    lines.append(f"Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): {result['fattore_azioni_difensive']:.3f}")
-    lines.append(f"Fattore gol subiti (goals_conceded, con cap): {result['fattore_gol_subiti']:.3f}")
-    lines.append(f"Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): {result['fattore_clean_sheet']:.3f}")
+    lines.append("NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello "
+                 "score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). "
+                 "Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 "
+                 "partite reali, vedi inspect_granular_weights.py).")
+    lines.append(f"Fattore possesso (casa/trasferta, da dati reali, non applicato): {result['fattore_possesso']:.3f}")
+    lines.append(f"Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): {result['fattore_passaggio']:.3f}")
+    lines.append(f"Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): {result['fattore_goalkeeping']:.3f}")
+    lines.append(f"Fattore gol subiti (goals_conceded, con cap, non applicato): {result['fattore_gol_subiti']:.3f}")
+    lines.append(f"Tasso storico clean sheet (porta inviolata nei primi 60'): {result['clean_sheet_rate']:.1%} "
+                 f"(bonus atteso incorporato nella media pesata: ~{result['bonus_clean_sheet_atteso']:.1f}pt)")
     if result['trend_avg_short'] is not None:
         lines.append(f"Fattore trend (media ultime 5: {result['trend_avg_short']:.1f} vs "
                      f"media ultime 10: {result['trend_avg_long']:.1f}): {result['fattore_trend']:.3f}")
@@ -1733,7 +1741,7 @@ def main():
         # volta giocata la partita -- vedi live_prediction_log.py. No-op in
         # CALIBRATION_MODE (gestito internamente alla funzione), zero
         # chiamate API aggiuntive, nessun impatto su score_atteso.
-        log_live_prediction(OUTPUT_DIR, CALIBRATION_MODE, 'def', result)
+        log_live_prediction(OUTPUT_DIR, CALIBRATION_MODE, 'gk', result)
 
         all_sections.append(f"\n{'#'*70}\n# GIOCATORE: {slug}\n{'#'*70}\n" + output_text)
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_low'),
@@ -1770,7 +1778,7 @@ def main():
 
     summary_lines = []
     summary_lines.append("=" * 70)
-    summary_lines.append("CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE")
+    summary_lines.append("CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE")
     summary_lines.append(f"Generato: {datetime.datetime.utcnow().isoformat()}Z")
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
@@ -1780,7 +1788,7 @@ def main():
         high = round(range_high)
         summary_lines.append(f"{idx}) {slug}: {round(atteso)} pt attesi ({low}-{high})")
         # NUOVO (26/07, tema correlazione GK-DEF): riga parseable con squadra/
-        # avversario, letta da build_consiglio_def.py per portarla fino a
+        # avversario, letta da build_consiglio_gk.py per portarla fino a
         # build_formazione_finale.py (evitare di schierare insieme portiere
         # e giocatore di movimento le cui squadre si affrontano).
         summary_lines.append(f"   SQUADRA: {team_slug or 'N/D'} | AVVERSARIO: {opp_slug or 'N/D'}")

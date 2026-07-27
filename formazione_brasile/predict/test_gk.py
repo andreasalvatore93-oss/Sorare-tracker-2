@@ -58,10 +58,10 @@ import datetime
 import requests
 
 # NUOVO (26/07, monitoraggio MAE live): modulo condiviso nella stessa
-# cartella, additivo/diagnostico -- vedi formazione_resto_mondo/predict/
+# cartella, additivo/diagnostico -- vedi formazione_brasile/predict/
 # live_prediction_log.py per motivazione e dettagli. sys.path[0] e' gia'
 # la cartella di questo script quando lanciato come `python
-# formazione_resto_mondo/predict/test_gk.py`, quindi l'import diretto funziona a
+# formazione_brasile/predict/test_gk.py`, quindi l'import diretto funziona a
 # prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
@@ -82,10 +82,10 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 CALIBRATION_MODE = os.environ.get('CALIBRATION_MODE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
 
 DISCOVERY_FILE = os.path.join(
-    'formazione_resto_mondo/output/resto_mondo_gk_discovery_global' if CALIBRATION_MODE else 'formazione_resto_mondo/output/resto_mondo_gk_discovery',
+    'formazione_brasile/output/brasile_gk_discovery_global' if CALIBRATION_MODE else 'formazione_brasile/output/brasile_gk_discovery',
     'player_slugs.json')
 
-# Fallback statico SOLO se resto_mondo_gk_discovery/player_slugs.json non esiste
+# Fallback statico SOLO se brasile_gk_discovery/player_slugs.json non esiste
 # ancora (nessuna discovery portieri ancora fatta): nessun giocatore
 # verificato per questo campionato, lista vuota fino al primo run reale.
 _FALLBACK_PLAYER_SLUGS = []
@@ -106,7 +106,7 @@ def load_player_slugs():
 PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per giocatore, budget complessita' API limitato)
-HALF_LIFE_GAMES = 12.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionati (MLS+K League+Portogallo+Austria+Scozia+Belgio) -- parametri riusati identici per il pool Resto del Mondo, nessuna calibrazione dedicata ancora fatta, granulari ritestati con i veri array (non piu inerti come in un primo tentativo scartato) -- vincitore hl=12.0/range=1.2/opp_sens=29.0/trend_int=0.7 SENZA granulari, composite score 17.60 vs 17.65 del valore precedente (hl=9.0) -- scarto piccolo ma applicato su richiesta esplicita dellutente.
+HALF_LIFE_GAMES = 12.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionati (MLS+K League+Portogallo+Austria+Scozia+Belgio) -- parametri riusati identici per il pool Brasileirao, nessuna calibrazione dedicata ancora fatta, granulari ritestati con i veri array (non piu inerti come in un primo tentativo scartato) -- vincitore hl=12.0/range=1.2/opp_sens=29.0/trend_int=0.7 SENZA granulari, composite score 17.60 vs 17.65 del valore precedente (hl=9.0) -- scarto piccolo ma applicato su richiesta esplicita dellutente.
 RANGE_MULTIPLIER = 1.6  # FISSATO (25/07): idem
 OPPONENT_SENSITIVITY = 29.0  # AGGIORNATO (26/07): grid search allargato K League su 3 portieri qualificati (>=3 partite test, campione MOLTO piccolo -- MAE 17.47 vs 17.6x circa con 20.0). Applicato per coerenza con MLS GK (stesso fix, stesso giorno) e con opp_sens=29.0 confermato su TUTTI gli altri ruoli K League (MID/FWD gia' a 29.0) tranne DEF (vedi nota separata, segnale opposto non applicato).
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
@@ -115,7 +115,7 @@ MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) esclus
 MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale che ha causato l'esclusione di 25/27 portieri nel primo batch di grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
-OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_gk_calibration' if CALIBRATION_MODE else 'formazione_resto_mondo/output/resto_mondo_gk_all'
+OUTPUT_DIR = 'formazione_brasile/output/brasile_gk_calibration' if CALIBRATION_MODE else 'formazione_brasile/output/brasile_gk_all'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')

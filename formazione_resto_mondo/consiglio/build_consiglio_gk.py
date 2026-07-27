@@ -1,7 +1,10 @@
 """
-Genera SOLO il riepilogo finale compatto "Consiglio attaccanti" leggendo i
-file prediction_<slug>_*.txt gia' prodotti dal job matrix (uno per
+Genera SOLO il riepilogo finale compatto "Consiglio portieri" leggendo
+i file prediction_<slug>_*.txt gia' prodotti dal job matrix (uno per
 giocatore). Nessun dump completo: poche righe, ordine di schieramento.
+
+Clone esatto di build_consiglio.py (attaccanti), adattato a mls_gk_all/ e
+resto_mondo_gk_discovery/.
 """
 import os
 import re
@@ -9,18 +12,18 @@ import json
 import glob
 import datetime
 
-OUTPUT_DIR = 'formazione_brasile/output/brasile_fwd_all'
-DISCOVERY_FILE = os.path.join('formazione_brasile/output/brasile_fwd_discovery', 'player_slugs.json')
+OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_gk_all'
+DISCOVERY_FILE = os.path.join('formazione_resto_mondo/output/resto_mondo_gk_discovery', 'player_slugs.json')
 
 # Pattern della riga "N) slug: X pt attesi (low-high)" gia' scritta da
-# test_mls_fwd_all.py nel riepilogo di ciascun job (uno per giocatore, quindi
+# test_gk.py nel riepilogo di ciascun job (uno per giocatore, quindi
 # sempre riga singola "1) ...").
 CONSIGLIO_RE = re.compile(r'^\d+\)\s+([\w-]+):\s+(-?\d+)\s+pt attesi\s+\((-?\d+)-(-?\d+)\)\s*$')
 ESCLUSO_RE = re.compile(r'^([\w-]+):\s+(ESCLUSO|DATI INSUFFICIENTI)\s+—\s+(.*)$')
 # NUOVO (26/07, tema correlazione GK-DEF): riga "SQUADRA: x | AVVERSARIO: y"
-# scritta subito dopo la riga consiglio da test_mls_fwd_all.py -- portata
-# fino a build_formazione_finale.py per evitare di schierare insieme
-# portiere e giocatore di movimento le cui squadre si affrontano.
+# scritta subito dopo la riga consiglio da test_gk.py -- portata fino a
+# build_formazione_finale.py per evitare di schierare insieme portiere e
+# giocatore di movimento le cui squadre si affrontano.
 TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
 
 
@@ -83,7 +86,7 @@ def main():
     ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
 
     lines = []
-    lines.append(f"Consiglio attaccanti — {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')}Z")
+    lines.append(f"Consiglio portieri — {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')}Z")
     lines.append("")
     for i, r in enumerate(ok_rows, 1):
         lines.append(f"{i}) {r['slug']}: {r['atteso']} pt ({r['low']}-{r['high']})")

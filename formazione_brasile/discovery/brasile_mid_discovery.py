@@ -1,36 +1,36 @@
 """
-Resto del Mondo Midfielder Discovery
+Brasileirao Midfielder Discovery
 
 Scopre TUTTI gli slug giocatore (deduplicati) delle carte possedute da
 'crowss' che sono: rarity=limited, posizione=Midfielder, in_season_eligible=true,
-ELEGGIBILI alla competizione SO5 "Resto del Mondo" (slug So5Competition
+ELEGGIBILI alla competizione SO5 "Brasileirao" (slug So5Competition
 'seasonal-rest_of_the_world').
 
 DIFFERENZA STRUTTURALE rispetto a tutti gli altri campionati (MLS, K League,
 Croazia, Austria, Scozia, Portogallo, Belgio -- vedi belgio_gk_discovery.py
-come riferimento generale): "Resto del Mondo" NON e' una domestic league reale
+come riferimento generale): "Brasileirao" NON e' una domestic league reale
 a cui un club appartiene, a differenza di jupiler-pro-league/mlspa/ecc che
 filtrano su anyPlayer.activeClub.domesticLeague.slug. E' invece un flag di
 ELEGGIBILITA' SO5: il campo GraphQL anyPlayer.eligibleSo5Competitions e' una
 lista di oggetti So5Competition (con slug/displayName), e un giocatore e'
-idoneo per "Resto del Mondo" se in quella lista compare un elemento con
+idoneo per "Brasileirao" se in quella lista compare un elemento con
 slug == 'seasonal-rest_of_the_world'.
 
 Esempio reale confermato dall'utente (query GraphQL + screenshot Sorare):
 Carlos Miguel, portiere brasiliano del Palmeiras, ha
 domesticLeague.slug == 'campeonato-brasileiro-serie-a' (NON una lega
-"Resto del Mondo"), ma la sua eligibleSo5Competitions include SIA
+"Brasileirao"), ma la sua eligibleSo5Competitions include SIA
 'seasonal-contenders' CHE 'seasonal-rest_of_the_world' -- quindi e' idoneo
-per il pool Resto del Mondo pur giocando in un campionato reale che ha un
+per il pool Brasileirao pur giocando in un campionato reale che ha un
 proprio nome. Il filtro quindi NON deve controllare domesticLeague (come
 fanno gli altri campionati), ma la presenza dello slug target nella lista
 eligibleSo5Competitions.
 
 Il resto della pipeline (game log, formula score_atteso, cache incrementale)
-NON cambia: un giocatore "Resto del Mondo" ha comunque una squadra/lega
+NON cambia: un giocatore "Brasileirao" ha comunque una squadra/lega
 domestica reale e partite reali, cambia SOLO il criterio di discovery.
 
-Output: resto_mondo_mid_discovery/player_slugs.json -- lista JSON di slug
+Output: brasile_mid_discovery/player_slugs.json -- lista JSON di slug
 univoci, usata dal job 'discover' nel workflow per generare dinamicamente la
 matrix del job 'predict'.
 """
@@ -48,15 +48,15 @@ except ImportError:
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 USER_SLUG = 'crowss'
-OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_mid_discovery'
+OUTPUT_DIR = 'formazione_brasile/output/brasile_mid_discovery'
 PAGE_SIZE = 20
 
-# Eleggibilita' SO5 target -- SOLO "Resto del Mondo" (Sorare la mostra in UI
-# come "Resto del mondo"). NON e' un domesticLeague.slug (vedi docstring
+# Eleggibilita' SO5 target -- SOLO "Brasileirao" (Sorare la mostra in UI
+# come "Brasileirao"). NON e' un domesticLeague.slug (vedi docstring
 # modulo): e' uno slug dentro la lista anyPlayer.eligibleSo5Competitions.
 # PIVOT (27/07): il filtro eligibleSo5Competitions non ha trovato nessuna carta
 # posseduta (0/0/0/0 su GK/DEF/MID/FWD) -- l'utente ha chiesto di ripiegare su un
-# campionato reale concreto invece di continuare a debuggare 'Resto del Mondo' in
+# campionato reale concreto invece di continuare a debuggare 'Brasileirao' in
 # astratto: Brasileirao (Campeonato Brasileiro Serie A), slug confermato dalla
 # query GraphQL reale usata per scoprire il meccanismo eligibleSo5Competitions
 # (caso Carlos Miguel, portiere Palmeiras). Torna al pattern standard di filtro
@@ -73,7 +73,7 @@ else:
 
 def log(msg):
     ts = datetime.datetime.utcnow().isoformat() + 'Z'
-    print(f"[{ts}] [resto_mondo_mid_discovery] {msg}")
+    print(f"[{ts}] [brasile_mid_discovery] {msg}")
 
 
 def graphql_query(query, variables=None, operation_name=None):
@@ -128,13 +128,13 @@ def get_user_uuid(user_slug):
     return user_id
 
 
-def discover_resto_mondo_mid_all(user_slug=USER_SLUG, max_pages=50):
+def discover_brasile_mid_all(user_slug=USER_SLUG, max_pages=50):
     """Ritorna la lista deduplicata di slug giocatore (Midfielder, eleggibile
     SO5 'seasonal-rest_of_the_world') posseduti da user_slug, SIA in_season
     CHE classic. Filtro eleggibilita' lato CLIENT (vedi docstring modulo) --
     nessun filtro eleggibilita' server-side, quindi la query recupera TUTTI i
     Midfielder posseduti (qualunque eleggibilita') e scarta quelli non idonei
-    a "Resto del Mondo" dopo il fetch."""
+    a "Brasileirao" dopo il fetch."""
     user_uuid = get_user_uuid(user_slug)
     if not user_uuid:
         log("Impossibile ottenere l'uuid utente, interrompo.")
@@ -196,7 +196,7 @@ def discover_resto_mondo_mid_all(user_slug=USER_SLUG, max_pages=50):
             hits = search.get('hits') or []
             if page == 1:
                 log(f"Totale carte Midfielder/{type_key} (TUTTE le eleggibilita') trovate: {search.get('nbHits')} "
-                    f"({search.get('nbPages')} pagine) -- filtro Resto del Mondo applicato dopo il fetch")
+                    f"({search.get('nbPages')} pagine) -- filtro Brasileirao applicato dopo il fetch")
             if not hits:
                 break
 
@@ -219,8 +219,8 @@ def discover_resto_mondo_mid_all(user_slug=USER_SLUG, max_pages=50):
             time.sleep(0.3)
 
     slugs = sorted(player_card_counts)
-    log(f"Carte scansionate: {total_card_count} (di cui {total_not_eligible} non eleggibili Resto del Mondo, scartate) "
-        f"| Giocatori Resto del Mondo unici (dedup): {len(slugs)}")
+    log(f"Carte scansionate: {total_card_count} (di cui {total_not_eligible} non eleggibili Brasileirao, scartate) "
+        f"| Giocatori Brasileirao unici (dedup): {len(slugs)}")
     return slugs, player_card_counts
 
 
@@ -283,7 +283,7 @@ def filter_by_starter_odds(slugs, player_card_counts, min_starter_odds=MIN_START
 
 # ---------------------------------------------------------------------------
 # FILTRO ATTIVITA' MINIMA (L5 + L10) -- identico a belgio_gk_discovery.py.
-# NOTA: i punteggi del pool Resto del Mondo (giocatori di leghe reali
+# NOTA: i punteggi del pool Brasileirao (giocatori di leghe reali
 # eterogenee) potrebbero essere strutturalmente diversi da quelli degli altri
 # campionati -- le soglie MIN_ACTIVITY_SCORE (0.0) e MIN_L10_SCORE (35.0)
 # sono riusate identiche come punto di partenza ma potrebbero tagliare
@@ -336,8 +336,8 @@ def filter_by_activity(slugs, player_card_counts, min_avg=MIN_ACTIVITY_SCORE, mi
 
 
 def main():
-    log("Avvio discovery centrocampisti Resto del Mondo (in_season + classic)...")
-    slugs, card_counts = discover_resto_mondo_mid_all()
+    log("Avvio discovery centrocampisti Brasileirao (in_season + classic)...")
+    slugs, card_counts = discover_brasile_mid_all()
 
     log("Filtro attivita' minima (media ultime 5 e ultime 10 partite giocate, taglia carte morte e sottotono)...")
     slugs, card_counts = filter_by_activity(slugs, card_counts)

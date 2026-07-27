@@ -4,7 +4,7 @@ i file prediction_<slug>_*.txt gia' prodotti dal job matrix (uno per
 giocatore). Nessun dump completo: poche righe, ordine di schieramento.
 
 Clone esatto di build_consiglio.py (attaccanti), adattato a mls_def_all/ e
-resto_mondo_def_discovery/.
+brasile_def_discovery/.
 """
 import os
 import re
@@ -12,8 +12,8 @@ import json
 import glob
 import datetime
 
-OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_def_all'
-DISCOVERY_FILE = os.path.join('formazione_resto_mondo/output/resto_mondo_def_discovery', 'player_slugs.json')
+OUTPUT_DIR = 'formazione_brasile/output/brasile_def_all'
+DISCOVERY_FILE = os.path.join('formazione_brasile/output/brasile_def_discovery', 'player_slugs.json')
 
 # Pattern della riga "N) slug: X pt attesi (low-high)" gia' scritta da
 # test_def.py nel riepilogo di ciascun job (uno per giocatore, quindi

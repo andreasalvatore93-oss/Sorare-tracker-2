@@ -1,9 +1,9 @@
 """
-Tool_formazione_mls_fwd_all (test TUTTI gli attaccanti pool Resto del Mondo in_season posseduti)
+Tool_formazione_mls_fwd_all (test TUTTI gli attaccanti pool Brasileirao in_season posseduti)
 
 Estende test_multi_fwd.py: invece di una lista statica di 7 giocatori, legge
-la lista COMPLETA degli attaccanti pool Resto del Mondo in_season posseduti (numero variabile,
-generata da resto_mondo_fwd_discovery.py) da resto_mondo_fwd_discovery/player_slugs.json.
+la lista COMPLETA degli attaccanti pool Brasileirao in_season posseduti (numero variabile,
+generata da brasile_fwd_discovery.py) da brasile_fwd_discovery/player_slugs.json.
 Fallback su una lista statica ridotta se il file non esiste (es. esecuzione
 manuale senza aver ancora girato la discovery).
 
@@ -36,7 +36,7 @@ NUOVO in questa versione (25/07, richiesta esplicita utente):
 - Output riepilogo: "CONSIGLIO ATTACCANTI" ordinato per score atteso
   decrescente, formato compatto "N) slug: X pt attesi (low-high)" — projected
   score come numero secco arrotondato + range, non piu' tabella dettagliata.
-- Lista giocatori letta dinamicamente da resto_mondo_fwd_discovery/player_slugs.json
+- Lista giocatori letta dinamicamente da brasile_fwd_discovery/player_slugs.json
   (generata dal job 'discover' in .yml prima di questo job).
 
 Filtro secco su starterOddsBasisPoints della partita target — se <
@@ -52,10 +52,10 @@ import datetime
 import requests
 
 # NUOVO (26/07, monitoraggio MAE live): modulo condiviso nella stessa
-# cartella, additivo/diagnostico -- vedi formazione_resto_mondo/predict/
+# cartella, additivo/diagnostico -- vedi formazione_brasile/predict/
 # live_prediction_log.py per motivazione e dettagli. sys.path[0] e' gia'
 # la cartella di questo script quando lanciato come `python
-# formazione_resto_mondo/predict/test_mls_fwd_all.py`, quindi l'import diretto
+# formazione_brasile/predict/test_mls_fwd_all.py`, quindi l'import diretto
 # funziona a prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
@@ -69,17 +69,17 @@ except ImportError:
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 
 # CALIBRATION_MODE (25/07, grid search allargato): se attivo, legge la lista
-# GLOBALE (tutti gli attaccanti pool Resto del Mondo di qualita', non solo posseduti) invece
+# GLOBALE (tutti gli attaccanti pool Brasileirao di qualita', non solo posseduti) invece
 # di quella dei posseduti, e riesegue il grid search COMPLETO (72
 # combinazioni) invece del singolo backtest sui parametri gia' fissati --
 # usato SOLO per la ricalibrazione one-shot su piu' dati, mai in produzione.
 CALIBRATION_MODE = os.environ.get('CALIBRATION_MODE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
 
 DISCOVERY_FILE = os.path.join(
-    'formazione_resto_mondo/output/resto_mondo_fwd_discovery_global' if CALIBRATION_MODE else 'formazione_resto_mondo/output/resto_mondo_fwd_discovery',
+    'formazione_brasile/output/brasile_fwd_discovery_global' if CALIBRATION_MODE else 'formazione_brasile/output/brasile_fwd_discovery',
     'player_slugs.json')
 
-# Fallback statico SOLO se resto_mondo_fwd_discovery/player_slugs.json non esiste
+# Fallback statico SOLO se brasile_fwd_discovery/player_slugs.json non esiste
 # ancora (es. primo run senza aver girato il job discover, o esecuzione
 # manuale locale). In condizioni normali la lista vera arriva dal file.
 _FALLBACK_PLAYER_SLUGS = []  # nessun giocatore verificato per questo campionato, popolato dalla discovery reale al primo run
@@ -109,7 +109,7 @@ MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) esclus
 MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente) in produzione. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale, causava esclusioni indesiderate nel grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
-OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_fwd_calibration' if CALIBRATION_MODE else 'formazione_resto_mondo/output/resto_mondo_fwd_all'
+OUTPUT_DIR = 'formazione_brasile/output/brasile_fwd_calibration' if CALIBRATION_MODE else 'formazione_brasile/output/brasile_fwd_all'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
@@ -1513,7 +1513,7 @@ def main():
     target_slug = os.environ.get('TARGET_SLUG', '').strip()
     slugs_to_process = [target_slug] if target_slug else PLAYER_SLUGS
 
-    log("Avvio test TUTTI attaccanti pool Resto del Mondo in_season Tool_formazione...")
+    log("Avvio test TUTTI attaccanti pool Brasileirao in_season Tool_formazione...")
     mode_str = f"modalita job singolo: {target_slug}" if target_slug else "lista completa"
     log(f"Config: {len(slugs_to_process)} giocatori da processare ({mode_str}), "
         f"WINDOW_SIZE={WINDOW_SIZE} HALF_LIFE_GAMES={HALF_LIFE_GAMES} "

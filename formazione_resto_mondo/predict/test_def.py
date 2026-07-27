@@ -56,10 +56,10 @@ import datetime
 import requests
 
 # NUOVO (26/07, monitoraggio MAE live): modulo condiviso nella stessa
-# cartella, additivo/diagnostico -- vedi formazione_brasile/predict/
+# cartella, additivo/diagnostico -- vedi formazione_resto_mondo/predict/
 # live_prediction_log.py per motivazione e dettagli. sys.path[0] e' gia'
 # la cartella di questo script quando lanciato come `python
-# formazione_brasile/predict/test_def.py`, quindi l'import diretto funziona a
+# formazione_resto_mondo/predict/test_def.py`, quindi l'import diretto funziona a
 # prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
@@ -80,10 +80,10 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 CALIBRATION_MODE = os.environ.get('CALIBRATION_MODE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
 
 DISCOVERY_FILE = os.path.join(
-    'formazione_brasile/output/brasile_def_discovery_global' if CALIBRATION_MODE else 'formazione_brasile/output/brasile_def_discovery',
+    'formazione_resto_mondo/output/resto_mondo_def_discovery_global' if CALIBRATION_MODE else 'formazione_resto_mondo/output/resto_mondo_def_discovery',
     'player_slugs.json')
 
-# Fallback statico SOLO se brasile_def_discovery/player_slugs.json non esiste
+# Fallback statico SOLO se resto_mondo_def_discovery/player_slugs.json non esiste
 # ancora (nessuna discovery difensori ancora fatta): nessun giocatore
 # verificato per questo campionato, lista vuota fino al primo run reale.
 _FALLBACK_PLAYER_SLUGS = []
@@ -113,7 +113,7 @@ MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) esclus
 MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale, causava esclusioni indesiderate nel grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
 
-OUTPUT_DIR = 'formazione_brasile/output/brasile_def_calibration' if CALIBRATION_MODE else 'formazione_brasile/output/brasile_def_all'
+OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_def_calibration' if CALIBRATION_MODE else 'formazione_resto_mondo/output/resto_mondo_def_all'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')

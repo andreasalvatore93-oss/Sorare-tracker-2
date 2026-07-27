@@ -83,20 +83,20 @@ import json
 import datetime
 
 ROLES = {
-    'GK': 'formazione_brasile/output/brasile_gk_all',
-    'DEF': 'formazione_brasile/output/brasile_def_all',
-    'MID': 'formazione_brasile/output/brasile_mid_all',
-    'FWD': 'formazione_brasile/output/brasile_fwd_all',
+    'GK': 'formazione_resto_mondo/output/resto_mondo_gk_all',
+    'DEF': 'formazione_resto_mondo/output/resto_mondo_def_all',
+    'MID': 'formazione_resto_mondo/output/resto_mondo_mid_all',
+    'FWD': 'formazione_resto_mondo/output/resto_mondo_fwd_all',
 }
 
 DISCOVERY_DIRS = {
-    'GK': 'formazione_brasile/output/brasile_gk_discovery',
-    'DEF': 'formazione_brasile/output/brasile_def_discovery',
-    'MID': 'formazione_brasile/output/brasile_mid_discovery',
-    'FWD': 'formazione_brasile/output/brasile_fwd_discovery',
+    'GK': 'formazione_resto_mondo/output/resto_mondo_gk_discovery',
+    'DEF': 'formazione_resto_mondo/output/resto_mondo_def_discovery',
+    'MID': 'formazione_resto_mondo/output/resto_mondo_mid_discovery',
+    'FWD': 'formazione_resto_mondo/output/resto_mondo_fwd_discovery',
 }
 
-OUTPUT_DIR = 'formazione_brasile/output'
+OUTPUT_DIR = 'formazione_resto_mondo/output'
 
 CONSIGLIO_LINE_RE = re.compile(r'^\d+\)\s+([\w-]+):\s+(-?\d+)\s+pt\s+\((-?\d+)-(-?\d+)\)\s*$')
 # NUOVO (26/07, tema correlazione GK-DEF): riga "SQUADRA: x | AVVERSARIO: y"
