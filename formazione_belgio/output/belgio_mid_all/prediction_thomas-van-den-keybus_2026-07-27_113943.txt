@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T11:39:43.084085Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) thomas-van-den-keybus: 8 pt attesi (1-30)
+   SQUADRA: westerlo-westerlo | AVVERSARIO: union-saint-gilloise-bruxelles-brussels
+======================================================================
+
+######################################################################
+# GIOCATORE: thomas-van-den-keybus
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: thomas-van-den-keybus (squadra: westerlo-westerlo)
+Generato: 2026-07-27T11:39:43.083721Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-18 | LAL vs WES | jupiler-pro-league | score=41.4 | peso=0.794
+  2025-10-25 | WES vs DEN | jupiler-pro-league | score=66.6 | peso=0.841
+  2025-12-20 | WES vs LAL | jupiler-pro-league | score=42.0 | peso=0.891
+  2026-04-21 | OHL vs WES | jupiler-pro-league | score=37.8 | peso=0.944
+  2026-05-23 | ANT vs WES | jupiler-pro-league | score=39.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 45.03
+  di cui Punteggio decisivo (level_score) medio: 39.70 | Punteggio complessivo (granulari) medio: 5.33 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 41.83 (delta +2.12)
+  Efficacia offensiva condizionata: delta venue -0.03, delta avversario +0.04 | Passaggio condizionato: delta venue -0.14, delta avversario +0.10 | Gol subiti condizionato: delta venue +0.09, delta avversario -0.22 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 10.49
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.8 - 66.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 1.19 (differenza: +9.30)
+Media score in casa: 54.30 | Media score fuori casa: 39.50
+Fattore casa/trasferta applicato: 1.041 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.6
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.566
+Fattore falli (casa/trasferta, da dati reali): 0.970
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.990
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.047
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 16.67% (fonte: tasso di presenza storico (5/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:45
+Casa: KVC Westerlo | Trasferta: Royal Union Saint-Gilloise
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 8.1 (range 0.9 - 29.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.68
+Punteggio REALE ottenuto in quella partita: 39.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

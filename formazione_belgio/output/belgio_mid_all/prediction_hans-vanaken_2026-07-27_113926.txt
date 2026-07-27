@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T11:39:26.476276Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) hans-vanaken: 57 pt attesi (46-70)
+   SQUADRA: club-brugge-brugge | AVVERSARIO: kortrijk-kortrijk
+======================================================================
+
+######################################################################
+# GIOCATORE: hans-vanaken
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: hans-vanaken (squadra: club-brugge-brugge)
+Generato: 2026-07-27T11:39:26.475755Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-01 | USG vs CLU | jupiler-pro-league | score=40.5 | peso=0.445
+  2026-02-08 | CLU vs STA | jupiler-pro-league | score=65.3 | peso=0.472
+  2026-02-15 | CER vs CLU | jupiler-pro-league | score=40.0 | peso=0.500
+  2026-02-21 | CLU vs OHL | jupiler-pro-league | score=56.0 | peso=0.530
+  2026-03-01 | CHA vs CLU | jupiler-pro-league | score=49.6 | peso=0.561
+  2026-03-08 | CLU vs AND | jupiler-pro-league | score=52.8 | peso=0.595
+  2026-04-06 | CLU vs AND | jupiler-pro-league | score=71.4 | peso=0.630
+  2026-04-11 | STV vs CLU | jupiler-pro-league | score=58.4 | peso=0.667
+  2026-04-22 | CLU vs KVM | jupiler-pro-league | score=100.0 | peso=0.707
+  2026-04-26 | GNT vs CLU | jupiler-pro-league | score=76.7 | peso=0.749
+  2026-05-03 | AND vs CLU | jupiler-pro-league | score=55.9 | peso=0.794
+  2026-05-09 | CLU vs STV | jupiler-pro-league | score=61.1 | peso=0.841
+  2026-05-17 | CLU vs USG | jupiler-pro-league | score=85.2 | peso=0.891
+  2026-05-21 | KVM vs CLU | jupiler-pro-league | score=59.4 | peso=0.944
+  2026-05-24 | CLU vs GNT | jupiler-pro-league | score=69.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 64.59
+  di cui Punteggio decisivo (level_score) medio: 42.23 | Punteggio complessivo (granulari) medio: 22.36 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 43.86 (delta +1.63)
+  Efficacia offensiva condizionata: delta venue +0.87, delta avversario +0.66 | Passaggio condizionato: delta venue +1.85, delta avversario +0.80 | Gol subiti condizionato: delta venue +0.22, delta avversario -0.46 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.11
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 52.8 - 76.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.23 (differenza: +3.88)
+Media score in casa: 70.15 | Media score fuori casa: 54.36
+Fattore casa/trasferta applicato: 1.010 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.5
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.363
+Fattore falli (casa/trasferta, da dati reali): 1.020
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.020
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.024
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.987
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.008
+Fattore trend (media ultime 5: 66.2 vs media ultime 10: 69.0): 0.971
+P(gioca): 83.33% (fonte: tasso di presenza storico (15/18))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-07T18:45
+Casa: Club Brugge KV | Trasferta: KV Kortrijk
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.5 (range 45.7 - 69.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 64.08
+Punteggio REALE ottenuto in quella partita: 69.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +5.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      54.6    71.4    +16.8    11.8        NO
+   7        7      42.1    58.4    +16.3    15.3        NO
+   8        8      62.3   100.0    +37.7    14.2        NO
+   9        9      52.5    76.7    +24.2    25.5        SI
+  10       10      62.9    55.9     -7.0    24.9        SI
+  11       11      70.4    61.1     -9.3    23.6        SI
+  12       12      63.7    85.2    +21.5    22.2        SI
+  13       13      68.7    59.4     -9.3    23.2        SI
+  14       14      67.5    69.4     +1.9    22.1        SI
+
+MAE (errore assoluto medio): 16.00
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
