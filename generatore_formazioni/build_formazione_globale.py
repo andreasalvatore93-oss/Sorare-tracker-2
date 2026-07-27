@@ -1,5 +1,5 @@
 """
-build_formazione_globale.py -- Generatore Formazioni (fusione MLS + K League)
+build_formazione_globale.py -- Generatore Formazioni
 
 Terza versione, AGGIUNTIVA rispetto a formazione_mls/build_formazione_finale.py
 e formazione_kleague/build_formazione_finale.py (che restano invariati e
