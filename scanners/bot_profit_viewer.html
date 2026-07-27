@@ -255,8 +255,9 @@ const KNOWN_COLUMNS = {
 // FIX (richiesta esplicita utente): player_slug e ultimo_tipo_evento eliminati
 // dalla tabella -- lo slug resta comunque come sottotitolo sotto il nome (vedi
 // renderCell), e il tipo evento e' ridondante col badge Tipo (in season/classic/
-// misto) gia' visibile.
-const EXCLUDED_COLUMNS = new Set(['player_slug', 'ultimo_tipo_evento']);
+// misto) gia' visibile. link_sorare (aggiunta 27/07) non e' una colonna a se'
+// -- usato per rendere il nome giocatore un link cliccabile (vedi renderCell).
+const EXCLUDED_COLUMNS = new Set(['player_slug', 'ultimo_tipo_evento', 'link_sorare']);
 
 // Ordine preferito (richiesta esplicita utente: info importanti vicine, es.
 // prezzo minimo e sconto% affiancati) -- le colonne non elencate qui (o non
@@ -599,7 +600,18 @@ function render() {
   function renderCell(col, r) {
     const v = r[col.key];
     if (col.key === 'player_name') {
-      return `<td class="name">${v || r.player_slug || '—'}${r.player_slug ? `<span class="slug">${r.player_slug}</span>` : ''}</td>`;
+      // FIX 27/07 (richiesta esplicita utente): nome giocatore cliccabile,
+      // link diretto alla carta sul mercato Sorare -- usa link_sorare dal CSV
+      // se presente, altrimenti lo ricostruisce dallo slug (CSV vecchi senza
+      // la colonna, stesso pattern URL usato in bot_profit.py).
+      const name = v || r.player_slug || '—';
+      const link = r.link_sorare || (r.player_slug
+        ? `https://sorare.com/it/football/market/shop/manager-sales/${r.player_slug}/limited`
+        : null);
+      const nameHtml = link
+        ? `<a href="${link}" target="_blank" rel="noopener noreferrer">${name}</a>`
+        : name;
+      return `<td class="name">${nameHtml}${r.player_slug ? `<span class="slug">${r.player_slug}</span>` : ''}</td>`;
     }
     switch (col.render) {
       case 'badge': return `<td>${tipoBadge(v)}</td>`;

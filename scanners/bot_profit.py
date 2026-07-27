@@ -502,11 +502,11 @@ def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
     per anyFutureGames: 'Selecting allPlayerGameScores within a list of
     AnyPlayerInterface (anyPlayers) is not supported, please select
     allPlayerGameScores for a specific AnyPlayerInterface instead.' Rimosso da
-    QUESTA query -- ultima partita ora fetchata per-giocatore assieme alla
-    prossima partita (vedi fetch_player_next_game), stesso principio gia' in
-    uso per anyFutureGames. Restano cosi' per-giocatore: prezzo (live offers),
-    prossima+ultima partita e transazioni -- nessuno di questi e' annidabile
-    dentro una lista anyPlayers per limite esplicito dello schema Sorare."""
+    QUESTA query -- ultima partita ora fetchata per-giocatore assieme a prezzo,
+    prossima partita e transazioni in un'unica query combinata (vedi
+    fetch_player_combined_snapshot, FIX 27/07 quater) -- nessuno di questi e'
+    annidabile dentro una lista anyPlayers per limite esplicito dello schema
+    Sorare."""
     all_nodes = []
     cursor = None
     for _ in range(TEAM_ROSTER_MAX_PAGES):
@@ -868,11 +868,10 @@ def get_player_snapshot(player_slug):
     anche match_dates: date passate (fino a 3) + prossima, per il pattern
     prezzo/distanza-da-partita (richiesta esplicita utente 26/07).
     Usata SOLO da run_listener (un giocatore alla volta, arrivano da eventi
-    live) -- il giro snapshot (run_snapshot_sweep) prende L5/L10/L40 e
-    ultima_partita_score gia' annidati dentro fetch_team_roster/
-    TEAM_ROSTER_QUERY, e la prossima partita a parte via
-    fetch_player_next_game (vedi commenti FIX 27/07 bis/ter: due tentativi di
-    accorpamento con alias/annidamento sono stati rifiutati da Sorare)."""
+    live) -- il giro snapshot (run_snapshot_sweep) prende L5/L10/L40 dal
+    roster (fetch_team_roster/TEAM_ROSTER_QUERY) e il resto (prezzo, prossima/
+    ultima partita, transazioni) in un'unica query combinata per giocatore
+    (fetch_player_combined_snapshot, FIX 27/07 quater)."""
     data = graphql_query(PROFIT_PLAYER_DATA_QUERY, {"slug": player_slug})
     if data.get('errors'):
         log(f"[snapshot] errore GraphQL per {player_slug}: {data['errors']}")
@@ -881,8 +880,25 @@ def get_player_snapshot(player_slug):
     return _parse_player_snapshot_node(player)
 
 
-NEXT_GAME_QUERY = """
-query PlayerNextGame($slug: String!) {
+COMBINED_PLAYER_SNAPSHOT_QUERY = """
+query PlayerCombinedSnapshot($slug: String!, $liveN: Int!, $liveCursor: String, $txN: Int!, $txCursor: String) {
+  tokens {
+    liveSingleSaleOffers(playerSlug: $slug, last: $liveN, before: $liveCursor) {
+      pageInfo { hasPreviousPage startCursor }
+      nodes {
+        status
+        receiverSide { amounts { eurCents wei usdCents gbpCents lamport } anyCards { slug } }
+        senderSide {
+          anyCards {
+            slug
+            rarityTyped
+            sport
+            inSeasonEligible
+          }
+        }
+      }
+    }
+  }
   anyPlayer(slug: $slug) {
     activeClub { ... on Club { slug name } }
     anyFutureGames(first: 1) {
@@ -899,26 +915,90 @@ query PlayerNextGame($slug: String!) {
         anyGame { date }
       }
     }
+    tokenPrices(rarity: limited, last: $txN, before: $txCursor) {
+      nodes {
+        date
+        deal { __typename ... on TokenOffer { type } }
+        card { inSeasonEligible }
+        amounts { eurCents wei usdCents gbpCents lamport }
+      }
+      pageInfo { hasPreviousPage startCursor }
+    }
   }
 }
 """
 
 
-def fetch_player_next_game(player_slug):
-    """Prossima partita E ultima partita giocata per un giocatore (CORREZIONE
-    27/07: entrambi i campi -- anyFutureGames e allPlayerGameScores -- sono
-    rifiutati da Sorare se annidati dentro una lista club.anyPlayers, vedi
-    TEAM_ROSTER_QUERY/fetch_team_roster, quindi restano per-giocatore in
-    un'unica query minima). Chiamata da _process_player_snapshot SOLO dopo
-    aver gia' scartato squadra_diversa/forma_zero con i dati del roster,
-    quindi mai sprecata su giocatori che verrebbero comunque esclusi prima."""
-    data = graphql_query(NEXT_GAME_QUERY, {"slug": player_slug})
+def _oldest_transaction_before_cutoff(nodes, cutoff):
+    if not nodes:
+        return False
+    try:
+        oldest_dt = datetime.datetime.fromisoformat((nodes[-1].get('date') or '').replace('Z', '+00:00'))
+        return oldest_dt < cutoff
+    except (ValueError, AttributeError):
+        return False
+
+
+def fetch_player_combined_snapshot(player_slug):
+    """FIX 27/07 quater (richiesta esplicita utente: troppi HTTP 429, ottimizzare
+    accorpando le query invece di alzare la concorrenza): prezzo (live offers),
+    prossima/ultima partita E prima pagina di transazioni in UNA SOLA richiesta,
+    al posto di 3 round-trip separati (fetch_all_live_offers + il vecchio
+    fetch_player_next_game + fetch_transaction_nodes_window) -- root fields
+    diversi (tokens/anyPlayer) sullo STESSO slug in una query, cosa diversa dal
+    tentativo gia' rifiutato da Sorare ('Duplicated root field: anyPlayer') che
+    riguardava PIU' slug differenti aliasati nella stessa query. Taglia le
+    query per-giocatore da fino a 3 a 1 nel caso comune (nessuna carta con
+    volume di annunci/transazioni cosi' alto da superare una pagina), riducendo
+    sensibilmente sia il tempo totale sia gli HTTP 429. La paginazione oltre la
+    prima pagina (rara, solo carte molto liquide) continua con richieste
+    aggiuntive dedicate, come nelle funzioni precedenti."""
+    data = graphql_query(COMBINED_PLAYER_SNAPSHOT_QUERY, {
+        "slug": player_slug, "liveN": LIVE_OFFERS_PAGE_SIZE, "liveCursor": None,
+        "txN": TRANSACTIONS_PAGE_SIZE, "txCursor": None,
+    })
     if data.get('errors'):
-        log(f"[prossima partita] errore GraphQL per {player_slug}: {data['errors']}")
-        return None, None, None, []
-    player = ((data.get('data') or {}).get('anyPlayer')) or {}
+        log(f"[combined snapshot] errore GraphQL per {player_slug}: {data['errors']}")
+        return [], None, None, None, [], [], None
+
+    root = data.get('data') or {}
+
+    live_conn = ((root.get('tokens') or {}).get('liveSingleSaleOffers')) or {}
+    live_nodes = live_conn.get('nodes') or []
+    live_page_info = live_conn.get('pageInfo') or {}
+    if live_page_info.get('hasPreviousPage'):
+        cursor = live_page_info.get('startCursor')
+        for _ in range(LIVE_OFFERS_MAX_PAGES - 1):
+            if not cursor:
+                break
+            more = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": LIVE_OFFERS_PAGE_SIZE, "cursor": cursor})
+            if more.get('errors'):
+                break
+            conn = (((more.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers')) or {}
+            nodes = conn.get('nodes') or []
+            live_nodes.extend(nodes)
+            page_info = conn.get('pageInfo') or {}
+            if not page_info.get('hasPreviousPage'):
+                break
+            cursor = page_info.get('startCursor')
+
+    player = root.get('anyPlayer') or {}
     squadra_slug = (player.get('activeClub') or {}).get('slug')
+
     future_nodes = ((player.get('anyFutureGames') or {}).get('nodes')) or []
+    next_game_date_str = None
+    prossimo_avversario = None
+    if future_nodes:
+        next_game = future_nodes[0]
+        next_game_date_str = next_game.get('date')
+        home = next_game.get('homeTeam') or {}
+        away = next_game.get('awayTeam') or {}
+        if squadra_slug and home.get('slug') == squadra_slug:
+            prossimo_avversario = f"{away.get('name', '?')} (casa)"
+        elif squadra_slug and away.get('slug') == squadra_slug:
+            prossimo_avversario = f"{home.get('name', '?')} (trasferta)"
+        elif home.get('name') or away.get('name'):
+            prossimo_avversario = f"{home.get('name', '?')} vs {away.get('name', '?')}"
 
     last_game_nodes = ((player.get('allPlayerGameScores') or {}).get('nodes')) or []
     ultima_partita_score = last_game_nodes[0].get('score') if last_game_nodes else None
@@ -926,20 +1006,27 @@ def fetch_player_next_game(player_slug):
         (n.get('anyGame') or {}).get('date') for n in last_game_nodes if (n.get('anyGame') or {}).get('date')
     ]
 
-    if not future_nodes:
-        return None, None, ultima_partita_score, past_game_dates
-    next_game = future_nodes[0]
-    next_game_date_str = next_game.get('date')
-    home = next_game.get('homeTeam') or {}
-    away = next_game.get('awayTeam') or {}
-    prossimo_avversario = None
-    if squadra_slug and home.get('slug') == squadra_slug:
-        prossimo_avversario = f"{away.get('name', '?')} (casa)"
-    elif squadra_slug and away.get('slug') == squadra_slug:
-        prossimo_avversario = f"{home.get('name', '?')} (trasferta)"
-    elif home.get('name') or away.get('name'):
-        prossimo_avversario = f"{home.get('name', '?')} vs {away.get('name', '?')}"
-    return next_game_date_str, prossimo_avversario, ultima_partita_score, past_game_dates
+    tx_conn = player.get('tokenPrices') or {}
+    tx_nodes = tx_conn.get('nodes') or []
+    tx_page_info = tx_conn.get('pageInfo') or {}
+    tx_cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=TRANSACTIONS_WINDOW_DAYS)
+    if tx_nodes and not _oldest_transaction_before_cutoff(tx_nodes, tx_cutoff) and tx_page_info.get('hasPreviousPage'):
+        cursor = tx_page_info.get('startCursor')
+        for _ in range(TRANSACTIONS_MAX_PAGES - 1):
+            if not cursor:
+                break
+            more = graphql_query(TRANSACTIONS_QUERY, {"p": player_slug, "n": TRANSACTIONS_PAGE_SIZE, "cursor": cursor})
+            if more.get('errors'):
+                break
+            conn = ((more.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}
+            nodes = conn.get('nodes') or []
+            tx_nodes.extend(nodes)
+            page_info = conn.get('pageInfo') or {}
+            if _oldest_transaction_before_cutoff(nodes, tx_cutoff) or not page_info.get('hasPreviousPage'):
+                break
+            cursor = page_info.get('startCursor')
+
+    return live_nodes, next_game_date_str, prossimo_avversario, ultima_partita_score, past_game_dates, tx_nodes, tx_cutoff
 
 
 def trimmed_average(prices):
@@ -1101,12 +1188,20 @@ def _upsert_tracked_row(key, row):
 
 
 CSV_FIELDNAMES = [
-    'player_slug', 'player_name', 'league_slug', 'tipo_carta', 'potenziale_score',
+    'player_slug', 'player_name', 'link_sorare', 'league_slug', 'tipo_carta', 'potenziale_score',
     'squadra', 'prossimo_avversario',
     'ultima_partita_score', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
     'sconto_percent', 'prossima_partita_data', 'ore_alla_partita', 'ultimo_tipo_evento',
 ]
+
+
+def _sorare_market_link(player_slug):
+    """Link diretto al mercato Sorare (carte limited in vendita) per il
+    giocatore -- richiesta esplicita utente 27/07, per aprire la carta con un
+    clic dal CSV/viewer invece di cercarla a mano. Stesso pattern URL gia' in
+    uso in bot_definitivo.py/autobuy_sorare.py/track.py."""
+    return f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
 
 
 def _key_from_csv_row(row):
@@ -1152,6 +1247,7 @@ def load_previous_tracked():
                 _tracked[key] = {
                     'player_slug': row.get('player_slug'),
                     'player_name': row.get('player_name'),
+                    'link_sorare': _sorare_market_link(row.get('player_slug')) if row.get('player_slug') else None,
                     'league_slug': row.get('league_slug') or None,
                     'tipo_carta': row.get('tipo_carta'),
                     'potenziale_score': _parse_float_or_none(row.get('potenziale_score')),
@@ -1433,6 +1529,7 @@ def run_listener(eth_rate):
             row = {
                 'player_slug': player_slug,
                 'player_name': player_name,
+                'link_sorare': _sorare_market_link(player_slug),
                 'league_slug': league_slug,
                 'tipo_carta': tipo_carta,
                 'potenziale_score': potenziale_score,
@@ -1620,11 +1717,13 @@ def run_listener(eth_rate):
 # logica di esclusione/blacklist, cambia solo cosa la innesca.
 # =====================================================================================
 def _process_player_snapshot(player_slug, player_name, expected_team_slug, league_slug, eth_rate,
-                              live_offer_nodes, snapshot):
+                              live_offer_nodes, snapshot, next_game_date_str, prossimo_avversario,
+                              ultima_partita_score, past_game_dates, tx_nodes, tx_cutoff):
     """FIX 27/07 bis (richiesta esplicita utente, ridurre il numero di query
-    verso Sorare): live_offer_nodes (prezzo) viene scaricato dal chiamante
-    (run_snapshot_sweep, dato individuale di mercato, non annidabile), mentre
-    snapshot (voto/prossima partita) arriva GIA' pronto dal roster per squadra
+    verso Sorare): live_offer_nodes (prezzo), la prossima/ultima partita e le
+    transazioni arrivano GIA' pronte dal chiamante (run_snapshot_sweep, un'unica
+    query combinata per giocatore, vedi fetch_player_combined_snapshot -- FIX
+    27/07 quater), mentre snapshot (voto) arriva dal roster per squadra
     (fetch_team_roster/TEAM_ROSTER_QUERY) -- qui restano solo gli scarti/il
     calcolo che dipendono dai dati gia' in mano, passati come parametri invece
     che ri-scaricati per ogni giocatore."""
@@ -1646,12 +1745,6 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
         # sweep ricontrolla il roster gratis, un blocco di 30gg non aggiungerebbe nulla.
         return 'forma_zero'
 
-    # FIX 27/07 ter: prossima partita fetchata QUI, non prima -- solo per chi ha
-    # gia' superato squadra_diversa/forma_zero con i dati del roster (vedi
-    # fetch_player_next_game). CORREZIONE 27/07: la stessa chiamata ora
-    # ritorna anche ultima_partita_score/past_game_dates (rimossi dalla query
-    # di roster, non annidabili li' -- vedi fetch_team_roster).
-    next_game_date_str, prossimo_avversario, ultima_partita_score, past_game_dates = fetch_player_next_game(player_slug)
     if not next_game_date_str:
         blacklist_player(player_slug, 'nessuna_partita', NESSUNA_PARTITA_DAYS)
         log(f"[blacklist] {player_name} ({player_slug}): nessuna prossima partita -- "
@@ -1661,7 +1754,6 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
     match_dates = past_game_dates + [next_game_date_str]
     ore_alla_partita = hours_until(next_game_date_str)
     righe_scritte = 0
-    tx_nodes_cache = None  # (nodes, cutoff) -- scaricate al bisogno, non se il prezzo scarta subito
 
     for is_in_season in (True, False):
         if not is_in_season and not CHECK_CLASSIC:
@@ -1671,9 +1763,6 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
         if min_attuale is None or min_attuale < MIN_PRICE_EUR_THRESHOLD:
             continue  # niente blacklist, il prezzo puo' risalire (stesso criterio del percorso a eventi)
 
-        if tx_nodes_cache is None:
-            tx_nodes_cache = fetch_transaction_nodes_window(player_slug)
-        tx_nodes, tx_cutoff = tx_nodes_cache
         tx_con_date = _countable_transactions_from_nodes(tx_nodes, tx_cutoff, is_in_season, league_slug, eth_rate)
         tx_prices = [price for _, price in tx_con_date]
         avg_trimmed, n_usati, n_totali = trimmed_average(tx_prices)
@@ -1698,6 +1787,7 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
         row = {
             'player_slug': player_slug,
             'player_name': player_name,
+            'link_sorare': _sorare_market_link(player_slug),
             'league_slug': league_slug,
             'tipo_carta': tipo_carta,
             'potenziale_score': potenziale_score,
@@ -1753,19 +1843,20 @@ def run_snapshot_sweep(eth_rate):
             log(f"[{done[0]}/{total}] {player_name} ({player_slug}): {esito}")
 
     # FIX 27/07 bis (richiesta esplicita utente, ridurre il numero di query
-    # verso Sorare): lo snapshot voto/prossima-partita arriva GIA' con il
-    # roster (vedi fetch_team_roster/TEAM_ROSTER_QUERY, 1 sola richiesta per
-    # squadra) -- qui resta solo blacklist+prezzo per-giocatore (dati di
-    # mercato individuali, non annidabili nella query di roster) e il resto
-    # dell'elaborazione (squadra/forma/partita/transazioni/punteggio), in un
-    # unico giro parallelo invece di due fasi separate.
+    # verso Sorare): lo snapshot voto arriva GIA' con il roster (vedi
+    # fetch_team_roster/TEAM_ROSTER_QUERY, 1 sola richiesta per squadra).
+    # FIX 27/07 quater (richiesta esplicita utente, troppi HTTP 429): prezzo,
+    # prossima/ultima partita e prima pagina di transazioni ora arrivano in
+    # UNA sola richiesta per giocatore (fetch_player_combined_snapshot), non
+    # piu' tre round-trip separati -- vedi quella funzione per il dettaglio.
     tipi_da_provare = (True, False) if CHECK_CLASSIC else (True,)
 
     def _worker(player_slug, player_name, expected_team_slug, snapshot):
         if is_player_blacklisted(player_slug):
             _registra_esito(player_name, player_slug, 'blacklist')
             return
-        live_offer_nodes = fetch_all_live_offers(player_slug)
+        (live_offer_nodes, next_game_date_str, prossimo_avversario, ultima_partita_score,
+         past_game_dates, tx_nodes, tx_cutoff) = fetch_player_combined_snapshot(player_slug)
         prezzo_ok = any(
             (m := _current_minimum_from_nodes(live_offer_nodes, tipo, SNAPSHOT_LEAGUE_SLUG, eth_rate)) is not None
             and m >= MIN_PRICE_EUR_THRESHOLD
@@ -1776,7 +1867,8 @@ def run_snapshot_sweep(eth_rate):
             return
         esito = _process_player_snapshot(
             player_slug, player_name, expected_team_slug, SNAPSHOT_LEAGUE_SLUG, eth_rate,
-            live_offer_nodes, snapshot,
+            live_offer_nodes, snapshot, next_game_date_str, prossimo_avversario,
+            ultima_partita_score, past_game_dates, tx_nodes, tx_cutoff,
         )
         _registra_esito(player_name, player_slug, esito)
 
