@@ -549,7 +549,7 @@ def main():
     page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
                      f"totale={num_totale} (" +
                      ", ".join(f"{LABELS[t]}={counts[t]}" for t in PRIORITY_ORDER) + ")")
-    footer_html = ("Fusione MLS + K League. Max 1 carta CLASSIC solo per In Season. Filtro qualita' "
+    footer_html = (f"Fusione {len(LEAGUES)} campionati. Max 1 carta CLASSIC solo per In Season. Filtro qualita' "
                     f"L5/L10/L40 tutti >= {quality_filter.MIN_QUALITY_SCORE} applicato prima della scelta.")
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)
     html_path = os.path.join(OUTPUT_DIR, f'generatore_formazioni{run_suffix}_{ts}.html')
