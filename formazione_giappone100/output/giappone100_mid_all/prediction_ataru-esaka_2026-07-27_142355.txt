@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T14:23:55.136168Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) ataru-esaka: 46 pt attesi (30-61)
+   SQUADRA: fagiano-okayama-okayama | AVVERSARIO: cerezo-osaka-osaka-osaka
+======================================================================
+
+######################################################################
+# GIOCATORE: ataru-esaka
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ataru-esaka (squadra: fagiano-okayama-okayama)
+Generato: 2026-07-27T14:23:55.043579Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 10
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | FAG vs GRA | j1-league | score=35.1 | peso=0.630
+  2025-09-20 | VER vs FAG | j1-league | score=61.0 | peso=0.667
+  2025-09-27 | MAC vs FAG | j1-league | score=41.6 | peso=0.707
+  2025-10-04 | ALB vs FAG | j1-league | score=29.6 | peso=0.749
+  2025-10-18 | FAG vs CER | j1-league | score=34.4 | peso=0.794
+  2025-10-25 | TOK vs FAG | j1-league | score=64.0 | peso=0.841
+  2025-11-08 | FRO vs FAG | j1-league | score=44.4 | peso=0.891
+  2025-11-30 | FAG vs RED | j1-league | score=33.2 | peso=0.944
+  2025-12-06 | SSP vs FAG | j1-league | score=87.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 48.94
+  di cui Punteggio decisivo (level_score) medio: 45.07 | Punteggio complessivo (granulari) medio: 3.88 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 47.74 (delta +2.68)
+  Efficacia offensiva condizionata: delta venue +0.64, delta avversario +0.01 | Passaggio condizionato: delta venue -0.11, delta avversario +0.05 | Gol subiti condizionato: delta venue +0.13, delta avversario -0.06 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 18.98
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.2 - 64.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.82 (differenza: +7.17)
+Media score in casa: 34.23 | Media score fuori casa: 54.62
+Fattore casa/trasferta applicato: 1.017 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.8
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.870
+Fattore falli (casa/trasferta, da dati reali): 1.019
+Fattore duelli (casa/trasferta, da dati reali): 1.012
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.017
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 1.008
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: tasso di presenza storico (9/10))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T10:00
+Casa: Cerezo Osaka | Trasferta: Fagiano Okayama
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.9 (range 30.1 - 60.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.81
+Punteggio REALE ottenuto in quella partita: 87.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +44.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.1    44.4     +1.3    19.0        SI
+   7        7      41.0    33.2     -7.8    17.3        SI
+   8        8      47.5    87.1    +39.6    17.0        NO
+
+MAE (errore assoluto medio): 16.21
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

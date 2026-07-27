@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T14:24:34.148098Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) yuki-yamamoto: 40 pt attesi (30-47)
+   SQUADRA: kawasaki-frontale-kawasaki | AVVERSARIO: tokyo-verdy-tokyo
+======================================================================
+
+######################################################################
+# GIOCATORE: yuki-yamamoto
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yuki-yamamoto (squadra: kawasaki-frontale-kawasaki)
+Generato: 2026-07-27T14:24:34.147613Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 10
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | FMA vs FRO | j1-league | score=92.0 | peso=0.667
+  2025-09-20 | FRO vs TOK | j1-league | score=55.1 | peso=0.707
+  2025-09-23 | BEL vs FRO | j1-league | score=44.4 | peso=0.749
+  2025-09-28 | FRO vs REY | j1-league | score=28.8 | peso=0.794
+  2025-10-18 | FRO vs SSP | j1-league | score=43.8 | peso=0.841
+  2025-10-25 | CER vs FRO | j1-league | score=51.4 | peso=0.891
+  2025-11-30 | FRO vs SFR | j1-league | score=37.5 | peso=0.944
+  2025-12-06 | RED vs FRO | j1-league | score=41.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 47.90
+  di cui Punteggio decisivo (level_score) medio: 37.53 | Punteggio complessivo (granulari) medio: 10.37 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 38.65 (delta +1.12)
+  Efficacia offensiva condizionata: delta venue +0.05, delta avversario -0.08 | Passaggio condizionato: delta venue +0.63, delta avversario +0.83 | Gol subiti condizionato: delta venue +0.24, delta avversario -0.10 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 16.54
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.5 - 55.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.87 (differenza: +10.67)
+Media score in casa: 41.30 | Media score fuori casa: 57.28
+Fattore casa/trasferta applicato: 1.019 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.9
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.935
+Fattore falli (casa/trasferta, da dati reali): 0.978
+Fattore duelli (casa/trasferta, da dati reali): 1.020
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.011
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.019
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.030
+Fattore gol subiti (goals_conceded, con cap): 1.014
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: tasso di presenza storico (8/10))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T09:00
+Casa: Tokyo Verdy | Trasferta: Kawasaki Frontale
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 40.2 (range 29.8 - 47.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.08
+Punteggio REALE ottenuto in quella partita: 41.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.6    37.5     -2.1    26.0        SI
+   7        7      55.7    41.3    -14.4    24.8        SI
+
+MAE (errore assoluto medio): 8.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
