@@ -139,19 +139,56 @@ def risolvi_fixture():
     return None
 
 
-def odds_e_data(slug, inizio, fine):
-    """(odds, data) della prima partita del giocatore DENTRO la fixture."""
-    d = base.graphql_query(ODDS_QUERY, {"slug": slug}, operation_name="NextOdds")
-    p = (d.get('data') or {}).get('anyPlayer') or {}
-    for n in ((p.get('anyFutureGames') or {}).get('nodes') or []):
-        pgs = n.get('playerGameScore') or {}
-        data = (pgs.get('anyGame') or {}).get('date') or ''
-        if inizio and fine and not (inizio <= data[:19] <= fine):
+BATCH = int(os.environ.get('ODDS_BATCH', '25'))
+
+
+def _frammento(i, slug):
+    return f'''  p{i}: anyPlayer(slug: "{slug}") {{
+    anyFutureGames(first: 3) {{
+      nodes {{
+        playerGameScore(playerSlug: "{slug}") {{
+          anyGame {{ date }}
+          anyPlayerGameStats {{
+            ... on PlayerGameStats {{
+              footballPlayingStatusOdds {{ starterOddsBasisPoints }}
+            }}
+          }}
+        }}
+      }}
+    }}
+  }}'''
+
+
+def odds_batch(slugs, inizio, fine):
+    """{slug: (odds, data)} interrogando BATCH giocatori per richiesta con gli
+    alias GraphQL. Era questo il collo di bottiglia: una query per giocatore su
+    ~2000 carte significava decine di minuti."""
+    out = {}
+    for start in range(0, len(slugs), BATCH):
+        chunk = slugs[start:start + BATCH]
+        corpo = chr(10).join(_frammento(i, s) for i, s in enumerate(chunk))
+        q = "query OddsBatch {" + chr(10) + corpo + chr(10) + "}"
+        try:
+            d = base.graphql_query(q, {}, operation_name="OddsBatch")
+        except Exception as e:
+            log(f"  batch odds fallito ({start}): {repr(e)[:120]}")
             continue
-        odds = ((pgs.get('anyPlayerGameStats') or {})
-                .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
-        return (odds / 10000.0 if odds is not None else None), data
-    return None, None
+        data = d.get('data') or {}
+        for i, slug in enumerate(chunk):
+            p = data.get(f'p{i}') or {}
+            res = (None, None)
+            for n in ((p.get('anyFutureGames') or {}).get('nodes') or []):
+                pgs = n.get('playerGameScore') or {}
+                dt = (pgs.get('anyGame') or {}).get('date') or ''
+                if inizio and fine and not (inizio <= dt[:19] <= fine):
+                    continue
+                o = ((pgs.get('anyPlayerGameStats') or {})
+                     .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
+                res = ((o / 10000.0 if o is not None else None), dt)
+                break
+            out[slug] = res
+        time.sleep(0.2)
+    return out
 
 
 def main():
@@ -168,9 +205,13 @@ def main():
     if not uuid:
         log("ERRORE: uuid utente non ottenuto.")
         return 1
+    # NB: active_competitions NON accetta lo slug della fixture (provato: 0 hit),
+    # accetta slug di competizione tipo 'mlspa'. Finche' non sono noti tutti, si
+    # scarica UNA volta per ruolo (4 scansioni invece di 80) e si screma con le
+    # odds in BATCH -- vedi odds_batch(). Il costo dominante non era la
+    # scansione delle carte ma le ~2000 query odds una per giocatore.
     advanced = (f"user.id:{uuid} AND sport:football "
-                f"AND NOT sealed=1 AND NOT rarity:custom_series "
-                f"AND active_competitions:{fx.get('slug')}")
+                f"AND NOT sealed=1 AND NOT rarity:custom_series")
 
     per_lega_ruolo = defaultdict(lambda: defaultdict(set))
     esclusi_odds = 0
@@ -208,9 +249,13 @@ def main():
             time.sleep(0.25)
 
         tot_carte += len(visti)
-        for slug, lega in sorted(visti):
-            odds, data = odds_e_data(slug, inizio, fine)
-            time.sleep(0.25)
+        lega_di = {slug: lega for slug, lega in visti}
+        elenco = sorted(lega_di)
+        log(f"  {position}: {len(elenco)} giocatori, odds in batch da {BATCH}...")
+        risultati = odds_batch(elenco, inizio, fine)
+        for slug in elenco:
+            lega = lega_di[slug]
+            odds, data = risultati.get(slug, (None, None))
             if data is None:
                 esclusi_finestra += 1
                 continue
