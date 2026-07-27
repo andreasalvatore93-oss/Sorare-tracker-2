@@ -104,7 +104,11 @@ def graphql_query(query, variables=None, operation_name=None):
                 backoff *= 2
                 continue
             if resp.status_code >= 400:
-                log(f"[ERRORE HTTP {resp.status_code}] body (primi 1500 char): {resp.text[:1500]}")
+                log(f"[ERRORE HTTP {resp.status_code}] tentativo {attempt+1}/5, body (primi 1500 char): {resp.text[:1500]}")
+                if attempt < 4:
+                    time.sleep(backoff)
+                    backoff *= 2
+                    continue
                 return {}
             data = resp.json()
             if data.get('errors'):
