@@ -403,6 +403,109 @@ def _min_available_l10(rows, used_slugs, card_pool):
     return min(vals) if vals else 0.0
 
 
+def _pareto_frontier(rows, card_pool):
+    """Candidati disponibili (almeno una copia posseduta) ordinati per L10
+    crescente, tenendo solo quelli che migliorano il punteggio rispetto a
+    TUTTI i candidati piu' economici gia' inclusi (frontiera di Pareto: mai
+    utile scegliere un candidato piu' caro E con punteggio minore o uguale a
+    uno gia' disponibile). Riduce drasticamente lo spazio di ricerca del
+    knapsack sotto senza perdere nessuna soluzione ottima possibile."""
+    avail = [(row, card_pool.l10(row['slug']) or 0.0) for row in rows
+             if card_pool.remaining_in_season(row['slug']) > 0 or card_pool.remaining_classic(row['slug']) > 0]
+    avail.sort(key=lambda x: x[1])
+    frontier = []
+    best = float('-inf')
+    for row, l10 in avail:
+        if row['atteso'] > best:
+            frontier.append((row, l10))
+            best = row['atteso']
+    return frontier
+
+
+def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
+    """Knapsack ESATTO sui 4 slot principali (GK/DEF/MID/FWD, un candidato
+    ciascuno) per massimizzare il PUNTEGGIO TOTALE sotto l10_cap (27/07,
+    stesso fix applicato identicamente in formazione_mls/build_formazione_
+    finale.py -- vedi quel file per il commento esteso). SOLO valido per
+    shape con un ruolo per slot (nessuna ripetizione, es. Arena) e
+    max_classic=None (vero per tutti i tipi con cap L10 oggi). Ritorna
+    (picks_dict {ruolo: row, 'EXTRA': (ruolo_extra, row)}, l10_totale) o
+    (None, None) se nessuna combinazione e' possibile."""
+    RES = 10  # risoluzione: decimi di L10, gestisce valori con 1 decimale
+    budget_units = int(round(l10_cap * RES))
+
+    frontiers = {}
+    for role in ('GK', 'DEF', 'MID', 'FWD'):
+        f = _pareto_frontier(role_data[role], card_pool)
+        if not f:
+            return None, None
+        frontiers[role] = f
+
+    states = {0: (0.0, {})}
+    for role in ('GK', 'DEF', 'MID', 'FWD'):
+        new_states = {}
+        for used, (score, picks) in states.items():
+            for row, l10 in frontiers[role]:
+                cost = int(round(l10 * RES))
+                nb = used + cost
+                if nb > budget_units:
+                    continue
+                ns = score + row['atteso']
+                cur = new_states.get(nb)
+                if cur is None or cur[0] < ns:
+                    new_picks = dict(picks)
+                    new_picks[role] = row
+                    new_states[nb] = (ns, new_picks)
+        if not new_states:
+            return None, None
+        states = new_states
+
+    extra_candidates = []
+    for role in shape['extra_roles']:
+        for row, l10 in _pareto_frontier(role_data[role], card_pool):
+            extra_candidates.append((role, row, l10))
+    extra_candidates.sort(key=lambda x: -x[1]['atteso'])
+
+    best_total = best_picks = best_extra = best_used = None
+    for used, (score4, picks4) in states.items():
+        used_slugs = {row['slug'] for row in picks4.values()}
+        remaining = (budget_units - used) / RES
+        chosen_extra = None
+        for role, row, l10 in extra_candidates:
+            if row['slug'] in used_slugs:
+                continue
+            if l10 <= remaining:
+                chosen_extra = (role, row, l10)
+                break
+        if chosen_extra is None:
+            continue
+        total = score4 + chosen_extra[1]['atteso']
+        if best_total is None or total > best_total:
+            best_total = total
+            best_picks = picks4
+            best_extra = chosen_extra
+            best_used = used / RES + chosen_extra[2]
+
+    if best_picks is None:
+        return None, None
+
+    result = dict(best_picks)
+    result['EXTRA'] = (best_extra[0], best_extra[1])
+    return result, best_used
+
+
+def _consume_pick(card_pool, slug):
+    """Consuma una copia dello slug scelto dal knapsack: preferisce IN_SEASON
+    se disponibile (stesso ordine di preferenza del vecchio greedy 'pick'),
+    altrimenti CLASSIC -- valido solo dove max_classic e' None (unico caso in
+    cui il knapsack e' applicabile, vedi build_one_lineup)."""
+    if card_pool.remaining_in_season(slug) > 0:
+        card_pool.use(slug, 'in_season')
+        return 'in_season'
+    card_pool.use(slug, 'classic')
+    return 'classic'
+
+
 def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False):
     """Costruisce UNA formazione secondo 'shape' (uno dei FORMATION_SHAPES),
     tenendo conto delle copie gia' esaurite (card_pool) e del vincolo
@@ -422,10 +525,43 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
     stack_bonus_perso); formazione e' una lista di tuple
     (slot_label, row, card_type). stack_bonus_perso e' True se la
     formazione finale ha comunque 3+ giocatori della stessa squadra
-    (informativo, sempre False se apply_stack_guard=False)."""
+    (informativo, sempre False se apply_stack_guard=False).
+
+    Se il knapsack ESATTO e' applicabile (l10_cap impostato, un ruolo per
+    slot senza ripetizioni, max_classic=None -- vero oggi per le 3 Arene
+    dedicate, MAI per In Season/All Stars che o non hanno cap o ripetono
+    ruoli), lo usa al posto del vecchio greedy-con-riserva per il punteggio
+    totale MASSIMO garantito sotto il cap (27/07, vedi
+    _optimize_capped_lineup, stesso fix applicato identicamente in
+    formazione_mls/build_formazione_finale.py)."""
+    role_slots = shape['role_slots']
+    max_classic = shape['max_classic']
+    can_use_knapsack = (
+        l10_cap is not None
+        and max_classic is None
+        and not apply_stack_guard
+        and len(role_slots) == len(set(role_slots))
+        and set(role_slots) == {'GK', 'DEF', 'MID', 'FWD'}
+    )
+    if can_use_knapsack:
+        result, _l10_total = _optimize_capped_lineup(shape, role_data, card_pool, l10_cap)
+        if result is None:
+            return (None,
+                    "Nessun candidato disponibile per completare la formazione entro il cap L10 "
+                    "(copie esaurite o pool insufficiente).",
+                    True, False)
+        picks = []
+        for role in role_slots:
+            row = result[role]
+            ctype = _consume_pick(card_pool, row['slug'])
+            picks.append((role, row, ctype))
+        extra_role, extra_row = result['EXTRA']
+        extra_ctype = _consume_pick(card_pool, extra_row['slug'])
+        picks.append((f'EXTRA ({extra_role})', extra_row, extra_ctype))
+        return picks, None, True, False
+
     used_this_lineup = set()
     classic_budget_used = [0]
-    max_classic = shape['max_classic']
     l10_used = [0.0]
     l10_cap_rispettato = [True]
     team_counts = {}

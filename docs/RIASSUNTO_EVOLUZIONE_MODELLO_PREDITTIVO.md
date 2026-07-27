@@ -4,8 +4,9 @@
 lavoro** (l'utente alterna due account, poca/nessuna memoria condivisa tra sessioni). Non
 presupporre nessun contesto pregresso: tutto quello che serve è qui dentro.
 
-**Aggiornato 27/07/2026 (sera)**: se cerchi solo "qual è lo stato adesso", salta direttamente alla
-**sezione 15** (l'ultima) — è l'handoff più recente e completo: un TERZO tool, il "Generatore
+**Aggiornato 27/07/2026 (notte)**: se cerchi solo "qual è lo stato adesso", salta direttamente alla
+**sezione 16** (l'ultima) — completa il punto 1 del backlog della sezione 15J (knapsack Arene
+collegato e testato). Le sezioni 1-15 restano cronistoria: un TERZO tool, il "Generatore
 Formazioni", che fonde MLS+K League in un solo script/workflow senza toccare i due tool dedicati.
 Leggi comunque SEMPRE questo documento dall'inizio alla fine prima di concludere che qualcosa
 manca, non fidarti solo dell'ultima sezione o della memoria persistente (la sezione 14D spiega
@@ -1313,3 +1314,61 @@ questo aggiornamento del riassunto con un messaggio esplicito "WIP, non collegat
 lanciare qualunque run del Generatore Formazioni con tipi a cap L10 (Arena), verificare che il
 branching in `build_one_lineup` sia stato completato** — finché non lo è, il comportamento resta
 quello del vecchio greedy-con-riserva (corretto sul cap, non ottimale sul punteggio), non rotto.
+
+## 16. Sessione 27/07/2026 (notte) — knapsack Arene collegato, testato, replicato in K League
+
+Ripresa da un account diverso. Chiude il punto 1 (PRIORITARIO) del backlog della sezione 15J.
+
+**Decisione presa con l'utente prima di implementare** (unico punto aperto lasciato dalla sessione
+precedente): il knapsack **NON incorpora i nudge di sinergia** (GK-DEF/GK-MID/DEF-MID/DEF-DEF,
+vedi sezione 14A) — punta solo al punteggio grezzo massimo sotto il cap. Motivazione dell'utente:
+più semplice da collegare/testare subito; il costo è la perdita dei bonus piccoli (+3/+11 pt) SOLO
+per i tipi a cap L10 (Arena dedicate, Arena All Stars 260/220) — Arena/All Stars senza cap non sono
+toccate (restano sul vecchio percorso con sinergia intatta).
+
+**Scoperta importante durante l'implementazione**: `generate_lineups_for_type` passa
+`variance_mode=True` per **tutte** le Arene, incluse quelle a cap L10 (non solo quelle senza cap
+come si poteva pensare leggendo solo la sezione 15) — quindi il gating iniziale del knapsack non
+poteva escludere `variance_mode=True`, altrimenti non si sarebbe mai attivato per nessuna Arena a
+cap. Il knapsack ignora semplicemente il valore di `variance_mode` quando lo attiva (lo attiva solo
+in base a `l10_cap is not None` + forma dello shape), coerente con la decisione sopra.
+
+**Implementazione** (`build_one_lineup`, IDENTICA in `formazione_mls/build_formazione_finale.py` e
+`formazione_kleague/build_formazione_finale.py`): se `l10_cap` è impostato, `max_classic` è `None`,
+`apply_stack_guard` è `False` e `role_slots` ha un ruolo per slot senza ripetizioni (vero oggi solo
+per le 3 Arene dedicate — MAI per In Season che ha `max_classic=1`, MAI per All Stars che ripete
+DEF/MID), usa `_optimize_capped_lineup` (il DP scritto nella sessione precedente, mai toccato) al
+posto del vecchio greedy-con-riserva. Fix minore collegato in `_optimize_capped_lineup`: prima non
+tracciava il RUOLO dello slot extra scelto (necessario per l'etichetta `EXTRA (ruolo)` in output) —
+aggiunto tag di ruolo alla lista `extra_candidates`. Nuovo helper `_consume_pick` (consuma la copia
+IN_SEASON se disponibile, altrimenti CLASSIC — stesso ordine di preferenza del vecchio `pick`).
+`formazione_kleague/build_formazione_finale.py` non aveva ancora `_pareto_frontier`/
+`_optimize_capped_lineup` (mai portate lì nella sessione precedente, solo scritte in MLS) —
+aggiunte identiche (senza `variance_mode`, parametro che K League non ha mai avuto).
+
+`generatore_formazioni/build_formazione_globale.py` non richiede modifiche: importa
+`build_one_lineup` direttamente da `formazione_mls` (`bff`) per **tutti** gli 8 tipi, incluse le
+Arene K League — il fix si applica automaticamente una volta wired nel sorgente MLS.
+
+**Verificato con test sintetico locale** (dati finti, nessuna rete — stesso approccio "smoke test"
+già usato nelle sessioni precedenti): 4 candidati per ruolo con L10/punteggio costruiti apposta
+perché il vecchio greedy avrebbe scelto una combinazione subottima; il knapsack trova l'ottimo
+esatto (**verificato per confronto diretto con un brute-force su tutte le combinazioni possibili**,
+stesso risultato: score 287, L10 220/220), rispetta sempre il cap, fallisce pulito quando il cap è
+impossibile da rispettare per qualunque combinazione, e non altera il comportamento dei tipi senza
+cap (Arena uncapped, che restano sul vecchio percorso greedy). Stesso test ripetuto sul modulo
+K League con esito identico. **Non ancora testato su una run reale GitHub Actions** (solo dati
+sintetici in locale) — da fare alla prima occasione utile prima di considerarlo definitivo.
+
+**Stato repo**: modifiche a `formazione_mls/build_formazione_finale.py` e
+`formazione_kleague/build_formazione_finale.py` pronte per il commit (non ancora pushate al
+momento di scrivere questa sezione, verificare `git status`).
+
+**Backlog aggiornato** (sostituisce il punto 1 di 15J, ora chiuso):
+1. **Verificare il knapsack su una run reale** (Arena MLS/K League dedicate, Arena All Stars
+   260/220 nel Generatore Formazioni) — priorità alla prossima occasione di lancio.
+2. Decidere e implementare la rimozione dell'anti-sinergia di base per le In Season (backlog
+   invariato dalla sezione 13/15, mai affrontato).
+3. Varianza capitano tra lineup multiple (backlog invariato, richiede ancora la risposta
+   dell'utente sullo scope: per tipo o sull'intera run).
+4. Tutto il resto del backlog di 13E/14F/15J resta valido e non toccato in questa sessione.
