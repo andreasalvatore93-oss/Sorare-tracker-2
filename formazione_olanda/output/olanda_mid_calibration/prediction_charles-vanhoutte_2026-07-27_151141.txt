@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T15:11:41.728010Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) charles-vanhoutte: 21 pt attesi (14-28)
+   SQUADRA: nice-nice | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: charles-vanhoutte
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: charles-vanhoutte (squadra: nice-nice)
+Generato: 2026-07-27T15:11:41.727199Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-21 | NIC vs OM | ligue-1-fr | score=37.5 | peso=0.472
+  2025-11-27 | POR vs NIC | uefa-europa-league | score=38.7 | peso=0.500
+  2025-12-07 | NIC vs SCO | ligue-1-fr | score=51.1 | peso=0.530
+  2026-01-22 | NIC vs GAE | uefa-europa-league | score=60.0 | peso=0.561
+  2026-01-25 | NAN vs NIC | ligue-1-fr | score=33.6 | peso=0.595
+  2026-02-01 | NIC vs BRE | ligue-1-fr | score=39.7 | peso=0.630
+  2026-02-08 | NIC vs ASM | ligue-1-fr | score=31.0 | peso=0.667
+  2026-02-15 | OL vs NIC | ligue-1-fr | score=43.4 | peso=0.707
+  2026-02-22 | NIC vs FCL | ligue-1-fr | score=44.7 | peso=0.749
+  2026-03-01 | PAR vs NIC | ligue-1-fr | score=47.5 | peso=0.794
+  2026-03-08 | NIC vs REN | ligue-1-fr | score=52.6 | peso=0.841
+  2026-03-14 | SCO vs NIC | ligue-1-fr | score=42.4 | peso=0.891
+  2026-04-12 | NIC vs HAC | ligue-1-fr | score=45.0 | peso=0.944
+  2026-05-26 | STE vs NIC | play-offs-1-2-fr | score=43.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 43.90
+  di cui Punteggio decisivo (level_score) medio: 36.42 | Punteggio complessivo (granulari) medio: 7.48 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 36.42 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue +0.00, delta avversario +0.00 | Passaggio condizionato: delta venue +0.00, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 6.89
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.5 - 51.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.95 (differenza: +1.94)
+Media score in casa: 45.20 | Media score fuori casa: 41.58
+Fattore casa/trasferta applicato: 0.980 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.1
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.970
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.986
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.015
+Fattore gol subiti (goals_conceded, con cap): 1.018
+Fattore trend (media ultime 5: 46.3 vs media ultime 10: 42.4): 1.064
+P(gioca): 46.67% (fonte: tasso di presenza storico (14/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T10:15
+Casa: Sparta Rotterdam | Trasferta: Feyenoord Rotterdam
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 20.8 (range 14.4 - 28.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.90
+Punteggio REALE ottenuto in quella partita: 43.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.8    31.0     -9.8    11.1        SI
+   7        7      30.9    43.4    +12.5    11.5        NO
+   8        8      42.5    44.7     +2.2    10.7        SI
+   9        9      43.6    47.5     +3.9    10.0        SI
+  10       10      37.7    52.6    +14.9     9.6        NO
+  11       11      48.3    42.4     -5.9     9.8        SI
+  12       12      53.3    45.0     -8.3     9.2        SI
+  13       13      34.2    43.9     +9.7     8.7        NO
+
+MAE (errore assoluto medio): 8.41
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
