@@ -162,12 +162,13 @@ SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '8'))
 # FIX 24/07 (richiesta esplicita utente): sotto questa soglia di transazioni nella
 # finestra, il dato e' troppo rumoroso per la classifica (una singola transazione
 # anomala puo' spostare la media intera) -- escluso, non solo dal trim ma dalla
-# classifica stessa. FIX 26/07 (richiesta esplicita utente): abbassato da 15 a 10
-# dopo l'esclusione di aste/acquisto istantaneo dalla media (vedi
-# _is_countable_transaction) -- il conteggio ora misura solo transazioni reali
-# manager-a-manager, quindi e' naturalmente ~40-50% piu' basso di prima a parita'
-# di liquidita' reale della carta.
-MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING', '10'))
+# classifica stessa. Abbassato temporaneamente a 10 per il test full-MLS del
+# 26-27/07 dopo l'esclusione di aste/acquisto istantaneo dalla media (vedi
+# _is_countable_transaction, il conteggio e' naturalmente ~40-50% piu' basso a
+# parita' di liquidita' reale) -- riportato a 15 (richiesta esplicita utente
+# 27/07, priorita' a un risultato piu' pulito) per riallinearsi al default gia'
+# usato in .github/workflows/bot_profit.yml, che non era mai stato cambiato.
+MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING', '15'))
 
 # FIX 24/07 (richiesta esplicita utente): sotto questo prezzo minimo la carta
 # viene scartata SUBITO, come prima query in assoluto -- niente tracciamento,
