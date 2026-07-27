@@ -675,6 +675,12 @@ MAKEOFFER_MIN_MARGIN_CURVE = [
     (4.00, 0.073),
     (11.60, 0.068),
     (30.00, 0.065),
+    # 27/07: estesa la fascia 30-40EUR (soglia minima per OFFRIRE invece di scartare).
+    # L'utente ragiona in utile assoluto: soglia ~= 2EUR di utile potenziale a prescindere
+    # dal prezzo -> 30EUR/5-6% scarta (1.5-1.8EUR), 35EUR/6% offre (2.1EUR)/4% scarta,
+    # 40EUR/5% offre (2EUR)/4% scarta. Da cui ~2EUR/prezzo: 35EUR->5.7%, 40EUR->5.0%.
+    (35.00, 0.057),
+    (40.00, 0.050),
 ]
 
 # Regola 2: il margine minimo per l'AutoBuy diretto scende con continuita' al crescere
@@ -749,10 +755,19 @@ AUTOBUY_MIN_MARGIN_CURVE = [
     (14.00, 0.22),
     (15.50, 0.20),
     (18.00, 0.175),
-    (20.00, 0.165),
-    (22.00, 0.16),
-    (25.00, 0.155),
-    (30.00, 0.15),
+    (20.00, 0.175),  # 27/07 (decima ricalibrazione): 20EUR/16% -> l'utente sceglie
+                     # offerta, non autobuy -> floor alzato 0.165->0.175 (17.5%).
+    # 27/07 (undicesima ricalibrazione): estesa/ricalibrata la fascia 25-40EUR dopo aver
+    # alzato il prezzo max carta da 30 a 40EUR. La vecchia coda (22->0.16, 25->0.155,
+    # 30->0.15) era estrapolata e MAI validata con l'utente: risultava troppo bassa. Da
+    # ~20 casi ipotetici l'utente vuole un floor a GOBBA -- ~19-20% sui 25-30EUR (25/20%
+    # e 30/20-22% -> autobuy, 25/17% e 30/16-18% -> offerta), poi in calo verso ~15.5% a
+    # 40EUR (35/19% si ma 35/18% no; 37/17% si; 40/16-18% si ma 40/15% no).
+    (25.00, 0.19),
+    (30.00, 0.195),
+    (35.00, 0.185),
+    (37.00, 0.165),
+    (40.00, 0.155),
 ]
 
 # Regola 3: sconto dell'offerta MakeOffer per fascia di prezzo (lista crescente), piu'
@@ -809,6 +824,16 @@ OFFER_DISCOUNT_CURVE = [
     (7.00, 0.15),
     (15.00, 0.125),
     (16.00, 0.156),
+    # 27/07: prima la curva si fermava a 16EUR -> tutto il range 16-40EUR usava il 15.6%
+    # fisso, troppo profondo per carte care (offrire 15.6% sotto un minimo da 40EUR = gap
+    # ~6EUR, irrealistico). Su casi reali l'utente offre uno SHAVE ASSOLUTO ~2-3EUR sotto
+    # il minimo su queste carte (min35->33, min40->38/37, min32->30, min30->28), cioe'
+    # sconti % miti e calanti: 30EUR->~7%, 35EUR->~6%, 40EUR->~6%. Il segmento 16->30EUR
+    # cosi' interpola su ~11.9% a 22EUR e ~8.9% a 27EUR, coerente coi dati storici in
+    # memoria (22EUR->11-13%, 27EUR->9.3%) -- niente ancore intermedie necessarie.
+    (30.00, 0.070),
+    (35.00, 0.060),
+    (40.00, 0.060),
 ]
 
 
