@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T08:03:27.453026Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=70%
+======================================================================
+1) tim-parker: 14 pt attesi (5-37)
+   SQUADRA: new-york-rb-secaucus-new-jersey | AVVERSARIO: orlando-city-lake-mary-florida
+======================================================================
+
+######################################################################
+# GIOCATORE: tim-parker
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tim-parker (squadra: new-york-rb-secaucus-new-jersey)
+Generato: 2026-07-27T08:03:27.452619Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | RBNY vs PHI | mlspa | score=67.1 | peso=0.630
+  2025-08-24 | CLT vs RBNY | mlspa | score=67.0 | peso=0.667
+  2025-09-14 | POR vs RBNY | mlspa | score=41.4 | peso=0.707
+  2025-09-27 | RBNY vs NYC | mlspa | score=31.9 | peso=0.749
+  2025-10-04 | RBNY vs CIN | mlspa | score=41.0 | peso=0.794
+  2026-04-25 | CIN vs RBNY | mlspa | score=35.6 | peso=0.841
+  2026-05-02 | RBNY vs DAL | mlspa | score=52.7 | peso=0.891
+  2026-05-09 | CHI vs RBNY | mlspa | score=35.7 | peso=0.944
+  2026-05-13 | RBNY vs CLB | mlspa | score=35.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 44.09
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 9.09 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.08, delta avversario +0.13 | Passaggio condizionato: delta venue -0.17, delta avversario -1.17 | Clean sheet/disimpegni condizionato: delta venue +0.73, delta avversario +1.35 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.23
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.1 - 67.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.39 (differenza: +1.84)
+Media score in casa: 45.57 | Media score fuori casa: 44.93
+Fattore casa/trasferta applicato: 0.976 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.080
+Fattore falli (casa/trasferta, da dati reali): 1.010
+Fattore duelli (casa/trasferta, da dati reali): 1.017
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.018
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.979
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.986
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.017
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 32.14% (fonte: tasso di presenza storico (9/28))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: New York Red Bulls | Trasferta: Orlando City SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 14.1 (range 5.1 - 37.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.54
+Punteggio REALE ottenuto in quella partita: 35.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      38.8    52.7    +13.9    16.7        SI
+   7        7      40.6    35.7     -4.9    15.5        SI
+   8        8      51.8    35.1    -16.7    15.1        NO
+
+MAE (errore assoluto medio): 11.82
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
