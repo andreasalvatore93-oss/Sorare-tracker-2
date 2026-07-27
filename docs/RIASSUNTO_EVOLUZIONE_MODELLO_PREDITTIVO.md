@@ -2501,3 +2501,78 @@ differire da quello dei pt attesi.
 **Da fare ancora**: la stessa separazione per GK/MID/FWD **non** è stata applicata — su FWD la
 misura non era concludente (8/12), su GK/MID non è ancora stata fatta. Prima va misurata con
 `selection_quality.py`, non replicata per analogia.
+
+### G. Il tetto teorico: perché il tuning del modello è CHIUSO
+
+Decomposizione della varianza degli score reali (DEF: 298 giocatori, 4.043 partite):
+
+```
+dev.std. TOTALE            19.26
+dev.std. ENTRO giocatore   18.72   <- rumore partita-per-partita, NON prevedibile
+dev.std. FRA giocatori      4.53   <- "bravura" persistente, l'unica cosa prevedibile
+ICC = 5.5%   (FWD: 9.0%)
+```
+
+Il **94.5%** della varianza di un difensore è rumore. Con 15 partite di storico l'affidabilità
+della stima del giocatore è 46.8%. Simulando con questi parametri reali il tetto di **qualunque**
+modello basato sullo storico:
+
+| | tetto con 15 partite | tetto con bravura VERA nota | **misurato** |
+|---|---|---|---|
+| DEF | 15.5% | 22.5% | **17.8%** |
+| FWD | 22.4% | 28.8% | **22–24%** |
+
+**Siamo già al tetto.** Confermato da una seconda direzione: `half_life` variato da 4 a "piatta"
+lascia il lift fra 16.3% e 17.8% (e la media pesata semplice resta sopra il modello ovunque).
+Ogni ulteriore ritocco dei parametri di questo modello è provatamente tempo perso.
+
+### H. Correlazioni ri-misurate sui 20 campionati (876 partite, 4.358 coppie)
+
+Same-team, residuo walk-forward, permutation test + split-half:
+
+| coppia | corr | split-half | in produzione? |
+|---|---|---|---|
+| def-gk | **+0.349** * | +0.434 / +0.344 | sì, bonus 11 (era misurata +0.40) |
+| def-def | +0.201 * | +0.229 / +0.189 | sì, bonus 5 |
+| fwd-fwd | +0.177 * | +0.201 / +0.170 | sì (regola generica compagno) |
+| fwd-mid | +0.173 * | +0.224 / +0.161 | sì |
+| mid-mid | +0.166 * | +0.144 / +0.174 | sì |
+| def-mid | +0.156 * | +0.148 / +0.166 | sì |
+| gk-mid | +0.142 * | +0.090 / +0.155 | sì, bonus 5 |
+| def-fwd | +0.107 * | +0.138 / +0.094 | sì |
+| **fwd-gk** | **+0.029** (n.s.) | +0.128 / +0.004 | — nullo, correttamente escluso |
+
+**Esito: confermano la produzione attuale, nessun cambio necessario.** Il quadro reale è "tutte le
+coppie di compagni correlano ~+0.15/+0.20, GK-DEF il doppio, GK-FWD zero" — che è ciò che i nudge
+attuali già fanno. Cade però la nota nel codice secondo cui "FWD non mostra correlazione con nessun
+ruolo": sul campione grande FWD correla con MID, FWD e DEF; solo con GK no (la regola generica
+compagno lo copriva già dal 27/07 notte).
+
+**Micro-imprecisione nota, non corretta**: un FWD prende il bonus compagno anche quando l'unico
+compagno già schierato è il PORTIERE, dove la correlazione è nulla. Distinguere richiederebbe
+conteggi per ruolo; effetto trascurabile.
+
+**Candidato NON implementato**: cross-team tutte le coppie sono negative (fwd-gk -0.258*,
+gk-mid -0.192*, def-mid -0.156*, def-def -0.122*, mid-mid -0.125*), non solo GK-vs-attaccante come
+codificato oggi. In Arena/All Stars la correlazione negativa *riduce* la varianza, quindi
+converrebbe evitare due giocatori di squadre che si affrontano, qualunque ruolo. **Ma lo split-half
+è instabile** (def-mid +0.036 poi -0.187; fwd-gk +0.031 poi -0.320): serve più storico prima di
+metterlo in produzione.
+
+### I. Il guadagno vero trovato: il POOL, non il modello
+
+Il modello è al tetto, ma la scelta dei candidati no. `build_formazione_globale.py` pescava solo da
+MLS + K League: le carte possedute negli altri 18 campionati, per cui la pipeline gira già, non
+venivano mai considerate — e le All Stars accettano qualsiasi campionato.
+
+| ruolo | candidati prima | ora | guadagno stimato per slot |
+|---|---|---|---|
+| GK | 36 | 82 | +1.08 |
+| DEF | 109 | 254 | +0.95 |
+| MID | 76 | 200 | +1.17 |
+| FWD | 67 | 170 | +1.05 |
+
+**~+7 punti per formazione a 7 slot** — più grande di qualunque intervento sul modello misurato in
+questa sessione, e senza rischio di modellazione: sono carte già possedute. Implementato (leghe
+scoperte dal filesystem, `_grow_for('mixed')` cresce una carta alla volta per non moltiplicare per
+20 le query L5/L10/L40).
