@@ -63,24 +63,32 @@ RANDOM_SEED = 42
 MIN_HISTORY = 6
 ROLES = ('gk', 'def', 'mid', 'fwd')
 
-# 27/07 notte: esteso da MLS-only a tutti e 6 i campionati con cache
-# disponibile (K League + Portogallo/Austria/Scozia/Croazia, aggiunti in
-# questa sessione). I 4 nuovi non hanno ancora cartelle "_calibration"
-# (mai lanciata la calibrazione allargata li'), quindi si usa la cache di
-# produzione "_all" -- stessi identici dati (score/detailedScore per
-# partita), solo generata dal run normale invece che da CALIBRATION_MODE.
-LEAGUES = {
-    'mls': ('formazione_mls.predict.test_{ruolo}', 'formazione_mls/output/mls_{ruolo}_calibration/.cache'),
-    'kleague': ('formazione_kleague.predict.test_{ruolo}', 'formazione_kleague/output/kleague_{ruolo}_calibration/.cache'),
-    'portogallo': ('formazione_portogallo.predict.test_{ruolo}', 'formazione_portogallo/output/portogallo_{ruolo}_all/.cache'),
-    'austria': ('formazione_austria.predict.test_{ruolo}', 'formazione_austria/output/austria_{ruolo}_all/.cache'),
-    'scozia': ('formazione_scozia.predict.test_{ruolo}', 'formazione_scozia/output/scozia_{ruolo}_all/.cache'),
-    'croazia': ('formazione_croazia.predict.test_{ruolo}', 'formazione_croazia/output/croazia_{ruolo}_all/.cache'),
-    'belgio': ('formazione_belgio.predict.test_{ruolo}', 'formazione_belgio/output/belgio_{ruolo}_all/.cache'),
-    'brasile': ('formazione_brasile.predict.test_{ruolo}', 'formazione_brasile/output/brasile_{ruolo}_all/.cache'),
-    'olanda': ('formazione_olanda.predict.test_{ruolo}', 'formazione_olanda/output/olanda_{ruolo}_all/.cache'),
-    'spagna': ('formazione_spagna.predict.test_{ruolo}', 'formazione_spagna/output/spagna_{ruolo}_all/.cache'),
-}
+# 28/07: da lista fissa (10 campionati) ad AUTO-DISCOVERY dal filesystem,
+# stesso pattern di _discover_leagues() in build_formazione_globale.py --
+# ogni cartella formazione_<lega>/output/<lega>_gk_all trovata entra
+# automaticamente, cosi' il conteggio segue da solo le nuove leghe aggiunte
+# (Danimarca/Argentina/Svizzera/Grecia/senza_lega, 27-28/07) senza dover
+# ritoccare questo file a mano. mls/kleague restano puntati sulla cache
+# "_calibration" (piu' grande, gia' usata per il grid search allargato);
+# per tutti gli altri si usa la cache di produzione "_all" (stessi dati,
+# score/detailedScore per partita, generati dal run normale).
+def _discover_leagues_for_correlation():
+    found = {}
+    for gk_dir in sorted(glob.glob(os.path.join('formazione_*', 'output', '*_gk_all'))):
+        champ_dir = os.path.basename(os.path.dirname(os.path.dirname(gk_dir)))
+        league = champ_dir[len('formazione_'):]
+        found[league] = (f'formazione_{league}.predict.test_{{ruolo}}',
+                          f'formazione_{league}/output/{league}_{{ruolo}}_all/.cache')
+    if 'mls' in found:
+        found['mls'] = ('formazione_mls.predict.test_{ruolo}',
+                         'formazione_mls/output/mls_{ruolo}_calibration/.cache')
+    if 'kleague' in found:
+        found['kleague'] = ('formazione_kleague.predict.test_{ruolo}',
+                             'formazione_kleague/output/kleague_{ruolo}_calibration/.cache')
+    return found
+
+
+LEAGUES = _discover_leagues_for_correlation()
 MIN_PAIRS_FOR_REPORT = 20
 
 
