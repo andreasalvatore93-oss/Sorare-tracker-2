@@ -35,6 +35,7 @@ le formazioni meno prioritarie a non completarsi per prime.
 Output: SOLO HTML (richiesta esplicita utente), in generatore_formazioni/output/.
 """
 import os
+import re
 import sys
 import glob
 import datetime
@@ -211,31 +212,67 @@ def load_league_role_data():
     return role_data, role_counts
 
 
-def apply_quality_filter(role_data):
-    for league in ('mls', 'kleague'):
-        for role in ROLES:
-            role_data[league][role] = quality_filter.filter_role_rows(role, league, role_data[league][role])
-    return role_data
+GROW_BATCH = int(os.environ.get('QUALITY_GROW_BATCH', '3'))
+SLOT_RE = re.compile(r'slot (\S+) \(')
 
 
-def build_role_data_views(role_data):
-    """role_data['mixed'][role] = MLS+K League filtrati, riordinati per
-    punteggio atteso decrescente (le due liste di partenza sono gia' ordinate
-    singolarmente, ma vanno fuse in un unico ordine globale)."""
-    role_data['mixed'] = {}
-    for role in ROLES:
-        combined = role_data['mls'][role] + role_data['kleague'][role]
+def build_quality_pools(role_data):
+    """Un LazyQualityPool per (lega, ruolo), sulla lista COMPLETA (non
+    filtrata) letta dai consigli -- nessuna query finche' non serve davvero
+    (vedi build_one_lineup_with_growth)."""
+    return {
+        league: {role: quality_filter.LazyQualityPool(role, league, role_data[league][role])
+                  for role in ROLES}
+        for league in ('mls', 'kleague')
+    }
+
+
+def _view_for(pools, pool_league, role):
+    if pool_league == 'mixed':
+        combined = pools['mls'][role].passing + pools['kleague'][role].passing
         combined.sort(key=lambda r: r['atteso'], reverse=True)
-        role_data['mixed'][role] = combined
-    return role_data
+        return combined
+    return pools[pool_league][role].passing
 
 
-def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_html_blocks):
+def _grow_for(pools, pool_league, role, batch):
+    if pool_league == 'mixed':
+        return pools['mls'][role].grow(batch) + pools['kleague'][role].grow(batch)
+    return pools[pool_league][role].grow(batch)
+
+
+def build_one_lineup_with_growth(shape, pool_league, pools, card_pool, l10_cap, apply_stack_guard, variance_mode):
+    """Chiama bff.build_one_lineup con il pool qualita' PASSANTE attuale; se
+    manca un candidato per uno slot, interroga la qualita' dei prossimi
+    candidati NON ancora controllati per quel ruolo (GROW_BATCH alla volta,
+    tutti i ruoli extra se lo slot mancante era 'extra') e riprova -- finche'
+    non completa la formazione o esaurisce davvero il pool scoperto."""
+    while True:
+        role_data_view = {role: _view_for(pools, pool_league, role) for role in ROLES}
+        formazione, error, l10_ok, stack_perso = bff.build_one_lineup(
+            shape, role_data_view, card_pool, l10_cap=l10_cap,
+            apply_stack_guard=apply_stack_guard, variance_mode=variance_mode)
+        if not error:
+            return formazione, None, l10_ok, stack_perso
+
+        m = SLOT_RE.search(error)
+        raw_slot = m.group(1) if m else ''
+        if raw_slot == 'extra':
+            roles_to_grow = shape['extra_roles']
+        else:
+            role = re.sub(r'\d+$', '', raw_slot)
+            roles_to_grow = [role] if role in ROLES else ROLES
+
+        progressed = any(_grow_for(pools, pool_league, r, GROW_BATCH) > 0 for r in roles_to_grow)
+        if not progressed:
+            return None, error, l10_ok, stack_perso
+
+
+def generate_lineups_for_type(tipo, count, pools, card_pool, lineup_html_blocks):
     if count <= 0:
         return 0, 0
     shape = FORMATION_SHAPES[tipo]
     pool_league = POOL_LEAGUE_BY_TYPE[tipo]
-    data_for_type = role_data[pool_league]
     cap = L10_CAP_BY_TYPE.get(tipo)
     stack_guard = tipo in STACK_GUARD_TYPES
     variance_mode = tipo in VARIANCE_MODE_TYPES
@@ -244,9 +281,8 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_html_blo
 
     generated, totale = 0, 0
     for idx in range(1, count + 1):
-        formazione, error, l10_ok, stack_perso = bff.build_one_lineup(
-            shape, data_for_type, card_pool, l10_cap=cap, apply_stack_guard=stack_guard,
-            variance_mode=variance_mode)
+        formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
+            shape, pool_league, pools, card_pool, cap, stack_guard, variance_mode)
         if error:
             msg = f"Formazione {label} #{idx}: NON GENERATA — {error}"
             print(msg)
@@ -286,8 +322,7 @@ def main():
             print(f"\nATTENZIONE: la lega '{league}' ha almeno un ruolo senza consiglio disponibile "
                   f"-- le formazioni di quella lega/pool misto potrebbero non completarsi.")
 
-    role_data = apply_quality_filter(role_data)
-    role_data = build_role_data_views(role_data)
+    pools = build_quality_pools(role_data)
 
     merged_counts = {
         role: {**role_counts['mls'][role], **role_counts['kleague'][role]}
@@ -300,7 +335,7 @@ def main():
     generated_by_type = {}
     grand_total = 0
     for tipo in PRIORITY_ORDER:
-        generated, totale = generate_lineups_for_type(tipo, counts[tipo], role_data, card_pool, lineup_html_blocks)
+        generated, totale = generate_lineups_for_type(tipo, counts[tipo], pools, card_pool, lineup_html_blocks)
         generated_by_type[tipo] = generated
         grand_total += totale
 
@@ -308,6 +343,11 @@ def main():
     print(f"\nFormazioni generate: {total_generated}/{num_totale}")
     if total_generated > 1:
         print(f"TOTALE COMPLESSIVO: {grand_total} pt")
+
+    tot_checked = sum(p.checked_idx for league in pools.values() for p in league.values())
+    tot_passed = sum(len(p.passing) for league in pools.values() for p in league.values())
+    print(f"Filtro qualita' (lazy): {tot_checked} carte interrogate, {tot_passed} promosse "
+          f"(su un pool scoperto totale di {sum(len(p.full) for league in pools.values() for p in league.values())}).")
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)

@@ -14,10 +14,12 @@ convenzione del filtro qualita' del discovery_global, non quella piu'
 permissiva degli altri filtri del progetto -- qui l'obiettivo e' proprio
 selezionare solo carte con storico affidabile).
 
-Fallback di sicurezza: se per un ruolo/lega il filtro lascia meno carte del
-minimo di sicurezza (MIN_KEPT_PER_ROLE), si ripescano le migliori scartate
-(per punteggio atteso) finche' non si raggiunge il minimo -- mai un ruolo
-lasciato vuoto per colpa del filtro.
+Interrogazione LAZY (27/07, seconda revisione -- richiesta esplicita utente
+dopo che una prima versione "controlla tutto il pool subito" ha impiegato
+~7 minuti/287 query per generare solo 4 formazioni, incappando anche in un
+429 con Retry-After di 4 minuti): vedi LazyQualityPool sotto -- si controllano
+solo i candidati migliori man mano che servono per completare le formazioni
+richieste, mai l'intero pool scoperto in un colpo solo.
 """
 import os
 import time
@@ -34,7 +36,6 @@ GRAPHQL_URL = 'https://api.sorare.com/federation/graphql'
 COOKIES = os.environ.get('SORARE_COOKIE', '')
 
 MIN_QUALITY_SCORE = float(os.environ.get('MIN_QUALITY_SCORE', '35.0'))
-MIN_KEPT_PER_ROLE = int(os.environ.get('QUALITY_FALLBACK_MIN', '3'))
 
 if _HAS_CURL_CFFI:
     _http_session = curl_requests.Session(impersonate="chrome")
@@ -103,26 +104,39 @@ def _passes(l5, l10, l40, min_score):
             and l40 is not None and l40 >= min_score)
 
 
-def filter_role_rows(role, league, rows, min_score=MIN_QUALITY_SCORE, min_kept=MIN_KEPT_PER_ROLE):
-    """rows: lista gia' ordinata per 'atteso' decrescente (come restituita da
-    parse_consiglio). Ritorna la stessa lista filtrata (stesso ordine), con
-    eventuale ripesca di fallback se resta troppo corta."""
-    kept, excluded = [], []
-    for row in rows:
-        l5, l10, l40 = fetch_l5_l10_l40(row['slug'])
-        time.sleep(0.3)
-        if _passes(l5, l10, l40, min_score):
-            kept.append(row)
-        else:
-            excluded.append(row)
+class LazyQualityPool:
+    """Interroga L5/L10/L40 SOLO per quanti candidati servono davvero, non per
+    tutto il pool scoperto (27/07, richiesta esplicita utente dopo una run
+    reale che ha impiegato ~7 minuti per interrogare 287 carte per generare
+    solo 4 formazioni, e ha preso pure un 429 con Retry-After di quasi 4
+    minuti).
 
-    if len(kept) < min_kept and excluded:
-        need = min_kept - len(kept)
-        ripescati = excluded[:need]
-        kept = sorted(kept + ripescati, key=lambda r: r['atteso'], reverse=True)
-        log(f"[{league}/{role}] Fallback qualita': pool sotto il minimo ({min_kept}), "
-            f"ripescati {len(ripescati)} scartati per media insufficiente.")
+    'full' e' la lista COMPLETA gia' ordinata per punteggio atteso
+    decrescente (come restituita da parse_consiglio) -- MAI interrogata tutta
+    subito. grow(n) controlla i prossimi 'n' candidati NON ancora controllati
+    (in ordine di punteggio) e aggiunge alla lista 'passing' quelli che
+    superano la soglia; ritorna quanti ne ha effettivamente controllati (0 =
+    pool esaurito). Il chiamante (build_one_lineup_with_growth in
+    build_formazione_globale.py) chiama grow() solo quando build_one_lineup
+    segnala che gli manca un candidato per completare una formazione --
+    "prova, se non basta controlla il prossimo, riprova" come richiesto."""
 
-    log(f"[{league}/{role}] Filtro qualita' (L5/L10/L40 tutti >= {min_score}): "
-        f"{len(rows) - len(kept)} esclusi su {len(rows)} (dato mancante = escluso).")
-    return kept
+    def __init__(self, role, league, full_candidates, min_score=MIN_QUALITY_SCORE):
+        self.role = role
+        self.league = league
+        self.full = full_candidates
+        self.min_score = min_score
+        self.checked_idx = 0
+        self.passing = []
+
+    def grow(self, batch):
+        checked = 0
+        while checked < batch and self.checked_idx < len(self.full):
+            row = self.full[self.checked_idx]
+            self.checked_idx += 1
+            l5, l10, l40 = fetch_l5_l10_l40(row['slug'])
+            time.sleep(0.3)
+            checked += 1
+            if _passes(l5, l10, l40, self.min_score):
+                self.passing.append(row)
+        return checked
