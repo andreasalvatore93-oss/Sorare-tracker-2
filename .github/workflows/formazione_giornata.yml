@@ -1,0 +1,189 @@
+name: Formazione giornata
+
+# Pipeline veloce, basata sulla GIORNATA invece che sui campionati.
+#  1) discovery_fixture.py: dalle partite della fixture ricava le squadre in
+#     campo, tiene solo le carte possedute di quelle squadre e applica la soglia
+#     starter-odds. ~3 minuti invece di ~30, e produce la matrice lega/ruolo.
+#  2) predict SOLO per i giocatori sopravvissuti (matrice dinamica: i campionati
+#     senza nessun titolare probabile non generano alcun job).
+#  3) consigli per lega/ruolo, nello stesso job del predict.
+#  4) generatore formazioni.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gameweek:
+        description: 'Numero giornata Sorare (es. 95)'
+        required: false
+        default: ''
+      fixture_slug:
+        description: 'Slug fixture (es. football-28-31-jul-2026). Ha la precedenza.'
+        required: false
+        default: ''
+      starter_odds_min:
+        description: 'Soglia starter-odds (0-1). Odds assenti = escluso.'
+        required: false
+        default: '0.80'
+      allstars:
+        description: 'Numero di All Stars da 7'
+        required: false
+        default: '1'
+      arena_allstars_260:
+        description: 'Arena All Stars cap 260'
+        required: false
+        default: '0'
+      arena_allstars_220:
+        description: 'Arena All Stars cap 220'
+        required: false
+        default: '0'
+      arena_allstars_uncapped:
+        description: 'Arena All Stars senza cap'
+        required: false
+        default: '0'
+      in_season:
+        description: 'In Season per lega (es. mls:1,kleague:1)'
+        required: false
+        default: ''
+      arena_dedicata:
+        description: 'Arene dedicate per lega (es. mls:1,belgio:1)'
+        required: false
+        default: ''
+      min_quality_score:
+        description: 'Soglia L5/L10/L40'
+        required: false
+        default: '35.0'
+
+permissions:
+  contents: write
+
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_*/output/*_discovery/player_slugs.json || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: slug eleggibili"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  predict:
+    needs: discovery
+    if: needs.discovery.outputs.matrice != '' && needs.discovery.outputs.matrice != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        combo: ${{ fromJson(needs.discovery.outputs.matrice) }}
+    env:
+      LEGA: ${{ matrix.combo.league }}
+      RUOLO: ${{ matrix.combo.role }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - name: Predict e consiglio
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -u
+          case "$RUOLO" in
+            gk)  PY=test_gk.py;          CO=build_consiglio_gk.py ;;
+            def) PY=test_def.py;         CO=build_consiglio_def.py ;;
+            mid) PY=test_mid.py;         CO=build_consiglio_mid.py ;;
+            fwd) PY=test_mls_fwd_all.py; CO=build_consiglio.py ;;
+          esac
+          FILE="formazione_$LEGA/output/${LEGA}_${RUOLO}_discovery/player_slugs.json"
+          SLUGS=$(python -c "import json,sys; print(' '.join(json.load(open(sys.argv[1]))))" "$FILE")
+          echo "Giocatori da elaborare: $SLUGS"
+          for SLUG in $SLUGS; do
+            echo "--- $LEGA/$RUOLO: $SLUG ---"
+            TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY" || echo "predict fallito per $SLUG"
+          done
+          python "formazione_$LEGA/consiglio/$CO" || echo "consiglio non generato"
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add "formazione_$LEGA/output/" || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: $LEGA $RUOLO"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  formazione:
+    needs: [discovery, predict]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          IN_SEASON: ${{ github.event.inputs.in_season }}
+          ARENA_DEDICATA: ${{ github.event.inputs.arena_dedicata }}
+          ARENA_ALLSTARS_260: ${{ github.event.inputs.arena_allstars_260 }}
+          ARENA_ALLSTARS_220: ${{ github.event.inputs.arena_allstars_220 }}
+          ARENA_ALLSTARS_UNCAPPED: ${{ github.event.inputs.arena_allstars_uncapped }}
+          ALLSTARS: ${{ github.event.inputs.allstars }}
+          MIN_QUALITY_SCORE: ${{ github.event.inputs.min_quality_score }}
+          MATCH_WINDOW_DAYS: '7'
+          PYTHONUNBUFFERED: "1"
+        run: python generatore_formazioni/build_formazione_globale.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add generatore_formazioni/output/*.html || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: formazioni generate"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
