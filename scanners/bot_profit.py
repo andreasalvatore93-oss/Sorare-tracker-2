@@ -34,18 +34,23 @@ crescita" -- richiesta esplicita utente 24/07):
 Nessuna decisione di acquisto/offerta, nessun punteggio composito calcolato
 ancora (i pesi relativi vanno concordati prima di tradurli in un unico score).
 
-Output: 3 CSV in bot_profit/, ognuno una CLASSIFICA PERSISTENTE che si aggiorna
-nel tempo (ricaricata ad ogni avvio, non riparte mai vuota):
-  - profit_tracking.csv           -> tutte le carte (comportamento di sempre)
-  - profit_tracking_in_season.csv -> SOLO carte in season
-  - profit_tracking_classic.csv   -> SOLO carte classic
-Riscritti ad ogni commit periodico (default 5 minuti) con SOLO le prime 50
-carte per potenziale_score decrescente. Il bot si ferma automaticamente anche
-quando raggiunge MAX_TRACKED_CARDS (default 500) di carte NUOVE, oltre che a
-fine LISTEN_SECONDS.
+Output (FIX 27/07, richiesta esplicita utente: un solo file al posto di 3,
+niente ambiguita' su quale aprire): un solo CSV GLOBALE in bot_profit_output/,
+CLASSIFICA PERSISTENTE che si aggiorna nel tempo (ricaricata ad ogni avvio,
+non riparte mai vuota) -- in_season e classic mescolati nella stessa riga,
+distinti dalla colonna tipo_carta:
+  - profit_tracking_<timestamp_utc>.csv -> tutte le carte, tutte le leghe
+Il nome include data/ora UTC (formato YYYYMMDD_HHMM); ad ogni riscrittura il
+file con timestamp precedente viene cancellato, quindi ne resta sempre e solo
+uno (il piu' recente). Stesso principio per i file per campionato in
+bot_profit_output/per_campionato/. Riscritti ad ogni commit periodico
+(default 5 minuti) con SOLO le prime 50 carte per potenziale_score decrescente.
+Il bot si ferma automaticamente anche quando raggiunge MAX_TRACKED_CARDS
+(default 500) di carte NUOVE, oltre che a fine LISTEN_SECONDS.
 """
 import csv
 import datetime
+import glob
 import json
 import os
 import subprocess
@@ -186,14 +191,15 @@ MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING'
 MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '1.0'))
 
 OUTPUT_DIR = 'scanners/bot_profit_output'
-OUTPUT_CSV_PATH = os.path.join(OUTPUT_DIR, 'profit_tracking.csv')
-# FIX 25/07 (richiesta esplicita utente): oltre al file combinato di sempre, due
-# file smistati -- SOLO in season e SOLO classic. Per i campionati MLS/K-League
-# lo smistamento e' gia' ovvio (tipo_carta = 'in season'/'classic'). Per gli
-# altri campionati (tipo_carta = 'misto') si usa il tipo dell'ULTIMO evento che
-# ha aggiornato quella riga (colonna interna 'ultimo_tipo_evento').
-OUTPUT_CSV_PATH_IN_SEASON = os.path.join(OUTPUT_DIR, 'profit_tracking_in_season.csv')
-OUTPUT_CSV_PATH_CLASSIC = os.path.join(OUTPUT_DIR, 'profit_tracking_classic.csv')
+# FIX 27/07 (richiesta esplicita utente: troppi file separati, "non so quale
+# aprire"): un SOLO file combinato (in season+classic mescolati, tutte le
+# leghe) al posto dei 3 file globali di prima (combinato/solo in season/solo
+# classic) -- il filtro Tipo del viewer copre gia' il bisogno di isolare
+# in_season o classic. Il nome include data/ora (UTC) cosi' si vede a colpo
+# d'occhio quanto e' fresco senza aprire il file. Solo l'ULTIMO file resta sul
+# disco: quelli vecchi vengono cancellati ad ogni scrittura (vedi
+# _cleanup_and_write_ranked_csv).
+OUTPUT_CSV_PREFIX = os.path.join(OUTPUT_DIR, 'profit_tracking')
 
 EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '2'))
 
@@ -1036,15 +1042,18 @@ def _parse_float_or_none(value):
 def load_previous_tracked():
     """FIX 24/07 (richiesta esplicita utente): il CSV non e' piu' uno snapshot
     che riparte vuoto ad ogni run -- e' una CLASSIFICA che si aggiorna nel
-    tempo. Ad ogni avvio, se esiste gia' un profit_tracking.csv nel repo, lo
-    ricarica in _tracked come stato di partenza; le carte incontrate in questa
-    run aggiornano (upsert) le righe esistenti o ne aggiungono di nuove, senza
-    perdere quello che le run precedenti avevano gia' trovato."""
-    if not os.path.exists(OUTPUT_CSV_PATH):
+    tempo. Ad ogni avvio, se esiste gia' un profit_tracking_<timestamp>.csv nel
+    repo, ricarica il PIU' RECENTE in _tracked come stato di partenza (FIX
+    27/07: il nome ora cambia ad ogni scrittura, vedi _find_latest_output_csv);
+    le carte incontrate in questa run aggiornano (upsert) le righe esistenti o
+    ne aggiungono di nuove, senza perdere quello che le run precedenti avevano
+    gia' trovato."""
+    latest_path = _find_latest_output_csv()
+    if latest_path is None:
         log("[classifica persistente] nessun CSV precedente trovato, parto da zero")
         return
     caricate = 0
-    with open(OUTPUT_CSV_PATH, 'r', newline='', encoding='utf-8') as f:
+    with open(latest_path, 'r', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         with _tracked_lock:
             for row in reader:
@@ -1076,8 +1085,7 @@ def load_previous_tracked():
 
 def _write_ranked_csv(rows_liquidi, path, label):
     """Ordina per potenziale_score decrescente, taglia a TOP_N_OUTPUT e scrive
-    su disco. Fattorizzata per essere riusata sui 3 file (combinato, solo in
-    season, solo classic)."""
+    su disco."""
     rows_sorted = sorted(
         rows_liquidi,
         key=lambda r: (r['potenziale_score'] if r['potenziale_score'] is not None else -999),
@@ -1091,6 +1099,30 @@ def _write_ranked_csv(rows_liquidi, path, label):
     log(f"[csv] {label}: scritte {len(rows_sorted)}/{len(rows_liquidi)} carte "
         f"(top {TOP_N_OUTPUT} per potenziale_score) in {path}")
     return len(rows_sorted)
+
+
+def _run_timestamp_utc():
+    return datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M')
+
+
+def _cleanup_and_write_ranked_csv(rows_liquidi, dir_path, prefix, timestamp, label):
+    """Come _write_ranked_csv, ma con nome file <prefix>_<timestamp>.csv (FIX
+    27/07, richiesta esplicita utente: data/ora gia' nel nome, un solo file
+    alla volta). Cancella PRIMA ogni <prefix>_*.csv preesistente nella stessa
+    cartella, cosi' non si accumulano vecchie versioni ad ogni run/commit
+    periodico -- ne resta sempre e solo uno, il piu' recente."""
+    for old_path in glob.glob(os.path.join(dir_path, f"{prefix}_*.csv")):
+        os.remove(old_path)
+    path = os.path.join(dir_path, f"{prefix}_{timestamp}.csv")
+    return path, _write_ranked_csv(rows_liquidi, path, label)
+
+
+def _find_latest_output_csv():
+    """Trova il file profit_tracking_<timestamp>.csv piu' recente (ordinamento
+    lessicografico = cronologico col formato YYYYMMDD_HHMM) -- serve a
+    load_previous_tracked() dato che il nome cambia ad ogni run."""
+    candidates = sorted(glob.glob(f"{OUTPUT_CSV_PREFIX}_*.csv"))
+    return candidates[-1] if candidates else None
 
 
 def _tra_quanto_leggibile(ore):
@@ -1165,19 +1197,19 @@ def write_buy_signals(rows_liquidi):
 
 
 def write_csv_snapshot():
-    """Scrive:
-      1) i 3 file GLOBALI di sempre -- combinato, solo in season, solo classic
-         (tutti i campionati mescolati, comportamento invariato);
-      2) un file PER CAMPIONATO in bot_profit/per_campionato/:
-         - MLS/K-League (EXCLUDED_LEAGUE_SLUGS): 2 file ciascuno, in_season e
-           classic separati (stessa regola di sempre per questi 2 campionati) --
-           es. mls_in_season.csv, mls_classic.csv
-         - tutti gli altri campionati: 1 file unico, in_season+classic mescolati
-           -- es. premier_league.csv (contiene sia Haaland classic che Haaland
-           in season nella stessa classifica)
-    Lo smistamento per MLS/K-League usa tipo_carta (gia' distinto); per gli
-    altri campionati (tipo_carta=misto) il file e' unico quindi non serve
-    distinguere in/classic al suo interno."""
+    """Scrive (FIX 27/07, richiesta esplicita utente: "troppi file separati,
+    non so quale aprire" -- un solo output combinato con data/ora nel nome):
+      1) UN file GLOBALE, in_season+classic mescolati, tutte le leghe insieme
+         -- profit_tracking_<timestamp_utc>.csv. Il filtro Tipo del viewer
+         copre il bisogno di isolare in_season o classic quando serve.
+      2) UN file PER CAMPIONATO in bot_profit/per_campionato/ (richiesta
+         esplicita utente: tenere la suddivisione per lega, utile quando in
+         futuro se ne traccia piu' di una insieme) -- anche qui in_season+
+         classic sempre mescolati dentro lo stesso file, es.
+         mlspa_<timestamp_utc>.csv.
+    In entrambi i casi, ad ogni scrittura vengono cancellati i file con lo
+    stesso prefisso ma timestamp precedente (vedi _cleanup_and_write_ranked_csv)
+    -- resta sempre un solo file per prefisso, il piu' recente."""
     with _tracked_lock:
         rows = list(_tracked.values())
     if not os.path.exists(OUTPUT_DIR):
@@ -1206,26 +1238,14 @@ def write_csv_snapshot():
     rows_liquidi = [r for r in rows_con_storico if _n_totali(r) >= MIN_TRANSACTIONS_FOR_RANKING]
     esclusi_poco_liquidi = len(rows_con_storico) - len(rows_liquidi)
 
-    def _is_in_season_row(r):
-        if r['tipo_carta'] == 'in season':
-            return True
-        if r['tipo_carta'] == 'classic':
-            return False
-        return r.get('ultimo_tipo_evento') == 'in_season'  # tipo_carta == 'misto'
+    timestamp = _run_timestamp_utc()
 
-    rows_in_season = [r for r in rows_liquidi if _is_in_season_row(r)]
-    rows_classic = [r for r in rows_liquidi if not _is_in_season_row(r)]
+    # --- 1) Unico file GLOBALE (in season+classic mescolati) ---
+    combinato_path, n_combinato = _cleanup_and_write_ranked_csv(
+        rows_liquidi, OUTPUT_DIR, 'profit_tracking', timestamp, 'combinato')
 
-    # --- 1) I 3 file GLOBALI di sempre (invariati) ---
-    n_combinato = _write_ranked_csv(rows_liquidi, OUTPUT_CSV_PATH, 'combinato')
-    _write_ranked_csv(rows_in_season, OUTPUT_CSV_PATH_IN_SEASON, 'solo in season')
-    _write_ranked_csv(rows_classic, OUTPUT_CSV_PATH_CLASSIC, 'solo classic')
-
-    # --- 2) File PER CAMPIONATO ---
-    # Raggruppo per (league_filename, tipo_gruppo) dove tipo_gruppo e':
-    #   - per MLS/K-League: 'in_season' o 'classic' (2 file separati)
-    #   - per tutti gli altri: 'unico' (1 file, in+classic mescolati)
-    gruppi = {}  # (league_filename, tipo_gruppo) -> lista righe
+    # --- 2) Un file per campionato (in season+classic mescolati dentro ognuno) ---
+    gruppi = {}  # league_filename -> lista righe
     senza_league_loggate = 0
     SENZA_LEAGUE_LOG_MAX = 5  # logga solo le prime N carte senza league leggibile
 
@@ -1237,34 +1257,25 @@ def write_csv_snapshot():
             if senza_league_loggate <= SENZA_LEAGUE_LOG_MAX:
                 log(f"[per_campionato] SCARTATA dai file per campionato (league_slug mancante/non "
                     f"leggibile): {r.get('player_name')} ({r.get('player_slug')}) "
-                    f"league_slug={league_slug_r!r} -- resta comunque nei 3 file globali")
-            continue  # scartata SOLO dai file per campionato, resta nei 3 globali
-
-        if league_slug_r in EXCLUDED_LEAGUE_SLUGS:
-            tipo_gruppo = 'in_season' if _is_in_season_row(r) else 'classic'
-        else:
-            tipo_gruppo = 'unico'
-
-        gruppi.setdefault((league_filename, tipo_gruppo), []).append(r)
+                    f"league_slug={league_slug_r!r} -- resta comunque nel file globale")
+            continue  # scartata SOLO dai file per campionato, resta nel file globale
+        gruppi.setdefault(league_filename, []).append(r)
 
     if senza_league_loggate > SENZA_LEAGUE_LOG_MAX:
         log(f"[per_campionato] altre {senza_league_loggate - SENZA_LEAGUE_LOG_MAX} carte scartate "
             f"per league_slug mancante/non leggibile (log troncato)")
 
-    for (league_filename, tipo_gruppo), gruppo_rows in gruppi.items():
-        if tipo_gruppo == 'unico':
-            filename = f"{league_filename}.csv"
-        else:
-            filename = f"{league_filename}_{tipo_gruppo}.csv"
-        path = os.path.join(per_campionato_dir, filename)
-        _write_ranked_csv(gruppo_rows, path, f'campionato={league_filename} ({tipo_gruppo})')
+    for league_filename, gruppo_rows in gruppi.items():
+        _cleanup_and_write_ranked_csv(
+            gruppo_rows, per_campionato_dir, league_filename, timestamp,
+            f'campionato={league_filename}')
 
     write_buy_signals(rows_liquidi)
 
     log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
         f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni "
-        f"({n_combinato} nel file combinato, {len(gruppi)} file per campionato scritti in "
-        f"{per_campionato_dir}/)")
+        f"({n_combinato} nel file combinato {combinato_path}, {len(gruppi)} file per campionato "
+        f"scritti in {per_campionato_dir}/)")
 
 
 # =====================================================================================
@@ -1277,19 +1288,13 @@ def _commit_output_se_serve():
     try:
         write_csv_snapshot()
         write_pattern_giorni_csv()
-        paths_da_committare = [OUTPUT_CSV_PATH, OUTPUT_CSV_PATH_IN_SEASON, OUTPUT_CSV_PATH_CLASSIC]
-        per_campionato_dir = os.path.join(OUTPUT_DIR, 'per_campionato')
-        if os.path.exists(per_campionato_dir):
-            paths_da_committare.append(per_campionato_dir)
+        # FIX 27/07: i nomi file dentro OUTPUT_DIR ora cambiano ad ogni scrittura
+        # (timestamp) -- si committa l'intera cartella invece di elencare nomi
+        # fissi, cosi' git vede automaticamente sia i file nuovi sia la
+        # cancellazione di quelli vecchi (vedi _cleanup_and_write_ranked_csv).
+        paths_da_committare = [OUTPUT_DIR]
         if os.path.exists(LISTA_NERA_PROFIT_PATH):
             paths_da_committare.append(LISTA_NERA_PROFIT_PATH)
-        pattern_path = os.path.join(OUTPUT_DIR, 'pattern_giorni_da_partita.csv')
-        if os.path.exists(pattern_path):
-            paths_da_committare.append(pattern_path)
-        if os.path.exists(BUY_SIGNALS_CSV_PATH):
-            paths_da_committare.append(BUY_SIGNALS_CSV_PATH)
-        if os.path.exists(BUY_SIGNALS_TXT_PATH):
-            paths_da_committare.append(BUY_SIGNALS_TXT_PATH)
         status = subprocess.run(
             ['git', 'status', '--porcelain', '--'] + paths_da_committare,
             capture_output=True, text=True, timeout=30

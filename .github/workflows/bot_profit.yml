@@ -92,17 +92,17 @@ jobs:
           SNAPSHOT_LEAGUE_SLUG: ${{ github.event.inputs.snapshot_league_slug || 'mlspa' }}
           SNAPSHOT_WORKER_THREADS: ${{ github.event.inputs.snapshot_worker_threads || '10' }}
         run: python scanners/bot_profit.py
-      - name: Commit CSV (globali + per campionato) + blacklist dedicata (fallback, se il commit periodico non ha gia' salvato tutto)
+      - name: Commit CSV (globale + per campionato) + blacklist dedicata (fallback, se il commit periodico non ha gia' salvato tutto)
         if: always()
         run: |
-          FILES="scanners/bot_profit_output/profit_tracking.csv scanners/bot_profit_output/profit_tracking_in_season.csv scanners/bot_profit_output/profit_tracking_classic.csv scanners/bot_profit_output/per_campionato sorare_lista_nera_profit.txt"
+          FILES="scanners/bot_profit_output sorare_lista_nera_profit.txt"
           if [ -z "$(git status --porcelain -- $FILES)" ]; then
             echo "Nessuna modifica, niente da committare."
           else
             git config user.name "bot-profit"
             git config user.email "bot-profit@users.noreply.github.com"
             git add $FILES
-            git commit -m "Bot Profit: commit finale dati tracciati (3 file globali + per campionato) + blacklist"
+            git commit -m "Bot Profit: commit finale dati tracciati (1 file globale + per campionato) + blacklist"
             git pull --rebase --autostash origin "${{ github.event.inputs.git_ref || 'main' }}"
             git push
           fi
