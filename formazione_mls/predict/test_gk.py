@@ -109,7 +109,7 @@ PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per giocatore, budget complessita' API limitato)
 HALF_LIFE_GAMES = 12.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionati (MLS+K League+Portogallo+Austria+Scozia+Croazia), granulari ritestati con i veri array (non piu inerti come in un primo tentativo scartato) -- vincitore hl=12.0/range=1.2/opp_sens=29.0/trend_int=0.7 SENZA granulari, composite score 17.60 vs 17.65 del valore precedente (hl=9.0) -- scarto piccolo ma applicato su richiesta esplicita dellutente.
-RANGE_MULTIPLIER = 1.6  # FISSATO (25/07): idem
+RANGE_MULTIPLIER = 1.4  # AGGIORNATO (ricalibrazione su 10 campionati, sessione 27/07): range_multiplier 1.6->1.4, MAE 18.30 vs 18.32 (-0.1%, scarto minimo ma applicato su richiesta esplicita dell'utente, stesso principio gia' seguito per altri parametri in questo progetto).
 OPPONENT_SENSITIVITY = 29.0  # AGGIORNATO (26/07): grid search allargato su 13 portieri qualificati (>=3 partite test, 26 qualificati totali) — opp_sens=29.0 batte 20.0 del -4.3% di MAE (18.96 vs 19.81), coerente con DEF/MID/FWD e col bootstrap di stabilita' (opp_sens=29.0 mai cambiato in nessun ruolo). range_multiplier=1.6 confermato invariato (tie con 1.4 in questo campione, nessun segnale per cambiarlo).
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.7  # FISSATO (25/07): idem

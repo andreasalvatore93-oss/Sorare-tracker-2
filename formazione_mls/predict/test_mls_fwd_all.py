@@ -128,12 +128,15 @@ TREND_INTENSITY = 1.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionat
 # shrink_k=5.0 gia' in produzione in media_condizionata() (Stadio D,
 # level_score) — stesso ordine di grandezza, stessa idea di "partite fittizie"
 # di prior, decisione presa una volta sola per tutte le correzioni di questo
-# tipo. MEDIA_RUOLO_FWD_PRIOR = media grezza di tutti gli score nel pool di
-# calibrazione FWD (599 score, 48 giocatori con >=9 partite) al 26/07 --
-# costante strutturale, non ricalcolata a runtime (stessa semplificazione
-# accettata per gli altri "FISSATO" sopra).
+# tipo. MEDIA_RUOLO_FWD_PRIOR = media grezza di tutti gli score FWD nel pool
+# esteso a 10 campionati (MLS, K League, Brasile, Croazia, Portogallo,
+# Austria, Scozia, Belgio, Olanda, Spagna), ricalibrata sessione 27/07 con
+# formazione_mls/diagnostics/validate_outlier_shrinkage.py (variabile
+# media_ruolo) -- costante strutturale, non ricalcolata a runtime (stessa
+# semplificazione accettata per gli altri "FISSATO" sopra). SHRINK_K_OUTLIER_FWD
+# resta 5.0 (differenza vs k=4 vista trascurabile, nessun cambio li').
 SHRINK_K_OUTLIER_FWD = 5.0
-MEDIA_RUOLO_FWD_PRIOR = 51.86
+MEDIA_RUOLO_FWD_PRIOR = 53.02
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # sotto questa soglia di probabilita' di titolarita', il giocatore e' ESCLUSO dall'analisi (non schierabile secondo l'utente) in produzione. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale, causava esclusioni indesiderate nel grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
