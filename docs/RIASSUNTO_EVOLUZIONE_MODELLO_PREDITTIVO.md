@@ -1433,17 +1433,35 @@ controllo esplicito "2+ copie", la condizione è già garantita dal pool.
 - Varianza capitano: 3 formazioni In Season generate in sequenza, 3 capitani diversi (nessuna
   ripetizione quando esistono alternative valide nella lineup).
 
-**Non ancora testato su una run reale GitHub Actions** (solo dati sintetici in locale, stesso
-livello di verifica del knapsack in sezione 16) — da fare insieme al test del knapsack alla
-prossima occasione di lancio.
+### D. Verificato su run reale GitHub Actions (run #5, 27/07 notte) — TUTTO CONFERMATO
 
-### D. Stato repo e prossimi passi
+Run [30253520459](https://github.com/andreasalvatore93-oss/Sorare-tracker-2/actions/runs/30253520459):
+6 In Season MLS, 6 In Season K League, 1 Arena MLS (cap 260), 1 Arena K League (cap 260), 1 Arena
+All Stars (cap 260), 1 All Stars — 16/16 formazioni generate, nessun errore.
 
-Modifiche pronte per il commit (knapsack sezione 16 + redesign In Season/varianza capitano sezione
-17), da pushare su `main` quando richiesto esplicitamente (vedi [[feedback_push_main_solo_a_fine_sessione]]).
+- **Knapsack Arene**: le 3 formazioni a cap L10 obbligatorio rispettano tutte il budget, vicinissime
+  al limite (L10 250.0/260.0, 253.0/260.0, 258.0/260.0 — tutte "entro budget") — segno che sta
+  davvero ottimizzando (vicino al cap), non solo rispettandolo per caso. Etichetta extra con ruolo
+  corretto (es. "EXTRA · MID").
+- **Varianza capitano**: 0 ripetizioni DENTRO lo stesso tipo — 6 capitani diversi tra le In Season
+  MLS, 6 diversi tra le In Season K League. Un capitano ripetuto tra In Season MLS e Arena MLS
+  (Sebastian Berhalter) è corretto: sono tipi/competizioni diverse, lo scope è per tipo.
+- Bonus capitano Arena confermato +20% in output (`CAPTAIN_BONUS_BY_TYPE`), nessuna regressione.
 
-**Backlog aggiornato**:
-1. **Verificare TUTTO su una run reale** (knapsack Arene + redesign In Season 2+/varianza capitano)
-   — prossima azione pianificata: 6 In Season MLS, 6 In Season K League, 1 Arena dedicata MLS,
-   1 Arena dedicata K League, 1 Arena mista cap 260, 1 All Stars.
-2. Tutto il resto del backlog di 13E/14F/15J resta valido e non toccato in questa sessione.
+**Nota per la prossima sessione (richiesta esplicita dell'utente, 27/07 notte)**: per ORA le
+modifiche vanno fatte solo sul Generatore Formazioni (`generatore_formazioni/` +
+`formazione_mls/build_formazione_finale.py`, da cui il tool fuso importa `build_one_lineup` per
+TUTTI gli 8 tipi, MLS e K League inclusi) — l'utente userà probabilmente solo questo tool d'ora in
+poi. `formazione_kleague/build_formazione_finale.py` è stato comunque tenuto allineato in questa
+sessione (knapsack + redesign In Season + varianza capitano, tutti e 3 i fix), ma non è più
+prioritario mantenerlo in parallelo nelle prossime sessioni finché l'utente non lo richiede di
+nuovo esplicitamente.
+
+### E. Stato repo e prossimi passi
+
+Tutto pushato su `main` (knapsack sezione 16 + redesign In Season/varianza capitano sezione 17),
+verificato su run reale.
+
+**Backlog aggiornato**: nessun punto prioritario aperto su questo filone al momento. Resta valido
+tutto il backlog di 13E/14F/15J (bonus K League da verificare con screenshot reali, estensione ad
+altri campionati, ecc.), non toccato in questa sessione.
