@@ -1,0 +1,26 @@
+name: Diagnostica slug
+
+on:
+  workflow_dispatch:
+    inputs:
+      slugs:
+        description: 'Slug giocatori separati da virgola (es. inaki-pena)'
+        required: false
+        default: 'inaki-pena'
+
+jobs:
+  diagnostica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SLUGS: ${{ github.event.inputs.slugs }}
+          PYTHONUNBUFFERED: "1"
+        run: python diagnostica_slug.py
