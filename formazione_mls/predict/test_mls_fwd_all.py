@@ -112,7 +112,7 @@ HALF_LIFE_GAMES = 12.0  # FISSATO (25/07): combinazione vincente aggregata cross
 RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 1.4, non 1.6 come nel tentativo precedente; la copertura ideale viene dalla combinazione GIUSTA di tutti i parametri insieme, non dal range preso da solo
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
-TREND_INTENSITY = 0.7  # FISSATO (25/07): idem — trend leggermente attenuato rispetto al comportamento originale (1.0)
+TREND_INTENSITY = 1.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionati, granulari ritestati con i veri array -- vincitore hl=12.0/range=1.4/opp_sens=29.0/trend_int=1.0 SENZA granulari, composite score 16.14 vs 16.19 del valore precedente (trend=0.7) -- scarto piccolo ma applicato su richiesta esplicita dellutente.
 # FISSATO (27/07, tema backlog "outlier/hot-streak" — caso Antino Lopez, DEF a
 # bassa titolarita' con picchi isolati sovrastimati dalla media pesata):
 # backtest walk-forward rigoroso su tutti i ruoli (formazione_mls/diagnostics/

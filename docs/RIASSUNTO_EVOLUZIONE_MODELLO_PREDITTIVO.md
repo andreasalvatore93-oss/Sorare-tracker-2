@@ -1688,3 +1688,56 @@ build_formazione_finale.py` (richiesta esplicita utente: modifiche solo sul tool
 
 Tutto pushato su `main`: fix A, fix B, run reali 4 campionati (con cache popolata), reindagine
 correlazioni + estensione nudge FWD. Nessun'altra azione in sospeso su questo filone.
+
+## 21. Stessa notte (continua) — ricalibrazione parametri In Season su 6 campionati, granulari
+## ritestati sul serio, 3 parametri aggiornati in produzione
+
+Richiesta esplicita dell'utente: a prescindere dalla sinergia (sezioni 16-20), rifare le indagini
+di calibrazione che hanno portato al modello attuale (grid search cross-player pesato per n_test,
+stessa metodologia di `aggregate_grid_search.py`) usando i dati dei 6 campionati, focus sulla stima
+del punteggio SINGOLO per le competizioni In Season (non Arena).
+
+**Primo tentativo scartato**: `formazione_mls/diagnostics/recalibrate_6leagues_inseason.py` chiamava
+`run_grid_search` senza passare gli array granulari (possession/passing/duelli/ecc.), rendendo il
+flag "con/senza granulari" inerte per costruzione (MAE identico in ogni riga con/senza) — l'utente
+ha corretto: bisognava ricostruire i VERI array granulari (stessa logica esatta di `build_prediction`
+in ciascun `test_<ruolo>.py`: `extract_group_score` sulle STATS del modulo, capping identico,
+`residual_values` = punteggio meno tutti i gruppi coperti) e ritestare sul serio.
+
+**Rifatto correttamente** (`build_granular_kwargs`, nuova funzione nello script): ricostruisce per
+ogni ruolo gli stessi identici array usati in produzione (GK: possesso/passaggio/portiere/gol
+subiti; DEF: + azioni difensive/clean sheet; MID: + azioni difensive, no clean sheet; FWD: senza
+azioni difensive/gol subiti/clean sheet), usando le costanti STATS e i CAP di ciascun modulo
+(nessun valore hardcoded, sempre letto dal modulo per restare fedele a eventuali differenze tra
+ruoli). Aggregazione per **composite score** (MAE + penalità copertura, peso 0.1 — stesso criterio
+già in uso, sezione 14C — NON per solo MAE: il `range_multiplier` non cambia mai il MAE, solo
+l'ampiezza dell'intervallo, quindi ordinare per solo MAE renderebbe la scelta tra range diversi
+arbitraria).
+
+**Risultato con i granulari testati sul serio**: **confermano ancora nessun beneficio** in NESSUN
+ruolo (nei top-5 per composite score, le varianti "+granulari" o non compaiono affatto o sono
+nettamente peggiori — es. MID: 15.84 con granulari vs 15.62 senza) — stavolta è una vera
+riconferma, non un artefatto. Sui parametri numerici emergono pero' 3 scarti piccoli ma reali
+rispetto alla produzione attuale (opponent_sensitivity e range_multiplier confermati invariati
+ovunque):
+
+| Ruolo | Parametro | Prima | Dopo | Composite prima | Composite dopo |
+|---|---|---|---|---|---|
+| GK | half_life | 9.0 | **12.0** | 17.65 | 17.60 |
+| DEF | half_life | 12.0 | **9.0** | 15.80 | 15.78 |
+| MID | (nessuno) | — | — | 15.83 | 15.83 (già ottimale) |
+| FWD | trend_intensity | 0.7 | **1.0** | 16.19 | 16.14 |
+
+**Decisione presa**: scarti piccoli (dentro il rumore già documentato altrove, sezione 13B/13C) ma
+l'utente ha esplicitamente chiesto di applicarli comunque ("se ci sono anche solo piccole modifiche
+da fare devi modificare la produzione... non essere pigro") — **applicati in produzione**. A
+differenza dei fix strutturali di stanotte (limitati al tool fuso su richiesta esplicita), questi
+sono PARAMETRI DEL MODELLO globale (principio dichiarato dall'utente in sezione 13D: "il modello
+sarà sempre uno solo"), quindi aggiornati identici in **tutti e 6 i campionati**
+(`formazione_mls/predict/test_gk.py`, `test_def.py`, `test_mls_fwd_all.py` + le stesse 3 righe
+nelle copie K League/Portogallo/Austria/Scozia/Croazia — 18 file totali, `test_mid.py` non toccato,
+nessun cambio li'). `RANGE_MULTIPLIER`/`OPPONENT_SENSITIVITY` invariati in tutti i ruoli (nessuno
+scarto nemmeno piccolo).
+
+**Backlog**: nessuno aperto su questo filone. Prossima ricalibrazione naturale quando la stagione
+avanza e i campioni per giocatore crescono (stesso principio già applicato più volte).

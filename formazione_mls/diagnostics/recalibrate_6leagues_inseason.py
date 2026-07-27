@@ -87,8 +87,82 @@ def player_team_and_flags_ranks(entries):
     return team_slug, flags, ranks
 
 
+def _capped(mod, cap_name, raw):
+    cap = getattr(mod, cap_name, None)
+    return max(-cap, min(cap, raw)) if cap is not None else raw
+
+
+def build_granular_kwargs(mod, ruolo, entries):
+    """Ricostruisce ESATTAMENTE gli stessi array granulari per partita usati
+    dal flusso reale di produzione (extract_group_score sulle STATS del
+    modulo, capping identico, residual_values = punteggio meno tutti i
+    gruppi coperti) -- necessario per testare DAVVERO il flag granulari nel
+    grid search, non lasciarlo inerte come in un primo tentativo scartato."""
+    detail_key = 'detailedScore'
+    details = entries  # ogni entry IN CACHE e' gia' il 'detail' (ha .get('detailedScore'))
+
+    if ruolo == 'gk':
+        possession, passing, goalkeeping, goals_conceded = [], [], [], []
+        for e in details:
+            possession.append(mod.extract_group_score(e, mod.POSSESSION_STATS))
+            passing.append(mod.extract_group_score(e, mod.PASSING_STATS))
+            goalkeeping.append(mod.extract_group_score(e, mod.GOALKEEPING_STATS))
+            gc_raw = mod.extract_group_score(e, mod.GOALS_CONCEDED_STATS)
+            goals_conceded.append(_capped(mod, 'GOALS_CONCEDED_CAP', gc_raw))
+        return dict(possession_values=possession, passing_values=passing,
+                    goalkeeping_values=goalkeeping, goals_conceded_values=goals_conceded)
+
+    fouls, duels, offensive, passing, defense_rare = [], [], [], [], []
+    defensive_actions, goals_conceded, clean_sheet, residual = [], [], [], []
+    has_clean_sheet = ruolo == 'def'
+    has_goals_conceded = ruolo in ('def', 'mid')
+    has_defensive_actions = ruolo in ('def', 'mid')
+
+    for e in details:
+        f_v = mod.extract_group_score(e, mod.FOULS_STATS)
+        d_v = mod.extract_group_score(e, mod.DUELS_STATS)
+        o_v = mod.extract_group_score(e, mod.OFFENSIVE_STATS)
+        p_v = mod.extract_group_score(e, mod.PASSING_STATS)
+        dr_raw = mod.extract_group_score(e, mod.DEFENSE_RARE_STATS)
+        dr_v = _capped(mod, 'DEFENSE_RARE_CAP', dr_raw)
+        fouls.append(f_v)
+        duels.append(d_v)
+        offensive.append(o_v)
+        passing.append(p_v)
+        defense_rare.append(dr_v)
+
+        covered = f_v + d_v + o_v + p_v + dr_raw
+        da_v = gc_raw = cs_v = 0.0
+        if has_defensive_actions:
+            da_v = mod.extract_group_score(e, mod.DEFENSIVE_ACTIONS_STATS)
+            defensive_actions.append(da_v)
+            covered += da_v
+        if has_goals_conceded:
+            gc_raw = mod.extract_group_score(e, mod.GOALS_CONCEDED_STATS)
+            goals_conceded.append(_capped(mod, 'GOALS_CONCEDED_CAP', gc_raw))
+            covered += gc_raw
+        if has_clean_sheet:
+            cs_v = mod.extract_group_score(e, mod.CLEAN_SHEET_STATS)
+            clean_sheet.append(cs_v)
+            covered += cs_v
+
+        game_score = e.get('score', 0.0)
+        residual.append(game_score - covered)
+
+    kwargs = dict(fouls_values=fouls, duels_values=duels, offensive_values=offensive,
+                  passing_values=passing, defense_rare_values=defense_rare, residual_values=residual)
+    if has_defensive_actions:
+        kwargs['defensive_actions_values'] = defensive_actions
+    if has_goals_conceded:
+        kwargs['goals_conceded_values'] = goals_conceded
+    if has_clean_sheet:
+        kwargs['clean_sheet_values'] = clean_sheet
+    return kwargs
+
+
 def collect_role(ruolo):
-    """Per ogni giocatore cachato (tutte le leghe), esegue run_grid_search e
+    """Per ogni giocatore cachato (tutte le leghe), esegue run_grid_search
+    (CON i veri array granulari ricostruiti, vedi build_granular_kwargs) e
     ritorna lista di (n_test, best_row_dict) per ogni combinazione testata
     -- serve tutta la classifica per giocatore, non solo il vincitore, per
     poter aggregare per combinazione attraverso i giocatori (stesso
@@ -110,7 +184,8 @@ def collect_role(ruolo):
                 cache = json.load(f)
             if not cache:
                 continue
-            entries = [e for e in cache.values() if e.get('anyGame') and e.get('scoreStatus') == 'FINAL']
+            entries = [e for e in cache.values() if e.get('anyGame') and e.get('scoreStatus') == 'FINAL'
+                       and e.get('detailedScore')]
             if len(entries) < MIN_HISTORY + MIN_TEST_GAMES:
                 continue
             entries.sort(key=lambda e: e['anyGame'].get('date') or '')
@@ -119,7 +194,8 @@ def collect_role(ruolo):
             if team_slug is None or any(f is None for f in flags):
                 continue
 
-            results = run_grid_search(scores, flags, ranks, min_history=MIN_HISTORY)
+            granular_kwargs = build_granular_kwargs(mod, ruolo, entries)
+            results = run_grid_search(scores, flags, ranks, min_history=MIN_HISTORY, **granular_kwargs)
             by_label = {r['label']: r for r in results if r.get('mae') is not None}
             if not by_label:
                 continue
@@ -152,12 +228,19 @@ def aggregate(per_player_results):
             continue
         mae = mae_sum / n_sum
         cov = cov_sum / n_sum
+        # Stesso composite score usato in run_grid_search/aggregate_grid_search.py:
+        # il range_multiplier NON cambia mai il MAE (influisce solo sull'ampiezza
+        # dell'intervallo, non sulla predizione puntuale) -- selezionare per solo
+        # MAE renderebbe la scelta tra range diversi arbitraria. La penalita' di
+        # copertura (peso 0.1, fissato in sezione 14C del riassunto) e' l'unico
+        # modo corretto di scegliere tra combinazioni a parita' di MAE.
+        composite = mae + abs(cov - 68.0) * 0.1
         bt = example[label]
-        agg.append(dict(label=label, mae=mae, coverage=cov, n_weighted=n_sum,
+        agg.append(dict(label=label, mae=mae, coverage=cov, n_weighted=n_sum, composite=composite,
                          half_life=bt['half_life'], range_multiplier=bt['range_multiplier'],
                          opponent_sensitivity=bt['opponent_sensitivity'], trend_intensity=bt['trend_intensity'],
-                         granular='con granulari' in label.lower() or 'granular' in label.lower()))
-    agg.sort(key=lambda a: a['mae'])
+                         granular=label.endswith('granulari')))
+    agg.sort(key=lambda a: a['composite'])
     return agg
 
 
@@ -176,7 +259,8 @@ def main():
         print(f"Vincitore aggregato: {winner['label']} -- MAE={winner['mae']:.2f} "
               f"copertura={winner['coverage']:.1f}% (n pesato={winner['n_weighted']:.0f})")
         print(f"  half_life={winner['half_life']} range={winner['range_multiplier']} "
-              f"opp_sens={winner['opponent_sensitivity']} trend={winner['trend_intensity']}")
+              f"opp_sens={winner['opponent_sensitivity']} trend={winner['trend_intensity']} "
+              f"granulari={'SI' if winner['granular'] else 'NO'}")
         print(f"Produzione attuale: half_life={prod['half_life']} range={prod['range_multiplier']} "
               f"opp_sens={prod['opponent_sensitivity']} trend={prod['trend_intensity']} "
               f"granulari={'SI' if prod['granular'] else 'NO'}")
@@ -184,7 +268,8 @@ def main():
         matches = [a for a in agg if abs(a['half_life'] - prod['half_life']) < 0.01
                    and abs(a['range_multiplier'] - prod['range_multiplier']) < 0.01
                    and abs(a['opponent_sensitivity'] - prod['opponent_sensitivity']) < 0.01
-                   and abs(a['trend_intensity'] - prod['trend_intensity']) < 0.01]
+                   and abs(a['trend_intensity'] - prod['trend_intensity']) < 0.01
+                   and a['granular'] == prod['granular']]
         if matches:
             cur = matches[0]
             delta_pct = (cur['mae'] - winner['mae']) / winner['mae'] * 100 if winner['mae'] else 0
@@ -193,9 +278,10 @@ def main():
         else:
             print("  (combinazione produzione attuale non trovata esattamente nella griglia -- normale se "
                   "differisce anche di poco da un valore testato)")
-        print("\nTop 5 combinazioni:")
+        print("\nTop 5 combinazioni (per composite score MAE+penalita' copertura):")
         for a in agg[:5]:
-            print(f"  {a['label']:<70} MAE={a['mae']:.2f} cov={a['coverage']:.1f}% n={a['n_weighted']:.0f}")
+            print(f"  {a['label']:<70} MAE={a['mae']:.2f} cov={a['coverage']:.1f}% "
+                  f"composite={a['composite']:.2f} n={a['n_weighted']:.0f}")
 
 
 if __name__ == '__main__':
