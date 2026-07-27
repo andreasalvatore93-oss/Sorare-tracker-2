@@ -2587,3 +2587,188 @@ Resta invece aperto: Arene dei campionati in pausa (consigli vuoti, si popolano 
 `formazione_resto_mondo` da allineare o dismettere, anti-sinergia cross-team estesa a tutti i ruoli
 (numeri promettenti ma split-half instabile), pulizia repo + scansione secret prima di renderlo
 privato.
+
+---
+
+# 28. Sessione 27/07/2026 (sera-notte) — il tuning è CHIUSO, il guadagno è altrove: pipeline riscritta sulla GIORNATA
+
+**Leggi questa sezione per intero: è lo stato attuale e sostituisce operativamente buona parte
+di quanto sopra.** L'utente è laureato in Giurisprudenza, autodidatta, verifica tutto su casi
+reali (stasera ha confrontato l'output con Sorare aperto davanti), vuole risposte brevi e
+decidere lui prima che si implementi.
+
+## 28.A — Le tre conclusioni che contano
+
+1. **Il tuning del modello predittivo è finito.** È al tetto teorico dei dati (sezione 27.G):
+   ICC 5.5% per i DEF, cioè il 94.5% della varianza è rumore partita-per-partita. Il massimo
+   estraibile da 15 partite di storico è ~15.5% del lift disponibile e il modello ne prende
+   17.8%. Verificato da due direzioni indipendenti (sweep dei parametri e sweep di `half_life`).
+   **Non rimettersi a limare parametri: è provatamente tempo perso.**
+2. **Il guadagno vero è nel POOL e nella PIPELINE, non nella previsione.** Estendere il pool
+   All Stars da 2 a 25 campionati vale ~+1 punto per slot (~+7 a formazione), più di qualunque
+   intervento sul modello misurato in questa sessione.
+3. **La pipeline aveva un difetto che invalidava tutto**: nessuno stadio guardava *quando*
+   gioca il giocatore. Le formazioni pescavano da consigli scaduti o di partite lontane una
+   settimana. Risolto ripartendo dalla **So5Fixture** (la giornata Sorare).
+
+## 28.B — Il difetto trovato dall'utente e la sua causa
+
+L'utente ha osservato: *"sta pescando solo portieri MLS e K League, che domani non giocano, non
+hanno starter odds, giocano tra una settimana"*. Verificato sui dati: i consigli MLS puntavano a
+partite del **25-26 luglio (già giocate)**, quelli K League al **1 agosto**.
+
+Due cause indipendenti, entrambe reali:
+
+1. **Nessun filtro sulla data della partita target.** Ogni predizione punta alla "prossima
+   partita di quel giocatore", qualunque essa sia, e il generatore le mescolava tutte.
+2. **Il filtro starter-odds era INERTE proprio dove serviva.** Il codice era
+   `if odds is not None and odds < soglia: escludi` — cioè **chi non aveva odds veniva TENUTO
+   "per sicurezza"**. Ma le odds escono a ~24-48h dal match: chi gioca fra settimane non ne ha,
+   quindi passava sempre indenne. Con soglia 0.80 il filtro non toccava nessuno dei giocatori
+   che andavano scartati.
+
+**Correzione**: con una soglia attiva (>0) le odds assenti ora **escludono**. Senza soglia il
+comportamento permissivo resta.
+
+## 28.C — La riscrittura: si parte dalla GIORNATA, non dai campionati
+
+L'utente ha fornito la traccia decisiva (payload catturato dal sito):
+`ArenaLineupsFixtureSelectorCurrentFixtureQuery` con `So5Fixture`
+`slug: football-28-31-jul-2026`, `seasonGameWeek: 95`, `startDate`/`endDate`.
+
+**Nuovo script `discovery_fixture.py`** (root):
+
+1. Risolve la fixture per **numero di gameweek** (input `gameweek`, es. 95) o per slug.
+2. `so5Fixture(slug).anyGames` restituisce tutte le partite della giornata **con le squadre**.
+3. Scarica le carte possedute e tiene **solo quelle il cui club scende in campo**.
+4. Solo su quelle interroga le starter odds, applicando la soglia.
+5. Scrive i `player_slugs.json` per lega/ruolo ed emette una **matrice JSON lega/ruolo**.
+
+**Misurato sulla gameweek 95**: 1674 carte possedute, 139 di squadre che giocano, **58
+sopravvissuti** a soglia 0.80, in **3 minuti e 11 secondi**.
+
+**Nuovo workflow `formazione_giornata.yml`** — end-to-end, l'unico input da cambiare ogni
+settimana è il numero di gameweek: discovery (fixture), predict SOLO dei sopravvissuti con
+matrice dinamica, consigli, formazioni. **Girato con successo in 7 minuti e 24 secondi**,
+contro i ~30 di prima.
+
+### Vincoli dell'API scoperti per tentativi (NON riprovarli)
+
+- `active_competitions:<slug-fixture>` restituisce **0 risultati**. Quel filtro accetta slug di
+  competizione (es. `mlspa`), non di fixture.
+- Batching odds con **alias GraphQL** su `anyPlayer`: rifiutato,
+  `"Duplicated root field: anyPlayer"`.
+- `players(slugs: [...])` **esiste e funziona**, ma *"Selecting `anyFutureGames` within a list of
+  `AnyPlayerInterface` is not supported"*: niente batching delle odds per questa via.
+- **L'introspezione dello schema è disabilitata** (`__type` ritorna campi vuoti). Per scoprire i
+  campi si usa il trucco degli errori: l'API suggerisce da sola
+  (*"Did you mean `anyPositions`?"*).
+- Campi inesistenti verificati: `position` su `AnyPlayerInterface`, `bench` e `notInSquad` su
+  `PlayingStatusOdds`, argomento `seasonGameWeeks` su `so5Fixtures`.
+- **Conseguenza**: le odds si possono chiedere solo un giocatore alla volta. L'unica leva sui
+  tempi è **ridurre quanti giocatori interrogare**, da cui il pre-filtro sulle squadre in campo.
+
+## 28.D — Campionati: da 20 a 25, e come si scoprono gli slug
+
+`audit_leghe_possedute.py` e il workflow "Audit leghe possedute" elencano **tutte** le leghe in
+cui l'utente ha carte, con lo **slug esatto Sorare** e i giocatori per ruolo, marcando quelle non
+tracciate. **Usare sempre questo invece di indovinare gli slug.**
+
+Create in questa sessione clonando `formazione_turchia`: **Danimarca** (`superliga-dk`),
+**Argentina** (`superliga-argentina-de-futbol`), **Svizzera** (`super-league-ch`), **Grecia**
+(`super-league-1`), **senza_lega** (filtro invertito: tiene solo le carte **senza**
+`domesticLeague`).
+
+**Lezione da non ripetere**: Iñaki Peña sembrava "senza campionato" e su quella base l'utente
+aveva deciso di non tracciare la Grecia. Era sbagliato: l'audit lo mostra come
+`ignacio-pena-sotorres` sotto `super-league-1`. Prima l'audit, poi le conclusioni.
+
+Leghe possedute ancora NON tracciate (dall'audit, con numero di carte): `liga-mx` 17,
+`segunda-division-es` 12, `serie-b-it` 10, `3-liga-de` 10, `first-division-b` 6, `ekstraklasa` 5,
+`russian-premier-league` 4, `pro-league` 4, `2-liga` 4, `primera-a` 3, `eliteserien` 3, più altre
+minori. Si creano in due minuti con il clone.
+
+## 28.E — Modifiche di produzione applicate (tutte su main)
+
+1. **Ordinamento DEF senza shrinkage** (sez. 27.C e 27.F): `score_atteso` resta il numero
+   *mostrato*, `score_ordinamento` (stessa funzione condivisa con `shrink_k=0`) decide
+   l'*ordine*. Propagato come riga `ORDINAMENTO:` lungo tutta la catena. Vale +0.73 pt per
+   difensore schierato. Non-regressione verificata su 20 campionati, 2.384 casi, diff massima
+   7e-15.
+2. **Riga `KICKOFF:`** nei consigli, estratta dalla riga `Data:` già presente nei file di
+   predizione (nessuna modifica agli 84 script di predict). Il generatore scarta chi è fuori
+   dalla finestra, e un **consiglio senza KICKOFF è considerato stale e scartato**
+   (override `MATCH_WINDOW_REQUIRE_KICKOFF=0`).
+3. **`MATCH_WINDOW_DAYS` = 7 giorni di CALENDARIO**, non ore da adesso: con 2 giorni contati
+   alle 19:00 di lunedì si tagliavano le partite del giovedì sera.
+4. **Pool All Stars esteso a tutti i campionati** (leghe scoperte dal filesystem).
+   `_grow_for('mixed')` cresce una carta alla volta, sempre la migliore globale, per non
+   moltiplicare per 25 le query L5/L10/L40.
+5. **Arene dedicate per 11 campionati** (erano 2): MLS, K League, Belgio, Eredivisie, Turchia,
+   Portogallo, Spagna, Germania, Ligue 1, Croazia, Scozia. Tutte le tabelle per-tipo sono
+   generate da `ARENA_LEAGUES`: aggiungerne una è una riga.
+6. **`build_consiglio` crea la cartella di output se manca** (le leghe nuove fallivano con
+   FileNotFoundError).
+7. **Rimosso il vecchio `generatore_formazioni.yml`** (241 job, ~30 minuti, non conosceva le
+   leghe nuove, a un soffio dal limite GitHub di 256 job), sostituito da
+   `formazione_giornata.yml`. Rimosse anche le sonde usa-e-getta usate per scoprire lo schema.
+
+## 28.F — Risultato reale verificato dall'utente
+
+All Stars da 7, gameweek 95: **417 pt (451 con capitano)**, confermata dall'utente
+(*"ci sono tutti"*).
+
+| slot | giocatore | attesi |
+|---|---|---|
+| GK | Elías Ólafsson (Danimarca) | 61 |
+| DEF | Marcos Johan López | 53 |
+| DEF | Scott McKenna | 53 |
+| MID | Philip Billing | 66 |
+| MID | Josip Mišić | 64 |
+| FWD (capitano) | Mika Godts | 68 |
+| EXTRA | Kerem Aktürkoğlu | 52 |
+
+**Nota operativa importante**: l'utente ha visto un giocatore (Miguel) comparire *dopo*, quando
+Sorare gli ha aggiunto le odds. **Le odds escono a scaglioni**, quindi conviene rilanciare la
+discovery vicino al deadline: ora costa 3 minuti, quindi la si può ripetere due o tre volte prima
+di schierare.
+
+## 28.G — Decisioni prese dall'utente (NON riproporle)
+
+- **Cap 370**: resta un **suggerimento, non un vincolo**. Confermato esplicitamente.
+- **In Season per gli altri campionati**: scartata, non serve (sez. 27.J).
+- **Log delle run rosse**: non gli interessa, non li guarda. Le pipeline delle leghe piccole
+  falliscono sul job `formazione_finale` (0 GK o 0 DEF in quella lega) senza conseguenze sul
+  resto.
+- **Vecchio generatore**: eliminato su sua richiesta.
+
+## 28.H — BACKLOG (da qui riparte il prossimo)
+
+1. **Giocatori senza campionato nel tool fuso** *(richiesta esplicita dell'utente)*: oggi
+   `discovery_fixture.py` scarta chi non ha `domesticLeague` con un semplice avviso. Vanno
+   dirottati sulla pipeline `formazione_senza_lega` già esistente e fatti confluire nel pool
+   misto. In questa giornata lì non c'era nessuno, ma la strada va chiusa.
+2. **`formazione_resto_mondo`** *(l'utente ha chiesto di chiarire il problema)*: è una copia
+   **vecchia e disallineata**, non ha nemmeno `SHRINK_K_OUTLIER_DEF` e la sua formula di
+   produzione è diversa da quella delle altre 20. Per questo è stata **esclusa da tutte** le
+   modifiche di oggi (ordinamento, KICKOFF, non-regressione). Va allineata clonando una pipeline
+   aggiornata, oppure dismessa se il suo pool è già coperto dalle leghe reali.
+3. **Anti-sinergia cross-team su tutti i ruoli**: misurata (fwd-gk -0.258, gk-mid -0.192,
+   def-mid -0.156, def-def -0.122, mid-mid -0.125, tutte con p<0.05), ma **split-half instabile**:
+   serve più storico prima di metterla in produzione.
+4. **Aggiungere le leghe mancanti** dall'elenco in 28.D quando servono.
+5. **Refuso**: il report HTML dice ancora "Fusione MLS + K League" in fondo.
+6. **Repo ancora PUBBLICO**: scansione secret prima di renderlo privato.
+7. **Le correlazioni sono già state ri-misurate su 20 campionati (sez. 27.H) e confermano la
+   produzione attuale: nessun cambio necessario.** Non rifarle senza dati nuovi.
+
+## 28.I — Stato repo
+
+Tutto su `main`. Script nuovi principali: `discovery_fixture.py`, `audit_leghe_possedute.py`,
+`diagnostica_slug.py`, e in `formazione_mls/diagnostics/`:
+`nonregression_score_atteso_def.py`, `nonregression_score_atteso_fwd.py`,
+`selection_quality.py`, `recalibrate_def_aligned.py`.
+
+Workflow principali: **`formazione_giornata.yml`** (quello da usare per schierare),
+`audit_leghe.yml`, `diagnostica_slug.yml`, `discovery_fixture.yml`, più i
+`<lega>_completa.yml` per l'uso singolo per campionato.
