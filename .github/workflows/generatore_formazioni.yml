@@ -23,13 +23,15 @@ on:
       arena_dedicata:
         description: >
           Quante Arene DEDICATE (cap L10 fisso 260, solo carte della lega scelta) per lega.
-          Formato: lega:quantità separate da virgola. Leghe valide oggi: mls, kleague.
-          Esempi: "mls:1,kleague:0" = 1 Arena MLS, nessuna K League.
-          "kleague:2" = solo 2 Arene K League. Vuoto = nessuna Arena dedicata generata.
+          Formato: lega:quantità separate da virgola. Leghe valide: mls, kleague, belgio,
+          olanda (Eredivisie), turchia, portogallo, spagna, germania, francia (Ligue 1),
+          croazia, scozia. Lega omessa o a 0 = nessuna lineup per quella lega.
+          Esempi: "mls:1,belgio:1,olanda:2" = 1 Arena MLS + 1 Belgio + 2 Eredivisie.
+          Vuoto = nessuna Arena dedicata generata.
         required: false
-        default: 'mls:0,kleague:0'
+        default: ''
       arena_allstars_260:
-        description: 'Numero di Arena All Stars con cap L10 fisso a 260 (pool misto MLS+K League, 0 per disattivare)'
+        description: 'Numero di Arena All Stars con cap L10 fisso a 260 (pool misto TUTTI i campionati, 0 per disattivare)'
         required: false
         default: '0'
       arena_allstars_220:

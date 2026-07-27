@@ -99,38 +99,70 @@ DISCOVERY_DIRS = {lg: v[1] for lg, v in _DISCOVERED.items()}
 
 OUTPUT_DIR = os.path.join(_HERE, 'output')
 
+# LEGHE CON ARENA DEDICATA (27/07, richiesta esplicita utente): le Arene sono
+# competizioni PER CAMPIONATO, quindi ognuna ha il suo tipo di formazione con
+# pool ristretto a quella lega (a differenza delle All Stars, che pescano dal
+# pool misto). Prima erano solo MLS e K League; estese ai campionati in cui
+# l'utente gioca le Arene. NB: 'olanda' = Eredivisie, 'francia' = Ligue 1.
+# Le In Season restano su MLS + K League (DEDICATED_LEAGUES sopra), non
+# richieste per gli altri campionati.
+ARENA_LEAGUES = tuple(lg for lg in (
+    'mls', 'kleague', 'belgio', 'olanda', 'turchia', 'portogallo', 'spagna',
+    'germania', 'francia', 'croazia', 'scozia',
+) if lg in _DISCOVERED)
+
+ARENA_LEAGUE_LABELS = {
+    'mls': 'MLS', 'kleague': 'K League', 'belgio': 'Belgio', 'olanda': 'Eredivisie',
+    'turchia': 'Turchia', 'portogallo': 'Portogallo', 'spagna': 'Spagna',
+    'germania': 'Germania', 'francia': 'Ligue 1', 'croazia': 'Croazia', 'scozia': 'Scozia',
+}
+
+
+def arena_type(league):
+    """Nome del tipo Arena dedicata di una lega. Per mls/kleague resta
+    'MLS_ARENA'/'KLEAGUE_ARENA', cioe' i nomi gia' usati prima -- nessuna
+    rottura di output, workflow o tabelle esistenti."""
+    return f'{league.upper()}_ARENA'
+
 # --- Strutture degli 8 tipi (role_slots/extra_roles/max_classic come nei tool
 # singoli) + parametri di comportamento per tipo, tutti espliciti qui (NON si
 # riusano i dizionari per-tipo del modulo importato, le chiavi sono diverse). -
 FORMATION_SHAPES = {
     'MLS_IN_SEASON': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': 1},
     'KLEAGUE_IN_SEASON': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': 1},
-    'MLS_ARENA': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
-    'KLEAGUE_ARENA': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ARENA_ALLSTARS_260': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ARENA_ALLSTARS_220': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ARENA_ALLSTARS_UNCAPPED': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ALLSTARS': {'role_slots': ['GK', 'DEF', 'DEF', 'MID', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
 }
+# Un tipo Arena dedicata per ogni lega di ARENA_LEAGUES, tutte con la stessa
+# struttura (5 slot, nessun limite Classic, cap L10 260 obbligatorio).
+FORMATION_SHAPES.update({
+    arena_type(lg): {'role_slots': ['GK', 'DEF', 'MID', 'FWD'],
+                     'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None}
+    for lg in ARENA_LEAGUES
+})
 
 LABELS = {
     'MLS_IN_SEASON': 'In Season MLS', 'KLEAGUE_IN_SEASON': 'In Season K League',
-    'MLS_ARENA': 'Arena MLS (cap 260)', 'KLEAGUE_ARENA': 'Arena K League (cap 260)',
     'ARENA_ALLSTARS_260': 'Arena All Stars (cap 260)', 'ARENA_ALLSTARS_220': 'Arena All Stars (cap 220)',
     'ARENA_ALLSTARS_UNCAPPED': 'Arena All Stars (uncapped)', 'ALLSTARS': 'All Stars',
 }
+LABELS.update({arena_type(lg): f'Arena {ARENA_LEAGUE_LABELS.get(lg, lg)} (cap 260)'
+               for lg in ARENA_LEAGUES})
 
 L10_CAP_BY_TYPE = {
-    'MLS_ARENA': 260.0, 'KLEAGUE_ARENA': 260.0,
     'ARENA_ALLSTARS_260': 260.0, 'ARENA_ALLSTARS_220': 220.0,  # ARENA_ALLSTARS_UNCAPPED: nessuna chiave = None
 }
+L10_CAP_BY_TYPE.update({arena_type(lg): 260.0 for lg in ARENA_LEAGUES})
 
 # Sinergia da correlazione misurata (GK-DEF/GK-MID/DEF-MID/DEF-DEF): dovunque
 # TRANNE In Season, dove il target e' fisso e non c'e' beneficio (stessa
 # regola gia' in produzione nei due tool singoli, confermata dall'utente
 # valida anche per le Arene dedicate fuse).
-VARIANCE_MODE_TYPES = {'MLS_ARENA', 'KLEAGUE_ARENA', 'ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220',
+VARIANCE_MODE_TYPES = {'ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220',
                         'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS'}
+VARIANCE_MODE_TYPES.update(arena_type(lg) for lg in ARENA_LEAGUES)
 
 # Bonus anti-stack Sorare "Multi-club" (<3 stessa squadra): SOLO In Season e
 # All Stars, mai nelle Arene (hanno il loro cap L10 obbligatorio separato).
@@ -143,10 +175,10 @@ CHECK_CAP260_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS'}
 
 CAPTAIN_BONUS_BY_TYPE = {
     'MLS_IN_SEASON': 0.5, 'KLEAGUE_IN_SEASON': 0.5,
-    'MLS_ARENA': 0.2, 'KLEAGUE_ARENA': 0.2,
     'ARENA_ALLSTARS_260': 0.2, 'ARENA_ALLSTARS_220': 0.2, 'ARENA_ALLSTARS_UNCAPPED': 0.2,
     'ALLSTARS': 0.5,
 }
+CAPTAIN_BONUS_BY_TYPE.update({arena_type(lg): 0.2 for lg in ARENA_LEAGUES})
 CAP260_THRESHOLD_BY_TYPE = {'MLS_IN_SEASON': 260.0, 'KLEAGUE_IN_SEASON': 260.0, 'ALLSTARS': 370.0}
 
 # Estende (SOLO in memoria di questo processo, nessuna modifica al file) le
@@ -157,19 +189,23 @@ bff.CAPTAIN_BONUS_BY_TYPE.update(CAPTAIN_BONUS_BY_TYPE)
 bff.CAP260_L10_THRESHOLD_BY_TYPE.update(CAP260_THRESHOLD_BY_TYPE)
 
 # Ordine di generazione FISSO (priorita' decisa dall'utente).
-PRIORITY_ORDER = [
-    'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON',
-    'MLS_ARENA', 'KLEAGUE_ARENA',
-    'ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED',
-    'ALLSTARS',
-]
+# Ordine: In Season -> Arene dedicate (nell'ordine di ARENA_LEAGUES, cioe'
+# MLS e K League per prime, poi gli altri campionati) -> Arena All Stars ->
+# All Stars. Il CardPool e' condiviso: se le carte finiscono, restano scoperte
+# le formazioni meno prioritarie.
+PRIORITY_ORDER = (
+    ['MLS_IN_SEASON', 'KLEAGUE_IN_SEASON']
+    + [arena_type(lg) for lg in ARENA_LEAGUES]
+    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS']
+)
 
 POOL_LEAGUE_BY_TYPE = {
-    'MLS_IN_SEASON': 'mls', 'MLS_ARENA': 'mls',
-    'KLEAGUE_IN_SEASON': 'kleague', 'KLEAGUE_ARENA': 'kleague',
+    'MLS_IN_SEASON': 'mls', 'KLEAGUE_IN_SEASON': 'kleague',
     'ARENA_ALLSTARS_260': 'mixed', 'ARENA_ALLSTARS_220': 'mixed', 'ARENA_ALLSTARS_UNCAPPED': 'mixed',
     'ALLSTARS': 'mixed',
 }
+# Ogni Arena dedicata pesca SOLO dalla sua lega.
+POOL_LEAGUE_BY_TYPE.update({arena_type(lg): lg for lg in ARENA_LEAGUES})
 
 
 def _read_int_env(name, default=0):
@@ -182,11 +218,14 @@ def _read_int_env(name, default=0):
         return default
 
 
-def parse_league_qty(raw, field_name):
+def parse_league_qty(raw, field_name, valid_leagues=DEDICATED_LEAGUES):
     """Formato 'lega:quantita,lega:quantita' (es. 'mls:4,kleague:1'). Lega
     omessa = 0. Fail-fast su lega sconosciuta o quantita' non numerica --
-    meglio fermarsi subito che generare formazioni diverse da quanto chiesto."""
-    result = {'mls': 0, 'kleague': 0}
+    meglio fermarsi subito che generare formazioni diverse da quanto chiesto.
+
+    'valid_leagues' (27/07): le In Season restano MLS + K League, mentre
+    ARENA_DEDICATA accetta tutte le leghe di ARENA_LEAGUES."""
+    result = {lg: 0 for lg in valid_leagues}
     raw = (raw or '').strip()
     if not raw:
         return result
@@ -199,7 +238,8 @@ def parse_league_qty(raw, field_name):
         lega, qty = part.split(':', 1)
         lega = lega.strip().lower()
         if lega not in result:
-            raise SystemExit(f"ERRORE in '{field_name}': lega '{lega}' sconosciuta (valide: mls, kleague).")
+            raise SystemExit(f"ERRORE in '{field_name}': lega '{lega}' sconosciuta "
+                             f"(valide: {', '.join(sorted(result))}).")
         try:
             result[lega] = int(qty.strip())
         except ValueError:
@@ -392,7 +432,8 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool, lineup_h
 
 def main():
     in_season_req = parse_league_qty(os.environ.get('IN_SEASON', 'mls:1,kleague:1'), 'in_season')
-    arena_dedicata_req = parse_league_qty(os.environ.get('ARENA_DEDICATA', 'mls:0,kleague:0'), 'arena_dedicata')
+    arena_dedicata_req = parse_league_qty(os.environ.get('ARENA_DEDICATA', ''), 'arena_dedicata',
+                                          valid_leagues=ARENA_LEAGUES)
     arena_allstars_260 = _read_int_env('ARENA_ALLSTARS_260', 0)
     arena_allstars_220 = _read_int_env('ARENA_ALLSTARS_220', 0)
     arena_allstars_uncapped = _read_int_env('ARENA_ALLSTARS_UNCAPPED', 0)
@@ -400,13 +441,14 @@ def main():
 
     counts = {
         'MLS_IN_SEASON': in_season_req['mls'], 'KLEAGUE_IN_SEASON': in_season_req['kleague'],
-        'MLS_ARENA': arena_dedicata_req['mls'], 'KLEAGUE_ARENA': arena_dedicata_req['kleague'],
         'ARENA_ALLSTARS_260': arena_allstars_260, 'ARENA_ALLSTARS_220': arena_allstars_220,
         'ARENA_ALLSTARS_UNCAPPED': arena_allstars_uncapped, 'ALLSTARS': allstars_qty,
     }
+    counts.update({arena_type(lg): arena_dedicata_req.get(lg, 0) for lg in ARENA_LEAGUES})
     num_totale = sum(counts.values())
+    richiesti = [t for t in PRIORITY_ORDER if counts.get(t)]
     print(f"Formazioni richieste: totale={num_totale} -> " +
-          ", ".join(f"{LABELS[t]}={counts[t]}" for t in PRIORITY_ORDER))
+          (", ".join(f"{LABELS[t]}={counts[t]}" for t in richiesti) if richiesti else "nessuna"))
 
     role_data, role_counts = load_league_role_data()
 
