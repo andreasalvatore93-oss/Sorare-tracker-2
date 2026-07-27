@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T14:08:58.697561Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) naatan-skytta: 35 pt attesi (19-54)
+   SQUADRA: kaiserslautern-kaiserslautern | AVVERSARIO: wolfsburg-wolfsburg
+======================================================================
+
+######################################################################
+# GIOCATORE: naatan-skytta
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: naatan-skytta (squadra: kaiserslautern-kaiserslautern)
+Generato: 2026-07-27T14:08:58.697064Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-20 | FCK vs FCM | 2-bundesliga | score=62.3 | peso=0.445
+  2026-01-18 | FCK vs H96 | 2-bundesliga | score=73.3 | peso=0.472
+  2026-01-25 | S04 vs FCK | 2-bundesliga | score=63.5 | peso=0.500
+  2026-01-31 | FCK vs ELV | 2-bundesliga | score=41.1 | peso=0.530
+  2026-02-07 | SVD vs FCK | 2-bundesliga | score=35.6 | peso=0.561
+  2026-02-14 | FCK vs SGF | 2-bundesliga | score=44.7 | peso=0.595
+  2026-02-22 | PRM vs FCK | 2-bundesliga | score=41.1 | peso=0.630
+  2026-02-28 | FCK vs SCP | 2-bundesliga | score=42.1 | peso=0.667
+  2026-03-07 | BOC vs FCK | 2-bundesliga | score=31.2 | peso=0.707
+  2026-03-15 | FCK vs KSC | 2-bundesliga | score=71.1 | peso=0.749
+  2026-03-21 | FCN vs FCK | 2-bundesliga | score=41.6 | peso=0.794
+  2026-04-11 | BSC vs FCK | 2-bundesliga | score=41.6 | peso=0.841
+  2026-04-17 | KIE vs FCK | 2-bundesliga | score=28.3 | peso=0.891
+  2026-04-24 | FCK vs EBS | 2-bundesliga | score=18.3 | peso=0.944
+  2026-05-17 | FCM vs FCK | 2-bundesliga | score=53.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 44.13
+  di cui Punteggio decisivo (level_score) medio: 40.25 | Punteggio complessivo (granulari) medio: 3.89 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 38.32 (delta -1.93)
+  Efficacia offensiva condizionata: delta venue -0.38, delta avversario +0.06 | Passaggio condizionato: delta venue -0.26, delta avversario +0.07 | Gol subiti condizionato: delta venue -0.09, delta avversario +0.28 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.26
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.3 - 63.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.36 (differenza: +2.90)
+Media score in casa: 50.41 | Media score fuori casa: 42.05
+Fattore casa/trasferta applicato: 0.985 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.2
+Ranking prossimo avversario: 16
+Fattore forza avversario applicato: 1.234
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 1.012
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.988
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore trend (media ultime 5: 36.7 vs media ultime 10: 41.4): 0.921
+P(gioca): 83.33% (fonte: tasso di presenza storico (15/18))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:30
+Casa: VfL Wolfsburg | Trasferta: 1. FC Kaiserslautern
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 35.1 (range 19.2 - 54.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.13
+Punteggio REALE ottenuto in quella partita: 53.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +10.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.1    41.1    -23.0    19.0        NO
+   7        7      43.6    42.1     -1.5    18.3        SI
+   8        8      46.7    31.2    -15.5    17.4        SI
+   9        9      53.8    71.1    +17.3    18.3        SI
+  10       10      42.3    41.6     -0.7    20.6        SI
+  11       11      41.5    41.6     +0.1    19.7        SI
+  12       12      51.6    28.3    -23.3    18.8        NO
+  13       13      62.0    18.3    -43.7    19.7        NO
+  14       14      49.1    53.5     +4.4    22.0        SI
+
+MAE (errore assoluto medio): 14.39
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
