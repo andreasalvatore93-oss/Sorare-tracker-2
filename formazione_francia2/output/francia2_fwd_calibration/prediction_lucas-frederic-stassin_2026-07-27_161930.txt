@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T16:19:30.530749Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) lucas-frederic-stassin: 62 pt attesi (42-84)
+   SQUADRA: saint-etienne-saint-etienne | AVVERSARIO: sochaux-montbeliard
+======================================================================
+
+######################################################################
+# GIOCATORE: lucas-frederic-stassin
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lucas-frederic-stassin (squadra: saint-etienne-saint-etienne)
+Generato: 2026-07-27T16:19:30.529584Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-24 | SR vs STE | ligue-2-fr | score=38.8 | peso=0.445
+  2026-01-31 | STE vs BOU | ligue-2-fr | score=45.4 | peso=0.472
+  2026-02-07 | STE vs MON | ligue-2-fr | score=41.4 | peso=0.500
+  2026-02-14 | EAG vs STE | ligue-2-fr | score=76.4 | peso=0.530
+  2026-02-21 | STE vs LAV | ligue-2-fr | score=80.2 | peso=0.561
+  2026-02-28 | PAU vs STE | ligue-2-fr | score=70.0 | peso=0.595
+  2026-03-07 | STE vs RED | ligue-2-fr | score=69.1 | peso=0.630
+  2026-03-14 | GRE vs STE | ligue-2-fr | score=42.4 | peso=0.667
+  2026-03-21 | STE vs ANN | ligue-2-fr | score=83.3 | peso=0.707
+  2026-04-04 | NAN vs STE | ligue-2-fr | score=62.7 | peso=0.749
+  2026-04-11 | STE vs DUN | ligue-2-fr | score=68.8 | peso=0.794
+  2026-04-18 | SCB vs STE | ligue-2-fr | score=41.3 | peso=0.841
+  2026-04-25 | STE vs TRO | ligue-2-fr | score=44.2 | peso=0.891
+  2026-05-02 | ROD vs STE | ligue-2-fr | score=39.6 | peso=0.944
+  2026-05-09 | STE vs AMI | ligue-2-fr | score=100.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 61.04
+  di cui Punteggio decisivo (level_score) medio: 52.64 | Punteggio complessivo (granulari) medio: 8.40 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.52 (delta -0.76) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.96
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.3 - 83.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.02 (differenza: +3.94)
+Media score in casa: 66.55 | Media score fuori casa: 53.03
+Fattore casa/trasferta applicato: 0.990 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.2
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.007
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.972
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.977
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 58.8 vs media ultime 10: 62.1): 0.946
+P(gioca): 100.00% (fonte: tasso di presenza storico (15/15))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:45
+Casa: FC Sochaux-Montbéliard | Trasferta: AS Saint-Étienne
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 61.6 (range 41.8 - 83.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.86
+Punteggio REALE ottenuto in quella partita: 100.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +43.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.7    69.1    +21.4    23.9        SI
+   7        7      63.0    42.4    -20.6    22.3        SI
+   8        8      54.8    83.3    +28.5    22.7        NO
+   9        9      67.0    62.7     -4.3    24.2        SI
+  10       10      68.7    68.8     +0.1    22.6        SI
+  11       11      74.5    41.3    -33.2    21.4        NO
+  12       12      40.5    44.2     +3.7    22.3        SI
+  13       13      44.4    39.6     -4.8    22.3        SI
+  14       14      69.0   100.0    +31.0    22.6        NO
+
+MAE (errore assoluto medio): 16.41
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
