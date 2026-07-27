@@ -1646,6 +1646,29 @@ def build_prediction(player_slug):
                                 + delta_passaggio_venue + delta_passaggio_avversario
                                 + delta_clean_sheet_venue + delta_clean_sheet_avversario)
 
+    # --- SCORE DI ORDINAMENTO (27/07, sezione 27.C del RIASSUNTO) ---
+    # Lo score_atteso qui sopra e' la MIGLIORE STIMA DEL PUNTEGGIO del singolo
+    # giocatore (minimizza il MAE) ed e' quello che viene MOSTRATO. Ma per
+    # SCEGLIERE chi schierare non serve indovinare il punteggio: serve ordinare
+    # bene i candidati, e per quello lo shrinkage e' dannoso. Tirando tutti
+    # verso il prior di ruolo comprime le differenze fra giocatori -- che sono
+    # esattamente il segnale che serve -- e siccome con k fisso tira di piu'
+    # chi ha meno storico NON e' nemmeno monotono: altera l'ordinamento.
+    # Misurato su 123 giornate reali / 15 campionati con
+    # formazione_mls/diagnostics/selection_quality.py (lift catturato fra
+    # "scegliere a caso" e "oracolo"): k=15 (produzione) 13.7% -> k=5 17.1%
+    # -> k=2 18.0% -> k=0 17.8%. Effetto +0.73 pt per difensore schierato,
+    # segno positivo in 12/12 configurazioni di valutazione (bootstrap
+    # appaiato IC95% [-0.40,+1.82], quindi direzione solida ma campione ancora
+    # sottile: ri-misurare con piu' giornate).
+    # Stessa identica funzione, unico parametro cambiato: shrink_k=0.
+    score_ordinamento = compute_score_atteso_def(
+        scores, is_home_flags, opponent_rankings, residual_values, granulari_values,
+        pos_decisive_values, neg_decisive_values,
+        goals_conceded_values, passing_values, clean_sheet_values,
+        target_is_home=next_is_home, target_opp_rank=next_opp_rank,
+        p_gioca=p_gioca, shrink_k=0.0)
+
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
     # = FORMA del range a percentili pesati (Stadio B, si adatta a distribuzioni
@@ -1761,6 +1784,7 @@ def build_prediction(player_slug):
         'p_gioca': p_gioca,
         'p_source': p_source,
         'score_atteso': score_atteso,
+        'score_ordinamento': score_ordinamento,
         'range_low': range_low,
         'range_high': range_high,
         'next_game': next_game,
@@ -1859,6 +1883,9 @@ def format_output(result):
     lines.append(f"Score atteso: {result['score_atteso']:.1f} "
                  f"(range {result['range_low']:.1f} - {result['range_high']:.1f}, "
                  f"Stadio C: percentili pesati ri-centrati sull'avversario/trend)")
+    if result.get('score_ordinamento') is not None:
+        lines.append(f"Score di ordinamento (senza shrinkage, usato SOLO per la "
+                     f"classifica del consiglio): {result['score_ordinamento']:.1f}")
 
     lines.append("")
     lines.append("--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---")
@@ -2023,7 +2050,8 @@ def main():
         all_sections.append(f"\n{'#'*70}\n# GIOCATORE: {slug}\n{'#'*70}\n" + output_text)
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_low'),
                               result.get('range_high'), result.get('target_competition', ''),
-                              result.get('player_team_slug'), result.get('next_opponent_team_slug')))
+                              result.get('player_team_slug'), result.get('next_opponent_team_slug'),
+                              result.get('score_ordinamento')))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} "
             f"(range {result.get('range_low'):.1f} - {result.get('range_high'):.1f})")
 
@@ -2051,19 +2079,31 @@ def main():
     # d'occhio, come richiesto dall'utente.
     ok_rows = [r for r in summary_rows if r[1] == 'OK']
     other_rows = [r for r in summary_rows if r[1] != 'OK']
-    ok_rows.sort(key=lambda r: r[2] if r[2] is not None else -1, reverse=True)
+    # ORDINAMENTO (27/07, sezione 27.C): si ordina per score_ordinamento
+    # (senza shrinkage), non per score_atteso -- vedi il commento esteso al
+    # calcolo di score_ordinamento in build_prediction. Il numero MOSTRATO
+    # resta score_atteso. Fallback su score_atteso se non disponibile.
+    ok_rows.sort(key=lambda r: (r[8] if len(r) > 8 and r[8] is not None
+                                else (r[2] if r[2] is not None else -1)), reverse=True)
 
     summary_lines = []
     summary_lines.append("=" * 70)
-    summary_lines.append("CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE")
+    summary_lines.append("CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)")
     summary_lines.append(f"Generato: {datetime.datetime.utcnow().isoformat()}Z")
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
     summary_lines.append("=" * 70)
-    for idx, (slug, status, atteso, range_low, range_high, note, team_slug, opp_slug) in enumerate(ok_rows, 1):
+    for idx, (slug, status, atteso, range_low, range_high, note, team_slug, opp_slug,
+              ordinamento) in enumerate(ok_rows, 1):
         low = round(range_low)
         high = round(range_high)
         summary_lines.append(f"{idx}) {slug}: {round(atteso)} pt attesi ({low}-{high})")
+        # NUOVO (27/07, sezione 27.C): score usato per ORDINARE (senza
+        # shrinkage), distinto dai "pt attesi" mostrati sopra. Riga parseable
+        # letta da build_consiglio_def.py; se manca, a valle si ordina sui
+        # pt attesi come prima.
+        if ordinamento is not None:
+            summary_lines.append(f"   ORDINAMENTO: {ordinamento:.2f}")
         # NUOVO (26/07, tema correlazione GK-DEF): riga parseable con squadra/
         # avversario, letta da build_consiglio_def.py per portarla fino a
         # build_formazione_finale.py (evitare di schierare insieme portiere

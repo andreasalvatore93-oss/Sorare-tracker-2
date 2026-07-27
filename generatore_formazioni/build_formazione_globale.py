@@ -230,7 +230,13 @@ def build_quality_pools(role_data):
 def _view_for(pools, pool_league, role):
     if pool_league == 'mixed':
         combined = pools['mls'][role].passing + pools['kleague'][role].passing
-        combined.sort(key=lambda r: r['atteso'], reverse=True)
+        # Ordina per lo score di ordinamento (senza shrinkage) -- vedi sezione
+        # 27.C del RIASSUNTO. Fallback TUTTO-O-NIENTE: i due score stanno su
+        # scale diverse, mescolarli nella stessa sort non e' omogeneo.
+        if combined and all(r.get('ordinamento') is not None for r in combined):
+            combined.sort(key=lambda r: r['ordinamento'], reverse=True)
+        else:
+            combined.sort(key=lambda r: r['atteso'], reverse=True)
         return combined
     return pools[pool_league][role].passing
 
@@ -244,7 +250,13 @@ def _grow_for(pools, pool_league, role, batch):
 def _raw_view_for(role_data, pool_league, role):
     if pool_league == 'mixed':
         combined = role_data['mls'][role] + role_data['kleague'][role]
-        combined.sort(key=lambda r: r['atteso'], reverse=True)
+        # Ordina per lo score di ordinamento (senza shrinkage) -- vedi sezione
+        # 27.C del RIASSUNTO. Fallback TUTTO-O-NIENTE: i due score stanno su
+        # scale diverse, mescolarli nella stessa sort non e' omogeneo.
+        if combined and all(r.get('ordinamento') is not None for r in combined):
+            combined.sort(key=lambda r: r['ordinamento'], reverse=True)
+        else:
+            combined.sort(key=lambda r: r['atteso'], reverse=True)
         return combined
     return role_data[pool_league][role]
 

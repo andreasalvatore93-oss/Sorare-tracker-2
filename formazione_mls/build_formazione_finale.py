@@ -100,6 +100,11 @@ CONSIGLIO_LINE_RE = re.compile(r'^\d+\)\s+([\w-]+):\s+(-?\d+)\s+pt\s+\((-?\d+)-(
 # NUOVO (26/07, tema correlazione GK-DEF): riga "SQUADRA: x | AVVERSARIO: y"
 # scritta subito dopo la riga consiglio da build_consiglio_<ruolo>.py.
 TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
+# NUOVO (27/07, sezione 27.C del RIASSUNTO): score di ordinamento senza
+# shrinkage, scritto da build_consiglio_<ruolo>.py. Serve SOLO a ordinare i
+# pool; i punti mostrati/sommati restano 'atteso'. Riga opzionale: sui
+# consigli generati prima si continua a ordinare per 'atteso'.
+ORDINAMENTO_RE = re.compile(r'^ORDINAMENTO:\s+(-?[\d.]+)\s*$')
 
 DEFAULT_NUM_FORMAZIONI = 1
 
@@ -349,7 +354,11 @@ def parse_consiglio(path):
                     rows.append(pending)
                 slug, atteso, low, high = m.groups()
                 pending = {'slug': slug, 'atteso': int(atteso), 'low': int(low), 'high': int(high),
-                           'team_slug': None, 'opponent_team_slug': None}
+                           'team_slug': None, 'opponent_team_slug': None, 'ordinamento': None}
+                continue
+            m = ORDINAMENTO_RE.match(stripped)
+            if m and pending:
+                pending['ordinamento'] = float(m.group(1))
                 continue
             m = TEAM_RE.match(stripped)
             if m and pending:

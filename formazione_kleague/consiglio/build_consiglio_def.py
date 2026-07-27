@@ -25,6 +25,14 @@ ESCLUSO_RE = re.compile(r'^([\w-]+):\s+(ESCLUSO|DATI INSUFFICIENTI)\s+—\s+(.*)
 # build_formazione_finale.py per evitare di schierare insieme portiere e
 # giocatore di movimento le cui squadre si affrontano.
 TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
+# NUOVO (27/07, sezione 27.C del RIASSUNTO): score usato per ORDINARE, calcolato
+# senza shrinkage. Lo shrinkage minimizza il MAE ma comprime le differenze fra
+# giocatori (e con k fisso tira di piu' chi ha meno storico, quindi altera
+# l'ordinamento): misurato su 123 giornate reali, ordinare senza shrinkage
+# cattura il 17.8% del lift disponibile contro il 13.7% con. I "pt" mostrati
+# restano lo score atteso (miglior stima del punteggio). Riga opzionale: se
+# manca (file generati dalla versione precedente) si ordina come prima.
+ORDINAMENTO_RE = re.compile(r'^ORDINAMENTO:\s+(-?[\d.]+)\s*$')
 
 
 def latest_file_for_slug(slug):
@@ -40,6 +48,7 @@ def parse_player_file(path):
 
     consiglio = None
     team_slug = opp_slug = None
+    ordinamento = None
     for line in content.splitlines():
         stripped = line.strip()
         m = CONSIGLIO_RE.match(stripped)
@@ -47,6 +56,10 @@ def parse_player_file(path):
             slug, atteso, low, high = m.groups()
             consiglio = {'slug': slug, 'status': 'OK', 'atteso': int(atteso),
                          'low': int(low), 'high': int(high)}
+            continue
+        m = ORDINAMENTO_RE.match(stripped)
+        if m:
+            ordinamento = float(m.group(1))
             continue
         m = TEAM_RE.match(stripped)
         if m:
@@ -60,6 +73,7 @@ def parse_player_file(path):
     if consiglio:
         consiglio['team_slug'] = None if team_slug == 'N/D' else team_slug
         consiglio['opponent_team_slug'] = None if opp_slug == 'N/D' else opp_slug
+        consiglio['ordinamento'] = ordinamento
         return consiglio
     return None
 
@@ -83,7 +97,15 @@ def main():
         else:
             excluded_count += 1
 
-    ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
+    # Ordina per lo score di ordinamento (senza shrinkage) -- vedi ORDINAMENTO_RE
+    # sopra. Il fallback e' TUTTO-O-NIENTE: i due score vivono su scale diverse
+    # (senza shrinkage la dispersione fra giocatori e' piu' ampia), quindi
+    # mescolarli nella stessa sort confronterebbe grandezze non omogenee. Se anche
+    # un solo giocatore non ha la riga, si ordina tutto per pt attesi come prima.
+    if ok_rows and all(r.get('ordinamento') is not None for r in ok_rows):
+        ok_rows.sort(key=lambda r: r['ordinamento'], reverse=True)
+    else:
+        ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
 
     lines = []
     lines.append(f"Consiglio difensori — {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')}Z")
@@ -93,6 +115,9 @@ def main():
         # NUOVO (26/07, tema correlazione GK-DEF): squadra/avversario, per
         # build_formazione_finale.py.
         lines.append(f"   SQUADRA: {r.get('team_slug') or 'N/D'} | AVVERSARIO: {r.get('opponent_team_slug') or 'N/D'}")
+        # Propagata a build_formazione_finale/globale, che ordinano i pool.
+        if r.get('ordinamento') is not None:
+            lines.append(f"   ORDINAMENTO: {r['ordinamento']:.2f}")
     lines.append("")
     lines.append(f"({excluded_count} esclusi/non disponibili questa giornata)")
 
