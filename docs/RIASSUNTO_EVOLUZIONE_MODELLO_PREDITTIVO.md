@@ -1544,3 +1544,89 @@ Pronto per il commit, non ancora pushato su `main` al momento di scrivere questa
 oggi disponibili (campione GK ancora relativamente piccolo, 149 partite) — da rivedere alla
 prossima ricalibrazione allargata quando la stagione avanza, stesso principio già applicato ai
 parametri ufficiali del modello.
+
+## 19. Stessa notte (continua) — sinergia FWD-MID same-team, estensione a 4 nuovi campionati
+
+### A. Analisi: conviene FWD+MID di squadre diverse (atteso combinato più alto) o della stessa
+squadra (atteso combinato più basso)?
+
+Nuovo script `formazione_mls/diagnostics/analyze_fwd_mid_team_pairing.py` (nessuna nuova query,
+cache di calibrazione già su disco, MLS+K League). Premessa teorica verificata: il valore atteso di
+una SOMMA di due punteggi non dipende dalla correlazione tra i due (solo la varianza ne risente) —
+se l'atteso è ben calibrato per ruolo (confermato: bias MID +0.71pt, FWD +0.55pt, quasi nullo), la
+coppia con atteso combinato più alto dovrebbe sempre vincere in media, indipendentemente dalla
+squadra. Verificato se questo tiene sui dati.
+
+**Risultato, più sfumato della teoria pura**: correlazione dei residui same-team **+0.147
+(p=0.076)** — al limite della soglia 0.05, non netta ma neanche trascurabile — contro cross-team
+**+0.002 (p=0.89)**, praticamente zero come atteso (nessun legame reale tra giocatori di squadre
+diverse). A parità di atteso combinato, nelle fasce centrali (80-120pt) le coppie same-team
+realizzano in media **+1/+3.4/+8.7 punti** in più delle cross-team; nelle fasce alte (120-140) il
+segno si inverte (-1.8/-3.2, campioni piccoli). Simulazione diretta: una coppia same-team con
+atteso combinato ~125 batte in media coppie cross-team con atteso combinato **fino a 20 punti più
+alto** (solo a +25 il cross-team supera). **Controllo anti-artefatto**: 50 coppie giocatore
+distinte dietro le 152 osservazioni same-team (max 8 partite insieme per la coppia più frequente)
+— il segnale non è guidato da un singolo duo dominante.
+
+**Conclusione onesta**: segnale di sinergia FWD-MID same-team plausibile ma debole/marginale (p non
+sotto soglia standard, pattern non pulito in ogni fascia) — **non portato in produzione**, resta un
+punto da riosservare quando il campione crescerà (stesso principio di cautela già applicato ad
+altri segnali deboli in questo progetto, es. sezione 13F).
+
+### B. Estensione pipeline completa a 4 nuovi campionati (Portogallo/Austria/Scozia/Croazia)
+
+**Richiesta esplicita dell'utente**: estendere l'infrastruttura a 4 campionati dove possiede carte
+(slug trovati in `sorare_lista_nera.txt` su main, sezione `## campionato_inseason_temp`): Croazia
+`1-hnl`, Austria `austrian-bundesliga`, Scozia `premiership-gb-sct`, Portogallo `primeira-liga-pt`.
+**Solo le carte POSSEDUTE dall'utente** in quei campionati (stesso pattern discovery non-globale di
+MLS/K League, NON la variante `_global` usata per la calibrazione allargata) — esplicitamente
+confermato con l'utente per evitare equivoci.
+
+Lavoro delegato a un agente in background, in worktree isolato, in due giri (stesso agente ripreso
+via `SendMessage` per non perdere il contesto già costruito):
+
+1. **Primo giro**: solo discovery (16 script `discovery/<lega>_<ruolo>_discovery.py` + 4 workflow
+   `<lega>_discovery.yml`, clone meccanico di `formazione_kleague/discovery/`).
+2. **Secondo giro** (richiesta ampliata dall'utente: "voglio la cache incrementale applicata subito,
+   così alla prima run tracciamo tutto e dopo in fase di predict sarà più facile"): scoperto che la
+   cache incrementale del game log vive SOLO in `predict/test_<ruolo>.py` (non in discovery, sia per
+   MLS che K League) — quindi ampliato lo scope alla pipeline COMPLETA (`predict/` x4 ruoli +
+   `consiglio/` + `build_formazione_finale.py` + workflow `<lega>_completa.yml`), clone verbatim di
+   `formazione_kleague/` con solo adattamenti meccanici di path/nome lega. STESSI parametri
+   ufficiali di produzione per ruolo (GK 9.0/1.6/29.0/0.7, DEF 12.0/1.2/29.0/0.7, MID/FWD
+   12.0/1.4/29.0/0.7), stessa cache incrementale (`GAME_LOG_REFRESH_COUNT=2`) e cache dettagli
+   granulari (`.cache/<slug>_detail_cache.json`).
+
+**Vincolo rispettato in entrambi i giri**: NON integrato nel pool di `generatore_formazioni/`
+(rimane MLS+K League soltanto, verificato con `git diff --stat` che il file non è stato toccato) —
+tool standalone separati per ora, stesso stadio in cui si trovava K League prima della fusione.
+NESSUN `gh workflow run` lanciato, NESSUN push al remoto durante lo sviluppo, NESSUNA query GraphQL
+reale (solo verifica sintattica/strutturale + smoke test con dati finti).
+
+**Scelte dell'agente da conoscere**: liste `_FALLBACK_PLAYER_SLUGS` (giocatori di test hardcoded nei
+file K League, es. Hugo Lloris/Mamadou Fofana) svuotate a `[]` per questi 4 campionati (si
+popoleranno dalla discovery reale al primo run) — lasciate invece intatte le note storiche che
+descrivono lo SCHEMA `detailedScore` di Sorare (non specifiche di un campionato). Titoli/commenti
+che identificano esplicitamente "questo file è per la lega X" aggiornati al nome nuovo; commenti
+storici sulla provenienza di un parametro (es. "OPPONENT_SENSITIVITY=29.0 calibrato su K League")
+lasciati invariati perché sono un fatto storico vero, il valore è solo riusato come punto di
+partenza per questi campionati (non ancora ricalibrato su dati propri).
+
+**Verificato**: `py_compile` su tutti i 60 file Python nuovi (discovery+predict+consiglio+build),
+`yaml.safe_load` su tutti i 12 workflow (8 discovery+completa + 4 già esistenti prima), merge
+pulito nel branch di lavoro (solo file nuovi, nessun conflitto).
+
+### C. Prossimo passo pianificato (in coda, non ancora eseguito)
+
+L'utente ha dato il via libera a lanciare la discovery+predict REALE (query GraphQL vere) per i 4
+campionati, **in sequenza, un campionato alla volta** (stessa cautela rate-limit già documentata
+più volte in questo progetto — mai più leghe/ruoli in parallelo sullo stesso account Sorare, rischio
+concreto di 429). Solo le carte possedute dall'utente in ciascun campionato. Risultati tenuti nelle
+rispettive cartelle `formazione_<lega>/output/`, pronti per un'eventuale fusione futura nel pool del
+Generatore Formazioni — **ma la fusione stessa NON va fatta finché l'utente non lo richiede
+esplicitamente** (già confermato due volte in questa sessione). Da eseguire alla ripresa.
+
+### D. Stato repo
+
+Tutto pushato su `main` (analisi FWD-MID + pipeline completa 4 nuovi campionati), nessuna run reale
+lanciata ancora. Prossimo passo: sezione C sopra.
