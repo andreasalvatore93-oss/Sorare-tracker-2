@@ -214,6 +214,7 @@ def main():
                 f"AND NOT sealed=1 AND NOT rarity:custom_series")
 
     per_lega_ruolo = defaultdict(lambda: defaultdict(set))
+    nomi_per_lega_ruolo = defaultdict(lambda: defaultdict(dict))
     esclusi_odds = 0
     esclusi_finestra = 0
     tot_carte = 0
@@ -248,14 +249,16 @@ def main():
                 # abbatte i tempi: da ~2000 interrogazioni a poche decine.
                 if club.get('slug') not in squadre_in_campo:
                     continue
-                visti.add((p['slug'], (club.get('domesticLeague') or {}).get('slug')))
+                visti.add((p['slug'], (club.get('domesticLeague') or {}).get('slug'),
+                           p.get('displayName') or ''))
             if page >= (s.get('nbPages') or 1):
                 break
             page += 1
             time.sleep(0.25)
 
         tot_carte += len(visti)
-        lega_di = {slug: lega for slug, lega in visti}
+        lega_di = {slug: lega for slug, lega, _nome in visti}
+        nome_di = {slug: nome for slug, _lega, nome in visti if nome}
         elenco = sorted(lega_di)
         log(f"  {position}: {len(elenco)} giocatori di squadre che giocano "
             f"(su {s.get('nbHits')} carte possedute) -> interrogo le odds")
@@ -282,6 +285,8 @@ def main():
                 # formazione_senza_lega (filtro invertito, gia' esistente).
                 dirname = 'senza_lega'
             per_lega_ruolo[dirname][role].add(slug)
+            if nome_di.get(slug):
+                nomi_per_lega_ruolo[dirname][role][slug] = nome_di[slug]
 
     log(f"\nGiocatori eleggibili esaminati: {tot_carte} | esclusi: "
         f"{esclusi_finestra} senza partita nella giornata, {esclusi_odds} "
@@ -294,6 +299,14 @@ def main():
             os.makedirs(outdir, exist_ok=True)
             with open(os.path.join(outdir, 'player_slugs.json'), 'w', encoding='utf-8') as f:
                 json.dump(sorted(slugs), f, ensure_ascii=False)
+            # displayName reale Sorare (28/07, richiesta esplicita utente: lo
+            # slug a volte si allontana troppo dal nome per essere riconosciuto
+            # a colpo d'occhio) -- gia' presente in CARDS_QUERY, nessuna query
+            # in piu'. Se manca per un giocatore, il renderer ripiega sullo
+            # slug title-case come faceva prima.
+            nomi = nomi_per_lega_ruolo.get(lega, {}).get(role, {})
+            with open(os.path.join(outdir, 'player_names.json'), 'w', encoding='utf-8') as f:
+                json.dump(nomi, f, ensure_ascii=False)
             scritti.setdefault(lega, {})[role] = sorted(slugs)
 
     print("\n" + "=" * 78)

@@ -288,21 +288,24 @@ def filter_by_window(role_data):
 
 
 def load_league_role_data():
-    """Ritorna (role_data, role_counts) per lega, riusando parse_consiglio/
-    load_card_counts/latest_consiglio del modulo importato -- identica
-    logica dei due tool singoli, su TUTTE le leghe scoperte."""
+    """Ritorna (role_data, role_counts, names) per lega, riusando
+    parse_consiglio/load_card_counts/load_player_names/latest_consiglio del
+    modulo importato -- identica logica dei due tool singoli, su TUTTE le
+    leghe scoperte."""
     role_data = {lg: {} for lg in LEAGUES}
     role_counts = {lg: {} for lg in LEAGUES}
+    names = {}
     for league in LEAGUES:
         for role in ROLES:
             out_dir = CONSIGLIO_DIRS[league][role]
             path = bff.latest_consiglio(out_dir)
             rows = bff.parse_consiglio(path) if path else []
             counts, _ = bff.load_card_counts(DISCOVERY_DIRS[league][role])
+            names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
             role_data[league][role] = rows
             role_counts[league][role] = counts
-    return role_data, role_counts
+    return role_data, role_counts, names
 
 
 GROW_BATCH = int(os.environ.get('QUALITY_GROW_BATCH', '3'))
@@ -490,7 +493,7 @@ def main():
     print(f"Formazioni richieste: totale={num_totale} -> " +
           (", ".join(f"{LABELS[t]}={counts[t]}" for t in richiesti) if richiesti else "nessuna"))
 
-    role_data, role_counts = load_league_role_data()
+    role_data, role_counts, player_names = load_league_role_data()
 
     prima = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
     role_data = filter_by_window(role_data)
@@ -519,7 +522,7 @@ def main():
         for lg in LEAGUES:
             acc.update(role_counts.get(lg, {}).get(role, {}))
         merged_counts[role] = acc
-    card_pool = bff.CardPool(merged_counts)
+    card_pool = bff.CardPool(merged_counts, names=player_names)
 
     run_number = os.environ.get('GITHUB_RUN_NUMBER')
     lineup_html_blocks = []
@@ -535,6 +538,20 @@ def main():
     if total_generated > 1:
         print(f"TOTALE COMPLESSIVO: {grand_total} pt")
 
+    # Giocatori candidati (idonei per starter-odds + finestra giornata, vedi
+    # discovery_fixture.py) MAI schierati in nessuna formazione di questa run
+    # (28/07, richiesta esplicita utente): dice a colpo d'occhio quanti
+    # rimangono "sul banco" dopo aver consumato il pool sulle formazioni
+    # richieste, totale e per ruolo.
+    used_slugs = card_pool.used_slugs()
+    esclusi_per_ruolo = {}
+    for r in ROLES:
+        candidati = {row['slug'] for lg in LEAGUES for row in role_data[lg][r]}
+        esclusi_per_ruolo[r] = len(candidati - used_slugs)
+    tot_esclusi = sum(esclusi_per_ruolo.values())
+    print(f"Candidati non schierati in nessuna formazione: {tot_esclusi} "
+          f"(" + ", ".join(f"{r}:{esclusi_per_ruolo[r]}" for r in ROLES) + ")")
+
     tot_checked = sum(p.checked_idx for league in pools.values() for p in league.values())
     tot_passed = sum(len(p.passing) for league in pools.values() for p in league.values())
     print(f"Filtro qualita' (lazy): {tot_checked} carte interrogate, {tot_passed} promosse "
@@ -548,7 +565,9 @@ def main():
     page_title = f"Generatore Formazioni{' — run #' + run_number if run_number else ''}"
     page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
                      f"totale={num_totale} (" +
-                     ", ".join(f"{LABELS[t]}={counts[t]}" for t in PRIORITY_ORDER) + ")")
+                     ", ".join(f"{LABELS[t]}={counts[t]}" for t in PRIORITY_ORDER) + ")<br>"
+                     f"Candidati non schierati in nessuna formazione: {tot_esclusi} (" +
+                     ", ".join(f"{r}: {esclusi_per_ruolo[r]}" for r in ROLES) + ")")
     footer_html = (f"Fusione {len(LEAGUES)} campionati. Max 1 carta CLASSIC solo per In Season. Filtro qualita' "
                     f"L5/L10/L40 tutti >= {quality_filter.MIN_QUALITY_SCORE} applicato prima della scelta.")
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)

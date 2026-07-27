@@ -395,6 +395,21 @@ def load_card_counts(discovery_dir):
         return {}, path
 
 
+def load_player_names(discovery_dir):
+    """Carica slug -> displayName reale Sorare da player_names.json (scritto
+    da discovery_fixture.py, 28/07). Se il file non esiste (discovery non
+    ancora aggiornata) ritorna {}: il chiamante ripiega sullo slug title-case
+    come faceva prima di questa data."""
+    path = os.path.join(discovery_dir, 'player_names.json')
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
 def load_all_roles():
     role_data = {}
     role_files = {}
@@ -418,7 +433,7 @@ class CardPool:
     pool). Default: 1 copia IN_SEASON (0 classic, L10 ignota) per uno slug
     non presente nel relativo player_card_counts.json."""
 
-    def __init__(self, counts_by_role):
+    def __init__(self, counts_by_role, names=None):
         self._total = {}
         self._l10 = {}
         for role, counts in counts_by_role.items():
@@ -429,7 +444,13 @@ class CardPool:
                 l10 = breakdown.get('l10')
                 if l10 is not None:
                     self._l10[slug] = l10
+        self._names = names or {}
         self._used = {}
+
+    def display_name(self, slug):
+        """displayName reale Sorare se noto (da player_names.json, vedi
+        load_player_names), altrimenti ripiega sullo slug title-case."""
+        return self._names.get(slug) or _slug_display_name(slug)
 
     def _total_for(self, slug):
         return self._total.get(slug, {'in_season': 1, 'classic': 0})
@@ -456,6 +477,12 @@ class CardPool:
         mai persistita (dato mancante -- vedi ARENA_L10_CAP, trattata come 0
         nel calcolo del budget, mai come esclusione)."""
         return self._l10.get(slug)
+
+    def used_slugs(self):
+        """Slug con almeno una copia consumata in una qualunque formazione
+        di questa run (di qualunque tipo -- il pool e' condiviso)."""
+        return {slug for slug, u in self._used.items()
+                if u['in_season'] > 0 or u['classic'] > 0}
 
 
 def _min_available_l10(rows, used_slugs, card_pool):
@@ -962,6 +989,8 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
     if copie > 1:
         tags.append(f'<span class="tag tag-copies">{copie} copie</span>')
     captain_badge = '<span class="pcard-captain">C</span>' if is_captain else ''
+    l10 = card_pool.l10(row['slug'])
+    l10_html = f'<div class="pcard-l10">L10: {l10:.0f}</div>' if l10 is not None else ''
     return (
         f'<div class="pcard" style="--role-color:{color}">'
         f'<div class="pcard-stripe" style="background:{color}"></div>'
@@ -969,9 +998,10 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
         f'{captain_badge}'
         f'<div class="pcard-body">'
         f'<div class="pcard-avatar">{_slug_initials(row["slug"])}</div>'
-        f'<div class="pcard-name">{_slug_display_name(row["slug"])}</div>'
+        f'<div class="pcard-name">{card_pool.display_name(row["slug"])}</div>'
         f'<div class="pcard-score">{row["atteso"]}</div>'
         f'<div class="pcard-range">{row["low"]}–{row["high"]} pt</div>'
+        f'{l10_html}'
         f'<div class="pcard-tags">{"".join(tags)}</div>'
         f'</div></div>'
     )
@@ -1083,6 +1113,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .pcard-name {{ font-size: 0.82rem; font-weight: 650; line-height: 1.25; min-height: 2.1em; display: flex; align-items: center; }}
   .pcard-score {{ font-size: 1.85rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }}
   .pcard-range {{ font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; }}
+  .pcard-l10 {{ font-size: 0.62rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
   .pcard-tags {{ display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; min-height: 18px; }}
   .tag {{ font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }}
   .tag-classic {{ background: rgba(240,168,59,0.16); color: #f0a83b; }}
