@@ -77,6 +77,7 @@ import os
 import re
 import sys
 import glob
+import html
 import json
 import datetime
 
@@ -979,31 +980,72 @@ def _slug_display_name(slug):
     return ' '.join(w[:1].upper() + w[1:] for w in slug.split('-') if w)
 
 
-def render_card_html(slot_label, row, ctype, card_pool, is_captain):
-    color = _slot_role_color(slot_label)
-    role_label = re.sub(r'^EXTRA \(([A-Z]+)\)$', r'EXTRA · \1', slot_label)
-    copie = card_pool.copies_owned(row['slug'])
+ROLES_HTML = ('GK', 'DEF', 'MID', 'FWD')
+
+
+def _slot_role(slot_label):
+    """Ruolo REALE (GK/DEF/MID/FWD) di uno slot, sia esso diretto ('DEF1')
+    che EXTRA ('EXTRA (MID)'). Condiviso fra pannello alternative e drag&drop
+    (28/07) -- prima esisteva solo una copia locale in
+    generatore_formazioni/build_formazione_globale.py, spostata qui perche'
+    ora serve anche a render_card_html per il matching lato client."""
+    for role in ROLES_HTML:
+        if slot_label.startswith(role):
+            return role
+    m = re.search(r'\(([A-Z]+)\)', slot_label)
+    return m.group(1) if m and m.group(1) in ROLES_HTML else None
+
+
+def _pcard_tags_html(ctype, copie):
     tags = []
     if ctype == 'classic':
         tags.append('<span class="tag tag-classic">Classic</span>')
     if copie > 1:
         tags.append(f'<span class="tag tag-copies">{copie} copie</span>')
-    captain_badge = '<span class="pcard-captain">C</span>' if is_captain else ''
-    l10 = card_pool.l10(row['slug'])
+    return ''.join(tags)
+
+
+def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool):
+    """Contenuto dinamico di una pcard (tutto tranne striscia colore/ruolo/
+    badge capitano, che restano legati allo SLOT, non al giocatore) --
+    fattorizzato (28/07) per essere riusato SIA per la carta reale SIA per
+    calcolare in anticipo, in Python, l'HTML che un'alternativa diventerebbe
+    se trascinata al posto del titolare (drag&drop lato client, nessun
+    ricalcolo server: lo scambio e' un puro swap di HTML gia' pronto)."""
     l10_html = f'<div class="pcard-l10">L10: {l10:.0f}</div>' if l10 is not None else ''
     return (
-        f'<div class="pcard" style="--role-color:{color}">'
+        f'<div class="pcard-avatar">{_slug_initials(slug)}</div>'
+        f'<div class="pcard-name">{card_pool.display_name(slug)}</div>'
+        f'<div class="pcard-score">{atteso}</div>'
+        f'<div class="pcard-range">{low}–{high} pt</div>'
+        f'{l10_html}'
+        f'<div class="pcard-tags">{tags_html}</div>'
+    )
+
+
+def render_card_html(slot_label, row, ctype, card_pool, is_captain):
+    color = _slot_role_color(slot_label)
+    role_label = re.sub(r'^EXTRA \(([A-Z]+)\)$', r'EXTRA · \1', slot_label)
+    role = _slot_role(slot_label) or ''
+    copie = card_pool.copies_owned(row['slug'])
+    tags_html = _pcard_tags_html(ctype, copie)
+    captain_badge = '<span class="pcard-captain">C</span>' if is_captain else ''
+    l10 = card_pool.l10(row['slug'])
+    body_html = _pcard_body_html(row['slug'], row['atteso'], row['low'], row['high'], l10, tags_html, card_pool)
+    # data-body (28/07): l'HTML esatto della pcard-body per QUESTO giocatore,
+    # gia' pronto -- il drag&drop lato client lo scambia con quello di
+    # un'alternativa senza ricalcolare nulla in JS (vedi script nel template).
+    return (
+        f'<div class="pcard" draggable="true" style="--role-color:{color}" '
+        f'data-slug="{html.escape(row["slug"], quote=True)}" data-role="{role}" '
+        f'data-score="{row["atteso"]}" '
+        f'data-name="{html.escape(card_pool.display_name(row["slug"]), quote=True)}" '
+        f'data-body="{html.escape(body_html, quote=True)}">'
         f'<div class="pcard-stripe" style="background:{color}"></div>'
         f'<span class="pcard-role">{role_label}</span>'
         f'{captain_badge}'
-        f'<div class="pcard-body">'
-        f'<div class="pcard-avatar">{_slug_initials(row["slug"])}</div>'
-        f'<div class="pcard-name">{card_pool.display_name(row["slug"])}</div>'
-        f'<div class="pcard-score">{row["atteso"]}</div>'
-        f'<div class="pcard-range">{row["low"]}–{row["high"]} pt</div>'
-        f'{l10_html}'
-        f'<div class="pcard-tags">{"".join(tags)}</div>'
-        f'</div></div>'
+        f'<div class="pcard-body">{body_html}</div>'
+        f'</div>'
     )
 
 
@@ -1011,9 +1053,18 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
                         stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False,
                         avoid_captain_slugs=None):
     captain_slot, captain_row, _captain_type = pick_captain(formazione, avoid_captain_slugs)
+    # Layout "a schieramento" (28/07, richiesta esplicita utente: niente piu'
+    # striscia con scroll orizzontale, raggruppare per ruolo come su Sorare
+    # -- FWD in cima, poi MID, DEF, GK in fondo, un blocco compatto).
+    ruolo_ordine = ('FWD', 'MID', 'DEF', 'GK')
+    per_ruolo = {r: [] for r in ruolo_ordine}
+    for slot, row, ctype in formazione:
+        ruolo = _slot_role(slot) or 'FWD'
+        card_html = render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
+        per_ruolo.setdefault(ruolo, []).append(card_html)
     cards_html = ''.join(
-        render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
-        for slot, row, ctype in formazione
+        f'<div class="pitch-row">{"".join(per_ruolo[r])}</div>'
+        for r in ruolo_ordine if per_ruolo.get(r)
     )
     totale_atteso = sum(row['atteso'] for _, row, _ in formazione)
     captain_bonus_pct = CAPTAIN_BONUS_BY_TYPE.get(tipo, 0.5)
@@ -1041,17 +1092,21 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
         esito = '+4% bonus formazione attivo' if ok260 else 'bonus +4% non ottenuto'
         cap260_note = (f'<div class="captain-note"{colore}>Cap {soglia_cap:.0f}: L10 {totale_l10_c260:.1f} / '
                         f'{soglia_cap:.0f} ({esito})</div>')
+    # data-captain-pct (28/07): il drag&drop lato client deve ricalcolare
+    # totale e bonus capitano dopo uno scambio senza rifare la run -- serve
+    # solo la percentuale, il resto (chi e' capitano, punteggi) si legge
+    # dagli attributi data-* delle pcard gia' presenti nel DOM.
     return (
         f'<div class="lineup-block"><div class="lineup-meta">'
         f'<div class="lineup-title">{tipo_label} <span>#{idx}</span></div></div>'
         f'<div class="card-strip">{cards_html}</div>'
-        f'<div class="lineup-total">'
+        f'<div class="lineup-total" data-captain-pct="{captain_bonus_pct}">'
         f'<div><span class="label">Totale</span><span class="figure">{totale_atteso} pt</span></div>'
         f'<div class="divider"></div>'
         f'<div><span class="label">Con capitano</span>'
         f'<span class="figure with-captain">{totale_con_capitano} pt</span></div>'
-        f'<div class="captain-note">Capitano <b>{_slug_display_name(captain_row["slug"])}</b> '
-        f'(+{bonus} pt, +{captain_bonus_pct:.0%})</div>{l10_note}{stack_note}{cap260_note}'
+        f'<div class="captain-note">Capitano <b class="cap-name">{card_pool.display_name(captain_row["slug"])}</b> '
+        f'<span class="cap-bonus">(+{bonus} pt, +{captain_bonus_pct:.0%})</span></div>{l10_note}{stack_note}{cap260_note}'
         f'</div></div>'
     )
 
@@ -1092,7 +1147,13 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
     color: var(--muted); margin-bottom: 10px; line-height: 1.4;
   }}
   .alt-list {{ display: flex; flex-direction: column; gap: 10px; }}
-  .alt-chip {{ display: flex; align-items: center; gap: 8px; }}
+  .alt-chip {{ display: flex; align-items: center; gap: 8px; cursor: grab; border-radius: 8px; padding: 2px; }}
+  .alt-chip[draggable="true"]:active {{ cursor: grabbing; }}
+  .pcard[draggable="true"] {{ cursor: grab; }}
+  .pcard[draggable="true"]:active {{ cursor: grabbing; }}
+  .pcard.drop-target, .alt-chip.drop-target {{
+    outline: 2px dashed var(--gold); outline-offset: 2px;
+  }}
   .alt-circle {{
     flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2);
     border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
@@ -1104,7 +1165,8 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .lineup-meta {{ margin-bottom: 12px; }}
   .lineup-title {{ font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }}
   .lineup-title span {{ color: var(--text); }}
-  .card-strip {{ display: flex; gap: 14px; overflow-x: auto; padding-bottom: 6px; }}
+  .card-strip {{ display: flex; flex-direction: column; gap: 12px; }}
+  .pitch-row {{ display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }}
   .pcard {{
     position: relative; flex: 0 0 152px; background: var(--surface);
     border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
@@ -1156,6 +1218,119 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
 <p class="subhead">{page_subhead}</p>
 {lineup_html}
 <footer>{footer}</footer>
+<script>
+// Drag&drop (28/07, richiesta esplicita utente): scambia un giocatore fra
+// una pcard schierata e un'alternativa (o un'altra pcard), stesso ruolo.
+// Puro swap di HTML/attributi gia' pronti lato server (data-body) -- NESSUN
+// ricalcolo di formula, NESSUNA persistenza (un refresh della pagina
+// riporta tutto allo stato generato). Limite noto: le note L10/cap/anti-stack
+// sotto ogni formazione restano quelle calcolate al momento della run, non
+// si aggiornano con lo scambio (solo totale e bonus capitano lo fanno).
+(function () {{
+  var dragEl = null;
+
+  function isDraggable(el) {{
+    return el && (el.classList.contains('pcard') || el.classList.contains('alt-chip'))
+      && el.getAttribute('draggable') === 'true';
+  }}
+
+  document.addEventListener('dragstart', function (e) {{
+    var el = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!el) return;
+    dragEl = el;
+    e.dataTransfer.effectAllowed = 'move';
+    try {{ e.dataTransfer.setData('text/plain', 'x'); }} catch (err) {{}}
+  }});
+
+  document.addEventListener('dragover', function (e) {{
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+  }});
+
+  document.addEventListener('dragenter', function (e) {{
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (dragEl && target && target !== dragEl && target.dataset.role === dragEl.dataset.role) {{
+      target.classList.add('drop-target');
+    }}
+  }});
+
+  document.addEventListener('dragleave', function (e) {{
+    var target = e.target.closest('.pcard, .alt-chip');
+    if (target) target.classList.remove('drop-target');
+  }});
+
+  document.addEventListener('dragend', function () {{
+    document.querySelectorAll('.drop-target').forEach(function (el) {{ el.classList.remove('drop-target'); }});
+    dragEl = null;
+  }});
+
+  document.addEventListener('drop', function (e) {{
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+    target.classList.remove('drop-target');
+    swapPlayers(dragEl, target);
+    dragEl = null;
+  }});
+
+  function initials(name) {{
+    return (name || '').split(' ').filter(Boolean).slice(0, 2)
+      .map(function (w) {{ return w[0].toUpperCase(); }}).join('') || '??';
+  }}
+
+  function refresh(el) {{
+    if (el.classList.contains('pcard')) {{
+      var body = el.querySelector('.pcard-body');
+      if (body) body.innerHTML = el.dataset.body;
+    }} else {{
+      var circle = el.querySelector('.alt-circle');
+      var name = el.querySelector('.alt-name');
+      var score = el.querySelector('.alt-score');
+      if (circle) circle.textContent = initials(el.dataset.name);
+      if (name) name.textContent = el.dataset.name;
+      if (score) score.textContent = el.dataset.score + ' pt · ' + el.dataset.role;
+    }}
+  }}
+
+  function swapPlayers(a, b) {{
+    ['slug', 'score', 'name', 'body'].forEach(function (k) {{
+      var tmp = a.dataset[k];
+      a.dataset[k] = b.dataset[k];
+      b.dataset[k] = tmp;
+    }});
+    refresh(a);
+    refresh(b);
+    [a, b].forEach(function (el) {{
+      var block = el.closest('.lineup-block');
+      if (block) recomputeTotal(block);
+    }});
+  }}
+
+  function recomputeTotal(block) {{
+    var total = 0;
+    block.querySelectorAll('.pcard').forEach(function (c) {{ total += parseFloat(c.dataset.score) || 0; }});
+    var totalEl = block.querySelector('.lineup-total');
+    if (!totalEl) return;
+    var figure = totalEl.querySelector('.figure:not(.with-captain)');
+    if (figure) figure.textContent = Math.round(total) + ' pt';
+    var capBadge = block.querySelector('.pcard-captain');
+    var capPct = parseFloat(totalEl.dataset.captainPct || '0.5');
+    var bonus = 0, capName = '';
+    if (capBadge) {{
+      var capCard = capBadge.closest('.pcard');
+      bonus = Math.round((parseFloat(capCard.dataset.score) || 0) * capPct);
+      capName = capCard.dataset.name || '';
+    }}
+    var withCap = totalEl.querySelector('.figure.with-captain');
+    if (withCap) withCap.textContent = Math.round(total + bonus) + ' pt';
+    var capNameEl = totalEl.querySelector('.cap-name');
+    if (capNameEl && capName) capNameEl.textContent = capName;
+    var capBonusEl = totalEl.querySelector('.cap-bonus');
+    if (capBonusEl) capBonusEl.textContent = '(+' + bonus + ' pt, +' + Math.round(capPct * 100) + '%)';
+  }}
+}})();
+</script>
 </body>
 </html>
 """

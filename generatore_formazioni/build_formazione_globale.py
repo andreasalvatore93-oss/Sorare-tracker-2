@@ -38,6 +38,7 @@ import os
 import re
 import sys
 import glob
+import html
 import datetime
 import importlib.util
 from collections import defaultdict
@@ -484,15 +485,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
     return risultati
 
 
-ROLE_BY_SLOT = ('GK', 'DEF', 'MID', 'FWD')
-
-
-def _slot_role(slot_label):
-    for role in ROLE_BY_SLOT:
-        if slot_label.startswith(role):
-            return role
-    m = re.search(r'\(([A-Z]+)\)', slot_label)
-    return m.group(1) if m and m.group(1) in ROLE_BY_SLOT else None
+_slot_role = bff._slot_role  # canonico, condiviso col drag&drop lato pcard
 
 
 def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
@@ -503,7 +496,9 @@ def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
     altrimenti uno slot puo' restare senza alcuna alternativa se un altro
     ruolo nella stessa formazione ha piu' candidati vicini (bug trovato nella
     prima versione con un top-4 flat, mai arrivato in produzione). Ritorna al
-    massimo max_chips coppie (slug, score, role), deduplicate per slug."""
+    massimo max_chips dict {row, ctype, role}, deduplicati per slug -- la riga
+    completa (non solo lo score) serve al drag&drop per costruire in anticipo
+    l'HTML della pcard che l'alternativa diventerebbe se trascinata."""
     seen_slugs = {row['slug'] for _, row, _ in formazione}
     per_slot = []
     for slot, row, _ctype in formazione:
@@ -512,9 +507,9 @@ def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
             continue
         own_score = row['atteso']
         cands = sorted(
-            ((abs(sc - own_score), sc, slug, role)
-             for sc, slug, lbl, i in global_usage.get(role, ())
-             if (lbl, i) != (label, idx) and slug not in seen_slugs),
+            ((abs(u['row']['atteso'] - own_score), u)
+             for u in global_usage.get(role, ())
+             if (u['label'], u['idx']) != (label, idx) and u['row']['slug'] not in seen_slugs),
             key=lambda t: t[0])
         per_slot.append(cands)
 
@@ -524,11 +519,12 @@ def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
         exhausted = True
         for cands in per_slot:
             while cands:
-                _diff, sc, slug, role = cands.pop(0)
+                _diff, u = cands.pop(0)
+                slug = u['row']['slug']
                 if slug in picked_slugs:
                     continue
                 picked_slugs.add(slug)
-                picked.append((slug, sc, role))
+                picked.append({'row': u['row'], 'ctype': u['ctype'], 'role': u['role']})
                 exhausted = False
                 break
             if len(picked) >= max_chips:
@@ -537,20 +533,35 @@ def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
 
 
 def _render_alt_panel(chips, card_pool):
+    """Ogni chip e' draggable e porta con se' data-body gia' pronto (28/07):
+    il drag&drop lato client (script nel template condiviso, vedi bff) scambia
+    l'attributo con quello della pcard bersaglio senza ricalcolare nulla."""
     if not chips:
         return ''
-    items = ''.join(
-        '<div class="alt-chip">'
-        f'<div class="alt-circle">{bff._slug_initials(slug)}</div>'
-        f'<div class="alt-info"><div class="alt-name">{card_pool.display_name(slug)}</div>'
-        f'<div class="alt-score">{sc} pt · {role}</div></div>'
-        '</div>'
-        for slug, sc, role in chips
-    )
+    items = []
+    for chip in chips:
+        row, ctype, role = chip['row'], chip['ctype'], chip['role']
+        slug = row['slug']
+        name = card_pool.display_name(slug)
+        copie = card_pool.copies_owned(slug)
+        tags_html = bff._pcard_tags_html(ctype, copie)
+        l10 = card_pool.l10(slug)
+        body_html = bff._pcard_body_html(slug, row['atteso'], row['low'], row['high'], l10, tags_html, card_pool)
+        items.append(
+            '<div class="alt-chip" draggable="true" '
+            f'data-slug="{html.escape(slug, quote=True)}" data-role="{role or ""}" '
+            f'data-score="{row["atteso"]}" data-name="{html.escape(name, quote=True)}" '
+            f'data-body="{html.escape(body_html, quote=True)}">'
+            f'<div class="alt-circle">{bff._slug_initials(slug)}</div>'
+            f'<div class="alt-info"><div class="alt-name">{name}</div>'
+            f'<div class="alt-score">{row["atteso"]} pt · {role}</div></div>'
+            '</div>'
+        )
     return (
         '<div class="alt-panel">'
-        '<div class="alt-panel-title">Alternative (vicinanza punteggio,<br>da altre formazioni)</div>'
-        f'<div class="alt-list">{items}</div>'
+        '<div class="alt-panel-title">Alternative (vicinanza punteggio,<br>da altre formazioni) — '
+        'trascina per sostituire</div>'
+        f'<div class="alt-list">{"".join(items)}</div>'
         '</div>'
     )
 
@@ -627,17 +638,20 @@ def main():
     if total_generated > 1:
         print(f"TOTALE COMPLESSIVO: {grand_total} pt")
 
-    # Indice globale: ruolo -> [(score, slug, label, idx), ...] su TUTTE le
-    # formazioni di TUTTI i tipi (28/07) -- usato per proporre alternative
-    # per vicinanza di punteggio, cross-formazione/cross-tipo.
+    # Indice globale: ruolo -> [{row, ctype, role, label, idx}, ...] su TUTTE
+    # le formazioni di TUTTI i tipi (28/07) -- usato per proporre alternative
+    # per vicinanza di punteggio, cross-formazione/cross-tipo. La riga
+    # completa (non solo lo score) serve al drag&drop per ricostruire l'HTML
+    # esatto della pcard che l'alternativa diventerebbe se trascinata.
     global_usage = defaultdict(list)
     for r in all_results:
         if 'error' in r:
             continue
-        for slot, row, _ctype in r['formazione']:
+        for slot, row, ctype in r['formazione']:
             role = _slot_role(slot)
             if role:
-                global_usage[role].append((row['atteso'], row['slug'], r['label'], r['idx']))
+                global_usage[role].append(
+                    {'row': row, 'ctype': ctype, 'role': role, 'label': r['label'], 'idx': r['idx']})
 
     # FASE 2: rendering, con il pannello alternative a fianco di ogni formazione.
     lineup_html_blocks = []
