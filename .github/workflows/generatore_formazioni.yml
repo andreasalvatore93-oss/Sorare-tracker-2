@@ -53,14 +53,14 @@ on:
           disponibili. Vuoto = tutte. Aggiornare solo le leghe che servono riduce di molto
           durata e query API.
         required: false
-        default: 'mls,kleague,belgio,olanda,turchia,portogallo,spagna,germania,francia,croazia,scozia'
+        default: 'mls,kleague,austria,belgio,olanda,turchia,portogallo,spagna,germania,francia,croazia,scozia'
       match_window_days:
         description: >
           Quanti giorni in avanti considerare "questa giornata". Un giocatore la cui prossima
           partita cade oltre questa finestra viene scartato SUBITO in discovery, senza sprecare
           job di predict. Le partite gia' iniziate da oltre 2h sono sempre escluse.
         required: false
-        default: '2'
+        default: '7'
       starter_odds_min:
         description: 'Soglia minima starter-odds (0-1) per includere un giocatore, es. 0.60. Dato mancante = tenuto per sicurezza.'
         required: false

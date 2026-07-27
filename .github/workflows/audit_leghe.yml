@@ -1,0 +1,24 @@
+name: Audit leghe possedute
+
+# Elenca tutte le domesticLeague in cui l'utente possiede carte, con lo slug
+# esatto usato da Sorare. Serve a creare le pipeline dei campionati non ancora
+# tracciati senza indovinare gli slug. Sola lettura: non scrive nulla nel repo.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          PYTHONUNBUFFERED: "1"
+        run: python audit_leghe_possedute.py

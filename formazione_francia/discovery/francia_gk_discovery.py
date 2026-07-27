@@ -229,7 +229,7 @@ query NextGameOdds($slug: String!) {
 """
 
 
-MATCH_WINDOW_DAYS = float(os.environ.get('MATCH_WINDOW_DAYS', '2'))
+MATCH_WINDOW_DAYS = float(os.environ.get('MATCH_WINDOW_DAYS', '7'))
 
 
 def get_next_game_odds_and_date(slug):
@@ -262,7 +262,10 @@ def _kickoff_within_window(kickoff, now=None):
         return True
     if dt < now - datetime.timedelta(hours=2):
         return False
-    return dt <= now + datetime.timedelta(days=MATCH_WINDOW_DAYS)
+    # Limite superiore in GIORNI DI CALENDARIO: fine giornata di (oggi + N).
+    # Contarlo in ore da adesso tagliava le partite serali dell'ultimo giorno.
+    ultimo = (now.date() + datetime.timedelta(days=int(MATCH_WINDOW_DAYS)))
+    return dt.date() <= ultimo
 
 
 def filter_by_starter_odds(slugs, player_card_counts, min_starter_odds=MIN_STARTER_ODDS_DISCOVERY):

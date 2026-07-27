@@ -258,7 +258,7 @@ def parse_league_qty(raw, field_name, valid_leagues=DEDICATED_LEAGUES):
 # fix, quindi stale: viene SCARTATO. Meglio una formazione incompleta che una
 # piena di giocatori che non scendono in campo. Con MATCH_WINDOW_REQUIRE_KICKOFF=0
 # si torna al comportamento permissivo (utile solo per debug su dati vecchi).
-MATCH_WINDOW_DAYS = float(os.environ.get('MATCH_WINDOW_DAYS', '2'))
+MATCH_WINDOW_DAYS = float(os.environ.get('MATCH_WINDOW_DAYS', '7'))
 REQUIRE_KICKOFF = os.environ.get('MATCH_WINDOW_REQUIRE_KICKOFF', '1').strip() not in ('0', 'false', 'no')
 
 
@@ -273,7 +273,7 @@ def _within_window(row, now=None):
         return not REQUIRE_KICKOFF
     if dt < now - datetime.timedelta(hours=2):
         return False
-    return dt <= now + datetime.timedelta(days=MATCH_WINDOW_DAYS)
+    return dt.date() <= now.date() + datetime.timedelta(days=int(MATCH_WINDOW_DAYS))
 
 
 def filter_by_window(role_data):
