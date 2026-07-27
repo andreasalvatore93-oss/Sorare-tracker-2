@@ -751,6 +751,59 @@ def extract_level_score(detail):
     return 0.0
 
 
+# --- level_score ATTESO da tasso di eventi decisivi (27/07 notte, sezione 22
+# del riassunto) -- vedi formazione_mls/predict/test_def.py per la stessa
+# implementazione commentata per esteso.
+LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
+LEVEL_SCORE_POISSON_K_MAX = 6
+
+
+def netto_to_level(netto):
+    k = max(-2, min(5, round(netto)))
+    return LEVEL_TABLE[k]
+
+
+def extract_decisive_rates(detail):
+    pos_sum, neg_sum = 0.0, 0.0
+    for entry in (detail.get('detailedScore') if detail else None) or []:
+        cat = entry.get('category')
+        val = entry.get('statValue') or 0.0
+        if cat == 'POSITIVE_DECISIVE_STAT':
+            pos_sum += val
+        elif cat == 'NEGATIVE_DECISIVE_STAT':
+            neg_sum += val
+    return pos_sum, neg_sum
+
+
+def _poisson_pmf_truncated(lam, k_max):
+    if lam <= 0:
+        probs = [0.0] * (k_max + 1)
+        probs[0] = 1.0
+        return probs
+    probs = []
+    cum = 0.0
+    for k in range(k_max):
+        p = math.exp(-lam) * (lam ** k) / math.factorial(k)
+        probs.append(p)
+        cum += p
+    probs.append(max(0.0, 1.0 - cum))
+    return probs
+
+
+def expected_level_from_rates(lambda_pos, lambda_neg):
+    probs_pos = _poisson_pmf_truncated(lambda_pos, LEVEL_SCORE_POISSON_K_MAX)
+    probs_neg = _poisson_pmf_truncated(lambda_neg, LEVEL_SCORE_POISSON_K_MAX)
+    expected = 0.0
+    for i, pp in enumerate(probs_pos):
+        if pp == 0.0:
+            continue
+        for j, pn in enumerate(probs_neg):
+            if pn == 0.0:
+                continue
+            expected += pp * pn * netto_to_level(i - j)
+    return expected
+
+
 def compute_split_factor(values, is_home_flags, target_is_home):
     """Dato un elenco di valori granulari (uno per partita, gia' sommati per un
     gruppo di stat) e i relativi flag casa/trasferta, calcola il fattore
@@ -1152,6 +1205,8 @@ def build_prediction(player_slug):
     clean_sheet_flag_values = []  # 1.0/0.0 per partita: porta inviolata nei primi 60' (vedi extract_clean_sheet_flag)
     level_score_values = []  # NUOVO (26/07, Stadio A): "Punteggio decisivo" per partita
     granulari_values = []  # NUOVO (26/07, Stadio A): resto del punteggio (= score - level_score)
+    pos_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi POSITIVE_DECISIVE_STAT per partita
+    neg_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi NEGATIVE_DECISIVE_STAT per partita
 
     for node, detail in zip(usable, details):
         game_score = node.get('score', 0.0)
@@ -1174,6 +1229,9 @@ def build_prediction(player_slug):
         level_score_v = extract_level_score(detail)
         level_score_values.append(level_score_v)
         granulari_values.append(game_score - level_score_v)
+        pos_dec_v, neg_dec_v = extract_decisive_rates(detail)
+        pos_decisive_values.append(pos_dec_v)
+        neg_decisive_values.append(neg_dec_v)
 
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
@@ -1330,8 +1388,15 @@ def build_prediction(player_slug):
     # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
     # Il fattore resta calcolato sopra e nel result dict solo a scopo
     # diagnostico/di visualizzazione nell'output.
-    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
-                    * fattore_trend)
+    # --- level_score ATTESO da tasso di eventi (27/07 notte, sezione 22):
+    # vedi test_def.py per la spiegazione estesa.
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
+    score_atteso = (p_gioca * (level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
+                    * fattore_casa_trasferta)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo
@@ -1451,6 +1516,8 @@ def build_prediction(player_slug):
         'dev_std_pesata': dev_std_pesata,
         'dev_std_trimmed': dev_std_trimmed,
         'media_level_score_pesata': media_level_score_pesata,
+        'level_score_atteso': level_score_atteso,
+        'fattore_trend_granulare': fattore_trend_granulare,
         'media_granulari_pesata': media_granulari_pesata,
         'media_level_score_condizionata': media_level_score_condizionata,
         'delta_condizionamento_avversario': delta_condizionamento_avversario,
