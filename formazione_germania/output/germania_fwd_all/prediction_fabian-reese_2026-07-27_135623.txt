@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T13:56:23.100864Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) fabian-reese: 63 pt attesi (54-71)
+   SQUADRA: hertha-bsc-berlin | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: fabian-reese
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: fabian-reese (squadra: hertha-bsc-berlin)
+Generato: 2026-07-27T13:56:23.100359Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-24 | KSC vs BSC | 2-bundesliga | score=83.7 | peso=0.445
+  2026-02-01 | BSC vs SVD | 2-bundesliga | score=68.1 | peso=0.472
+  2026-02-07 | ELV vs BSC | 2-bundesliga | score=60.0 | peso=0.500
+  2026-02-14 | BSC vs H96 | 2-bundesliga | score=78.6 | peso=0.530
+  2026-02-22 | SCP vs BSC | 2-bundesliga | score=75.0 | peso=0.561
+  2026-03-01 | BSC vs FCN | 2-bundesliga | score=41.6 | peso=0.595
+  2026-03-08 | PRM vs BSC | 2-bundesliga | score=65.5 | peso=0.630
+  2026-03-22 | F95 vs BSC | 2-bundesliga | score=100.0 | peso=0.667
+  2026-04-04 | SGD vs BSC | 2-bundesliga | score=71.8 | peso=0.707
+  2026-04-11 | BSC vs FCK | 2-bundesliga | score=49.3 | peso=0.749
+  2026-04-19 | EBS vs BSC | 2-bundesliga | score=60.0 | peso=0.794
+  2026-04-25 | BSC vs KIE | 2-bundesliga | score=68.1 | peso=0.841
+  2026-05-03 | FCM vs BSC | 2-bundesliga | score=58.3 | peso=0.891
+  2026-05-10 | BSC vs SGF | 2-bundesliga | score=60.0 | peso=0.944
+  2026-05-17 | DSC vs BSC | 2-bundesliga | score=70.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 66.56
+  di cui Punteggio decisivo (level_score) medio: 54.28 | Punteggio complessivo (granulari) medio: 12.28 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 5.30 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.13
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 58.3 - 75.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.52 (differenza: +4.61)
+Media score in casa: 60.95 | Media score fuori casa: 71.61
+Fattore casa/trasferta applicato: 1.019 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.3
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.009
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.990
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore trend (media ultime 5: 63.3 vs media ultime 10: 64.5): 0.982
+P(gioca): 93.75% (fonte: tasso di presenza storico (15/16))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:30
+Casa: VfL Wolfsburg | Trasferta: 1. FC Kaiserslautern
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 62.6 (range 54.4 - 71.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 66.17
+Punteggio REALE ottenuto in quella partita: 70.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      96.6    65.5    -31.1    20.1        NO
+   7        7      89.2   100.0    +10.8    18.3        SI
+   8        8      80.1    71.8     -8.3    23.8        SI
+   9        9      61.9    49.3    -12.6    22.1        SI
+  10       10      81.5    60.0    -21.5    23.1        SI
+  11       11      75.0    68.1     -6.9    22.1        SI
+  12       12      81.2    58.3    -22.9    20.8        NO
+  13       13      75.2    60.0    -15.2    20.1        SI
+  14       14      67.3    70.2     +2.9    19.3        SI
+
+MAE (errore assoluto medio): 14.69
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
