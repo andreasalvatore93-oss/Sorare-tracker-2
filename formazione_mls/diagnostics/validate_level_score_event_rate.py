@@ -89,6 +89,7 @@ LEAGUE_CACHE_TPL = {
     'austria': 'formazione_austria/output/austria_{ruolo}_all/.cache',
     'scozia': 'formazione_scozia/output/scozia_{ruolo}_all/.cache',
     'croazia': 'formazione_croazia/output/croazia_{ruolo}_all/.cache',
+    'belgio': 'formazione_belgio/output/belgio_{ruolo}_all/.cache',
 }
 
 

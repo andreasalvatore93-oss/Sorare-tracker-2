@@ -76,6 +76,7 @@ LEAGUES = {
     'austria': ('formazione_austria.predict.test_{ruolo}', 'formazione_austria/output/austria_{ruolo}_all/.cache'),
     'scozia': ('formazione_scozia.predict.test_{ruolo}', 'formazione_scozia/output/scozia_{ruolo}_all/.cache'),
     'croazia': ('formazione_croazia.predict.test_{ruolo}', 'formazione_croazia/output/croazia_{ruolo}_all/.cache'),
+    'belgio': ('formazione_belgio.predict.test_{ruolo}', 'formazione_belgio/output/belgio_{ruolo}_all/.cache'),
 }
 MIN_PAIRS_FOR_REPORT = 20
 
