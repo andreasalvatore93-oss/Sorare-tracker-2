@@ -140,11 +140,14 @@ MAX_TRACKED_CARDS = int(os.environ.get('MAX_TRACKED_CARDS', '500'))
 BUY_SIGNAL_THRESHOLD_PERCENT = float(os.environ.get('BUY_SIGNAL_THRESHOLD_PERCENT', '10.0'))
 BUY_SIGNAL_TOP_N = int(os.environ.get('BUY_SIGNAL_TOP_N', '50'))
 
-# FIX 26/07 (richiesta esplicita utente, ridurre ulteriormente il roster full-MLS):
-# sotto questo L10, il giocatore e' scartato GIA' nella query roster (stesso principio
-# del filtro L5 -- vedi fetch_team_roster). CHECK_CLASSIC resta 'si' (l'utente vuole
-# continuare a tracciare le classic, solo il roster va tagliato).
-ROSTER_MIN_L10 = float(os.environ.get('ROSTER_MIN_L10', '35.0'))
+# FIX 26/07 (richiesta esplicita utente, ridurre ulteriormente il roster full-MLS),
+# esteso 27/07 (richiesta esplicita utente) a L5 e L40 oltre a L10: sotto questa
+# soglia su UNA QUALSIASI delle tre medie, il giocatore e' scartato GIA' nella
+# query roster (vedi fetch_team_roster) -- zero query sprecate sulle costose
+# (snapshot/minimo/transazioni) per chi non le supererebbe comunque.
+# CHECK_CLASSIC resta 'si' (l'utente vuole continuare a tracciare le classic,
+# solo il roster va tagliato).
+ROSTER_MIN_AVG_SCORE = float(os.environ.get('ROSTER_MIN_AVG_SCORE', '35.0'))
 
 # FIX 27/07 (richiesta esplicita utente, run troppo lento + 429): la pausa fissa
 # per-giocatore del 26/07 serializzava tutto il giro. _graphql_throttle() e' gia'
@@ -154,7 +157,7 @@ ROSTER_MIN_L10 = float(os.environ.get('ROSTER_MIN_L10', '35.0'))
 # processano piu' giocatori in parallelo: il throttle continua a limitare il
 # RITMO delle richieste in uscita, la concorrenza serve solo a sovrapporre i
 # tempi di attesa risposta invece di sommarli giocatore per giocatore.
-SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '5'))
+SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '8'))
 
 # FIX 24/07 (richiesta esplicita utente): sotto questa soglia di transazioni nella
 # finestra, il dato e' troppo rumoroso per la classifica (una singola transazione
@@ -425,6 +428,7 @@ query TeamRoster($slug: String!, $first: Int!, $after: String) {
           activeClub { slug }
           lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
           lastTenAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+          lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
         }
         pageInfo { hasNextPage endCursor }
       }
@@ -463,8 +467,12 @@ def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
 
     FIX 26/07 quater (richiesta esplicita utente, il filtro L5 da solo non ha
     tagliato abbastanza -- 645 giocatori restanti, run da 28 minuti con 43
-    429 falliti): aggiunto anche L10 <= ROSTER_MIN_L10 (default 35.0) come
-    scarto, stesso principio -- gia' disponibile in QUESTA query."""
+    429 falliti): aggiunto anche L10 <= ROSTER_MIN_AVG_SCORE (default 35.0)
+    come scarto, stesso principio -- gia' disponibile in QUESTA query.
+
+    FIX 27/07 (richiesta esplicita utente): stessa soglia estesa anche a L5 e
+    L40 (prima L5 scartava solo se assente/zero) -- ora tutte e tre le medie
+    (L5, L10, L40) devono superare ROSTER_MIN_AVG_SCORE, non solo L10."""
     all_nodes = []
     cursor = None
     for _ in range(TEAM_ROSTER_MAX_PAGES):
@@ -492,17 +500,19 @@ def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
         n for n in all_nodes
         if n.get('slug') and (n.get('activeClub') or {}).get('slug') == team_slug
     ]
-    roster_l5 = [n for n in roster_attuale if n.get('lastFiveAvgScore')]  # None o 0 -> 'forma_zero'
-    roster_nodi = [n for n in roster_l5 if (n.get('lastTenAvgScore') or 0) > ROSTER_MIN_L10]
+    roster_nodi = [
+        n for n in roster_attuale
+        if (n.get('lastFiveAvgScore') or 0) > ROSTER_MIN_AVG_SCORE
+        and (n.get('lastTenAvgScore') or 0) > ROSTER_MIN_AVG_SCORE
+        and (n.get('lastFortyAvgScore') or 0) > ROSTER_MIN_AVG_SCORE
+    ]
     roster = [(n['slug'], n.get('displayName') or n['slug']) for n in roster_nodi]
 
     scartati_ex = len(roster_completo) - len(roster_attuale)
-    scartati_forma_zero = len(roster_attuale) - len(roster_l5)
-    scartati_l10_basso = len(roster_l5) - len(roster)
+    scartati_media_bassa = len(roster_attuale) - len(roster_nodi)
     log(f"[roster] {team_slug}: {len(roster_completo)} giocatori totali nel roster storico, "
-        f"{scartati_ex} scartati subito (non piu' al club), {scartati_forma_zero} scartati per "
-        f"L5 assente/zero, {scartati_l10_basso} scartati per L10 <= {ROSTER_MIN_L10}, "
-        f"{len(roster)} rilevanti da processare.")
+        f"{scartati_ex} scartati subito (non piu' al club), {scartati_media_bassa} scartati per "
+        f"L5/L10/L40 <= {ROSTER_MIN_AVG_SCORE} (una qualsiasi), {len(roster)} rilevanti da processare.")
     return roster
 
 
@@ -1609,6 +1619,23 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
     if is_player_blacklisted(player_slug):
         return 'blacklist'
 
+    # FIX 27/07 (run troppo lento, richiesta esplicita utente): controlla PRIMA
+    # se c'e' un prezzo valido (live offers) per ALMENO un tipo di carta -- nel
+    # run del 27/07 il 33% dei giocatori (192/585) finiva scartato qui
+    # comunque, ma get_player_snapshot (L5/L10/L40/ultima partita/prossima
+    # partita) veniva speso PRIMA per tutti loro. Nessun dato di questa query
+    # serve per decidere lo scarto per prezzo, quindi si risparmia l'intera
+    # chiamata quando non servira' mai a scrivere una riga.
+    live_offer_nodes = fetch_all_live_offers(player_slug)
+    tipi_da_provare = (True, False) if CHECK_CLASSIC else (True,)
+    prezzo_ok = any(
+        (m := _current_minimum_from_nodes(live_offer_nodes, tipo, league_slug, eth_rate)) is not None
+        and m >= MIN_PRICE_EUR_THRESHOLD
+        for tipo in tipi_da_provare
+    )
+    if not prezzo_ok:
+        return 'prezzo_basso_o_senza_annunci'
+
     snapshot = get_player_snapshot(player_slug)
     if snapshot is None:
         log(f"[snapshot] {player_name} ({player_slug}): nessun dato giocatore, salto.")
@@ -1636,12 +1663,6 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
 
     ore_alla_partita = hours_until(snapshot['next_game_date_str'])
     righe_scritte = 0
-
-    # FIX 27/07 (run troppo lento, richiesta esplicita utente): live-offers e
-    # transazioni NON dipendono da is_in_season lato rete (il filtro e' locale,
-    # in Python) -- un fetch solo, riusato per entrambi i rami invece di
-    # richiamare le query due volte per lo stesso giocatore.
-    live_offer_nodes = fetch_all_live_offers(player_slug)
     tx_nodes_cache = None  # (nodes, cutoff) -- scaricate al bisogno, non se il prezzo scarta subito
 
     for is_in_season in (True, False):
