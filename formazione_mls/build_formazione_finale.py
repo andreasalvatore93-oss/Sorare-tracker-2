@@ -423,12 +423,30 @@ class CardPool:
         return self._l10.get(slug)
 
 
+def _min_available_l10(rows, used_slugs, card_pool):
+    """Minimo L10 (mancante trattato come 0.0, permissivo) tra i candidati di
+    'rows' NON ancora usati in questa lineup -- usato per riservare budget ai
+    prossimi slot quando l10_cap e' attivo (27/07, fix di un difetto reale:
+    senza riserva, i primi slot potevano spendere tutto il budget sui
+    punteggi migliori, lasciando lo slot EXTRA finale sempre sforato perche'
+    mai processato con budget residuo garantito)."""
+    vals = [card_pool.l10(r['slug']) or 0.0 for r in rows if r['slug'] not in used_slugs]
+    return min(vals) if vals else 0.0
+
+
 def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False, variance_mode=False):
     """Costruisce UNA formazione secondo 'shape' (uno dei FORMATION_SHAPES),
     tenendo conto delle copie gia' esaurite (card_pool) e del vincolo
     max_classic della shape (None = nessun vincolo). Se l10_cap e' impostato
-    (SOLO Arena), applica l'euristica greedy a budget residuo descritta nel
-    docstring del modulo. 'apply_stack_guard' (SOLO In Season/All Stars, vedi
+    (SOLO Arena), sceglie ad ogni slot il miglior punteggio che rientra nel
+    budget residuo MENO una riserva (somma dei minimi L10 disponibili per gli
+    slot ancora da riempire, extra incluso) -- garantisce che il cap non
+    venga MAI sforato: se a un certo slot nessun candidato rientra nemmeno
+    riservando, la formazione fallisce con lo stesso errore di "candidato
+    esaurito", nessun fallback che sfora in silenzio (27/07, fix di un
+    difetto reale: prima i primi slot potevano spendere tutto il budget sui
+    punteggi migliori, lasciando lo slot EXTRA finale sempre sforato).
+    'apply_stack_guard' (SOLO In Season/All Stars, vedi
     commento sopra IN_SEASON_STACK_LIMIT): scoraggia (non vieta) il 3o
     giocatore della stessa squadra nello slot extra, per non perdere per
     errore il bonus anti-stack Sorare. 'variance_mode' (SOLO Arena/All Stars,
@@ -446,21 +464,19 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
     l10_cap_rispettato = [True]
     team_counts = {}
 
-    def pick(pool_rows, role_slot_l10_check):
-        """role_slot_l10_check: se l10_cap e' impostato, filtra/ordina i
-        candidati rispettando il budget residuo; altrimenti comportamento
-        identico a prima (solo copie/classic_budget)."""
+    def pick(pool_rows, role_slot_l10_check, reserve=0.0):
+        """role_slot_l10_check: se l10_cap e' impostato, filtra i candidati
+        rispettando il budget residuo (MENO 'reserve', la somma dei minimi
+        L10 disponibili per tutti gli slot ANCORA da riempire dopo questo --
+        27/07, fix: senza riserva i primi slot potevano spendere tutto il
+        budget sui punteggi migliori, lasciando lo slot EXTRA finale sempre
+        sforato). Se nessun candidato rientra nemmeno riservando, la
+        formazione FALLISCE (nessun fallback che sfora il cap in silenzio --
+        il cap e' un vincolo vero, non un suggerimento)."""
         candidates = [r for r in pool_rows if r['slug'] not in used_this_lineup]
         if l10_cap is not None and role_slot_l10_check:
-            budget_residuo = l10_cap - l10_used[0]
-            entro_budget = [r for r in candidates if (card_pool.l10(r['slug']) or 0.0) <= budget_residuo]
-            if entro_budget:
-                candidates = entro_budget
-            else:
-                # Nessun candidato rispetta il budget residuo: ripiega sul
-                # piu' economico disponibile (limite noto, vedi docstring).
-                candidates = sorted(candidates, key=lambda r: (card_pool.l10(r['slug']) or 0.0))
-                l10_cap_rispettato[0] = False
+            budget_residuo = l10_cap - l10_used[0] - reserve
+            candidates = [r for r in candidates if (card_pool.l10(r['slug']) or 0.0) <= budget_residuo]
 
         for row in candidates:
             slug = row['slug']
@@ -478,16 +494,23 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         role_slot_counts[role] = role_slot_counts.get(role, 0) + 1
     role_occurrence = {role: 0 for role in role_slot_counts}
 
-    for role in shape['role_slots']:
+    for slot_idx, role in enumerate(shape['role_slots']):
         role_occurrence[role] += 1
         slot_label = role if role_slot_counts[role] == 1 else f"{role}{role_occurrence[role]}"
 
+        reserve = 0.0
+        if l10_cap is not None:
+            reserve = sum(_min_available_l10(role_data[r], used_this_lineup, card_pool)
+                          for r in shape['role_slots'][slot_idx + 1:])
+            reserve += _min_available_l10(
+                [row for r in shape['extra_roles'] for row in role_data[r]], used_this_lineup, card_pool)
+
         if role == 'GK':
-            row, ctype = pick(role_data['GK'], l10_cap is not None)
+            row, ctype = pick(role_data['GK'], l10_cap is not None, reserve)
         else:
             candidates = synergy_adjusted_rows(role, role_data[role], gk_team_slug, gk_opponent_slug,
                                                 team_counts, apply_stack_guard, variance_mode)
-            row, ctype = pick(candidates, l10_cap is not None)
+            row, ctype = pick(candidates, l10_cap is not None, reserve)
 
         if row is None:
             return None, f"Nessun candidato disponibile per lo slot {slot_label} (copie esaurite o consiglio vuoto).", l10_cap_rispettato[0], False
@@ -521,13 +544,8 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
     extra_candidates = [(role, row) for role, row in combined if row['slug'] not in used_this_lineup]
     if l10_cap is not None:
         budget_residuo = l10_cap - l10_used[0]
-        entro_budget = [(role, row) for role, row in extra_candidates
-                        if (card_pool.l10(row['slug']) or 0.0) <= budget_residuo]
-        if entro_budget:
-            extra_candidates = entro_budget
-        else:
-            extra_candidates = sorted(extra_candidates, key=lambda rc: (card_pool.l10(rc[1]['slug']) or 0.0))
-            l10_cap_rispettato[0] = False
+        extra_candidates = [(role, row) for role, row in extra_candidates
+                             if (card_pool.l10(row['slug']) or 0.0) <= budget_residuo]
 
     extra_role = extra_pick = extra_type = None
     for role, row in extra_candidates:

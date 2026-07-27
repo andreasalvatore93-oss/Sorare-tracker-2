@@ -241,12 +241,35 @@ def _grow_for(pools, pool_league, role, batch):
     return pools[pool_league][role].grow(batch)
 
 
-def build_one_lineup_with_growth(shape, pool_league, pools, card_pool, l10_cap, apply_stack_guard, variance_mode):
-    """Chiama bff.build_one_lineup con il pool qualita' PASSANTE attuale; se
-    manca un candidato per uno slot, interroga la qualita' dei prossimi
-    candidati NON ancora controllati per quel ruolo (GROW_BATCH alla volta,
-    tutti i ruoli extra se lo slot mancante era 'extra') e riprova -- finche'
-    non completa la formazione o esaurisce davvero il pool scoperto."""
+def _raw_view_for(role_data, pool_league, role):
+    if pool_league == 'mixed':
+        combined = role_data['mls'][role] + role_data['kleague'][role]
+        combined.sort(key=lambda r: r['atteso'], reverse=True)
+        return combined
+    return role_data[pool_league][role]
+
+
+def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool, l10_cap,
+                                  apply_stack_guard, variance_mode):
+    """Se il tipo ha un cap L10 obbligatorio (Arena dedicate/All Stars), il
+    filtro qualita' NON si applica (27/07, richiesta esplicita utente): sono
+    in tensione diretta -- L5/L10/L40>=35 esclude proprio le carte economiche
+    che servirebbero per stare sotto il cap, e il vincolo hard sul cap ora
+    vive in bff.build_one_lineup stesso (riserva di budget per gli slot
+    futuri, fallisce piuttosto che sforare). Si usa quindi il pool GREZZO
+    (tutte le carte scoperte per la lega/le leghe coinvolte), zero query di
+    qualita' per questi tipi.
+
+    Per i tipi SENZA cap (In Season, All Stars, Arena All Stars uncapped) il
+    filtro qualita' resta attivo: si interrogano solo i candidati che
+    servono, e se manca un candidato per uno slot si interrogano i prossimi
+    (GROW_BATCH alla volta) e si riprova, finche' la formazione si completa
+    o il pool scoperto e' davvero esaurito."""
+    if l10_cap is not None:
+        role_data_view = {role: _raw_view_for(role_data, pool_league, role) for role in ROLES}
+        return bff.build_one_lineup(shape, role_data_view, card_pool, l10_cap=l10_cap,
+                                     apply_stack_guard=apply_stack_guard, variance_mode=variance_mode)
+
     while True:
         role_data_view = {role: _view_for(pools, pool_league, role) for role in ROLES}
         formazione, error, l10_ok, stack_perso = bff.build_one_lineup(
@@ -268,7 +291,7 @@ def build_one_lineup_with_growth(shape, pool_league, pools, card_pool, l10_cap, 
             return None, error, l10_ok, stack_perso
 
 
-def generate_lineups_for_type(tipo, count, pools, card_pool, lineup_html_blocks):
+def generate_lineups_for_type(tipo, count, role_data, pools, card_pool, lineup_html_blocks):
     if count <= 0:
         return 0, 0
     shape = FORMATION_SHAPES[tipo]
@@ -282,7 +305,7 @@ def generate_lineups_for_type(tipo, count, pools, card_pool, lineup_html_blocks)
     generated, totale = 0, 0
     for idx in range(1, count + 1):
         formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
-            shape, pool_league, pools, card_pool, cap, stack_guard, variance_mode)
+            shape, pool_league, role_data, pools, card_pool, cap, stack_guard, variance_mode)
         if error:
             msg = f"Formazione {label} #{idx}: NON GENERATA — {error}"
             print(msg)
@@ -335,7 +358,7 @@ def main():
     generated_by_type = {}
     grand_total = 0
     for tipo in PRIORITY_ORDER:
-        generated, totale = generate_lineups_for_type(tipo, counts[tipo], pools, card_pool, lineup_html_blocks)
+        generated, totale = generate_lineups_for_type(tipo, counts[tipo], role_data, pools, card_pool, lineup_html_blocks)
         generated_by_type[tipo] = generated
         grand_total += totale
 
