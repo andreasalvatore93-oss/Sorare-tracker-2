@@ -1,0 +1,104 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T11:38:25.652255Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.6, min_starter_odds=70%
+======================================================================
+1) leo-kokubo: 42 pt attesi (29-57)
+   SQUADRA: sint-truiden-sint-truiden-st-trond | AVVERSARIO: lommel-lommel
+======================================================================
+
+######################################################################
+# GIOCATORE: leo-kokubo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: leo-kokubo (squadra: sint-truiden-sint-truiden-st-trond)
+Generato: 2026-07-27T11:38:25.651709Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 17
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-06 | WES vs STV | jupiler-pro-league | score=65.9 | peso=0.445
+  2026-02-15 | STV vs ZWA | jupiler-pro-league | score=39.3 | peso=0.472
+  2026-02-21 | DEN vs STV | jupiler-pro-league | score=40.3 | peso=0.500
+  2026-02-28 | ANT vs STV | jupiler-pro-league | score=49.5 | peso=0.530
+  2026-03-08 | STV vs CER | jupiler-pro-league | score=55.8 | peso=0.561
+  2026-03-15 | GNK vs STV | jupiler-pro-league | score=45.5 | peso=0.595
+  2026-03-22 | STV vs USG | jupiler-pro-league | score=50.9 | peso=0.630
+  2026-04-04 | USG vs STV | jupiler-pro-league | score=52.8 | peso=0.667
+  2026-04-11 | STV vs CLU | jupiler-pro-league | score=31.6 | peso=0.707
+  2026-04-19 | GNT vs STV | jupiler-pro-league | score=63.4 | peso=0.749
+  2026-04-23 | STV vs AND | jupiler-pro-league | score=87.7 | peso=0.794
+  2026-04-26 | KVM vs STV | jupiler-pro-league | score=37.2 | peso=0.841
+  2026-05-02 | STV vs USG | jupiler-pro-league | score=34.7 | peso=0.891
+  2026-05-09 | CLU vs STV | jupiler-pro-league | score=48.4 | peso=0.944
+  2026-05-16 | STV vs GNT | jupiler-pro-league | score=35.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 48.70
+  di cui Punteggio decisivo (level_score) medio: 39.81 | Punteggio complessivo (granulari) medio: 8.89 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.81 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.37, delta avversario +0.00 | Possesso condizionato per venue: delta +0.60 | Goalkeeping condizionato per venue: delta -0.98 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 14.90
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.6 - 63.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.74 (differenza: +5.16)
+Media score in casa: 47.94 | Media score fuori casa: 50.37
+Fattore casa/trasferta applicato: 0.975 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.2
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.024
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.020
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.998
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.984
+Tasso storico clean sheet (porta inviolata nei primi 60'): 20.0% (bonus atteso incorporato nella media pesata: ~5.0pt)
+Fattore trend (media ultime 5: 48.7 vs media ultime 10: 48.8): 0.999
+P(gioca): 88.24% (fonte: tasso di presenza storico (15/17))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:45
+Casa: Sint-Truidense VV | Trasferta: Lommel SK
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.9 (range 28.8 - 56.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.10
+Punteggio REALE ottenuto in quella partita: 35.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.6x+opp_sens=29.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      38.5    50.9    +12.4    14.2        SI
+   7        7      41.9    52.8    +10.9    12.9        SI
+   8        8      41.7    31.6    -10.1    12.1        SI
+   9        9      49.3    63.4    +14.1    15.1        SI
+  10       10      43.7    87.7    +44.0    16.5        NO
+  11       11      60.8    37.2    -23.6    25.2        SI
+  12       12      48.4    34.7    -13.7    25.2        SI
+  13       13      44.6    48.4     +3.8    25.3        SI
+  14       14      51.9    35.6    -16.3    24.0        SI
+
+MAE (errore assoluto medio): 16.57
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 88.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

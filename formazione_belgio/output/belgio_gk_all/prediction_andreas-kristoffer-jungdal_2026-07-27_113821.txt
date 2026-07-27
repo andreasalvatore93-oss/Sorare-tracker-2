@@ -1,0 +1,104 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T11:38:21.502163Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.6, min_starter_odds=70%
+======================================================================
+1) andreas-kristoffer-jungdal: 42 pt attesi (28-69)
+   SQUADRA: westerlo-westerlo | AVVERSARIO: union-saint-gilloise-bruxelles-brussels
+======================================================================
+
+######################################################################
+# GIOCATORE: andreas-kristoffer-jungdal
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andreas-kristoffer-jungdal (squadra: westerlo-westerlo)
+Generato: 2026-07-27T11:38:21.501722Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | WES vs CHA | jupiler-pro-league | score=42.8 | peso=0.445
+  2026-03-01 | WES vs USG | jupiler-pro-league | score=60.0 | peso=0.472
+  2026-03-07 | OHL vs WES | jupiler-pro-league | score=66.6 | peso=0.500
+  2026-03-14 | WES vs CLU | jupiler-pro-league | score=39.1 | peso=0.530
+  2026-03-22 | STA vs WES | jupiler-pro-league | score=67.2 | peso=0.561
+  2026-04-05 | WES vs CHA | jupiler-pro-league | score=82.2 | peso=0.595
+  2026-04-11 | STA vs WES | jupiler-pro-league | score=51.2 | peso=0.630
+  2026-04-18 | WES vs GNK | jupiler-pro-league | score=42.4 | peso=0.667
+  2026-04-21 | OHL vs WES | jupiler-pro-league | score=88.9 | peso=0.707
+  2026-04-25 | WES vs ANT | jupiler-pro-league | score=46.6 | peso=0.749
+  2026-05-02 | WES vs OHL | jupiler-pro-league | score=24.4 | peso=0.794
+  2026-05-10 | GNK vs WES | jupiler-pro-league | score=10.2 | peso=0.841
+  2026-05-16 | CHA vs WES | jupiler-pro-league | score=79.6 | peso=0.891
+  2026-05-19 | WES vs STA | jupiler-pro-league | score=54.1 | peso=0.944
+  2026-05-23 | ANT vs WES | jupiler-pro-league | score=48.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 52.75
+  di cui Punteggio decisivo (level_score) medio: 43.08 | Punteggio complessivo (granulari) medio: 9.68 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.50 (delta -3.58 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -1.01, delta avversario -0.72 | Possesso condizionato per venue: delta -0.01 | Goalkeeping condizionato per venue: delta +0.98 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 21.43
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.1 - 79.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.14 (differenza: +5.30)
+Media score in casa: 48.95 | Media score fuori casa: 58.89
+Fattore casa/trasferta applicato: 0.908 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.4
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.779
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.988
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.005
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.983
+Tasso storico clean sheet (porta inviolata nei primi 60'): 40.0% (bonus atteso incorporato nella media pesata: ~10.0pt)
+Fattore trend (media ultime 5: 43.4 vs media ultime 10: 52.8): 0.875
+P(gioca): 100.00% (fonte: tasso di presenza storico (15/15))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:45
+Casa: KVC Westerlo | Trasferta: Royal Union Saint-Gilloise
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.9 (range 28.2 - 68.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.21
+Punteggio REALE ottenuto in quella partita: 48.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.6x+opp_sens=29.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.1    51.2     -4.9    24.1        SI
+   7        7      58.7    42.4    -16.3    22.7        SI
+   8        8      73.4    88.9    +15.5    23.0        SI
+   9        9      59.7    46.6    -13.1    27.9        SI
+  10       10      62.7    24.4    -38.3    27.1        NO
+  11       11      58.9    10.2    -48.7    31.2        NO
+  12       12      53.2    79.6    +26.4    37.1        SI
+  13       13      36.3    54.1    +17.8    38.0        SI
+  14       14      54.9    48.5     -6.4    36.0        SI
+
+MAE (errore assoluto medio): 20.81
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
