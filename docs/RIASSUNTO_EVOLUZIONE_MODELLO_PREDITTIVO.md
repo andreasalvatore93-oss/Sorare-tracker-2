@@ -2744,10 +2744,15 @@ di schierare.
 
 ## 28.H — BACKLOG (da qui riparte il prossimo)
 
-1. **Giocatori senza campionato nel tool fuso** *(richiesta esplicita dell'utente)*: oggi
-   `discovery_fixture.py` scarta chi non ha `domesticLeague` con un semplice avviso. Vanno
-   dirottati sulla pipeline `formazione_senza_lega` già esistente e fatti confluire nel pool
-   misto. In questa giornata lì non c'era nessuno, ma la strada va chiusa.
+1. **Giocatori senza campionato nel tool fuso** *(richiesta esplicita dell'utente)* — **FATTO
+   28/07**: `discovery_fixture.py` ora dirotta chi non ha `domesticLeague` su `senza_lega`
+   invece di scartarlo (branch `else: dirname = 'senza_lega'`), che confluisce da solo nel pool
+   All Stars (`formazione_senza_lega` ha già predict/consiglio/output per tutti e 4 i ruoli,
+   scoperta automatica da filesystem in `build_formazione_globale.py`). **DA VERIFICARE su una
+   run reale**: non c'era nessun giocatore senza lega nella gameweek 95, quindi il branch non è
+   mai stato eseguito con dati veri — controllare la prima volta che ne compare uno (log
+   `discovery_fixture` deve mostrarlo sotto `senza_lega` invece che "lega senza pipeline --
+   ignorato", e deve comparire nell'output All Stars).
 2. **`formazione_resto_mondo`** *(l'utente ha chiesto di chiarire il problema)*: è una copia
    **vecchia e disallineata**, non ha nemmeno `SHRINK_K_OUTLIER_DEF` e la sua formula di
    produzione è diversa da quella delle altre 20. Per questo è stata **esclusa da tutte** le

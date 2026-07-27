@@ -272,10 +272,15 @@ def main():
             if odds is None or odds < MIN_ODDS:
                 esclusi_odds += 1
                 continue
-            dirname = LEAGUE_DIR.get(lega)
-            if not dirname:
-                log(f"  lega senza pipeline: {lega} (giocatore {slug}) -- ignorato")
-                continue
+            if lega:
+                dirname = LEAGUE_DIR.get(lega)
+                if not dirname:
+                    log(f"  lega senza pipeline: {lega} (giocatore {slug}) -- ignorato")
+                    continue
+            else:
+                # Nessun domesticLeague: dirottato sulla pipeline dedicata
+                # formazione_senza_lega (filtro invertito, gia' esistente).
+                dirname = 'senza_lega'
             per_lega_ruolo[dirname][role].add(slug)
 
     log(f"\nGiocatori eleggibili esaminati: {tot_carte} | esclusi: "
