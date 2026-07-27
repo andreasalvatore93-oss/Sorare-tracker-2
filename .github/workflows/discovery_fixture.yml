@@ -1,0 +1,63 @@
+name: Discovery giornata (fixture)
+
+# Scopre SOLO i giocatori posseduti eleggibili per la giornata indicata, con
+# starter odds sopra soglia. Non scarica tutte le carte possedute: il filtro e'
+# lato server (active_competitions sulla So5Fixture). Le leghe senza nessun
+# titolare probabile non compaiono e non generano lavoro.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gameweek:
+        description: 'Numero della giornata Sorare (es. 95). Ignorato se compili fixture_slug.'
+        required: false
+        default: ''
+      fixture_slug:
+        description: 'Slug esatto della fixture (es. football-28-31-jul-2026). Ha la precedenza.'
+        required: false
+        default: ''
+      starter_odds_min:
+        description: 'Soglia minima starter-odds (0-1). Odds assenti = escluso.'
+        required: false
+        default: '0.80'
+
+permissions:
+  contents: write
+
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+      fixture: ${{ steps.run.outputs.fixture }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_*/output/*_discovery/player_slugs.json || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Discovery giornata: slug eleggibili per la fixture"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
