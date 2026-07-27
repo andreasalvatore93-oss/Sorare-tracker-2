@@ -1,0 +1,104 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T15:06:29.928713Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) joel-drommel: 42 pt attesi (16-72)
+   SQUADRA: sparta-rotterdam-rotterdam | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: joel-drommel
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: joel-drommel (squadra: sparta-rotterdam-rotterdam)
+Generato: 2026-07-27T15:06:29.927639Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-18 | FEY vs SPA | eredivisie | score=59.8 | peso=0.445
+  2026-01-25 | UTR vs SPA | eredivisie | score=90.5 | peso=0.472
+  2026-01-31 | SPA vs GRO | eredivisie | score=71.0 | peso=0.500
+  2026-02-07 | FOR vs SPA | eredivisie | score=34.8 | peso=0.530
+  2026-02-22 | AZ vs SPA | eredivisie | score=28.1 | peso=0.561
+  2026-02-28 | HEE vs SPA | eredivisie | score=32.5 | peso=0.595
+  2026-03-08 | SPA vs ZWO | eredivisie | score=60.2 | peso=0.630
+  2026-03-14 | AJA vs SPA | eredivisie | score=47.4 | peso=0.667
+  2026-03-21 | SPA vs VOL | eredivisie | score=79.5 | peso=0.707
+  2026-04-05 | NAC vs SPA | eredivisie | score=78.5 | peso=0.749
+  2026-04-11 | SPA vs PSV | eredivisie | score=37.8 | peso=0.794
+  2026-04-22 | TEL vs SPA | eredivisie | score=15.2 | peso=0.841
+  2026-05-03 | SPA vs GAE | eredivisie | score=45.5 | peso=0.891
+  2026-05-10 | TWE vs SPA | eredivisie | score=54.8 | peso=0.944
+  2026-05-17 | SPA vs EXC | eredivisie | score=22.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 48.51
+  di cui Punteggio decisivo (level_score) medio: 40.88 | Punteggio complessivo (granulari) medio: 7.63 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 40.88 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 | Possesso condizionato per venue: delta +0.00 | Goalkeeping condizionato per venue: delta +0.00 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 21.54
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 22.9 - 78.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.31 (differenza: +3.24)
+Media score in casa: 52.82 | Media score fuori casa: 49.07
+Fattore casa/trasferta applicato: 0.963 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.3
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.984
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.012
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.991
+Tasso storico clean sheet (porta inviolata nei primi 60'): 26.7% (bonus atteso incorporato nella media pesata: ~6.7pt)
+Fattore trend (media ultime 5: 35.2 vs media ultime 10: 47.4): 0.820
+P(gioca): 93.75% (fonte: tasso di presenza storico (15/16))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:00
+Casa: PSV Eindhoven | Trasferta: Fortuna Sittard
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.1 (range 16.5 - 72.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.26
+Punteggio REALE ottenuto in quella partita: 22.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -28.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      75.7    60.2    -15.5    27.2        SI
+   7        7      39.6    47.4     +7.8    25.1        SI
+   8        8      75.5    79.5     +4.0    23.1        SI
+   9        9      58.5    78.5    +20.0    24.4        SI
+  10       10      47.9    37.8    -10.1    24.6        SI
+  11       11      64.4    15.2    -49.2    24.4        NO
+  12       12      65.7    45.5    -20.2    28.0        SI
+  13       13      39.9    54.8    +14.9    26.4        SI
+  14       14      61.5    22.9    -38.6    24.9        NO
+
+MAE (errore assoluto medio): 20.03
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
