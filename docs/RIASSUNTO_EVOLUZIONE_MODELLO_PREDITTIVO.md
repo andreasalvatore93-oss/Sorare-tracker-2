@@ -1825,3 +1825,155 @@ fermarsi e lasciarlo a un'altra sessione/agente) — `git checkout` già eseguit
 richiesto due volte dall'utente stanotte ("non essere pigro" sui cambi piccoli ma reali). Non
 derubricarlo di nuovo a "poco rilevante" senza aver almeno provato l'implementazione completa e
 misurato il risultato reale end-to-end.
+
+## 23. Sessione 27/07/2026 (giorno) — `level_score` atteso IMPLEMENTATO su tutti i campionati,
+## 4 nuovi campionati (Belgio/Spagna/Olanda/tentativo Brasile), tool di ricognizione leghe mancanti
+
+Ripresa da un account diverso. Chiude il PROSSIMO PASSO URGENTE della sezione 22 (implementazione
+reale di `level_score` atteso, non solo diagnostica) e apre un nuovo filone di estensione
+campionati.
+
+### A. `level_score` atteso IMPLEMENTATO in produzione su tutti i campionati (chiude sezione 22)
+
+Implementati in `formazione_mls/predict/test_gk.py`/`test_def.py`/`test_mid.py`/
+`test_mls_fwd_all.py` esattamente i passi descritti in sezione 22: `LEVEL_TABLE`/`netto_to_level`/
+`extract_decisive_rates`/`_poisson_pmf_truncated`/`expected_level_from_rates` dopo
+`extract_level_score`; `pos_decisive_values`/`neg_decisive_values` popolati nel loop storico di
+`build_prediction`; `score_atteso` sostituito con `p_gioca * (level_score_atteso + media_granulari_pesata
+* fattore_trend_granulare) * fattore_casa_trasferta` (il trend si applica SOLO al pezzo granulare).
+
+**Casi speciali per ruolo** (gestiti mantenendo la logica esistente sopra la nuova base):
+- **GK**: pattern semplice, nessuna correzione Stadio D applicata a `score_atteso`.
+- **DEF**: correzioni Stadio D esistenti (delta venue/avversario su gol subiti/passaggio/clean
+  sheet) lasciate INVARIATE, sommate sopra la nuova base.
+- **MID**: rimosso `delta_condizionamento_venue_level` dalla somma finale di `score_atteso` (era un
+  condizionamento venue della vecchia media di `level_score` — ridondante/doppio conteggio col
+  nuovo `level_score_atteso` a tasso di eventi). La variabile resta calcolata SOLO come
+  diagnostico in output.
+- **FWD**: lo shrinkage outlier (`SHRINK_K_OUTLIER_FWD`/`MEDIA_RUOLO_FWD_PRIOR`, sezione 14B) ora si
+  applica al nuovo grezzo (`level_score_atteso + granulare_atteso*trend`) invece che a
+  `media_pesata` direttamente — stesso principio, applicato al pezzo corretto.
+
+**Verificato con smoke test walk-forward** (`formazione_mls/diagnostics/
+smoke_test_level_score_production.py`, nuovo script, usa le funzioni VERE dei moduli modificati):
+MAE delta esattamente coincidenti con la rivalidazione di sezione 22 — GK -0.87%, DEF -1.38%, MID
+-0.45%, FWD -0.78%. Commit `c2f52df27`.
+
+**Replicato IDENTICO sugli altri 5 campionati** (K League, Portogallo, Austria, Scozia, Croazia — 20
+file, stessi casi speciali per ruolo, nessuna ri-taratura di parametri) tramite un agente in
+background con il diff MLS come riferimento esatto. Commit `336ce146f`.
+
+### B. Nuovo campionato: Belgio (Jupiler Pro League)
+
+Costruita pipeline completa (`formazione_belgio/`, clone di `formazione_croazia/`), slug confermato
+`jupiler-pro-league` (trovato in `campionati_aste_whitelist.json`). Commit `5cb2714a9`. **Lanciata
+la run reale** (dopo push temporaneo su `main` per registrare i workflow — GitHub registra
+`workflow_dispatch` solo se il file `.yml` esiste sul branch di default): riuscita al primo colpo,
+16/16 job. **Scoperta importante**: `formazione_belgio/` (e quindi i cloni successivi) erano stati
+generati PRIMA dell'implementazione di `level_score` atteso (punto A) — rimasti sprovvisti della
+formula. Applicata retroattivamente insieme a Spagna/Olanda (vedi sotto). Commit `5ea7b0162`.
+
+### C. Correlazioni e `level_score` ri-analizzati su 7 campionati (+Belgio)
+
+`measure_teammate_correlation.py` e `validate_level_score_event_rate.py` estesi con Belgio in
+`LEAGUE_CACHE_TPL`/`LEAGUES`. **Nessuna modifica alla produzione**: entrambe le analisi confermano
+le scelte già in atto.
+- Correlazione same-team: FWD-MID sale a +0.191 (p=0.001, stabile su split-half +0.182/+0.201) —
+  ulteriore conferma del nudge già applicato (sezione 20). def-fwd (+0.079, p=0.085) e fwd-fwd
+  (+0.174, p=0.117) restano non significativi, non applicati (coerente con prima).
+- `level_score` atteso: -1.39% GK, -1.19% DEF, -0.31% MID, -1.07% FWD su 7 campionati — stesso
+  ordine di grandezza della sezione 22, nessuno scarto sorprendente. Commit `87354a1c1`.
+
+### D. Estensione a Spagna (LaLiga) e Olanda (Eredivisie)
+
+Slug trovati nei feature flag LaunchDarkly di Sorare (campo `football-league-launches-2027`,
+incollato dall'utente da una risposta GraphQL reale): **LaLiga → `laliga-es`**, **Eredivisie →
+`eredivisie`** (già noto da `sorare_lista_nera.txt`). Pipeline `formazione_spagna/`/
+`formazione_olanda/` clonate da Belgio (poi allineate col `level_score` atteso, punto B). **Run
+reali lanciate in PARALLELO** (deroga alla cautela rate-limit standard "un campionato alla volta",
+nessun problema riscontrato in questo caso specifico — pool di grandi club, tante query ma nessun
+429).
+- **Olanda**: riuscita, formazioni generate (stagione già iniziata oggi 27/07).
+- **Spagna**: fallita SOLO nell'ultimo step (`formazione_finale`, "0 giocatori disponibili" su
+  tutti e 4 i ruoli) — **non è un bug**: LaLiga inizia il 3/8/2026, quindi oggi non esiste ancora
+  una partita target e tutti i candidati vengono esclusi come "non disponibili questa giornata". I
+  job discovery/predict/consiglio hanno funzionato correttamente (es. Courtois, Bellingham, Mbappé
+  tutti valutati con successo). Si risolverà da solo quando parte il campionato, nessuna azione
+  necessaria. **Altri campionati non ancora schedulati avranno probabilmente lo stesso
+  comportamento** finché non parte la loro stagione — da tenere a mente, non è un pattern
+  specifico di LaLiga.
+
+### E. Tentativo "Resto del Mondo" — fallito due volte, ripiegato su Brasile, causa root trovata
+
+Richiesta esplicita dell'utente: pool per "Resto del Mondo" (competizione Sorare che raggruppa
+giocatori di leghe senza copertura dedicata) + eventualmente altri campionati mancanti (LaLiga,
+Eredivisie — poi diventati filone separato, punto D).
+
+**Scoperta chiave (verificata dall'utente con query GraphQL reale + screenshot Sorare)**: "Resto del
+Mondo" NON è una `domesticLeague` reale — è un flag di eleggibilità SO5
+(`anyPlayer.eligibleSo5Competitions[].slug == 'seasonal-rest_of_the_world'`). Caso di riferimento:
+Carlos Miguel, portiere brasiliano del Palmeiras (`domesticLeague.slug='campeonato-brasileiro-serie-a'`)
+ma eleggibile anche per "Resto del Mondo".
+
+**Primo tentativo** (`formazione_resto_mondo/`, filtro `eligibleSo5Competitions`): run fallita, 0
+giocatori trovati su tutti i ruoli. **Causa vera trovata nei log**: la query GraphQL includeva
+`eligibleSo5Competitions { slug }` annidato dentro `anyPlayer` all'interno di una lista `hits`
+(risultati di `searchCards`) — Sorare rifiuta questo con l'errore "Selecting eligibleSo5Competitions
+within a list of AnyCardInterface (hits) is not supported", azzerando SILENZIOSAMENTE l'intera
+ricerca (`search=None`, non un errore fatale in Python).
+
+**Pivot su richiesta dell'utente**: ripiegato su un filtro concreto, `domesticLeague.slug ==
+'campeonato-brasileiro-serie-a'` (Brasileirão) — pattern standard già collaudato. Ma la query aveva
+ANCORA il campo `eligibleSo5Competitions` residuo (mai rimosso durante il pivot) → stesso errore,
+stesso fallimento silenzioso. **Fix reale**: rimosso il campo dalla query. Run rilanciata: SUCCESSO,
+giocatori trovati (es. Carlos Miguel stesso, coerente). **Rinominata la pipeline** da
+`formazione_resto_mondo/` a `formazione_brasile/` (nome corretto per quello che effettivamente fa),
+output della run riuscita spostato di conseguenza. Commit `ef7015115`.
+
+**Secondo vero tentativo Resto del Mondo** (ricostruito da zero in `formazione_resto_mondo/`, stesso
+fix ma con un fragment esplicito `... on Card { anyPlayer { eligibleSo5Competitions { slug } } }` —
+stesso pattern già in uso nel repo per `coverageStatus`, vedi `bots/bot_definitivo.py`): **fallito
+di nuovo, stesso identico errore GraphQL**. Conclusione: Sorare non permette PROPRIO di leggere
+`eligibleSo5Competitions` dentro una ricerca a lista (bulk), nemmeno con un fragment sul tipo
+concreto — è una restrizione strutturale dell'API, non un problema di sintassi della query.
+
+**Decisione presa con l'utente**: l'UNICO modo per ottenere l'eleggibilità "Resto del Mondo" è a
+due fasi — (1) discovery ampia di TUTTE le carte possedute (nessun filtro lega/eleggibilità), poi
+(2) una query separata PER GIOCATORE UNICO (`anyPlayer(slug:X){eligibleSo5Competitions{slug}}`,
+stesso pattern gia' usato per Carlos Miguel) per verificarne l'eleggibilità — più query ma
+l'unica via percorribile. **NON implementato ora** (deprioritizzato dall'utente: "lo faremo solo per
+trovare i campionati mancanti, per ora procedi con Liga e Olanda") — resta in backlog, da
+implementare quando si affronta la ricognizione generale dei campionati mancanti (punto F).
+
+`formazione_resto_mondo/` risulta quindi ATTUALMENTE NON FUNZIONANTE (0 giocatori, ultima run
+fallita) — non cancellata, in attesa dell'implementazione a due fasi. `formazione_brasile/` invece
+è pienamente funzionante e verificata.
+
+### F. Tool standalone: ricognizione campionati mancanti (`diagnostics/discover_missing_leagues.py`)
+
+Richiesta esplicita dell'utente, per non dover indovinare/scoprire un campionato alla volta come
+nel punto E: script INDIPENDENTE (non dentro nessuna cartella `formazione_*`, nessun import da
+esse) che scansiona TUTTE le carte possedute (nessun filtro ruolo/lega/rarità), aggrega per
+`domesticLeague.slug` ed esclude gli 8 campionati già coperti da una pipeline dedicata (MLS,
+K League, Brasile, Croazia, Portogallo, Scozia, Austria, Belgio — **Spagna e Olanda ancora
+ESCLUSI dall'esclusione**, cioè continuano a comparire nel report finché non sono considerati
+"sicuri al 100%"). Report leggibile ordinato per numero di carte + export JSON
+(`diagnostics/output/missing_leagues_report.json`). Nessun filtro di qualità (tool di ricognizione,
+non di produzione — deve contare tutto). Verificato con `py_compile` + smoke test con dati finti
+(mock di `graphql_query`). **Non ancora eseguito** (richiede `SORARE_COOKIE`, lasciato all'utente
+quando vuole lanciarlo). Commit `b699d097d`.
+
+### G. Stato repo e prossimi passi
+
+Tutto pushato su `main`. Campionati con pipeline dedicata FUNZIONANTE e verificata su run reale:
+MLS, K League, Brasile, Croazia, Portogallo, Scozia, Austria, Belgio, Olanda (9). Spagna: pipeline
+funzionante, in attesa che la stagione inizi (3/8/2026). Resto del Mondo: pipeline presente ma NON
+funzionante (richiede l'implementazione a due fasi del punto E).
+
+**Prossimo passo esplicito (richiesto dall'utente a fine sessione)**: eseguire
+`diagnostics/discover_missing_leagues.py` per rintracciare TUTTI i campionati mancanti dove
+l'utente possiede carte, poi ripetere per ciascuno il pattern collaudato (clone pipeline dedicata +
+run reale). Per "Resto del Mondo" servirà l'approccio a due fasi (punto E) se emerge dalla
+ricognizione che vale la pena investirci. **Promemoria**: altri campionati non ancora schedulati
+avranno probabilmente lo stesso comportamento "0 disponibili" di LaLiga finché non parte la
+rispettiva stagione — non trattarlo come un bug quando si presenta di nuovo.
