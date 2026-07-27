@@ -163,7 +163,6 @@ def discover_resto_mondo_fwd_all(user_slug=USER_SLUG, max_pages=50):
             anyPlayer {
               slug
               activeClub { domesticLeague { slug } }
-              eligibleSo5Competitions { slug }
             }
           }
           nbHits
