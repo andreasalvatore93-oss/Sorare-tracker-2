@@ -232,7 +232,11 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
             adjusted += GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA
         elif role == 'MID' and gk_team_slug and team_slug == gk_team_slug:
             adjusted += TEAMMATE_SYNERGY_BONUS_VARIANCE
-        elif role in ('DEF', 'MID') and team_counts and team_counts.get(team_slug, 0) >= 1:
+        # FWD-MID same-team (27/07 notte, reindagine su 6 campionati invece
+        # di 2: corr +0.161 p=0.005, stabile split-half -- prima era marginale
+        # su MLS+K League soli, +0.106/+0.147 p=0.076-0.17, non modellato):
+        # stesso nudge piccolo gia' usato per DEF/MID, non un fattore nuovo.
+        elif role in ('DEF', 'MID', 'FWD') and team_counts and team_counts.get(team_slug, 0) >= 1:
             adjusted += TEAMMATE_SYNERGY_BONUS_VARIANCE
     if apply_stack_guard and team_slug and team_counts and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT:
         adjusted -= STACK_GUARD_PENALTY

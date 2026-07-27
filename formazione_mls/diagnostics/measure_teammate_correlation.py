@@ -63,14 +63,31 @@ RANDOM_SEED = 42
 MIN_HISTORY = 6
 ROLES = ('gk', 'def', 'mid', 'fwd')
 
-MODULE_BY_ROLE = {
-    'gk': 'formazione_mls.predict.test_gk',
-    'def': 'formazione_mls.predict.test_def',
-    'mid': 'formazione_mls.predict.test_mid',
-    'fwd': 'formazione_mls.predict.test_mls_fwd_all',
+# 27/07 notte: esteso da MLS-only a tutti e 6 i campionati con cache
+# disponibile (K League + Portogallo/Austria/Scozia/Croazia, aggiunti in
+# questa sessione). I 4 nuovi non hanno ancora cartelle "_calibration"
+# (mai lanciata la calibrazione allargata li'), quindi si usa la cache di
+# produzione "_all" -- stessi identici dati (score/detailedScore per
+# partita), solo generata dal run normale invece che da CALIBRATION_MODE.
+LEAGUES = {
+    'mls': ('formazione_mls.predict.test_{ruolo}', 'formazione_mls/output/mls_{ruolo}_calibration/.cache'),
+    'kleague': ('formazione_kleague.predict.test_{ruolo}', 'formazione_kleague/output/kleague_{ruolo}_calibration/.cache'),
+    'portogallo': ('formazione_portogallo.predict.test_{ruolo}', 'formazione_portogallo/output/portogallo_{ruolo}_all/.cache'),
+    'austria': ('formazione_austria.predict.test_{ruolo}', 'formazione_austria/output/austria_{ruolo}_all/.cache'),
+    'scozia': ('formazione_scozia.predict.test_{ruolo}', 'formazione_scozia/output/scozia_{ruolo}_all/.cache'),
+    'croazia': ('formazione_croazia.predict.test_{ruolo}', 'formazione_croazia/output/croazia_{ruolo}_all/.cache'),
 }
-
 MIN_PAIRS_FOR_REPORT = 20
+
+
+def _module_and_cache(league, ruolo):
+    mod_tpl, cache_tpl = LEAGUES[league]
+    if ruolo == 'fwd':
+        prefix = mod_tpl.rsplit('.', 1)[0]  # es. 'formazione_mls.predict'
+        mod_name = f"{prefix}.test_mls_fwd_all"
+    else:
+        mod_name = mod_tpl.format(ruolo=ruolo)
+    return mod_name, cache_tpl.format(ruolo=ruolo)
 
 
 def parse_date(g):
@@ -94,75 +111,83 @@ def player_team_slug(games):
 
 
 def collect_residuals_for_role(ruolo):
-    """Ritorna lista di (team_slug, match_date_iso, player_id, residuo)."""
-    mod = importlib.import_module(MODULE_BY_ROLE[ruolo])
-    exponential_weights = mod.exponential_weights
-    weighted_mean = mod.weighted_mean
-    compute_split_factor = mod.compute_split_factor
-    compute_trend_factor = mod.compute_trend_factor
-    HALF_LIFE_GAMES = mod.HALF_LIFE_GAMES
-    TREND_INTENSITY = mod.TREND_INTENSITY
-
-    cache_dir = f'formazione_mls/output/mls_{ruolo}_calibration/.cache'
-    files = glob.glob(os.path.join(cache_dir, '*_detail_cache.json'))
-
+    """Ritorna lista di (team_slug, match_date_iso, player_id, residuo),
+    ACCORPANDO tutti i campionati in LEAGUES (27/07 notte: esteso da MLS-only
+    a MLS+K League+4 nuovi). team_slug e' prefissato con la lega per evitare
+    di accorpare per errore due squadre omonime di campionati diversi nel
+    raggruppamento (team_slug, data) usato da build_pair_values."""
     out = []
     n_players_used = 0
 
-    for fpath in files:
-        with open(fpath, encoding='utf-8') as f:
-            cache = json.load(f)
-        if not cache:
+    for league in LEAGUES:
+        mod_name, cache_dir = _module_and_cache(league, ruolo)
+        try:
+            mod = importlib.import_module(mod_name)
+        except ModuleNotFoundError:
             continue
-        entries = [e for e in cache.values() if e.get('anyGame') and e.get('detailedScore')]
-        if len(entries) < MIN_HISTORY + 3:
-            continue
-        games = [e['anyGame'] for e in entries]
-        team_slug = player_team_slug(games)
-        if not team_slug:
-            continue
+        exponential_weights = mod.exponential_weights
+        weighted_mean = mod.weighted_mean
+        compute_split_factor = mod.compute_split_factor
+        compute_trend_factor = mod.compute_trend_factor
+        HALF_LIFE_GAMES = mod.HALF_LIFE_GAMES
+        TREND_INTENSITY = mod.TREND_INTENSITY
 
-        player_id = os.path.basename(fpath).replace('_detail_cache.json', '')
-
-        scores, is_home_flags, dates, opponents = [], [], [], []
-        for e in entries:
-            g = e['anyGame']
-            home, away = g.get('homeTeam') or {}, g.get('awayTeam') or {}
-            if home.get('slug') == team_slug:
-                is_home, opp_slug = True, away.get('slug')
-            elif away.get('slug') == team_slug:
-                is_home, opp_slug = False, home.get('slug')
-            else:
+        files = glob.glob(os.path.join(cache_dir, '*_detail_cache.json'))
+        for fpath in files:
+            with open(fpath, encoding='utf-8') as f:
+                cache = json.load(f)
+            if not cache:
                 continue
-            dt = parse_date(g)
-            scores.append(e.get('score') or 0.0)
-            is_home_flags.append(is_home)
-            dates.append(dt)
-            opponents.append(opp_slug)
-
-        n = len(scores)
-        if n < MIN_HISTORY + 3:
-            continue
-        n_players_used += 1
-
-        for i in range(MIN_HISTORY, n):
-            if dates[i] is None:
+            entries = [e for e in cache.values() if e.get('anyGame') and e.get('detailedScore')]
+            if len(entries) < MIN_HISTORY + 3:
                 continue
-            hist_scores = scores[:i]
-            hist_home = is_home_flags[:i]
-            weights = exponential_weights(i, HALF_LIFE_GAMES)
+            games = [e['anyGame'] for e in entries]
+            team_slug_raw = player_team_slug(games)
+            if not team_slug_raw:
+                continue
+            team_slug = f"{league}:{team_slug_raw}"
 
-            media = weighted_mean(hist_scores, weights)
-            fattore_ct = compute_split_factor(hist_scores, hist_home, is_home_flags[i])
-            fattore_trend, _, _ = compute_trend_factor(
-                hist_scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
+            player_id = os.path.basename(fpath).replace('_detail_cache.json', '')
 
-            baseline = media * fattore_ct * fattore_trend
-            reale = scores[i]
-            residuo = reale - baseline
+            scores, is_home_flags, dates, opponents = [], [], [], []
+            for e in entries:
+                g = e['anyGame']
+                home, away = g.get('homeTeam') or {}, g.get('awayTeam') or {}
+                if home.get('slug') == team_slug_raw:
+                    is_home, opp_slug = True, away.get('slug')
+                elif away.get('slug') == team_slug_raw:
+                    is_home, opp_slug = False, home.get('slug')
+                else:
+                    continue
+                dt = parse_date(g)
+                scores.append(e.get('score') or 0.0)
+                is_home_flags.append(is_home)
+                dates.append(dt)
+                opponents.append(f"{league}:{opp_slug}" if opp_slug else None)
 
-            match_date = dates[i].date().isoformat()
-            out.append((team_slug, opponents[i], match_date, f"{ruolo}:{player_id}", residuo))
+            n = len(scores)
+            if n < MIN_HISTORY + 3:
+                continue
+            n_players_used += 1
+
+            for i in range(MIN_HISTORY, n):
+                if dates[i] is None:
+                    continue
+                hist_scores = scores[:i]
+                hist_home = is_home_flags[:i]
+                weights = exponential_weights(i, HALF_LIFE_GAMES)
+
+                media = weighted_mean(hist_scores, weights)
+                fattore_ct = compute_split_factor(hist_scores, hist_home, is_home_flags[i])
+                fattore_trend, _, _ = compute_trend_factor(
+                    hist_scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
+
+                baseline = media * fattore_ct * fattore_trend
+                reale = scores[i]
+                residuo = reale - baseline
+
+                match_date = dates[i].date().isoformat()
+                out.append((team_slug, opponents[i], match_date, f"{ruolo}:{league}:{player_id}", residuo))
 
     print(f"  {ruolo.upper()}: {n_players_used} giocatori, {len(out)} punti con residuo")
     return out
