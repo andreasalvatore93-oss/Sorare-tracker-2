@@ -1,0 +1,96 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T16:19:24.193233Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) thierno-ballo: 16 pt attesi (6-30)
+   SQUADRA: millwall-london | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: thierno-ballo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: thierno-ballo (squadra: millwall-london)
+Generato: 2026-07-27T16:19:24.192159Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-10 | DER vs MIL | football-league-championship | score=37.5 | peso=0.530
+  2025-12-13 | MIL vs HUL | football-league-championship | score=48.9 | peso=0.561
+  2026-01-01 | SOT vs MIL | football-league-championship | score=34.3 | peso=0.595
+  2026-01-04 | MIL vs SWA | football-league-championship | score=55.2 | peso=0.630
+  2026-01-17 | WAT vs MIL | football-league-championship | score=35.1 | peso=0.667
+  2026-01-20 | COV vs MIL | football-league-championship | score=47.3 | peso=0.707
+  2026-04-10 | WBA vs MIL | football-league-championship | score=35.5 | peso=0.749
+  2026-04-18 | MIL vs QPR | football-league-championship | score=48.1 | peso=0.794
+  2026-04-21 | STO vs MIL | football-league-championship | score=65.9 | peso=0.841
+  2026-04-24 | LEI vs MIL | football-league-championship | score=35.1 | peso=0.891
+  2026-05-02 | MIL vs OXF | football-league-championship | score=31.5 | peso=0.944
+  2026-05-08 | HUL vs MIL | football-league-championship | score=28.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 41.47
+  di cui Punteggio decisivo (level_score) medio: 37.36 | Punteggio complessivo (granulari) medio: 4.11 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.61 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 11.07
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.5 - 55.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.73 (differenza: +3.34)
+Media score in casa: 45.92 | Media score fuori casa: 39.95
+Fattore casa/trasferta applicato: 1.008 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.5
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.988
+Fattore duelli (casa/trasferta, da dati reali): 0.977
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.983
+Fattore trend (media ultime 5: 41.9 vs media ultime 10: 41.7): 1.005
+P(gioca): 40.00% (fonte: tasso di presenza storico (12/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:45
+Casa: FC Sochaux-Montbéliard | Trasferta: AS Saint-Étienne
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 16.4 (range 6.4 - 30.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.06
+Punteggio REALE ottenuto in quella partita: 28.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=20.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.8    35.5    -29.3     9.5        NO
+   7        7      53.3    48.1     -5.2     9.3        SI
+   8        8      57.3    65.9     +8.6     9.0        SI
+   9        9      69.6    35.1    -34.5    12.7        NO
+  10       10      67.7    31.5    -36.2    12.6        NO
+  11       11      27.8    28.9     +1.1    12.9        SI
+
+MAE (errore assoluto medio): 19.14
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
