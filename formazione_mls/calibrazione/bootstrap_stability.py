@@ -76,7 +76,7 @@ def _per_label(players):
 
 
 def main():
-    players, n_excluded = load_players()
+    players, n_excluded, _per_campionato = load_players()
     if not players:
         return
 
