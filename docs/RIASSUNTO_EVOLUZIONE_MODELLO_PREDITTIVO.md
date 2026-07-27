@@ -1208,14 +1208,108 @@ non committato.
 **File modificati nei due tool esistenti** (SOLO la funzione `build_one_lineup`, resto invariato):
 `formazione_mls/build_formazione_finale.py`, `formazione_kleague/build_formazione_finale.py`.
 
-**Da verificare alla prossima sessione**: run reale richiesta dall'utente a fine sessione (1 In
-Season MLS + 1 In Season K League + 2 Arena All Stars cap260 + 1 All Stars) — controllare l'esito
-(tempi, cap rispettato su Arena All Stars/All Stars, HTML corretto) se non già verificato prima di
-riprendere in mano il tool.
+### H. Verifica reale del fix cap L10 (run 3, stessa sera) — funziona
 
-**Backlog aperto** (nessuno bloccante):
-1. Batching dei job predict (rimandato dalla sezione A, mai diventato necessario finora).
-2. Verificare il fix del cap L10 anche sul caso limite "pool davvero troppo piccolo per
-   qualunque combinazione" (deve fallire pulito, non ancora visto in una run reale).
-3. Tutto il backlog della sezione 13E/14F resta valido e non toccato in questa sessione (bonus
+Run richiesta dall'utente per testare il fix: 1 In Season MLS + 1 In Season K League + 2 Arena All
+Stars cap260 + 1 All Stars. Esito: 5/5 generate, **entrambe le Arena All Stars entro budget**
+(cap 260 mai sforato), job finale solo 29s (24 query di qualità, solo sui tipi senza cap). Le note
+"Cap 260/370: bonus +4% non ottenuto" viste su In Season/All Stars sono il bonus SOFT (solo
+informativo, mai un vincolo) — non c'entrano col cap obbligatorio delle Arene, comportamento
+corretto.
+
+### I. Run "carico reale" (run 4) — 3 osservazioni dell'utente, analizzate con dati veri
+
+Richiesta dell'utente: 6 In Season MLS + 6 In Season K League + 1 Arena MLS + 1 Arena K League + 1
+Arena All Stars 260 (il volume che schiera davvero ogni giornata, "vediamo se il modello regge").
+Tre osservazioni sull'output, **investigate leggendo i dati reali (consiglio/cache), non a
+intuizione**:
+
+1. **Bonus anti-stack (Multi-club) non evidenziato quando attivo** — prima veniva mostrato SOLO
+   il warning di fallimento. **Fix applicato e pushato** (`a1c8c2ef8`): ora mostrato sempre,
+   sia il caso positivo ("Bonus Multi-club +2%/giocatore: attivo") sia il fallimento, identico nei
+   due tool + script fuso (stesse funzioni riusate).
+
+2. **Budget delle Arene "sballato"**: extra con punteggio 14-26pt quando ne esistevano di molto
+   migliori nello stesso budget. Causa reale: il fix precedente (sezione E) garantisce che il cap
+   non sfori MAI, ma resta un greedy slot-per-slot con riserva — si accontenta della PRIMA
+   combinazione che entra nel budget, non cerca quella con punteggio totale massimo. **Soluzione
+   concordata con l'utente**: knapsack ESATTO sui 4 ruoli principali + scelta ottima dello slot
+   extra, provando ogni ripartizione di budget (non solo quella che spende di più sui primi 4).
+   **STATO A FINE SESSIONE: PARZIALE, non completato**:
+   - Scritte in `formazione_mls/build_formazione_finale.py` le funzioni `_pareto_frontier`
+     (riduce i candidati di un ruolo ai soli non-dominati: nessuno più caro E con punteggio minore
+     o uguale a uno già incluso) e `_optimize_capped_lineup` (DP su GK/DEF/MID/FWD combinato con
+     la scelta ottima dell'extra) — **sintassi verificata (`py_compile` OK), ma NON ANCORA
+     collegate a `build_one_lineup`** (che continua a usare il vecchio greedy-con-riserva).
+   - **NON ancora replicato in `formazione_kleague/build_formazione_finale.py`** (identico al
+     pattern già usato per il fix precedente, va rifatto identico).
+   - **NON ancora integrato/testato in `generatore_formazioni/`** (eredita tutto per import da
+     `formazione_mls`, quindi si aggiorna da solo una volta wired nel file sorgente — ma va
+     comunque testato sul caso reale).
+   - Scelta di design già presa (da rispettare quando si riprende): il knapsack **non incorpora i
+     nudge di sinergia da correlazione** (piccoli, ±3/±11, applicati oggi in `variance_mode`) —
+     l'obiettivo qui è il punteggio reale massimo sotto cap, non l'ordine di scelta. Significa che
+     per i tipi con cap L10 (Arena dedicate, Arena All Stars 260/220) la sinergia GK-DEF/GK-MID/
+     ecc. andrebbe PERSA se si passa al knapsack così com'è — non ancora deciso con l'utente se va
+     bene o se serve un'estensione (es. DP annidato per ogni possibile portiere, più costoso).
+     **Da chiarire alla ripresa prima di completare il collegamento.**
+   - Il knapsack si applica SOLO quando `role_slots` ha un ruolo per slot senza ripetizioni
+     (vero per tutte le Arene con cap oggi) e `max_classic is None` (vero per tutte) — per shape
+     diverse (es. All Stars con 2x DEF/MID, mai a cap oggi) va mantenuto il vecchio percorso come
+     fallback, già previsto nel design ma da implementare quel branching in `build_one_lineup`.
+
+3. **Caso Zinckernagel (2 copie) — NON un bug, verificato con dati reali**: escluso dalle lineup
+   In Season #4/#5 per anti-sinergia (il suo Chicago Fire gioca contro Charlotte FC, il cui
+   portiere Kristijan Kahlina era schierato in quelle lineup) — dato di calendario reale
+   confermato nel consiglio (`SQUADRA`/`AVVERSARIO`). Escluso dalla #6 perché la sua ultima copia
+   era Classic e quello slot aveva già consumato l'unica Classic ammessa (su un altro giocatore,
+   DEF). Finito in Arena perché lì non c'è il vincolo "max 1 Classic".
+
+   **Domanda di follow-up dell'utente, NON ancora risolta**: per le In Season, ha senso che il
+   portiere venga scelto SEMPRE per primo (`role_slots` inizia con GK), e l'anti-sinergia esclude
+   poi FWD/MID in base a quel portiere -- mai il contrario, indipendentemente da quale punteggio
+   sia più alto. **Osservazione tecnica emersa in sessione (da validare/implementare)**: per le In
+   Season il target è fisso (nessuna variabilità da sfruttare) — una sessione precedente (Finding
+   3+F, sezione 12/13) aveva già stabilito che la correlazione tra compagni NON cambia il valore
+   atteso della somma (linearità del valore atteso), motivo per cui `variance_mode` è stato
+   limitato ad Arena/All Stars. La penalità anti-sinergia DI BASE (`ANTI_SYNERGY_PENALTY`/
+   `POSITIVE_SYNERGY_BONUS`, indipendente da `variance_mode`) però continua ad applicarsi anche
+   alle In Season, dove — con lo stesso ragionamento — non dovrebbe avere alcun beneficio di
+   valore atteso. **Proposta discussa ma non implementata**: rimuovere l'anti/positive-sinergia di
+   base per le In Season, lasciarla solo per Arena/All Stars — ogni slot scelto puramente per
+   punteggio, senza artefatti da chi è stato scelto come portiere. Da confermare con l'utente prima
+   di toccare `synergy_adjusted_rows`/`synergy_sort_key` (funzioni condivise nei due tool).
+
+4. **Varianza capitano tra lineup multiple, richiesta dell'utente (NON implementata)**: con più
+   copie di un giocatore fortissimo, oggi ogni lineup lo nomina capitano indipendentemente (stesso
+   giocatore capitano in più lineup dello stesso pacchetto) — l'utente vuole una logica che eviti
+   di riassegnare il capitano a chi lo è già stato in un'altra lineup (dello stesso tipo, o
+   dell'intera run — **domanda posta all'utente, risposta non ancora arrivata**), per varianza sul
+   rischio complessivo della giornata invece di concentrarlo tutto su un solo giocatore. Richiede
+   tracciare un set di "già capitanati" condiviso tra le chiamate di `generate_lineups_for_type`
+   (oggi `pick_captain` sceglie sempre e solo il punteggio più alto, senza memoria tra lineup) e
+   modificare `pick_captain`/i punti di chiamata in entrambi i tool + script fuso. Non iniziato.
+
+**Backlog aperto per la prossima sessione** (in ordine di priorità, dato quanto emerso oggi):
+1. **PRIORITARIO**: completare il knapsack (punto 2 sopra) — decidere sinergia sì/no, collegare a
+   `build_one_lineup`, replicare in K League, testare su una run reale.
+2. Decidere e implementare la rimozione dell'anti-sinergia di base per le In Season (punto 3
+   sopra) — richiede conferma esplicita dell'utente prima di toccare le funzioni condivise.
+3. Varianza capitano tra lineup (punto 4 sopra) — richiede la risposta dell'utente sullo scope
+   (per tipo o sull'intera run) prima di implementare.
+4. Batching dei job predict (rimandato dalla sezione A, mai diventato necessario finora).
+5. Verificare il fix del cap L10 sul caso limite "pool davvero troppo piccolo per qualunque
+   combinazione" (deve fallire pulito, non ancora visto in una run reale).
+6. Tutto il backlog della sezione 13E/14F resta valido e non toccato in questa sessione (bonus
    K League da verificare con screenshot reali, estensione ad altri campionati, ecc.).
+
+### J. Stato repo esatto a fine sessione (per chi riprende, anche su un altro account)
+
+Ultimo commit pushato su `origin/main`: `a1c8c2ef8` (bonus anti-stack sempre mostrato). **Questa
+sessione lascia inoltre modifiche WIP non ancora committate/pushate in
+`formazione_mls/build_formazione_finale.py`** (funzioni `_pareto_frontier`/
+`_optimize_capped_lineup`, sintassi valida ma non collegate/usate) — verranno committate insieme a
+questo aggiornamento del riassunto con un messaggio esplicito "WIP, non collegato". **Prima di
+lanciare qualunque run del Generatore Formazioni con tipi a cap L10 (Arena), verificare che il
+branching in `build_one_lineup` sia stato completato** — finché non lo è, il comportamento resta
+quello del vecchio greedy-con-riserva (corretto sul cap, non ottimale sul punteggio), non rotto.

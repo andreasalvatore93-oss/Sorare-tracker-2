@@ -434,6 +434,105 @@ def _min_available_l10(rows, used_slugs, card_pool):
     return min(vals) if vals else 0.0
 
 
+def _pareto_frontier(rows, card_pool):
+    """Candidati disponibili (almeno una copia posseduta) ordinati per L10
+    crescente, tenendo solo quelli che migliorano il punteggio rispetto a
+    TUTTI i candidati piu' economici gia' inclusi (frontiera di Pareto: mai
+    utile scegliere un candidato piu' caro E con punteggio minore o uguale a
+    uno gia' disponibile). Riduce drasticamente lo spazio di ricerca del
+    knapsack sotto senza perdere nessuna soluzione ottima possibile."""
+    avail = [(row, card_pool.l10(row['slug']) or 0.0) for row in rows
+             if card_pool.remaining_in_season(row['slug']) > 0 or card_pool.remaining_classic(row['slug']) > 0]
+    avail.sort(key=lambda x: x[1])
+    frontier = []
+    best = float('-inf')
+    for row, l10 in avail:
+        if row['atteso'] > best:
+            frontier.append((row, l10))
+            best = row['atteso']
+    return frontier
+
+
+def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
+    """Knapsack ESATTO sui 4 slot principali (GK/DEF/MID/FWD, un candidato
+    ciascuno) per massimizzare il PUNTEGGIO TOTALE sotto l10_cap (27/07,
+    richiesta esplicita utente: la vecchia euristica greedy-con-riserva
+    rispettava il cap ma si accontentava della prima combinazione che
+    entrava nel budget, non della migliore -- risultato: extra con punteggio
+    anche di 14-26pt quando ne esistevano di molto migliori nello stesso
+    budget). Prova OGNI possibile ripartizione di budget tra i 4 ruoli
+    principali E lo slot EXTRA (miglior punteggio disponibile nel budget
+    residuo, tra tutti i ruoli ammessi, mai lo stesso giocatore gia' scelto),
+    non solo quella che spende piu' budget sui primi 4 -- cosi' trova il vero
+    massimo del totale a 5 slot. SOLO valido per shape con un ruolo per slot
+    (nessuna ripetizione, es. Arena) e max_classic=None (vero per tutti i
+    tipi con cap L10 oggi, mai per In Season/All Stars che non hanno cap).
+    Non incorpora i nudge di sinergia da correlazione (piccoli, +3/+11 --
+    qui l'obiettivo e' il punteggio reale, non l'ordine di scelta). Ritorna
+    (picks_dict {ruolo/EXTRA: row}, l10_totale) o (None, None) se nessuna
+    combinazione e' possibile (pool esaurito per almeno un ruolo)."""
+    RES = 10  # risoluzione: decimi di L10, gestisce valori con 1 decimale
+    budget_units = int(round(l10_cap * RES))
+
+    frontiers = {}
+    for role in ('GK', 'DEF', 'MID', 'FWD'):
+        f = _pareto_frontier(role_data[role], card_pool)
+        if not f:
+            return None, None
+        frontiers[role] = f
+
+    states = {0: (0.0, {})}
+    for role in ('GK', 'DEF', 'MID', 'FWD'):
+        new_states = {}
+        for used, (score, picks) in states.items():
+            for row, l10 in frontiers[role]:
+                cost = int(round(l10 * RES))
+                nb = used + cost
+                if nb > budget_units:
+                    continue
+                ns = score + row['atteso']
+                cur = new_states.get(nb)
+                if cur is None or cur[0] < ns:
+                    new_picks = dict(picks)
+                    new_picks[role] = row
+                    new_states[nb] = (ns, new_picks)
+        if not new_states:
+            return None, None
+        states = new_states
+
+    extra_candidates = []
+    for role in shape['extra_roles']:
+        extra_candidates.extend(_pareto_frontier(role_data[role], card_pool))
+    extra_candidates.sort(key=lambda x: -x[0]['atteso'])
+
+    best_total = best_picks = best_extra = best_used = None
+    for used, (score4, picks4) in states.items():
+        used_slugs = {row['slug'] for row in picks4.values()}
+        remaining = (budget_units - used) / RES
+        chosen_extra = None
+        for row, l10 in extra_candidates:
+            if row['slug'] in used_slugs:
+                continue
+            if l10 <= remaining:
+                chosen_extra = (row, l10)
+                break
+        if chosen_extra is None:
+            continue
+        total = score4 + chosen_extra[0]['atteso']
+        if best_total is None or total > best_total:
+            best_total = total
+            best_picks = picks4
+            best_extra = chosen_extra
+            best_used = used / RES + chosen_extra[1]
+
+    if best_picks is None:
+        return None, None
+
+    result = dict(best_picks)
+    result['EXTRA'] = best_extra[0]
+    return result, best_used
+
+
 def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False, variance_mode=False):
     """Costruisce UNA formazione secondo 'shape' (uno dei FORMATION_SHAPES),
     tenendo conto delle copie gia' esaurite (card_pool) e del vincolo
