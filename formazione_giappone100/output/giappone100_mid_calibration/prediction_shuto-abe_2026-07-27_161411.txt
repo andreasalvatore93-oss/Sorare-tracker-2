@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T16:14:11.368663Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) shuto-abe: 59 pt attesi (43-92)
+   SQUADRA: gamba-osaka-suita-shi-suita | AVVERSARIO: urawa-reds-saitama
+======================================================================
+
+######################################################################
+# GIOCATORE: shuto-abe
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: shuto-abe (squadra: gamba-osaka-suita-shi-suita)
+Generato: 2026-07-27T16:14:11.367642Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 10
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-31 | BEL vs GAM | j1-league | score=58.7 | peso=0.595
+  2025-09-13 | GAM vs RED | j1-league | score=94.2 | peso=0.630
+  2025-09-23 | GAM vs FMA | j1-league | score=46.6 | peso=0.667
+  2025-09-27 | GAM vs ALB | j1-league | score=98.1 | peso=0.707
+  2025-10-05 | ANT vs GAM | j1-league | score=57.8 | peso=0.749
+  2025-10-18 | GAM vs REY | j1-league | score=23.1 | peso=0.794
+  2025-10-25 | GRA vs GAM | j1-league | score=80.0 | peso=0.841
+  2025-11-09 | GAM vs VIS | j1-league | score=44.8 | peso=0.891
+  2025-11-30 | AVI vs GAM | j1-league | score=52.4 | peso=0.944
+  2025-12-06 | GAM vs VER | j1-league | score=62.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 60.86
+  di cui Punteggio decisivo (level_score) medio: 41.96 | Punteggio complessivo (granulari) medio: 18.90 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 42.05 (delta +0.09)
+  Efficacia offensiva condizionata: delta venue +0.56, delta avversario +0.41 | Passaggio condizionato: delta venue -0.09, delta avversario +0.64 | Gol subiti condizionato: delta venue -0.36, delta avversario +0.90 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 21.36
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.8 - 94.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.17 (differenza: +6.20)
+Media score in casa: 61.60 | Media score fuori casa: 62.23
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.931
+Fattore falli (casa/trasferta, da dati reali): 1.026
+Fattore duelli (casa/trasferta, da dati reali): 0.974
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.020
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 0.991
+Fattore trend (media ultime 5: 52.6 vs media ultime 10: 61.9): 0.896
+P(gioca): 100.00% (fonte: tasso di presenza storico (10/10))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-07T10:30
+Casa: Gamba Osaka | Trasferta: Urawa Red Diamonds
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.9 (range 42.8 - 92.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.58
+Punteggio REALE ottenuto in quella partita: 62.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +2.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.1    80.0    +34.9    32.0        NO
+   7        7      47.1    44.8     -2.3    30.3        SI
+   8        8      65.6    52.4    -13.2    29.2        SI
+   9        9      54.1    62.8     +8.7    27.4        SI
+
+MAE (errore assoluto medio): 14.77
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
