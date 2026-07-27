@@ -63,26 +63,39 @@ bff = _import_module('mls_build_formazione_finale', 'formazione_mls/build_formaz
 
 ROLES = ('GK', 'DEF', 'MID', 'FWD')
 
-CONSIGLIO_DIRS = {
-    'mls': {
-        'GK': 'formazione_mls/output/mls_gk_all', 'DEF': 'formazione_mls/output/mls_def_all',
-        'MID': 'formazione_mls/output/mls_mid_all', 'FWD': 'formazione_mls/output/mls_fwd_all',
-    },
-    'kleague': {
-        'GK': 'formazione_kleague/output/kleague_gk_all', 'DEF': 'formazione_kleague/output/kleague_def_all',
-        'MID': 'formazione_kleague/output/kleague_mid_all', 'FWD': 'formazione_kleague/output/kleague_fwd_all',
-    },
-}
-DISCOVERY_DIRS = {
-    'mls': {
-        'GK': 'formazione_mls/output/mls_gk_discovery', 'DEF': 'formazione_mls/output/mls_def_discovery',
-        'MID': 'formazione_mls/output/mls_mid_discovery', 'FWD': 'formazione_mls/output/mls_fwd_discovery',
-    },
-    'kleague': {
-        'GK': 'formazione_kleague/output/kleague_gk_discovery', 'DEF': 'formazione_kleague/output/kleague_def_discovery',
-        'MID': 'formazione_kleague/output/kleague_mid_discovery', 'FWD': 'formazione_kleague/output/kleague_fwd_discovery',
-    },
-}
+# LEGHE DEDICATE: i tipi "In Season <lega>" e "Arena <lega>" restano solo per
+# queste due (sono i campionati in cui l'utente gioca le competizioni dedicate).
+DEDICATED_LEAGUES = ('mls', 'kleague')
+
+
+def _discover_leagues():
+    """Tutte le leghe con i consigli dei 4 ruoli gia' prodotti. ESTESO il 27/07
+    (roadmap step 3): il pool MISTO delle All Stars / Arena All Stars pescava
+    solo da MLS + K League, lasciando inutilizzate le carte possedute negli
+    altri ~18 campionati per cui la pipeline gira gia'. Le competizioni All
+    Stars accettano qualsiasi campionato, quindi era pool buttato via.
+    Quanto vale: con la varianza REALE misurata sui dati (sd bravura 4.53,
+    sd rumore 18.72, stima da 15 partite), passare da 10 a 40 candidati per
+    slot vale circa +2 punti attesi PER SLOT -- su 5 slot di movimento,
+    ~+10 punti a formazione. E' il guadagno piu' grande misurato finora,
+    molto oltre qualunque ritocco del modello (vedi sezione 27 del RIASSUNTO).
+    Le leghe si scoprono dal filesystem: aggiungerne una non richiede codice."""
+    found = {}
+    for consiglio_dir in sorted(glob.glob(os.path.join(_REPO_ROOT, 'formazione_*', 'output', '*_gk_all'))):
+        champ_dir = os.path.basename(os.path.dirname(os.path.dirname(consiglio_dir)))
+        league = champ_dir[len('formazione_'):]
+        prefix = os.path.basename(consiglio_dir)[:-len('_gk_all')]
+        dirs = {r: os.path.join(champ_dir, 'output', f'{prefix}_{r.lower()}_all') for r in ROLES}
+        disc = {r: os.path.join(champ_dir, 'output', f'{prefix}_{r.lower()}_discovery') for r in ROLES}
+        if all(os.path.isdir(os.path.join(_REPO_ROOT, d)) for d in dirs.values()):
+            found[league] = (dirs, disc)
+    return found
+
+
+_DISCOVERED = _discover_leagues()
+LEAGUES = tuple(sorted(_DISCOVERED))
+CONSIGLIO_DIRS = {lg: v[0] for lg, v in _DISCOVERED.items()}
+DISCOVERY_DIRS = {lg: v[1] for lg, v in _DISCOVERED.items()}
 
 OUTPUT_DIR = os.path.join(_HERE, 'output')
 
@@ -197,10 +210,10 @@ def parse_league_qty(raw, field_name):
 def load_league_role_data():
     """Ritorna (role_data, role_counts) per lega, riusando parse_consiglio/
     load_card_counts/latest_consiglio del modulo importato -- identica
-    logica dei due tool singoli, solo su entrambe le leghe."""
-    role_data = {'mls': {}, 'kleague': {}}
-    role_counts = {'mls': {}, 'kleague': {}}
-    for league in ('mls', 'kleague'):
+    logica dei due tool singoli, su TUTTE le leghe scoperte."""
+    role_data = {lg: {} for lg in LEAGUES}
+    role_counts = {lg: {} for lg in LEAGUES}
+    for league in LEAGUES:
         for role in ROLES:
             out_dir = CONSIGLIO_DIRS[league][role]
             path = bff.latest_consiglio(out_dir)
@@ -223,13 +236,13 @@ def build_quality_pools(role_data):
     return {
         league: {role: quality_filter.LazyQualityPool(role, league, role_data[league][role])
                   for role in ROLES}
-        for league in ('mls', 'kleague')
+        for league in LEAGUES
     }
 
 
 def _view_for(pools, pool_league, role):
     if pool_league == 'mixed':
-        combined = pools['mls'][role].passing + pools['kleague'][role].passing
+        combined = [r for lg in LEAGUES for r in pools[lg][role].passing]
         # Ordina per lo score di ordinamento (senza shrinkage) -- vedi sezione
         # 27.C del RIASSUNTO. Fallback TUTTO-O-NIENTE: i due score stanno su
         # scale diverse, mescolarli nella stessa sort non e' omogeneo.
@@ -241,15 +254,40 @@ def _view_for(pools, pool_league, role):
     return pools[pool_league][role].passing
 
 
+def _next_unchecked_score(pool):
+    """Punteggio del prossimo candidato non ancora controllato (o None)."""
+    if pool.checked_idx >= len(pool.full):
+        return None
+    row = pool.full[pool.checked_idx]
+    return row.get('ordinamento') if row.get('ordinamento') is not None else row.get('atteso')
+
+
 def _grow_for(pools, pool_league, role, batch):
-    if pool_league == 'mixed':
-        return pools['mls'][role].grow(batch) + pools['kleague'][role].grow(batch)
-    return pools[pool_league][role].grow(batch)
+    if pool_league != 'mixed':
+        return pools[pool_league][role].grow(batch)
+    # Pool misto su TUTTE le leghe (27/07): crescere batch carte PER LEGA
+    # significherebbe moltiplicare per ~20 le query L5/L10/L40 -- e un 429
+    # quasi certo. Si cresce invece una carta alla volta, sempre quella col
+    # punteggio piu' alto fra le prime non ancora controllate di ogni lega:
+    # stesso costo in query del caso a due leghe, ma pescando dal pool intero.
+    checked = 0
+    while checked < batch:
+        best_lg, best_score = None, None
+        for lg in LEAGUES:
+            sc = _next_unchecked_score(pools[lg][role])
+            if sc is None:
+                continue
+            if best_score is None or sc > best_score:
+                best_lg, best_score = lg, sc
+        if best_lg is None:
+            break
+        checked += pools[best_lg][role].grow(1)
+    return checked
 
 
 def _raw_view_for(role_data, pool_league, role):
     if pool_league == 'mixed':
-        combined = role_data['mls'][role] + role_data['kleague'][role]
+        combined = [r for lg in LEAGUES for r in role_data[lg][role]]
         # Ordina per lo score di ordinamento (senza shrinkage) -- vedi sezione
         # 27.C del RIASSUNTO. Fallback TUTTO-O-NIENTE: i due score stanno su
         # scale diverse, mescolarli nella stessa sort non e' omogeneo.
@@ -372,17 +410,21 @@ def main():
 
     role_data, role_counts = load_league_role_data()
 
-    for league in ('mls', 'kleague'):
-        if not all(role_data[league].get(r) for r in ROLES):
+    for league in DEDICATED_LEAGUES:
+        if not all(role_data.get(league, {}).get(r) for r in ROLES):
             print(f"\nATTENZIONE: la lega '{league}' ha almeno un ruolo senza consiglio disponibile "
                   f"-- le formazioni di quella lega/pool misto potrebbero non completarsi.")
 
     pools = build_quality_pools(role_data)
 
-    merged_counts = {
-        role: {**role_counts['mls'][role], **role_counts['kleague'][role]}
-        for role in ROLES
-    }
+    # Conteggio carte possedute: unione di TUTTE le leghe (27/07). Gli slug
+    # sono globalmente univoci, quindi l'unione non puo' collidere fra leghe.
+    merged_counts = {}
+    for role in ROLES:
+        acc = {}
+        for lg in LEAGUES:
+            acc.update(role_counts.get(lg, {}).get(role, {}))
+        merged_counts[role] = acc
     card_pool = bff.CardPool(merged_counts)
 
     run_number = os.environ.get('GITHUB_RUN_NUMBER')
