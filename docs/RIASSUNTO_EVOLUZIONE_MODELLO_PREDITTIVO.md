@@ -4,11 +4,12 @@
 lavoro** (l'utente alterna due account, poca/nessuna memoria condivisa tra sessioni). Non
 presupporre nessun contesto pregresso: tutto quello che serve è qui dentro.
 
-**Aggiornato 27/07/2026**: se cerchi solo "qual è lo stato adesso", salta direttamente alla
-**sezione 14** (l'ultima) — è l'handoff più recente e completo, e contiene anche la correzione
-di due falsi allarmi di backlog (K League e GK "da fare" erano in realtà già chiusi in sezioni
-precedenti mai lette per intero — leggi SEMPRE questo documento dall'inizio alla fine prima di
-concludere che qualcosa manca, non fidarti solo dell'ultima sezione o della memoria persistente).
+**Aggiornato 27/07/2026 (sera)**: se cerchi solo "qual è lo stato adesso", salta direttamente alla
+**sezione 15** (l'ultima) — è l'handoff più recente e completo: un TERZO tool, il "Generatore
+Formazioni", che fonde MLS+K League in un solo script/workflow senza toccare i due tool dedicati.
+Leggi comunque SEMPRE questo documento dall'inizio alla fine prima di concludere che qualcosa
+manca, non fidarti solo dell'ultima sezione o della memoria persistente (la sezione 14D spiega
+perché, con un caso reale).
 Le sezioni 1-13 restano come cronistoria di come ci si è arrivati (parametri di produzione
 FINALIZZATI per DEF/MID/FWD/GK, scoperta e validazione della formula `level_score`/floor,
 implementazione Arena/All Stars, infrastruttura K League completa), utile se serve capire IL
@@ -1062,3 +1063,159 @@ Nessun lavoro di codice pendente non committato. Backlog aggiornato:
    sopra), non riaprire senza una richiesta esplicita nuova.
 4. Rilevamento carte bloccate in lineup Sorare via GraphQL (sezione E) — accantonato per
    complessità/beneficio, non riproporre senza una richiesta esplicita nuova.
+
+## 15. Sessione 27/07/2026 (sera) — Generatore Formazioni: terzo tool, fusione MLS+K League
+
+Ripresa da un account diverso. Richiesta esplicita dell'utente: un TERZO script/workflow che generi
+lineup pescando da MLS e K League **insieme**, **senza toccare** `formazione_mls/` e
+`formazione_kleague/` (restano intatti, usabili da soli). Sessione lunga con più giri di test reali
+su GitHub Actions e correzione di bug trovati sul campo — dettaglio in ordine cronologico perché
+ogni bug ha portato al successivo.
+
+### A. Requisiti raccolti (uno alla volta, con l'utente) e progettazione
+
+**6 tipi di formazione** nel nuovo tool:
+1. **In Season MLS** — pool solo MLS, 5 titolari, min 4 In Season + max 1 Classic
+2. **In Season K League** — identico, pool solo K League
+3. **Arena MLS** — pool solo MLS, **cap L10 fisso 260, non scelto dall'utente** (le Arene dedicate
+   sono sempre a 260 su Sorare, verificato dall'utente)
+4. **Arena K League** — identico, pool solo K League
+5. **Arena All Stars** — stesse regole di un'Arena dedicata (5 carte, anche tutte Classic) ma pool
+   **misto** MLS+K League, e qui SÌ il cap è scelto dall'utente tra 260/220/uncapped (come fa
+   Sorare per questa modalità)
+6. **All Stars** — 7 carte, pool misto, cap 370 **soft** (bonus +4% se rispettato, mai un vincolo
+   che filtra le scelte)
+
+**Ordine di priorità** (build condiviso, stesso pool di copie via `CardPool`): In Season (MLS poi
+K League) → Arena dedicate (MLS poi K League) → Arena All Stars (260→220→uncapped) → All Stars.
+
+**Ottimizzazione job discussa PRIMA di implementare** (tema "un tema alla volta"): il costo
+dominante della pipeline produzione è 1 job predict per carta posseduta (checkout+setup ≈20-35s di
+overhead contro ~7.5s di calcolo reale) — batching valutato ma rimandato ("partiamo così, se ci
+mette troppo modifichiamo"); cache incrementale già esistente (`.game_log_cache`/`.cache`,
+committata dai due tool) confermata riusabile senza modifiche.
+
+**Filtro qualità nuovo** (diverso da tutto il resto del progetto): carta ammessa nel pool SOLO se
+L5 **e** L10 **e** L40 sono **tutti e tre** ≥35 (AND severo, non media come nel discovery_global di
+calibrazione — quello resta a soglia 30 sulla media, invariato). Fallback di sicurezza previsto se
+un ruolo/lega resta sguarnito.
+
+**Input configurabili**: niente più un campo numerico per tipo (non scala con nuovi campionati
+futuri). Soluzione: 4 campi numerici semplici per i tipi sempre "misti" (Arena All Stars ×3 cap +
+All Stars, non cresceranno mai con nuovi campionati) + 2 campi testo brevi `lega:quantità` solo per
+i tipi legati a una lega specifica (`in_season`, `arena_dedicata`, es. `"mls:4,kleague:1"`) — un
+domani un nuovo campionato è solo un nuovo codice lega nella stessa stringa, zero nuovi campi nel
+workflow.
+
+### B. Implementazione: `generatore_formazioni/` (nuova cartella, nulla toccato nei due tool)
+
+- `generatore_formazioni/build_formazione_globale.py` — script di fusione. **Riusa per import**
+  (via `importlib`, nessuna duplicazione) le funzioni generiche già esistenti in
+  `formazione_mls/build_formazione_finale.py` (`CardPool`, `build_one_lineup`,
+  `synergy_adjusted_rows`, `render_lineup_html`, `render_report_html`, `parse_consiglio`,
+  `load_card_counts`) — erano già indipendenti dalla lega, bastava passargli dati taggati con la
+  lega giusta. Output **solo HTML** (richiesta esplicita utente).
+- `generatore_formazioni/quality_filter.py` — query GraphQL L5/L10/L40 (stesso pattern già
+  collaudato in `mls_gk_discovery_global.py`, mai una query nuova/rischiosa).
+- `.github/workflows/generatore_formazioni.yml` — Action "Generatore Formazioni": richiama gli
+  script discover/predict/consiglio **esistenti e invariati** di entrambi i tool (stessi path di
+  output/cache → la cache incrementale viene riusata cosi' com'e', zero query storiche nuove per
+  giocatori già noti), poi un job finale nuovo che fa la fusione.
+
+Testato in locale con dati reali già su disco (filtro qualità disattivato via monkeypatch, nessuna
+rete disponibile in locale): tutti gli 8 tipi si generano correttamente, HTML valido. Commit
+iniziale pushato su `main` (`34aefd19b`).
+
+### C. Bug 1 (run reale): filtro qualità troppo lento — query sull'intero pool scoperto
+
+Prima run reale (2 formazioni In Season+Arena): il job finale ha impiegato **~7 minuti** e
+interrogato **287 carte** (l'intero pool scoperto per 4 ruoli × 2 leghe), incappando anche in un
+**429 con `Retry-After` di 236 secondi** (quasi 4 minuti da solo) — probabilmente perché le 287
+query partivano subito dopo ~280 job predict paralleli sullo stesso account Sorare nello stesso
+run, sommando carico.
+
+**Causa**: il filtro qualità controllava OGNI carta scoperta, non solo quelle che servivano per le
+formazioni richieste (richiesta esplicita dell'utente: "fagli interrogare solo il numero di
+giocatori richiesto... se non riesce, ne interroga un altro, finché non completa").
+
+**Fix**: `LazyQualityPool` (`quality_filter.py`) — parte VUOTA, cresce solo quando
+`build_one_lineup` segnala che manca un candidato per uno slot: si controllano i prossimi
+candidati non ancora verificati (batch di 3, `GROW_BATCH`) e si riprova, finché la formazione si
+completa o il pool scoperto è davvero esaurito. Verificato con un test locale simulato: **27 query
+invece di 284** per lo stesso risultato. In produzione reale, seconda run: job finale sceso da
+**6m57s a 34s**, richieste esattamente le carte necessarie (30 su un pool di 285).
+
+### D. Bug 2 (run reale): default del workflow generava formazioni non richieste
+
+Run successiva: l'utente ha lasciato il campo `in_season` "vuoto" (senza cancellare attivamente il
+testo pre-scritto dal form GitHub) e sono comparse 2 formazioni In Season non richieste — il
+default nello YAML era `'mls:1,kleague:1'` (ereditato dal vecchio pattern a singolo-tool), mentre
+`arena_dedicata` aveva già default `'mls:0,kleague:0'`. **Fix**: uniformato il default di
+`in_season` a `'mls:0,kleague:0'` — un campo non toccato ora genera davvero 0.
+
+### E. Bug 3 (run reale, il più importante): cap L10 delle Arene MAI rispettato
+
+Con Bug 2 corretto, le formazioni richieste (Arene) sforavano COMUNQUE il cap (297-311 invece di
+260, su 5/5 formazioni). Diagnosi in due passaggi:
+
+1. **Prima ipotesi (sbagliata)**: pool troppo piccolo dopo il fix del Bug 1 (solo 2-3 candidati
+   controllati per ruolo). Provato ad aggiungere un pre-riempimento minimo (`MIN_POOL_FOR_L10_CAP`)
+   — non ha risolto: anche con 12 candidati/ruolo disponibili (L10 minimi reali 38-49), sforava
+   comunque.
+2. **Causa reale**: `build_one_lineup` (funzione CONDIVISA, identica nei due tool originali)
+   sceglieva il miglior punteggio che rientrava nel budget residuo **slot per slot in ordine fisso
+   GK→DEF→MID→FWD→extra**, senza MAI riservare budget per lo slot EXTRA finale — che quindi
+   sforava quasi sempre (un giocatore vero costa sempre >0 di L10, non esiste un pareggio esatto a
+   budget zero). Riordinare i ruoli (provato: FWD-first) NON bastava, spostava solo il problema.
+   Confermato con l'utente: le run standalone dei due tool originali non avevano MAI incontrato
+   questo bug nei loro output storici (probabilmente solo fortuna sulla distribuzione L10 delle
+   loro carte specifiche) — il difetto è strutturale, non introdotto dalla fusione.
+
+**Decisione esplicita dell'utente** (superando il vincolo iniziale "non toccare i due tool"): il
+cap è un vincolo VERO, va corretto **anche nei due tool condivisi**, non solo nel nuovo script — "se
+deve sforare il cap meglio non generarla proprio".
+
+**Fix applicato IDENTICO in `formazione_mls/build_formazione_finale.py` E
+`formazione_kleague/build_formazione_finale.py`** (`build_one_lineup`): ogni slot ora riserva la
+somma dei minimi L10 disponibili per TUTTI gli slot ancora da riempire (extra incluso) prima di
+scegliere un candidato; se nessun candidato rientra nemmeno riservando, la formazione **fallisce**
+con lo stesso errore di "candidato esaurito" — **rimosso ogni fallback che sforava in silenzio**
+(prima: "prendi il più economico disponibile anche se sfora"). Verificato su dati reali di
+entrambi i tool: cap sempre rispettato (257-260/260 su più formazioni generate). Il riordino
+"FWD-first" nel Generatore Formazioni è stato rimosso (era un cerotto per lo stesso sintomo, non
+più necessario col fix vero).
+
+### F. Bug 4 (scoperta collegata): filtro qualità in tensione diretta con le Arene a cap
+
+Notato dall'utente ("mi sembra che il filtro quality faccia solo danni"): il filtro L5/L10/L40≥35
+esclude proprio le carte ECONOMICHE (L10 basso) che servirebbero per stare sotto un cap di 260 —
+i due meccanismi lavorano l'uno contro l'altro. **Decisione**: il filtro qualità ha senso SOLO dove
+conta il punteggio assoluto (In Season, All Stars, Arena All Stars uncapped), NON dove conta invece
+il risparmio L10 (Arena dedicate, Arena All Stars 260/220). **Fix**: nel Generatore Formazioni, i
+tipi con cap L10 obbligatorio ora usano il pool GREZZO (tutte le carte scoperte, zero query di
+qualità — anche più veloci), il filtro lazy resta attivo solo per i tipi senza cap. Verificato:
+5/5 formazioni Arena "entro budget", 0 query di qualità quando si chiedono solo tipi con cap.
+
+### G. Stato repo a fine sessione (27/07 sera)
+
+Pushato su `origin/main`: `34aefd19b` (Generatore Formazioni, primo commit), `db895e6c7` (filtro
+qualità lazy), `2977df7a0` (default `in_season` a 0/0), `d5792fcf4` (fix cap L10 riserva budget +
+hard-fail, in ENTRAMBI i tool condivisi + scoping filtro qualità). Nessun lavoro di codice pendente
+non committato.
+
+**File chiave nuovi**: `generatore_formazioni/build_formazione_globale.py`,
+`generatore_formazioni/quality_filter.py`, `.github/workflows/generatore_formazioni.yml`.
+**File modificati nei due tool esistenti** (SOLO la funzione `build_one_lineup`, resto invariato):
+`formazione_mls/build_formazione_finale.py`, `formazione_kleague/build_formazione_finale.py`.
+
+**Da verificare alla prossima sessione**: run reale richiesta dall'utente a fine sessione (1 In
+Season MLS + 1 In Season K League + 2 Arena All Stars cap260 + 1 All Stars) — controllare l'esito
+(tempi, cap rispettato su Arena All Stars/All Stars, HTML corretto) se non già verificato prima di
+riprendere in mano il tool.
+
+**Backlog aperto** (nessuno bloccante):
+1. Batching dei job predict (rimandato dalla sezione A, mai diventato necessario finora).
+2. Verificare il fix del cap L10 anche sul caso limite "pool davvero troppo piccolo per
+   qualunque combinazione" (deve fallire pulito, non ancora visto in una run reale).
+3. Tutto il backlog della sezione 13E/14F resta valido e non toccato in questa sessione (bonus
+   K League da verificare con screenshot reali, estensione ad altri campionati, ecc.).
