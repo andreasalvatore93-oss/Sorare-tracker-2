@@ -36,11 +36,7 @@ query Diagnostica($slug: String!) {
           }
           anyPlayerGameStats {
             ... on PlayerGameStats {
-              footballPlayingStatusOdds {
-                starterOddsBasisPoints
-                bench
-                notInSquad
-              }
+              footballPlayingStatusOdds { starterOddsBasisPoints }
             }
           }
         }
