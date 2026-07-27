@@ -77,6 +77,20 @@ MODULE_BY_ROLE = {
     'fwd': 'formazione_mls.predict.test_mls_fwd_all',
 }
 
+# 27/07 notte: esteso da MLS-only a tutti e 6 i campionati (stesso motivo
+# delle altre reindagini di stasera -- campione piu' ampio, stessa cache
+# gia' su disco, nessuna nuova query). I moduli funzione (exponential_
+# weights/weighted_mean/ecc.) restano presi da MLS -- logica identica in
+# tutti i cloni, solo la CACHE cambia per lega.
+LEAGUE_CACHE_TPL = {
+    'mls': 'formazione_mls/output/mls_{ruolo}_calibration/.cache',
+    'kleague': 'formazione_kleague/output/kleague_{ruolo}_calibration/.cache',
+    'portogallo': 'formazione_portogallo/output/portogallo_{ruolo}_all/.cache',
+    'austria': 'formazione_austria/output/austria_{ruolo}_all/.cache',
+    'scozia': 'formazione_scozia/output/scozia_{ruolo}_all/.cache',
+    'croazia': 'formazione_croazia/output/croazia_{ruolo}_all/.cache',
+}
+
 
 # ---------------------------------------------------------------------------
 # Tabella netto -> level_score (REGOLA VALIDATA, sezione 11 del riassunto)
@@ -127,8 +141,10 @@ def extract_netto(detailed_score):
 
 
 def load_players(ruolo):
-    cache_dir = f'formazione_mls/output/mls_{ruolo}_calibration/.cache'
-    files = glob.glob(os.path.join(cache_dir, '*_detail_cache.json'))
+    files = []
+    for tpl in LEAGUE_CACHE_TPL.values():
+        cache_dir = tpl.format(ruolo=ruolo)
+        files.extend(glob.glob(os.path.join(cache_dir, '*_detail_cache.json')))
     players = []
     for fpath in files:
         with open(fpath, encoding='utf-8') as f:
@@ -365,7 +381,7 @@ def run_role(ruolo):
 
 
 def main():
-    ruoli = sys.argv[1:] or ('fwd', 'def')
+    ruoli = sys.argv[1:] or ('gk', 'def', 'mid', 'fwd')
     for ruolo in ruoli:
         run_role(ruolo)
 

@@ -1741,3 +1741,87 @@ scarto nemmeno piccolo).
 
 **Backlog**: nessuno aperto su questo filone. Prossima ricalibrazione naturale quando la stagione
 avanza e i campioni per giocatore crescono (stesso principio già applicato più volte).
+
+## 22. Stessa notte (continua) — `level_score` atteso da tasso eventi: RIVALIDATO su 6 campionati,
+## implementazione PROSSIMO PASSO URGENTE (non ancora fatta)
+
+L'utente ha chiesto di ripassare tutto il riassunto per trovare scoperte reali ma MAI applicate
+solo perché ritenute "poco rilevanti" (non perché sbagliate/distorsive) — con l'osservazione
+importante che anche 1 punto di differenza sul punteggio di un giocatore può spostarlo da una
+formazione all'altra, quindi "piccolo" non significa "da ignorare". Candidato più forte trovato:
+**`level_score` atteso da tasso di eventi decisivi** (sezione 13F, script
+`formazione_mls/diagnostics/validate_level_score_event_rate.py`) — nella sessione originale (26/07)
+migliorava il MAE in TUTTI e 4 i ruoli (FWD -0.63%, DEF -1.01%, MID -0.51%, GK -1.18%) ma fu
+scartato per "troppo piccolo per giustificare la complessità aggiuntiva".
+
+### Rivalidato stanotte su 6 campionati (script esteso, stesso approccio delle altre reindagini)
+
+Campione molto più ampio di prima (212-915 punti di test per ruolo, contro i campioni originali
+più piccoli), usando i parametri di produzione APPENA aggiornati in sezione 21 (half_life 12.0 per
+GK, 9.0 per DEF, trend 1.0 per FWD). **Risultato confermato, miglioramento consistente in tutti e 4
+i ruoli**:
+
+| Ruolo | n test | MAE baseline (produzione attuale) | MAE con level_score atteso | Delta |
+|---|---|---|---|---|
+| GK | 212 | 16.811 | 16.664 | **-0.87%** |
+| DEF | 868 | 15.395 | 15.183 | **-1.38%** |
+| MID | 915 | 14.372 | 14.307 | **-0.45%** |
+| FWD | 661 | 15.167 | 15.050 | **-0.78%** |
+
+Il floor (max su level_atteso>=60) non cambia nulla (MAE identico con/senza) — la formulazione a
+valore atteso continuo non attiva mai la condizione, coerente con quanto già annotato nello script
+originale ("nota aperta se si vuole approfondire il floor" — resta aperta, non bloccante).
+
+### Meccanismo (invariato dalla validazione originale, sezione 13F/11)
+
+```
+netto = sum(statValue righe POSITIVE_DECISIVE_STAT) - sum(statValue righe NEGATIVE_DECISIVE_STAT)
+livello(netto) = tabella {-2:5, -1:15, 0:35, 1:60, 2:70, 3:80, 4:90, 5:100}  # regola VALIDATA, sez. 11
+```
+Invece di lasciare `level_score` implicito dentro la media pesata generica del punteggio totale
+(dove il rumore degli eventi rari lo confonde con le fluttuazioni "normali"), si stima:
+1. `lambda_pos` / `lambda_neg` = media pesata esponenziale (STESSO half_life di produzione, NESSUNA
+   ri-taratura) del conteggio di eventi POSITIVE_DECISIVE_STAT / NEGATIVE_DECISIVE_STAT per partita.
+2. Si modellano come Poisson(lambda_pos)/Poisson(lambda_neg) indipendenti, si convolvono per la
+   distribuzione di `netto`, e si calcola `level_score_atteso = sum_k P(netto=k) * tabella(k)` — il
+   vero valore atteso della variabile categoriale (diverso da `tabella(media(netto))` per la non
+   linearità della tabella).
+3. Il resto (`granulare_atteso` = punteggio meno level_score, con lo STESSO trend/half_life già in
+   uso) resta invariato.
+4. `score_atteso = p_gioca * (level_score_atteso + granulare_atteso * fattore_trend_granulare)
+   * fattore_casa_trasferta` — differenza chiave: il fattore trend si applica SOLO al pezzo
+   granulare, non più al totale (il livello non ha un trend proprio, è basato su un tasso di eventi
+   già pesato).
+
+### PROSSIMO PASSO URGENTE (da fare per primo alla ripresa, PRIMA di qualunque altro tema)
+
+**Tentativo di implementazione iniziato e poi ANNULLATO stanotte** (l'utente ha chiesto di
+fermarsi e lasciarlo a un'altra sessione/agente) — `git checkout` già eseguito su
+`formazione_mls/predict/test_def.py`, **repo pulito, nessun residuo WIP**. Da implementare da zero:
+
+1. In ciascuno dei 4 `test_<ruolo>.py` (GK/DEF/MID/FWD), aggiungere subito dopo `extract_level_score`:
+   `LEVEL_TABLE`, `netto_to_level`, `extract_decisive_rates(detail)` (somma `statValue` per
+   `POSITIVE_DECISIVE_STAT`/`NEGATIVE_DECISIVE_STAT`, stesso pattern di `extract_group_score`),
+   `_poisson_pmf_truncated`, `expected_level_from_rates` — implementazione già scritta e testata
+   nello script diagnostico `validate_level_score_event_rate.py`, da copiare/adattare 1:1.
+2. Nel loop storico di `build_prediction` (dove oggi si popolano `level_score_values`/
+   `granulari_values`), aggiungere `pos_decisive_values`/`neg_decisive_values` per partita.
+3. Sostituire il calcolo di `score_atteso` (oggi `p_gioca * media_pesata * fattore_casa_trasferta *
+   fattore_trend`): calcolare `lambda_pos`/`lambda_neg` pesati, `level_atteso =
+   expected_level_from_rates(...)`, `gran_atteso = weighted_mean(granulari_values, weights)`,
+   `fattore_trend_granulare = compute_trend_factor(granulari_values, ...)` (trend SOLO sul
+   granulare, non più sul totale), poi `score_atteso = p_gioca * (level_atteso + gran_atteso *
+   fattore_trend_granulare) * fattore_casa_trasferta`.
+4. Verificare con uno smoke test locale (dati cache già su disco, nessuna nuova query) che il MAE
+   walk-forward della nuova formula PRODUZIONE combaci con i numeri della tabella sopra (non solo
+   con lo script diagnostico separato — la vera formula di produzione ha altri dettagli, es.
+   `fattore_casa_trasferta` calcolato sul residuo invece che sul totale, da verificare che non
+   cambi le conclusioni).
+5. Applicare IDENTICO a tutti e 6 i campionati (stesso principio "un solo modello globale" già
+   usato in sezione 21 per gli altri parametri) — 24 file totali (4 ruoli x 6 leghe).
+6. Aggiornare questo riassunto con l'esito e il commit finale.
+
+**Nota per chi riprende**: questo è esplicitamente il PROSSIMO PASSO URGENTE da fare per primo,
+richiesto due volte dall'utente stanotte ("non essere pigro" sui cambi piccoli ma reali). Non
+derubricarlo di nuovo a "poco rilevante" senza aver almeno provato l'implementazione completa e
+misurato il risultato reale end-to-end.
