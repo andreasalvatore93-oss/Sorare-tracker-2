@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T10:25:18.436474Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) borja-sainz-eguskiza: 11 pt attesi (0-46)
+   SQUADRA: porto-porto | AVVERSARIO: alverca-alverca
+======================================================================
+
+######################################################################
+# GIOCATORE: borja-sainz-eguskiza
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: borja-sainz-eguskiza (squadra: porto-porto)
+Generato: 2026-07-27T10:25:18.436137Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: primeira-liga-pt (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-30 | POR vs EST | primeira-liga-pt | score=40.6 | peso=0.749
+  2025-12-15 | POR vs EST | primeira-liga-pt | score=38.7 | peso=0.794
+  2025-12-22 | ALV vs POR | primeira-liga-pt | score=77.8 | peso=0.841
+  2026-01-18 | VIG vs POR | primeira-liga-pt | score=30.7 | peso=0.891
+  2026-01-26 | POR vs GIL | primeira-liga-pt | score=39.0 | peso=0.944
+  2026-02-09 | POR vs SCP | primeira-liga-pt | score=34.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 43.16
+  di cui Punteggio decisivo (level_score) medio: 40.64 | Punteggio complessivo (granulari) medio: 2.52 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.17 (delta -0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.53
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.7 - 77.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 2.31 (differenza: +13.22)
+Media score in casa: 38.20 | Media score fuori casa: 54.25
+Fattore casa/trasferta applicato: 0.978 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.8
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.075
+Fattore falli (casa/trasferta, da dati reali): 1.014
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 26.09% (fonte: tasso di presenza storico (6/23))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T17:00
+Casa: FC Porto | Trasferta: Alverca
+Competizione: primeira-liga-pt
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 11.0 (range 0.0 - 45.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.21
+Punteggio REALE ottenuto in quella partita: 34.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

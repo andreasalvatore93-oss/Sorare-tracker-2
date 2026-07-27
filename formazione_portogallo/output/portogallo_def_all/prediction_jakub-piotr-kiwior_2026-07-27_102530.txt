@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T10:25:30.671570Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=70%
+======================================================================
+1) jakub-piotr-kiwior: 44 pt attesi (29-63)
+   SQUADRA: porto-porto | AVVERSARIO: alverca-alverca
+======================================================================
+
+######################################################################
+# GIOCATORE: jakub-piotr-kiwior
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jakub-piotr-kiwior (squadra: porto-porto)
+Generato: 2026-07-27T10:25:30.671060Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: primeira-liga-pt (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-22 | ALV vs POR | primeira-liga-pt | score=78.2 | peso=0.472
+  2025-12-29 | POR vs AVS | primeira-liga-pt | score=65.3 | peso=0.500
+  2026-01-04 | SCL vs POR | primeira-liga-pt | score=38.1 | peso=0.530
+  2026-01-18 | VIG vs POR | primeira-liga-pt | score=77.2 | peso=0.561
+  2026-01-26 | POR vs GIL | primeira-liga-pt | score=43.5 | peso=0.595
+  2026-02-09 | POR vs SCP | primeira-liga-pt | score=65.7 | peso=0.630
+  2026-02-27 | POR vs ARO | primeira-liga-pt | score=60.3 | peso=0.667
+  2026-03-08 | SLB vs POR | primeira-liga-pt | score=32.6 | peso=0.707
+  2026-03-15 | POR vs MOR | primeira-liga-pt | score=72.7 | peso=0.749
+  2026-03-22 | BRA vs POR | primeira-liga-pt | score=42.8 | peso=0.794
+  2026-04-04 | POR vs FAM | primeira-liga-pt | score=46.9 | peso=0.841
+  2026-04-12 | EST vs POR | primeira-liga-pt | score=48.7 | peso=0.891
+  2026-04-26 | EST vs POR | primeira-liga-pt | score=52.9 | peso=0.944
+  2026-05-16 | POR vs SCL | primeira-liga-pt | score=85.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 57.68
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 22.68 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.41, delta avversario +0.64 | Passaggio condizionato: delta venue +1.39, delta avversario +0.73 | Clean sheet/disimpegni condizionato: delta venue +0.89, delta avversario +0.87 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.04
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.8 - 77.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.79 (differenza: +3.25)
+Media score in casa: 62.79 | Media score fuori casa: 52.93
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.074
+Fattore falli (casa/trasferta, da dati reali): 1.015
+Fattore duelli (casa/trasferta, da dati reali): 1.013
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.014
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.978
+Fattore gol subiti (goals_conceded, con cap): 1.010
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.011
+Fattore trend (media ultime 5: 55.3 vs media ultime 10: 55.1): 1.002
+P(gioca): 70.00% (fonte: tasso di presenza storico (14/20))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T17:00
+Casa: FC Porto | Trasferta: Alverca
+Competizione: primeira-liga-pt
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.7 (range 28.8 - 63.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.60
+Punteggio REALE ottenuto in quella partita: 85.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +30.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.6    60.3     +7.7    18.4        SI
+   7        7      50.6    32.6    -18.0    16.8        NO
+   8        8      53.0    72.7    +19.8    19.6        NO
+   9        9      48.0    42.8     -5.3    19.4        SI
+  10       10      51.0    46.9     -4.1    19.2        SI
+  11       11      55.6    48.7     -6.9    18.5        SI
+  12       12      63.0    52.9    -10.0    17.6        SI
+  13       13      62.6    85.1    +22.5    16.6        NO
+
+MAE (errore assoluto medio): 11.79
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
