@@ -3,14 +3,14 @@
 Generato da `diagnostics/discover_missing_leagues.py` (run reale del 27/07/2026), fonte completa
 in `diagnostics/output/missing_leagues_report.json`. Esclusi gli 8 campionati gia' coperti (MLS,
 K League, Brasile, Croazia, Portogallo, Scozia, Austria, Belgio) + Spagna/Olanda (in corso di
-verifica in sessione separata). **`mlspa` escluso da questa lista**: confermato dall'utente essere
-un duplicato del pool MLS gia' tracciato (stesso slug MLS ma sotto una chiave diversa lato Sorare),
-non un campionato realmente mancante — da verificare comunque incrociando gli slug giocatore prima
-di scartarlo definitivamente (non ancora fatto).
+verifica in sessione separata).
 
-**`__unknown__` (70 carte, 67 giocatori)**: carte con `domesticLeague` mancante/nullo nei dati
-Sorare — NON e' uno slug valido, va ispezionato singolarmente (probabilmente giocatori free agent,
-squadre senza campionato assegnato, o un problema di query) prima di poterci fare qualunque cosa.
+**`mlspa` ESCLUSO, DEFINITIVO**: confermato dall'utente essere un duplicato del pool MLS gia'
+tracciato — nessuna azione, non riproporlo.
+
+**`__unknown__` (70 carte, 67 giocatori) ESCLUSO, DEFINITIVO**: carte non usabili (nessun
+`domesticLeague` leggibile) — scartate su decisione esplicita dell'utente (27/07), non
+investigare ulteriormente, non riproporlo.
 
 ## Priorita' alta (>=20 carte)
 
@@ -61,5 +61,4 @@ in `diagnostics/output/missing_leagues_report.json`).
 Non ancora deciso l'ordine. Candidati naturali per volume: J1 (Giappone, valuta se unire alla
 pipeline K League/Asia o farne una a parte), Süper Lig, Bundesliga, Premier League, Ligue 1 —
 tutti campionati "big 5"-adiacenti con abbastanza carte da giustificare una pipeline dedicata.
-Prima pero': (1) verificare `mlspa` non nasconda carte MLS realmente non tracciate, (2) ispezionare
-`__unknown__`.
+`mlspa`/`__unknown__` chiusi definitivamente (vedi sopra), nessuna verifica ulteriore necessaria.
