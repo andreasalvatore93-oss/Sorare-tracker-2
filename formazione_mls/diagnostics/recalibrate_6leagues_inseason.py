@@ -49,6 +49,10 @@ LEAGUES = {
     'austria': ('formazione_austria.predict.{mod}', 'formazione_austria/output/austria_{ruolo}_all/.cache'),
     'scozia': ('formazione_scozia.predict.{mod}', 'formazione_scozia/output/scozia_{ruolo}_all/.cache'),
     'croazia': ('formazione_croazia.predict.{mod}', 'formazione_croazia/output/croazia_{ruolo}_all/.cache'),
+    'belgio': ('formazione_belgio.predict.{mod}', 'formazione_belgio/output/belgio_{ruolo}_all/.cache'),
+    'brasile': ('formazione_brasile.predict.{mod}', 'formazione_brasile/output/brasile_{ruolo}_all/.cache'),
+    'olanda': ('formazione_olanda.predict.{mod}', 'formazione_olanda/output/olanda_{ruolo}_all/.cache'),
+    'spagna': ('formazione_spagna.predict.{mod}', 'formazione_spagna/output/spagna_{ruolo}_all/.cache'),
 }
 
 # Parametri UFFICIALI attuali di produzione (per confronto diretto).

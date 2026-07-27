@@ -84,6 +84,22 @@ MODULE_BY_ROLE = {
 
 K_GRID = [0, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30]
 
+# 27/07 (sessione estensione campionati): esteso da MLS-only a tutti i
+# campionati con cache disponibile, stesso principio delle altre analisi
+# estese in questa sessione.
+LEAGUE_CACHE_TPL = {
+    'mls': 'formazione_mls/output/mls_{ruolo}_calibration/.cache',
+    'kleague': 'formazione_kleague/output/kleague_{ruolo}_calibration/.cache',
+    'brasile': 'formazione_brasile/output/brasile_{ruolo}_all/.cache',
+    'croazia': 'formazione_croazia/output/croazia_{ruolo}_all/.cache',
+    'portogallo': 'formazione_portogallo/output/portogallo_{ruolo}_all/.cache',
+    'austria': 'formazione_austria/output/austria_{ruolo}_all/.cache',
+    'scozia': 'formazione_scozia/output/scozia_{ruolo}_all/.cache',
+    'belgio': 'formazione_belgio/output/belgio_{ruolo}_all/.cache',
+    'olanda': 'formazione_olanda/output/olanda_{ruolo}_all/.cache',
+    'spagna': 'formazione_spagna/output/spagna_{ruolo}_all/.cache',
+}
+
 
 def parse_date(g):
     d = g.get('date')
@@ -101,8 +117,9 @@ def load_role_pool(ruolo):
     solo partite FINAL con score numerico valido. Stesso filtro MIN_HISTORY+3
     usato in validate_team_defense_strength.py (serve storico sufficiente
     per avere almeno qualche punto di test walk-forward per giocatore)."""
-    cache_dir = f'formazione_mls/output/mls_{ruolo}_calibration/.cache'
-    files = glob.glob(os.path.join(cache_dir, '*_detail_cache.json'))
+    files = []
+    for tpl in LEAGUE_CACHE_TPL.values():
+        files.extend(glob.glob(os.path.join(tpl.format(ruolo=ruolo), '*_detail_cache.json')))
     players = []
 
     for fpath in files:

@@ -45,6 +45,25 @@ from collections import defaultdict
 RUOLO = os.environ.get('RUOLO', 'gk').strip().lower()
 CACHE_DIR = f'formazione_mls/output/mls_{RUOLO}_calibration/.cache'
 
+# 27/07 (sessione estensione campionati): esteso da MLS-only a tutti i
+# campionati con cache disponibile -- stesso principio delle altre analisi
+# estese in questa sessione (measure_teammate_correlation.py/
+# validate_level_score_event_rate.py). CACHE_DIR sopra resta per
+# retrocompatibilita' (RUOLO singolo, uso diretto), CACHE_DIRS sotto e'
+# usato da main() per l'analisi multi-campionato.
+LEAGUE_CACHE_TPL = {
+    'mls': 'formazione_mls/output/mls_{ruolo}_calibration/.cache',
+    'kleague': 'formazione_kleague/output/kleague_{ruolo}_calibration/.cache',
+    'brasile': 'formazione_brasile/output/brasile_{ruolo}_all/.cache',
+    'croazia': 'formazione_croazia/output/croazia_{ruolo}_all/.cache',
+    'portogallo': 'formazione_portogallo/output/portogallo_{ruolo}_all/.cache',
+    'austria': 'formazione_austria/output/austria_{ruolo}_all/.cache',
+    'scozia': 'formazione_scozia/output/scozia_{ruolo}_all/.cache',
+    'belgio': 'formazione_belgio/output/belgio_{ruolo}_all/.cache',
+    'olanda': 'formazione_olanda/output/olanda_{ruolo}_all/.cache',
+    'spagna': 'formazione_spagna/output/spagna_{ruolo}_all/.cache',
+}
+
 # Gruppi per ruolo, copiati da test_<ruolo>.py (26/07/2026).
 GROUPS_BY_ROLE = {
     'gk': {
@@ -139,9 +158,12 @@ def analyze_game(detailed_score):
 
 
 def main():
-    files = glob.glob(os.path.join(CACHE_DIR, '*_detail_cache.json'))
+    files = []
+    for tpl in LEAGUE_CACHE_TPL.values():
+        cache_dir = tpl.format(ruolo=RUOLO)
+        files.extend(glob.glob(os.path.join(cache_dir, '*_detail_cache.json')))
     if not files:
-        print(f"Nessuna cache trovata in {CACHE_DIR}/")
+        print(f"Nessuna cache trovata per ruolo '{RUOLO}' in nessun campionato noto.")
         return
 
     n_players = 0

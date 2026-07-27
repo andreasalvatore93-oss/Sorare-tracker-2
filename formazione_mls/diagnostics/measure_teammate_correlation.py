@@ -77,6 +77,9 @@ LEAGUES = {
     'scozia': ('formazione_scozia.predict.test_{ruolo}', 'formazione_scozia/output/scozia_{ruolo}_all/.cache'),
     'croazia': ('formazione_croazia.predict.test_{ruolo}', 'formazione_croazia/output/croazia_{ruolo}_all/.cache'),
     'belgio': ('formazione_belgio.predict.test_{ruolo}', 'formazione_belgio/output/belgio_{ruolo}_all/.cache'),
+    'brasile': ('formazione_brasile.predict.test_{ruolo}', 'formazione_brasile/output/brasile_{ruolo}_all/.cache'),
+    'olanda': ('formazione_olanda.predict.test_{ruolo}', 'formazione_olanda/output/olanda_{ruolo}_all/.cache'),
+    'spagna': ('formazione_spagna.predict.test_{ruolo}', 'formazione_spagna/output/spagna_{ruolo}_all/.cache'),
 }
 MIN_PAIRS_FOR_REPORT = 20
 

@@ -85,6 +85,45 @@ CONFIGS = [
           use_trend=True, trend_intensity=0.7)),
 ]
 
+# 27/07 (sessione estensione campionati): esteso programmaticamente ai 6
+# nuovi campionati (nessuna cartella "_calibration", usano "_all" di
+# produzione -- stessi dati, generati da run normale invece che
+# CALIBRATION_MODE). Parametri CORRETTI alla sezione 21 del riassunto
+# (GK/DEF avevano valori STALE sopra: GK era ancora hl=9.0 pre-ricalibrazione,
+# DEF hl=12.0 -- ora GK hl=12.0, DEF hl=9.0, coerenti con test_gk.py/
+# test_def.py attuali). NOTA: rigorous_backtest() sotto e' la formula DI
+# BACKTEST DIAGNOSTICO (media pesata sul totale), NON la nuova formula di
+# produzione level_score_atteso+granulare_atteso implementata in questa
+# sessione (score_atteso in build_prediction) -- stesso limite gia' presente
+# quando questo script fu scritto la prima volta, non introdotto ora.
+_PARAMS_BY_ROLE = {
+    'GK': dict(half_life=12.0, range_multiplier=1.6, opponent_sensitivity=29.0,
+               use_granular_factors=False, use_trend=True, trend_intensity=0.7),
+    'DEF': dict(half_life=9.0, range_multiplier=1.2, opponent_sensitivity=29.0,
+                use_granular_factors=False, use_trend=True, trend_intensity=0.7),
+    'MID': dict(half_life=12.0, range_multiplier=1.4, opponent_sensitivity=29.0,
+                use_granular_factors=False, use_trend=True, trend_intensity=0.7),
+    'FWD': dict(half_life=12.0, range_multiplier=1.4, opponent_sensitivity=29.0,
+                use_granular_factors=False, use_trend=True, trend_intensity=1.0),
+}
+_MODULE_BY_ROLE = {
+    'GK': 'test_gk', 'DEF': 'test_def', 'MID': 'test_mid', 'FWD': 'test_mls_fwd_all',
+}
+_NEW_LEAGUES = {
+    'BRASILE': 'formazione_brasile', 'CROAZIA': 'formazione_croazia',
+    'PORTOGALLO': 'formazione_portogallo', 'AUSTRIA': 'formazione_austria',
+    'SCOZIA': 'formazione_scozia', 'BELGIO': 'formazione_belgio',
+    'OLANDA': 'formazione_olanda', 'SPAGNA': 'formazione_spagna',
+}
+for _league, _pkg in _NEW_LEAGUES.items():
+    _folder = _pkg.split('_', 1)[1]
+    for _ruolo in ('GK', 'DEF', 'MID', 'FWD'):
+        CONFIGS.append((
+            _league, _ruolo, f'{_pkg}.predict.{_MODULE_BY_ROLE[_ruolo]}',
+            f'{_pkg}/output/{_folder}_{_ruolo.lower()}_all/.cache',
+            _PARAMS_BY_ROLE[_ruolo],
+        ))
+
 
 def load_player_series(fpath):
     with open(fpath, encoding='utf-8') as f:
