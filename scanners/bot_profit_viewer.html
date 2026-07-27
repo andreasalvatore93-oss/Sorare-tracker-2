@@ -175,7 +175,7 @@
   </header>
 
   <div class="load-zone" id="loadZone">
-    <p>Trascina qui <code>profit_tracking_&lt;data_ora&gt;.csv</code> oppure <code>consiglio_acquisto_mls.csv</code>, oppure</p>
+    <p>Trascina qui <code>profit_tracking_&lt;data_ora&gt;.csv</code>, oppure</p>
     <button class="btn" id="pickBtn">Scegli file</button>
     <input type="file" id="fileInput" accept=".csv">
   </div>
@@ -229,9 +229,8 @@
 </div>
 
 <script>
-// Metadati noti per entrambi i formati CSV emessi da bot_profit.py:
-// - profit_tracking*.csv / per_campionato/*.csv (classifica completa, potenziale_score)
-// - consigli_acquisto.csv (segnali diretti, sconto% vs media 7gg, target_rivendita_eur)
+// Metadati noti per il CSV emesso da bot_profit.py:
+// - profit_tracking*.csv (classifica top 50, potenziale_score)
 // Colonne NON elencate qui vengono comunque mostrate (testo semplice, label = chiave).
 const KNOWN_COLUMNS = {
   player_name:      { label: 'Giocatore', type: 'text' },

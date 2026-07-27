@@ -34,17 +34,17 @@ crescita" -- richiesta esplicita utente 24/07):
 Nessuna decisione di acquisto/offerta, nessun punteggio composito calcolato
 ancora (i pesi relativi vanno concordati prima di tradurli in un unico score).
 
-Output (FIX 27/07, richiesta esplicita utente: un solo file al posto di 3,
-niente ambiguita' su quale aprire): un solo CSV GLOBALE in bot_profit_output/,
-CLASSIFICA PERSISTENTE che si aggiorna nel tempo (ricaricata ad ogni avvio,
-non riparte mai vuota) -- in_season e classic mescolati nella stessa riga,
-distinti dalla colonna tipo_carta:
-  - profit_tracking_<timestamp_utc>.csv -> tutte le carte, tutte le leghe
+Output (FIX 27/07, richiesta esplicita utente: un solo output per run, niente
+ambiguita' su quale aprire): un solo CSV in bot_profit_output/ (cartella in
+root del repo, non sotto scanners/), CLASSIFICA PERSISTENTE che si aggiorna
+nel tempo (ricaricata ad ogni avvio, non riparte mai vuota) -- in_season e
+classic mescolati nella stessa riga, distinti dalla colonna tipo_carta, tutte
+le leghe insieme:
+  - profit_tracking_<timestamp_utc>.csv -> top 50 carte per potenziale_score
 Il nome include data/ora UTC (formato YYYYMMDD_HHMM); ad ogni riscrittura il
 file con timestamp precedente viene cancellato, quindi ne resta sempre e solo
-uno (il piu' recente). Stesso principio per i file per campionato in
-bot_profit_output/per_campionato/. Riscritti ad ogni commit periodico
-(default 5 minuti) con SOLO le prime 50 carte per potenziale_score decrescente.
+uno (il piu' recente). Riscritto ad ogni commit periodico (default 5 minuti)
+con SOLO le prime 50 carte per potenziale_score decrescente.
 Il bot si ferma automaticamente anche quando raggiunge MAX_TRACKED_CARDS
 (default 500) di carte NUOVE, oltre che a fine LISTEN_SECONDS.
 """
@@ -152,12 +152,6 @@ TOP_N_OUTPUT = int(os.environ.get('TOP_N_OUTPUT', '50'))
 # non solo per LISTEN_SECONDS -- default 500.
 MAX_TRACKED_CARDS = int(os.environ.get('MAX_TRACKED_CARDS', '500'))
 
-# FIX 26/07 (richiesta esplicita utente): sotto questo sconto% (minimo attuale
-# vs media 7gg trimmed) una carta non e' considerata "anomalmente scontata" --
-# soglia per il segnale COMPRA in write_buy_signals(), non tocca potenziale_score.
-BUY_SIGNAL_THRESHOLD_PERCENT = float(os.environ.get('BUY_SIGNAL_THRESHOLD_PERCENT', '10.0'))
-BUY_SIGNAL_TOP_N = int(os.environ.get('BUY_SIGNAL_TOP_N', '50'))
-
 # FIX 26/07 (richiesta esplicita utente, ridurre ulteriormente il roster full-MLS),
 # esteso 27/07 (richiesta esplicita utente) a L5 e L40 oltre a L10: sotto questa
 # soglia su UNA QUALSIASI delle tre medie, il giocatore e' scartato GIA' nella
@@ -203,7 +197,7 @@ MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING'
 # come coverage/L5/nessuna partita). Alleggerisce le chiamate successive.
 MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '1.0'))
 
-OUTPUT_DIR = 'scanners/bot_profit_output'
+OUTPUT_DIR = 'bot_profit_output'
 # FIX 27/07 (richiesta esplicita utente: troppi file separati, "non so quale
 # aprire"): un SOLO file combinato (in season+classic mescolati, tutte le
 # leghe) al posto dei 3 file globali di prima (combinato/solo in season/solo
@@ -427,20 +421,6 @@ def graphql_query(query, variables=None, max_retries=3):
 def is_excluded_league(league_slug):
     """MLS/K-League: in_season e classic sono due mercati separati."""
     return league_slug in EXCLUDED_LEAGUE_SLUGS
-
-
-def normalize_league_filename(league_slug):
-    """Converte un league_slug Sorare (es. 'premier-league', 'mlspa') in un nome
-    file sicuro in snake_case (es. 'premier_league', 'mlspa'). Nessuna query
-    aggiuntiva: si usa direttamente lo slug tecnico gia' disponibile, non il
-    displayName leggibile (deciso 25/07 per zero overhead di rete)."""
-    if not league_slug:
-        return None
-    safe = league_slug.strip().lower()
-    safe = safe.replace('-', '_').replace(' ', '_')
-    safe = ''.join(ch for ch in safe if ch.isalnum() or ch == '_')
-    safe = safe.strip('_')
-    return safe or None
 
 
 # =====================================================================================
@@ -1233,98 +1213,17 @@ def _find_latest_output_csv():
     return candidates[-1] if candidates else None
 
 
-def _tra_quanto_leggibile(ore):
-    if ore is None:
-        return "data sconosciuta"
-    if ore < 0:
-        return "partita gia' in corso/giocata"
-    if ore < 24:
-        return f"tra {round(ore)} ore"
-    return f"tra {round(ore / 24)} giorni"
-
-
-BUY_SIGNALS_CSV_PATH = os.path.join(OUTPUT_DIR, 'consiglio_acquisto_mls.csv')
-BUY_SIGNALS_TXT_PATH = os.path.join(OUTPUT_DIR, 'consiglio_acquisto_mls.txt')
-
-
-def write_buy_signals(rows_liquidi):
-    """Consigli DIRETTI di acquisto (richiesta esplicita utente 26/07): tra le
-    carte gia' filtrate per liquidita' (rows_liquidi, stesso identico criterio
-    dei CSV normali), seleziona quelle con sconto_percent >= BUY_SIGNAL_THRESHOLD_PERCENT
-    (prezzo minimo attuale anomalmente basso rispetto alla media reale delle
-    ultime transazioni -- probabile rimbalzo), ordinate per sconto% decrescente,
-    top BUY_SIGNAL_TOP_N. Target di rivendita = la media 7gg trimmed stessa (la
-    decisione di QUANDO rivendere resta manuale, qui e' solo un riferimento).
-    Sovrascrive sempre lo stesso file (nessun nome con timestamp)."""
-    candidati = [
-        r for r in rows_liquidi
-        if r.get('sconto_percent') is not None and r['sconto_percent'] >= BUY_SIGNAL_THRESHOLD_PERCENT
-        and r.get('media_transazioni_7gg_trimmed_eur') is not None
-    ]
-    candidati.sort(key=lambda r: r['sconto_percent'], reverse=True)
-    top = candidati[:BUY_SIGNAL_TOP_N]
-
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
-
-    fieldnames = [
-        'player_name', 'tipo_carta', 'prezzo_attuale_eur', 'sconto_percent',
-        'target_rivendita_eur', 'squadra', 'prossimo_avversario',
-        'prossima_partita_data', 'ore_alla_partita',
-    ]
-    with open(BUY_SIGNALS_CSV_PATH, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for r in top:
-            writer.writerow({
-                'player_name': r['player_name'],
-                'tipo_carta': r['tipo_carta'],
-                'prezzo_attuale_eur': r['min_attuale_eur'],
-                'sconto_percent': r['sconto_percent'],
-                'target_rivendita_eur': r['media_transazioni_7gg_trimmed_eur'],
-                'squadra': r.get('squadra'),
-                'prossimo_avversario': r.get('prossimo_avversario'),
-                'prossima_partita_data': r.get('prossima_partita_data'),
-                'ore_alla_partita': r.get('ore_alla_partita'),
-            })
-
-    with open(BUY_SIGNALS_TXT_PATH, 'w', encoding='utf-8') as f:
-        f.write(f"Consigli di acquisto -- sconto >= {BUY_SIGNAL_THRESHOLD_PERCENT}% vs media 7gg, "
-                f"top {BUY_SIGNAL_TOP_N} per sconto%. Target rivendita = media 7gg (riferimento, "
-                f"decisione finale manuale).\n\n")
-        for r in top:
-            f.write(
-                f"COMPRA: {r['player_name']} ({r['tipo_carta']}) — {r['min_attuale_eur']}EUR ora, "
-                f"-{r['sconto_percent']}% sotto la media 7gg ({r['media_transazioni_7gg_trimmed_eur']}EUR). "
-                f"Target rivendita indicativo: ~{r['media_transazioni_7gg_trimmed_eur']}EUR. "
-                f"Prossima partita {_tra_quanto_leggibile(r.get('ore_alla_partita'))}.\n"
-            )
-
-    log(f"[consigli acquisto] {len(top)}/{len(candidati)} carte sopra soglia "
-        f"{BUY_SIGNAL_THRESHOLD_PERCENT}% scritte in {BUY_SIGNALS_CSV_PATH} / {BUY_SIGNALS_TXT_PATH}")
-
-
 def write_csv_snapshot():
-    """Scrive (FIX 27/07, richiesta esplicita utente: "troppi file separati,
-    non so quale aprire" -- un solo output combinato con data/ora nel nome):
-      1) UN file GLOBALE, in_season+classic mescolati, tutte le leghe insieme
-         -- profit_tracking_<timestamp_utc>.csv. Il filtro Tipo del viewer
-         copre il bisogno di isolare in_season o classic quando serve.
-      2) UN file PER CAMPIONATO in bot_profit/per_campionato/ (richiesta
-         esplicita utente: tenere la suddivisione per lega, utile quando in
-         futuro se ne traccia piu' di una insieme) -- anche qui in_season+
-         classic sempre mescolati dentro lo stesso file, es.
-         mlspa_<timestamp_utc>.csv.
-    In entrambi i casi, ad ogni scrittura vengono cancellati i file con lo
-    stesso prefisso ma timestamp precedente (vedi _cleanup_and_write_ranked_csv)
-    -- resta sempre un solo file per prefisso, il piu' recente."""
+    """Scrive (richiesta esplicita utente 27/07: un solo output per run, niente
+    file per campionato ne' file di consigli separati) UN solo CSV, top 50 per
+    potenziale_score, in_season+classic mescolati, tutte le leghe insieme --
+    profit_tracking_<timestamp_utc>.csv. Ad ogni scrittura viene cancellato il
+    file con timestamp precedente (vedi _cleanup_and_write_ranked_csv) -- ne
+    resta sempre e solo uno, il piu' recente."""
     with _tracked_lock:
         rows = list(_tracked.values())
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
-    per_campionato_dir = os.path.join(OUTPUT_DIR, 'per_campionato')
-    if not os.path.exists(per_campionato_dir):
-        os.makedirs(per_campionato_dir)
 
     # FIX 24/07 (richiesta esplicita utente): le carte senza NESSUNA transazione
     # nella finestra (0/0, media_trimmed=None) non vanno in classifica -- niente
@@ -1348,42 +1247,12 @@ def write_csv_snapshot():
 
     timestamp = _run_timestamp_utc()
 
-    # --- 1) Unico file GLOBALE (in season+classic mescolati) ---
     combinato_path, n_combinato = _cleanup_and_write_ranked_csv(
         rows_liquidi, OUTPUT_DIR, 'profit_tracking', timestamp, 'combinato')
 
-    # --- 2) Un file per campionato (in season+classic mescolati dentro ognuno) ---
-    gruppi = {}  # league_filename -> lista righe
-    senza_league_loggate = 0
-    SENZA_LEAGUE_LOG_MAX = 5  # logga solo le prime N carte senza league leggibile
-
-    for r in rows_liquidi:
-        league_slug_r = r.get('league_slug')
-        league_filename = normalize_league_filename(league_slug_r)
-        if not league_filename:
-            senza_league_loggate += 1
-            if senza_league_loggate <= SENZA_LEAGUE_LOG_MAX:
-                log(f"[per_campionato] SCARTATA dai file per campionato (league_slug mancante/non "
-                    f"leggibile): {r.get('player_name')} ({r.get('player_slug')}) "
-                    f"league_slug={league_slug_r!r} -- resta comunque nel file globale")
-            continue  # scartata SOLO dai file per campionato, resta nel file globale
-        gruppi.setdefault(league_filename, []).append(r)
-
-    if senza_league_loggate > SENZA_LEAGUE_LOG_MAX:
-        log(f"[per_campionato] altre {senza_league_loggate - SENZA_LEAGUE_LOG_MAX} carte scartate "
-            f"per league_slug mancante/non leggibile (log troncato)")
-
-    for league_filename, gruppo_rows in gruppi.items():
-        _cleanup_and_write_ranked_csv(
-            gruppo_rows, per_campionato_dir, league_filename, timestamp,
-            f'campionato={league_filename}')
-
-    write_buy_signals(rows_liquidi)
-
     log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
         f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni "
-        f"({n_combinato} nel file combinato {combinato_path}, {len(gruppi)} file per campionato "
-        f"scritti in {per_campionato_dir}/)")
+        f"({n_combinato} nel file {combinato_path})")
 
 
 # =====================================================================================
