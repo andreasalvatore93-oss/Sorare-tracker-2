@@ -137,6 +137,8 @@
   }
   tbody td.name { font-family: 'Inter', sans-serif; font-size: 12px; }
   tbody td.name .slug { color: var(--text-dim); font-size: 10px; display: block; }
+  tbody td.name a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--text-dim); }
+  tbody td.name a:hover { color: var(--teal); border-bottom-color: var(--teal); }
   tbody td.truncate { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Inter', sans-serif; }
   tbody tr:hover { background: #10171f; }
   tbody tr:nth-child(even) { background: #0d1218; }
@@ -266,9 +268,14 @@ const KNOWN_COLUMNS = {
 // media_transazioni_recente_eur/storica_eur (aggiunte 27/07 col trend) restano
 // solo nel CSV grezzo per analisi future -- nel viewer si vede SOLO la
 // freccia trend_recente (richiesta esplicita utente: "troppi numeri nell'html").
+// FIX 27/07 bis (richiesta esplicita utente: "compatta tutto, elimina campi
+// inutili, niente scroll orizzontale"): league_slug (sempre mlspa in pratica),
+// l40 (L5/L10 gia' bastano a colpo d'occhio) e ore_alla_partita (ridondante
+// con prossima_partita_data) eliminati dalla tabella -- restano nel CSV grezzo.
 const EXCLUDED_COLUMNS = new Set([
   'player_slug', 'ultimo_tipo_evento', 'link_sorare',
   'media_transazioni_recente_eur', 'media_transazioni_storica_eur',
+  'league_slug', 'l40', 'ore_alla_partita',
 ]);
 
 // Ordine preferito (richiesta esplicita utente: info importanti vicine, es.
@@ -276,11 +283,11 @@ const EXCLUDED_COLUMNS = new Set([
 // presenti nel CSV caricato) restano in coda, nell'ordine con cui compaiono
 // nel file.
 const PREFERRED_ORDER = [
-  'player_name', 'tipo_carta', 'potenziale_score',
+  'player_name', 'trend_recente', 'tipo_carta', 'potenziale_score',
   'min_attuale_eur', 'prezzo_attuale_eur', 'sconto_percent',
   'media_transazioni_7gg_trimmed_eur', 'target_rivendita_eur', 'n_transazioni_usate',
-  'squadra', 'prossimo_avversario', 'prossima_partita_data', 'ore_alla_partita',
-  'ultima_partita_score', 'l5', 'l10', 'l40', 'league_slug',
+  'squadra', 'prossimo_avversario', 'prossima_partita_data',
+  'ultima_partita_score', 'l5', 'l10',
 ];
 
 let rawRows = [];
