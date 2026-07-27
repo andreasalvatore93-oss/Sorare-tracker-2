@@ -1977,3 +1977,117 @@ run reale). Per "Resto del Mondo" servirà l'approccio a due fasi (punto E) se e
 ricognizione che vale la pena investirci. **Promemoria**: altri campionati non ancora schedulati
 avranno probabilmente lo stesso comportamento "0 disponibili" di LaLiga finché non parte la
 rispettiva stagione — non trattarlo come un bug quando si presenta di nuovo.
+
+## 24. Stessa giornata (continua) — rianalisi su 10 campionati, correzioni applicate, ricognizione
+## campionati mancanti, bootstrap stability lanciato in background
+
+Continuazione diretta della sessione 23, stesso giorno. Chiude la richiesta esplicita dell'utente
+di ripetere TUTTE le analisi (correlazioni, level_score, granulari) su tutti i campionati raccolti
+finora, poi valutare insieme ogni possibile correzione "dalla più piccola alla più grande".
+
+### A. Script diagnostici estesi da 7 a 10 campionati (+Brasile/Olanda/Spagna)
+
+`measure_teammate_correlation.py`, `validate_level_score_event_rate.py`,
+`smoke_test_level_score_production.py`, `inspect_granular_weights.py` (quest'ultimo MAI esteso
+prima, era MLS-only da quando scritto), `analyze_gk_captain_value.py`,
+`recalibrate_6leagues_inseason.py`, `validate_outlier_shrinkage.py` — tutti estesi con lo stesso
+pattern `LEAGUE_CACHE_TPL`/`LEAGUES` già usato altrove. Nessuna nuova query, solo cache già su
+disco. Risultati principali:
+- **level_score atteso**: MAE -1.69% GK, -1.28% DEF, -0.55% MID, -1.28% FWD (n quasi raddoppiato
+  rispetto alla sez. 23, es. GK 278→447) — formula confermata, nessuna azione.
+- **Granulari**: pesi confermati (level_score 55.6% GK/40.2% DEF/49.5% MID/63.4% FWD), coerenti con
+  la scoperta originale a singola lega — nessuna sorpresa.
+- **Correlazioni**: def-fwd e fwd-fwd same-team hanno SUPERATO la soglia p<0.05 con più dati
+  (+0.107 p=0.005 e +0.177 p=0.042) — **MA verificato che il codice esistente le copre già**
+  (il ramo `TEAMMATE_SYNERGY_BONUS_VARIANCE` in `synergy_sort_key` è generico su
+  `role in ('DEF','MID','FWD')` da quando FWD-MID fu aggiunto in sezione 20, non specifico per
+  coppia di ruolo) — nessuna modifica necessaria, era un falso allarme del riassunto proposto
+  dall'IA prima di controllare il codice.
+
+### B. Tool di ricognizione lanciato: 40+ campionati mancanti trovati
+
+`diagnostics/discover_missing_leagues.py` (creato in sezione 23F) lanciato per la prima volta via
+un workflow dedicato creato al volo (`.github/workflows/discover_missing_leagues.yml`). 1674 carte
+scansionate. Risultato salvato in `docs/CAMPIONATI_MANCANTI.md` (lista curata, ordinata per
+priorità/numero carte). **`mlspa`** (312 carte) confermato dall'utente duplicato del pool MLS già
+tracciato — escluso definitivamente. **`__unknown__`** (70 carte, `domesticLeague` non leggibile)
+scartato su decisione esplicita dell'utente — non investigare oltre.
+
+Lista priorità alta (>=20 carte, esclusi eredivisie/laliga già coperti): Süper Lig (58),
+Bundesliga (50), Premier League (45), Ligue 1 (41), 2. Bundesliga (41), Serie A (40),
+J1 100 Year Vision League (61), J1 League (27), Ligue 2 (25), Championship (20). Dettaglio completo
++ coda media/bassa priorità nel file.
+
+### C. Correzioni al modello — valutate una alla volta con l'utente
+
+Rifatta la ricalibrazione parametri (`recalibrate_6leagues_inseason.py`) e lo shrinkage outlier
+(`validate_outlier_shrinkage.py`) su 10 campionati. Ogni correzione trovata presentata singolarmente
+per decisione esplicita (principio "un tema alla volta" applicato dentro lo stesso filone):
+
+**APPLICATE**:
+1. GK `RANGE_MULTIPLIER` 1.6→1.4 (MAE 18.30 vs 18.32, -0.1% — scarto minimo ma applicato su
+   richiesta esplicita, stesso principio "anche mezzo punto conta" già seguito altrove).
+2. FWD `MEDIA_RUOLO_FWD_PRIOR` 51.86→53.02 (ricalibrato su 10 campionati, `SHRINK_K_OUTLIER_FWD`
+   invariato a 5.0 — k=4 era troppo simile a k=5 per giustificare il cambio).
+3. `GK_CAPTAIN_MARGIN` 10.0→6.7 (404 partite GK su 10 campionati vs 149 di prima, gap
+   bias-movimento/bias-GK sceso da ~10.2 a 6.69pt — stima più precisa, stessa direzione).
+   **Solo `formazione_mls/build_formazione_finale.py`** (stessa regola "modifiche capitano solo sul
+   tool fuso" di sezione 18).
+4. **DEF shrinkage outlier NUOVO** (`SHRINK_K_OUTLIER_DEF=15.0`, `MEDIA_RUOLO_DEF_PRIOR=51.34`):
+   -3.07% MAE totale, migliora su ENTRAMBI i segmenti n<8 (-2.46%) e n>=8 (-3.30%) — segnale pulito,
+   non il pattern "sospetto" (guadagno solo su un segmento) visto per MID. Applicato a tutti i
+   campionati con la formula level_score (9 al momento del commit, Brasile in fix separato —
+   vedi sezione D).
+
+**SCARTATE**:
+- MID shrinkage outlier (k=3, -0.87%): guadagno quasi tutto sul segmento n>=8 (già affidabile),
+  quasi nullo su n<8 (il segmento che avrebbe dovuto beneficiarne) — stesso pattern "sospetto" già
+  visto e scartato per DEF nella prima calibrazione (sezione 14B). Non applicato.
+
+**DEFERITE** (salvate in memoria persistente, `project_correzioni_modello_da_rivedere_piu_dati.md`,
+per essere rivalutate quando i campionati nuovi avranno più storico):
+- GK shrinkage outlier (k=30, -5.88% MAE totale, -9.11% sul segmento a rischio n<8 — il guadagno
+  più grande di tutti) — MA k=30 è il bordo estremo della griglia testata (`K_GRID` fino a 30),
+  sintomo di possibile overfitting da bordo di griglia (stesso pattern di cautela di sezione 21).
+  Da riprovare con griglia allargata (k fino a 50-60) quando GK avrà più dati — resta il ruolo con
+  meno storico anche a 10 campionati (447 punti test contro 929-1470 degli altri ruoli).
+- Cross-team correlation extra (def-mid/def-def significative ma senza meccanismo dedicato, solo
+  GK ha l'anti-sinergia hard-filter) — nessuna proposta concreta fatta, solo annotato come possibile
+  estensione futura se richiesta.
+- Tutte queste analisi (comprese quelle applicate) andranno RIFATTE quando i campionati nuovi
+  (Brasile/Croazia/Portogallo/Austria/Scozia/Belgio/Olanda/Spagna) avranno accumulato più storico —
+  richiesta esplicita dell'utente, salvata in memoria persistente per non perderla tra sessioni.
+
+**Scoperto un gap durante l'applicazione del punto 4**: `formazione_brasile/predict/test_*.py`
+erano rimasti PRIVI della formula level_score di base (mai applicata, essendo stato creato per
+rename/pivot di una pipeline intermedia in sezione 23E dopo il primo giro di implementazione) — fix
+in corso in background al momento di scrivere questa sezione (level_score + DEF shrinkage insieme).
+
+### D. Bootstrap stability: lavoro lungo lanciato in background, autorizzazione esplicita
+
+L'utente ha autorizzato esplicitamente il lancio di query GraphQL reali per estendere l'infrastruttura
+di calibrazione allargata (grid search 72 combinazioni) agli 8 campionati che non l'hanno mai avuta
+(Brasile, Croazia, Portogallo, Austria, Scozia, Belgio, Olanda, Spagna), con l'obiettivo finale di
+rieseguire `formazione_mls/calibrazione/bootstrap_stability.py` su un pool esteso a 10 campionati
+(oggi solo MLS+K League). **Lavoro delegato a un agente in background**, istruito con la stessa
+cautela rate-limit di sempre (un campionato/ruolo alla volta, mai in parallelo, verifica
+`gh run list` prima di ogni lancio) — è un lavoro LUNGO (fino a 32 run sequenziali), non ancora
+completato al momento di scrivere questa sezione.
+
+### E. Prossimo filone: costruzione pipeline per i campionati mancanti prioritari
+
+Deciso con l'utente: costruire le pipeline dedicate (stesso pattern collaudato più volte oggi:
+clone di un campionato esistente + adattamento slug/nomi) per i campionati della lista priorità
+alta di `docs/CAMPIONATI_MANCANTI.md`, UNA ALLA VOLTA, poi lanciarle — **con attenzione a non
+sovrapporsi al lavoro di bootstrap stability della sezione D** (stesso principio rate-limit,
+verificare sempre `gh run list` prima di lanciare qualunque nuova run). Lavoro in corso al momento
+di scrivere questa sezione, l'utente si è allontanato e ha chiesto un riepilogo di stato al ritorno
+(o una notifica se tutto finisce prima).
+
+### F. Stato repo a questo punto della sessione
+
+Pushato su `main`: correzioni GK_CAPTAIN_MARGIN + DEF shrinkage (9/10 campionati, Brasile in fix),
+`docs/CAMPIONATI_MANCANTI.md`, script diagnostici estesi. **In corso, non ancora pushato**: fix
+level_score+DEF shrinkage per Brasile (agente in background), costruzione pipeline nuovi campionati
+(sezione E, appena iniziata). Memoria persistente aggiornata con la nota "da rivedere quando c'è
+più storico" per tutte le correzioni di questa sessione.
