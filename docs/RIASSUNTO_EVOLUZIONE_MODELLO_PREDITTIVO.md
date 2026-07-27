@@ -2764,9 +2764,18 @@ di schierare.
    davvero questa competizione: non lo sa ancora, deve verificare su Sorare.** Nessuna azione
    presa, riprendere quando ha la risposta (dismettere se non la gioca, altrimenti progettare il
    filtro `eligibleSo5Competitions`).
-3. **Anti-sinergia cross-team su tutti i ruoli**: misurata (fwd-gk -0.258, gk-mid -0.192,
-   def-mid -0.156, def-def -0.122, mid-mid -0.125, tutte con p<0.05), ma **split-half instabile**:
-   serve più storico prima di metterla in produzione.
+3. **Anti-sinergia cross-team su tutti i ruoli** — **RIMISURATA 28/07** con `measure_teammate_
+   correlation.py` (ora auto-discovery di TUTTI i campionati dal filesystem, non più lista fissa
+   a 10): 25 campionati, 1157 partite same-team / 547 cross-team (contro le 20/876 di sez. 27.H).
+   **Novità importante**: con più dati la maggior parte delle coppie cross-team è ora STABILE in
+   split-half (stesso segno, grandezza simile prima/seconda metà): def-def -0.136 (-0.144/-0.148),
+   mid-mid -0.139 (-0.143/-0.149), gk-mid -0.208 (-0.118/-0.229), def-mid -0.175 (-0.034/-0.215),
+   def-fwd -0.127 (-0.185/-0.127), fwd-mid -0.109 (-0.098/-0.118) — tutte p<0.05. **Ironia**:
+   l'unica coppia già in produzione (fwd-gk, -0.289) è ora la MENO stabile (prima metà -0.003,
+   seconda -0.357). Same-team confermato invariato, tutto stabile (nessun cambio necessario).
+   **Proposto all'utente di estendere la penalità cross-team alle coppie ora stabili — RIMANDATO
+   su sua richiesta esplicita ("rifammela dopo, ricorda domanda per dopo"): riproporre la stessa
+   domanda quando riprende questo filone, non decidere da soli.**
 4. **Aggiungere le leghe mancanti** dall'elenco in 28.D quando servono.
 5. **Refuso**: il report HTML dice ancora "Fusione MLS + K League" in fondo.
 6. **Repo ancora PUBBLICO**: scansione secret prima di renderlo privato.
