@@ -20,7 +20,6 @@ query Diagnostica($slug: String!) {
   anyPlayer(slug: $slug) {
     slug
     displayName
-    position
     activeClub {
       name
       domesticLeague { slug displayName }
@@ -71,7 +70,7 @@ def main():
             continue
         club = p.get('activeClub') or {}
         dl = club.get('domesticLeague') or {}
-        print(f"nome: {p.get('displayName')} | ruolo: {p.get('position')}")
+        print(f"nome: {p.get('displayName')}")
         print(f"club: {club.get('name')} | domesticLeague: {dl.get('slug') or 'NESSUNA'}")
         nodes = (p.get('anyFutureGames') or {}).get('nodes') or []
         print(f"partite future restituite: {len(nodes)}")
