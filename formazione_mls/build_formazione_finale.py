@@ -792,24 +792,63 @@ CAP260_BONUS = 0.04
 CAP260_L10_THRESHOLD_BY_TYPE = {'IN_SEASON': 260.0, 'ALLSTARS': 370.0}
 
 
+# Margine minimo di punteggio atteso che un portiere deve superare rispetto
+# al migliore giocatore di movimento per convenire come capitano (27/07,
+# richiesta esplicita utente, confermata con dati reali via
+# formazione_mls/diagnostics/analyze_gk_captain_value.py -- NESSUNA nuova
+# query, solo cache di calibrazione gia' su disco, 149 partite GK / 1673
+# movimento MLS+K League). Il bonus capitano e' una percentuale del
+# punteggio REALE ottenuto (non dell'atteso), quindi scegliere il capitano
+# solo in base all'atteso grezzo e' ottimale SOLO se l'atteso e' calibrato
+# allo stesso modo tra ruoli -- non lo e': nella fascia di punteggio atteso
+# rilevante per la scelta capitano (>=55, dove tipicamente si gioca la
+# decisione), il bias di calibrazione (reale - atteso) e' -15.4pt per i
+# portieri contro -5.2pt per il movimento -- un divario di ~10pt, coerente
+# con l'esperienza dell'utente su Sorare ("basta un gol subito per perdere
+# il bonus clean sheet, i portieri hanno punteggi tendenzialmente piu'
+# bassi") anche se lui stesso non l'aveva mai verificato sui dati. A parita'
+# o quasi di atteso nominale, il portiere realizza in media MENO del
+# giocatore di movimento: un margine fisso corregge la scelta senza dover
+# ricalibrare l'intera formula solo per la selezione capitano.
+GK_CAPTAIN_MARGIN = 10.0
+
+
 def pick_captain(formazione, avoid_slugs=None):
-    """Il capitano ottimale e' semplicemente il giocatore con lo score atteso
-    piu' alto della formazione: dato che gli altri punteggi restano fissi
-    a prescindere da chi si nomina capitano, il bonus (che sia +50% o +20%
-    Arena) e' comunque una percentuale, quindi e' sempre massimizzato
-    scegliendo il punteggio di partenza piu' alto tra i titolari.
+    """Il capitano ottimale sarebbe, in puro valore atteso, il giocatore con
+    lo score atteso piu' alto della formazione (il bonus e' una percentuale
+    del punteggio REALE di quel giocatore, quindi massimizzare l'atteso
+    massimizza il bonus atteso) -- MA questo vale solo se l'atteso e'
+    calibrato allo stesso modo tra ruoli. Non lo e' per i portieri (vedi
+    GK_CAPTAIN_MARGIN sopra): un portiere diventa capitano solo se il suo
+    atteso supera quello del miglior giocatore di movimento di almeno
+    GK_CAPTAIN_MARGIN punti, altrimenti vince il movimento anche se il
+    portiere ha un atteso nominale piu' alto (ma non abbastanza).
     'avoid_slugs' (27/07, richiesta esplicita utente: varianza capitano tra
     piu' formazioni della STESSA competizione/tipo, quando esistono 2+ copie
     di una carta che permettono di riusarla in piu' lineup): se fornito,
     preferisce il punteggio piu' alto TRA i titolari non ancora capitanati in
     questo tipo; se sono gia' stati capitanati tutti (nessuna alternativa),
-    ripiega sul punteggio piu' alto assoluto -- mai un peggioramento del
-    punteggio atteso solo per la varianza."""
+    ripiega sul pool completo -- mai un peggioramento del punteggio atteso
+    solo per la varianza, la logica GK/movimento resta comunque applicata."""
+    candidates = formazione
     if avoid_slugs:
-        candidates = [p for p in formazione if p[1]['slug'] not in avoid_slugs]
-        if candidates:
-            return max(candidates, key=lambda pick: pick[1]['atteso'])
-    return max(formazione, key=lambda pick: pick[1]['atteso'])
+        filtered = [p for p in formazione if p[1]['slug'] not in avoid_slugs]
+        if filtered:
+            candidates = filtered
+
+    outfield = [p for p in candidates if p[0] != 'GK']
+    if not outfield:
+        return max(candidates, key=lambda p: p[1]['atteso'])
+    best_outfield = max(outfield, key=lambda p: p[1]['atteso'])
+
+    gk = [p for p in candidates if p[0] == 'GK']
+    if not gk:
+        return best_outfield
+    best_gk = max(gk, key=lambda p: p[1]['atteso'])
+
+    if best_gk[1]['atteso'] >= best_outfield[1]['atteso'] + GK_CAPTAIN_MARGIN:
+        return best_gk
+    return best_outfield
 
 
 def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,

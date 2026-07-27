@@ -1465,3 +1465,82 @@ verificato su run reale.
 **Backlog aggiornato**: nessun punto prioritario aperto su questo filone al momento. Resta valido
 tutto il backlog di 13E/14F/15J (bonus K League da verificare con screenshot reali, estensione ad
 altri campionati, ecc.), non toccato in questa sessione.
+
+## 18. Stessa notte (continua) — capitano portiere: analisi dati + margine minimo
+
+**Richiesta esplicita dell'utente**: dalla sua esperienza pluriennale su Sorare, un portiere quasi
+mai conviene come capitano (basta un gol subito per perdere il bonus clean sheet, i portieri hanno
+punteggi tendenzialmente più bassi) — ma è un'intuizione, mai verificata sui dati. Chiesta
+un'analisi locale (nessuna nuova query) per quantificare quanto conviene/sconviene un portiere
+capitano rispetto a un giocatore di movimento, anche a parità o quasi di punteggio atteso.
+
+**Nota concettuale importante** (chiarisce perché questo NON è solo "avversione al rischio"): il
+bonus capitano è una percentuale del punteggio REALE ottenuto (non dell'atteso). Scegliere il
+capitano in base al solo "atteso" grezzo è ottimale in valore atteso SOLO SE l'atteso è calibrato
+allo stesso modo tra ruoli. Se il modello sovrastima sistematicamente i portieri rispetto al
+movimento a parità di atteso nominale, scegliere il portiere in base al raw atteso è un errore
+anche in pura logica di valore atteso — non serve invocare la varianza per giustificare
+l'intuizione dell'utente, basta una bias di calibrazione per ruolo.
+
+### A. Analisi (`formazione_mls/diagnostics/analyze_gk_captain_value.py`, nuovo script)
+
+Walk-forward identico ad altri diagnostici del progetto (`rigorous_backtest` di ciascun
+`test_<ruolo>.py`, PARAMETRI UFFICIALI di produzione, granulari OFF, opponent factor neutro) su
+TUTTE le cache di calibrazione già su disco, MLS+K League insieme (149 partite GK, 1673 partite
+movimento DEF+MID+FWD combinate). Nessuna nuova query API.
+
+**Bias di calibrazione complessivo** (media reale − atteso): GK **−3.12 pt**, movimento **+0.29 pt**
+— il modello sovrastima sistematicamente i portieri, il movimento è quasi non distorto.
+
+**Nella "zona capitano" (atteso ≥ 55, dove si gioca tipicamente la scelta)** il divario esplode:
+
+| Gruppo | n | Atteso medio | Reale medio | Bias | Frequenza "crollo" (reale <50% atteso) |
+|---|---|---|---|---|---|
+| GK | 38 | 60.6 | 45.2 | **−15.4 pt** | 10.5% (gap medio 52pt) |
+| Movimento | 517 | 62.0 | 56.9 | −5.2 pt | 7.7% (gap medio 40pt) |
+
+Confronto per fascia di punteggio atteso (bucket da 5pt): dai 50 punti in su, a parità di atteso
+nominale il reale medio del GK è sistematicamente più basso di quello del movimento, e il divario
+CRESCE con l'atteso (−7.5, −10.7, −7.8, −15.6 pt nelle fasce successive fino a 70) — non è rumore
+casuale, è un pattern consistente. **Conclusione: l'intuizione dell'utente era corretta e
+quantificabile.** Il divario "equo" implicito nella zona capitano è: `bias_movimento -
+bias_GK = -5.2 - (-15.4) ≈ 10.2 pt`.
+
+### B. Fix implementato: margine minimo per il capitano portiere
+
+Prima modifica rapida (già fatta prima dell'analisi, su richiesta): a parità ESATTA di atteso tra
+portiere e movimento, preferire il movimento (`_captain_sort_key`, poi sostituita dal fix B sotto,
+più completo).
+
+**Fix finale** (`pick_captain` in `formazione_mls/build_formazione_finale.py`, DA CUI il Generatore
+Formazioni importa `pick_captain` per TUTTI gli 8 tipi — **richiesta esplicita dell'utente: per ora
+le modifiche SOLO sul tool fuso, non più su `formazione_kleague/build_formazione_finale.py`
+standalone**, che quindi NON è stato toccato in questo fix, a differenza dei fix precedenti della
+stessa notte): nuova costante `GK_CAPTAIN_MARGIN = 10.0` (tarata sul gap ~10.2pt misurato sopra). Un
+portiere diventa capitano SOLO se il suo atteso supera il miglior atteso tra i giocatori di
+movimento della formazione di almeno `GK_CAPTAIN_MARGIN` punti — altrimenti vince il movimento anche
+se il portiere ha un atteso nominale più alto (ma non abbastanza). Riscritta la funzione senza il
+vecchio `_captain_sort_key` (rimosso, sostituito da questa logica più esplicita): separa i candidati
+in `outfield` (tutto tranne lo slot `'GK'`, che identifica sempre univocamente il portiere) e `gk`,
+sceglie il migliore per punteggio in ciascun gruppo, poi applica la soglia di margine. Compatibile
+con la varianza capitano (`avoid_slugs`, sezione 17B) — il filtro "già capitanati" si applica prima,
+poi la logica GK/movimento gira normalmente sul sottoinsieme filtrato.
+
+**Verificato con test sintetici locali**: parità esatta (70 vs 70) → movimento; GK sopra ma sotto
+margine (70 vs 65, diff 5) → movimento comunque; GK esattamente al margine (75 vs 65, diff 10) →
+GK; GK ben oltre (85 vs 65, diff 20) → GK; compatibilità con `avoid_slugs` verificata (varianza
+capitano continua a funzionare, la logica GK/movimento si applica al sottoinsieme filtrato).
+
+### C. Stato repo
+
+Nuovo file `formazione_mls/diagnostics/analyze_gk_captain_value.py` (analisi, non tocca la
+produzione) + modifica a `pick_captain` in `formazione_mls/build_formazione_finale.py`. **NON
+toccato `formazione_kleague/build_formazione_finale.py`** (richiesta esplicita dell'utente, vedi
+sopra) — se in futuro cambia idea e richiede di nuovo il doppio tool, replicare identico il fix di
+`pick_captain` anche lì (stesso pattern usato più volte in questa sessione per gli altri fix).
+Pronto per il commit, non ancora pushato su `main` al momento di scrivere questa sezione.
+
+**Backlog**: nessun punto prioritario aperto. `GK_CAPTAIN_MARGIN=10.0` è un valore tarato su dati
+oggi disponibili (campione GK ancora relativamente piccolo, 149 partite) — da rivedere alla
+prossima ricalibrazione allargata quando la stagione avanza, stesso principio già applicato ai
+parametri ufficiali del modello.
