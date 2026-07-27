@@ -109,6 +109,21 @@ RANGE_MULTIPLIER = 1.2  # invariato
 OPPONENT_SENSITIVITY = 29.0  # invariato
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto) -- non piu' applicato in produzione per DEF (granulari rimossi da score_atteso, vedi sotto), resta per il grid search/diagnostica
 TREND_INTENSITY = 0.7  # FISSATO (26/07): idem, vedi HALF_LIFE_GAMES sopra
+# FISSATO (27/07, tema backlog "outlier/hot-streak" per DEF, dopo il FWD gia'
+# in produzione): backtest walk-forward rigoroso esteso a 10 campionati
+# (formazione_mls/diagnostics/validate_outlier_shrinkage.py) mostra che tirare
+# il grezzo level_score_atteso+granulare_atteso verso la media di ruolo
+# (Empirical Bayes, pseudo-count SHRINK_K_OUTLIER_DEF) migliora il MAE reale
+# per DEF con k=15.0: -3.07% totale, e su ENTRAMBI i segmenti (n<8: -2.46%,
+# n>=8: -3.30%) -- non solo sul segmento "a rischio" come ci si aspetterebbe,
+# segno di un segnale pulito e non di overfitting (a differenza di MID, dove
+# lo stesso identico check e' stato scartato perche' il guadagno cadeva SOLO
+# sul segmento n>=8). MEDIA_RUOLO_DEF_PRIOR = media grezza di tutti gli score
+# DEF nel pool esteso a 10 campionati (MLS, K League, Brasile, Croazia,
+# Portogallo, Austria, Scozia, Belgio, Olanda, Spagna), ricalibrata sessione
+# 27/07 con validate_outlier_shrinkage.py (variabile media_ruolo).
+SHRINK_K_OUTLIER_DEF = 15.0
+MEDIA_RUOLO_DEF_PRIOR = 51.34
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70  # RIATTIVATO (25/07) per l'USO REALE (schierare formazione): il filtro va tenuto attivo in produzione per escludere chi probabilmente non gioca. FIX (25/07): disattivato automaticamente in CALIBRATION_MODE (era un TODO manuale, causava esclusioni indesiderate nel grid search allargato).
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1379,8 +1394,15 @@ def build_prediction(player_slug):
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
-    score_atteso = (p_gioca * (level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
-                    * fattore_casa_trasferta)
+    grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    # --- Shrinkage outlier/hot-streak (27/07, vedi SHRINK_K_OUTLIER_DEF sopra):
+    # si applica al grezzo (level_score_atteso + granulare_atteso), PRIMA di
+    # fattore_casa_trasferta e delle correzioni additive Stadio D sotto.
+    grezzo_nuovo_corretto = (
+        (n / (n + SHRINK_K_OUTLIER_DEF)) * grezzo_nuovo
+        + (SHRINK_K_OUTLIER_DEF / (n + SHRINK_K_OUTLIER_DEF)) * MEDIA_RUOLO_DEF_PRIOR
+    )
+    score_atteso = p_gioca * grezzo_nuovo_corretto * fattore_casa_trasferta
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
@@ -1512,6 +1534,7 @@ def build_prediction(player_slug):
         'media_granulari_pesata': media_granulari_pesata,
         'level_score_atteso': level_score_atteso,
         'fattore_trend_granulare': fattore_trend_granulare,
+        'grezzo_nuovo_corretto': grezzo_nuovo_corretto,
         'delta_gol_subiti_venue': delta_gol_subiti_venue,
         'delta_gol_subiti_avversario': delta_gol_subiti_avversario,
         'delta_passaggio_venue': delta_passaggio_venue,
