@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T12:13:14.286400Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) ayase-ueda: 44 pt attesi (26-63)
+   SQUADRA: feyenoord-rotterdam | AVVERSARIO: sparta-rotterdam-rotterdam
+======================================================================
+
+######################################################################
+# GIOCATORE: ayase-ueda
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ayase-ueda (squadra: feyenoord-rotterdam)
+Generato: 2026-07-27T12:13:14.285932Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-21 | FEY vs TWE | eredivisie | score=44.0 | peso=0.445
+  2026-01-11 | HEE vs FEY | eredivisie | score=63.1 | peso=0.472
+  2026-01-25 | FEY vs HER | eredivisie | score=32.5 | peso=0.500
+  2026-02-01 | PSV vs FEY | eredivisie | score=36.5 | peso=0.530
+  2026-02-15 | FEY vs GAE | eredivisie | score=45.0 | peso=0.561
+  2026-02-22 | FEY vs TEL | eredivisie | score=31.1 | peso=0.595
+  2026-03-01 | TWE vs FEY | eredivisie | score=33.3 | peso=0.630
+  2026-03-08 | NAC vs FEY | eredivisie | score=70.0 | peso=0.667
+  2026-03-15 | FEY vs EXC | eredivisie | score=83.3 | peso=0.707
+  2026-03-22 | FEY vs AJA | eredivisie | score=32.2 | peso=0.749
+  2026-04-05 | VOL vs FEY | eredivisie | score=39.9 | peso=0.794
+  2026-04-12 | NEC vs FEY | eredivisie | score=68.7 | peso=0.841
+  2026-04-25 | FEY vs GRO | eredivisie | score=83.1 | peso=0.891
+  2026-05-03 | FOR vs FEY | eredivisie | score=28.8 | peso=0.944
+  2026-05-10 | FEY vs AZ | eredivisie | score=50.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 50.37
+  di cui Punteggio decisivo (level_score) medio: 45.86 | Punteggio complessivo (granulari) medio: 4.51 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.12 (delta -0.42) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.21
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.2 - 70.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.33 (differenza: +1.89)
+Media score in casa: 50.15 | Media score fuori casa: 48.61
+Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.018
+Fattore falli (casa/trasferta, da dati reali): 1.011
+Fattore duelli (casa/trasferta, da dati reali): 0.987
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.988
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.974
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 54.1 vs media ultime 10: 52.0): 1.040
+P(gioca): 83.33% (fonte: tasso di presenza storico (15/18))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T10:15
+Casa: Sparta Rotterdam | Trasferta: Feyenoord Rotterdam
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.7 (range 25.5 - 63.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.41
+Punteggio REALE ottenuto in quella partita: 50.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      34.8    33.3     -1.5    14.8        SI
+   7        7      51.4    70.0    +18.6    14.2        NO
+   8        8      49.4    83.3    +33.9    19.9        NO
+   9        9      42.5    32.2    -10.3    26.3        SI
+  10       10      59.6    39.9    -19.7    25.9        SI
+  11       11      38.4    68.7    +30.3    24.6        NO
+  12       12      57.8    83.1    +25.3    25.1        NO
+  13       13      63.9    28.8    -35.1    27.9        NO
+  14       14      46.0    50.0     +4.0    28.3        SI
+
+MAE (errore assoluto medio): 19.85
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 44.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

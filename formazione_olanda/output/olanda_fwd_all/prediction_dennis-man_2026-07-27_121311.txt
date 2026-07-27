@@ -1,0 +1,92 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T12:13:11.591347Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=70%
+======================================================================
+1) dennis-man: 24 pt attesi (8-46)
+   SQUADRA: psv-eindhoven | AVVERSARIO: fortuna-sittard-sittard
+======================================================================
+
+######################################################################
+# GIOCATORE: dennis-man
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: dennis-man (squadra: psv-eindhoven)
+Generato: 2026-07-27T12:13:11.590846Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-22 | NAC vs PSV | eredivisie | score=40.9 | peso=0.595
+  2025-12-06 | HEE vs PSV | eredivisie | score=61.2 | peso=0.630
+  2025-12-13 | PSV vs HER | eredivisie | score=38.5 | peso=0.667
+  2026-01-10 | PSV vs EXC | eredivisie | score=89.2 | peso=0.707
+  2026-02-21 | PSV vs HEE | eredivisie | score=49.1 | peso=0.749
+  2026-02-28 | HER vs PSV | eredivisie | score=76.5 | peso=0.794
+  2026-03-07 | PSV vs AZ | eredivisie | score=38.8 | peso=0.841
+  2026-03-14 | PSV vs NEC | eredivisie | score=41.0 | peso=0.891
+  2026-04-04 | PSV vs UTR | eredivisie | score=34.5 | peso=0.944
+  2026-05-17 | PSV vs TWE | eredivisie | score=73.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 54.28
+  di cui Punteggio decisivo (level_score) medio: 47.20 | Punteggio complessivo (granulari) medio: 7.09 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 5.83 (delta -0.39) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.50
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.5 - 76.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.27 (differenza: +3.23)
+Media score in casa: 52.09 | Media score fuori casa: 59.53
+Fattore casa/trasferta applicato: 0.993 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.2
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.028
+Fattore falli (casa/trasferta, da dati reali): 0.981
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.989
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 52.9 vs media ultime 10: 54.3): 0.973
+P(gioca): 45.45% (fonte: tasso di presenza storico (10/22))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:00
+Casa: PSV Eindhoven | Trasferta: Fortuna Sittard
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 24.1 (range 8.3 - 46.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.46
+Punteggio REALE ottenuto in quella partita: 73.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +22.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.8    38.8     -7.0    26.1        SI
+   7        7      36.6    41.0     +4.4    26.3        SI
+   8        8      43.0    34.5     -8.5    25.4        SI
+   9        9      38.1    73.5    +35.4    25.4        NO
+
+MAE (errore assoluto medio): 13.81
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
