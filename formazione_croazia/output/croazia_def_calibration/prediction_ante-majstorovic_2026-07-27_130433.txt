@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T13:04:33.660873Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) ante-majstorovic: 39 pt attesi (20-46)
+   SQUADRA: rijeka-rijeka | AVVERSARIO: derry-city-derry
+======================================================================
+
+######################################################################
+# GIOCATORE: ante-majstorovic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ante-majstorovic (squadra: rijeka-rijeka)
+Generato: 2026-07-27T13:04:33.660522Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 8
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-27 | RIJ vs AEK | uefa-europa-conference-league | score=67.5 | peso=0.680
+  2025-12-11 | RIJ vs CEL | uefa-europa-conference-league | score=60.9 | peso=0.735
+  2026-02-19 | OMO vs RIJ | uefa-europa-conference-league | score=58.0 | peso=0.794
+  2026-02-26 | RIJ vs OMO | uefa-europa-conference-league | score=48.5 | peso=0.857
+  2026-03-12 | RIJ vs STR | uefa-europa-conference-league | score=60.8 | peso=0.926
+  2026-07-23 | RIJ vs DER | uefa-europa-conference-league | score=35.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 54.01
+  di cui Punteggio decisivo (level_score) medio: 39.64 | Punteggio complessivo (granulari) medio: 14.37 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.36, delta avversario +0.00 | Passaggio condizionato: delta venue -0.54, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +1.09, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 10.97
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 60.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.13 (differenza: +5.84)
+Media score in casa: 54.55 | Media score fuori casa: 57.96
+Fattore casa/trasferta applicato: 0.985 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.027
+Fattore duelli (casa/trasferta, da dati reali): 0.985
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.969
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.973
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.069
+Fattore gol subiti (goals_conceded, con cap): 1.033
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.057
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 75.00% (fonte: tasso di presenza storico (6/8))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T17:30
+Casa: Derry City FC | Trasferta: HNK Rijeka
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 39.1 (range 20.1 - 46.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.77
+Punteggio REALE ottenuto in quella partita: 35.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -23.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
