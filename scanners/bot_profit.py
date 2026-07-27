@@ -109,8 +109,21 @@ CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', '
 # Fase di test: si parte da UNA squadra sola (Vancouver Whitecaps) per validare i
 # risultati prima di estendere a tutto il roster MLS/Korea.
 # TEAM_WHITELIST vuota = nessuna restrizione (comportamento a eventi invariato).
-SNAPSHOT_MODE = os.environ.get('SNAPSHOT_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
-TEAM_WHITELIST = [s.strip() for s in os.environ.get('TEAM_WHITELIST', '').split(',') if s.strip()]
+SNAPSHOT_MODE = os.environ.get('SNAPSHOT_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+_MLS_TEAM_SLUGS_DEFAULT = (
+    'nashville-sc,inter-miami,chicago-fire-bridgeview-illinois,new-england-foxborough-massachusetts,'
+    'cincinnati-cincinnati-ohio,new-york-city-new-york-new-york,charlotte-fc-charlotte-north-carolina,'
+    'new-york-rb-secaucus-new-jersey,dc-united-washington-district-of-columbia,orlando-city-lake-mary-florida,'
+    'columbus-crew-columbus-ohio,toronto-toronto,montreal-impact-montreal-quebec,atlanta-united-atlanta-georgia,'
+    'philadelphia-union-chester-pennsylvania,vancouver-whitecaps-vancouver-british-columbia,'
+    'sj-earthquakes-santa-clara-california,los-angeles-fc-los-angeles-california,'
+    'real-salt-lake-salt-lake-city-utah,dallas-frisco-texas,seattle-sounders-renton-washington,'
+    'houston-dynamo-houston-texas,st-louis-city-st-louis-missouri,'
+    'minnesota-united-minneapolis-saint-paul-minnesota,la-galaxy-los-angeles-california,'
+    'colorado-rapids-denver-colorado,portland-timbers-portland-oregon,san-diego-san-diego,'
+    'austin-austin-texas,sporting-kc-kansas-city-kansas'
+)
+TEAM_WHITELIST = [s.strip() for s in os.environ.get('TEAM_WHITELIST', _MLS_TEAM_SLUGS_DEFAULT).split(',') if s.strip()]
 # Lega di appartenenza delle squadre in TEAM_WHITELIST -- oggi supportiamo solo un
 # giro per volta su un solo campionato (mlspa o k-league-1), coerente con la
 # richiesta "oggi ci concentriamo solo su MLS e Korea".
