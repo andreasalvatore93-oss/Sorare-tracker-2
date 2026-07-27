@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T09:27:56.238277Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=70%
+======================================================================
+1) nick-hagglund: 26 pt attesi (8-41)
+   SQUADRA: cincinnati-cincinnati-ohio | AVVERSARIO: sj-earthquakes-santa-clara-california
+======================================================================
+
+######################################################################
+# GIOCATORE: nick-hagglund
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: nick-hagglund (squadra: cincinnati-cincinnati-ohio)
+Generato: 2026-07-27T09:27:56.237755Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | LA vs CIN | mlspa | score=41.6 | peso=0.445
+  2025-09-28 | CIN vs ORL | mlspa | score=67.8 | peso=0.472
+  2025-10-18 | CIN vs MTL | mlspa | score=49.6 | peso=0.500
+  2025-10-27 | CIN vs CLB | mlspa | score=63.5 | peso=0.530
+  2025-11-08 | CIN vs CLB | mlspa | score=41.6 | peso=0.561
+  2025-11-23 | CIN vs MIA | mlspa | score=30.2 | peso=0.595
+  2026-02-21 | CIN vs ATL | mlspa | score=100.0 | peso=0.630
+  2026-02-28 | MIN vs CIN | mlspa | score=46.0 | peso=0.667
+  2026-03-08 | CIN vs TOR | mlspa | score=35.8 | peso=0.707
+  2026-03-15 | NE vs CIN | mlspa | score=60.0 | peso=0.749
+  2026-04-04 | RBNY vs CIN | mlspa | score=43.3 | peso=0.794
+  2026-04-11 | TOR vs CIN | mlspa | score=22.5 | peso=0.841
+  2026-04-18 | CIN vs CHI | mlspa | score=39.5 | peso=0.891
+  2026-05-09 | CLT vs CIN | mlspa | score=63.0 | peso=0.944
+  2026-05-17 | SD vs CIN | mlspa | score=29.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 47.61
+  di cui Punteggio decisivo (level_score) medio: 39.56 | Punteggio complessivo (granulari) medio: 8.05 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.99, delta avversario -1.66 | Passaggio condizionato: delta venue +0.45, delta avversario +0.82 | Clean sheet/disimpegni condizionato: delta venue +1.04, delta avversario -1.10 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.78
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.5 - 63.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.43 (differenza: +6.35)
+Media score in casa: 53.50 | Media score fuori casa: 43.69
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.3
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.784
+Fattore falli (casa/trasferta, da dati reali): 1.006
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.009
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.987
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 1.020
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.022
+Fattore trend (media ultime 5: 39.5 vs media ultime 10: 47.0): 0.889
+P(gioca): 60.00% (fonte: tasso di presenza storico (15/25))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: FC Cincinnati | Trasferta: San Jose Earthquakes
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 25.7 (range 7.5 - 41.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.55
+Punteggio REALE ottenuto in quella partita: 29.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -20.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.3   100.0    +42.7    15.9        NO
+   7        7      47.8    46.0     -1.9    27.3        SI
+   8        8      61.2    35.8    -25.4    25.6        SI
+   9        9      38.0    60.0    +22.0    25.1        SI
+  10       10      47.7    43.3     -4.4    23.7        SI
+  11       11      56.8    22.5    -34.3    22.6        NO
+  12       12      35.9    39.5     +3.6    24.1        SI
+  13       13      36.0    63.0    +27.0    23.0        NO
+  14       14      52.0    29.5    -22.5    22.5        SI
+
+MAE (errore assoluto medio): 20.41
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
