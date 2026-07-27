@@ -1630,3 +1630,61 @@ esplicitamente** (già confermato due volte in questa sessione). Da eseguire all
 
 Tutto pushato su `main` (analisi FWD-MID + pipeline completa 4 nuovi campionati), nessuna run reale
 lanciata ancora. Prossimo passo: sezione C sopra.
+
+## 20. Stessa notte (continua) — run reali 4 campionati, due bug reali trovati/corretti, correlazioni
+## reindagate su 6 campionati, modello aggiornato
+
+### A. Bug 1: la cache incrementale non veniva MAI persistita (MLS/K League inclusi)
+
+Prima run reale dei 4 nuovi campionati: nessun file `.cache`/`.game_log_cache` finiva nel repo,
+nonostante i log del job `predict` mostrassero chiaramente il fetch/salvataggio in corso. Causa:
+`actions/upload-artifact@v4` esclude i file/cartelle nascosti per default
+(`include-hidden-files: false`, mai impostato esplicitamente) — il job `predict` (matrice per
+giocatore) scrive la cache in locale e la carica come artifact per il job `merge`, ma l'artifact
+conteneva SOLO il file di predizione, mai `.cache`/`.game_log_cache`. **Bug preesistente anche per
+MLS e K League**, non solo i 4 nuovi: verificato che l'ultimo commit che ha aggiunto file a
+`mls_gk_all/.cache` risale a uno stile di commit per-singolo-giocatore precedente all'introduzione
+del pattern matrix+artifact — da allora la cache era di fatto ferma (il fallback "cache
+insufficiente" ha sempre coperto la cosa senza errori visibili, solo con piu' query del necessario
+ad ogni run). **Fix**: aggiunto `include-hidden-files: true` a tutti gli step `upload-artifact` di
+predict in `formazione_completa.yml`, `formazione_completa_kleague.yml`, i 4 nuovi campionati, e
+`generatore_formazioni.yml`.
+
+### B. Bug 2: nessun retry su errori HTTP non-429 nella discovery
+
+Rilancio dei 4 campionati dopo il fix A: la discovery MID del Portogallo ha incontrato un 403
+CloudFront transitorio, e `graphql_query` (in tutti i 32 script discovery del progetto) trattava
+QUALUNQUE errore >=400 diverso da 429 come "nessun dato", ritornando `{}` senza ritentare —
+azzerando il pool MID (`player_slugs.json` sovrascritto con lista vuota) e facendo fallire l'intera
+run (nessun candidato MID disponibile per la formazione finale). **Fix**: ogni errore HTTP >=400 ora
+viene ritentato con lo stesso backoff esponenziale di 429 (fino a 5 tentativi) prima di arrendersi,
+applicato identico a tutti e 32 gli script discovery (MLS/K League/4 nuovi campionati).
+
+### C. Run reali completate con successo (dopo i due fix)
+
+Tutti e 4 i campionati generati con successo (In Season, giocatori posseduti scoperti, cache
+incrementale ora effettivamente persistita — verificato: 34/24/31/25 file `.game_log_cache` per
+Portogallo/Austria/Scozia/Croazia rispettivamente). Nessuna fusione nel pool del Generatore
+Formazioni (resta MLS+K League soltanto, come richiesto esplicitamente più volte).
+
+### D. Correlazioni reindagate su 6 campionati (non più 2) — FWD-MID diventa significativa
+
+`measure_teammate_correlation.py` esteso da MLS-only a tutti e 6 i campionati (K League +
+Portogallo/Austria/Scozia/Croazia, usando le cache "_all" di produzione per i 4 nuovi dove non
+esiste ancora una cartella "_calibration" dedicata — stessi dati). Risultato: **FWD-MID same-team
+passa da marginale a significativo e stabile**: corr +0.161, p=0.005 (prima: +0.106/+0.147,
+p=0.076-0.17 su solo 2 campionati), split-half concorde (+0.174/+0.152). Le altre correlazioni note
+si confermano più solide con più dati: DEF-GK +0.390, GK-MID +0.225, DEF-MID +0.238, DEF-DEF +0.190
+(tutte p<0.05). Cross-team: GK-vs-MID avversario e GK-vs-FWD avversario ORA ENTRAMBI significativi
+(-0.250 p=0.005, -0.281 p=0.024 — prima GK-FWD era solo marginale p=0.12), a conferma dell'anti-
+sinergia già codificata.
+
+**Modello aggiornato**: `TEAMMATE_SYNERGY_BONUS_VARIANCE` (nudge di sinergia da correlazione
+misurata, SOLO Arena/All Stars) esteso da DEF/MID anche a FWD in `synergy_sort_key` — stesso piccolo
+nudge già usato per gli altri ruoli, nessun fattore nuovo introdotto. Solo `formazione_mls/
+build_formazione_finale.py` (richiesta esplicita utente: modifiche solo sul tool fuso per ora).
+
+### E. Stato repo
+
+Tutto pushato su `main`: fix A, fix B, run reali 4 campionati (con cache popolata), reindagine
+correlazioni + estensione nudge FWD. Nessun'altra azione in sospeso su questo filone.
