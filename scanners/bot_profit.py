@@ -1192,8 +1192,48 @@ CSV_FIELDNAMES = [
     'squadra', 'prossimo_avversario',
     'ultima_partita_score', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
-    'sconto_percent', 'prossima_partita_data', 'ore_alla_partita', 'ultimo_tipo_evento',
+    'sconto_percent', 'trend_recente', 'media_transazioni_recente_eur', 'media_transazioni_storica_eur',
+    'prossima_partita_data', 'ore_alla_partita', 'ultimo_tipo_evento',
 ]
+
+# FIX 27/07 quinquies (richiesta esplicita utente): lo sconto_percent confronta
+# il minimo attuale con la media dell'INTERA finestra a 7gg -- se il prezzo sta
+# gia' scendendo da un paio di giorni, quella media e' "vecchia" e lo sconto
+# appare piu' grande di quanto sia in realta' un'occasione (sta solo inseguendo
+# un mercato in calo, non necessariamente destinato a tornare alla vecchia
+# media). Confermato su un caso reale (Anthony Markanich/Daniel Munie, min
+# verificato dall'utente su Sorare: crollo reale da ~8-10EUR a ~3.5EUR negli
+# ultimi 2 giorni). Aggiunta una media "recente" separata (ultimi
+# TREND_RECENT_WINDOW_DAYS giorni) confrontata con la media del resto della
+# finestra, per segnalare quando lo sconto e' meno affidabile -- NON cambia
+# ancora potenziale_score, solo un indicatore visivo (freccia) da valutare
+# insieme prima di deciderne il peso nello score.
+TREND_RECENT_WINDOW_DAYS = int(os.environ.get('TREND_RECENT_WINDOW_DAYS', '2'))
+TREND_FLAT_THRESHOLD_PERCENT = float(os.environ.get('TREND_FLAT_THRESHOLD_PERCENT', '10.0'))
+
+
+def _split_recent_vs_storico(tx_con_date, now=None):
+    """Divide le transazioni (gia' filtrate is_in_season/lega, con datetime e
+    prezzo) in 'recenti' (ultimi TREND_RECENT_WINDOW_DAYS giorni) e 'storiche'
+    (il resto della finestra a 7gg), e calcola la media trimmed di ciascun
+    gruppo. Ritorna (media_recente, media_storica, trend_arrow)."""
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    soglia_recente = now - datetime.timedelta(days=TREND_RECENT_WINDOW_DAYS)
+    prezzi_recenti = [p for dt, p in tx_con_date if dt >= soglia_recente]
+    prezzi_storici = [p for dt, p in tx_con_date if dt < soglia_recente]
+    media_recente, _, _ = trimmed_average(prezzi_recenti)
+    media_storica, _, _ = trimmed_average(prezzi_storici)
+
+    trend = None
+    if media_recente is not None and media_storica is not None and media_storica > 0:
+        variazione = (media_recente - media_storica) / media_storica * 100
+        if variazione <= -TREND_FLAT_THRESHOLD_PERCENT:
+            trend = 'down'
+        elif variazione >= TREND_FLAT_THRESHOLD_PERCENT:
+            trend = 'up'
+        else:
+            trend = 'flat'
+    return media_recente, media_storica, trend
 
 
 def _sorare_market_link(player_slug):
@@ -1262,6 +1302,9 @@ def load_previous_tracked():
                         row.get('media_transazioni_7gg_trimmed_eur')),
                     'n_transazioni_usate': row.get('n_transazioni_usate'),
                     'sconto_percent': _parse_float_or_none(row.get('sconto_percent')),
+                    'trend_recente': row.get('trend_recente') or None,
+                    'media_transazioni_recente_eur': _parse_float_or_none(row.get('media_transazioni_recente_eur')),
+                    'media_transazioni_storica_eur': _parse_float_or_none(row.get('media_transazioni_storica_eur')),
                     'prossima_partita_data': row.get('prossima_partita_data') or None,
                     'ore_alla_partita': _parse_float_or_none(row.get('ore_alla_partita')),
                     'ultimo_tipo_evento': row.get('ultimo_tipo_evento') or None,
@@ -1508,12 +1551,15 @@ def run_listener(eth_rate):
                     f"blacklistato {NESSUNA_PARTITA_DAYS:.0f}gg")
                 return
 
-            tx_prices = get_recent_transaction_prices(player_slug, is_in_season, league_slug, eth_rate)
+            tx_con_date = _fetch_countable_transactions(player_slug, is_in_season, league_slug, eth_rate)
+            tx_prices = [price for _, price in tx_con_date]
             avg_trimmed, n_usati, n_totali = trimmed_average(tx_prices)
 
             sconto_percent = None
             if avg_trimmed and avg_trimmed > 0 and min_attuale is not None:
                 sconto_percent = round((avg_trimmed - min_attuale) / avg_trimmed * 100, 2)
+
+            media_recente, media_storica, trend_recente = _split_recent_vs_storico(tx_con_date)
 
             ore_alla_partita = hours_until(snapshot['next_game_date_str'])
 
@@ -1543,6 +1589,9 @@ def run_listener(eth_rate):
                 'media_transazioni_7gg_trimmed_eur': round(avg_trimmed, 2) if avg_trimmed is not None else None,
                 'n_transazioni_usate': f"{n_usati}/{n_totali}",
                 'sconto_percent': sconto_percent,
+                'trend_recente': trend_recente,
+                'media_transazioni_recente_eur': round(media_recente, 2) if media_recente is not None else None,
+                'media_transazioni_storica_eur': round(media_storica, 2) if media_storica is not None else None,
                 'prossima_partita_data': snapshot['next_game_date_str'],
                 'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
                 'ultimo_tipo_evento': 'in_season' if is_in_season else 'classic',
@@ -1771,6 +1820,8 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
         if avg_trimmed and avg_trimmed > 0:
             sconto_percent = round((avg_trimmed - min_attuale) / avg_trimmed * 100, 2)
 
+        media_recente, media_storica, trend_recente = _split_recent_vs_storico(tx_con_date)
+
         if tx_prices:
             baseline_pattern = sum(tx_prices) / len(tx_prices)
             _registra_pattern_giorni(match_dates, tx_con_date, baseline_pattern)
@@ -1801,6 +1852,9 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
             'media_transazioni_7gg_trimmed_eur': round(avg_trimmed, 2) if avg_trimmed is not None else None,
             'n_transazioni_usate': f"{n_usati}/{n_totali}",
             'sconto_percent': sconto_percent,
+            'trend_recente': trend_recente,
+            'media_transazioni_recente_eur': round(media_recente, 2) if media_recente is not None else None,
+            'media_transazioni_storica_eur': round(media_storica, 2) if media_storica is not None else None,
             'prossima_partita_data': next_game_date_str,
             'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
             'ultimo_tipo_evento': 'in_season' if is_in_season else 'classic',
