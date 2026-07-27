@@ -498,3 +498,41 @@ questa sessione per forzare artificialmente moltissimi AutoBuy in un test diagno
   gh workflow run "bot_definitivo.yml" --ref main -f autobuy_live_mode=no -f makeoffer_live_mode=no \
     -f target_matches=100 -f listen_seconds=1800
   ```
+
+## 8. Aggiornamento 27/07 — ricalibrazione soglie AutoBuy + estensione fascia 30-40€
+
+Sessione dedicata a due obiettivi: (a) far scattare di più l'AutoBuy, (b) calibrare per la
+prima volta la fascia 30-40€ (finora si lavorava solo in 1-30€).
+
+**AutoBuy — analisi ultimi 2 log reali (run 30271575621 / 30268557857):** zero AutoBuy in
+entrambe. Motivo STRUTTURALE, non soglia sbagliata: tutti i margini alti erano su carte <3€
+(fascia che l'utente continua a preferire in offerta, riconfermato su 5 casi reali fino al 32%),
+e l'unico caso ≥5€ ad alto margine era trigger-su-minimo-non-allineato (MakeOffer-only per regola).
+
+**Regola "carte economiche mai AutoBuy": non più assoluta** (decisione esplicita utente). In
+pratica però sotto ~3€ l'utente sceglie ancora quasi sempre l'offerta.
+
+**Ricalibrazione curva AutoBuy (`AUTOBUY_MIN_MARGIN_CURVE`)** su ~40 casi (popup interattivi,
+schema min/2°). I punti 5-8€ validano quasi esattamente la curva esistente. Modifiche:
+- 20€: 16.5% → **17.5%** (20€/16% → l'utente offre, non compra).
+- fascia **25-40€ ricalibrata** (prima estrapolata e mai validata, risultava troppo bassa):
+  floor a "gobba" — 25€→19%, 30€→19.5%, 35€→18.5%, 37€→16.5%, 40€→15.5%. Motivo plausibile:
+  su carte da 25-30€ un AutoBuy sbagliato immobilizza molto capitale → serve margine più alto;
+  verso 40€ (carte rare e chiaramente sottoprezzo) l'utente assicura l'acquisto.
+- Il ginocchio 10-13€ è risultato contraddittorio (10€ vuole ~28%, 12€ riconfermato 3× a ~20%):
+  rumore per-giocatore non modellabile, **lasciato invariato**.
+
+**Prezzo max carta:** alzato a 40€ e poi **riportato a 30€** su richiesta utente (default resta 30,
+lo alza a mano quando vuole; le curve però sono calibrate fino a 40€).
+
+**MakeOffer floor 30-40€ (`MAKEOFFER_MIN_MARGIN_CURVE`)** — regola ~2€ di utile assoluto:
+35€→5.7%, 40€→5.0% (30€ lasciato a 6.5%).
+
+**Sconto offerta (`OFFER_DISCOUNT_CURVE`)** — prima la curva finiva a 16€ → tutto 16-40€ usava il
+15.6% fisso, troppo profondo per carte care. L'utente applica uno "shave" assoluto ~2-3€ sotto il
+minimo: nuovi anchor 30€→7%, 35€→6%, 40€→6%. Il segmento 16→30€ ora interpola a ~11.9% a 22€ /
+~8.9% a 27€, coerente coi dati storici in memoria (fix bonus del 16-30€, prima troppo profondo).
+
+Dettaglio caso-per-caso completo in `bot_definitivo_margin_calibration.md` (memoria locale).
+Modifiche NON ancora validate su run reale — prossimo passo: run diagnostica per verificare i
+nuovi routing nella fascia alta.
