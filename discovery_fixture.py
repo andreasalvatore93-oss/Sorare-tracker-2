@@ -68,6 +68,23 @@ query FixtureBySlug($slug: String!) {
 }
 """
 
+# Partite della giornata: da qui si ricavano le SQUADRE che scendono in campo.
+# E' la chiave per non interrogare le starter odds di ~2000 giocatori: si
+# tengono solo i posseduti il cui club gioca in questa giornata.
+FIXTURE_GAMES = """
+query FixtureGames($slug: String!) {
+  so5 {
+    so5Fixture(slug: $slug) {
+      anyGames {
+        date
+        homeTeam { ... on TeamInterface { slug name } }
+        awayTeam { ... on TeamInterface { slug name } }
+      }
+    }
+  }
+}
+"""
+
 # Carte possedute ELEGGIBILI per la fixture indicata: il filtro vive in
 # advancedFilters, quindi Sorare restituisce gia' solo quelle giuste.
 CARDS_QUERY = """
@@ -82,7 +99,7 @@ query FixtureCards($userSlug: String!, $page: Int!, $pageSize: Int!,
         anyPlayer {
           slug
           displayName
-          activeClub { domesticLeague { slug } }
+          activeClub { slug domesticLeague { slug } }
         }
       }
       nbHits
@@ -139,56 +156,23 @@ def risolvi_fixture():
     return None
 
 
-BATCH = int(os.environ.get('ODDS_BATCH', '25'))
-
-
-def _frammento(i, slug):
-    return f'''  p{i}: anyPlayer(slug: "{slug}") {{
-    anyFutureGames(first: 3) {{
-      nodes {{
-        playerGameScore(playerSlug: "{slug}") {{
-          anyGame {{ date }}
-          anyPlayerGameStats {{
-            ... on PlayerGameStats {{
-              footballPlayingStatusOdds {{ starterOddsBasisPoints }}
-            }}
-          }}
-        }}
-      }}
-    }}
-  }}'''
-
-
-def odds_batch(slugs, inizio, fine):
-    """{slug: (odds, data)} interrogando BATCH giocatori per richiesta con gli
-    alias GraphQL. Era questo il collo di bottiglia: una query per giocatore su
-    ~2000 carte significava decine di minuti."""
-    out = {}
-    for start in range(0, len(slugs), BATCH):
-        chunk = slugs[start:start + BATCH]
-        corpo = chr(10).join(_frammento(i, s) for i, s in enumerate(chunk))
-        q = "query OddsBatch {" + chr(10) + corpo + chr(10) + "}"
-        try:
-            d = base.graphql_query(q, {}, operation_name="OddsBatch")
-        except Exception as e:
-            log(f"  batch odds fallito ({start}): {repr(e)[:120]}")
+def odds_singola(slug, inizio, fine):
+    """(odds, data) della prima partita del giocatore dentro la finestra.
+    NB: Sorare non consente il batching -- alias duplicati su anyPlayer sono
+    rifiutati ("Duplicated root field") e players(slugs:) non permette di
+    selezionare anyFutureGames. Per questo il pre-filtro sulle squadre che
+    giocano e' l'unica leva che conta sui tempi."""
+    d = base.graphql_query(ODDS_QUERY, {"slug": slug}, operation_name="NextOdds")
+    p = (d.get('data') or {}).get('anyPlayer') or {}
+    for n in ((p.get('anyFutureGames') or {}).get('nodes') or []):
+        pgs = n.get('playerGameScore') or {}
+        dt = (pgs.get('anyGame') or {}).get('date') or ''
+        if inizio and fine and not (inizio <= dt[:19] <= fine):
             continue
-        data = d.get('data') or {}
-        for i, slug in enumerate(chunk):
-            p = data.get(f'p{i}') or {}
-            res = (None, None)
-            for n in ((p.get('anyFutureGames') or {}).get('nodes') or []):
-                pgs = n.get('playerGameScore') or {}
-                dt = (pgs.get('anyGame') or {}).get('date') or ''
-                if inizio and fine and not (inizio <= dt[:19] <= fine):
-                    continue
-                o = ((pgs.get('anyPlayerGameStats') or {})
-                     .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
-                res = ((o / 10000.0 if o is not None else None), dt)
-                break
-            out[slug] = res
-        time.sleep(0.2)
-    return out
+        o = ((pgs.get('anyPlayerGameStats') or {})
+             .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
+        return (o / 10000.0 if o is not None else None), dt
+    return None, None
 
 
 def main():
@@ -200,6 +184,22 @@ def main():
     fine = (fx.get('endDate') or '')[:19]
     log(f"Giornata: {fx.get('slug')} (gameweek {fx.get('seasonGameWeek')}, "
         f"stato {fx.get('aasmState')}) dal {inizio} al {fine}")
+
+    # Squadre che giocano in questa giornata
+    dg = base.graphql_query(FIXTURE_GAMES, {"slug": fx.get('slug')},
+                            operation_name="FixtureGames")
+    games = (((dg.get('data') or {}).get('so5') or {})
+             .get('so5Fixture') or {}).get('anyGames') or []
+    squadre_in_campo = set()
+    for g in games:
+        for lato in ('homeTeam', 'awayTeam'):
+            sl = (g.get(lato) or {}).get('slug')
+            if sl:
+                squadre_in_campo.add(sl)
+    log(f"Partite nella giornata: {len(games)} | squadre in campo: {len(squadre_in_campo)}")
+    if not squadre_in_campo:
+        log("ERRORE: nessuna squadra ricavata dalla fixture.")
+        return 1
 
     uuid = base.get_user_uuid(base.USER_SLUG)
     if not uuid:
@@ -240,9 +240,15 @@ def main():
                 break
             for h in hits:
                 p = h.get('anyPlayer') or {}
-                if p.get('slug'):
-                    visti.add((p['slug'], ((p.get('activeClub') or {})
-                                           .get('domesticLeague') or {}).get('slug')))
+                club = p.get('activeClub') or {}
+                if not p.get('slug'):
+                    continue
+                # PRE-FILTRO decisivo: se il club non gioca in questa giornata,
+                # non serve nemmeno chiedere le starter odds. E' questo che
+                # abbatte i tempi: da ~2000 interrogazioni a poche decine.
+                if club.get('slug') not in squadre_in_campo:
+                    continue
+                visti.add((p['slug'], (club.get('domesticLeague') or {}).get('slug')))
             if page >= (s.get('nbPages') or 1):
                 break
             page += 1
@@ -251,8 +257,12 @@ def main():
         tot_carte += len(visti)
         lega_di = {slug: lega for slug, lega in visti}
         elenco = sorted(lega_di)
-        log(f"  {position}: {len(elenco)} giocatori, odds in batch da {BATCH}...")
-        risultati = odds_batch(elenco, inizio, fine)
+        log(f"  {position}: {len(elenco)} giocatori di squadre che giocano "
+            f"(su {s.get('nbHits')} carte possedute) -> interrogo le odds")
+        risultati = {}
+        for sl in elenco:
+            risultati[sl] = odds_singola(sl, inizio, fine)
+            time.sleep(0.2)
         for slug in elenco:
             lega = lega_di[slug]
             odds, data = risultati.get(slug, (None, None))
