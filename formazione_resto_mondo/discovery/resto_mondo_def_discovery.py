@@ -54,7 +54,14 @@ PAGE_SIZE = 20
 # Eleggibilita' SO5 target -- SOLO "Resto del Mondo" (Sorare la mostra in UI
 # come "Resto del mondo"). NON e' un domesticLeague.slug (vedi docstring
 # modulo): e' uno slug dentro la lista anyPlayer.eligibleSo5Competitions.
-TARGET_SO5_ELIGIBILITY_SLUG = 'seasonal-rest_of_the_world'
+# PIVOT (27/07): il filtro eligibleSo5Competitions non ha trovato nessuna carta
+# posseduta (0/0/0/0 su GK/DEF/MID/FWD) -- l'utente ha chiesto di ripiegare su un
+# campionato reale concreto invece di continuare a debuggare 'Resto del Mondo' in
+# astratto: Brasileirao (Campeonato Brasileiro Serie A), slug confermato dalla
+# query GraphQL reale usata per scoprire il meccanismo eligibleSo5Competitions
+# (caso Carlos Miguel, portiere Palmeiras). Torna al pattern standard di filtro
+# su domesticLeague.slug, uguale a tutti gli altri campionati.
+TARGET_LEAGUE_SLUG = 'campeonato-brasileiro-serie-a'
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
 
@@ -198,16 +205,8 @@ def discover_resto_mondo_def_all(user_slug=USER_SLUG, max_pages=50):
                 total_card_count += 1
                 player = h.get('anyPlayer') or {}
                 p_slug = player.get('slug')
-                eligible_competitions = player.get('eligibleSo5Competitions') or []
-                # Filtro CHIAVE (diverso dagli altri campionati): controlla
-                # la PRESENZA dello slug target nella LISTA di eleggibilita'
-                # SO5, non un confronto diretto su domesticLeague.slug (vedi
-                # esempio Carlos Miguel nella docstring modulo -- lui ha
-                # domesticLeague brasiliana ma e' comunque eleggibile qui).
-                is_eligible = any(
-                    c.get('slug') == TARGET_SO5_ELIGIBILITY_SLUG for c in eligible_competitions
-                )
-                if not is_eligible:
+                league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
+                if league_slug != TARGET_LEAGUE_SLUG:
                     total_not_eligible += 1
                     continue
                 if p_slug:
