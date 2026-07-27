@@ -53,7 +53,7 @@ on:
       snapshot_worker_threads:
         description: "Modalita' snapshot: quanti giocatori processare in parallelo (il rate limit verso Sorare resta comunque governato da _graphql_throttle, condiviso tra i worker)"
         required: false
-        default: "8"
+        default: "5"
 permissions:
   contents: write
 concurrency:
@@ -90,7 +90,7 @@ jobs:
           SNAPSHOT_MODE: ${{ github.event.inputs.snapshot_mode || 'no' }}
           TEAM_WHITELIST: ${{ github.event.inputs.team_whitelist || '' }}
           SNAPSHOT_LEAGUE_SLUG: ${{ github.event.inputs.snapshot_league_slug || 'mlspa' }}
-          SNAPSHOT_WORKER_THREADS: ${{ github.event.inputs.snapshot_worker_threads || '8' }}
+          SNAPSHOT_WORKER_THREADS: ${{ github.event.inputs.snapshot_worker_threads || '5' }}
         run: python scanners/bot_profit.py
       - name: Commit CSV (globali + per campionato) + blacklist dedicata (fallback, se il commit periodico non ha gia' salvato tutto)
         if: always()

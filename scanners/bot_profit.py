@@ -157,7 +157,12 @@ ROSTER_MIN_AVG_SCORE = float(os.environ.get('ROSTER_MIN_AVG_SCORE', '35.0'))
 # processano piu' giocatori in parallelo: il throttle continua a limitare il
 # RITMO delle richieste in uscita, la concorrenza serve solo a sovrapporre i
 # tempi di attesa risposta invece di sommarli giocatore per giocatore.
-SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '8'))
+# Ridotto da 8 a 5 (richiesta esplicita utente, seconda passata 27/07 -- 423
+# HTTP 429 nell'ultima run): meno richieste in volo contemporaneamente riduce
+# la probabilita' che piu' thread arrivino a ridosso dello stesso istante
+# consentito dal throttle (che limita il RITMO di invio, non quante richieste
+# possono essere gia' in attesa di risposta nello stesso momento).
+SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '5'))
 
 # FIX 24/07 (richiesta esplicita utente): sotto questa soglia di transazioni nella
 # finestra, il dato e' troppo rumoroso per la classifica (una singola transazione
@@ -338,7 +343,11 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
-GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.15'))
+# FIX 27/07 (richiesta esplicita utente, 423 HTTP 429 su ~1300-1500 richieste
+# nell'ultima run -- ~30% finite in retry con backoff): alzato da 0.15 a 0.25s.
+# Ritmo base piu' lento ma meno 429 = meno tempo perso nei backoff (2s/4s/8s
+# per tentativo) e meno finestre di 45s a ritmo SAFE (0.6s) dopo ogni 429.
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.25'))
 GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.6'))
 GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '45.0'))
 _graphql_throttle_lock = threading.Lock()
