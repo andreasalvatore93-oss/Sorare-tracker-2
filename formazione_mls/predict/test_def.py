@@ -1070,7 +1070,8 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
                              target_is_home, target_opp_rank, p_gioca=1.0,
                              half_life=None, trend_intensity=None,
                              shrink_k=SHRINK_K_OUTLIER_DEF,
-                             media_ruolo_prior=MEDIA_RUOLO_DEF_PRIOR):
+                             media_ruolo_prior=MEDIA_RUOLO_DEF_PRIOR,
+                             use_stadio_d=True):
     """FUNZIONE CONDIVISA (27/07): calcola lo `score_atteso` DEF di PRODUZIONE, da
     usare SIA in build_prediction (predizione reale) SIA nel backtest walk-forward
     di calibrazione -- cosi' le due non possono piu' divergere (prima il backtest
@@ -1107,6 +1108,10 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     score_atteso = p_gioca * grezzo_nuovo_corretto * fattore_casa_trasferta
 
     # --- Stadio D: correzioni granulari condizionate venue + forza avversario ---
+    # use_stadio_d=False serve SOLO al grid di calibrazione (misura quanto lo
+    # Stadio D aggiunge o toglie): coi default resta True = produzione.
+    if not use_stadio_d:
+        return score_atteso
     valid_opp_ranks = [r for r in opponent_rankings if r is not None]
     avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
     opponent_forte_flags = [
@@ -1175,6 +1180,67 @@ def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,
     coperti = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
     pct = (sum(1 for c in coperti if c) / len(coperti) * 100.0) if coperti else None
     return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct, 'n_test': len(rows)}
+
+
+# --- GRIGLIA ALLINEATA ALLA PRODUZIONE (27/07, punto 26.D.2 handoff) ---
+# La vecchia GRID_SEARCH_COMBINATIONS variava anche `opponent_sensitivity` e il
+# toggle `granulari`: due parametri che NON esistono piu' nella formula di
+# produzione (il fattore moltiplicativo forza-avversario e' stato rimosso il
+# 26/07, e i granulari entrano in modo ADDITIVO dentro il grezzo, non come
+# fattore moltiplicativo opzionale). Calibrarli significava ottimizzare un
+# modello diverso da quello che schiera davvero le formazioni. Qui restano i
+# SOLI parametri che la produzione usa per davvero:
+# - half_life: peso esponenziale dello storico (entra in tutte le medie pesate)
+# - trend_intensity: intensita' del trend applicato al pezzo granulare
+# - range_multiplier: NON tocca lo score atteso, solo la larghezza della banda
+#   di confidenza del backtest (quindi il MAE e' costante a parita' di hl/ti,
+#   cambia solo la copertura e quindi il composite score).
+def _build_grid_combinations_prod():
+    combos = []
+    for hl in (9.0, 12.0):
+        for ti in (0.7, 1.0, 1.3):
+            # range_mult: griglia estesa VERSO IL BASSO (27/07). Con il backtest
+            # allineato la copertura al vecchio minimo 1.2 era gia' 72% (sopra
+            # l'ideale 68%): la griglia era troncata dal lato sbagliato. 1.1
+            # centra il 68.2% sui 287 difensori di 20 campionati.
+            for rm in (1.0, 1.1, 1.2, 1.4):
+                combos.append((hl, ti, rm, f"hl={hl}+trend_int={ti}+range={rm}x"))
+    return combos
+
+
+GRID_SEARCH_COMBINATIONS_PROD = _build_grid_combinations_prod()
+
+
+def run_grid_search_prod_def(scores, is_home_flags, opponent_rankings,
+                             residual_values, granulari_values,
+                             pos_decisive_values, neg_decisive_values,
+                             goals_conceded_values, passing_values, clean_sheet_values,
+                             min_history=6):
+    """Grid search ALLINEATO: gira rigorous_backtest_prod_def (che internamente
+    chiama compute_score_atteso_def, la STESSA funzione della predizione reale)
+    su GRID_SEARCH_COMBINATIONS_PROD. Stesso composite score e stesso formato di
+    ritorno del vecchio run_grid_search, cosi' aggregate_grid_search.py resta
+    compatibile senza modifiche (le chiavi assenti sono esportate a None)."""
+    results = []
+    for half_life, trend_intensity, range_mult, label in GRID_SEARCH_COMBINATIONS_PROD:
+        bt = rigorous_backtest_prod_def(
+            scores, is_home_flags, opponent_rankings,
+            residual_values, granulari_values,
+            pos_decisive_values, neg_decisive_values,
+            goals_conceded_values, passing_values, clean_sheet_values,
+            min_history=min_history, half_life=half_life,
+            trend_intensity=trend_intensity, range_multiplier=range_mult)
+        bt.update({'label': label, 'half_life': half_life,
+                   'range_multiplier': range_mult, 'trend_intensity': trend_intensity,
+                   'opponent_sensitivity': None})
+        if bt['mae'] is not None:
+            coverage_penalty = abs((bt['pct_dentro_range'] or 0) - 68.0) * 0.3
+            bt['composite_score'] = bt['mae'] + coverage_penalty
+        else:
+            bt['composite_score'] = float('inf')
+        results.append(bt)
+    results.sort(key=lambda r: r['composite_score'])
+    return results
 
 
 def build_prediction(player_slug):
@@ -1612,16 +1678,15 @@ def build_prediction(player_slug):
     # combinazioni ad ogni giocatore in produzione — un solo backtest sui
     # parametri fissati, molto piu' veloce.
     if CALIBRATION_MODE:
-        log("CALIBRATION_MODE attivo: esecuzione grid search completo (72 combinazioni)...")
-        grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                                        fouls_values=fouls_values, duels_values=duels_values,
-                                        offensive_values=offensive_values,
-                                        passing_values=passing_values,
-                                        defense_rare_values=defense_rare_values,
-                                        defensive_actions_values=defensive_actions_values,
-                                        goals_conceded_values=goals_conceded_values,
-                                        clean_sheet_values=clean_sheet_values,
-                                        residual_values=residual_values)
+        log(f"CALIBRATION_MODE attivo: grid search ALLINEATO alla produzione "
+            f"({len(GRID_SEARCH_COMBINATIONS_PROD)} combinazioni, "
+            f"backtest = compute_score_atteso_def)...")
+        grid_results = run_grid_search_prod_def(
+            scores, is_home_flags, opponent_rankings,
+            residual_values, granulari_values,
+            pos_decisive_values, neg_decisive_values,
+            goals_conceded_values, passing_values, clean_sheet_values,
+            min_history=6)
         rigorous_bt = grid_results[0] if grid_results else None
     else:
         log("Esecuzione backtest rigoroso sui parametri fissati...")
