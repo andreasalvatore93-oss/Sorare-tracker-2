@@ -157,12 +157,16 @@ ROSTER_MIN_AVG_SCORE = float(os.environ.get('ROSTER_MIN_AVG_SCORE', '35.0'))
 # processano piu' giocatori in parallelo: il throttle continua a limitare il
 # RITMO delle richieste in uscita, la concorrenza serve solo a sovrapporre i
 # tempi di attesa risposta invece di sommarli giocatore per giocatore.
-# Ridotto da 8 a 5 (richiesta esplicita utente, seconda passata 27/07 -- 423
-# HTTP 429 nell'ultima run): meno richieste in volo contemporaneamente riduce
-# la probabilita' che piu' thread arrivino a ridosso dello stesso istante
-# consentito dal throttle (che limita il RITMO di invio, non quante richieste
-# possono essere gia' in attesa di risposta nello stesso momento).
-SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '5'))
+# Ridotto da 8 a 5 il 27/07 (423 HTTP 429), poi RIPORTATO su e alzato a 10:
+# la run con 5 worker ha ridotto i 429 (423->243) ma e' durata DI PIU' (10:11
+# -> 12:02) perche' il taglio di throughput e' costato piu' di quanto abbia
+# fatto risparmiare in retry evitati. Il ritmo piu' lento (0.25s, vedi sopra)
+# resta invece confermato: quello sì ha ridotto i 429 senza il costo di
+# throughput dei worker. Portato a 10 (richiesta esplicita utente, scendere
+# sotto i 10 minuti): il throttle globale limita comunque il RITMO di invio a
+# 1/0.25s, quindi piu' worker aumentano solo la sovrapposizione dei tempi di
+# attesa risposta, non il ritmo reale verso Sorare.
+SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '10'))
 
 # FIX 24/07 (richiesta esplicita utente): sotto questa soglia di transazioni nella
 # finestra, il dato e' troppo rumoroso per la classifica (una singola transazione
