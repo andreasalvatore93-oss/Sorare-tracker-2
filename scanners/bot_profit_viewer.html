@@ -54,6 +54,7 @@
     background: transparent; color: var(--text-dim); border: 1px solid var(--border);
   }
   .btn.ghost:hover { color: var(--text); border-color: var(--text-dim); }
+  .btn.ghost.active { background: var(--teal); color: #04211d; border-color: var(--teal); }
 
   .toolbar {
     display: none; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
@@ -162,6 +163,11 @@
   .trend-up { color: var(--teal); }
   .trend-flat { color: var(--text-dim); }
 
+  tr.top-pick { background: rgba(20,224,196,.08); }
+  tr.top-pick:hover { background: rgba(20,224,196,.14); }
+  tr.top-pick td.name { border-left: 2px solid var(--teal); }
+  .trophy { font-size: 11px; }
+
   .empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
   .empty .big { font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--text); margin-bottom: 6px; }
 
@@ -222,6 +228,7 @@
       <input type="number" id="fOreMax" placeholder="∞">
     </div>
     <button class="btn ghost" id="clearFilters">Pulisci filtri</button>
+    <button class="btn ghost" id="topPicksBtn" title="Evidenzia le 5 carte con la miglior combinazione trend+score+sconto, non solo lo score piu' alto">🏆 Top 5</button>
   </div>
 
   <div class="sortchain" id="sortChain"></div>
@@ -293,6 +300,29 @@ const PREFERRED_ORDER = [
 let rawRows = [];
 let COLUMNS = [];
 let sortChain = []; // [{key, dir: 1|-1, pinned: bool}]
+let topPicksActive = false;
+
+// FIX 27/07 (richiesta esplicita utente: "un bottone che evidenzia i 5
+// migliori considerando trend+score+sconto, non solo lo score"): lo score
+// grezzo da solo premia le carte con sconto% gonfiato da un mercato in calo
+// (trend 'down'). Qui si pesa lo score per l'affidabilita' del trend --
+// stessa idea del multiplo emerso guardando Denkey/Fernandez-Mercau (unici
+// 'up' della run, finiti in cima appena il trend e' entrato nell'ordinamento)
+// -- ma resta SOLO un aiuto visivo lato viewer, non tocca potenziale_score
+// ne' il CSV/bot_profit.py.
+const TOP_PICKS_TREND_MULTIPLIER = { up: 1.2, flat: 1.0, down: 0.5 };
+const TOP_PICKS_COUNT = 5;
+
+function computeTopPicksKeys(rows) {
+  const withScore = rows
+    .filter(r => r._num_potenziale_score !== null && r._num_potenziale_score !== undefined)
+    .map(r => {
+      const mult = TOP_PICKS_TREND_MULTIPLIER[r.trend_recente] ?? 0.8; // trend mancante: neutro-scontato
+      return { key: `${r.player_slug}::${r.tipo_carta}`, pick: r._num_potenziale_score * mult };
+    });
+  withScore.sort((a, b) => b.pick - a.pick);
+  return new Set(withScore.slice(0, TOP_PICKS_COUNT).map(x => x.key));
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -364,6 +394,8 @@ function loadCSVText(text) {
   if (COLUMNS.some(c => c.key === 'potenziale_score')) {
     sortChain.push({ key: 'potenziale_score', dir: -1, pinned: false });
   }
+  topPicksActive = false;
+  $('topPicksBtn').classList.remove('active');
   $('loadZone').style.display = 'none';
   $('reloadBtn').style.display = 'inline-block';
   $('toolbar').classList.add('active');
@@ -541,6 +573,11 @@ $('clearFilters').addEventListener('click', () => {
   $('fTipo').value = '';
   render();
 });
+$('topPicksBtn').addEventListener('click', () => {
+  topPicksActive = !topPicksActive;
+  $('topPicksBtn').classList.toggle('active', topPicksActive);
+  render();
+});
 ['fSearch','fTipo','fPrezzoMin','fPrezzoMax','fScoreMin','fScontoMin','fOreMax'].forEach(id => {
   $(id).addEventListener('input', render);
   $(id).addEventListener('change', render);
@@ -623,6 +660,11 @@ function render() {
   const filtered = applyFilters(rawRows);
   const sorted = applySort(filtered);
 
+  // Top 5 calcolate SEMPRE su tutto il dataset (rawRows), non sul filtrato --
+  // il bottone risponde "quali sono le migliori carte in assoluto", i filtri
+  // servono a cercare, non a ridefinire cosa conta come "top".
+  const topPicksKeys = topPicksActive ? computeTopPicksKeys(rawRows) : null;
+
   $('rowCount').textContent = `${sorted.length} / ${rawRows.length} carte mostrate`;
   renderSortChain();
 
@@ -646,7 +688,7 @@ function render() {
 
   // Renderer generico per cella: dispatcha in base al render dichiarato in KNOWN_COLUMNS
   // (o al type/nome chiave come euristica), cosi' funziona anche per colonne sconosciute.
-  function renderCell(col, r) {
+  function renderCell(col, r, isTopPick) {
     const v = r[col.key];
     if (col.key === 'player_name') {
       // FIX 27/07 (richiesta esplicita utente): nome giocatore cliccabile,
@@ -660,7 +702,8 @@ function render() {
       const nameHtml = link
         ? `<a href="${link}" target="_blank" rel="noopener noreferrer">${name}</a>`
         : name;
-      return `<td class="name">${nameHtml}${r.player_slug ? `<span class="slug">${r.player_slug}</span>` : ''}</td>`;
+      const trophy = isTopPick ? `<span class="trophy" title="Tra le 5 migliori (trend+score+sconto)">🏆 </span>` : '';
+      return `<td class="name">${trophy}${nameHtml}${r.player_slug ? `<span class="slug">${r.player_slug}</span>` : ''}</td>`;
     }
     switch (col.render) {
       case 'badge': return `<td>${tipoBadge(v)}</td>`;
@@ -674,9 +717,10 @@ function render() {
     }
   }
 
-  const tbody = `<tbody>${sorted.map(r =>
-    `<tr>${COLUMNS.map(col => renderCell(col, r)).join('')}</tr>`
-  ).join('')}</tbody>`;
+  const tbody = `<tbody>${sorted.map(r => {
+    const isTopPick = topPicksKeys && topPicksKeys.has(`${r.player_slug}::${r.tipo_carta}`);
+    return `<tr class="${isTopPick ? 'top-pick' : ''}">${COLUMNS.map(col => renderCell(col, r, isTopPick)).join('')}</tr>`;
+  }).join('')}</tbody>`;
 
   $('tableHolder').innerHTML = `<div class="table-scroll">${'<table>' + thead + tbody + '</table>'}</div>`;
   const newScroll = document.querySelector('.table-scroll');
