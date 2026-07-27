@@ -86,7 +86,13 @@ from collections import defaultdict
 RUOLO = os.environ.get('RUOLO', 'fwd').strip().lower()
 CAMPIONATO = os.environ.get('CAMPIONATO', 'mls').strip().lower()
 GLOBALE = os.environ.get('GLOBALE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
-CAMPIONATI_NOTI = ('mls', 'kleague')  # estendere qui quando si aggiunge un nuovo campionato
+CAMPIONATI_NOTI = (
+    'mls', 'kleague', 'brasile', 'croazia', 'portogallo', 'austria',
+    'scozia', 'belgio', 'olanda', 'spagna',
+)  # estendere qui quando si aggiunge un nuovo campionato (27/07: aggiunti gli 8
+# campionati con infrastruttura di calibrazione allargata appena creata,
+# grid_search_calibrazione_<lega>.yml, pool limitato ai soli posseduti per
+# assenza di discovery globale su questi campionati)
 MIN_TEST_GAMES = int(os.environ.get('MIN_TEST_GAMES', '3'))
 
 CALIBRATION_DIR = f'formazione_{CAMPIONATO}/output/{CAMPIONATO}_{RUOLO}_calibration'  # solo per modalita' singolo-campionato
