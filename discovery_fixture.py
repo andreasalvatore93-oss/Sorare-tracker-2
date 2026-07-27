@@ -129,6 +129,24 @@ query NextOdds($slug: String!) {
 """
 
 
+# L10 (28/07, richiesta esplicita utente): stessa query gia' usata da
+# generatore_formazioni/quality_filter.py per il filtro qualita'. Interrogata
+# SOLO per i sopravvissuti finali (dopo finestra+odds), mai per i ~2000
+# posseduti -- stesso principio del pre-filtro squadre in campo.
+L10_QUERY = """
+query PlayerL10($slug: String!) {
+  anyPlayer(slug: $slug) {
+    lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+  }
+}
+"""
+
+
+def l10_singola(slug):
+    d = base.graphql_query(L10_QUERY, {"slug": slug}, operation_name="PlayerL10")
+    return (d.get('data') or {}).get('anyPlayer', {}).get('lastTenPlayedAvgScore')
+
+
 def log(msg):
     print(f"[discovery_fixture] {msg}", flush=True)
 
@@ -215,6 +233,7 @@ def main():
 
     per_lega_ruolo = defaultdict(lambda: defaultdict(set))
     nomi_per_lega_ruolo = defaultdict(lambda: defaultdict(dict))
+    counts_per_lega_ruolo = defaultdict(lambda: defaultdict(dict))
     esclusi_odds = 0
     esclusi_finestra = 0
     tot_carte = 0
@@ -287,6 +306,19 @@ def main():
             per_lega_ruolo[dirname][role].add(slug)
             if nome_di.get(slug):
                 nomi_per_lega_ruolo[dirname][role][slug] = nome_di[slug]
+            # L10 (28/07): solo per i sopravvissuti finali, mai per l'intero
+            # pool. Copie possedute NON tracciate da questa pipeline veloce
+            # (a differenza delle vecchie discovery per-campionato): si tiene
+            # l'assunzione preesistente "1 copia in_season" gia' usata da
+            # CardPool come default per uno slug assente dal file -- qui va
+            # scritta esplicitamente perche' il file adesso include lo slug
+            # (per portarci l10), e altrimenti verrebbe letta come 0 copie.
+            l10 = l10_singola(slug)
+            time.sleep(0.2)
+            entry = {'in_season': 1, 'classic': 0}
+            if l10 is not None:
+                entry['l10'] = l10
+            counts_per_lega_ruolo[dirname][role][slug] = entry
 
     log(f"\nGiocatori eleggibili esaminati: {tot_carte} | esclusi: "
         f"{esclusi_finestra} senza partita nella giornata, {esclusi_odds} "
@@ -307,6 +339,14 @@ def main():
             nomi = nomi_per_lega_ruolo.get(lega, {}).get(role, {})
             with open(os.path.join(outdir, 'player_names.json'), 'w', encoding='utf-8') as f:
                 json.dump(nomi, f, ensure_ascii=False)
+            # L10 (28/07): sovrascrive il player_card_counts.json esistente
+            # con i soli sopravvissuti di QUESTA giornata (le vecchie voci di
+            # altri giocatori non piu' candidati non servono e verrebbero
+            # comunque ignorate da CardPool, che legge solo gli slug dei
+            # consigli prodotti in questa run).
+            counts = counts_per_lega_ruolo.get(lega, {}).get(role, {})
+            with open(os.path.join(outdir, 'player_card_counts.json'), 'w', encoding='utf-8') as f:
+                json.dump(counts, f, ensure_ascii=False)
             scritti.setdefault(lega, {})[role] = sorted(slugs)
 
     print("\n" + "=" * 78)

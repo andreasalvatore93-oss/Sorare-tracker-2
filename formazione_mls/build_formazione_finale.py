@@ -1081,6 +1081,25 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   }}
   h1 {{ font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }}
   .subhead {{ color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }}
+  .lineup-row {{ display: flex; gap: 20px; align-items: flex-start; margin-bottom: 40px; }}
+  .lineup-row .lineup-block {{ flex: 1 1 auto; min-width: 0; margin-bottom: 0; }}
+  .alt-panel {{
+    flex: 0 0 200px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; align-self: stretch;
+  }}
+  .alt-panel-title {{
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 10px; line-height: 1.4;
+  }}
+  .alt-list {{ display: flex; flex-direction: column; gap: 10px; }}
+  .alt-chip {{ display: flex; align-items: center; gap: 8px; }}
+  .alt-circle {{
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700; color: var(--muted);
+  }}
+  .alt-name {{ font-size: 0.72rem; font-weight: 600; line-height: 1.2; }}
+  .alt-score {{ font-size: 0.64rem; color: var(--muted); }}
   .lineup-block {{ margin-bottom: 40px; }}
   .lineup-meta {{ margin-bottom: 12px; }}
   .lineup-title {{ font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }}

@@ -40,6 +40,7 @@ import sys
 import glob
 import datetime
 import importlib.util
+from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import quality_filter  # noqa: E402
@@ -428,9 +429,15 @@ def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool
             return None, error, l10_ok, stack_perso
 
 
-def generate_lineups_for_type(tipo, count, role_data, pools, card_pool, lineup_html_blocks):
+def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
+    """FASE 1 (28/07, refactor per il pannello alternative): genera e CONSUMA
+    il card_pool, ma non renderizza piu' l'HTML qui -- lo si fa in una
+    seconda passata in main(), quando si conoscono TUTTE le formazioni di
+    TUTTI i tipi (serve per proporre alternative cross-lineup per vicinanza
+    di punteggio). Ritorna una lista di dict, uno per formazione (chiave
+    'error' se non generata)."""
     if count <= 0:
-        return 0, 0
+        return []
     shape = FORMATION_SHAPES[tipo]
     pool_league = POOL_LEAGUE_BY_TYPE[tipo]
     cap = L10_CAP_BY_TYPE.get(tipo)
@@ -449,7 +456,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool, lineup_h
     # identico nei due tool singoli): scope per tipo (uno degli 8 qui).
     captained_slugs = set()
 
-    generated, totale = 0, 0
+    risultati = []
     for idx in range(1, count + 1):
         strict_gk_anti_synergy = in_season_multi
         apply_positive_synergy = not in_season_multi or idx == 1
@@ -459,18 +466,93 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool, lineup_h
         if error:
             msg = f"Formazione {label} #{idx}: NON GENERATA — {error}"
             print(msg)
-            lineup_html_blocks.append(f'<p class="error-block">{msg}</p>')
+            risultati.append({'error': msg})
             break
-        lineup_html_blocks.append(bff.render_lineup_html(
-            label, idx, formazione, card_pool, l10_cap=cap, l10_cap_rispettato=l10_ok,
-            stack_bonus_perso=stack_perso, check_cap260=check_cap260, tipo=tipo,
-            apply_stack_guard=stack_guard, avoid_captain_slugs=captained_slugs))
+        # avoid_captain_slugs va catturato COSI' com'e' ORA (solo i capitani
+        # delle formazioni precedenti dello stesso tipo) -- render_lineup_html
+        # lo user' in fase 2 per decidere lo stesso identico capitano scelto qui.
+        avoid_snapshot = set(captained_slugs)
         _cap_slot, cap_row, _cap_type = bff.pick_captain(formazione, captained_slugs)
         captained_slugs.add(cap_row['slug'])
-        totale += sum(row['atteso'] for _, row, _ in formazione)
-        generated += 1
+        risultati.append({
+            'tipo': tipo, 'label': label, 'idx': idx, 'formazione': formazione,
+            'l10_cap': cap, 'l10_ok': l10_ok, 'stack_perso': stack_perso,
+            'check_cap260': check_cap260, 'stack_guard': stack_guard,
+            'avoid_captain_slugs': avoid_snapshot,
+        })
         print(f"Formazione {label} #{idx}: generata ({sum(r['atteso'] for _, r, _ in formazione)} pt)")
-    return generated, totale
+    return risultati
+
+
+ROLE_BY_SLOT = ('GK', 'DEF', 'MID', 'FWD')
+
+
+def _slot_role(slot_label):
+    for role in ROLE_BY_SLOT:
+        if slot_label.startswith(role):
+            return role
+    m = re.search(r'\(([A-Z]+)\)', slot_label)
+    return m.group(1) if m and m.group(1) in ROLE_BY_SLOT else None
+
+
+def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
+    """Per ogni SLOT della formazione, cerca alternative dello stesso ruolo
+    usate in ALTRE formazioni (qualunque tipo) con punteggio atteso vicino
+    (28/07, richiesta esplicita utente: "un attaccante con 57, alternative
+    con 55/54"). Round-robin per slot (non un top-N globale per vicinanza):
+    altrimenti uno slot puo' restare senza alcuna alternativa se un altro
+    ruolo nella stessa formazione ha piu' candidati vicini (bug trovato nella
+    prima versione con un top-4 flat, mai arrivato in produzione). Ritorna al
+    massimo max_chips coppie (slug, score, role), deduplicate per slug."""
+    seen_slugs = {row['slug'] for _, row, _ in formazione}
+    per_slot = []
+    for slot, row, _ctype in formazione:
+        role = _slot_role(slot)
+        if not role:
+            continue
+        own_score = row['atteso']
+        cands = sorted(
+            ((abs(sc - own_score), sc, slug, role)
+             for sc, slug, lbl, i in global_usage.get(role, ())
+             if (lbl, i) != (label, idx) and slug not in seen_slugs),
+            key=lambda t: t[0])
+        per_slot.append(cands)
+
+    picked, picked_slugs = [], set()
+    exhausted = False
+    while len(picked) < max_chips and not exhausted:
+        exhausted = True
+        for cands in per_slot:
+            while cands:
+                _diff, sc, slug, role = cands.pop(0)
+                if slug in picked_slugs:
+                    continue
+                picked_slugs.add(slug)
+                picked.append((slug, sc, role))
+                exhausted = False
+                break
+            if len(picked) >= max_chips:
+                break
+    return picked
+
+
+def _render_alt_panel(chips, card_pool):
+    if not chips:
+        return ''
+    items = ''.join(
+        '<div class="alt-chip">'
+        f'<div class="alt-circle">{bff._slug_initials(slug)}</div>'
+        f'<div class="alt-info"><div class="alt-name">{card_pool.display_name(slug)}</div>'
+        f'<div class="alt-score">{sc} pt · {role}</div></div>'
+        '</div>'
+        for slug, sc, role in chips
+    )
+    return (
+        '<div class="alt-panel">'
+        '<div class="alt-panel-title">Alternative (vicinanza punteggio,<br>da altre formazioni)</div>'
+        f'<div class="alt-list">{items}</div>'
+        '</div>'
+    )
 
 
 def main():
@@ -525,18 +607,52 @@ def main():
     card_pool = bff.CardPool(merged_counts, names=player_names)
 
     run_number = os.environ.get('GITHUB_RUN_NUMBER')
-    lineup_html_blocks = []
-    generated_by_type = {}
-    grand_total = 0
+
+    # FASE 1: genera (e consuma il card_pool) per tutti i tipi, in ordine di
+    # priorita'. Nessun HTML ancora -- il rendering avviene dopo, quando si
+    # conoscono TUTTE le formazioni (serve per il pannello alternative).
+    all_results = []
     for tipo in PRIORITY_ORDER:
-        generated, totale = generate_lineups_for_type(tipo, counts[tipo], role_data, pools, card_pool, lineup_html_blocks)
-        generated_by_type[tipo] = generated
-        grand_total += totale
+        all_results.extend(generate_lineups_for_type(tipo, counts[tipo], role_data, pools, card_pool))
+
+    generated_by_type = {t: 0 for t in PRIORITY_ORDER}
+    grand_total = 0
+    for r in all_results:
+        if 'error' not in r:
+            generated_by_type[r['tipo']] += 1
+            grand_total += sum(row['atteso'] for _, row, _ in r['formazione'])
 
     total_generated = sum(generated_by_type.values())
     print(f"\nFormazioni generate: {total_generated}/{num_totale}")
     if total_generated > 1:
         print(f"TOTALE COMPLESSIVO: {grand_total} pt")
+
+    # Indice globale: ruolo -> [(score, slug, label, idx), ...] su TUTTE le
+    # formazioni di TUTTI i tipi (28/07) -- usato per proporre alternative
+    # per vicinanza di punteggio, cross-formazione/cross-tipo.
+    global_usage = defaultdict(list)
+    for r in all_results:
+        if 'error' in r:
+            continue
+        for slot, row, _ctype in r['formazione']:
+            role = _slot_role(slot)
+            if role:
+                global_usage[role].append((row['atteso'], row['slug'], r['label'], r['idx']))
+
+    # FASE 2: rendering, con il pannello alternative a fianco di ogni formazione.
+    lineup_html_blocks = []
+    for r in all_results:
+        if 'error' in r:
+            lineup_html_blocks.append(f'<p class="error-block">{r["error"]}</p>')
+            continue
+        lineup_html = bff.render_lineup_html(
+            r['label'], r['idx'], r['formazione'], card_pool, l10_cap=r['l10_cap'],
+            l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
+            check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
+            avoid_captain_slugs=r['avoid_captain_slugs'])
+        chips = _build_alt_chips(r['formazione'], r['label'], r['idx'], global_usage)
+        alt_panel = _render_alt_panel(chips, card_pool)
+        lineup_html_blocks.append(f'<div class="lineup-row">{lineup_html}{alt_panel}</div>')
 
     # Giocatori candidati (idonei per starter-odds + finestra giornata, vedi
     # discovery_fixture.py) MAI schierati in nessuna formazione di questa run
