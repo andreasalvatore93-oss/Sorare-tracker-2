@@ -1053,23 +1053,14 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
                         stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False,
                         avoid_captain_slugs=None):
     captain_slot, captain_row, _captain_type = pick_captain(formazione, avoid_captain_slugs)
-    # Layout "a diagonale" (28/07, richiesta esplicita utente, con posizioni
-    # precise: GK in basso a sinistra, DEF a destra e piu' in alto del GK,
-    # MID a destra del DEF e leggermente piu' in alto, EXTRA sopra il MID
-    # (stessa colonna), FWD accanto all'EXTRA (stessa riga in cima). Griglia
-    # CSS 4 colonne x 4 righe con posizionamento esplicito -- generalizza da
-    # solo a qualunque FORMATION_SHAPE (1-2 DEF/MID, con o senza EXTRA).
-    # Lo slot EXTRA va nel proprio livello SEMPRE (non in quello del suo
-    # ruolo reale, che varia a run-time fra DEF/MID/FWD).
-    CELLE_GRIGLIA = {'EXTRA': (1, 3), 'FWD': (1, 4), 'MID': (2, 3), 'DEF': (3, 2), 'GK': (4, 1)}
-    per_livello = {liv: [] for liv in CELLE_GRIGLIA}
-    for slot, row, ctype in formazione:
-        livello = 'EXTRA' if slot.startswith('EXTRA') else (_slot_role(slot) or 'FWD')
-        card_html = render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
-        per_livello.setdefault(livello, []).append(card_html)
+    # Tornati alla fila originale (28/07): sia il raggruppamento per ruolo
+    # sia la diagonale non convincevano l'utente ("non ci siamo") -- niente
+    # riordino, stessa sequenza di formazione, striscia unica con scroll
+    # orizzontale se serve. Carte piu' piccole restano (richiesta separata,
+    # confermata).
     cards_html = ''.join(
-        f'<div class="pgrid-cell" style="grid-row:{riga};grid-column:{colonna}">{"".join(per_livello[liv])}</div>'
-        for liv, (riga, colonna) in CELLE_GRIGLIA.items() if per_livello.get(liv)
+        render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
+        for slot, row, ctype in formazione
     )
     totale_atteso = sum(row['atteso'] for _, row, _ in formazione)
     captain_bonus_pct = CAPTAIN_BONUS_BY_TYPE.get(tipo, 0.5)
@@ -1170,11 +1161,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .lineup-meta {{ margin-bottom: 12px; }}
   .lineup-title {{ font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }}
   .lineup-title span {{ color: var(--text); }}
-  .card-strip {{
-    display: grid; grid-template-columns: repeat(4, minmax(76px, 1fr));
-    grid-template-rows: repeat(4, auto); gap: 8px 10px; align-items: end;
-  }}
-  .pgrid-cell {{ display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: end; }}
+  .card-strip {{ display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }}
   .pcard {{
     position: relative; flex: 0 0 104px; background: var(--surface);
     border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
