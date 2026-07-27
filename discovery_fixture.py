@@ -53,9 +53,9 @@ LEAGUE_DIR = {
 }
 
 FIXTURE_BY_GW = """
-query FixtureByGameWeek($gw: Int!) {
+query FixtureList($first: Int!) {
   so5 {
-    so5Fixtures(seasonGameWeeks: [$gw], first: 5) {
+    so5Fixtures(first: $first) {
       nodes { slug seasonGameWeek aasmState startDate endDate }
     }
   }
@@ -125,14 +125,17 @@ def risolvi_fixture():
             return f
         log(f"ATTENZIONE: fixture '{FIXTURE_SLUG}' non trovata.")
     if GAMEWEEK:
-        d = base.graphql_query(FIXTURE_BY_GW, {"gw": int(GAMEWEEK)},
-                               operation_name="FixtureByGameWeek")
+        # so5Fixtures non accetta un filtro per gameweek: si prendono le ultime
+        # e si sceglie quella giusta lato client.
+        d = base.graphql_query(FIXTURE_BY_GW, {"first": 30}, operation_name="FixtureList")
         nodes = (((d.get('data') or {}).get('so5') or {})
                  .get('so5Fixtures') or {}).get('nodes') or []
-        if nodes:
-            aperte = [n for n in nodes if n.get('aasmState') == 'opened']
-            return (aperte or nodes)[0]
-        log(f"ATTENZIONE: nessuna fixture per gameweek {GAMEWEEK}.")
+        match = [n for n in nodes if str(n.get('seasonGameWeek')) == str(GAMEWEEK)]
+        if match:
+            aperte = [n for n in match if n.get('aasmState') == 'opened']
+            return (aperte or match)[0]
+        disponibili = sorted({str(n.get('seasonGameWeek')) for n in nodes})
+        log(f"ATTENZIONE: gameweek {GAMEWEEK} non fra quelle restituite: {disponibili}")
     return None
 
 
