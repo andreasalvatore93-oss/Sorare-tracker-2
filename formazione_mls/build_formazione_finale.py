@@ -1053,18 +1053,23 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
                         stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False,
                         avoid_captain_slugs=None):
     captain_slot, captain_row, _captain_type = pick_captain(formazione, avoid_captain_slugs)
-    # Layout "a schieramento" (28/07, richiesta esplicita utente: niente piu'
-    # striscia con scroll orizzontale, raggruppare per ruolo come su Sorare
-    # -- FWD in cima, poi MID, DEF, GK in fondo, un blocco compatto).
-    ruolo_ordine = ('FWD', 'MID', 'DEF', 'GK')
-    per_ruolo = {r: [] for r in ruolo_ordine}
+    # Layout "a diagonale" (28/07, richiesta esplicita utente, con posizioni
+    # precise: GK in basso a sinistra, DEF a destra e piu' in alto del GK,
+    # MID a destra del DEF e leggermente piu' in alto, EXTRA sopra il MID
+    # (stessa colonna), FWD accanto all'EXTRA (stessa riga in cima). Griglia
+    # CSS 4 colonne x 4 righe con posizionamento esplicito -- generalizza da
+    # solo a qualunque FORMATION_SHAPE (1-2 DEF/MID, con o senza EXTRA).
+    # Lo slot EXTRA va nel proprio livello SEMPRE (non in quello del suo
+    # ruolo reale, che varia a run-time fra DEF/MID/FWD).
+    CELLE_GRIGLIA = {'EXTRA': (1, 3), 'FWD': (1, 4), 'MID': (2, 3), 'DEF': (3, 2), 'GK': (4, 1)}
+    per_livello = {liv: [] for liv in CELLE_GRIGLIA}
     for slot, row, ctype in formazione:
-        ruolo = _slot_role(slot) or 'FWD'
+        livello = 'EXTRA' if slot.startswith('EXTRA') else (_slot_role(slot) or 'FWD')
         card_html = render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
-        per_ruolo.setdefault(ruolo, []).append(card_html)
+        per_livello.setdefault(livello, []).append(card_html)
     cards_html = ''.join(
-        f'<div class="pitch-row">{"".join(per_ruolo[r])}</div>'
-        for r in ruolo_ordine if per_ruolo.get(r)
+        f'<div class="pgrid-cell" style="grid-row:{riga};grid-column:{colonna}">{"".join(per_livello[liv])}</div>'
+        for liv, (riga, colonna) in CELLE_GRIGLIA.items() if per_livello.get(liv)
     )
     totale_atteso = sum(row['atteso'] for _, row, _ in formazione)
     captain_bonus_pct = CAPTAIN_BONUS_BY_TYPE.get(tipo, 0.5)
@@ -1165,38 +1170,41 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .lineup-meta {{ margin-bottom: 12px; }}
   .lineup-title {{ font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }}
   .lineup-title span {{ color: var(--text); }}
-  .card-strip {{ display: flex; flex-direction: column; gap: 12px; }}
-  .pitch-row {{ display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }}
+  .card-strip {{
+    display: grid; grid-template-columns: repeat(4, minmax(76px, 1fr));
+    grid-template-rows: repeat(4, auto); gap: 8px 10px; align-items: end;
+  }}
+  .pgrid-cell {{ display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: end; }}
   .pcard {{
-    position: relative; flex: 0 0 152px; background: var(--surface);
-    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    position: relative; flex: 0 0 104px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
     box-shadow: 0 1px 2px rgba(0,0,0,0.2);
   }}
-  .pcard-stripe {{ height: 6px; width: 100%; }}
-  .pcard-body {{ padding: 14px 12px 12px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }}
+  .pcard-stripe {{ height: 4px; width: 100%; }}
+  .pcard-body {{ padding: 8px 6px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }}
   .pcard-role {{
-    position: absolute; top: 12px; left: 12px; font-size: 0.62rem; font-weight: 700;
-    letter-spacing: 0.09em; text-transform: uppercase; color: var(--role-color);
+    position: absolute; top: 6px; left: 6px; font-size: 0.52rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--role-color);
     background: color-mix(in srgb, var(--role-color) 16%, transparent);
-    padding: 2px 7px; border-radius: 5px;
+    padding: 1px 5px; border-radius: 4px;
   }}
   .pcard-captain {{
-    position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--gold); color: #241c00; font-size: 0.68rem; font-weight: 800;
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); color: #241c00; font-size: 0.58rem; font-weight: 800;
     display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
   }}
   .pcard-avatar {{
-    width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 1.05rem; color: var(--role-color);
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.72rem; color: var(--role-color);
     background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
-    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 14px;
+    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 8px;
   }}
-  .pcard-name {{ font-size: 0.82rem; font-weight: 650; line-height: 1.25; min-height: 2.1em; display: flex; align-items: center; }}
-  .pcard-score {{ font-size: 1.85rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }}
-  .pcard-range {{ font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; }}
-  .pcard-l10 {{ font-size: 0.62rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
-  .pcard-tags {{ display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; min-height: 18px; }}
-  .tag {{ font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }}
+  .pcard-name {{ font-size: 0.62rem; font-weight: 650; line-height: 1.2; min-height: 1.6em; display: flex; align-items: center; }}
+  .pcard-score {{ font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }}
+  .pcard-range {{ font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }}
+  .pcard-l10 {{ font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
+  .pcard-tags {{ display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }}
+  .tag {{ font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }}
   .tag-classic {{ background: rgba(240,168,59,0.16); color: #f0a83b; }}
   .tag-copies {{ background: var(--stripe); color: var(--muted); }}
   .lineup-total {{
