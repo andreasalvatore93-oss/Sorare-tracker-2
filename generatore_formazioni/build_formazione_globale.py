@@ -313,7 +313,8 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool, lineup_h
             break
         lineup_html_blocks.append(bff.render_lineup_html(
             label, idx, formazione, card_pool, l10_cap=cap, l10_cap_rispettato=l10_ok,
-            stack_bonus_perso=stack_perso, check_cap260=check_cap260, tipo=tipo))
+            stack_bonus_perso=stack_perso, check_cap260=check_cap260, tipo=tipo,
+            apply_stack_guard=stack_guard))
         totale += sum(row['atteso'] for _, row, _ in formazione)
         generated += 1
         print(f"Formazione {label} #{idx}: generata ({sum(r['atteso'] for _, r, _ in formazione)} pt)")

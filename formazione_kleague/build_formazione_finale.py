@@ -570,7 +570,7 @@ def pick_captain(formazione):
 
 
 def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                   stack_bonus_perso=False, check_cap260=False, tipo=None):
+                   stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False):
     lines = []
     lines.append(f"--- Formazione {tipo_label} #{idx} ---")
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
@@ -596,9 +596,12 @@ def format_lineup(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_
     if l10_cap is not None:
         stato = "OK" if l10_cap_rispettato else "NON RISPETTATO (nessun candidato entro budget, preso il piu' economico disponibile)"
         lines.append(f"L10 combinata: {totale_l10:.1f} / cap {l10_cap:.1f} -- {stato}")
-    if stack_bonus_perso:
-        lines.append("ATTENZIONE: 3+ giocatori della stessa squadra -- bonus anti-stack 2%/giocatore NON applicato "
-                      "(valuta tu se il contesto della partita giustifica comunque lo stack).")
+    if apply_stack_guard:
+        if stack_bonus_perso:
+            lines.append("ATTENZIONE: 3+ giocatori della stessa squadra -- bonus anti-stack 2%/giocatore NON applicato "
+                          "(valuta tu se il contesto della partita giustifica comunque lo stack).")
+        else:
+            lines.append("Bonus anti-stack (Multi-club) +2%/giocatore: attivo (meno di 3 titolari della stessa squadra).")
     if check_cap260:
         soglia_cap = CAP260_L10_THRESHOLD_BY_TYPE.get(tipo, 260.0)
         stato260 = "OK" if totale_l10 <= soglia_cap else "NON rispettato"
@@ -666,7 +669,7 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
 
 
 def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
-                        stack_bonus_perso=False, check_cap260=False, tipo=None):
+                        stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False):
     captain_slot, captain_row, _captain_type = pick_captain(formazione)
     cards_html = ''.join(
         render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
@@ -682,9 +685,13 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
         stato = 'entro budget' if l10_cap_rispettato else 'budget NON rispettato'
         l10_note = f'<div class="captain-note">L10: {totale_l10:.1f} / {l10_cap:.1f} ({stato})</div>'
     stack_note = ''
-    if stack_bonus_perso:
-        stack_note = ('<div class="captain-note" style="color:#d9534f">ATTENZIONE: 3+ giocatori della stessa '
-                       'squadra — bonus anti-stack 2%/giocatore NON applicato</div>')
+    if apply_stack_guard:
+        if stack_bonus_perso:
+            stack_note = ('<div class="captain-note" style="color:#d9534f">ATTENZIONE: 3+ giocatori della stessa '
+                           'squadra — bonus anti-stack 2%/giocatore NON applicato</div>')
+        else:
+            stack_note = ('<div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari '
+                           'della stessa squadra)</div>')
     cap260_note = ''
     if check_cap260:
         soglia_cap = CAP260_L10_THRESHOLD_BY_TYPE.get(tipo, 260.0)
@@ -830,12 +837,13 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
         block_text, punti = format_lineup(shape['label'], idx, formazione, card_pool,
                                            l10_cap=cap, l10_cap_rispettato=l10_ok,
                                            stack_bonus_perso=stack_perso, check_cap260=check_cap260,
-                                           tipo=tipo)
+                                           tipo=tipo, apply_stack_guard=stack_guard)
         lineup_blocks.append(block_text)
         lineup_html_blocks.append(render_lineup_html(shape['label'], idx, formazione, card_pool,
                                                        l10_cap=cap, l10_cap_rispettato=l10_ok,
                                                        stack_bonus_perso=stack_perso,
-                                                       check_cap260=check_cap260, tipo=tipo))
+                                                       check_cap260=check_cap260, tipo=tipo,
+                                                       apply_stack_guard=stack_guard))
         totale += punti
         generated += 1
         if print_output:
