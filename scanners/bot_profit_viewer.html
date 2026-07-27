@@ -606,7 +606,7 @@ function render() {
       // la colonna, stesso pattern URL usato in bot_profit.py).
       const name = v || r.player_slug || '—';
       const link = r.link_sorare || (r.player_slug
-        ? `https://sorare.com/it/football/market/shop/manager-sales/${r.player_slug}/limited`
+        ? `https://sorare.com/it/football/players/${r.player_slug}`
         : null);
       const nameHtml = link
         ? `<a href="${link}" target="_blank" rel="noopener noreferrer">${name}</a>`

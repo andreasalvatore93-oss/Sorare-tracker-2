@@ -1197,11 +1197,11 @@ CSV_FIELDNAMES = [
 
 
 def _sorare_market_link(player_slug):
-    """Link diretto al mercato Sorare (carte limited in vendita) per il
-    giocatore -- richiesta esplicita utente 27/07, per aprire la carta con un
-    clic dal CSV/viewer invece di cercarla a mano. Stesso pattern URL gia' in
-    uso in bot_definitivo.py/autobuy_sorare.py/track.py."""
-    return f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+    """Link diretto alla pagina giocatore su Sorare -- richiesta esplicita
+    utente 27/07, per aprire la carta con un clic dal CSV/viewer invece di
+    cercarla a mano (corretto lo stesso giorno: non la pagina mercato/shop
+    ma quella profilo giocatore, es. .../football/players/anthony-markanich)."""
+    return f"https://sorare.com/it/football/players/{player_slug}"
 
 
 def _key_from_csv_row(row):
