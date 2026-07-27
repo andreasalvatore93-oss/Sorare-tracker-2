@@ -1,0 +1,868 @@
+name: Generatore Formazioni (fusione MLS + K League)
+
+# Terza pipeline, AGGIUNTIVA rispetto a "Formazione Completa MLS" e
+# "Formazione Completa K League" (che restano invariate, usabili da sole).
+# Riusa gli stessi script discover/predict/consiglio di entrambi i tool,
+# SENZA modificarli: stessi path di output/cache, quindi la cache
+# incrementale gia' presente viene riusata cosi' com'e' (nessuna nuova
+# query storica per giocatori gia' noti). L'unica cosa nuova e' il job
+# finale, che applica il filtro qualita' e fonde tutto in fino a 8 tipi di
+# lineup (vedi generatore_formazioni/build_formazione_globale.py).
+
+on:
+  workflow_dispatch:
+    inputs:
+      in_season:
+        description: >
+          Quante lineup In Season generare per lega. Formato: lega:quantità separate da virgola.
+          Leghe valide oggi: mls, kleague. Lega omessa o a 0 = nessuna lineup per quella lega.
+          Esempi: "mls:4,kleague:1" = 4 In Season MLS + 1 In Season K League.
+          "mls:2" = solo 2 In Season MLS, K League a 0. Vuoto = nessuna In Season generata.
+        required: false
+        default: 'mls:1,kleague:1'
+      arena_dedicata:
+        description: >
+          Quante Arene DEDICATE (cap L10 fisso 260, solo carte della lega scelta) per lega.
+          Formato: lega:quantità separate da virgola. Leghe valide oggi: mls, kleague.
+          Esempi: "mls:1,kleague:0" = 1 Arena MLS, nessuna K League.
+          "kleague:2" = solo 2 Arene K League. Vuoto = nessuna Arena dedicata generata.
+        required: false
+        default: 'mls:0,kleague:0'
+      arena_allstars_260:
+        description: 'Numero di Arena All Stars con cap L10 fisso a 260 (pool misto MLS+K League, 0 per disattivare)'
+        required: false
+        default: '0'
+      arena_allstars_220:
+        description: 'Numero di Arena All Stars con cap L10 fisso a 220 (pool misto, 0 per disattivare)'
+        required: false
+        default: '0'
+      arena_allstars_uncapped:
+        description: 'Numero di Arena All Stars SENZA cap L10 (pool misto, 0 per disattivare)'
+        required: false
+        default: '0'
+      allstars:
+        description: 'Numero di formazioni All Stars (7 carte, pool misto, cap 370 soft, 0 per disattivare)'
+        required: false
+        default: '0'
+      starter_odds_min:
+        description: 'Soglia minima starter-odds (0-1) per includere un giocatore, es. 0.60. Dato mancante = tenuto per sicurezza.'
+        required: false
+        default: '0.60'
+      min_quality_score:
+        description: 'Soglia minima L5/L10/L40 (tutti e tre) per entrare nel pool. Sotto soglia = carta scartata, nessun job predict sprecato.'
+        required: false
+        default: '35.0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generatore-formazioni
+  cancel-in-progress: false
+
+jobs:
+  # ------------------------------------------------------------------
+  # DISCOVERY -- script ESISTENTI e INVARIATI dei due tool dedicati, stessi
+  # path di output (formazione_mls/output/..., formazione_kleague/output/...).
+  # ------------------------------------------------------------------
+  discover_mls_gk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_mls/discovery/mls_gk_discovery.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_gk_discovery/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: discovery MLS GK"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_mls_def:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_mls/discovery/mls_def_discovery.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_def_discovery/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: discovery MLS DEF"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_mls_mid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_mls/discovery/mls_mid_discovery.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_mid_discovery/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: discovery MLS MID"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_mls_fwd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_mls/discovery/mls_fwd_discovery.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_fwd_discovery/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: discovery MLS FWD"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_kleague_gk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_kleague/discovery/kleague_gk_discovery.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_kleague/output/kleague_gk_discovery/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: discovery K League GK"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_kleague_def:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_kleague/discovery/kleague_def_discovery.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_kleague/output/kleague_def_discovery/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: discovery K League DEF"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_kleague_mid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_kleague/discovery/kleague_mid_discovery.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_kleague/output/kleague_mid_discovery/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: discovery K League MID"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discover_kleague_fwd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      player_slugs: ${{ steps.run_discovery.outputs.player_slugs }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run_discovery
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_kleague/discovery/kleague_fwd_discovery.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_kleague/output/kleague_fwd_discovery/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: discovery K League FWD"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  # ------------------------------------------------------------------
+  # PREDICT -- script ESISTENTI e INVARIATI, stessi path di cache dei due
+  # tool dedicati: la cache incrementale gia' presente viene riusata.
+  # ------------------------------------------------------------------
+  predict_mls_gk:
+    needs: discover_mls_gk
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_mls_gk.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_mls/predict/test_gk.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-mls-gk-${{ matrix.player_slug }}
+          path: |
+            formazione_mls/output/mls_gk_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_mls/output/mls_gk_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_mls/output/mls_gk_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  predict_mls_def:
+    needs: discover_mls_def
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_mls_def.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_mls/predict/test_def.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-mls-def-${{ matrix.player_slug }}
+          path: |
+            formazione_mls/output/mls_def_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_mls/output/mls_def_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_mls/output/mls_def_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  predict_mls_mid:
+    needs: discover_mls_mid
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_mls_mid.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_mls/predict/test_mid.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-mls-mid-${{ matrix.player_slug }}
+          path: |
+            formazione_mls/output/mls_mid_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_mls/output/mls_mid_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_mls/output/mls_mid_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  predict_mls_fwd:
+    needs: discover_mls_fwd
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_mls_fwd.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_mls/predict/test_mls_fwd_all.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-mls-fwd-${{ matrix.player_slug }}
+          path: |
+            formazione_mls/output/mls_fwd_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_mls/output/mls_fwd_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_mls/output/mls_fwd_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  predict_kleague_gk:
+    needs: discover_kleague_gk
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_kleague_gk.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_kleague/predict/test_gk.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-kleague-gk-${{ matrix.player_slug }}
+          path: |
+            formazione_kleague/output/kleague_gk_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_kleague/output/kleague_gk_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_kleague/output/kleague_gk_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  predict_kleague_def:
+    needs: discover_kleague_def
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_kleague_def.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_kleague/predict/test_def.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-kleague-def-${{ matrix.player_slug }}
+          path: |
+            formazione_kleague/output/kleague_def_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_kleague/output/kleague_def_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_kleague/output/kleague_def_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  predict_kleague_mid:
+    needs: discover_kleague_mid
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_kleague_mid.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_kleague/predict/test_mid.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-kleague-mid-${{ matrix.player_slug }}
+          path: |
+            formazione_kleague/output/kleague_mid_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_kleague/output/kleague_mid_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_kleague/output/kleague_mid_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  predict_kleague_fwd:
+    needs: discover_kleague_fwd
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        player_slug: ${{ fromJson(needs.discover_kleague_fwd.outputs.player_slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          TARGET_SLUG: ${{ matrix.player_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python formazione_kleague/predict/test_mls_fwd_all.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predict-kleague-fwd-${{ matrix.player_slug }}
+          path: |
+            formazione_kleague/output/kleague_fwd_all/prediction_${{ matrix.player_slug }}_*.txt
+            formazione_kleague/output/kleague_fwd_all/.cache/${{ matrix.player_slug }}_detail_cache.json
+            formazione_kleague/output/kleague_fwd_all/.game_log_cache/${{ matrix.player_slug }}_gamelog.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # ------------------------------------------------------------------
+  # MERGE -- consiglio_<ts>.txt per ruolo/lega, script ESISTENTI invariati.
+  # ------------------------------------------------------------------
+  merge_mls_gk:
+    needs: [discover_mls_gk, predict_mls_gk]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: predict-mls-gk-*, path: formazione_mls/output/mls_gk_all, merge-multiple: true }
+        continue-on-error: true
+      - run: python formazione_mls/consiglio/build_consiglio_gk.py
+      - run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_gk_all/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: predict+consiglio MLS GK"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_mls_def:
+    needs: [discover_mls_def, predict_mls_def]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: predict-mls-def-*, path: formazione_mls/output/mls_def_all, merge-multiple: true }
+        continue-on-error: true
+      - run: python formazione_mls/consiglio/build_consiglio_def.py
+      - run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_def_all/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: predict+consiglio MLS DEF"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_mls_mid:
+    needs: [discover_mls_mid, predict_mls_mid]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: predict-mls-mid-*, path: formazione_mls/output/mls_mid_all, merge-multiple: true }
+        continue-on-error: true
+      - run: python formazione_mls/consiglio/build_consiglio_mid.py
+      - run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_mid_all/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: predict+consiglio MLS MID"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_mls_fwd:
+    needs: [discover_mls_fwd, predict_mls_fwd]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: predict-mls-fwd-*, path: formazione_mls/output/mls_fwd_all, merge-multiple: true }
+        continue-on-error: true
+      - run: python formazione_mls/consiglio/build_consiglio.py
+      - run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_fwd_all/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: predict+consiglio MLS FWD"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_kleague_gk:
+    needs: [discover_kleague_gk, predict_kleague_gk]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: predict-kleague-gk-*, path: formazione_kleague/output/kleague_gk_all, merge-multiple: true }
+        continue-on-error: true
+      - run: python formazione_kleague/consiglio/build_consiglio_gk.py
+      - run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_kleague/output/kleague_gk_all/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: predict+consiglio K League GK"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_kleague_def:
+    needs: [discover_kleague_def, predict_kleague_def]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: predict-kleague-def-*, path: formazione_kleague/output/kleague_def_all, merge-multiple: true }
+        continue-on-error: true
+      - run: python formazione_kleague/consiglio/build_consiglio_def.py
+      - run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_kleague/output/kleague_def_all/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: predict+consiglio K League DEF"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_kleague_mid:
+    needs: [discover_kleague_mid, predict_kleague_mid]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: predict-kleague-mid-*, path: formazione_kleague/output/kleague_mid_all, merge-multiple: true }
+        continue-on-error: true
+      - run: python formazione_kleague/consiglio/build_consiglio_mid.py
+      - run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_kleague/output/kleague_mid_all/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: predict+consiglio K League MID"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  merge_kleague_fwd:
+    needs: [discover_kleague_fwd, predict_kleague_fwd]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: predict-kleague-fwd-*, path: formazione_kleague/output/kleague_fwd_all, merge-multiple: true }
+        continue-on-error: true
+      - run: python formazione_kleague/consiglio/build_consiglio.py
+      - run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_kleague/output/kleague_fwd_all/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: predict+consiglio K League FWD"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  # ------------------------------------------------------------------
+  # FUSIONE FINALE -- SOLO qui c'e' codice nuovo (generatore_formazioni/).
+  # ------------------------------------------------------------------
+  formazione_globale:
+    needs: [merge_mls_gk, merge_mls_def, merge_mls_mid, merge_mls_fwd,
+            merge_kleague_gk, merge_kleague_def, merge_kleague_mid, merge_kleague_fwd]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - name: Genera formazioni fuse (filtro qualita' + 8 tipi)
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          IN_SEASON: ${{ github.event.inputs.in_season }}
+          ARENA_DEDICATA: ${{ github.event.inputs.arena_dedicata }}
+          ARENA_ALLSTARS_260: ${{ github.event.inputs.arena_allstars_260 }}
+          ARENA_ALLSTARS_220: ${{ github.event.inputs.arena_allstars_220 }}
+          ARENA_ALLSTARS_UNCAPPED: ${{ github.event.inputs.arena_allstars_uncapped }}
+          ALLSTARS: ${{ github.event.inputs.allstars }}
+          MIN_QUALITY_SCORE: ${{ github.event.inputs.min_quality_score }}
+          PYTHONUNBUFFERED: "1"
+        run: python generatore_formazioni/build_formazione_globale.py
+      - name: Commit formazione globale
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add generatore_formazioni/output/*.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Generatore Formazioni: formazione globale fusa MLS+K League"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
