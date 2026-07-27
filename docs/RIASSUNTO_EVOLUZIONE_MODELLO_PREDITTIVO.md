@@ -2753,11 +2753,17 @@ di schierare.
    mai stato eseguito con dati veri — controllare la prima volta che ne compare uno (log
    `discovery_fixture` deve mostrarlo sotto `senza_lega` invece che "lega senza pipeline --
    ignorato", e deve comparire nell'output All Stars).
-2. **`formazione_resto_mondo`** *(l'utente ha chiesto di chiarire il problema)*: è una copia
-   **vecchia e disallineata**, non ha nemmeno `SHRINK_K_OUTLIER_DEF` e la sua formula di
-   produzione è diversa da quella delle altre 20. Per questo è stata **esclusa da tutte** le
-   modifiche di oggi (ordinamento, KICKOFF, non-regressione). Va allineata clonando una pipeline
-   aggiornata, oppure dismessa se il suo pool è già coperto dalle leghe reali.
+2. **`formazione_resto_mondo`** *(l'utente ha chiesto di chiarire il problema)* — **CHIARITO
+   28/07, in sospeso**: non è solo disallineata, è **completamente inerte**: nessun workflow la
+   richiama, mai prodotto un `_all` (quindi `build_formazione_globale.py` non la scopre neppure).
+   Il suo criterio di discovery è diverso dagli altri: non `domesticLeague`, ma eleggibilità alla
+   competizione SO5 "Resto del Mondo" (`anyPlayer.eligibleSo5Competitions`, slug
+   `seasonal-rest_of_the_world`) — un giocatore può comparirci pur avendo già una lega domestica
+   tracciata altrove (es. Carlos Miguel, Brasileirao + Resto del Mondo). Allinearla non è un clone
+   di pipeline ma un nuovo tipo di filtro in `discovery_fixture.py`. **Chiesto all'utente se gioca
+   davvero questa competizione: non lo sa ancora, deve verificare su Sorare.** Nessuna azione
+   presa, riprendere quando ha la risposta (dismettere se non la gioca, altrimenti progettare il
+   filtro `eligibleSo5Competitions`).
 3. **Anti-sinergia cross-team su tutti i ruoli**: misurata (fwd-gk -0.258, gk-mid -0.192,
    def-mid -0.156, def-def -0.122, mid-mid -0.125, tutte con p<0.05), ma **split-half instabile**:
    serve più storico prima di metterla in produzione.
