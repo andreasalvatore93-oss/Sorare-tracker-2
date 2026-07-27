@@ -89,6 +89,11 @@ GLOBALE = os.environ.get('GLOBALE', 'no').strip().lower() in ('1', 'true', 'si',
 CAMPIONATI_NOTI = (
     'mls', 'kleague', 'brasile', 'croazia', 'portogallo', 'austria',
     'scozia', 'belgio', 'olanda', 'spagna',
+    # 27/07 (sera): aggiunti i campionati con pipeline+calibrazione creati oggi.
+    # Quelli senza storico ancora (stagione non iniziata) contribuiscono 0 grid,
+    # innocuo: load_players_for trova semplicemente 0 file e li salta.
+    'turchia', 'francia', 'francia2', 'germania', 'germania2',
+    'giappone', 'giappone100', 'italia', 'inghilterra', 'inghilterra2',
 )  # estendere qui quando si aggiunge un nuovo campionato (27/07: aggiunti gli 8
 # campionati con infrastruttura di calibrazione allargata appena creata,
 # grid_search_calibrazione_<lega>.yml, pool limitato ai soli posseduti per
