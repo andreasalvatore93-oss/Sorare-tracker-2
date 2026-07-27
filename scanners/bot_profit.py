@@ -442,13 +442,6 @@ query TeamRoster($slug: String!, $first: Int!, $after: String) {
           lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
           lastTenAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
           lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
-          allPlayerGameScores(first: 3) {
-            nodes {
-              score
-              scoreStatus
-              anyGame { date }
-            }
-          }
         }
         pageInfo { hasNextPage endCursor }
       }
@@ -501,18 +494,19 @@ def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
     su ogni batch (verificato con un run reale) -- niente aliasing di campi
     radice ripetuti, a differenza di quanto permette lo standard GraphQL.
 
-    FIX 27/07 ter (stesso obiettivo, secondo tentativo): annidare
-    allPlayerGameScores (ultima partita) DENTRO questa query di roster
-    FUNZIONA -- stesso principio gia' usato per L5/L10/L40, zero query
-    aggiuntive. anyFutureGames (prossima partita) invece NO: Sorare risponde
-    'Selecting anyFutureGames within a list of AnyPlayerInterface (anyPlayers)
-    is not supported, please select anyFutureGames for a specific
-    AnyPlayerInterface instead.' -- resta quindi per-giocatore
-    (fetch_player_next_game, query minima, chiamata solo per chi supera
-    squadra_diversa/forma_zero). Restano cosi' per-giocatore solo prezzo
-    (live offers), prossima partita e transazioni -- i primi due dati di
-    mercato/schema non annidabili qui, ultima non annidabile per limite
-    esplicito dello schema Sorare."""
+    CORREZIONE 27/07 (run reale 30306125200, TUTTE le 30 squadre MLS a 0
+    giocatori): il FIX 27/07 ter precedente affermava che annidare
+    allPlayerGameScores (ultima partita) dentro questa query di roster
+    funzionasse -- MAI verificato su una run reale successiva, e in realta'
+    Sorare rifiuta anche questo campo con lo stesso identico errore gia' visto
+    per anyFutureGames: 'Selecting allPlayerGameScores within a list of
+    AnyPlayerInterface (anyPlayers) is not supported, please select
+    allPlayerGameScores for a specific AnyPlayerInterface instead.' Rimosso da
+    QUESTA query -- ultima partita ora fetchata per-giocatore assieme alla
+    prossima partita (vedi fetch_player_next_game), stesso principio gia' in
+    uso per anyFutureGames. Restano cosi' per-giocatore: prezzo (live offers),
+    prossima+ultima partita e transazioni -- nessuno di questi e' annidabile
+    dentro una lista anyPlayers per limite esplicito dello schema Sorare."""
     all_nodes = []
     cursor = None
     for _ in range(TEAM_ROSTER_MAX_PAGES):
@@ -898,33 +892,42 @@ query PlayerNextGame($slug: String!) {
         awayTeam { ... on Club { slug name } }
       }
     }
+    allPlayerGameScores(first: 3) {
+      nodes {
+        score
+        scoreStatus
+        anyGame { date }
+      }
+    }
   }
 }
 """
 
 
 def fetch_player_next_game(player_slug):
-    """Prossima partita per un giocatore. FIX 27/07 ter (richiesta esplicita
-    utente, ridurre query verso Sorare): un secondo tentativo di annidare
-    anyFutureGames dentro club.anyPlayers (assieme a L5/L10/L40/ultima
-    partita, vedi TEAM_ROSTER_QUERY) e' stato rifiutato da Sorare: 'Selecting
-    anyFutureGames within a list of AnyPlayerInterface (anyPlayers) is not
-    supported, please select anyFutureGames for a specific AnyPlayerInterface
-    instead.' -- a differenza di allPlayerGameScores (quello si', resta nel
-    roster). Resta quindi per-giocatore, ma: (a) query MINIMA, un solo campo
-    utile invece dell'intero PROFIT_PLAYER_DATA_QUERY; (b) chiamata da
-    _process_player_snapshot SOLO dopo aver gia' scartato squadra_diversa/
-    forma_zero con i dati del roster, quindi mai sprecata su giocatori che
-    verrebbero comunque esclusi prima."""
+    """Prossima partita E ultima partita giocata per un giocatore (CORREZIONE
+    27/07: entrambi i campi -- anyFutureGames e allPlayerGameScores -- sono
+    rifiutati da Sorare se annidati dentro una lista club.anyPlayers, vedi
+    TEAM_ROSTER_QUERY/fetch_team_roster, quindi restano per-giocatore in
+    un'unica query minima). Chiamata da _process_player_snapshot SOLO dopo
+    aver gia' scartato squadra_diversa/forma_zero con i dati del roster,
+    quindi mai sprecata su giocatori che verrebbero comunque esclusi prima."""
     data = graphql_query(NEXT_GAME_QUERY, {"slug": player_slug})
     if data.get('errors'):
         log(f"[prossima partita] errore GraphQL per {player_slug}: {data['errors']}")
-        return None, None
+        return None, None, None, []
     player = ((data.get('data') or {}).get('anyPlayer')) or {}
     squadra_slug = (player.get('activeClub') or {}).get('slug')
     future_nodes = ((player.get('anyFutureGames') or {}).get('nodes')) or []
+
+    last_game_nodes = ((player.get('allPlayerGameScores') or {}).get('nodes')) or []
+    ultima_partita_score = last_game_nodes[0].get('score') if last_game_nodes else None
+    past_game_dates = [
+        (n.get('anyGame') or {}).get('date') for n in last_game_nodes if (n.get('anyGame') or {}).get('date')
+    ]
+
     if not future_nodes:
-        return None, None
+        return None, None, ultima_partita_score, past_game_dates
     next_game = future_nodes[0]
     next_game_date_str = next_game.get('date')
     home = next_game.get('homeTeam') or {}
@@ -936,7 +939,7 @@ def fetch_player_next_game(player_slug):
         prossimo_avversario = f"{home.get('name', '?')} (trasferta)"
     elif home.get('name') or away.get('name'):
         prossimo_avversario = f"{home.get('name', '?')} vs {away.get('name', '?')}"
-    return next_game_date_str, prossimo_avversario
+    return next_game_date_str, prossimo_avversario, ultima_partita_score, past_game_dates
 
 
 def trimmed_average(prices):
@@ -1645,15 +1648,17 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
 
     # FIX 27/07 ter: prossima partita fetchata QUI, non prima -- solo per chi ha
     # gia' superato squadra_diversa/forma_zero con i dati del roster (vedi
-    # fetch_player_next_game).
-    next_game_date_str, prossimo_avversario = fetch_player_next_game(player_slug)
+    # fetch_player_next_game). CORREZIONE 27/07: la stessa chiamata ora
+    # ritorna anche ultima_partita_score/past_game_dates (rimossi dalla query
+    # di roster, non annidabili li' -- vedi fetch_team_roster).
+    next_game_date_str, prossimo_avversario, ultima_partita_score, past_game_dates = fetch_player_next_game(player_slug)
     if not next_game_date_str:
         blacklist_player(player_slug, 'nessuna_partita', NESSUNA_PARTITA_DAYS)
         log(f"[blacklist] {player_name} ({player_slug}): nessuna prossima partita -- "
             f"blacklistato {NESSUNA_PARTITA_DAYS:.0f}gg")
         return 'nessuna_partita'
 
-    match_dates = snapshot['match_dates'] + [next_game_date_str]
+    match_dates = past_game_dates + [next_game_date_str]
     ore_alla_partita = hours_until(next_game_date_str)
     righe_scritte = 0
     tx_nodes_cache = None  # (nodes, cutoff) -- scaricate al bisogno, non se il prezzo scarta subito
@@ -1683,7 +1688,7 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
 
         potenziale_score = compute_potenziale_score(
             l5=l5, l10=snapshot['l10'], l40=snapshot['l40'],
-            ultima_partita_score=snapshot['ultima_partita_score'],
+            ultima_partita_score=ultima_partita_score,
             sconto_percent=sconto_percent, ore_alla_partita=ore_alla_partita,
         )
 
@@ -1698,7 +1703,7 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
             'potenziale_score': potenziale_score,
             'squadra': snapshot['squadra'],
             'prossimo_avversario': prossimo_avversario,
-            'ultima_partita_score': snapshot['ultima_partita_score'],
+            'ultima_partita_score': ultima_partita_score,
             'l5': l5,
             'l10': snapshot['l10'],
             'l40': snapshot['l40'],
