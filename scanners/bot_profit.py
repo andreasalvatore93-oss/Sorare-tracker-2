@@ -445,10 +445,17 @@ query TeamRoster($slug: String!, $first: Int!, $after: String) {
         nodes {
           slug
           displayName
-          activeClub { slug }
+          activeClub { slug name }
           lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
           lastTenAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
           lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
+          allPlayerGameScores(first: 3) {
+            nodes {
+              score
+              scoreStatus
+              anyGame { date }
+            }
+          }
         }
         pageInfo { hasNextPage endCursor }
       }
@@ -492,7 +499,27 @@ def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
 
     FIX 27/07 (richiesta esplicita utente): stessa soglia estesa anche a L5 e
     L40 (prima L5 scartava solo se assente/zero) -- ora tutte e tre le medie
-    (L5, L10, L40) devono superare ROSTER_MIN_AVG_SCORE, non solo L10."""
+    (L5, L10, L40) devono superare ROSTER_MIN_AVG_SCORE, non solo L10.
+
+    FIX 27/07 bis (richiesta esplicita utente, ridurre il numero di query verso
+    Sorare): un primo tentativo di accorpare PROFIT_PLAYER_DATA_QUERY con alias
+    GraphQL (piu' 'anyPlayer(slug: ...)' nella stessa richiesta) e' stato
+    RIFIUTATO dal server Sorare con errore 'Duplicated root field: anyPlayer'
+    su ogni batch (verificato con un run reale) -- niente aliasing di campi
+    radice ripetuti, a differenza di quanto permette lo standard GraphQL.
+
+    FIX 27/07 ter (stesso obiettivo, secondo tentativo): annidare
+    allPlayerGameScores (ultima partita) DENTRO questa query di roster
+    FUNZIONA -- stesso principio gia' usato per L5/L10/L40, zero query
+    aggiuntive. anyFutureGames (prossima partita) invece NO: Sorare risponde
+    'Selecting anyFutureGames within a list of AnyPlayerInterface (anyPlayers)
+    is not supported, please select anyFutureGames for a specific
+    AnyPlayerInterface instead.' -- resta quindi per-giocatore
+    (fetch_player_next_game, query minima, chiamata solo per chi supera
+    squadra_diversa/forma_zero). Restano cosi' per-giocatore solo prezzo
+    (live offers), prossima partita e transazioni -- i primi due dati di
+    mercato/schema non annidabili qui, ultima non annidabile per limite
+    esplicito dello schema Sorare."""
     all_nodes = []
     cursor = None
     for _ in range(TEAM_ROSTER_MAX_PAGES):
@@ -526,7 +553,7 @@ def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
         and (n.get('lastTenAvgScore') or 0) > ROSTER_MIN_AVG_SCORE
         and (n.get('lastFortyAvgScore') or 0) > ROSTER_MIN_AVG_SCORE
     ]
-    roster = [(n['slug'], n.get('displayName') or n['slug']) for n in roster_nodi]
+    roster = [(n['slug'], n.get('displayName') or n['slug'], _parse_player_snapshot_node(n)) for n in roster_nodi]
 
     scartati_ex = len(roster_completo) - len(roster_attuale)
     scartati_media_bassa = len(roster_attuale) - len(roster_nodi)
@@ -796,11 +823,12 @@ query ProfitPlayerData($slug: String!) {
 
 
 def _parse_player_snapshot_node(player):
-    """Nucleo di parsing condiviso (FIX 27/07, accorpamento query con alias):
-    estrae lo stesso identico snapshot sia dal ramo anyPlayer singolo
-    (get_player_snapshot, usato da run_listener evento-per-evento) sia da un
-    nodo alias dentro la query batch (fetch_players_snapshot_batch, usata da
-    run_snapshot_sweep) -- stessa forma di ritorno in entrambi i casi."""
+    """Nucleo di parsing condiviso (FIX 27/07 bis): estrae lo stesso identico
+    snapshot sia dal ramo anyPlayer singolo (get_player_snapshot, usato da
+    run_listener evento-per-evento) sia da un nodo del roster per squadra
+    (fetch_team_roster/TEAM_ROSTER_QUERY, usato da run_snapshot_sweep, dove
+    gli stessi campi sono annidati dentro club.anyPlayers) -- stessa forma di
+    ritorno in entrambi i casi."""
     if not player:
         return None
 
@@ -852,8 +880,12 @@ def get_player_snapshot(player_slug):
     prezzo piu' in alto di un L5 alto ma con l'ultima gara sottotono). Ritorna
     anche match_dates: date passate (fino a 3) + prossima, per il pattern
     prezzo/distanza-da-partita (richiesta esplicita utente 26/07).
-    Usata da run_listener (un giocatore alla volta, arrivano da eventi live).
-    Il giro snapshot (run_snapshot_sweep) usa invece fetch_players_snapshot_batch."""
+    Usata SOLO da run_listener (un giocatore alla volta, arrivano da eventi
+    live) -- il giro snapshot (run_snapshot_sweep) prende L5/L10/L40 e
+    ultima_partita_score gia' annidati dentro fetch_team_roster/
+    TEAM_ROSTER_QUERY, e la prossima partita a parte via
+    fetch_player_next_game (vedi commenti FIX 27/07 bis/ter: due tentativi di
+    accorpamento con alias/annidamento sono stati rifiutati da Sorare)."""
     data = graphql_query(PROFIT_PLAYER_DATA_QUERY, {"slug": player_slug})
     if data.get('errors'):
         log(f"[snapshot] errore GraphQL per {player_slug}: {data['errors']}")
@@ -862,17 +894,10 @@ def get_player_snapshot(player_slug):
     return _parse_player_snapshot_node(player)
 
 
-# Campi identici a PROFIT_PLAYER_DATA_QUERY, riusati per costruire la query batch
-# con alias (un alias per giocatore, stesso set di campi).
-_PLAYER_DATA_FIELDS = """
-    slug
-    displayName
-    activeClub {
-      ... on Club { slug name }
-    }
-    lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
-    lastTenAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
-    lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
+NEXT_GAME_QUERY = """
+query PlayerNextGame($slug: String!) {
+  anyPlayer(slug: $slug) {
+    activeClub { ... on Club { slug name } }
     anyFutureGames(first: 1) {
       nodes {
         date
@@ -880,53 +905,45 @@ _PLAYER_DATA_FIELDS = """
         awayTeam { ... on Club { slug name } }
       }
     }
-    allPlayerGameScores(first: 3) {
-      nodes {
-        score
-        scoreStatus
-        anyGame { date }
-      }
-    }
+  }
+}
 """
 
-# FIX 27/07 (richiesta esplicita utente, ridurre il numero di query verso Sorare
-# nel giro snapshot): invece di una PROFIT_PLAYER_DATA_QUERY per giocatore, si
-# chiedono BATCH_SNAPSHOT_SIZE giocatori in UNA SOLA richiesta usando alias
-# GraphQL (p0, p1, p2... ognuno un anyPlayer(slug: ...) con gli stessi campi).
-# Dimezza/riduce drasticamente il numero di round-trip per questa query
-# rispetto a prima (era 1 per giocatore, ora 1 ogni BATCH_SNAPSHOT_SIZE).
-# Dimensione tenuta prudente (20) e configurabile via env: query troppo grandi
-# rischiano di sbattere contro limiti di complessita' lato Sorare (mai
-# verificato prima -- da confermare con un run reale).
-BATCH_SNAPSHOT_SIZE = int(os.environ.get('BATCH_SNAPSHOT_SIZE', '20'))
 
-
-def _build_batch_player_query(n):
-    aliases = "\n".join(
-        f'  p{i}: anyPlayer(slug: $s{i}) {{{_PLAYER_DATA_FIELDS}  }}'
-        for i in range(n)
-    )
-    var_decls = ", ".join(f"$s{i}: String!" for i in range(n))
-    return f"query BatchPlayerData({var_decls}) {{\n{aliases}\n}}"
-
-
-def fetch_players_snapshot_batch(player_slugs):
-    """Come get_player_snapshot, ma per una LISTA di giocatori in un colpo solo
-    (vedi BATCH_SNAPSHOT_SIZE). Ritorna dict slug -> snapshot (None se il
-    giocatore non e' stato trovato o il batch e' fallito per lui)."""
-    result = {}
-    for start in range(0, len(player_slugs), BATCH_SNAPSHOT_SIZE):
-        chunk = player_slugs[start:start + BATCH_SNAPSHOT_SIZE]
-        query = _build_batch_player_query(len(chunk))
-        variables = {f"s{i}": slug for i, slug in enumerate(chunk)}
-        data = graphql_query(query, variables)
-        if data.get('errors'):
-            log(f"[snapshot batch] errore GraphQL per batch di {len(chunk)} giocatori "
-                f"(indice {start}): {data['errors']}")
-        payload = data.get('data') or {}
-        for i, slug in enumerate(chunk):
-            result[slug] = _parse_player_snapshot_node(payload.get(f"p{i}"))
-    return result
+def fetch_player_next_game(player_slug):
+    """Prossima partita per un giocatore. FIX 27/07 ter (richiesta esplicita
+    utente, ridurre query verso Sorare): un secondo tentativo di annidare
+    anyFutureGames dentro club.anyPlayers (assieme a L5/L10/L40/ultima
+    partita, vedi TEAM_ROSTER_QUERY) e' stato rifiutato da Sorare: 'Selecting
+    anyFutureGames within a list of AnyPlayerInterface (anyPlayers) is not
+    supported, please select anyFutureGames for a specific AnyPlayerInterface
+    instead.' -- a differenza di allPlayerGameScores (quello si', resta nel
+    roster). Resta quindi per-giocatore, ma: (a) query MINIMA, un solo campo
+    utile invece dell'intero PROFIT_PLAYER_DATA_QUERY; (b) chiamata da
+    _process_player_snapshot SOLO dopo aver gia' scartato squadra_diversa/
+    forma_zero con i dati del roster, quindi mai sprecata su giocatori che
+    verrebbero comunque esclusi prima."""
+    data = graphql_query(NEXT_GAME_QUERY, {"slug": player_slug})
+    if data.get('errors'):
+        log(f"[prossima partita] errore GraphQL per {player_slug}: {data['errors']}")
+        return None, None
+    player = ((data.get('data') or {}).get('anyPlayer')) or {}
+    squadra_slug = (player.get('activeClub') or {}).get('slug')
+    future_nodes = ((player.get('anyFutureGames') or {}).get('nodes')) or []
+    if not future_nodes:
+        return None, None
+    next_game = future_nodes[0]
+    next_game_date_str = next_game.get('date')
+    home = next_game.get('homeTeam') or {}
+    away = next_game.get('awayTeam') or {}
+    prossimo_avversario = None
+    if squadra_slug and home.get('slug') == squadra_slug:
+        prossimo_avversario = f"{away.get('name', '?')} (casa)"
+    elif squadra_slug and away.get('slug') == squadra_slug:
+        prossimo_avversario = f"{home.get('name', '?')} (trasferta)"
+    elif home.get('name') or away.get('name'):
+        prossimo_avversario = f"{home.get('name', '?')} vs {away.get('name', '?')}"
+    return next_game_date_str, prossimo_avversario
 
 
 def trimmed_average(prices):
@@ -1719,14 +1736,13 @@ def run_listener(eth_rate):
 # =====================================================================================
 def _process_player_snapshot(player_slug, player_name, expected_team_slug, league_slug, eth_rate,
                               live_offer_nodes, snapshot):
-    """FIX 27/07 bis (richiesta esplicita utente, accorpamento query con alias):
-    blacklist/prezzo (live_offer_nodes) e dati voto/prossima partita (snapshot)
-    sono ora scaricati PRIMA e in blocco da run_snapshot_sweep (fase A: prezzo
-    per-giocatore, non accorpabile essendo dati di mercato individuali; fase B:
-    snapshot voto/partita ACCORPATO con alias GraphQL, una query ogni
-    BATCH_SNAPSHOT_SIZE giocatori) -- qui restano solo gli scarti/il calcolo che
-    dipendono dai dati gia' in mano, passati come parametri invece che
-    ri-scaricati per ogni giocatore."""
+    """FIX 27/07 bis (richiesta esplicita utente, ridurre il numero di query
+    verso Sorare): live_offer_nodes (prezzo) viene scaricato dal chiamante
+    (run_snapshot_sweep, dato individuale di mercato, non annidabile), mentre
+    snapshot (voto/prossima partita) arriva GIA' pronto dal roster per squadra
+    (fetch_team_roster/TEAM_ROSTER_QUERY) -- qui restano solo gli scarti/il
+    calcolo che dipendono dai dati gia' in mano, passati come parametri invece
+    che ri-scaricati per ogni giocatore."""
     if snapshot is None:
         log(f"[snapshot] {player_name} ({player_slug}): nessun dato giocatore, salto.")
         return 'no_snapshot'
@@ -1745,13 +1761,18 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
         # sweep ricontrolla il roster gratis, un blocco di 30gg non aggiungerebbe nulla.
         return 'forma_zero'
 
-    if not snapshot['next_game_date_str']:
+    # FIX 27/07 ter: prossima partita fetchata QUI, non prima -- solo per chi ha
+    # gia' superato squadra_diversa/forma_zero con i dati del roster (vedi
+    # fetch_player_next_game).
+    next_game_date_str, prossimo_avversario = fetch_player_next_game(player_slug)
+    if not next_game_date_str:
         blacklist_player(player_slug, 'nessuna_partita', NESSUNA_PARTITA_DAYS)
         log(f"[blacklist] {player_name} ({player_slug}): nessuna prossima partita -- "
             f"blacklistato {NESSUNA_PARTITA_DAYS:.0f}gg")
         return 'nessuna_partita'
 
-    ore_alla_partita = hours_until(snapshot['next_game_date_str'])
+    match_dates = snapshot['match_dates'] + [next_game_date_str]
+    ore_alla_partita = hours_until(next_game_date_str)
     righe_scritte = 0
     tx_nodes_cache = None  # (nodes, cutoff) -- scaricate al bisogno, non se il prezzo scarta subito
 
@@ -1776,7 +1797,7 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
 
         if tx_prices:
             baseline_pattern = sum(tx_prices) / len(tx_prices)
-            _registra_pattern_giorni(snapshot['match_dates'], tx_con_date, baseline_pattern)
+            _registra_pattern_giorni(match_dates, tx_con_date, baseline_pattern)
 
         potenziale_score = compute_potenziale_score(
             l5=l5, l10=snapshot['l10'], l40=snapshot['l40'],
@@ -1794,7 +1815,7 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
             'tipo_carta': tipo_carta,
             'potenziale_score': potenziale_score,
             'squadra': snapshot['squadra'],
-            'prossimo_avversario': snapshot['prossimo_avversario'],
+            'prossimo_avversario': prossimo_avversario,
             'ultima_partita_score': snapshot['ultima_partita_score'],
             'l5': l5,
             'l10': snapshot['l10'],
@@ -1803,7 +1824,7 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
             'media_transazioni_7gg_trimmed_eur': round(avg_trimmed, 2) if avg_trimmed is not None else None,
             'n_transazioni_usate': f"{n_usati}/{n_totali}",
             'sconto_percent': sconto_percent,
-            'prossima_partita_data': snapshot['next_game_date_str'],
+            'prossima_partita_data': next_game_date_str,
             'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
             'ultimo_tipo_evento': 'in_season' if is_in_season else 'classic',
         }
@@ -1821,10 +1842,10 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
 def run_snapshot_sweep(eth_rate):
     log(f"Avvio SNAPSHOT su {len(TEAM_WHITELIST)} squadra/e (league={SNAPSHOT_LEAGUE_SLUG}): {TEAM_WHITELIST}")
 
-    roster = {}  # slug -> (displayName, team_slug attesa), deduplicato tra squadre
+    roster = {}  # slug -> (displayName, team_slug attesa, snapshot voto/partita), deduplicato tra squadre
     for team_slug in TEAM_WHITELIST:
-        for player_slug, player_name in fetch_team_roster(team_slug):
-            roster.setdefault(player_slug, (player_name, team_slug))
+        for player_slug, player_name, snapshot in fetch_team_roster(team_slug):
+            roster.setdefault(player_slug, (player_name, team_slug, snapshot))
 
     log(f"Roster totale (deduplicato): {len(roster)} giocatori.")
 
@@ -1844,15 +1865,16 @@ def run_snapshot_sweep(eth_rate):
             done[0] += 1
             log(f"[{done[0]}/{total}] {player_name} ({player_slug}): {esito}")
 
-    # FASE A (FIX 27/07 bis, richiesta esplicita utente: ridurre il numero di
-    # query verso Sorare): blacklist + prezzo restano per-giocatore -- sono
-    # dati di mercato individuali (offerte live), non accorpabili con alias
-    # come lo snapshot voto/partita. In parallelo come prima.
+    # FIX 27/07 bis (richiesta esplicita utente, ridurre il numero di query
+    # verso Sorare): lo snapshot voto/prossima-partita arriva GIA' con il
+    # roster (vedi fetch_team_roster/TEAM_ROSTER_QUERY, 1 sola richiesta per
+    # squadra) -- qui resta solo blacklist+prezzo per-giocatore (dati di
+    # mercato individuali, non annidabili nella query di roster) e il resto
+    # dell'elaborazione (squadra/forma/partita/transazioni/punteggio), in un
+    # unico giro parallelo invece di due fasi separate.
     tipi_da_provare = (True, False) if CHECK_CLASSIC else (True,)
-    candidati = {}  # slug -> live_offer_nodes, solo chi supera blacklist+prezzo
-    candidati_lock = threading.Lock()
 
-    def _fase_prezzo(player_slug, player_name, expected_team_slug):
+    def _worker(player_slug, player_name, expected_team_slug, snapshot):
         if is_player_blacklisted(player_slug):
             _registra_esito(player_name, player_slug, 'blacklist')
             return
@@ -1865,44 +1887,20 @@ def run_snapshot_sweep(eth_rate):
         if not prezzo_ok:
             _registra_esito(player_name, player_slug, 'prezzo_basso_o_senza_annunci')
             return
-        with candidati_lock:
-            candidati[player_slug] = live_offer_nodes
-
-    with concurrent.futures.ThreadPoolExecutor(
-            max_workers=SNAPSHOT_WORKER_THREADS, thread_name_prefix='snapPrezzo') as executor:
-        futures = [
-            executor.submit(_fase_prezzo, player_slug, player_name, expected_team_slug)
-            for player_slug, (player_name, expected_team_slug) in roster.items()
-        ]
-        for future in concurrent.futures.as_completed(futures):
-            future.result()
-
-    log(f"Fase prezzo completata: {len(candidati)}/{total} giocatori superano la soglia, "
-        f"proseguono su snapshot voto/partita + transazioni.")
-
-    # FASE B (FIX 27/07 bis): snapshot voto/prossima partita ACCORPATO con alias
-    # GraphQL -- una sola richiesta ogni BATCH_SNAPSHOT_SIZE giocatori, invece
-    # di una per giocatore come prima (get_player_snapshot restava riservata al
-    # percorso a eventi run_listener, dove i giocatori arrivano uno alla volta).
-    candidati_slugs = list(candidati.keys())
-    snapshots = fetch_players_snapshot_batch(candidati_slugs)
-
-    # FASE C: resto dell'elaborazione (squadra/forma/partita/transazioni/
-    # punteggio) per-giocatore, riusando i dati gia' scaricati nelle fasi A e B
-    # invece di richiederli di nuovo.
-    def _fase_elaborazione(player_slug):
-        player_name, expected_team_slug = roster[player_slug]
         esito = _process_player_snapshot(
             player_slug, player_name, expected_team_slug, SNAPSHOT_LEAGUE_SLUG, eth_rate,
-            candidati[player_slug], snapshots.get(player_slug),
+            live_offer_nodes, snapshot,
         )
         _registra_esito(player_name, player_slug, esito)
 
     with concurrent.futures.ThreadPoolExecutor(
-            max_workers=SNAPSHOT_WORKER_THREADS, thread_name_prefix='snapElab') as executor:
-        futures = [executor.submit(_fase_elaborazione, player_slug) for player_slug in candidati_slugs]
+            max_workers=SNAPSHOT_WORKER_THREADS, thread_name_prefix='snap') as executor:
+        futures = [
+            executor.submit(_worker, player_slug, player_name, expected_team_slug, snapshot)
+            for player_slug, (player_name, expected_team_slug, snapshot) in roster.items()
+        ]
         for future in concurrent.futures.as_completed(futures):
-            future.result()  # rilancia eventuali eccezioni non gestite dentro _fase_elaborazione
+            future.result()  # rilancia eventuali eccezioni non gestite dentro _worker
 
     log(f"SNAPSHOT completato. Riepilogo per giocatore: {stats}")
     return stats
