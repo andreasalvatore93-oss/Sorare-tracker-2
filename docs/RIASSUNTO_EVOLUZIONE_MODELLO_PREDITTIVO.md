@@ -4,13 +4,14 @@
 lavoro** (l'utente alterna due account, poca/nessuna memoria condivisa tra sessioni). Non
 presupporre nessun contesto pregresso: tutto quello che serve è qui dentro.
 
-**Aggiornato 27/07/2026 (notte)**: se cerchi solo "qual è lo stato adesso", salta direttamente alla
-**sezione 16** (l'ultima) — completa il punto 1 del backlog della sezione 15J (knapsack Arene
-collegato e testato). Le sezioni 1-15 restano cronistoria: un TERZO tool, il "Generatore
-Formazioni", che fonde MLS+K League in un solo script/workflow senza toccare i due tool dedicati.
-Leggi comunque SEMPRE questo documento dall'inizio alla fine prima di concludere che qualcosa
-manca, non fidarti solo dell'ultima sezione o della memoria persistente (la sezione 14D spiega
-perché, con un caso reale).
+**Aggiornato 27/07/2026 (pomeriggio)**: se cerchi solo "qual è lo stato adesso", salta direttamente
+alla **sezione 25** (l'ultima) — sessione interrotta ESPLICITAMENTE dall'utente ("ferma tutto") con
+due lavori sospesi a metà (calibrazione allargata su 8 campionati, pipeline per 10 campionati
+mancanti). Leggi la sezione 25 PRIMA di riprendere qualunque lavoro su questi due filoni: spiega
+esattamente dove si sono fermati e cosa NON dare per scontato. Le sezioni 1-24 restano cronistoria
+utile per il PERCHÉ delle decisioni, non per lo stato attuale. Leggi comunque SEMPRE questo
+documento dall'inizio alla fine prima di concludere che qualcosa manca, non fidarti solo
+dell'ultima sezione o della memoria persistente (la sezione 14D spiega perché, con un caso reale).
 Le sezioni 1-13 restano come cronistoria di come ci si è arrivati (parametri di produzione
 FINALIZZATI per DEF/MID/FWD/GK, scoperta e validazione della formula `level_score`/floor,
 implementazione Arena/All Stars, infrastruttura K League completa), utile se serve capire IL
@@ -2091,3 +2092,128 @@ Pushato su `main`: correzioni GK_CAPTAIN_MARGIN + DEF shrinkage (9/10 campionati
 level_score+DEF shrinkage per Brasile (agente in background), costruzione pipeline nuovi campionati
 (sezione E, appena iniziata). Memoria persistente aggiornata con la nota "da rivedere quando c'è
 più storico" per tutte le correzioni di questa sessione.
+
+## 25. Stessa giornata (continua) — sessione INTERROTTA dall'utente ("ferma tutto"), stato esatto
+## dei due lavori sospesi per chi riprende
+
+**IMPORTANTE**: questa sessione è stata fermata a metà su richiesta ESPLICITA dell'utente
+("ferma tutto"), non per un errore o un blocco tecnico. I due filoni sotto sono a metà, in uno
+stato consistente (nessuna corruzione, tutto ciò che era completo è committato) ma INCOMPLETI.
+Non riprenderli automaticamente: aspettare un'indicazione esplicita dell'utente su quale, se non
+entrambi, continuare.
+
+### A. Lezione operativa da questa sessione: gli agenti in background NON si autorisvegliano in modo affidabile
+
+Durante questa sessione, due agenti in background (delegati con lo strumento Agent) sono rimasti
+**inattivi per diversi minuti senza fare nulla**, nonostante avessero dichiarato di essere "in
+attesa che il rate-limit si liberasse" e di aver lanciato un proprio poll/monitor interno per
+risvegliarsi da soli. Il poll interno NON li ha risvegliati in modo affidabile — sono rimasti
+fermi finché non sono stati esplicitamente ripresi con `SendMessage` dalla sessione principale
+(che ha confermato "had no active task" al momento della ripresa, cioè erano davvero fermi, non
+solo lenti). **Lezione per chi riprende**: se deleghi un lavoro lungo a un agente in background che
+deve aspettare una condizione (es. rate-limit libero, un'altra run che finisce), NON fidarsi che si
+risvegli da solo — controllare periodicamente lo stato reale (`gh run list`, `git log`) e, se
+sembra fermo da un po' senza progressi visibili, mandare un messaggio di ripresa esplicito
+piuttosto che aspettare passivamente. Non è chiaro se il problema sia strutturale (i poll interni
+degli agenti non sono affidabili quanto quelli della sessione principale) o un caso isolato — da
+tenere d'occhio se si ripresenta.
+
+### B. Filone 1 — Calibrazione allargata (grid search) estesa a 8 nuovi campionati, per bootstrap stability
+
+**Obiettivo**: estendere `formazione_mls/calibrazione/bootstrap_stability.py` (oggi limitato a
+MLS+K League) a tutti i 10 campionati, costruendo l'infrastruttura di calibrazione allargata (grid
+search 72 combinazioni per giocatore, `CALIBRATION_MODE=1`) per gli 8 campionati che non l'hanno
+mai avuta: Brasile, Croazia, Portogallo, Austria, Scozia, Belgio, Olanda, Spagna. Autorizzazione
+esplicita dell'utente a lanciare query GraphQL reali per questo, con la CAUTELA RATE-LIMIT
+standard del progetto (un campionato/ruolo alla volta, mai in parallelo, `gh run list` prima di
+ogni lancio).
+
+**Infrastruttura completata e pushata** (commit `dcd1cdc58`): workflow
+`.github/workflows/grid_search_calibrazione_{brasile,croazia,portogallo,austria,scozia,belgio,
+olanda,spagna}.yml` (clone del pattern K League), `CAMPIONATI_NOTI` esteso in
+`formazione_mls/calibrazione/aggregate_grid_search.py` a tutti e 10 i campionati (copre anche
+`bootstrap_stability.py`, che importa da li').
+
+**Stato calibrazione, campionato per campionato**:
+- **Brasile**: SALTATO deliberatamente — ogni ruolo ha <=2 giocatori posseduti/qualificati (gk=2,
+  def=2, mid=1, fwd=2), sotto la soglia di utilità. Non riprovare finché il pool non cresce
+  (nessuno di questi campionati ha discovery globale, solo carte possedute).
+- **Croazia GK**: batch completato (3 giocatori), ma l'aggregazione non ha trovato nessuna
+  combinazione che superi la soglia minima di rappresentatività (solo 1/3 giocatori con >=3
+  partite di backtest) — pool troppo sottile per un risultato utile. Nessun file
+  `combinazione_vincente_aggregata.json` prodotto per GK.
+- **Croazia DEF**: batch completato (5 giocatori, 45 partite test pesate). Vincitore:
+  `half_life=12.0, range=1.2x, opp_sens=29.0, trend=0.7, CON granulari`, MAE 16.33, copertura
+  73.3%. **ANOMALIA DA VERIFICARE**: è il PRIMO caso su tutti i ruoli/campionati di questo intero
+  progetto dove i granulari vincono — ogni altra combinazione vincente trovata finora (decine,
+  vedi sezioni 13-24) è sempre risultata "SENZA granulari". Campione piccolissimo (5 giocatori),
+  quasi certamente rumore, ma da NON applicare alla produzione senza prima verificarlo con più
+  dati o con un controllo di sensitivity (stesso approccio di sezione 8D). File risultato salvato
+  in locale (`formazione_croazia/output/croazia_def_calibration/combinazione_vincente_aggregata.json`)
+  ma **non ancora committato al momento dello stop** — va aggiunto se si riprende questo filone
+  (non è stato perso, è ancora su disco nel worktree).
+- **Croazia MID**: batch LANCIATO ma **CANCELLATO** (run id `30271460897`) — non a causa di un
+  errore, ma perché l'agente ha ricevuto l'ordine di stop dell'utente MENTRE il batch era in corso
+  e ha annullato la run invece di lasciarla finire. Nessun dato prodotto per MID. Da rilanciare da
+  zero se si riprende (non riprendibile da dove si era fermata, un batch GitHub Actions cancellato
+  non si può "riprendere").
+- **Croazia FWD**: mai iniziato.
+- **Portogallo, Austria, Scozia, Belgio, Olanda, Spagna**: nessun batch mai lanciato per nessun
+  ruolo. Tutti e 4 i ruoli di tutti e 6 questi campionati restano da fare.
+- **Bootstrap stability vero e proprio**: MAI eseguito in questa sessione (serve prima che TUTTI
+  o quasi i campionati/ruoli abbiano i loro dati di calibrazione, altrimenti il pool resta quasi
+  identico a quello di partenza MLS+K League).
+
+**Per riprendere**: rilanciare i batch mancanti nell'ordine Croazia (MID da rifare, poi FWD) →
+Portogallo → Austria → Scozia → Belgio → Olanda → Spagna, sempre un ruolo/campionato alla volta con
+`gh run list` prima di ogni lancio. Ogni batch è già velocissimo (pool piccoli, <10 giocatori per
+ruolo tipicamente, run da 1-2 minuti) — il collo di bottiglia è SOLO la cautela rate-limit tra un
+lancio e l'altro, non il tempo di esecuzione. Considerare se valga la pena rivedere prima la soglia
+"pool troppo piccolo" (Brasile saltato, Croazia GK senza risultato utile) prima di investire altro
+tempo su campionati con pochissime carte possedute.
+
+### C. Filone 2 — Pipeline dedicate per i 10 campionati mancanti prioritari
+
+**Obiettivo**: costruire (discovery+predict+consiglio+build+2 workflow) e lanciare una run reale
+per i campionati in cima a `docs/CAMPIONATI_MANCANTI.md` (priorità alta, >=20 carte possedute),
+nell'ordine: Turchia (Süper Lig) → Germania (Bundesliga) → Inghilterra (Premier League) → Francia
+(Ligue 1) → Germania 2 (2. Bundesliga) → Italia (Serie A) → Giappone (J1 League) → Francia 2
+(Ligue 2) → Inghilterra 2 (Championship) → Giappone J1-100 (da verificare se è un campionato
+distinto o una sovrapposizione, non ancora chiarito).
+
+**Stato**: **SOLO Turchia (Süper Lig, slug `spor-toto-super-lig`, cartella `formazione_turchia/`)
+completata e pushata su main.** Pipeline costruita col pattern standard (clone di
+`formazione_belgio/`, quindi GIA' con la formula level_score atteso + shrinkage DEF + 
+GK_CAPTAIN_MARGIN=6.7 aggiornato). Run reale lanciata (id `30269157794`): discovery/predict/
+consiglio/merge per tutti e 4 i ruoli riusciti, MA `formazione_finale` fallita ("0 giocatori
+disponibili" su tutti i ruoli) — **causa non ancora diagnosticata con certezza**: il pattern più
+probabile è lo stesso già visto per LaLiga in sezione 23D (stagione turca non ancora iniziata,
+nessuna partita target), ma A DIFFERENZA di LaLiga questa volta l'errore esatto nei log non è
+stato controllato/confermato prima dello stop — **verificare i log della run prima di assumere sia
+lo stesso caso "stagione non iniziata" e non un bug reale** (query `gh run view 30269157794 --log
+| grep -B5 "ERRORE: almeno un ruolo"` per il dettaglio, o cercare la data di inizio Süper Lig nei
+feature flag Sorare se serve conferma).
+
+**Germania e tutti i successivi (3-10 della lista) non sono stati nemmeno iniziati** — nessun file
+creato, nessuna cartella `formazione_germania/` esiste.
+
+**Per riprendere**: costruire Germania seguendo lo stesso identico pattern di Turchia (guardare
+`formazione_turchia/` come riferimento più recente, ha già tutte le formule/parametri aggiornati
+di oggi), poi continuare nell'ordine sopra. Prima di ogni lancio verificare `gh run list` (stessa
+cautela rate-limit, E verificare anche che il Filone 1 sopra non abbia una run in corso in
+parallelo se si riprendono entrambi i filoni insieme).
+
+### D. Correzioni al modello (sezione 24C) — stato invariato, non toccato in questa interruzione
+
+Le correzioni GK_CAPTAIN_MARGIN/DEF shrinkage/GK range_multiplier/FWD prior restano come descritto
+in sezione 24C, tutte committate e pushate su `main` prima dell'inizio dei due filoni sopra —
+nessun impatto dall'interruzione.
+
+### E. Stato repo esatto al momento dello stop
+
+Tutto il codice completo è committato e pushato su `main`. **Unico file non committato**:
+`formazione_croazia/output/croazia_def_calibration/combinazione_vincente_aggregata.json`
+(risultato locale del batch Croazia DEF, sezione B sopra) — decidere se committarlo (dato reale,
+solo diagnostico, non tocca la produzione) o scartarlo quando si riprende. Nessun'altra modifica
+pendente. I due agenti in background che stavano lavorando sono stati fermati esplicitamente e
+confermano di essere fermi (nessuna azione residua in corso).
