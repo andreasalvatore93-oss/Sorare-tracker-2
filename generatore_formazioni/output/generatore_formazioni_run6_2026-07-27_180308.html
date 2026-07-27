@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Generatore Formazioni — run #6</title>
+<style>
+  :root {
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530; --stripe: #232d3a;
+    --text: #edf1f6; --muted: #8a93a6; --muted-2: #5f6879; --gold: #f4c542;
+    --border: rgba(255,255,255,0.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4; --stripe: #e3e6ec;
+      --text: #1a2029; --muted: #5b6474; --muted-2: #8a93a6; --border: rgba(20,25,35,0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 32px 64px; max-width: 1180px; margin: 0 auto;
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .subhead { color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }
+  .lineup-block { margin-bottom: 40px; }
+  .lineup-meta { margin-bottom: 12px; }
+  .lineup-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .lineup-title span { color: var(--text); }
+  .card-strip { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 6px; }
+  .pcard {
+    position: relative; flex: 0 0 152px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .pcard-stripe { height: 6px; width: 100%; }
+  .pcard-body { padding: 14px 12px 12px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+  .pcard-role {
+    position: absolute; top: 12px; left: 12px; font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 16%, transparent);
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .pcard-captain {
+    position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--gold); color: #241c00; font-size: 0.68rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+  }
+  .pcard-avatar {
+    width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1.05rem; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
+    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 14px;
+  }
+  .pcard-name { font-size: 0.82rem; font-weight: 650; line-height: 1.25; min-height: 2.1em; display: flex; align-items: center; }
+  .pcard-score { font-size: 1.85rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }
+  .pcard-range { font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pcard-tags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; min-height: 18px; }
+  .tag { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
+  .tag-classic { background: rgba(240,168,59,0.16); color: #f0a83b; }
+  .tag-copies { background: var(--stripe); color: var(--muted); }
+  .lineup-total {
+    margin-top: 12px; display: flex; align-items: center; gap: 18px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; flex-wrap: wrap;
+  }
+  .lineup-total .figure { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .lineup-total .figure.with-captain { color: var(--gold); }
+  .lineup-total .label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }
+  .lineup-total .divider { width: 1px; height: 30px; background: var(--border); }
+  .lineup-total .captain-note { font-size: 0.74rem; color: var(--muted); margin-left: auto; }
+  .lineup-total .captain-note b { color: var(--gold); font-weight: 700; }
+  .error-block { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }
+</style>
+</head>
+<body>
+<h1>Generatore Formazioni — run #6</h1>
+<p class="subhead">Generato 27/07/2026 18:03Z — totale=1 (In Season MLS=0, In Season K League=0, Arena MLS (cap 260)=0, Arena K League (cap 260)=0, Arena Belgio (cap 260)=0, Arena Eredivisie (cap 260)=0, Arena Turchia (cap 260)=0, Arena Portogallo (cap 260)=0, Arena Spagna (cap 260)=0, Arena Germania (cap 260)=0, Arena Ligue 1 (cap 260)=0, Arena Croazia (cap 260)=0, Arena Scozia (cap 260)=0, Arena All Stars (cap 260)=0, Arena All Stars (cap 220)=0, Arena All Stars (uncapped)=0, All Stars=1)</p>
+<div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">All Stars <span>#1</span></div></div><div class="card-strip"><div class="pcard" style="--role-color:#8b7cf6"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><div class="pcard-avatar">RK</div><div class="pcard-name">Ryosuke Kojima</div><div class="pcard-score">67</div><div class="pcard-range">42–79 pt</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard" style="--role-color:#3aa1e8"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF1</span><div class="pcard-body"><div class="pcard-avatar">JB</div><div class="pcard-name">Jan Bednarek</div><div class="pcard-score">75</div><div class="pcard-range">51–95 pt</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard" style="--role-color:#3aa1e8"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF2</span><div class="pcard-body"><div class="pcard-avatar">JH</div><div class="pcard-name">Joon Hyuck Kang</div><div class="pcard-score">59</div><div class="pcard-range">40–77 pt</div><div class="pcard-tags"><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard" style="--role-color:#2fbf8f"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID1</span><span class="pcard-captain">C</span><div class="pcard-body"><div class="pcard-avatar">NF</div><div class="pcard-name">Nicolas Fernandez Mercau</div><div class="pcard-score">77</div><div class="pcard-range">60–96 pt</div><div class="pcard-tags"></div></div></div><div class="pcard" style="--role-color:#2fbf8f"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID2</span><div class="pcard-body"><div class="pcard-avatar">GZ</div><div class="pcard-name">Gjivai Zechiel</div><div class="pcard-score">72</div><div class="pcard-range">44–88 pt</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard" style="--role-color:#ef5b5b"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><div class="pcard-avatar">JE</div><div class="pcard-name">Jeppe Erenbjerg</div><div class="pcard-score">68</div><div class="pcard-range">51–87 pt</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard" style="--role-color:#2fbf8f"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><div class="pcard-avatar">MW</div><div class="pcard-name">Marvin Wanitzek</div><div class="pcard-score">68</div><div class="pcard-range">45–102 pt</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div></div><div class="lineup-total"><div><span class="label">Totale</span><span class="figure">486 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">524 pt</span></div><div class="captain-note">Capitano <b>Nicolas Fernandez Mercau</b> (+38 pt, +50%)</div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note" style="color:#d9534f">Cap 370: L10 444.0 / 370 (bonus +4% non ottenuto)</div></div></div>
+<footer>Fusione MLS + K League. Max 1 carta CLASSIC solo per In Season. Filtro qualita' L5/L10/L40 tutti >= 35.0 applicato prima della scelta.</footer>
+</body>
+</html>
