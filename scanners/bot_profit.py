@@ -864,7 +864,10 @@ def hours_until(date_str):
 #   0.40 x peso_timing (prossimita' partita, 3 bucket ricalibrati 27/07 sui
 #         dati reali di pattern_giorni_da_partita.csv)
 #   0.25 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5)
-#   0.15 x media_generale ((L5+L10+L40)/3)/100
+#   0.15 x media_generale (0.5*L5 + 0.3*L10 + 0.2*L40)/100 -- pesi decrescenti
+#         (FIX 27/07, richiesta esplicita utente): prima era una media piatta
+#         (L5+L10+L40)/3, incoerente col fatto che L5 riflette la forma PIU'
+#         recente e deve pesare di piu' di L40 (che include partite di mesi fa)
 #   0.20 x sconto_normalizzato (sconto% clampato [-30,100] / 100)
 # =====================================================================================
 TIMING_WEIGHT_BUCKETS = (
@@ -903,7 +906,7 @@ def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent,
         return None
     peso_timing = timing_weight(ore_alla_partita)
     ultima = (ultima_partita_score or 0.0) / 100.0
-    media_generale = ((l5 or 0.0) + (l10 or 0.0) + (l40 or 0.0)) / 3.0 / 100.0
+    media_generale = (0.5 * (l5 or 0.0) + 0.3 * (l10 or 0.0) + 0.2 * (l40 or 0.0)) / 100.0
     sconto_norm = _clamp(sconto_percent, -30.0, 100.0) / 100.0 if sconto_percent is not None else 0.0
     score = (0.40 * peso_timing) + (0.25 * ultima) + (0.15 * media_generale) + (0.20 * sconto_norm)
     return round(score, 4)
