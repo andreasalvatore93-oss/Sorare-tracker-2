@@ -4,11 +4,13 @@
 lavoro** (l'utente alterna due account, poca/nessuna memoria condivisa tra sessioni). Non
 presupporre nessun contesto pregresso: tutto quello che serve è qui dentro.
 
-**Aggiornato 27/07/2026 (pomeriggio)**: se cerchi solo "qual è lo stato adesso", salta direttamente
-alla **sezione 25** (l'ultima) — sessione interrotta ESPLICITAMENTE dall'utente ("ferma tutto") con
-due lavori sospesi a metà (calibrazione allargata su 8 campionati, pipeline per 10 campionati
-mancanti). Leggi la sezione 25 PRIMA di riprendere qualunque lavoro su questi due filoni: spiega
-esattamente dove si sono fermati e cosa NON dare per scontato. Le sezioni 1-24 restano cronistoria
+**Aggiornato 27/07/2026 (sera)**: se cerchi solo "qual è lo stato adesso", salta direttamente
+alla **sezione 26** (l'ultima) — è l'HANDOFF completo di questa sessione, scritto apposta per il
+prossimo account Claude: espansione a 20 campionati, calibrazione pooled, la SCOPERTA che il
+backtest di calibrazione era divergente dalla formula di produzione, e il refactor DEF avviato
+(funzione condivisa `compute_score_atteso_def` + backtest allineato) con i PROSSIMI PASSI ESATTI da
+cui ripartire. La sezione 25 resta come stato del pomeriggio (i due filoni allora sospesi sono ora
+completati, vedi sezione 26A). Le sezioni 1-24 restano cronistoria
 utile per il PERCHÉ delle decisioni, non per lo stato attuale. Leggi comunque SEMPRE questo
 documento dall'inizio alla fine prima di concludere che qualcosa manca, non fidarti solo
 dell'ultima sezione o della memoria persistente (la sezione 14D spiega perché, con un caso reale).
@@ -2217,3 +2219,137 @@ Tutto il codice completo è committato e pushato su `main`. **Unico file non com
 solo diagnostico, non tocca la produzione) o scartarlo quando si riprende. Nessun'altra modifica
 pendente. I due agenti in background che stavano lavorando sono stati fermati esplicitamente e
 confermano di essere fermi (nessuna azione residua in corso).
+
+## 26. Sessione 27/07/2026 (sera) — espansione a 20 campionati, calibrazione POOLED, scoperta divergenza backtest↔produzione, refactor DEF avviato (HANDOFF per il prossimo account)
+
+**Leggi questa sezione per intero: è lo stato attuale ed è scritta apposta per un ALTRO account
+Claude che deve continuare esattamente da qui.** L'utente è laureato in Giurisprudenza, autodidatta,
+molto rigoroso: verifica tutto su casi reali, vuole decidere insieme prima di implementare, un tema
+alla volta, risposte brevi in chat.
+
+### A. Cosa è stato fatto in questa sessione (in ordine)
+
+1. **9 nuove pipeline campionato** costruite clonando `formazione_turchia/` (che ha già le formule
+   aggiornate): germania (bundesliga-de), inghilterra (premier), francia (ligue-1), germania2
+   (2-bundesliga), italia (serie-a), giappone (j1-league), francia2 (ligue-2), inghilterra2
+   (championship), giappone100 (j1-100). Ognuna = discovery+predict+consiglio+build + 2 workflow
+   (`<champ>_completa.yml`, `<champ>_discovery.yml`). Run reali lanciate: dati raccolti per tutte
+   (16-49 prediction ciascuna). Quelle "in pausa stagionale" falliscono SOLO su `formazione_finale`
+   ("0 giocatori", stagione non schedulata, come LaLiga/Turchia) ma i dati si raccolgono lo stesso —
+   confermato dall'utente che è normale.
+2. **Calibrazione allargata estesa**: creati `grid_search_calibrazione_<champ>.yml` per turchia,
+   francia, germania, germania2, francia2, giappone, giappone100 (clone del pattern croazia). Girate
+   in parallelo. **LEZIONE 429**: il parallelo pieno (28 run insieme) NON dà 429 su Sorare, ma dà
+   **contesa di git push su main** (28 commit simultanei → `[rejected] main -> main`, 7 run fallite
+   sul commit discovery). Tetto pratico ~4-5 run parallele. Le fallite non erano perdite di dati
+   critiche (per lo più leghe in pausa senza storico).
+3. **Consolidamento dati**: `consolida_dati_globali.py` (root) copia tutti i `grid_search` +
+   `detail_cache` da ogni `formazione_*/output` in `dati_globali/` (COPIA, non tocca gli originali;
+   rigenerabile in ~5s). `dati_globali/` è in `.gitignore` salvo `manifest.json` (evita +134M su
+   main). 20 campionati, 1016 grid, 1536 detail_cache.
+4. **Pulizia**: rimossi 7 script orfani (3 `aggregate_grid_search_{gk,def,mid}.py` superati dalla
+   versione parametrica + 4 diagnostici one-off).
+5. **CALIBRAZIONE POOLED** (step 2 roadmap): `aggregate_grid_search.py` ha già la modalità
+   `GLOBALE=1` che unisce tutti i `CAMPIONATI_NOTI`. Esteso `CAMPIONATI_NOTI` a tutti i 20 campionati.
+   Eseguito `RUOLO=<r> GLOBALE=1 python formazione_mls/calibrazione/aggregate_grid_search.py` per i
+   4 ruoli → primi risultati su 4000+ partite unite (prima era solo MLS+K League). Poi bootstrap
+   (`bootstrap_stability.py`, fixato un bug: `load_players()` ora ritorna 3 valori) e **nuovo script
+   `leave_one_league_out.py`** (calibra su N-1 leghe, valida sulla lega esclusa).
+   - Risultato robusto: **`opponent_sensitivity=29.0` universale (100% dei fold/ruoli)**,
+     `trend=0.7` e `half_life=12` dominanti, generalizzano (delta MAE val-train piccolo).
+   - Win-rate bootstrap saliti a 31-50% (dai vecchi 14-34%): più dati HANNO aiutato.
+
+### B. LA SCOPERTA CHIAVE (il motivo per cui tutto il tuning va rifatto): il backtest è DIVERGENTE dalla produzione
+
+Verificando dove riattivare i granulari FWD, scoperto che **`rigorous_backtest` (usato da grid +
+bootstrap + leave_one_league_out) calcola una formula DIVERSA da quella di produzione**:
+- **Backtest (vecchio)**: `predetto = media × fattore_ct × fattore_forza_avversario ×
+  granulare_MOLTIPLICATIVO × trend`.
+- **Produzione reale** (`score_atteso` in `build_prediction`, ~riga 1488+): `p_gioca ×
+  shrink(level_score_atteso + granulari_ADDITIVI × trend) × fattore_ct + Σ(Stadio D: delta granulari
+  condizionati venue+avversario su gol_subiti/passaggio/clean_sheet)`.
+
+Conseguenze: **`opponent_sensitivity` e il toggle "granulari" del grid NON mappano sulla produzione**
+(la produzione ha rimosso il fattore moltiplicativo avversario e usa level_score additivo). Solo
+`half_life` e `trend_intensity` transitano; `range_multiplier` è cosmetico (solo la banda). **Ecco
+perché i segnali di calibrazione restavano deboli: si ottimizzava una formula stale, non quella che
+schiera davvero le formazioni.** Tutti i numeri della sezione A del tuning sono quindi da RIFARE con
+il backtest allineato.
+
+L'utente ha deciso (option 1): **REVERT** di ogni cambio parametri (fatto: `git stash` "flip
+parametri revertati" — recuperabile ma NON applicato) e **allineare il backtest alla produzione**
+estraendo lo scoring in una **funzione condivisa** chiamata sia da produzione sia da backtest (così
+non divergono mai più), POI ricalibrare pulito.
+
+### C. Refactor DEF AVVIATO (dove mi sono fermato — riparti ESATTAMENTE da qui)
+
+In `formazione_mls/predict/test_def.py` (commit `db5d8641f`, già su main) ho aggiunto DUE funzioni,
+**senza toccare la produzione** (`build_prediction` è INTATTA, quindi lo score reale delle formazioni
+NON è cambiato):
+1. **`compute_score_atteso_def(...)`**: replica ESATTA della formula di produzione DEF (righe ~1408-
+   1534 di build_prediction: level_score atteso da tassi eventi + granulari additivi×trend +
+   shrinkage `SHRINK_K_OUTLIER_DEF`/`MEDIA_RUOLO_DEF_PRIOR` + `fattore_ct` sul residuo + Stadio D
+   condizionato venue+avversario). Coi default = identica alla produzione; variabile su
+   half_life/trend per il grid. Validata: py_compile + smoke test.
+2. **`rigorous_backtest_prod_def(...)`**: backtest walk-forward che ad ogni partita chiama la STESSA
+   `compute_score_atteso_def` sullo storico precedente. Sostituisce concettualmente il vecchio
+   `rigorous_backtest`. Ritorna la stessa struttura (`mae`, `pct_dentro_range`, `n_test`) per restare
+   compatibile con `aggregate_grid_search.py`. Validata: py_compile + smoke.
+
+### D. PROSSIMI PASSI ESATTI (in ordine) — riparti da qui
+
+1. **Verificare che `compute_score_atteso_def` == produzione byte-identica** (test di non-regressione,
+   CRITICO prima di fidarsene): il modo pulito è collegarla dentro `build_prediction` come unica
+   sorgente dello `score_atteso` (sostituire l'assegnazione a riga ~1488 e il `+=` Stadio D a ~1532
+   con una chiamata alla funzione, MANTENENDO le variabili diagnostiche inline che servono a valle —
+   Stadio C/range/output usano `delta_*`, `grezzo_nuovo_corretto`, `fattore_casa_trasferta`), poi
+   lanciare una run vera DEF e confrontare lo score di un giocatore con la `prediction_*.txt` già
+   committata (generata dal codice vecchio): DEVE essere identico. In alternativa, harness offline
+   che ricostruisce gli array dai `.cache/*_detail_cache.json` (la logica di estrazione è le righe
+   ~1200-1271 di build_prediction: `extract_level_score`, `extract_decisive_rates`, granulari =
+   game_score - level_score, residuo = game_score - covered_total) e confronta funzione vs formula
+   inline. **Non applicare nulla in produzione finché non è verificato identico.**
+2. **Wiring nel grid**: nel percorso `CALIBRATION_MODE` di `build_prediction` (dove chiama
+   `run_grid_search`), passare anche gli array che il nuovo backtest richiede (pos_decisive_values,
+   neg_decisive_values, granulari_values, goals_conceded_values, passing_values, clean_sheet_values,
+   residual_values — alcuni già passati, altri no) e far chiamare `rigorous_backtest_prod_def` invece
+   del vecchio `rigorous_backtest`. **Ridefinire la griglia** sui SOLI parametri reali: `half_life`
+   ∈{9,12}, `trend_intensity`∈{0.7,1.0,1.3}, `range_multiplier` (solo banda) — TOGLIERE
+   `opponent_sensitivity` e il toggle granulari (non esistono più in produzione).
+3. **Ricalibrare DEF** con il backtest allineato (rilanciare i batch DEF o un harness offline sui
+   detail_cache già in `dati_globali/`), poi `RUOLO=def GLOBALE=1 python .../aggregate_grid_search.py`
+   → primi MAE che misurano DAVVERO il modello di produzione. Confrontare con i parametri attuali.
+4. **Replicare a GK, MID, FWD**: stessa estrazione `compute_score_atteso_<ruolo>` + backtest allineato.
+   ATTENZIONE: ogni ruolo ha la sua formula (GK ha level_score legato al clean sheet, niente offensivo;
+   FWD ha `SHRINK_K_OUTLIER_FWD`/`MEDIA_RUOLO_FWD_PRIOR` e la sua versione di Stadio D — leggerla in
+   `test_mls_fwd_all.py` ~riga 1341-1351, NON assumere sia identica a DEF).
+5. **Solo DOPO** la ricalibrazione allineata: decidere con l'utente i cambi di produzione veri
+   (i parametri stanno replicati in ~20 copie `formazione_*/predict/test_<ruolo>.py`, vanno cambiati
+   tutti — modello unico globale). NB: `formazione_resto_mondo` è una copia leggermente sfasata, tenerne conto.
+6. Poi gli altri temi del tuning (rifit level_score su scala piena, Finding 4/5 correlazioni slot,
+   MAE live) e gli step 3-4 della roadmap sotto.
+
+### E. Roadmap complessiva concordata con l'utente (priorità = TUNING; NON il deadline formazioni)
+
+L'utente schiera formazioni a mano da 2 anni, quindi il "deve schierare domani" NON è vincolante: la
+**priorità dichiarata è il tuning** (la statistica come vantaggio competitivo). Ordine:
+1. ~~Ricalibrazione nuovi campionati~~ FATTA.
+2. **Tuning modello con calcoli locali** ← SIAMO QUI (refactor backtest↔produzione, punto C/D sopra).
+3. **Unire i pool nel tool unificato**: `generatore_formazioni/build_formazione_globale.py` è il "tool
+   unificato" (un click, tutte le formazioni). Oggi ha `CONSIGLIO_DIRS`/`DISCOVERY_DIRS` hardcoded
+   SOLO su MLS+K League: legge i consigli da `formazione_<champ>/output/<champ>_<ruolo>_all/`. Va
+   esteso a tutti i campionati perché peschi da tutte le carte possedute.
+4. **Pulire repo**: eliminare le action per-campionato OBSOLETE (il passo `formazione_finale` per-lega
+   è ridondante col tool unificato; discovery+predict+consiglio SERVONO come fornitori dati), un solo
+   tool. Opzionale raggruppare `formazione_<champ>/` sotto `campionati/` (invasivo: path hardcoded
+   ovunque; le GitHub Actions NON si possono spostare da `.github/workflows/`). **Fare una SCANSIONE
+   SECRET prima**: il repo è ancora PUBBLICO, l'utente lo renderà privato/lo chiuderà.
+
+### F. Stato repo a fine sessione
+
+Tutto committato e pushato su `main`. Commit chiave di oggi: pipeline 9 campionati (`4b3c576f2`),
+pulizia+consolidamento (`e7d6722d4`), CAMPIONATI_NOTI esteso (`5cc9ec54f`), bootstrap fix +
+leave_one_league_out (`25b8a15b6`), combinazioni pooled GK/DEF/MID/FWD (in `calibrazione_globale/
+output/*/combinazione_vincente_aggregata.json`), refactor DEF (`db5d8641f`). Working tree pulito
+salvo lo `git stash` dei flip parametri revertati (recuperabile con `git stash list`/`git stash show`,
+ma NON riapplicare senza il backtest allineato). Nessuna run GitHub in corso.
