@@ -1,40 +1,20 @@
-"""Verifica che players(slugs:) esponga anche partite future e starter odds."""
+"""Cerca il campo della So5Fixture che elenca le PARTITE della giornata."""
 import json, os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),'formazione_turchia','discovery'))
 os.environ.setdefault('MIN_STARTER_ODDS','0')
 import turchia_gk_discovery as base
-
-SL = ["elias-rafn-olafsson", "carlo-boukhalfa", "ignacio-pena-sotorres"]
-Q = '''
-query P($s:[String!]!){
-  players(slugs:$s){
-    slug
-    displayName
-    activeClub { domesticLeague { slug } }
-    anyFutureGames(first: 3) {
-      nodes {
-        playerGameScore(playerSlug: "") { anyGame { date } }
-      }
-    }
-  }
-}
-'''
-Q2 = '''
-query P($s:[String!]!){
-  players(slugs:$s){
-    slug
-    activeClub { domesticLeague { slug } }
-    futureGames(first: 3) { date }
-  }
-}
-'''
-for nome,q in (("con anyFutureGames",Q),("con futureGames",Q2)):
-    print("\n--- "+nome+" ---")
-    try:
-        d = base.graphql_query(q, {"s": SL}, operation_name="P")
-    except Exception as e:
-        print("  eccezione:", repr(e)[:400]); continue
-    if d.get('errors'):
-        print("  errore:", json.dumps(d['errors'])[:600])
-    else:
-        print("  OK ->", json.dumps(d.get('data'))[:900])
+S="football-28-31-jul-2026"
+CAND=[
+ ("games", 'query F($s:String!){ so5{ so5Fixture(slug:$s){ slug games{ id } } } }'),
+ ("anyGames", 'query F($s:String!){ so5{ so5Fixture(slug:$s){ slug anyGames{ id date } } } }'),
+ ("anyGames.nodes", 'query F($s:String!){ so5{ so5Fixture(slug:$s){ slug anyGames(first:5){ nodes{ id date } } } } }'),
+ ("footballGames", 'query F($s:String!){ so5{ so5Fixture(slug:$s){ slug footballGames{ id } } } }'),
+ ("mySo5Lineups", 'query F($s:String!){ so5{ so5Fixture(slug:$s){ slug mySo5Lineups{ id } } } }'),
+ ("so5Leaderboards", 'query F($s:String!){ so5{ so5Fixture(slug:$s){ slug so5Leaderboards{ slug displayName } } } }'),
+]
+for n,q in CAND:
+    print("\n--- "+n+" ---")
+    try: d=base.graphql_query(q,{"s":S},operation_name="F")
+    except Exception as e: print("  ecc:",repr(e)[:300]); continue
+    if d.get('errors'): print("  errore:",json.dumps(d['errors'])[:400])
+    else: print("  OK ->",json.dumps(d.get('data'))[:600])
