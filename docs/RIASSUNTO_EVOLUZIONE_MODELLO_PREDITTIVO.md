@@ -2353,3 +2353,115 @@ leave_one_league_out (`25b8a15b6`), combinazioni pooled GK/DEF/MID/FWD (in `cali
 output/*/combinazione_vincente_aggregata.json`), refactor DEF (`db5d8641f`). Working tree pulito
 salvo lo `git stash` dei flip parametri revertati (recuperabile con `git stash list`/`git stash show`,
 ma NON riapplicare senza il backtest allineato). Nessuna run GitHub in corso.
+
+## 27. Sessione 27/07/2026 (notte) — backtest allineato completato, e la SCOPERTA che il MAE è la metrica sbagliata
+
+### A. Punti 26.D.1-D.4 chiusi
+
+1. **Non-regressione DEF verificata** (`formazione_mls/diagnostics/nonregression_score_atteso_def.py`):
+   `compute_score_atteso_def` è **identica** alla produzione. 298 giocatori, 5.364 casi
+   (varianti casa/trasferta × rank avversario × p_gioca), **diff max 7e-15**. Il test non riscrive
+   la formula: **estrae il blocco inline dal sorgente** di `build_prediction` e lo esegue con `exec`,
+   quindi confronta contro il codice di produzione letterale (se la produzione cambia, il test se ne
+   accorge).
+2. **Grid allineato** (`run_grid_search_prod_def` + `GRID_SEARCH_COMBINATIONS_PROD`): tolti
+   `opponent_sensitivity` e il toggle granulari (non esistono più nella formula reale), restano
+   `half_life`, `trend_intensity`, `range_multiplier`. `CALIBRATION_MODE` ora usa questo.
+3. **Stessa cosa per FWD** (`compute_score_atteso_fwd`, `rigorous_backtest_prod_fwd`,
+   `nonregression_score_atteso_fwd.py`): 187 giocatori, 1.122 casi, **diff 0.000e+00**. NB: la
+   formula FWD è diversa — shrink 5.0/53.02 e Stadio D ridotto alla sola correzione "Passaggio"
+   per venue, nessun condizionamento avversario.
+4. **`build_prediction` NON è stata modificata per nessun ruolo**: lo score delle formazioni è
+   invariato rispetto a prima della sessione.
+
+### B. Ricalibrazione allineata: i parametri erano già all'ottimo, e il modello non ha quasi segnale
+
+Ricalibrazione **offline** sulle detail_cache già in repo (`recalibrate_def_aligned.py`), nessuna
+chiamata di rete: DEF 287 giocatori / 2.233 casi / 20 campionati; FWD 175 / 1.356 / 19.
+
+- **`half_life` e `trend_intensity` sono INERTI**: su tutte le 18 combinazioni DEF il MAE sta fra
+  14.980 e 14.988 (spread 0.05%). Idem FWD. Il vecchio grid *sembrava* discriminare solo perché
+  ottimizzava la formula moltiplicativa divergente (sezione 26.B).
+- **`SHRINK_K_OUTLIER_DEF=15`, `MEDIA_RUOLO_DEF_PRIOR=51.34`, Stadio D=on: già tutti all'ottimo**
+  (k=0 → +3.83%, prior 44 → +2.32%, Stadio D off → +0.62%). Stesso esito FWD per `shrink_k=5`.
+- **`range_multiplier`**: la griglia era troncata dal lato sbagliato (a 1.2 la copertura era già 72%
+  contro l'ideale 68%); **1.1 centra 68.2%**. Impatto reale marginale: in produzione
+  `RANGE_MULTIPLIER` alimenta solo la banda di *fallback*, lo Stadio C usa i percentili pesati.
+- **`MEDIA_RUOLO_FWD_PRIOR` è l'unico parametro davvero sub-ottimale**: 42 batte 53.02 di **-1.22%
+  MAE fuori campione** (leave-one-league-out, 19/19 fold scelgono 40-44). Causa: il prior fu fissato
+  sulla **media** degli score, ma il MAE è minimizzato dalla **mediana** e la distribuzione FWD è
+  asimmetrica a destra (media 55.1, mediana 50.1). **NON applicato**, vedi sotto.
+
+**Il dato che ridimensiona tutto** — baseline banali a confronto (DEF):
+```
+predire sempre 51.34 (costante)      MAE 15.21
+media pesata storica del giocatore   MAE 15.63
+MODELLO COMPLETO                     MAE 14.99
+```
+Il modello batte "la stessa costante per tutti" dell'1.5%, e la media pesata dello storico è
+*peggiore* della costante. Con ~15 partite per giocatore lo storico individuale è quasi tutto
+rumore: ecco perché lo shrinkage aggressivo vince e perché half_life/trend non spostano nulla.
+
+### C. LA SCOPERTA: il MAE è la metrica sbagliata, e ottimizzarlo PEGGIORA le formazioni
+
+Il MAE misura "quanto sbaglio il punteggio del singolo giocatore". Ma per schierare non serve
+indovinare il punteggio: serve **ordinare** bene i candidati e prendere i migliori. Le due cose
+divergono, e non di poco.
+
+Nuovo harness **`formazione_mls/diagnostics/selection_quality.py`**: per ogni giornata di ogni
+campionato prende i giocatori che hanno davvero giocato, calcola le predizioni walk-forward (solo
+storico precedente), ordina, e misura i **punti reali** ottenuti dai top K — fra due riferimenti:
+**CASO** (media di tutti i candidati = schierare a caso) e **ORACOLO** (i migliori K veri). Il
+"lift catturato" è la frazione di distanza caso→oracolo percorsa.
+
+Risultati (top 3 per giornata):
+```
+DEF (123 giornate, 15 campionati)          FWD (70 giornate, 9 campionati)
+media pesata storica       20.4%           media semplice          23.8%
+media semplice             19.1%           media pesata storica    22.9%
+MODELLO (produzione)       13.7%           MODELLO (produzione)    22.0%
+ultima partita              7.3%           ultima partita          -0.2%
+solo level_score atteso     3.3%           solo level_score        -6.1%
+```
+**Sulla metrica che decide le formazioni, il modello di produzione NON batte una media pesata
+banale** — pur avendo un MAE nettamente migliore (14.99 vs 15.63 su DEF). Ed è esattamente il
+rovesciamento del ranking per MAE.
+
+**Causa individuata: lo SHRINKAGE.** Tira tutti verso il prior di ruolo: ottimo per il MAE
+(avvicina al centro) ma distrugge la **discriminazione fra giocatori**, che è l'unica cosa che
+serve per scegliere. Peggio: con `k` fisso tira **di più chi ha meno storico**, quindi non è
+nemmeno una trasformazione monotona — **altera l'ordinamento**, non lo comprime soltanto.
+
+Dose-risposta DEF (lift catturato): `k=15` (produzione) **13.7%** → `k=5` 17.1% → `k=2` **18.0%**
+→ `k=0` 17.8%.
+
+Significatività (bootstrap appaiato sulle giornate): DEF no-shrink vs produzione **+0.73
+pt/giornata**, IC95% [-0.40, +1.82], P(>0)=89.6% — **non** significativo al 95% da solo. Ma su 12
+configurazioni di valutazione (top_k ∈ {1,2,3,5} × min_candidati ∈ {4,5,8}) il segno è **positivo
+12/12**, delta da +0.17 a +1.90. FWD **non concludente** (8/12, delta piccoli).
+
+**Corollario sul prior FWD**: abbassarlo a 42 migliora il MAE ma rende il modello sistematicamente
+pessimista (bias medio passa da -0.24 a **-4.13**), e per schierare serve il **valore atteso**, non
+la mediana. E comunque non cambierebbe le scelte: Spearman fra i due ordinamenti **0.996**, top-5
+identica, spostamento di rango mediano 2 posizioni. **Guadagno di MAE inutile in pratica.**
+
+### D. Prossimi passi proposti
+
+1. **Decidere con l'utente** se togliere/ridurre lo shrinkage nell'ORDINAMENTO dei consigli (non
+   necessariamente nello score mostrato): è il primo cambio con un guadagno plausibile in
+   produzione (~+0.7 pt per difensore schierato). Sample ancora sottile → in alternativa
+   raccogliere più giornate e ri-misurare con `selection_quality.py`.
+2. **NON replicare il tuning MAE a GK/MID**: su due ruoli su due ha ottimizzato la cosa sbagliata.
+   Semmai replicare la coppia funzione-condivisa + `selection_quality`.
+3. Il vero margine non è nei parametri di questa formula (il modello estrae ~1.5% sul MAE e ~14-22%
+   del lift disponibile): sta nel **segnale nuovo** esterno allo storico del giocatore (forza reale
+   squadra, contesto partita, minutaggio atteso) e nella **selezione roster/prezzo**.
+4. Restano aperti gli step 3-4 della roadmap (tool unificato su tutti i campionati, pulizia repo +
+   scansione secret prima di rendere privato).
+
+### E. Stato repo
+
+Branch di lavoro `claude/sorare-tracker-predictive-model-88a17f` (worktree), **non ancora su main**.
+Commit: `0edaef117` (DEF non-regressione + grid allineato), `8a05feaa6` (FWD), `f2efe6256`
+(selection_quality). Produzione invariata. Lo `git stash` dei flip parametri revertati è ancora lì,
+e ora sappiamo che **non va riapplicato**.
