@@ -111,30 +111,33 @@
   .table-scroll::-webkit-scrollbar-thumb { background: var(--teal-dim); border-radius: 7px; border: 3px solid var(--panel); }
   .table-scroll::-webkit-scrollbar-thumb:hover { background: var(--teal); }
   .table-scroll::-webkit-scrollbar-track { background: var(--panel-2); }
-  table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 12px; }
+  /* FIX (richiesta esplicita utente, compattare): padding ridotto ovunque,
+     testo leggermente piu' piccolo, colonne troncate piu' strette -- meno
+     spazio sprecato, piu' colonne visibili senza scorrere. */
+  table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 11.5px; }
   thead th {
     position: sticky; top: 0; background: var(--panel-2); z-index: 2;
-    text-align: left; padding: 8px 8px; font-family: 'Space Grotesk', sans-serif;
-    font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em;
+    text-align: left; padding: 6px 7px; font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .02em;
     color: var(--text-dim); border-bottom: 1px solid var(--border); white-space: nowrap;
     cursor: pointer; user-select: none;
   }
   thead th:hover { color: var(--text); }
-  thead th .th-inner { display: flex; align-items: center; gap: 6px; }
-  thead th .dir { color: var(--teal); font-size: 11px; }
+  thead th .th-inner { display: flex; align-items: center; gap: 5px; }
+  thead th .dir { color: var(--teal); font-size: 10px; }
   thead th .pin {
-    font-size: 11px; opacity: .35; cursor: pointer; padding: 0 2px;
+    font-size: 10px; opacity: .35; cursor: pointer; padding: 0 2px;
   }
   thead th .pin.on { opacity: 1; color: var(--teal); }
   thead th.active { color: var(--text); }
 
   tbody td {
-    padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap;
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    padding: 4px 7px; border-bottom: 1px solid var(--border); white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
   }
-  tbody td.name { font-family: 'Inter', sans-serif; font-size: 12.5px; }
-  tbody td.name .slug { color: var(--text-dim); font-size: 10.5px; display: block; }
-  tbody td.truncate { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Inter', sans-serif; }
+  tbody td.name { font-family: 'Inter', sans-serif; font-size: 12px; }
+  tbody td.name .slug { color: var(--text-dim); font-size: 10px; display: block; }
+  tbody td.truncate { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Inter', sans-serif; }
   tbody tr:hover { background: #10171f; }
   tbody tr:nth-child(even) { background: #0d1218; }
   tbody tr:nth-child(even):hover { background: #10171f; }
@@ -250,6 +253,24 @@ const KNOWN_COLUMNS = {
   ore_alla_partita: { label: 'Ore alla partita', type: 'number' },
 };
 
+// FIX (richiesta esplicita utente): player_slug e ultimo_tipo_evento eliminati
+// dalla tabella -- lo slug resta comunque come sottotitolo sotto il nome (vedi
+// renderCell), e il tipo evento e' ridondante col badge Tipo (in season/classic/
+// misto) gia' visibile.
+const EXCLUDED_COLUMNS = new Set(['player_slug', 'ultimo_tipo_evento']);
+
+// Ordine preferito (richiesta esplicita utente: info importanti vicine, es.
+// prezzo minimo e sconto% affiancati) -- le colonne non elencate qui (o non
+// presenti nel CSV caricato) restano in coda, nell'ordine con cui compaiono
+// nel file.
+const PREFERRED_ORDER = [
+  'player_name', 'tipo_carta', 'potenziale_score',
+  'min_attuale_eur', 'prezzo_attuale_eur', 'sconto_percent',
+  'media_transazioni_7gg_trimmed_eur', 'target_rivendita_eur', 'n_transazioni_usate',
+  'squadra', 'prossimo_avversario', 'prossima_partita_data', 'ore_alla_partita',
+  'ultima_partita_score', 'l5', 'l10', 'l40', 'league_slug',
+];
+
 let rawRows = [];
 let COLUMNS = [];
 let sortChain = []; // [{key, dir: 1|-1, pinned: bool}]
@@ -276,12 +297,24 @@ function humanizeKey(key) {
 // con potenziale_score/L5/L10/L40/ecc.) sia coi consigli diretti (consigli_acquisto.csv,
 // piu' snello: prezzo_attuale_eur/target_rivendita_eur, niente score).
 function buildColumns(fields, sampleRow) {
-  return fields.map(key => {
-    const known = KNOWN_COLUMNS[key];
-    if (known) return { key, ...known };
-    const looksNumeric = sampleRow && sampleRow[key] !== '' && sampleRow[key] !== undefined
-      && !isNaN(parseFloat(sampleRow[key]));
-    return { key, label: humanizeKey(key), type: looksNumeric ? 'number' : 'text' };
+  const cols = fields
+    .filter(key => !EXCLUDED_COLUMNS.has(key))
+    .map(key => {
+      const known = KNOWN_COLUMNS[key];
+      if (known) return { key, ...known };
+      const looksNumeric = sampleRow && sampleRow[key] !== '' && sampleRow[key] !== undefined
+        && !isNaN(parseFloat(sampleRow[key]));
+      return { key, label: humanizeKey(key), type: looksNumeric ? 'number' : 'text' };
+    });
+  // Riordina secondo PREFERRED_ORDER (info importanti vicine, es. prezzo minimo
+  // e sconto% affiancati) -- le colonne non elencate li' restano in coda,
+  // nell'ordine originale del CSV, invece di sparire o finire a caso.
+  return cols.slice().sort((a, b) => {
+    const ia = PREFERRED_ORDER.indexOf(a.key);
+    const ib = PREFERRED_ORDER.indexOf(b.key);
+    const ra = ia === -1 ? PREFERRED_ORDER.length + cols.indexOf(a) : ia;
+    const rb = ib === -1 ? PREFERRED_ORDER.length + cols.indexOf(b) : ib;
+    return ra - rb;
   });
 }
 
