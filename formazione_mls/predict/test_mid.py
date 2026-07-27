@@ -671,6 +671,59 @@ def extract_level_score(detail):
     return 0.0
 
 
+# --- level_score ATTESO da tasso di eventi decisivi (27/07 notte, sezione 22
+# del riassunto) -- vedi formazione_mls/predict/test_def.py per la stessa
+# implementazione commentata per esteso. Rivalidato su 6 campionati: -0.45% MAE.
+LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
+LEVEL_SCORE_POISSON_K_MAX = 6
+
+
+def netto_to_level(netto):
+    k = max(-2, min(5, round(netto)))
+    return LEVEL_TABLE[k]
+
+
+def extract_decisive_rates(detail):
+    pos_sum, neg_sum = 0.0, 0.0
+    for entry in (detail.get('detailedScore') if detail else None) or []:
+        cat = entry.get('category')
+        val = entry.get('statValue') or 0.0
+        if cat == 'POSITIVE_DECISIVE_STAT':
+            pos_sum += val
+        elif cat == 'NEGATIVE_DECISIVE_STAT':
+            neg_sum += val
+    return pos_sum, neg_sum
+
+
+def _poisson_pmf_truncated(lam, k_max):
+    if lam <= 0:
+        probs = [0.0] * (k_max + 1)
+        probs[0] = 1.0
+        return probs
+    probs = []
+    cum = 0.0
+    for k in range(k_max):
+        p = math.exp(-lam) * (lam ** k) / math.factorial(k)
+        probs.append(p)
+        cum += p
+    probs.append(max(0.0, 1.0 - cum))
+    return probs
+
+
+def expected_level_from_rates(lambda_pos, lambda_neg):
+    probs_pos = _poisson_pmf_truncated(lambda_pos, LEVEL_SCORE_POISSON_K_MAX)
+    probs_neg = _poisson_pmf_truncated(lambda_neg, LEVEL_SCORE_POISSON_K_MAX)
+    expected = 0.0
+    for i, pp in enumerate(probs_pos):
+        if pp == 0.0:
+            continue
+        for j, pn in enumerate(probs_neg):
+            if pn == 0.0:
+                continue
+            expected += pp * pn * netto_to_level(i - j)
+    return expected
+
+
 def compute_split_factor(values, is_home_flags, target_is_home):
     """Dato un elenco di valori granulari (uno per partita, gia' sommati per un
     gruppo di stat) e i relativi flag casa/trasferta, calcola il fattore
@@ -1083,6 +1136,8 @@ def build_prediction(player_slug):
     residual_values = []  # NUOVO (FIX Finding 3, 25/07): punteggio totale meno tutti i gruppi granulari tracciati (vedi compute_split_factor/fattore_casa_trasferta piu' sotto)
     level_score_values = []  # NUOVO (26/07, Stadio A): "Punteggio decisivo" per partita
     granulari_values = []  # NUOVO (26/07, Stadio A): resto del punteggio (= score - level_score)
+    pos_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi POSITIVE_DECISIVE_STAT per partita
+    neg_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi NEGATIVE_DECISIVE_STAT per partita
 
     for node, detail in zip(usable, details):
         game_score = node.get('score', 0.0)
@@ -1114,6 +1169,9 @@ def build_prediction(player_slug):
         level_score_v = extract_level_score(detail)
         level_score_values.append(level_score_v)
         granulari_values.append(game_score - level_score_v)
+        pos_dec_v, neg_dec_v = extract_decisive_rates(detail)
+        pos_decisive_values.append(pos_dec_v)
+        neg_decisive_values.append(neg_dec_v)
 
         # Residuo = tutto cio' che NON e' in nessun gruppo granulare tracciato
         # sopra (usiamo i valori REALI non cappati per i gruppi con cap, cosi'
@@ -1249,23 +1307,29 @@ def build_prediction(player_slug):
     # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
     # Il fattore resta calcolato sopra e nel result dict solo a scopo
     # diagnostico/di visualizzazione nell'output.
-    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
-                    * fattore_trend)
+    # --- level_score ATTESO da tasso di eventi (27/07 notte, sezione 22):
+    # vedi test_def.py per la spiegazione estesa. Rivalidato su 6 campionati: -0.45% MAE.
+    # SOSTITUISCE il vecchio condizionamento venue di Stadio D sotto (che
+    # correggeva la media grezza di level_score per casa/trasferta) -- il
+    # tasso di eventi e' gia' una stima piu' informativa del level_score
+    # atteso, ricondizionarlo per venue sarebbe un doppio conteggio dello
+    # stesso segnale. Il condizionamento venue/avversario sulle sotto-categorie
+    # granulari sotto (offensivo/passaggio/gol_subiti) resta invariato.
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
+    score_atteso = (p_gioca * (level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
+                    * fattore_casa_trasferta)
 
-    # --- Stadio D (26/07, tema level_score/correlazione venue-avversario,
-    # DECISO CON L'UTENTE dopo diagnostica su 1228 partite MID in cache di
-    # calibrazione): il "Punteggio decisivo" (level_score) e' significativamente
-    # piu' alto in casa (41.4 vs 40.0, z=+2.07) -- condizionato per venue.
+    # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) ---
     opponent_forte_flags = [
         (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
         for r in opponent_rankings
     ]
     next_forte = (next_opp_rank < avg_opp_rank_hist) if (
         next_opp_rank is not None and avg_opp_rank_hist is not None) else None
-
-    media_level_score_condizionata = media_condizionata(
-        level_score_values, weights, is_home_flags, next_is_home, media_level_score_pesata)
-    delta_condizionamento_venue_level = media_level_score_condizionata - media_level_score_pesata
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
@@ -1288,6 +1352,13 @@ def build_prediction(player_slug):
         cond_avv = media_condizionata(values, weights, opponent_forte_flags, next_forte, fallback)
         return cond_venue, cond_avv, cond_venue - fallback, cond_avv - fallback
 
+    # media_level_score_condizionata/delta_condizionamento_venue_level: SOLO
+    # diagnostici ora (non piu' sommati a score_atteso, vedi nota sopra sul
+    # doppio conteggio con level_score_atteso a tasso di eventi).
+    media_level_score_condizionata = media_condizionata(
+        level_score_values, weights, is_home_flags, next_is_home, media_level_score_pesata)
+    delta_condizionamento_venue_level = media_level_score_condizionata - media_level_score_pesata
+
     (media_offensivo_condizionata_venue, media_offensivo_condizionata_avversario,
      delta_offensivo_venue, delta_offensivo_avversario) = _condiziona_venue_avversario(offensive_values)
     (media_passaggio_condizionata_venue, media_passaggio_condizionata_avversario,
@@ -1295,8 +1366,7 @@ def build_prediction(player_slug):
     (media_gol_subiti_condizionata_venue, media_gol_subiti_condizionata_avversario,
      delta_gol_subiti_venue, delta_gol_subiti_avversario) = _condiziona_venue_avversario(goals_conceded_values)
 
-    score_atteso += p_gioca * (delta_condizionamento_venue_level
-                                + delta_offensivo_venue + delta_offensivo_avversario
+    score_atteso += p_gioca * (delta_offensivo_venue + delta_offensivo_avversario
                                 + delta_passaggio_venue + delta_passaggio_avversario
                                 + delta_gol_subiti_venue + delta_gol_subiti_avversario)
 
@@ -1382,6 +1452,8 @@ def build_prediction(player_slug):
         'dev_std_pesata': dev_std_pesata,
         'dev_std_trimmed': dev_std_trimmed,
         'media_level_score_pesata': media_level_score_pesata,
+        'level_score_atteso': level_score_atteso,
+        'fattore_trend_granulare': fattore_trend_granulare,
         'media_granulari_pesata': media_granulari_pesata,
         'media_level_score_condizionata': media_level_score_condizionata,
         'delta_condizionamento_venue_level': delta_condizionamento_venue_level,
