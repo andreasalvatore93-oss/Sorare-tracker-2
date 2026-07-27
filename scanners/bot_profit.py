@@ -95,6 +95,22 @@ EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
+# =====================================================================================
+# MODALITA' SNAPSHOT (richiesta esplicita utente 26/07): invece di aspettare eventi
+# websocket per aggiornare una carta (comportamento normale, sotto), fa un giro
+# esplicito sul roster completo delle squadre in TEAM_WHITELIST (query pubblica
+# Club.anyPlayers, stesso pattern di formazione_mls/discovery/mls_mid_discovery_global.py)
+# e ricalcola OGNI carta (in_season + classic) indipendentemente da eventi di mercato.
+# Fase di test: si parte da UNA squadra sola (Vancouver Whitecaps) per validare i
+# risultati prima di estendere a tutto il roster MLS/Korea.
+# TEAM_WHITELIST vuota = nessuna restrizione (comportamento a eventi invariato).
+SNAPSHOT_MODE = os.environ.get('SNAPSHOT_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+TEAM_WHITELIST = [s.strip() for s in os.environ.get('TEAM_WHITELIST', '').split(',') if s.strip()]
+# Lega di appartenenza delle squadre in TEAM_WHITELIST -- oggi supportiamo solo un
+# giro per volta su un solo campionato (mlspa o k-league-1), coerente con la
+# richiesta "oggi ci concentriamo solo su MLS e Korea".
+SNAPSHOT_LEAGUE_SLUG = os.environ.get('SNAPSHOT_LEAGUE_SLUG', 'mlspa')
+
 # FIX 24/07 (richiesta esplicita utente, promemoria applicato ora): prima nessun
 # default (obbligatorio ad ogni run), ora default 100 minuti -- resta comunque
 # sovrascrivibile dal workflow_dispatch.
@@ -118,10 +134,49 @@ TOP_N_OUTPUT = int(os.environ.get('TOP_N_OUTPUT', '50'))
 # non solo per LISTEN_SECONDS -- default 500.
 MAX_TRACKED_CARDS = int(os.environ.get('MAX_TRACKED_CARDS', '500'))
 
+# FIX 26/07 (richiesta esplicita utente): sotto questo sconto% (minimo attuale
+# vs media 7gg trimmed) una carta non e' considerata "anomalmente scontata" --
+# soglia per il segnale COMPRA in write_buy_signals(), non tocca potenziale_score.
+BUY_SIGNAL_THRESHOLD_PERCENT = float(os.environ.get('BUY_SIGNAL_THRESHOLD_PERCENT', '10.0'))
+BUY_SIGNAL_TOP_N = int(os.environ.get('BUY_SIGNAL_TOP_N', '50'))
+
+# FIX 26/07 (richiesta esplicita utente, ridurre ulteriormente il roster full-MLS),
+# esteso 27/07 (richiesta esplicita utente) a L5 e L40 oltre a L10: sotto questa
+# soglia su UNA QUALSIASI delle tre medie, il giocatore e' scartato GIA' nella
+# query roster (vedi fetch_team_roster) -- zero query sprecate sulle costose
+# (snapshot/minimo/transazioni) per chi non le supererebbe comunque.
+# CHECK_CLASSIC resta 'si' (l'utente vuole continuare a tracciare le classic,
+# solo il roster va tagliato).
+ROSTER_MIN_AVG_SCORE = float(os.environ.get('ROSTER_MIN_AVG_SCORE', '35.0'))
+
+# FIX 27/07 (richiesta esplicita utente, run troppo lento + 429): la pausa fissa
+# per-giocatore del 26/07 serializzava tutto il giro. _graphql_throttle() e' gia'
+# un rate-limiter GLOBALE condiviso (lock + intervallo minimo tra le richieste,
+# si autoallenta a 0.6s dopo un 429) -- e' lui il vero argine ai 429, non un
+# secondo ritardo sequenziale sopra. Sostituita con un pool di worker che
+# processano piu' giocatori in parallelo: il throttle continua a limitare il
+# RITMO delle richieste in uscita, la concorrenza serve solo a sovrapporre i
+# tempi di attesa risposta invece di sommarli giocatore per giocatore.
+# Ridotto da 8 a 5 il 27/07 (423 HTTP 429), poi RIPORTATO su e alzato a 10:
+# la run con 5 worker ha ridotto i 429 (423->243) ma e' durata DI PIU' (10:11
+# -> 12:02) perche' il taglio di throughput e' costato piu' di quanto abbia
+# fatto risparmiare in retry evitati. Il ritmo piu' lento (0.25s, vedi sopra)
+# resta invece confermato: quello sì ha ridotto i 429 senza il costo di
+# throughput dei worker. Portato a 10 (richiesta esplicita utente, scendere
+# sotto i 10 minuti): il throttle globale limita comunque il RITMO di invio a
+# 1/0.25s, quindi piu' worker aumentano solo la sovrapposizione dei tempi di
+# attesa risposta, non il ritmo reale verso Sorare.
+SNAPSHOT_WORKER_THREADS = int(os.environ.get('SNAPSHOT_WORKER_THREADS', '10'))
+
 # FIX 24/07 (richiesta esplicita utente): sotto questa soglia di transazioni nella
 # finestra, il dato e' troppo rumoroso per la classifica (una singola transazione
 # anomala puo' spostare la media intera) -- escluso, non solo dal trim ma dalla
-# classifica stessa. Probabilmente da alzare in futuro, per ora 15.
+# classifica stessa. Abbassato temporaneamente a 10 per il test full-MLS del
+# 26-27/07 dopo l'esclusione di aste/acquisto istantaneo dalla media (vedi
+# _is_countable_transaction, il conteggio e' naturalmente ~40-50% piu' basso a
+# parita' di liquidita' reale) -- riportato a 15 (richiesta esplicita utente
+# 27/07, priorita' a un risultato piu' pulito) per riallinearsi al default gia'
+# usato in .github/workflows/bot_profit.yml, che non era mai stato cambiato.
 MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING', '15'))
 
 # FIX 24/07 (richiesta esplicita utente): sotto questo prezzo minimo la carta
@@ -292,7 +347,11 @@ def eur_price_from_amounts(amounts, eth_rate):
     return None
 
 
-GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.15'))
+# FIX 27/07 (richiesta esplicita utente, 423 HTTP 429 su ~1300-1500 richieste
+# nell'ultima run -- ~30% finite in retry con backoff): alzato da 0.15 a 0.25s.
+# Ritmo base piu' lento ma meno 429 = meno tempo perso nei backoff (2s/4s/8s
+# per tentativo) e meno finestre di 45s a ritmo SAFE (0.6s) dopo ogni 429.
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.25'))
 GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.6'))
 GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '45.0'))
 _graphql_throttle_lock = threading.Lock()
@@ -366,6 +425,112 @@ def normalize_league_filename(league_slug):
 
 
 # =====================================================================================
+# QUERY: roster completo di una squadra (modalita' SNAPSHOT) -- query pubblica,
+# nessuno scope utente richiesto. Stesso pattern di
+# formazione_mls/discovery/mls_mid_discovery_global.py (TeamRoster/anyPlayers).
+# =====================================================================================
+TEAM_ROSTER_QUERY = """
+query TeamRoster($slug: String!, $first: Int!, $after: String) {
+  football {
+    club(slug: $slug) {
+      slug
+      name
+      anyPlayers(first: $first, after: $after) {
+        nodes {
+          slug
+          displayName
+          activeClub { slug }
+          lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
+          lastTenAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+          lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }
+}
+"""
+
+TEAM_ROSTER_PAGE_SIZE = 100
+TEAM_ROSTER_MAX_PAGES = 10  # tetto di sicurezza (fino a 1000 giocatori/squadra)
+
+
+def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
+    """FIX 26/07 (bug segnalato dall'utente confrontando col roster reale di una
+    partita): anyPlayers(first: 50) SENZA paginazione tagliava fuori giocatori
+    attuali della rosa (restituisce a quanto pare TUTTI i giocatori mai passati
+    per il club, non solo quelli attuali, e l'ordine non e' legato all'attualita').
+    Ora pagina finche' hasNextPage=false o il tetto di sicurezza, cosi' prendiamo
+    l'intera lista.
+
+    FIX 26/07 bis (richiesta esplicita utente, velocizzare): activeClub.slug
+    (stesso campo gia' usato/verificato in PROFIT_PLAYER_DATA_QUERY) viene
+    richiesto GIA' qui, cosi' scartiamo gli ex-giocatori SUBITO -- zero query
+    aggiuntive sprecate su di loro nel ciclo principale (niente snapshot,
+    niente controllo blacklist), invece di scoprirlo solo dopo la fetch dello
+    snapshot in _process_player_snapshot.
+
+    FIX 26/07 ter (richiesta esplicita utente, ridurre il campione da 952 a
+    ~400 su tutta la MLS -- causa diretta dei 429 nel run precedente): stesso
+    principio applicato all'L5, gia' incluso in QUESTA query (1 query per
+    squadra, non per giocatore) -- chi ha L5 assente/zero viene scartato QUI,
+    PRIMA di spendere snapshot/minimo/transazioni (le query davvero costose,
+    fino a ~9 per giocatore). Stesso identico criterio gia' usato in
+    _process_player_snapshot (L5 assente o 0 = 'forma_zero'), solo spostato
+    a monte per non pagarne il costo query.
+
+    FIX 26/07 quater (richiesta esplicita utente, il filtro L5 da solo non ha
+    tagliato abbastanza -- 645 giocatori restanti, run da 28 minuti con 43
+    429 falliti): aggiunto anche L10 <= ROSTER_MIN_AVG_SCORE (default 35.0)
+    come scarto, stesso principio -- gia' disponibile in QUESTA query.
+
+    FIX 27/07 (richiesta esplicita utente): stessa soglia estesa anche a L5 e
+    L40 (prima L5 scartava solo se assente/zero) -- ora tutte e tre le medie
+    (L5, L10, L40) devono superare ROSTER_MIN_AVG_SCORE, non solo L10."""
+    all_nodes = []
+    cursor = None
+    for _ in range(TEAM_ROSTER_MAX_PAGES):
+        data = graphql_query(TEAM_ROSTER_QUERY, {"slug": team_slug, "first": page_size, "after": cursor})
+        if data.get('errors'):
+            log(f"[roster] errore GraphQL per {team_slug}: {data['errors']}")
+            break
+        club = ((data.get('data') or {}).get('football') or {}).get('club')
+        if not club:
+            if not all_nodes:
+                log(f"[roster] ATTENZIONE: nessun dato club restituito per {team_slug}.")
+            break
+        conn = club.get('anyPlayers') or {}
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        page_info = conn.get('pageInfo') or {}
+        if not page_info.get('hasNextPage'):
+            break
+        cursor = page_info.get('endCursor')
+        if not cursor:
+            break
+
+    roster_completo = [(n['slug'], n.get('displayName') or n['slug']) for n in all_nodes if n.get('slug')]
+    roster_attuale = [
+        n for n in all_nodes
+        if n.get('slug') and (n.get('activeClub') or {}).get('slug') == team_slug
+    ]
+    roster_nodi = [
+        n for n in roster_attuale
+        if (n.get('lastFiveAvgScore') or 0) > ROSTER_MIN_AVG_SCORE
+        and (n.get('lastTenAvgScore') or 0) > ROSTER_MIN_AVG_SCORE
+        and (n.get('lastFortyAvgScore') or 0) > ROSTER_MIN_AVG_SCORE
+    ]
+    roster = [(n['slug'], n.get('displayName') or n['slug']) for n in roster_nodi]
+
+    scartati_ex = len(roster_completo) - len(roster_attuale)
+    scartati_media_bassa = len(roster_attuale) - len(roster_nodi)
+    log(f"[roster] {team_slug}: {len(roster_completo)} giocatori totali nel roster storico, "
+        f"{scartati_ex} scartati subito (non piu' al club), {scartati_media_bassa} scartati per "
+        f"L5/L10/L40 <= {ROSTER_MIN_AVG_SCORE} (una qualsiasi), {len(roster)} rilevanti da processare.")
+    return roster
+
+
+# =====================================================================================
 # QUERY: annunci live del giocatore -- per il MINIMO attuale (identica a Bot Supremo)
 # =====================================================================================
 LIVE_OFFERS_QUERY = """
@@ -414,13 +579,12 @@ def fetch_all_live_offers(player_slug):
     return all_nodes
 
 
-def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
-    """Minimo attuale in vendita.
-    - MLS/K-League: SOLO il tipo (in_season o classic) corrispondente alla carta
-      dell'evento -- i due mercati non si toccano mai.
-    - Tutti gli altri campionati: in_season+classic mescolati (stesso identico
-      criterio di Bot Supremo -- un giocatore, un solo mercato)."""
-    nodes = fetch_all_live_offers(player_slug)
+def _current_minimum_from_nodes(nodes, is_in_season, league_slug, eth_rate):
+    """Nucleo di filtro condiviso, fattorizzato (FIX 27/07) da get_current_minimum
+    per poter riusare GLI STESSI nodi live-offers gia' scaricati sia per il ramo
+    in_season sia per quello classic nel giro snapshot, invece di richiamare
+    fetch_all_live_offers() due volte per lo stesso giocatore (dimezza le
+    richieste di rete per questa parte, indipendentemente dalla concorrenza)."""
     excluded = is_excluded_league(league_slug)
     prices_in_season = []
     prices_classic = []
@@ -452,6 +616,16 @@ def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
     return min(candidates) if candidates else None
 
 
+def get_current_minimum(player_slug, is_in_season, league_slug, eth_rate):
+    """Minimo attuale in vendita.
+    - MLS/K-League: SOLO il tipo (in_season o classic) corrispondente alla carta
+      dell'evento -- i due mercati non si toccano mai.
+    - Tutti gli altri campionati: in_season+classic mescolati (stesso identico
+      criterio di Bot Supremo -- un giocatore, un solo mercato)."""
+    nodes = fetch_all_live_offers(player_slug)
+    return _current_minimum_from_nodes(nodes, is_in_season, league_slug, eth_rate)
+
+
 # =====================================================================================
 # QUERY: ultime transazioni REALI in una FINESTRA di TRANSACTIONS_WINDOW_DAYS giorni
 # (paginata -- stesso campo/pattern confermato funzionante di Bot Supremo)
@@ -474,8 +648,13 @@ query RecentTransactionsQuery($p: String!, $n: Int!, $cursor: String) {
 
 
 def _is_countable_transaction(node):
+    # Aste (TokenAuction) e acquisti diretti dalla riserva di Sorare (TokenPrimaryOffer, seller
+    # sempre null -- verificato su dati reali 26/07: "Acquisto istantaneo" con seller=null e'
+    # sempre TokenPrimaryOffer) escluse dalla media -- entrambi prezzi non di mercato tra
+    # manager (aste per meccaniche di gioco, primary offer perche' non c'e' un venditore reale).
+    # Restano solo le transazioni TokenOffer (Scambio/Offerta diretta), che hanno sempre 'type'.
     deal = node.get('deal') or {}
-    return bool(deal.get('type')) or deal.get('__typename') in ('TokenAuction', 'TokenPrimaryOffer')
+    return bool(deal.get('type'))
 
 
 def fetch_transaction_nodes_window(player_slug):
@@ -511,13 +690,14 @@ def fetch_transaction_nodes_window(player_slug):
     return all_nodes, cutoff
 
 
-def get_recent_transaction_prices(player_slug, is_in_season, league_slug, eth_rate):
-    """Prezzi (EUR) delle transazioni reali negli ultimi TRANSACTIONS_WINDOW_DAYS
-    giorni. MLS/K-League: solo lo stesso tipo (in_season/classic) della riga;
-    altri campionati: mescolati (stesso criterio del minimo attuale)."""
-    nodes, cutoff = fetch_transaction_nodes_window(player_slug)
+def _countable_transactions_from_nodes(nodes, cutoff, is_in_season, league_slug, eth_rate):
+    """Nucleo di filtro condiviso, fattorizzato (FIX 27/07) da
+    _fetch_countable_transactions per poter riusare GLI STESSI nodi transazione
+    gia' paginati sia per il ramo in_season sia per quello classic nel giro
+    snapshot, invece di richiamare fetch_transaction_nodes_window() due volte
+    per lo stesso giocatore (dimezza le richieste di rete per questa parte)."""
     excluded = is_excluded_league(league_slug)
-    prices = []
+    out = []
     for node in nodes:
         date_str = node.get('date') or ''
         try:
@@ -534,8 +714,46 @@ def get_recent_transaction_prices(player_slug, is_in_season, league_slug, eth_ra
             continue
         price = eur_price_from_amounts(node.get('amounts'), eth_rate)
         if price is not None:
-            prices.append(price)
-    return prices
+            out.append((dt, price))
+    return out
+
+
+def _fetch_countable_transactions(player_slug, is_in_season, league_slug, eth_rate):
+    """Nucleo condiviso: transazioni reali (stesso filtro di sempre) con data E
+    prezzo, negli ultimi TRANSACTIONS_WINDOW_DAYS giorni. Fattorizzato (FIX 26/07,
+    richiesta esplicita utente) per riusare la STESSA query/filtro sia per la
+    media prezzi sia per il pattern giorni-da-partita, senza raddoppiare le
+    query GraphQL per carta."""
+    nodes, cutoff = fetch_transaction_nodes_window(player_slug)
+    return _countable_transactions_from_nodes(nodes, cutoff, is_in_season, league_slug, eth_rate)
+
+
+def get_recent_transaction_prices(player_slug, is_in_season, league_slug, eth_rate):
+    """Prezzi (EUR) delle transazioni reali negli ultimi TRANSACTIONS_WINDOW_DAYS
+    giorni. MLS/K-League: solo lo stesso tipo (in_season/classic) della riga;
+    altri campionati: mescolati (stesso criterio del minimo attuale)."""
+    return [price for _, price in _fetch_countable_transactions(player_slug, is_in_season, league_slug, eth_rate)]
+
+
+def giorni_da_partita_piu_vicina(dt, match_date_strs):
+    """Distanza in giorni (con segno: negativo = prima della partita, positivo =
+    dopo) tra dt e la partita piu' vicina nell'elenco date passato (mix di
+    passate/future). None se non c'e' nessuna data valida. Richiesta esplicita
+    utente 26/07: capire il pattern prezzo/distanza-da-partita nell'arco della
+    settimana (non giorno-di-calendario, perche' ogni squadra gioca in giorni
+    diversi)."""
+    best = None
+    for date_str in match_date_strs:
+        if not date_str:
+            continue
+        try:
+            match_dt = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            continue
+        delta_days = (dt - match_dt).total_seconds() / 86400.0
+        if best is None or abs(delta_days) < abs(best):
+            best = delta_days
+    return best
 
 
 # =====================================================================================
@@ -559,10 +777,11 @@ query ProfitPlayerData($slug: String!) {
         awayTeam { ... on Club { slug name } }
       }
     }
-    allPlayerGameScores(first: 1) {
+    allPlayerGameScores(first: 3) {
       nodes {
         score
         scoreStatus
+        anyGame { date }
       }
     }
   }
@@ -573,7 +792,9 @@ query ProfitPlayerData($slug: String!) {
 def get_player_snapshot(player_slug):
     """Medie voto, prossima partita, punteggio dell'ULTIMA partita giocata (peso
     maggiore secondo l'esperienza utente -- un 70+ nell'ultima gara spinge il
-    prezzo piu' in alto di un L5 alto ma con l'ultima gara sottotono)."""
+    prezzo piu' in alto di un L5 alto ma con l'ultima gara sottotono). Ritorna
+    anche match_dates: date passate (fino a 3) + prossima, per il pattern
+    prezzo/distanza-da-partita (richiesta esplicita utente 26/07)."""
     data = graphql_query(PROFIT_PLAYER_DATA_QUERY, {"slug": player_slug})
     if data.get('errors'):
         log(f"[snapshot] errore GraphQL per {player_slug}: {data['errors']}")
@@ -606,15 +827,21 @@ def get_player_snapshot(player_slug):
 
     last_game_nodes = ((player.get('allPlayerGameScores') or {}).get('nodes')) or []
     ultima_partita_score = last_game_nodes[0].get('score') if last_game_nodes else None
+    past_game_dates = [
+        (n.get('anyGame') or {}).get('date') for n in last_game_nodes if (n.get('anyGame') or {}).get('date')
+    ]
+    match_dates = past_game_dates + ([next_game_date_str] if next_game_date_str else [])
 
     return {
         'l5': l5,
         'l10': l10,
         'l40': l40,
         'squadra': squadra,
+        'squadra_slug': squadra_slug,
         'prossimo_avversario': prossimo_avversario,
         'next_game_date_str': next_game_date_str,
         'ultima_partita_score': ultima_partita_score,
+        'match_dates': match_dates,
     }
 
 
@@ -644,22 +871,32 @@ def hours_until(date_str):
 
 
 # =====================================================================================
-# POTENZIALE SCORE (formula concordata 24/07) -- 4 fattori, nessun peso su
-# sconto%/n_transazioni oltre a quanto segue (restano comunque in colonna solo
-# per valutazione finale manuale):
-#   0.40 x peso_timing (prossimita' partita, curva a campana)
-#   0.25 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5)
-#   0.15 x media_generale ((L5+L10+L40)/3)/100
-#   0.20 x sconto_normalizzato (sconto% clampato [-30,100] / 100)
+# POTENZIALE SCORE (formula concordata 24/07, pesi ripesati 27/07) -- 4 fattori,
+# nessun peso su n_transazioni oltre a quanto segue (resta comunque in colonna
+# solo per valutazione finale manuale):
+#   0.35 x peso_timing (prossimita' partita, 3 bucket ricalibrati 27/07 sui
+#         dati reali di pattern_giorni_da_partita.csv)
+#   0.20 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5)
+#   0.15 x media_generale (0.5*L5 + 0.3*L10 + 0.2*L40)/100 -- pesi decrescenti
+#         (FIX 27/07, richiesta esplicita utente): prima era una media piatta
+#         (L5+L10+L40)/3, incoerente col fatto che L5 riflette la forma PIU'
+#         recente e deve pesare di piu' di L40 (che include partite di mesi fa)
+#   0.30 x sconto_normalizzato (sconto% clampato [-30,100] / 100) -- alzato da
+#         0.20 (FIX 27/07, richiesta esplicita utente: lo sconto deve pesare
+#         di piu'), tolto 0.05 a peso_timing e 0.05 a ultima_partita
 # =====================================================================================
 TIMING_WEIGHT_BUCKETS = (
     # (soglia_ore_esclusiva, peso) -- controllate in ordine, la prima che
-    # soddisfa ore < soglia vince.
-    (24, 0.1),
-    (48, 0.3),
+    # soddisfa ore < soglia vince. Ricalibrati 27/07 su dati reali
+    # (pattern_giorni_da_partita.csv, run full-MLS 30201147701, migliaia di
+    # campioni): <48h e 48-96h mostravano pesi diversi (0.1/0.3) ma
+    # scostamento reale IDENTICO (+3.9%/+4.0%, nessuno sconto) -> unificati.
+    # 48-96h prima resta il picco di sconto reale (-9.3%/-15.9%). Oltre le
+    # 96h i dati sono troppo scarsi (11 campioni a -4gg, zero oltre) per
+    # giustificare un peso alto: ridotto a 0.3, prudente invece che assunto.
+    (48, 0.1),
     (96, 1.0),
-    (200, 0.7),
-    (float('inf'), 0.4),
+    (float('inf'), 0.3),
 )
 
 
@@ -669,7 +906,7 @@ def timing_weight(ore_alla_partita):
     for soglia, peso in TIMING_WEIGHT_BUCKETS:
         if ore_alla_partita < soglia:
             return peso
-    return 0.4
+    return TIMING_WEIGHT_BUCKETS[-1][1]
 
 
 def _clamp(value, lo, hi):
@@ -684,10 +921,61 @@ def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent,
         return None
     peso_timing = timing_weight(ore_alla_partita)
     ultima = (ultima_partita_score or 0.0) / 100.0
-    media_generale = ((l5 or 0.0) + (l10 or 0.0) + (l40 or 0.0)) / 3.0 / 100.0
+    media_generale = (0.5 * (l5 or 0.0) + 0.3 * (l10 or 0.0) + 0.2 * (l40 or 0.0)) / 100.0
     sconto_norm = _clamp(sconto_percent, -30.0, 100.0) / 100.0 if sconto_percent is not None else 0.0
-    score = (0.40 * peso_timing) + (0.25 * ultima) + (0.15 * media_generale) + (0.20 * sconto_norm)
+    score = (0.35 * peso_timing) + (0.20 * ultima) + (0.15 * media_generale) + (0.30 * sconto_norm)
     return round(score, 4)
+
+
+# =====================================================================================
+# PATTERN GIORNI-DA-PARTITA (diagnostico, richiesta esplicita utente 26/07)
+# Accumulatore GLOBALE (non per singola carta -- 7gg di storico per una sola
+# carta danno troppi pochi campioni): bucket = giorno intero rispetto alla
+# partita piu' vicina (negativo=prima, positivo=dopo) -> lista di prezzi
+# NORMALIZZATI (prezzo / media della carta in quella finestra), cosi' carte di
+# valore diverso si possono sommare senza che le piu' costose pesino di piu'.
+# =====================================================================================
+_pattern_giorni_lock = threading.Lock()
+_pattern_giorni = {}  # bucket_int -> [prezzo_normalizzato, ...]
+
+
+def _registra_pattern_giorni(match_dates, tx_con_date, baseline):
+    """Per ogni transazione (dt, prezzo) calcola il bucket giorno-da-partita e
+    accumula il prezzo normalizzato (prezzo/baseline) nell'accumulatore globale.
+    baseline = media (non trimmed, per semplicita') dei prezzi della carta in
+    questa finestra -- se manca o e' zero, non c'e' niente da normalizzare."""
+    if not baseline or baseline <= 0 or not match_dates:
+        return
+    with _pattern_giorni_lock:
+        for dt, price in tx_con_date:
+            offset = giorni_da_partita_piu_vicina(dt, match_dates)
+            if offset is None:
+                continue
+            bucket = int(round(offset))
+            _pattern_giorni.setdefault(bucket, []).append(price / baseline)
+
+
+def write_pattern_giorni_csv():
+    """Scrive scanners/bot_profit_output/pattern_giorni_da_partita.csv: una riga
+    per bucket giorno-da-partita, prezzo medio normalizzato (1.0 = media della
+    carta) e sconto%/premio% implicito -- per capire in quale punto del ciclo
+    settimanale conviene comprare (valore minimo) o vendere (valore massimo)."""
+    with _pattern_giorni_lock:
+        snapshot_buckets = {k: list(v) for k, v in _pattern_giorni.items()}
+    if not snapshot_buckets:
+        return
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+    path = os.path.join(OUTPUT_DIR, 'pattern_giorni_da_partita.csv')
+    with open(path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(['giorni_da_partita', 'n_transazioni', 'prezzo_medio_normalizzato', 'scostamento_percent'])
+        for bucket in sorted(snapshot_buckets):
+            valori = snapshot_buckets[bucket]
+            media_norm = sum(valori) / len(valori)
+            writer.writerow([bucket, len(valori), round(media_norm, 4), round((media_norm - 1.0) * 100, 2)])
+    log(f"[pattern giorni-da-partita] scritto {path} ({len(snapshot_buckets)} bucket, "
+        f"{sum(len(v) for v in snapshot_buckets.values())} transazioni totali)")
 
 
 # =====================================================================================
@@ -805,6 +1093,77 @@ def _write_ranked_csv(rows_liquidi, path, label):
     return len(rows_sorted)
 
 
+def _tra_quanto_leggibile(ore):
+    if ore is None:
+        return "data sconosciuta"
+    if ore < 0:
+        return "partita gia' in corso/giocata"
+    if ore < 24:
+        return f"tra {round(ore)} ore"
+    return f"tra {round(ore / 24)} giorni"
+
+
+BUY_SIGNALS_CSV_PATH = os.path.join(OUTPUT_DIR, 'consiglio_acquisto_mls.csv')
+BUY_SIGNALS_TXT_PATH = os.path.join(OUTPUT_DIR, 'consiglio_acquisto_mls.txt')
+
+
+def write_buy_signals(rows_liquidi):
+    """Consigli DIRETTI di acquisto (richiesta esplicita utente 26/07): tra le
+    carte gia' filtrate per liquidita' (rows_liquidi, stesso identico criterio
+    dei CSV normali), seleziona quelle con sconto_percent >= BUY_SIGNAL_THRESHOLD_PERCENT
+    (prezzo minimo attuale anomalmente basso rispetto alla media reale delle
+    ultime transazioni -- probabile rimbalzo), ordinate per sconto% decrescente,
+    top BUY_SIGNAL_TOP_N. Target di rivendita = la media 7gg trimmed stessa (la
+    decisione di QUANDO rivendere resta manuale, qui e' solo un riferimento).
+    Sovrascrive sempre lo stesso file (nessun nome con timestamp)."""
+    candidati = [
+        r for r in rows_liquidi
+        if r.get('sconto_percent') is not None and r['sconto_percent'] >= BUY_SIGNAL_THRESHOLD_PERCENT
+        and r.get('media_transazioni_7gg_trimmed_eur') is not None
+    ]
+    candidati.sort(key=lambda r: r['sconto_percent'], reverse=True)
+    top = candidati[:BUY_SIGNAL_TOP_N]
+
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+
+    fieldnames = [
+        'player_name', 'tipo_carta', 'prezzo_attuale_eur', 'sconto_percent',
+        'target_rivendita_eur', 'squadra', 'prossimo_avversario',
+        'prossima_partita_data', 'ore_alla_partita',
+    ]
+    with open(BUY_SIGNALS_CSV_PATH, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for r in top:
+            writer.writerow({
+                'player_name': r['player_name'],
+                'tipo_carta': r['tipo_carta'],
+                'prezzo_attuale_eur': r['min_attuale_eur'],
+                'sconto_percent': r['sconto_percent'],
+                'target_rivendita_eur': r['media_transazioni_7gg_trimmed_eur'],
+                'squadra': r.get('squadra'),
+                'prossimo_avversario': r.get('prossimo_avversario'),
+                'prossima_partita_data': r.get('prossima_partita_data'),
+                'ore_alla_partita': r.get('ore_alla_partita'),
+            })
+
+    with open(BUY_SIGNALS_TXT_PATH, 'w', encoding='utf-8') as f:
+        f.write(f"Consigli di acquisto -- sconto >= {BUY_SIGNAL_THRESHOLD_PERCENT}% vs media 7gg, "
+                f"top {BUY_SIGNAL_TOP_N} per sconto%. Target rivendita = media 7gg (riferimento, "
+                f"decisione finale manuale).\n\n")
+        for r in top:
+            f.write(
+                f"COMPRA: {r['player_name']} ({r['tipo_carta']}) — {r['min_attuale_eur']}EUR ora, "
+                f"-{r['sconto_percent']}% sotto la media 7gg ({r['media_transazioni_7gg_trimmed_eur']}EUR). "
+                f"Target rivendita indicativo: ~{r['media_transazioni_7gg_trimmed_eur']}EUR. "
+                f"Prossima partita {_tra_quanto_leggibile(r.get('ore_alla_partita'))}.\n"
+            )
+
+    log(f"[consigli acquisto] {len(top)}/{len(candidati)} carte sopra soglia "
+        f"{BUY_SIGNAL_THRESHOLD_PERCENT}% scritte in {BUY_SIGNALS_CSV_PATH} / {BUY_SIGNALS_TXT_PATH}")
+
+
 def write_csv_snapshot():
     """Scrive:
       1) i 3 file GLOBALI di sempre -- combinato, solo in season, solo classic
@@ -900,6 +1259,8 @@ def write_csv_snapshot():
         path = os.path.join(per_campionato_dir, filename)
         _write_ranked_csv(gruppo_rows, path, f'campionato={league_filename} ({tipo_gruppo})')
 
+    write_buy_signals(rows_liquidi)
+
     log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
         f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni "
         f"({n_combinato} nel file combinato, {len(gruppi)} file per campionato scritti in "
@@ -915,12 +1276,20 @@ _stop_periodic_commit = threading.Event()
 def _commit_output_se_serve():
     try:
         write_csv_snapshot()
+        write_pattern_giorni_csv()
         paths_da_committare = [OUTPUT_CSV_PATH, OUTPUT_CSV_PATH_IN_SEASON, OUTPUT_CSV_PATH_CLASSIC]
         per_campionato_dir = os.path.join(OUTPUT_DIR, 'per_campionato')
         if os.path.exists(per_campionato_dir):
             paths_da_committare.append(per_campionato_dir)
         if os.path.exists(LISTA_NERA_PROFIT_PATH):
             paths_da_committare.append(LISTA_NERA_PROFIT_PATH)
+        pattern_path = os.path.join(OUTPUT_DIR, 'pattern_giorni_da_partita.csv')
+        if os.path.exists(pattern_path):
+            paths_da_committare.append(pattern_path)
+        if os.path.exists(BUY_SIGNALS_CSV_PATH):
+            paths_da_committare.append(BUY_SIGNALS_CSV_PATH)
+        if os.path.exists(BUY_SIGNALS_TXT_PATH):
+            paths_da_committare.append(BUY_SIGNALS_TXT_PATH)
         status = subprocess.run(
             ['git', 'status', '--porcelain', '--'] + paths_da_committare,
             capture_output=True, text=True, timeout=30
@@ -939,12 +1308,23 @@ def _commit_output_se_serve():
             log(f"[commit periodico] nulla da committare o commit fallito: "
                 f"{commit.stdout.strip()} {commit.stderr.strip()}")
             return
+        branch = subprocess.run(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            capture_output=True, text=True, timeout=10
+        ).stdout.strip() or 'main'
         pull = subprocess.run(
-            ['git', 'pull', '--rebase', '--autostash', 'origin', 'main'],
+            ['git', 'pull', '--rebase', '--autostash', 'origin', branch],
             capture_output=True, text=True, timeout=60
         )
         if pull.returncode != 0:
-            log(f"[commit periodico] git pull --rebase fallito, salto il push di questo giro: {pull.stderr.strip()}")
+            # FIX 26/07: un rebase fallito lascia il repo a meta' rebase -- se non lo
+            # annulliamo, TUTTI i prossimi giri di commit periodico falliscono allo
+            # stesso modo per il resto della run. Annullato cosi' il prossimo giro
+            # riparte pulito (i dati di QUESTO giro restano committati solo in
+            # locale, verranno ripushati al prossimo giro se il conflitto rientra).
+            subprocess.run(['git', 'rebase', '--abort'], capture_output=True, text=True, timeout=30)
+            log(f"[commit periodico] git pull --rebase fallito su branch={branch}, annullato il rebase, "
+                f"salto il push di questo giro: {pull.stderr.strip()}")
             return
         push = subprocess.run(['git', 'push'], capture_output=True, text=True, timeout=60)
         if push.returncode == 0:
@@ -1246,8 +1626,170 @@ def run_listener(eth_rate):
     return stats
 
 
+# =====================================================================================
+# MODALITA' SNAPSHOT -- giro esplicito sul roster delle squadre in TEAM_WHITELIST,
+# nessun websocket. Ricalcola SEMPRE ogni carta (in_season + classic), a differenza
+# del listener a eventi che aggiorna una carta solo quando genera un evento.
+# Riusa le STESSE funzioni del percorso a eventi (get_current_minimum,
+# get_player_snapshot, get_recent_transaction_prices, blacklist) -- stessa identica
+# logica di esclusione/blacklist, cambia solo cosa la innesca.
+# =====================================================================================
+def _process_player_snapshot(player_slug, player_name, expected_team_slug, league_slug, eth_rate):
+    if is_player_blacklisted(player_slug):
+        return 'blacklist'
+
+    # FIX 27/07 (run troppo lento, richiesta esplicita utente): controlla PRIMA
+    # se c'e' un prezzo valido (live offers) per ALMENO un tipo di carta -- nel
+    # run del 27/07 il 33% dei giocatori (192/585) finiva scartato qui
+    # comunque, ma get_player_snapshot (L5/L10/L40/ultima partita/prossima
+    # partita) veniva speso PRIMA per tutti loro. Nessun dato di questa query
+    # serve per decidere lo scarto per prezzo, quindi si risparmia l'intera
+    # chiamata quando non servira' mai a scrivere una riga.
+    live_offer_nodes = fetch_all_live_offers(player_slug)
+    tipi_da_provare = (True, False) if CHECK_CLASSIC else (True,)
+    prezzo_ok = any(
+        (m := _current_minimum_from_nodes(live_offer_nodes, tipo, league_slug, eth_rate)) is not None
+        and m >= MIN_PRICE_EUR_THRESHOLD
+        for tipo in tipi_da_provare
+    )
+    if not prezzo_ok:
+        return 'prezzo_basso_o_senza_annunci'
+
+    snapshot = get_player_snapshot(player_slug)
+    if snapshot is None:
+        log(f"[snapshot] {player_name} ({player_slug}): nessun dato giocatore, salto.")
+        return 'no_snapshot'
+
+    # FIX 26/07 (bug segnalato dall'utente): Club.anyPlayers restituisce anche
+    # giocatori NON piu' al club (storico), non solo la rosa attuale -- niente
+    # blacklist qui (potrebbero comunque essere validi altrove/in futuro), solo
+    # uno scarto SILENZIOSO subito, PRIMA di sprecare le query su minimo/
+    # transazioni per un giocatore che non appartiene piu' a questa squadra.
+    if snapshot.get('squadra_slug') != expected_team_slug:
+        return 'squadra_diversa'
+
+    l5 = snapshot['l5']
+    if not l5:  # None o 0 -- il roster gia' filtra L5 a monte (fetch_team_roster),
+        # qui e' solo rete di sicurezza silenziosa, nessuna blacklist: il prossimo
+        # sweep ricontrolla il roster gratis, un blocco di 30gg non aggiungerebbe nulla.
+        return 'forma_zero'
+
+    if not snapshot['next_game_date_str']:
+        blacklist_player(player_slug, 'nessuna_partita', NESSUNA_PARTITA_DAYS)
+        log(f"[blacklist] {player_name} ({player_slug}): nessuna prossima partita -- "
+            f"blacklistato {NESSUNA_PARTITA_DAYS:.0f}gg")
+        return 'nessuna_partita'
+
+    ore_alla_partita = hours_until(snapshot['next_game_date_str'])
+    righe_scritte = 0
+    tx_nodes_cache = None  # (nodes, cutoff) -- scaricate al bisogno, non se il prezzo scarta subito
+
+    for is_in_season in (True, False):
+        if not is_in_season and not CHECK_CLASSIC:
+            continue
+
+        min_attuale = _current_minimum_from_nodes(live_offer_nodes, is_in_season, league_slug, eth_rate)
+        if min_attuale is None or min_attuale < MIN_PRICE_EUR_THRESHOLD:
+            continue  # niente blacklist, il prezzo puo' risalire (stesso criterio del percorso a eventi)
+
+        if tx_nodes_cache is None:
+            tx_nodes_cache = fetch_transaction_nodes_window(player_slug)
+        tx_nodes, tx_cutoff = tx_nodes_cache
+        tx_con_date = _countable_transactions_from_nodes(tx_nodes, tx_cutoff, is_in_season, league_slug, eth_rate)
+        tx_prices = [price for _, price in tx_con_date]
+        avg_trimmed, n_usati, n_totali = trimmed_average(tx_prices)
+
+        sconto_percent = None
+        if avg_trimmed and avg_trimmed > 0:
+            sconto_percent = round((avg_trimmed - min_attuale) / avg_trimmed * 100, 2)
+
+        if tx_prices:
+            baseline_pattern = sum(tx_prices) / len(tx_prices)
+            _registra_pattern_giorni(snapshot['match_dates'], tx_con_date, baseline_pattern)
+
+        potenziale_score = compute_potenziale_score(
+            l5=l5, l10=snapshot['l10'], l40=snapshot['l40'],
+            ultima_partita_score=snapshot['ultima_partita_score'],
+            sconto_percent=sconto_percent, ore_alla_partita=ore_alla_partita,
+        )
+
+        excluded = is_excluded_league(league_slug)
+        tipo_carta = ('in season' if is_in_season else 'classic') if excluded else 'misto'
+
+        row = {
+            'player_slug': player_slug,
+            'player_name': player_name,
+            'league_slug': league_slug,
+            'tipo_carta': tipo_carta,
+            'potenziale_score': potenziale_score,
+            'squadra': snapshot['squadra'],
+            'prossimo_avversario': snapshot['prossimo_avversario'],
+            'ultima_partita_score': snapshot['ultima_partita_score'],
+            'l5': l5,
+            'l10': snapshot['l10'],
+            'l40': snapshot['l40'],
+            'min_attuale_eur': round(min_attuale, 2) if min_attuale is not None else None,
+            'media_transazioni_7gg_trimmed_eur': round(avg_trimmed, 2) if avg_trimmed is not None else None,
+            'n_transazioni_usate': f"{n_usati}/{n_totali}",
+            'sconto_percent': sconto_percent,
+            'prossima_partita_data': snapshot['next_game_date_str'],
+            'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
+            'ultimo_tipo_evento': 'in_season' if is_in_season else 'classic',
+        }
+        key = _row_key(player_slug, is_in_season, league_slug)
+        _upsert_tracked_row(key, row)
+        righe_scritte += 1
+
+        log(f"[snapshot] {player_name} ({tipo_carta}): score={potenziale_score} "
+            f"min={row['min_attuale_eur']}EUR media7gg_trim={row['media_transazioni_7gg_trimmed_eur']}EUR "
+            f"sconto={sconto_percent}% n_transazioni={row['n_transazioni_usate']}")
+
+    return 'ok' if righe_scritte else 'prezzo_basso_o_senza_annunci'
+
+
+def run_snapshot_sweep(eth_rate):
+    log(f"Avvio SNAPSHOT su {len(TEAM_WHITELIST)} squadra/e (league={SNAPSHOT_LEAGUE_SLUG}): {TEAM_WHITELIST}")
+
+    roster = {}  # slug -> (displayName, team_slug attesa), deduplicato tra squadre
+    for team_slug in TEAM_WHITELIST:
+        for player_slug, player_name in fetch_team_roster(team_slug):
+            roster.setdefault(player_slug, (player_name, team_slug))
+
+    log(f"Roster totale (deduplicato): {len(roster)} giocatori.")
+
+    # FIX 27/07 (run troppo lento, richiesta esplicita utente): pool di worker
+    # invece del giro sequenziale con pausa fissa -- _graphql_throttle() e' gia'
+    # un rate-limiter globale (lock condiviso), quindi la concorrenza qui
+    # sovrappone i tempi di attesa risposta tra giocatori diversi senza
+    # aumentare il ritmo delle richieste in uscita verso Sorare.
+    stats = {}
+    stats_lock = threading.Lock()
+    total = len(roster)
+    done = [0]
+
+    def _worker(player_slug, player_name, expected_team_slug):
+        esito = _process_player_snapshot(player_slug, player_name, expected_team_slug, SNAPSHOT_LEAGUE_SLUG, eth_rate)
+        with stats_lock:
+            stats[esito] = stats.get(esito, 0) + 1
+            done[0] += 1
+            log(f"[{done[0]}/{total}] {player_name} ({player_slug}): {esito}")
+
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=SNAPSHOT_WORKER_THREADS, thread_name_prefix='snap') as executor:
+        futures = [
+            executor.submit(_worker, player_slug, player_name, expected_team_slug)
+            for player_slug, (player_name, expected_team_slug) in roster.items()
+        ]
+        for future in concurrent.futures.as_completed(futures):
+            future.result()  # rilancia eventuali eccezioni non gestite dentro _worker
+
+    log(f"SNAPSHOT completato. Riepilogo per giocatore: {stats}")
+    return stats
+
+
 def main():
-    log(f"Avvio Bot Profit. LISTEN_SECONDS={LISTEN_SECONDS} COMMIT_CHUNK_SECONDS={COMMIT_CHUNK_SECONDS} "
+    log(f"Avvio Bot Profit. SNAPSHOT_MODE={SNAPSHOT_MODE} TEAM_WHITELIST={TEAM_WHITELIST} "
+        f"LISTEN_SECONDS={LISTEN_SECONDS} COMMIT_CHUNK_SECONDS={COMMIT_CHUNK_SECONDS} "
         f"CHECK_CLASSIC={CHECK_CLASSIC} "
         f"TRANSACTIONS_WINDOW_DAYS={TRANSACTIONS_WINDOW_DAYS} "
         f"TOP_N_OUTPUT={TOP_N_OUTPUT} MAX_TRACKED_CARDS={MAX_TRACKED_CARDS} "
@@ -1258,10 +1800,20 @@ def main():
         log("ERRORE: SORARE_COOKIE/SORARE_CSRF mancanti, impossibile continuare.")
         return
 
+    if SNAPSHOT_MODE and not TEAM_WHITELIST:
+        log("ERRORE: SNAPSHOT_MODE attivo ma TEAM_WHITELIST vuota, impossibile continuare.")
+        return
+
     eth_rate = get_eth_rate()
     log(f"Tasso ETH/EUR: {eth_rate}")
 
     load_previous_tracked()
+
+    if SNAPSHOT_MODE:
+        stats = run_snapshot_sweep(eth_rate)
+        _commit_output_se_serve()
+        log(f"Bot Profit (snapshot) terminato. Riepilogo: {stats}")
+        return
 
     commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
     commit_thread.start()

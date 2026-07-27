@@ -34,6 +34,26 @@ on:
         description: "Sotto questo prezzo minimo, la carta e' scartata subito (nessun tracciamento, nessuna blacklist)"
         required: false
         default: "1.0"
+      git_ref:
+        description: "Branch/ref da eseguire e su cui committare (default main -- usare il proprio branch solo per test)"
+        required: false
+        default: "main"
+      snapshot_mode:
+        description: "'si' = modalita' SNAPSHOT: nessun listener websocket, giro esplicito sul roster delle squadre in team_whitelist (ricalcola SEMPRE ogni carta, in_season+classic). 'no' = comportamento normale a eventi."
+        required: false
+        default: "no"
+      team_whitelist:
+        description: "Modalita' snapshot: slug squadre separati da virgola (es. vancouver-whitecaps-vancouver-british-columbia). Vuoto = errore se snapshot_mode=si."
+        required: false
+        default: ""
+      snapshot_league_slug:
+        description: "Modalita' snapshot: lega di appartenenza delle squadre in team_whitelist (mlspa o k-league-1)"
+        required: false
+        default: "mlspa"
+      snapshot_worker_threads:
+        description: "Modalita' snapshot: quanti giocatori processare in parallelo (il rate limit verso Sorare resta comunque governato da _graphql_throttle, condiviso tra i worker)"
+        required: false
+        default: "10"
 permissions:
   contents: write
 concurrency:
@@ -46,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.inputs.git_ref || 'main' }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -67,6 +87,10 @@ jobs:
           TOP_N_OUTPUT: ${{ github.event.inputs.top_n_output || '50' }}
           MIN_TRANSACTIONS_FOR_RANKING: ${{ github.event.inputs.min_transactions_for_ranking || '15' }}
           MIN_PRICE_EUR_THRESHOLD: ${{ github.event.inputs.min_price_eur_threshold || '1.0' }}
+          SNAPSHOT_MODE: ${{ github.event.inputs.snapshot_mode || 'no' }}
+          TEAM_WHITELIST: ${{ github.event.inputs.team_whitelist || '' }}
+          SNAPSHOT_LEAGUE_SLUG: ${{ github.event.inputs.snapshot_league_slug || 'mlspa' }}
+          SNAPSHOT_WORKER_THREADS: ${{ github.event.inputs.snapshot_worker_threads || '10' }}
         run: python scanners/bot_profit.py
       - name: Commit CSV (globali + per campionato) + blacklist dedicata (fallback, se il commit periodico non ha gia' salvato tutto)
         if: always()
@@ -79,6 +103,6 @@ jobs:
             git config user.email "bot-profit@users.noreply.github.com"
             git add $FILES
             git commit -m "Bot Profit: commit finale dati tracciati (3 file globali + per campionato) + blacklist"
-            git pull --rebase --autostash origin main
+            git pull --rebase --autostash origin "${{ github.event.inputs.git_ref || 'main' }}"
             git push
           fi
