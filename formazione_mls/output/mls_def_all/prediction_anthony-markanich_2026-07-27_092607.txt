@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T09:26:07.367301Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.2, min_starter_odds=70%
+======================================================================
+1) anthony-markanich: 43 pt attesi (22-59)
+   SQUADRA: minnesota-united-minneapolis-saint-paul-minnesota | AVVERSARIO: san-diego-san-diego
+======================================================================
+
+######################################################################
+# GIOCATORE: anthony-markanich
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: anthony-markanich (squadra: minnesota-united-minneapolis-saint-paul-minnesota)
+Generato: 2026-07-27T09:26:07.366843Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-28 | MIN vs CIN | mlspa | score=61.5 | peso=0.445
+  2026-03-08 | NSH vs MIN | mlspa | score=52.1 | peso=0.472
+  2026-03-22 | MIN vs SEA | mlspa | score=59.5 | peso=0.500
+  2026-04-05 | LA vs MIN | mlspa | score=60.0 | peso=0.530
+  2026-04-12 | SD vs MIN | mlspa | score=65.4 | peso=0.561
+  2026-04-19 | MIN vs POR | mlspa | score=54.6 | peso=0.595
+  2026-04-23 | DAL vs MIN | mlspa | score=70.8 | peso=0.630
+  2026-04-25 | MIN vs LAFC | mlspa | score=51.9 | peso=0.667
+  2026-05-02 | CLB vs MIN | mlspa | score=78.2 | peso=0.707
+  2026-05-10 | MIN vs ATX | mlspa | score=73.6 | peso=0.749
+  2026-05-14 | MIN vs RAP | mlspa | score=19.4 | peso=0.794
+  2026-05-16 | NE vs MIN | mlspa | score=60.0 | peso=0.841
+  2026-05-23 | MIN vs RSL | mlspa | score=49.3 | peso=0.891
+  2026-07-23 | SKC vs MIN | mlspa | score=33.1 | peso=0.944
+  2026-07-26 | MIN vs VAN | mlspa | score=48.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 54.42
+  di cui Punteggio decisivo (level_score) medio: 44.05 | Punteggio complessivo (granulari) medio: 10.37 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.97, delta avversario -0.69 | Passaggio condizionato: delta venue +0.38, delta avversario +0.46 | Clean sheet/disimpegni condizionato: delta venue +0.80, delta avversario -1.04 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.44
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.1 - 70.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.02 (differenza: +4.42)
+Media score in casa: 52.30 | Media score fuori casa: 59.95
+Fattore casa/trasferta applicato: 0.977 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.149
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.987
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.011
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.008
+Fattore gol subiti (goals_conceded, con cap): 1.024
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.016
+Fattore trend (media ultime 5: 42.1 vs media ultime 10: 53.9): 0.846
+P(gioca): 93.75% (fonte: tasso di presenza storico (15/16))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Minnesota United | Trasferta: San Diego FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.0 (range 21.7 - 59.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.05
+Punteggio REALE ottenuto in quella partita: 48.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      50.5    70.8    +20.3     5.3        NO
+   7        7      53.5    51.9     -1.6     7.2        SI
+   8        8      67.3    78.2    +11.0     7.7        NO
+   9        9      76.9    73.6     -3.2    10.5        SI
+  10       10      73.1    19.4    -53.8    10.9        NO
+  11       11      51.5    60.0     +8.5    20.0        SI
+  12       12      48.9    49.3     +0.4    18.9        SI
+  13       13      69.9    33.1    -36.8    18.1        NO
+  14       14      37.6    48.6    +11.0    19.3        SI
+
+MAE (errore assoluto medio): 16.29
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
