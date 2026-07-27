@@ -800,21 +800,25 @@ CAP260_L10_THRESHOLD_BY_TYPE = {'IN_SEASON': 260.0, 'ALLSTARS': 370.0}
 # al migliore giocatore di movimento per convenire come capitano (27/07,
 # richiesta esplicita utente, confermata con dati reali via
 # formazione_mls/diagnostics/analyze_gk_captain_value.py -- NESSUNA nuova
-# query, solo cache di calibrazione gia' su disco, 149 partite GK / 1673
-# movimento MLS+K League). Il bonus capitano e' una percentuale del
-# punteggio REALE ottenuto (non dell'atteso), quindi scegliere il capitano
-# solo in base all'atteso grezzo e' ottimale SOLO se l'atteso e' calibrato
-# allo stesso modo tra ruoli -- non lo e': nella fascia di punteggio atteso
-# rilevante per la scelta capitano (>=55, dove tipicamente si gioca la
-# decisione), il bias di calibrazione (reale - atteso) e' -15.4pt per i
-# portieri contro -5.2pt per il movimento -- un divario di ~10pt, coerente
-# con l'esperienza dell'utente su Sorare ("basta un gol subito per perdere
-# il bonus clean sheet, i portieri hanno punteggi tendenzialmente piu'
-# bassi") anche se lui stesso non l'aveva mai verificato sui dati. A parita'
-# o quasi di atteso nominale, il portiere realizza in media MENO del
-# giocatore di movimento: un margine fisso corregge la scelta senza dover
-# ricalibrare l'intera formula solo per la selezione capitano.
-GK_CAPTAIN_MARGIN = 10.0
+# query, solo cache di calibrazione gia' su disco). Ricalibrato lo stesso
+# giorno estendendo lo script a 10 campionati (MLS, K League, Brasile,
+# Croazia, Portogallo, Austria, Scozia, Belgio, Olanda, Spagna): 404 partite
+# GK (quasi 3x il campione precedente di 149 GK / 1673 movimento
+# MLS+K League) confermano la stessa direzione con stima piu' precisa. Il
+# bonus capitano e' una percentuale del punteggio REALE ottenuto (non
+# dell'atteso), quindi scegliere il capitano solo in base all'atteso grezzo
+# e' ottimale SOLO se l'atteso e' calibrato allo stesso modo tra ruoli --
+# non lo e': nella fascia di punteggio atteso rilevante per la scelta
+# capitano (>=55, dove tipicamente si gioca la decisione), il bias di
+# calibrazione (reale - atteso) e' -12.06pt per i portieri contro -5.37pt
+# per il movimento -- un divario di 6.69pt, coerente con l'esperienza
+# dell'utente su Sorare ("basta un gol subito per perdere il bonus clean
+# sheet, i portieri hanno punteggi tendenzialmente piu' bassi") anche se lui
+# stesso non l'aveva mai verificato sui dati. A parita' o quasi di atteso
+# nominale, il portiere realizza in media MENO del giocatore di movimento:
+# un margine fisso corregge la scelta senza dover ricalibrare l'intera
+# formula solo per la selezione capitano.
+GK_CAPTAIN_MARGIN = 6.7
 
 
 def pick_captain(formazione, avoid_slugs=None):
