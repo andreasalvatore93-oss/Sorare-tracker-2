@@ -251,6 +251,7 @@ query NextGameOdds($slug: String!) {
     anyFutureGames(first: 1) {
       nodes {
         playerGameScore(playerSlug: $slug) {
+          anyGame { date }
           anyPlayerGameStats {
             ... on PlayerGameStats {
               footballPlayingStatusOdds { starterOddsBasisPoints }
@@ -264,35 +265,69 @@ query NextGameOdds($slug: String!) {
 """
 
 
-def get_next_game_starter_odds(slug):
+MATCH_WINDOW_DAYS = float(os.environ.get('MATCH_WINDOW_DAYS', '2'))
+
+
+def get_next_game_odds_and_date(slug):
+    """(probabilita' 0.0-1.0 di titolarita', data ISO della prossima partita)."""
     data = graphql_query(NEXT_GAME_ODDS_QUERY, {"slug": slug}, operation_name="NextGameOdds")
     player = (data.get('data') or {}).get('anyPlayer') or {}
     future = (player.get('anyFutureGames') or {}).get('nodes') or []
     if not future:
-        return None
+        return None, None
     pgs = future[0].get('playerGameScore') or {}
+    kickoff = (pgs.get('anyGame') or {}).get('date')
     odds = (pgs.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {}
     bp = odds.get('starterOddsBasisPoints')
-    if bp is None:
-        return None
-    return bp / 10000.0
+    return (bp / 10000.0 if bp is not None else None), kickoff
+
+
+def get_next_game_starter_odds(slug):
+    return get_next_game_odds_and_date(slug)[0]
+
+
+def _kickoff_within_window(kickoff, now=None):
+    """True se la partita cade fra adesso e +MATCH_WINDOW_DAYS. Data assente o
+    non parsabile = True (non si scarta per un dato mancante)."""
+    if not kickoff:
+        return True
+    now = now or datetime.datetime.utcnow()
+    try:
+        dt = datetime.datetime.fromisoformat(kickoff.replace('Z', '')[:19])
+    except ValueError:
+        return True
+    if dt < now - datetime.timedelta(hours=2):
+        return False
+    return dt <= now + datetime.timedelta(days=MATCH_WINDOW_DAYS)
 
 
 def filter_by_starter_odds(slugs, player_card_counts, min_starter_odds=MIN_STARTER_ODDS_DISCOVERY):
     kept_slugs = []
     kept_counts = {}
     excluded = []
+    fuori_finestra = []
+    senza_odds = []
     for slug in slugs:
-        odds = get_next_game_starter_odds(slug)
+        odds, kickoff = get_next_game_odds_and_date(slug)
         time.sleep(0.3)
-        if odds is not None and odds < min_starter_odds:
+        if not _kickoff_within_window(kickoff):
+            fuori_finestra.append((slug, (kickoff or '?')[:16]))
+            continue
+        if odds is None:
+            if min_starter_odds > 0:
+                senza_odds.append(slug)
+                continue
+        elif odds < min_starter_odds:
             excluded.append((slug, odds))
             continue
         kept_slugs.append(slug)
         kept_counts[slug] = player_card_counts[slug]
 
-    log(f"Filtro starter-odds >= {min_starter_odds:.0%}: {len(excluded)} esclusi su {len(slugs)} "
-        f"(dato mancante = tenuto per sicurezza). Esclusi: {excluded}")
+    log(f"Filtro giornata (+{MATCH_WINDOW_DAYS:g}g): {len(fuori_finestra)} esclusi perche' "
+        f"la prossima partita e' fuori finestra. Esempi: {fuori_finestra[:5]}")
+    log(f"Filtro starter-odds >= {min_starter_odds:.0%}: {len(excluded)} sotto soglia, "
+        f"{len(senza_odds)} senza dato odds (esclusi: con una soglia attiva il dato "
+        f"mancante NON e' piu' tenuto). Sotto soglia: {excluded}")
     return kept_slugs, kept_counts
 
 
