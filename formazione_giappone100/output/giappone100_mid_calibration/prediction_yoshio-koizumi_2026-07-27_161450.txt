@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-27T16:14:50.942404Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) yoshio-koizumi: 64 pt attesi (43-80)
+   SQUADRA: kashiwa-reysol-kashiwa-chiba | AVVERSARIO: mito-hollyhock-mito
+======================================================================
+
+######################################################################
+# GIOCATORE: yoshio-koizumi
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yoshio-koizumi (squadra: kashiwa-reysol-kashiwa-chiba)
+Generato: 2026-07-27T16:14:50.941445Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 10
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | VIS vs REY | j1-league | score=39.2 | peso=0.595
+  2025-09-20 | CER vs REY | j1-league | score=71.4 | peso=0.630
+  2025-09-23 | REY vs SFR | j1-league | score=54.5 | peso=0.667
+  2025-09-28 | FRO vs REY | j1-league | score=38.4 | peso=0.707
+  2025-10-04 | REY vs FMA | j1-league | score=73.3 | peso=0.749
+  2025-10-18 | GAM vs REY | j1-league | score=78.7 | peso=0.794
+  2025-10-25 | REY vs YFC | j1-league | score=52.1 | peso=0.841
+  2025-11-08 | REY vs GRA | j1-league | score=51.4 | peso=0.891
+  2025-11-30 | ALB vs REY | j1-league | score=76.8 | peso=0.944
+  2025-12-06 | REY vs MAC | j1-league | score=58.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 60.13
+  di cui Punteggio decisivo (level_score) medio: 44.97 | Punteggio complessivo (granulari) medio: 15.16 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 42.24 (delta -2.73)
+  Efficacia offensiva condizionata: delta venue -0.20, delta avversario +0.13 | Passaggio condizionato: delta venue +0.67, delta avversario +1.44 | Gol subiti condizionato: delta venue +0.56, delta avversario +0.14 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.78
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.2 - 76.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.79 (differenza: +2.00)
+Media score in casa: 58.02 | Media score fuori casa: 60.90
+Fattore casa/trasferta applicato: 0.981 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.7
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.079
+Fattore falli (casa/trasferta, da dati reali): 1.009
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.019
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 1.025
+Fattore trend (media ultime 5: 63.6 vs media ultime 10: 59.5): 1.048
+P(gioca): 100.00% (fonte: tasso di presenza storico (10/10))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T10:00
+Casa: Kashiwa Reysol | Trasferta: Mito Hollyhock
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 63.6 (range 42.7 - 80.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.33
+Punteggio REALE ottenuto in quella partita: 58.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      89.5    52.1    -37.4    19.5        NO
+   7        7      52.6    51.4     -1.2    18.2        SI
+   8        8      87.6    76.8    -10.8    17.1        SI
+   9        9      50.8    58.8     +8.0    17.7        SI
+
+MAE (errore assoluto medio): 14.33
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
