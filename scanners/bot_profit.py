@@ -372,12 +372,21 @@ def eur_price_from_amounts(amounts, eth_rate):
 # della run, un po' di 429 in piu' sono accettabili): la run del 27/07 ha
 # mostrato 2 minuti filati di 429 anche a ritmo SAFE 0.6s -- il ritmo "sicuro"
 # non evitava comunque i 429 durante una finestra di penalita' sostenuta, quindi
-# non ha senso pagarne il costo pieno in throughput. Riabbassato FAST a 0.15s
-# e SAFE a 0.3s, e accorciata la finestra di penalita' da 45s a 20s cosi' si
-# torna al ritmo veloce piu' in fretta una volta finiti i 429.
-GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.15'))
-GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.3'))
-GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '20.0'))
+# non ha senso pagarne il costo pieno in throughput.
+#
+# Primo tentativo (FAST=0.15/SAFE=0.3/cooldown=20/backoff dimezzato): 4m30-4m54s
+# ma 140+ giocatori scartati per retry esauriti (contro i 69 originali) --
+# troppo, l'utente ha chiesto un compromesso (5-6 min, non 10, ma senza perdere
+# cosi' tante carte). La causa principale era il BACKOFF dimezzato (2/4/8s
+# invece di 2/4/16s): dava alle richieste meno margine per "aspettare che
+# passi" il rate-limit prima di rinunciare al 3o tentativo. Backoff ripristinato
+# all'originale (piu' importante per la sopravvivenza dei retry del ritmo
+# stesso), ritmo base/safe/cooldown solo moderatamente piu' veloci
+# dell'originale (non quanto il primo tentativo) per restare nella fascia
+# 5-6 min richiesta.
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.2'))
+GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.45'))
+GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '30.0'))
 _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
@@ -421,12 +430,12 @@ def graphql_query(query, variables=None, max_retries=3):
         r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             _graphql_last_429_ts[0] = time.time()
-            # FIX 29/07: backoff dimezzato (era (2**attempt)*2, cap 16s) -- la
-            # run del 27/07 mostrava che il backoff lungo non evitava comunque
-            # i 429 successivi durante una finestra di penalita' sostenuta, era
-            # solo tempo perso. Meglio ritentare prima e accettare qualche 429
-            # in piu' pur di accorciare la run (richiesta esplicita utente).
-            wait_seconds = min((2 ** attempt) * 1, 8.0)
+            # FIX 29/07 bis: backoff dimezzato (2/4/8s) provato e SCARTATO --
+            # ha piu' che raddoppiato i giocatori persi per retry esauriti
+            # (69 -> 140+) a fronte di un risparmio di tempo minimo (~25%).
+            # Ripristinato l'originale: il backoff lungo da' al retry il tempo
+            # di uscire dalla finestra di penalita' prima di rinunciare.
+            wait_seconds = min((2 ** attempt) * 2, 16.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), attendo {wait_seconds:.1f}s...")
             time.sleep(wait_seconds)
             continue
