@@ -90,6 +90,10 @@ on:
         description: "'si' = log dettagliato per OGNI carta scartata per campionato blacklistato (utile per il primo test). 'no' = filtro silenzioso."
         required: false
         default: "no"
+      makeoffer_live_mode:
+        description: "'si' = OFFERTE REALI AUTOMATICHE (ramo MakeOffer). 'no' = solo diagnostica. AutoBuy resta SEMPRE disattivato in questo test, non configurabile."
+        required: false
+        default: "no"
       offer_duration_days:
         description: "Durata dell'offerta MakeOffer in giorni interi, 1-7"
         required: false
@@ -160,6 +164,7 @@ jobs:
           BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
           STARTER_ODDS_DIAGNOSTIC_LOG: ${{ github.event.inputs.starter_odds_diagnostic_log || 'si' }}
+          MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'no' }}
           OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '15' }}
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: "20"

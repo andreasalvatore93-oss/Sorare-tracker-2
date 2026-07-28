@@ -60,14 +60,17 @@ CSRF_TOKEN = _extract_csrf_from_cookie(COOKIES) or os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
-# SOLO DIAGNOSTICA OBBLIGATORIA (bot_test_starterodds, 28/07, richiesta esplicita utente):
-# per questo test isolato acquisti/offerte reali sono disattivati SEMPRE, a prescindere
-# da cosa arriva dal workflow_dispatch (non solo un default, un vero e proprio blocco --
-# niente env che possa riattivarli per errore). Le notifiche Telegram "LO AVREI
-# ACQUISTATO/OFFERTO" restano invariate: send_autobuy_alert/send_makeoffer_alert le
-# mandano comunque quando live_mode e' False, vedi sotto.
+# AUTOBUY SEMPRE DISATTIVATO (bot_test_starterodds, richiesta esplicita utente):
+# hardcoded a False, non un env, a prescindere da cosa arriva dal workflow_dispatch --
+# per questo test l'acquisto diretto resta sempre vietato.
 AUTOBUY_LIVE_MODE = False
-MAKEOFFER_LIVE_MODE = False
+# MAKEOFFER LIVE MODE (28/07, aggiornamento richiesta esplicita utente): a differenza di
+# AUTOBUY, per questo test le offerte reali SONO permesse su richiesta esplicita
+# (l'utente segue manualmente ogni offerta) -- configurabile da workflow_dispatch,
+# default 'no' (resta prudente se non specificato). Le notifiche Telegram "LO AVREI
+# ACQUISTATO/OFFERTO" restano comunque invariate anche quando live_mode e' False --
+# vedi send_autobuy_alert/send_makeoffer_alert.
+MAKEOFFER_LIVE_MODE = os.environ.get('MAKEOFFER_LIVE_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
 SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
 SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 
