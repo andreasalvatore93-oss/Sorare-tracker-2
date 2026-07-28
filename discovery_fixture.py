@@ -405,7 +405,19 @@ def main():
             if data is None:
                 esclusi_finestra += 1
                 continue
-            if odds is None or odds < MIN_ODDS:
+            # Odds assenti (partita troppo lontana, Sorare non le ha ancora
+            # pubblicate -- escono a ~24-48h dal match): con una soglia ATTIVA
+            # (>0) escludono per sicurezza (non sappiamo se giochera'); con
+            # soglia 0 (nessun filtro richiesto) restano INCLUSI, coerente con
+            # la regola gia' corretta una volta in questa pipeline (sez. 28.B
+            # del riassunto: "senza soglia il comportamento permissivo resta")
+            # -- riscoperta oggi perche' qui il controllo era regredito a
+            # escludere SEMPRE quando odds is None, ignorando MIN_ODDS.
+            if odds is None:
+                if MIN_ODDS > 0:
+                    esclusi_odds += 1
+                    continue
+            elif odds < MIN_ODDS:
                 esclusi_odds += 1
                 continue
             if lega:
