@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "dor-david-turgeman", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:31:56 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785267116', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': '0yfBOgsqDdkEdRDXldBnh_XR9gRullsLaEpFpU-gIeCvSscBj4gEqXZfV4m2MysO3rjHGDd5t1H8oL8RVr7pMQ', 'etag': 'W/"4b1505c9c684819cba5e6b70facfbcd5"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=5rHc7aJ11sjnDgDNjT%2F0RZbmEV1%2BMBk41MvOyklEvMSujBQeNvAH6fqJAI0CDpQXedY05r3YXuS0o35F5Skfe9nhJ%2FbW%2FI4PgUs7MZaQFXEzBzPZXWvPjMCEQQX3ebNAbmonKEMehzCNr8PzgDmc8ZbSEybFGrRvmoZeeJEYMsYayFytiXaq0c09ylV8t4qYExI2cndRv2RuO46DwI9xuGOy3tlc0UkBjD%2B2tV5IOaWNwW1G1zEVtWQ7Z32wEZwBJFG9szjJg3MuKGg9%2BbUIGCPM7DAFt%2FBBdmuFtayg7TUoabII%2B3ImXTUdgCE6jDtF--21BJKRKdjUX8AXc1--wQDGB8eot0xJvkT1%2Beaf7g%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:31:56 GMT; secure; httponly; samesite=none', 'x-request-id': '36e29966-bdc8-90c2-847e-1751c1339f40', 'x-runtime': '0.074411', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 0819e703158679947bab2d0bebe6285e.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': '12gP7WD6jtJL3FdIKqWlg04E8WlMVitpJGV0hSXhg8Mlw6a0hOKF8Q=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:3abcde7b-047e-4c20-a88d-7d485e5d50cc","score":76.4,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:bedd2679-7251-48a3-b7a9-7bc34182a15d","date":"2026-07-25T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"awayTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":68,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:cf390532-d698-42da-9f37-600efe72f56f","score":41.0,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:fc28d91d-0769-4278-98f5-7b81eb8b14b4","date":"2026-07-22T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"awayTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":73,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:6c12d295-4a07-442b-9ce7-890c780e24d8","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:eff4982a-bab6-44a0-bc14-69744429576a","positionTyped":"Forward","projectedScore":49.0,"anyGame":{"id":"Game:6c12d295-4a07-442b-9ce7-890c780e24d8","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"awayTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:b3fa7b12-b73b-4fac-a0fc-dfbe8043bcae","date":"2026-08-08T20:30:00Z","playerGameScore":{"id":"So5Score:e9b53578-6999-46d6-bf23-4b34529005f2","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:b3fa7b12-b73b-4fac-a0fc-dfbe8043bcae","date":"2026-08-08T20:30:00Z","homeTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"awayTeam":{"slug":"houston-dynamo-houston-texas","name":"Houston Dynamo FC","code":"HOU","domesticLeagueRanking":5},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:11c5d18f-e2eb-4bec-9cd0-d0b82c815418","date":"2026-08-15T23:30:00Z","playerGameScore":{"id":"So5Score:7ec10cfc-dfc8-464c-9e13-077cd800da1d","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:11c5d18f-e2eb-4bec-9cd0-d0b82c815418","date":"2026-08-15T23:30:00Z","homeTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"awayTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:3a287d7a-20de-4cf7-bc78-6e1695378180","date":"2026-08-19T23:30:00Z","playerGameScore":{"id":"So5Score:75cb60ad-c2dd-4cac-a0ef-226d342aa354","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:3a287d7a-20de-4cf7-bc78-6e1695378180","date":"2026-08-19T23:30:00Z","homeTeam":{"slug":"dc-united-washington-district-of-columbia","name":"DC United","code":"DC","domesticLeagueRanking":9},"awayTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:6391889a-58e7-4893-8682-bf660a791f4c","date":"2026-08-23T20:30:00Z","playerGameScore":{"id":"So5Score:37e09f07-56ff-4558-97fc-7d53641f3f5e","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:6391889a-58e7-4893-8682-bf660a791f4c","date":"2026-08-23T20:30:00Z","homeTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"awayTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
