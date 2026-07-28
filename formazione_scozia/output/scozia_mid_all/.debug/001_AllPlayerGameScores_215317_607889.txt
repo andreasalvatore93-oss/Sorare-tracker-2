@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "jamie-mcgrath", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 21:53:17 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785275597', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'GZkEQaRmmDaRdeE3ze_y3oHy2IvCoiYySagY-MBRjWfmvXh1f5ks5eVHhUKSzzjdSaGmU50b4DQJJizKluL0pA', 'etag': 'W/"8cb4b840922fb2091e0d859e97cd27da"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=hbb8Kj7xus%2B8SLBpvICyzcEWGgDrmyQj0sask0whLxi5rg3DMF5lGpBDb%2FtROVf2aOB%2BXCQHXUvUlrHo5RPgkhq8ALrF1iHzt5HnKMGnIUZurQ%2B%2FbRfaOmwygvtGA26JP1%2BxhD71SBQ7TCppGZFM1LzZTMcySovmxmXuFFjsAZ%2BMEpD81bWUg6fHr%2FW%2FWVtuYSH8fzxmZC%2BZSah4WbO50Mz6JJ45BdT2SXJQimlCN%2FJrrp7NX4CjiQIqQ5Abq1jmXuDqkQ1PCtNfeGQpodNS1ThnWzsdgcIm%2F6FaffOcRFlnhAuNibhQskBpHvVWA69%2B--P8dM5XLOENU3tCRb--Rr9PM4n4T7lGtkwHfKrhDg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 21:53:17 GMT; secure; httponly; samesite=none', 'x-request-id': '3266f0e9-64c4-4c68-8f73-7426a2575327', 'x-runtime': '0.058988', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 2e121d0230380556e33c845180e9c642.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'SFO53-P6', 'x-amz-cf-id': 'sIfRZ27R4D35YhaU77mSZFQ6MU3cKIPmlllKRR4Ehmr6zNIKvcQ82g=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:2d43ded5-8139-4d7a-917f-adf0272d3744","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:2e41b9d4-c73f-4bb8-b53f-03422ed99064","date":"2026-07-23T14:30:00Z","statusTyped":"played","homeTeam":{"slug":"malisheva-malisheva-malisevo","name":"Ujvara e Malishevës","code":"MAL","domesticLeagueRanking":null},"awayTeam":{"slug":"hibernian-edinburgh","name":"Hibernian FC","code":"HIB","domesticLeagueRanking":5},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:9044d17e-af34-4cb9-8fb7-eb32d2aac489","score":50.0,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:cea3ad79-e57e-4a7c-9c15-b1fbe491ae45","date":"2026-06-05T23:30:00Z","statusTyped":"played","homeTeam":{},"awayTeam":{},"competition":{"slug":"friendlies"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":45,"yellowCard":1,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:47bf978d-5ccf-4cf7-9ab5-9e42eaf1f4c7","date":"2026-07-30T19:00:00Z","playerGameScore":{"id":"So5Score:379a83da-8f77-444f-946e-85d2c242da26","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:47bf978d-5ccf-4cf7-9ab5-9e42eaf1f4c7","date":"2026-07-30T19:00:00Z","homeTeam":{"slug":"hibernian-edinburgh","name":"Hibernian FC","code":"HIB","domesticLeagueRanking":5},"awayTeam":{"slug":"malisheva-malisheva-malisevo","name":"Ujvara e Malishevës","code":"MAL","domesticLeagueRanking":null},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:a1fb7fc2-96bd-4a73-9a02-54be9ebdfc7a","date":"2026-08-02T15:30:00Z","playerGameScore":{"id":"So5Score:2f7dcc95-5435-454f-8776-e1a7158c36ce","positionTyped":"Midfielder","projectedScore":52.0,"anyGame":{"id":"Game:a1fb7fc2-96bd-4a73-9a02-54be9ebdfc7a","date":"2026-08-02T15:30:00Z","homeTeam":{"slug":"hibernian-edinburgh","name":"Hibernian FC","code":"HIB","domesticLeagueRanking":5},"awayTeam":{"slug":"motherwell-motherwell","name":"Motherwell FC","code":"MOT","domesticLeagueRanking":4},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:4d0ad890-915a-413a-973e-54ea3e9f9254","date":"2026-08-09T15:00:00Z","playerGameScore":{"id":"So5Score:b3dd9561-ed53-4d17-a14c-d1c04291ff22","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:4d0ad890-915a-413a-973e-54ea3e9f9254","date":"2026-08-09T15:00:00Z","homeTeam":{"slug":"rangers-glasgow","name":"Rangers FC","code":"RAN","domesticLeagueRanking":3},"awayTeam":{"slug":"hibernian-edinburgh","name":"Hibernian FC","code":"HIB","domesticLeagueRanking":5},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:a8bf8704-d7df-4bd6-b0a8-70d68695eb8a","date":"2026-08-22T14:00:00Z","playerGameScore":{"id":"So5Score:6f5b2d50-20d3-46a3-a12c-4b6d708b9a65","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:a8bf8704-d7df-4bd6-b0a8-70d68695eb8a","date":"2026-08-22T14:00:00Z","homeTeam":{"slug":"hibernian-edinburgh","name":"Hibernian FC","code":"HIB","domesticLeagueRanking":5},"awayTeam":{"slug":"kilmarnock-kilmarnock","name":"Kilmarnock FC","code":"KIL","domesticLeagueRanking":4},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:971d7874-1df0-4a68-b8e4-c625b7a8aaba","date":"2026-08-29T14:00:00Z","playerGameScore":{"id":"So5Score:51f4d017-e174-4333-ba08-4bec6827d2b7","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:971d7874-1df0-4a68-b8e4-c625b7a8aaba","date":"2026-08-29T14:00:00Z","homeTeam":{"slug":"dundee-dundee","name":"Dundee FC","code":"DUN","domesticLeagueRanking":2},"awayTeam":{"slug":"hibernian-edinburgh","name":"Hibernian FC","code":"HIB","domesticLeagueRanking":5},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
