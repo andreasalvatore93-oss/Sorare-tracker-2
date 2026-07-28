@@ -1,0 +1,96 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T18:37:57.309638Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) min-kyu-joo: 20 pt attesi (1-38)
+   SQUADRA: daejeon-citizen-daejeon | AVVERSARIO: gwangju-gwangju
+======================================================================
+
+######################################################################
+# GIOCATORE: min-kyu-joo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: min-kyu-joo (squadra: daejeon-citizen-daejeon)
+Generato: 2026-07-28T18:37:57.308746Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | DJO vs DAE | k-league-1 | score=80.9 | peso=0.530
+  2025-09-27 | GAN vs DJO | k-league-1 | score=37.7 | peso=0.561
+  2025-10-05 | POH vs DJO | k-league-1 | score=60.0 | peso=0.595
+  2025-10-18 | DJO vs JEJ | k-league-1 | score=81.4 | peso=0.630
+  2025-10-26 | DJO vs POH | k-league-1 | score=60.0 | peso=0.667
+  2026-03-02 | DJO vs ANY | k-league-1 | score=66.7 | peso=0.707
+  2026-03-07 | BUC vs DJO | k-league-1 | score=38.6 | peso=0.749
+  2026-03-18 | INC vs DJO | k-league-1 | score=33.9 | peso=0.794
+  2026-04-12 | DJO vs GAN | k-league-1 | score=30.2 | peso=0.841
+  2026-05-09 | DJO vs POH | k-league-1 | score=26.9 | peso=0.891
+  2026-07-04 | DJO vs BUC | k-league-1 | score=67.5 | peso=0.944
+  2026-07-12 | JEJ vs DJO | k-league-1 | score=32.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 49.37
+  di cui Punteggio decisivo (level_score) medio: 47.73 | Punteggio complessivo (granulari) medio: 1.63 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.78 (delta +0.20) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.04
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.2 - 67.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.99 (differenza: +2.05)
+Media score in casa: 59.09 | Media score fuori casa: 40.58
+Fattore casa/trasferta applicato: 1.019 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.8
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.178
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.014
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.009
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 38.2 vs media ultime 10: 49.8): 0.800
+P(gioca): 40.00% (fonte: tasso di presenza storico (12/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Daejeon Citizen FC | Trasferta: Gwangju FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 20.0 (range 0.8 - 38.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.47
+Punteggio REALE ottenuto in quella partita: 32.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.8    38.6    -26.2    20.0        NO
+   7        7      52.5    33.9    -18.6    22.8        SI
+   8        8      54.7    30.2    -24.5    24.8        SI
+   9        9      57.8    26.9    -30.9    26.2        NO
+  10       10      47.8    67.5    +19.7    27.3        SI
+  11       11      40.3    32.7     -7.6    26.9        SI
+
+MAE (errore assoluto medio): 21.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

@@ -1,0 +1,94 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T18:37:33.414987Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) markus-pink: 15 pt attesi (8-34)
+   SQUADRA: wolfsberger-ac-wolfsberg | AVVERSARIO: austria-wien-wien
+======================================================================
+
+######################################################################
+# GIOCATORE: markus-pink
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: markus-pink (squadra: wolfsberger-ac-wolfsberg)
+Generato: 2026-07-28T18:37:33.414448Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-31 | WSG vs WAC | austrian-bundesliga | score=65.4 | peso=0.561
+  2025-09-13 | WAC vs RBS | austrian-bundesliga | score=74.5 | peso=0.595
+  2025-09-20 | HTB vs WAC | austrian-bundesliga | score=60.4 | peso=0.630
+  2025-09-27 | WAC vs ASK | austrian-bundesliga | score=34.0 | peso=0.667
+  2025-10-18 | WAC vs SVR | austrian-bundesliga | score=41.5 | peso=0.707
+  2025-10-26 | STU vs WAC | austrian-bundesliga | score=35.1 | peso=0.749
+  2025-11-02 | WAC vs WSG | austrian-bundesliga | score=34.4 | peso=0.794
+  2025-12-07 | WAC vs FAK | austrian-bundesliga | score=33.9 | peso=0.841
+  2025-12-14 | RBS vs WAC | austrian-bundesliga | score=30.3 | peso=0.891
+  2026-05-04 | ALT vs WAC | austrian-bundesliga | score=34.1 | peso=0.944
+  2026-05-09 | SVR vs WAC | austrian-bundesliga | score=34.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 41.36
+  di cui Punteggio decisivo (level_score) medio: 40.33 | Punteggio complessivo (granulari) medio: 1.03 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 1.01 (delta +0.05) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.67
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.9 - 60.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.71 (differenza: +2.96)
+Media score in casa: 43.66 | Media score fuori casa: 43.25
+Fattore casa/trasferta applicato: 0.993 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.0
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.025
+Fattore duelli (casa/trasferta, da dati reali): 1.032
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore trend (media ultime 5: 33.4 vs media ultime 10: 41.2): 0.809
+P(gioca): 37.93% (fonte: tasso di presenza storico (11/29))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T15:00
+Casa: RZ Pellets WAC | Trasferta: FK Austria Wien
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 15.4 (range 7.9 - 34.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.33
+Punteggio REALE ottenuto in quella partita: 34.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.8    34.4    -26.4    21.8        NO
+   7        7      49.8    33.9    -15.9    21.6        SI
+   8        8      43.0    30.3    -12.7    21.1        SI
+   9        9      47.5    34.1    -13.4    20.9        SI
+  10       10      28.7    34.2     +5.5    20.0        SI
+
+MAE (errore assoluto medio): 14.79
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
