@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "brian-anunga", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 18:36:24 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785263784', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'a6GE4EnfYJxs-_Q5kTm0FtErQj8dy3sQX1XmqFSp4g0EhMnnNrNEOm2WGJPnRxhV6Asx9-ASaWTwmy8oJkUB2A', 'etag': 'W/"f9eac6beb43e27c66bb9569d85700e7b"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=lD%2B%2Blt%2F%2Fr5O4BC%2BGyVpbjoRvpW8KOFN6G8j8lkFlPZNOjW5TtGZRkyhv1SX5z5TsSoeLFx1ucNkqMJzb9KkvJLCafKK73q3P0%2BdkHMXEOU8B%2B%2F16EyK9Sq5T13l%2FsjIL3i0TH3PgIwesLg1JWRo86srx4thvQE832R3NwCozFJD%2FFGTlV8lImuH0%2FXwOuuvLc2hv5LCHBwncJ3qb7GqrH0S1lsFDklw0ZdWFEaMLxMw7O4kcAjQ9QEiztOG0x4MLhO8pLXkBCMIzeOPd5%2FG2qllfKlbdWbFc58CGsuepESVkmfLT3%2BihR6Kzy3N%2BbrUb--pMKjMHSs46dndiGN--vl7gKndbAG4E2bFheMSBVw%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 18:36:24 GMT; secure; httponly; samesite=none', 'x-request-id': 'b5ec453a-913a-45d4-ab8c-5ba716060edd', 'x-runtime': '0.045561', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 be8b43f893825967d3e4c649e583b4a0.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'FbZhR9vD7aJ5WbZOyFOHYn-WiA1d0wP_f2LqZsx2vhbCW0ZrbSgfaw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:06fadd07-db70-4a7f-ac5c-6d151f390669","score":39.0,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:31035219-e955-47eb-8782-11bb4f49aaca","date":"2026-07-25T23:15:00Z","statusTyped":"played","homeTeam":{"slug":"columbus-crew-columbus-ohio","name":"Columbus Crew","code":"CLB","domesticLeagueRanking":11},"awayTeam":{"slug":"cincinnati-cincinnati-ohio","name":"FC Cincinnati","code":"CIN","domesticLeagueRanking":7},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":5,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:13e300ba-7f52-4361-a4b1-2e59d5733c88","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:b1c6e092-db82-4123-a2e8-22cf37d64ae8","date":"2026-07-22T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"cincinnati-cincinnati-ohio","name":"FC Cincinnati","code":"CIN","domesticLeagueRanking":7},"awayTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_BENCH","gameStarted":null,"minsPlayed":0,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:7ec953b9-adf9-47c9-a7b5-912e8135caaf","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:fdc82e85-d4d8-4507-94e9-0a8cc77c0a66","positionTyped":"Midfielder","projectedScore":40.0,"anyGame":{"id":"Game:7ec953b9-adf9-47c9-a7b5-912e8135caaf","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"cincinnati-cincinnati-ohio","name":"FC Cincinnati","code":"CIN","domesticLeagueRanking":7},"awayTeam":{"slug":"sj-earthquakes-santa-clara-california","name":"San Jose Earthquakes","code":"SJ","domesticLeagueRanking":3},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:bf49e6b4-9fff-47c5-9025-28908278155a","date":"2026-08-04T23:30:00Z","playerGameScore":{"id":"So5Score:d1119449-73b7-46f5-9d94-4e11243ffafa","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:bf49e6b4-9fff-47c5-9025-28908278155a","date":"2026-08-04T23:30:00Z","homeTeam":{"slug":"cincinnati-cincinnati-ohio","name":"FC Cincinnati","code":"CIN","domesticLeagueRanking":7},"awayTeam":{"slug":"pachuca-pachuca-de-soto","name":"CF Pachuca","code":"PAC","domesticLeagueRanking":6},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:b64bf34a-0308-4f59-b151-6ed0be0933d3","date":"2026-08-08T00:00:00Z","playerGameScore":{"id":"So5Score:d69e5c3a-a818-412d-9a03-9cd82211a252","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:b64bf34a-0308-4f59-b151-6ed0be0933d3","date":"2026-08-08T00:00:00Z","homeTeam":{"slug":"cincinnati-cincinnati-ohio","name":"FC Cincinnati","code":"CIN","domesticLeagueRanking":7},"awayTeam":{"slug":"pumas-unam-delegacion-coyoacan-ciudad-de-mexico-d-f","name":"Pumas de la Universidad Nacional Autonoma de Mexico","code":"PUM","domesticLeagueRanking":13},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:5ef4af4a-96e5-4bbc-a445-48acf022ab8a","date":"2026-08-12T00:00:00Z","playerGameScore":{"id":"So5Score:34ac9dd4-d0f0-4321-936f-e8bc84fe3c78","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:5ef4af4a-96e5-4bbc-a445-48acf022ab8a","date":"2026-08-12T00:00:00Z","homeTeam":{"slug":"cincinnati-cincinnati-ohio","name":"FC Cincinnati","code":"CIN","domesticLeagueRanking":7},"awayTeam":{"slug":"atlas-guadalajara","name":"Atlas FC de Guadalajara","code":"ATS","domesticLeagueRanking":2},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:5f58eb35-3cc3-463f-b595-efc18f7f4a69","date":"2026-08-15T23:30:00Z","playerGameScore":{"id":"So5Score:f4fcded4-e34f-4dd4-b8bb-23af61e65924","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:5f58eb35-3cc3-463f-b595-efc18f7f4a69","date":"2026-08-15T23:30:00Z","homeTeam":{"slug":"orlando-city-lake-mary-florida","name":"Orlando City SC","code":"ORL","domesticLeagueRanking":10},"awayTeam":{"slug":"cincinnati-cincinnati-ohio","name":"FC Cincinnati","code":"CIN","domesticLeagueRanking":7},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
