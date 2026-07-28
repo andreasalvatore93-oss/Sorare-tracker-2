@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "walker-zimmerman", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 23:58:00 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785283080', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'ieBaRb75x1ivVLtrkRS7bzqTBfCCR42dfDnrDuUoWJH694QNCkxZ5YJHkKJYwJlShjwxxf9AH-KCxBk0qojmuA', 'etag': 'W/"6ad39ea6368f44f28b026619fba815d0"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=2s2QVXAzdIZxYqsC3XMoFHOLS6cXeUJBiZgsCG%2B18v4Sj%2FXIXNoEgRcvhvMNWG8p1Yxo4yObUmfrpVfqpIQ%2BdyAgDedfa%2F1yryB%2FVaQ0NyoOJXZhZRCoHOxx%2BUZk0cyvB49WT6gOj2Y2vb4KwJf6NQVih%2BmOxR%2BZMiTLRDk%2FY4G2D7Lrrc6cUjAATh8S5lHiB15cIGviIfVPLVEqtkDaR%2FOXLYuOo0AvzUVPGYXNduxZNl17dMNQLxDlXK4gGvqu5Uwstl8lafoAouBHc7B5RebApRGbAk2NoAa8jDaHaFZ1yi7m1dDhj9wKGNsX4kwf--0QUvmWrzIiDF5S%2BK--6o5g9PtvXLGOP8c7vE8JQg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 23:58:00 GMT; secure; httponly; samesite=none', 'x-request-id': '18db7667-656b-4cca-be38-2c414b038d82', 'x-runtime': '0.055285', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 4e65e40699a5e85cdc5b08cf225325c4.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': '8DGczLrq2Jbd8hEFQqaaK6w_iP66dL3dFkIJrEndntlGgm7H8--Uow=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:80cdac0c-acbb-4495-852a-eb6f21ef738c","score":69.86,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:8787284c-673c-4733-baac-ace16348a2b7","date":"2026-07-25T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"dc-united-washington-district-of-columbia","name":"DC United","code":"DC","domesticLeagueRanking":9},"awayTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:fcfc1204-ea35-4e47-a606-9fcd02f63b88","score":50.42,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:fc28d91d-0769-4278-98f5-7b81eb8b14b4","date":"2026-07-22T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"awayTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:5295ebbe-28e6-4651-a58b-ce636991d923","date":"2026-07-31T23:30:00Z","playerGameScore":{"id":"So5Score:598fce00-365f-46a6-a3d3-2cfc10f63597","positionTyped":"Defender","projectedScore":45.0,"anyGame":{"id":"Game:5295ebbe-28e6-4651-a58b-ce636991d923","date":"2026-07-31T23:30:00Z","homeTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"awayTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:11c5d18f-e2eb-4bec-9cd0-d0b82c815418","date":"2026-08-15T23:30:00Z","playerGameScore":{"id":"So5Score:3852e25e-1455-49bb-93e0-7370d14ddadb","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:11c5d18f-e2eb-4bec-9cd0-d0b82c815418","date":"2026-08-15T23:30:00Z","homeTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"awayTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:5c17acb7-05e5-4264-833d-3030a0d23c81","date":"2026-08-19T23:30:00Z","playerGameScore":{"id":"So5Score:af3d6a6e-8289-4737-a15e-a52591bacc28","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:5c17acb7-05e5-4264-833d-3030a0d23c81","date":"2026-08-19T23:30:00Z","homeTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"awayTeam":{"slug":"charlotte-fc-charlotte-north-carolina","name":"Charlotte FC","code":"CLT","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:17a583eb-dfc3-491b-8606-477296e9cd36","date":"2026-08-22T23:30:00Z","playerGameScore":{"id":"So5Score:ae2c8563-3316-4180-915a-6fb27d3367fc","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:17a583eb-dfc3-491b-8606-477296e9cd36","date":"2026-08-22T23:30:00Z","homeTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"awayTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:d89d58ae-dc64-444a-b11f-12267ed97981","date":"2026-08-29T23:30:00Z","playerGameScore":{"id":"So5Score:f5b7307b-d709-41d0-94f7-adfec5b6e2c7","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:d89d58ae-dc64-444a-b11f-12267ed97981","date":"2026-08-29T23:30:00Z","homeTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"awayTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
