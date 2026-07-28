@@ -1083,12 +1083,20 @@ def build_prediction(player_slug):
 
     # Determina la squadra del giocatore dalla partita piu' recente
     player_team_slug = None
-    last_game = usable[-1]['anyGame']
-    # Deduciamo la squadra del giocatore guardando quale delle due non cambia
-    # tra le varie partite: usiamo l'euristica "squadra che compare in tutte le
-    # partite casalinghe e in trasferta piu' di frequente" sui dati raccolti.
+    # FIX (28/07, bug reale trovato durante l'audit): la maggioranza andava
+    # calcolata sull'INTERA finestra storica (fino a 15 partite, ora fino a
+    # 12 mesi) -- un giocatore trasferito a meta' finestra rischiava di
+    # essere attribuito alla squadra VECCHIA se aveva piu' partite li',
+    # sbagliando casa/trasferta, sinergie e avversario. Il commento originale
+    # diceva gia' "dalla partita piu' recente" ma il codice non lo faceva
+    # (last_game veniva assegnata e mai usata). Ora la maggioranza si calcola
+    # SOLO sulle ultime 5 partite (o tutte se meno di 5) -- serve ancora un
+    # piccolo gruppo per disambiguare casa/trasferta dello stesso avversario,
+    # ma la squadra vecchia (games piu' vecchi di 5 partite) non puo' piu'
+    # vincere sulla nuova.
+    _recent_window = usable[-5:] if len(usable) >= 5 else usable
     team_counts = {}
-    for node in usable:
+    for node in _recent_window:
         g = node['anyGame']
         for side in ('homeTeam', 'awayTeam'):
             t = (g.get(side) or {}).get('slug')
