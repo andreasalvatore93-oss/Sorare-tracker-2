@@ -1,0 +1,74 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T17:03:16.058110Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jacob-shaffelburg: 6 pt attesi (3-11)
+   SQUADRA: los-angeles-fc-los-angeles-california | AVVERSARIO: vancouver-whitecaps-vancouver-british-columbia
+======================================================================
+
+######################################################################
+# GIOCATORE: jacob-shaffelburg
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jacob-shaffelburg (squadra: los-angeles-fc-los-angeles-california)
+Generato: 2026-07-28T17:03:16.057228Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-23 | LAFC vs RAP | mlspa | score=39.5 | peso=0.841
+  2026-04-30 | LAFC vs TOL | concacaf-champions-league | score=43.4 | peso=0.891
+  2026-07-18 | LA vs LAFC | mlspa | score=35.8 | peso=0.944
+  2026-07-23 | LAFC vs RSL | mlspa | score=36.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 38.60
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.02, n=4): 46.61 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 3.60 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.11 (delta +0.02) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 3.06
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.8 - 43.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 39.70 | Media score fuori casa: 35.80
+Fattore casa/trasferta applicato: 1.029 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.8
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.767
+Fattore falli (casa/trasferta, da dati reali): 0.928
+Fattore duelli (casa/trasferta, da dati reali): 0.968
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.975
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.022
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.971
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 12.90% (fonte: tasso di presenza storico (4/31))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Vancouver Whitecaps FC | Trasferta: Los Angeles FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 6.2 (range 3.4 - 11.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.49
+Punteggio REALE ottenuto in quella partita: 36.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
