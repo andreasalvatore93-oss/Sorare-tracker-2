@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T16:56:33.151040Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) harry-milne: 30 pt attesi (15-50)
+   ORDINAMENTO: 29.82
+   SQUADRA: hearts-edinburgh | AVVERSARIO: sturm-graz-graz
+======================================================================
+
+######################################################################
+# GIOCATORE: harry-milne
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: harry-milne (squadra: hearts-edinburgh)
+Generato: 2026-07-28T16:56:33.150274Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-03 | HEA vs KIL | premiership-gb-sct | score=66.7 | peso=0.340
+  2025-12-07 | CEL vs HEA | premiership-gb-sct | score=60.0 | peso=0.367
+  2025-12-13 | FAL vs HEA | premiership-gb-sct | score=87.4 | peso=0.397
+  2026-01-03 | HEA vs LIV | premiership-gb-sct | score=66.0 | peso=0.429
+  2026-01-14 | HEA vs STM | premiership-gb-sct | score=61.5 | peso=0.463
+  2026-01-25 | HEA vs CEL | premiership-gb-sct | score=37.6 | peso=0.500
+  2026-01-31 | DUU vs HEA | premiership-gb-sct | score=71.9 | peso=0.540
+  2026-02-03 | STM vs HEA | premiership-gb-sct | score=49.8 | peso=0.583
+  2026-02-10 | HEA vs HIB | premiership-gb-sct | score=91.8 | peso=0.630
+  2026-02-15 | RAN vs HEA | premiership-gb-sct | score=37.3 | peso=0.680
+  2026-02-21 | HEA vs FAL | premiership-gb-sct | score=56.5 | peso=0.735
+  2026-02-28 | HEA vs ABE | premiership-gb-sct | score=54.4 | peso=0.794
+  2026-03-14 | KIL vs HEA | premiership-gb-sct | score=37.8 | peso=0.857
+  2026-05-16 | CEL vs HEA | premiership-gb-sct | score=46.5 | peso=0.926
+  2026-07-21 | STU vs HEA | uefa-champions-league | score=18.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 52.41
+  di cui Punteggio decisivo (level_score) medio: 40.23 | Punteggio complessivo (granulari) medio: 12.17 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +1.19, delta avversario -1.27 | Passaggio condizionato: delta venue +0.71, delta avversario -1.05 | Clean sheet/disimpegni condizionato: delta venue +1.89, delta avversario -1.17 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.3 - 71.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.49 (differenza: +6.14)
+Media score in casa: 62.08 | Media score fuori casa: 51.10
+Fattore casa/trasferta applicato: 0.988 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.9
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.901
+Fattore falli (casa/trasferta, da dati reali): 1.025
+Fattore duelli (casa/trasferta, da dati reali): 1.016
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.021
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.015
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.993
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.980
+Fattore gol subiti (goals_conceded, con cap): 1.017
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.020
+Fattore trend (media ultime 5: 42.6 vs media ultime 10: 50.2): 0.895
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-28T18:45
+Casa: Heart of Midlothian FC | Trasferta: SK Puntigamer Sturm Graz
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 30.2 (range 15.1 - 49.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 29.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.58
+Punteggio REALE ottenuto in quella partita: 18.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -38.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      68.1    71.9     +3.8    18.1        SI
+   7        7      65.4    49.8    -15.6    17.0        SI
+   8        8      62.9    91.8    +28.9    16.8        NO
+   9        9      60.8    37.3    -23.5    20.2        NO
+  10       10      64.6    56.5     -8.1    22.2        SI
+  11       11      59.9    54.4     -5.5    20.8        SI
+  12       12      55.0    37.8    -17.2    19.7        SI
+  13       13      48.1    46.5     -1.5    20.5        SI
+  14       14      43.1    18.0    -25.1    19.8        NO
+
+MAE (errore assoluto medio): 14.36
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

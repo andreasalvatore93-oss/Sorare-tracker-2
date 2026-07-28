@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T16:56:23.931462Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) marco-di-cesare: 36 pt attesi (21-57)
+   ORDINAMENTO: 35.83
+   SQUADRA: racing-club-avellaneda-provincia-de-buenos-aires | AVVERSARIO: rosario-central-rosario-provincia-de-santa-fe
+======================================================================
+
+######################################################################
+# GIOCATORE: marco-di-cesare
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marco-di-cesare (squadra: racing-club-avellaneda-provincia-de-buenos-aires)
+Generato: 2026-07-28T16:56:23.930890Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 21
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-07 | BOC vs RAC | superliga-argentina-de-futbol | score=68.4 | peso=0.340
+  2026-01-28 | RAC vs ROS | superliga-argentina-de-futbol | score=31.4 | peso=0.367
+  2026-02-07 | RAC vs ARG | superliga-argentina-de-futbol | score=34.3 | peso=0.397
+  2026-02-14 | BAN vs RAC | superliga-argentina-de-futbol | score=83.6 | peso=0.429
+  2026-02-20 | BOC vs RAC | superliga-argentina-de-futbol | score=71.2 | peso=0.463
+  2026-02-26 | RAC vs IND | superliga-argentina-de-futbol | score=62.5 | peso=0.500
+  2026-03-04 | TUC vs RAC | superliga-argentina-de-futbol | score=42.1 | peso=0.540
+  2026-03-11 | SAR vs RAC | superliga-argentina-de-futbol | score=35.0 | peso=0.583
+  2026-03-22 | BEL vs RAC | superliga-argentina-de-futbol | score=70.5 | peso=0.630
+  2026-04-04 | IND vs RAC | superliga-argentina-de-futbol | score=40.5 | peso=0.680
+  2026-04-12 | RAC vs RIV | superliga-argentina-de-futbol | score=37.9 | peso=0.735
+  2026-04-25 | RAC vs BAC | superliga-argentina-de-futbol | score=47.6 | peso=0.794
+  2026-05-03 | RAC vs HUR | superliga-argentina-de-futbol | score=61.8 | peso=0.857
+  2026-05-10 | EST vs RAC | superliga-argentina-de-futbol | score=63.1 | peso=0.926
+  2026-05-13 | ROS vs RAC | superliga-argentina-de-futbol | score=20.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 49.91
+  di cui Punteggio decisivo (level_score) medio: 34.44 | Punteggio complessivo (granulari) medio: 15.48 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.66, delta avversario -0.41 | Passaggio condizionato: delta venue +0.19, delta avversario +0.25 | Clean sheet/disimpegni condizionato: delta venue +1.06, delta avversario -0.73 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.56
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.3 - 70.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.78 (differenza: +3.79)
+Media score in casa: 45.91 | Media score fuori casa: 55.00
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.092
+Fattore falli (casa/trasferta, da dati reali): 0.988
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.015
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.009
+Fattore gol subiti (goals_conceded, con cap): 1.024
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.021
+Fattore trend (media ultime 5: 46.2 vs media ultime 10: 48.2): 0.972
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T00:15
+Casa: CA Rosario Central | Trasferta: Racing Club de Avellaneda
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 36.2 (range 20.6 - 56.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 35.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.46
+Punteggio REALE ottenuto in quella partita: 20.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -32.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.8    42.1    -22.7    22.6        NO
+   7        7      62.1    35.0    -27.1    22.0        NO
+   8        8      40.5    70.5    +30.0    22.2        NO
+   9        9      44.0    40.5     -3.5    21.8        SI
+  10       10      49.4    37.9    -11.5    21.2        SI
+  11       11      36.4    47.6    +11.2    20.8        SI
+  12       12      34.1    61.8    +27.7    19.5        NO
+  13       13      39.4    63.1    +23.7    18.8        NO
+  14       14      60.5    20.7    -39.9    18.2        NO
+
+MAE (errore assoluto medio): 21.93
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 33.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
