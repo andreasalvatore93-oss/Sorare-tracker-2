@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T17:04:25.564653Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) ousseni-bouda: 45 pt attesi (26-59)
+   SQUADRA: sj-earthquakes-santa-clara-california | AVVERSARIO: cincinnati-cincinnati-ohio
+======================================================================
+
+######################################################################
+# GIOCATORE: ousseni-bouda
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ousseni-bouda (squadra: sj-earthquakes-santa-clara-california)
+Generato: 2026-07-28T17:04:25.563605Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 17
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | SJ vs SKC | mlspa | score=46.9 | peso=0.445
+  2026-03-01 | SJ vs ATL | mlspa | score=60.0 | peso=0.472
+  2026-03-08 | PHI vs SJ | mlspa | score=64.5 | peso=0.500
+  2026-03-15 | SJ vs SEA | mlspa | score=40.6 | peso=0.530
+  2026-03-22 | VAN vs SJ | mlspa | score=36.1 | peso=0.561
+  2026-04-05 | SJ vs SD | mlspa | score=45.8 | peso=0.595
+  2026-04-12 | SKC vs SJ | mlspa | score=38.7 | peso=0.630
+  2026-04-19 | LAFC vs SJ | mlspa | score=71.8 | peso=0.667
+  2026-04-23 | SJ vs ATX | mlspa | score=95.1 | peso=0.707
+  2026-05-02 | TOR vs SJ | mlspa | score=38.4 | peso=0.749
+  2026-05-10 | SJ vs VAN | mlspa | score=31.6 | peso=0.794
+  2026-05-17 | SJ vs DAL | mlspa | score=64.6 | peso=0.841
+  2026-05-24 | POR vs SJ | mlspa | score=29.4 | peso=0.891
+  2026-07-23 | SJ vs ORL | mlspa | score=51.9 | peso=0.944
+  2026-07-26 | SJ vs LA | mlspa | score=46.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 50.32
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.02, n=15): 51.00 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 41.33 | Punteggio complessivo (granulari) medio: 9.00 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.28 (delta -0.89) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.33
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.6 - 64.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.08 (differenza: +5.25)
+Media score in casa: 53.64 | Media score fuori casa: 46.48
+Fattore casa/trasferta applicato: 1.010 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.903
+Fattore falli (casa/trasferta, da dati reali): 0.984
+Fattore duelli (casa/trasferta, da dati reali): 0.966
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.976
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.971
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.990
+Fattore trend (media ultime 5: 44.8 vs media ultime 10: 51.4): 0.871
+P(gioca): 88.24% (fonte: tasso di presenza storico (15/17))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: FC Cincinnati | Trasferta: San Jose Earthquakes
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.6 (range 25.9 - 58.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.76
+Punteggio REALE ottenuto in quella partita: 46.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.2    38.7    -14.5    14.1        NO
+   7        7      31.8    71.8    +40.0    13.9        NO
+   8        8      59.5    95.1    +35.6    17.9        NO
+   9        9      54.0    38.4    -15.6    27.2        SI
+  10       10      42.6    31.6    -11.0    26.8        SI
+  11       11      47.7    64.6    +16.9    27.2        SI
+  12       12      60.4    29.4    -31.0    26.2        NO
+  13       13      58.4    51.9     -6.5    26.8        SI
+  14       14      49.1    46.3     -2.8    25.5        SI
+
+MAE (errore assoluto medio): 19.33
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
