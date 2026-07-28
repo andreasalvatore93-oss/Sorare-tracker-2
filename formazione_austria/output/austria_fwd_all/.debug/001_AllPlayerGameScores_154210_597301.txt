@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "johannes-eggestein", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 15:42:10 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785253330', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'EiJNSdek2ejx6_bxTlX9igNAqWK0G-UrpXISHXbkSu4DLJ2WPOBq3BCFaQW00mwnyYWjOyA3BWb00QbjeNUXMA', 'etag': 'W/"7fa799a1189447bd9f6798ca5dfc29bb"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=vW3rqlbUITySQfGYSRAFdA2hHPC5iAWeHqLpNn7bxB2tFU32PHZSgVv5D%2FIJXcwD9%2Bqp%2BiG56FVcNXqzNUUISCZA%2Bd3IuFLMP7tIla4JSNGLqE2ToT4LB%2BSipSCrpPWQI8NV315RVst5EhV5vETpGS06fc%2F0FXBV3BARwFVsbA%2BeSC7%2B%2BCEj69SgeOXztiBt3Zj8lDiokn2tuK8MPQ%2BkApPBSX17Aw9ZKuolIbJROzlFiA1jFReNKFv3OTnee8Kqxtf9gC%2F9Gsn%2FkpRv7fnsjEdSJSMyeG6DRxmjVfRDclfdp2fmmfdUMU6E%2FG7ztdwB--wfw%2FhicV0Y%2B%2BauQZ--xUmyH11Su9a0JzTMLkm3rw%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 15:42:10 GMT; secure; httponly; samesite=none', 'x-request-id': '75848067-95f5-4f9c-bf18-a4ecea155f02', 'x-runtime': '0.067599', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 7b7ed180a68f72f1dd6bcc5c75fd0210.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': 'hcN2I8kVTXmp7Y06AFduqn2oN6lRCDz6FLaqG9FRLOT6q2JJz45QKw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:1b1cd5a5-fb61-4a35-91d5-cf51078a5128","score":31.6,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:23f6bd2a-a146-4bd7-856a-d395b609b84b","date":"2026-07-23T15:00:00Z","statusTyped":"played","homeTeam":{"slug":"liepaja-liepaja","name":"FK Liepāja","code":"LIE","domesticLeagueRanking":null},"awayTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":72,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:56f29696-d0d0-426b-9246-16de10041826","score":37.4,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:a0aa31b0-9c84-4101-82f9-ed591c0c7558","date":"2026-05-17T12:30:00Z","statusTyped":"played","homeTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"awayTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:7c1b502c-cc7b-497c-9be5-7e42bb7d0ff4","date":"2026-07-30T18:30:00Z","playerGameScore":{"id":"So5Score:6249ddc3-fae7-474b-ab2f-382489fedf01","positionTyped":"Forward","projectedScore":50.0,"anyGame":{"id":"Game:7c1b502c-cc7b-497c-9be5-7e42bb7d0ff4","date":"2026-07-30T18:30:00Z","homeTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"awayTeam":{"slug":"liepaja-liepaja","name":"FK Liepāja","code":"LIE","domesticLeagueRanking":null},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":9000,"reliability":"MEDIUM"}}}},{"id":"Game:913a1cae-9a3c-478d-8a4f-8312170bbf28","date":"2026-08-02T15:00:00Z","playerGameScore":{"id":"So5Score:98706652-a0e2-4186-8d01-db7c32f06c1f","positionTyped":"Forward","projectedScore":49.0,"anyGame":{"id":"Game:913a1cae-9a3c-478d-8a4f-8312170bbf28","date":"2026-08-02T15:00:00Z","homeTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"awayTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:77aaf6ed-d81d-436c-9e03-b4faa9ace9b1","date":"2026-08-09T17:00:00Z","playerGameScore":{"id":"So5Score:4d80ecce-bfab-440b-8148-e15a3ad21905","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:77aaf6ed-d81d-436c-9e03-b4faa9ace9b1","date":"2026-08-09T17:00:00Z","homeTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"awayTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:d577eac3-fdb5-4e9c-8f72-33f1aa1ad61c","date":"2026-08-16T15:00:00Z","playerGameScore":{"id":"So5Score:41fd1b91-2966-49f6-9079-7669f94ad8bd","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:d577eac3-fdb5-4e9c-8f72-33f1aa1ad61c","date":"2026-08-16T15:00:00Z","homeTeam":{"slug":"hartberg-hartberg","name":"TSV Egger Glas Hartberg","code":"HTB","domesticLeagueRanking":6},"awayTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:b5b68899-a70a-4cb8-b25b-51bc0fc0583d","date":"2026-08-23T15:00:00Z","playerGameScore":{"id":"So5Score:6a9752bf-dd9e-470a-a211-f7ff04185245","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:b5b68899-a70a-4cb8-b25b-51bc0fc0583d","date":"2026-08-23T15:00:00Z","homeTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"awayTeam":{"slug":"wattens-wattens","name":"WSG Tirol","code":"WSG","domesticLeagueRanking":7},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}

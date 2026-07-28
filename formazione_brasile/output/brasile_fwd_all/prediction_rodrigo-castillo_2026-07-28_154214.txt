@@ -1,0 +1,96 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T15:42:14.781166Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) rodrigo-castillo: 6 pt attesi (0-31)
+   SQUADRA: lanus-lanus-provincia-de-buenos-aires | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: rodrigo-castillo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rodrigo-castillo (squadra: lanus-lanus-provincia-de-buenos-aires)
+Generato: 2026-07-28T15:42:14.780636Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-22 | LAN vs CAM | conmebol-sudamericana | score=28.7 | peso=0.530
+  2025-11-27 | LAN vs TIG | superliga-argentina-de-futbol | score=49.9 | peso=0.561
+  2026-01-23 | SLO vs LAN | superliga-argentina-de-futbol | score=70.2 | peso=0.595
+  2026-01-29 | LAN vs UNI | superliga-argentina-de-futbol | score=69.4 | peso=0.630
+  2026-02-04 | INS vs LAN | superliga-argentina-de-futbol | score=87.3 | peso=0.667
+  2026-02-09 | LAN vs CAT | superliga-argentina-de-futbol | score=43.3 | peso=0.707
+  2026-03-21 | FLU vs CAM | campeonato-brasileiro-serie-a | score=65.1 | peso=0.749
+  2026-04-04 | CBA vs FLU | campeonato-brasileiro-serie-a | score=26.3 | peso=0.794
+  2026-04-16 | FLU vs IND | conmebol-libertadores | score=40.7 | peso=0.841
+  2026-04-19 | SAN vs FLU | campeonato-brasileiro-serie-a | score=78.6 | peso=0.891
+  2026-04-26 | FLU vs CHA | campeonato-brasileiro-serie-a | score=50.2 | peso=0.944
+  2026-05-07 | IND vs FLU | conmebol-libertadores | score=35.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 53.21
+  di cui Punteggio decisivo (level_score) medio: 46.66 | Punteggio complessivo (granulari) medio: 6.55 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.40 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.2 - 78.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.87 (differenza: +3.16)
+Media score in casa: 47.83 | Media score fuori casa: 78.75
+Fattore casa/trasferta applicato: 1.061 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.0
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 1.013
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.048
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.063
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 46.2 vs media ultime 10: 56.6): 0.816
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T00:30
+Casa: Fluminense FC | Trasferta: EC Bahia
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 5.6 (range 0.0 - 31.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.49
+Punteggio REALE ottenuto in quella partita: 35.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -20.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      67.7    65.1     -2.6    27.1        SI
+   7        7      69.2    26.3    -42.9    24.9        NO
+   8        8      65.8    40.7    -25.1    28.5        SI
+   9        9      64.4    78.6    +14.2    27.3        SI
+  10       10      61.6    50.2    -11.4    28.2        SI
+  11       11      59.1    35.2    -23.9    26.6        SI
+
+MAE (errore assoluto medio): 20.03
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 83.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
