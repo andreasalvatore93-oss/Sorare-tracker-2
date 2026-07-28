@@ -20,7 +20,7 @@ query Diagnostica($slug: String!) {
   anyPlayer(slug: $slug) {
     slug
     displayName
-    birthDate
+    birthDay
     activeClub {
       name
       domesticLeague { slug displayName }
@@ -48,6 +48,39 @@ query Diagnostica($slug: String!) {
 """
 
 
+XP_PROBE_QUERY = """
+query XpProbe($userSlug: String!) {
+  user(slug: $userSlug) {
+    searchCards(rarity: limited, sport: FOOTBALL, query: "", page: 1, pageSize: 3,
+                sorts: [{field: "user_owner.from", direction: DESC}]) {
+      hits {
+        slug
+        inSeasonEligible
+        xp
+        xpBonus
+        bonus
+        power
+        cardLevel
+        anyPlayer { slug displayName }
+      }
+    }
+  }
+}
+"""
+
+
+def probe_xp():
+    print("\n" + "=" * 78)
+    print("PROBE XP su carte possedute")
+    print("=" * 78)
+    data = base.graphql_query(XP_PROBE_QUERY, {"userSlug": base.USER_SLUG}, operation_name="XpProbe")
+    if data.get('errors'):
+        print("ERRORI GraphQL:", json.dumps(data['errors'], indent=2)[:2000])
+    hits = ((data.get('data') or {}).get('user') or {}).get('searchCards', {}).get('hits') or []
+    for h in hits:
+        print(json.dumps(h, indent=2))
+
+
 def main():
     slugs = [s.strip() for s in os.environ.get('SLUGS', 'inaki-pena').split(',') if s.strip()]
     for slug in slugs:
@@ -67,7 +100,7 @@ def main():
             continue
         club = p.get('activeClub') or {}
         dl = club.get('domesticLeague') or {}
-        print(f"nome: {p.get('displayName')}")
+        print(f"nome: {p.get('displayName')} | birthDay: {p.get('birthDay')}")
         print(f"club: {club.get('name')} | domesticLeague: {dl.get('slug') or 'NESSUNA'}")
         nodes = (p.get('anyFutureGames') or {}).get('nodes') or []
         print(f"partite future restituite: {len(nodes)}")
@@ -83,3 +116,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    probe_xp()
