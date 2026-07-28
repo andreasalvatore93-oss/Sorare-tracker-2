@@ -3231,3 +3231,16 @@ piccolo (discovery già a ~1 minuto, il pavimento pratico è probabilmente il ch
 di ogni job GitHub Actions, ~15-20s fissi per job, che con troppi job comincia a pesare più del
 lavoro utile). Se in futuro si vuole andare oltre, valutare prima di ridurre l'overhead fisso per
 job (es. cache pip) piuttosto che aumentare ancora il numero di shard.
+
+## 30.M — TEST v4 IN CORSO (28/07, sera, "ultimo test promesso"): 24 job discovery + max-parallel 28
+
+**ATTENZIONE se questa sezione è ancora qui SENZA un esito: il test è stato interrotto a metà
+sessione. Controllare `gh run list --workflow formazione_giornata.yml` prima di continuare.**
+
+Dopo v3 (30.L: 12 job, 4m21s, zero 429), richiesto un raddoppio totale per vedere il limite
+pratico: **24 job discovery** (GK×4, DEF×8, MID×8, FWD×4, stesso principio di sharding
+proporzionale) + **max-parallel predict a 28** (doppio di 14). Generato via script Python come i
+test precedenti, verificato con `yaml.safe_load` prima di applicare.
+
+**Come ripristinare se fallisce**: `git log` + revert/checkout del commit "TEST v4" / "24 job
+discovery" per tornare a v3 (12 job, 30.L), già confermata stabile.
