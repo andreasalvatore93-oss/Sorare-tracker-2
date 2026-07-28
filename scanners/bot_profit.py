@@ -364,9 +364,17 @@ def eur_price_from_amounts(amounts, eth_rate):
 # nell'ultima run -- ~30% finite in retry con backoff): alzato da 0.15 a 0.25s.
 # Ritmo base piu' lento ma meno 429 = meno tempo perso nei backoff (2s/4s/8s
 # per tentativo) e meno finestre di 45s a ritmo SAFE (0.6s) dopo ogni 429.
-GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.25'))
-GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.6'))
-GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '45.0'))
+#
+# FIX 29/07 (richiesta esplicita utente: priorita' e' accorciare la durata
+# della run, un po' di 429 in piu' sono accettabili): la run del 27/07 ha
+# mostrato 2 minuti filati di 429 anche a ritmo SAFE 0.6s -- il ritmo "sicuro"
+# non evitava comunque i 429 durante una finestra di penalita' sostenuta, quindi
+# non ha senso pagarne il costo pieno in throughput. Riabbassato FAST a 0.15s
+# e SAFE a 0.3s, e accorciata la finestra di penalita' da 45s a 20s cosi' si
+# torna al ritmo veloce piu' in fretta una volta finiti i 429.
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.15'))
+GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.3'))
+GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '20.0'))
 _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
@@ -410,7 +418,12 @@ def graphql_query(query, variables=None, max_retries=3):
         r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             _graphql_last_429_ts[0] = time.time()
-            wait_seconds = min((2 ** attempt) * 2, 16.0)
+            # FIX 29/07: backoff dimezzato (era (2**attempt)*2, cap 16s) -- la
+            # run del 27/07 mostrava che il backoff lungo non evitava comunque
+            # i 429 successivi durante una finestra di penalita' sostenuta, era
+            # solo tempo perso. Meglio ritentare prima e accettare qualche 429
+            # in piu' pur di accorciare la run (richiesta esplicita utente).
+            wait_seconds = min((2 ** attempt) * 1, 8.0)
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), attendo {wait_seconds:.1f}s...")
             time.sleep(wait_seconds)
             continue
