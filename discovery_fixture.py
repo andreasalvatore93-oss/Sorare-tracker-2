@@ -349,17 +349,18 @@ def main():
                 if h.get('u23Eligible'):
                     u23_di[p['slug']] = True
                 # Bonus xp/collezione/stagione (28/07, richiesta esplicita
-                # utente: il bot non li considerava affatto nello schieramento
-                # -- da qui in poi solo RACCOLTA dato, l'integrazione nello
-                # score e' un passo successivo, ancora da progettare). Vive
-                # sulla CARTA, stessa query di u23Eligible, zero costo in piu'.
-                # Season/collection/xp contano SOLO in In Season/All Stars
-                # (7 e U23), MAI nelle Arene (dove xp=0 di default per tutti,
-                # solo il capitano ha un bonus fisso) -- quella distinzione va
-                # applicata a valle, qui si salva il dato grezzo per tutti.
+                # utente): vive sulla CARTA, stessa query di u23Eligible, zero
+                # costo in piu'. Season/collection/xp contano SOLO in In
+                # Season/All Stars (7 e U23), MAI nelle Arene (confermato
+                # dall'utente: nelle Arene tutti i bonus sono a 0, solo il
+                # capitano ha il suo +20% fisso) -- quella distinzione si
+                # applica a valle nello score, qui si salva il dato grezzo.
+                # Se il giocatore ha piu' carte possedute con bonus diversi,
+                # tiene quella col bonus TOTALE piu' alto (confermato
+                # dall'utente: ha senso prendere la migliore disponibile).
                 pb = h.get('powerBreakdown') or {}
                 if pb or h.get('xp') is not None:
-                    power_di[p['slug']] = {
+                    candidato = {
                         'xp': h.get('xp'),
                         'season_bp': pb.get('seasonBasisPoints'),
                         'collection_bp': pb.get('collectionBasisPoints'),
@@ -370,6 +371,11 @@ def main():
                         'nationality_bp': pb.get('nationalityBasisPoints'),
                         'positions_bp': pb.get('positionsBasisPoints'),
                     }
+                    tot_candidato = sum(v or 0 for k, v in candidato.items() if k.endswith('_bp'))
+                    tot_attuale = sum(v or 0 for k, v in (power_di.get(p['slug']) or {}).items()
+                                      if k.endswith('_bp'))
+                    if p['slug'] not in power_di or tot_candidato > tot_attuale:
+                        power_di[p['slug']] = candidato
             if page >= (s.get('nbPages') or 1):
                 break
             page += 1

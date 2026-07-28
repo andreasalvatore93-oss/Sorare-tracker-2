@@ -462,6 +462,7 @@ class CardPool:
     def __init__(self, counts_by_role, names=None):
         self._total = {}
         self._l10 = {}
+        self._power = {}
         for role, counts in counts_by_role.items():
             for slug, breakdown in counts.items():
                 cur = self._total.setdefault(slug, {'in_season': 0, 'classic': 0})
@@ -470,6 +471,9 @@ class CardPool:
                 l10 = breakdown.get('l10')
                 if l10 is not None:
                     self._l10[slug] = l10
+                power = breakdown.get('power')
+                if power is not None:
+                    self._power[slug] = power
         self._names = names or {}
         self._used = {}
 
@@ -503,6 +507,20 @@ class CardPool:
         mai persistita (dato mancante -- vedi ARENA_L10_CAP, trattata come 0
         nel calcolo del budget, mai come esclusione)."""
         return self._l10.get(slug)
+
+    def power_bonus_fraction(self, slug):
+        """Somma dei basis points del powerBreakdown Sorare (season/collection/
+        xp/scarcity/special edition/active clubs/nationality/positions) per
+        slug, come frazione (es. 1000 basis points -> 0.10). 0.0 se il dato
+        non e' stato raccolto (giocatore mai visto in una CARDS_QUERY, o
+        senza carta con bonus noto) -- MAI un'esclusione, solo nessun
+        moltiplicatore extra. Il chiamante decide se applicarla (28/07:
+        SOLO In Season/All Stars 7/Under 23, mai nelle Arene, confermato
+        dall'utente -- vedi XP_BONUS_TYPES in build_formazione_globale.py)."""
+        pb = self._power.get(slug)
+        if not pb:
+            return 0.0
+        return sum(v or 0 for k, v in pb.items() if k.endswith('_bp')) / 10000.0
 
     def used_slugs(self):
         """Slug con almeno una copia consumata in una qualunque formazione
