@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "jeppe-tverskov", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:43:24 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785267804', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'v_Ma7G6sd-rmNcfWxddnrPJDruo5Lp6duCK868cfYmY8E3uId-yP2z6EFLntdOq0jHG33O2MpXmH8KXqr_Wyhg', 'etag': 'W/"ac9e3eca9ffe80dab2a61e31d8000964"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=zXRO0iejYxjS8UBRhugLaqF9VNL1KlDPxKMxbmjox7Io5BbafXlEIorO9wPyi5GhXRijjj9lLb9zBiDOQtCEwSvhQzztZAt%2BMEGmhUlQ2Lc8fdxVsJTvUEFIFw4WNBGzWLOASlbDY2AYnGNKP0VNeXhgvCYspA3lzKo8vo5YEVQzdnUO3pVUdm%2FQl1ihXFHGuLmnlcqNsfY1epqXcJVjfp8A%2FYGxUQSsYtZagDHtpMQYRNQq0hFbJz9blW6tQS%2BY5K1U05AJEE048IazAn%2FGhnACqxXWGl228G6LkkCii17dWSnpfFTj4KQ4IYXn4zeV--j3jM7dXN7%2Bh%2FfpiM--oXD2kWOv733Y7vMPfAbaog%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:43:24 GMT; secure; httponly; samesite=none', 'x-request-id': '80166db8-ad05-471f-951b-3593ad5cbe16', 'x-runtime': '0.052531', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 00f06a69591175d4912909a93b231ea8.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'BzWoeV72eUqlm_BuhI2WWCXr8sX04ZZek8RQKpl8JkDXF8rSMmdmiQ=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:a67bc434-53db-44b6-9e86-085883ff92d5","score":68.6,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:bb064691-ac68-45c8-ba03-fef559215c99","date":"2026-07-26T01:30:00Z","statusTyped":"played","homeTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"awayTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:82710e56-a83f-4e82-becd-52c9e965eb0e","score":42.7,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:a007156d-3a47-4f3e-932e-bd7edb22aacf","date":"2026-07-23T01:30:00Z","statusTyped":"played","homeTeam":{"slug":"colorado-rapids-denver-colorado","name":"Colorado Rapids","code":"RAP","domesticLeagueRanking":13},"awayTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:6554dccc-251e-4df2-9df0-ce8c676883b0","date":"2026-08-02T00:30:00Z","playerGameScore":{"id":"So5Score:32273024-09d6-49dc-b72a-963b6fd465ed","positionTyped":"Midfielder","projectedScore":56.0,"anyGame":{"id":"Game:6554dccc-251e-4df2-9df0-ce8c676883b0","date":"2026-08-02T00:30:00Z","homeTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"awayTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:b840c5e5-093c-41ea-8fba-47f2d5eceda8","date":"2026-08-07T02:00:00Z","playerGameScore":{"id":"So5Score:c3ee27e4-6b36-4137-8b50-328f13e02bb7","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:b840c5e5-093c-41ea-8fba-47f2d5eceda8","date":"2026-08-07T02:00:00Z","homeTeam":{"slug":"america-ciudad-de-mexico-d-f","name":"Club América","code":"AME","domesticLeagueRanking":5},"awayTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:ea2529dd-d41e-4e5c-860e-164111ab51db","date":"2026-08-10T02:00:00Z","playerGameScore":{"id":"So5Score:c1b2f1ce-2a12-4d35-8618-a1cf93dea5fe","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:ea2529dd-d41e-4e5c-860e-164111ab51db","date":"2026-08-10T02:00:00Z","homeTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"awayTeam":{"slug":"tijuana-tijuana","name":"Club Tijuana Xoloitzcuintles de Caliente","code":"TIJ","domesticLeagueRanking":1},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:5087a45e-43f6-43b4-b646-d3372ed0d896","date":"2026-08-13T02:15:00Z","playerGameScore":{"id":"So5Score:0097d940-da99-4a51-8b68-5f83ed966f5d","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:5087a45e-43f6-43b4-b646-d3372ed0d896","date":"2026-08-13T02:15:00Z","homeTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"awayTeam":{"slug":"puebla-puebla","name":"Puebla FC","code":"PUE","domesticLeagueRanking":9},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:98ff9409-3409-4af0-8ace-b29c0ca28688","date":"2026-08-16T02:30:00Z","playerGameScore":{"id":"So5Score:89d52b94-3a29-41dd-bdb8-4a2dc69b3f75","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:98ff9409-3409-4af0-8ace-b29c0ca28688","date":"2026-08-16T02:30:00Z","homeTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"awayTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
