@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "samuele-vignato", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 21:53:09 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785275589', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'kOxfnS7MS-pjH-lpqW_5yYcv3_t7lXs8GdX9GBKoAcp8Ao7C1wMmvtseU9-0xwdeywxVkL7g4BiVD8OnRO3J-A', 'etag': 'W/"28baf658fefbb17de4db1b477aee7130"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=qQXtiodeKPIyCGoaGbcU7bIga%2BxhHSdTjYWczP0tkQjyrxicWOHs6kYSF5W643jOdYY9xfzAjLX7t25oKZeEz8zh7t7qq1Acdyx%2BAZLLXTQhWhUt7mUfsVMgBrRWEA2ucZzb%2BuOZi2p7VB9TgzlZ7z7M0Piojl7fCG9FBZpgrefKG0ir5EpwIEGBkt7JxqVTKpr2wRPsmgSPch1gpTOgpZY3fRterenVyijm0FK7e5AaZcYehWGDl0A%2BjJ6oaiJlLklX1c1fNCDAmJASWVG5y8Mku1fi9T11M3G2CPMvz%2FRRK0Ad4XYxvVZfioajGo0U--G9tgO6abzQhkneXn--JIsAyEyXlBlwwJdJSJFyEA%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 21:53:09 GMT; secure; httponly; samesite=none', 'x-request-id': '6884b9f4-2673-48c2-bf43-60beca5afb3b', 'x-runtime': '0.057223', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 ee30ad75b0d5067a56c4e84f3f168abe.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': 'iN_b8tXXLY8dHFrnd4F9Br1AOclbOE7plzIuaHZ-kFIXW0kiez__hw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:97894bdd-aaf2-4882-9d37-e645bcdb8237","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:da3797c3-a6ae-45ec-96b9-0c40810785c3","date":"2026-07-23T18:45:00Z","statusTyped":"played","homeTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"awayTeam":{"slug":"derry-city-derry","name":"Derry City FC","code":"DER","domesticLeagueRanking":null},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"fieldStatus":"ON_BENCH","gameStarted":null,"minsPlayed":0,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:cef68a76-d556-4422-8510-f0f5255bddb1","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:ab28f836-d0bd-4655-bba3-0036f88d5773","date":"2026-05-23T14:00:00Z","statusTyped":"played","homeTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"awayTeam":{"slug":"gorica-velika-gorica","name":"HNK Gorica","code":"GOR","domesticLeagueRanking":7},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:152499c3-a823-4321-a33a-c5016c5c3522","date":"2026-07-30T17:30:00Z","playerGameScore":{"id":"So5Score:3be39c7c-41bb-4050-a426-9836d709ce3a","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:152499c3-a823-4321-a33a-c5016c5c3522","date":"2026-07-30T17:30:00Z","homeTeam":{"slug":"derry-city-derry","name":"Derry City FC","code":"DER","domesticLeagueRanking":null},"awayTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:9fce5e99-455b-4c9d-8e05-90e351da6db8","date":"2026-08-02T19:00:00Z","playerGameScore":{"id":"So5Score:ae77e5bc-f021-41ad-abee-fda1bf7442c6","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:9fce5e99-455b-4c9d-8e05-90e351da6db8","date":"2026-08-02T19:00:00Z","homeTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"awayTeam":{"slug":"rudes-zagreb","name":"NK Rudeš Zagreb","code":"RUD","domesticLeagueRanking":10},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:ca99fb15-2687-439d-8f47-ed7eec06393f","date":"2026-08-08T00:00:00Z","playerGameScore":{"id":"So5Score:6edde813-d576-4f14-98fc-7258806ae309","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:ca99fb15-2687-439d-8f47-ed7eec06393f","date":"2026-08-08T00:00:00Z","homeTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"awayTeam":{"slug":"dinamo-zagreb-zagreb","name":"GNK Dinamo Zagreb","code":"DIN","domesticLeagueRanking":1},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:acf225f2-57e1-4724-b90e-675c1111b4cc","date":"2026-08-15T00:00:00Z","playerGameScore":{"id":"So5Score:a014970f-c367-4523-98be-e1c69025b40f","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:acf225f2-57e1-4724-b90e-675c1111b4cc","date":"2026-08-15T00:00:00Z","homeTeam":{"slug":"varazdin-varazdin","name":"NK Varaždin","code":"VAR","domesticLeagueRanking":3},"awayTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:dc8fd577-4e9d-4080-94fe-03ecce299e06","date":"2026-08-22T00:00:00Z","playerGameScore":{"id":"So5Score:ced3cd60-8cbf-4ae8-98df-65f1a2b769e6","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:dc8fd577-4e9d-4080-94fe-03ecce299e06","date":"2026-08-22T00:00:00Z","homeTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"awayTeam":{"slug":"istra-1961-pula","name":"NK Istra 1961","code":"IST","domesticLeagueRanking":6},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
