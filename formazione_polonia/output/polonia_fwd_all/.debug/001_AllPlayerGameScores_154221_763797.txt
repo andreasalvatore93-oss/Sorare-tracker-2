@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "allahyar-sayyadmanesh", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 15:42:21 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785253341', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': '7G1nlDRAhHRzWS8Bxsi659qvHLtnC8dd5uvWqwl3rEE43oy11Wz2zjOLdqHDJrm6Czii32K5xg7Tno3fEEkgRw', 'etag': 'W/"1bc8a8ed42cec7fe7234ec511871e785"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=5IU031f9jJwTB5TYRPxMw07vxeOGbWxD%2Fm1Z3AEpyADdTV9k7cm%2FEwNt5qIZNXd4nacSObmqwKlX4HF3p57gJxTbkmw%2Bc6I1sXr8SPqH1W9yPlONpZgL04d0alWJMdWQP8U%2BzQB6c1Ds9rXkse9Vsa6FQGjecy5okclkTMOkMsa0hdHv3kLGVPCRsztXhwZrRGohWVIOHo%2FcrgBpHh1NnvrewfckV%2FGlnLY5vrmhM8CPfoAKG7KYEdE92ftI7XX%2FFJtsHSwXeokO6pUNUqoo8SQDZ57jC10g%2F0S1P1oolH2YaMwIdac7%2BK6NHSlVlK%2BV--7E%2Bl7cUsQhbyRhx2--LFa1ZPYH%2F0KZZvRL2gBgww%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 15:42:21 GMT; secure; httponly; samesite=none', 'x-request-id': '88c36460-4d57-4431-8540-a5b389149e12', 'x-runtime': '0.047367', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 92141bfcb2216a30c23e70b82ad530aa.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'ORD58-P3', 'x-amz-cf-id': '6OsTuvQlUP1iOfo-pVShjsUp5hlEbsc3VZskq7fGofW9REwFUvd24w=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:cd22d5ad-fd4c-4f47-89bd-63a3d38e7dc7","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Forward","anyGame":{"id":"Game:52a10fa4-a465-4a27-b728-bc9fad9bd5be","date":"2026-07-21T17:00:00Z","statusTyped":"played","homeTeam":{"slug":"agf-arhus","name":"Aarhus Gymnastikforening","code":"AGF","domesticLeagueRanking":7},"awayTeam":{"slug":"lech-poznan-poznan","name":"KKS Lech Poznań","code":"LPO","domesticLeagueRanking":null},"competition":{"slug":"uefa-champions-league"}},"anyPlayerGameStats":{"fieldStatus":"ON_BENCH","gameStarted":null,"minsPlayed":0,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:48ca4b86-5efd-429b-9c7d-908328f21005","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Forward","anyGame":{"id":"Game:4c9a01d9-d3d8-4374-a214-c6dbbabed53f","date":"2026-05-23T18:45:00Z","statusTyped":"played","homeTeam":{"slug":"antwerp-deurne","name":"Royal Antwerp FC","code":"ANT","domesticLeagueRanking":10},"awayTeam":{"slug":"westerlo-westerlo","name":"KVC Westerlo","code":"WES","domesticLeagueRanking":4},"competition":{"slug":"jupiler-pro-league"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:039c993e-7f7b-4c8b-bfa4-bccec5d27fc3","date":"2026-07-29T17:00:00Z","playerGameScore":{"id":"So5Score:d01f1de6-038c-42fb-9737-b4f7e7937d6a","positionTyped":"Forward","projectedScore":50.0,"anyGame":{"id":"Game:039c993e-7f7b-4c8b-bfa4-bccec5d27fc3","date":"2026-07-29T17:00:00Z","homeTeam":{"slug":"lech-poznan-poznan","name":"KKS Lech Poznań","code":"LPO","domesticLeagueRanking":null},"awayTeam":{"slug":"agf-arhus","name":"Aarhus Gymnastikforening","code":"AGF","domesticLeagueRanking":7},"competition":{"slug":"uefa-champions-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":6000,"reliability":"MEDIUM"}}}}]}}}}
