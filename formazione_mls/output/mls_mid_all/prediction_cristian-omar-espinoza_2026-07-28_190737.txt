@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:07:37.148598Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) cristian-omar-espinoza: 61 pt attesi (43-82)
+   SQUADRA: nashville-sc | AVVERSARIO: dc-united-washington-district-of-columbia
+======================================================================
+
+######################################################################
+# GIOCATORE: cristian-omar-espinoza
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: cristian-omar-espinoza (squadra: nashville-sc)
+Generato: 2026-07-28T19:07:37.147388Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-05 | CHI vs NSH | mlspa | score=38.1 | peso=0.561
+  2026-04-08 | NSH vs AME | concacaf-champions-league | score=42.5 | peso=0.595
+  2026-04-15 | AME vs NSH | concacaf-champions-league | score=62.0 | peso=0.630
+  2026-04-18 | ATL vs NSH | mlspa | score=99.8 | peso=0.667
+  2026-04-26 | NSH vs CLT | mlspa | score=66.9 | peso=0.707
+  2026-04-29 | NSH vs TIG | concacaf-champions-league | score=44.9 | peso=0.749
+  2026-05-06 | TIG vs NSH | concacaf-champions-league | score=41.8 | peso=0.794
+  2026-05-10 | NSH vs DC | mlspa | score=60.9 | peso=0.841
+  2026-05-13 | NE vs NSH | mlspa | score=79.9 | peso=0.891
+  2026-05-18 | NSH vs LAFC | mlspa | score=43.6 | peso=0.944
+  2026-05-24 | NSH vs NYC | mlspa | score=69.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 59.60
+  di cui Punteggio decisivo (level_score) medio: 47.69 | Punteggio complessivo (granulari) medio: 11.91 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 50.32 (delta +2.63)
+  Efficacia offensiva condizionata: delta venue -0.88, delta avversario +2.10 | Passaggio condizionato: delta venue -0.34, delta avversario +0.54 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 17.86
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.8 - 79.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.51 (differenza: +4.35)
+Media score in casa: 54.70 | Media score fuori casa: 64.32
+Fattore casa/trasferta applicato: 1.019 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.6
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.047
+Fattore falli (casa/trasferta, da dati reali): 1.043
+Fattore duelli (casa/trasferta, da dati reali): 1.016
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.984
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.986
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.024
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 59.1 vs media ultime 10: 61.2): 0.977
+P(gioca): 68.75% (fonte: tasso di presenza storico (11/16))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: DC United | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 61.3 (range 43.5 - 81.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.27
+Punteggio REALE ottenuto in quella partita: 69.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      84.7    41.8    -42.9    29.3        NO
+   7        7      52.0    60.9     +8.9    28.3        SI
+   8        8      50.7    79.9    +29.2    26.2        NO
+   9        9      45.8    43.6     -2.2    26.6        SI
+  10       10      48.4    69.4    +21.0    26.1        SI
+
+MAE (errore assoluto medio): 20.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
