@@ -1169,7 +1169,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      max-parallel: 64
+      max-parallel: 77
       matrix:
         combo: ${{ fromJson(needs.discovery_merge.outputs.matrice) }}
     env:
