@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "marco-di-cesare", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 22:44:28 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785278668', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'QhzIZvlqHtmw98xbHsjR-arK7Bdg-4nIciKZGOb65D7q2EM2PG3MN2WUyMSlLZvANsLoVpIhl-wKlwI2wMNnCA', 'etag': 'W/"dc211a9e6d480f90437672808493cf0d"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=nRkbFcQS8N4e2%2BUx6%2B4LHabZ0cEHiUytkhUL5enSOVI3waIUYdFqzs5Ch6DhJPE6axdWJXelAVSA6XWDDzeyE9VZSGqInyGWtsV%2B79kTXP4q0%2FDqohUa3HGDCi2uVJNhlWvJhnaT1WXiKk%2BpWYuCaH5wAyBEx7KU9N968yqhSTK8tRDw8ytwpZFTmlJk6INmIEYxK4c1NMRwry%2FYfT0ZIaNu9G8%2BEhCFvAOJ6dC7b%2BHcrZMqIbnBhtgcnDfz1FN%2FA2154nAzIv%2Bo7HpRuGKxlvkWW9TPMPmR08HyxuEqC63gfnd8uCo%2Fh%2FglUICk7jAi--iJxGwp%2BgrLnfPRiA--jYM7rgU1%2Ffx58tulF%2FGHsg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 22:44:28 GMT; secure; httponly; samesite=none', 'x-request-id': 'f5af4a8f-fb42-4fa9-8afe-e1a1064d09a7', 'x-runtime': '0.048769', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 891b20281dcf3b56ea9344b8415f631c.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'DFW57-P6', 'x-amz-cf-id': 'b5FEpypzQ81tZvgCO6JQVQfbHcpzR5SNoS0etCsCgjVKDApAVl7P-Q=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:09e6cd0c-7c97-4219-90ec-08b713d199f1","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Defender","anyGame":{"id":"Game:0c4ac7bb-280e-4c67-84fd-f959f6d3c719","date":"2026-07-24T22:00:00Z","statusTyped":"played","homeTeam":{"slug":"racing-club-avellaneda-provincia-de-buenos-aires","name":"Racing Club de Avellaneda","code":"RAC","domesticLeagueRanking":3},"awayTeam":{"slug":"gimnasia-la-plata-la-plata-provincia-de-buenos-aires","name":"Gimnasia y Esgrima La Plata","code":"GLP","domesticLeagueRanking":12},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:76e53bcc-b1a7-444c-8d00-f9638f277b10","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Defender","anyGame":{"id":"Game:6b29039b-30c6-4e5e-a7fe-441e09a3f90e","date":"2026-05-27T22:00:00Z","statusTyped":"played","homeTeam":{"slug":"racing-club-avellaneda-provincia-de-buenos-aires","name":"Racing Club de Avellaneda","code":"RAC","domesticLeagueRanking":3},"awayTeam":{"slug":"independiente-petrolero-chuquisaca","name":"Club Independiente Petrolero","code":"INP","domesticLeagueRanking":null},"competition":{"slug":"conmebol-sudamericana"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:640000ba-574e-488a-a89a-f8d2b8e12f5b","date":"2026-07-29T00:15:00Z","playerGameScore":{"id":"So5Score:8189c28f-cd2b-42d2-b5d9-74774c8873b6","positionTyped":"Defender","projectedScore":45.0,"anyGame":{"id":"Game:640000ba-574e-488a-a89a-f8d2b8e12f5b","date":"2026-07-29T00:15:00Z","homeTeam":{"slug":"rosario-central-rosario-provincia-de-santa-fe","name":"CA Rosario Central","code":"ROS","domesticLeagueRanking":11},"awayTeam":{"slug":"racing-club-avellaneda-provincia-de-buenos-aires","name":"Racing Club de Avellaneda","code":"RAC","domesticLeagueRanking":3},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":7000,"reliability":"HIGH"}}}},{"id":"Game:c1f5a948-d6f9-4631-a800-e73684143bb0","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:1771d4e1-dd12-4364-a950-f44ced499fff","positionTyped":"Defender","projectedScore":48.0,"anyGame":{"id":"Game:c1f5a948-d6f9-4631-a800-e73684143bb0","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"racing-club-avellaneda-provincia-de-buenos-aires","name":"Racing Club de Avellaneda","code":"RAC","domesticLeagueRanking":3},"awayTeam":{"slug":"tigre-victoria-provincia-de-buenos-aires","name":"CA Tigre","code":"TIG","domesticLeagueRanking":14},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:1eff42b8-e2c6-4296-92eb-f1fd17e53d75","date":"2026-08-09T00:00:00Z","playerGameScore":{"id":"So5Score:c807c064-2592-4a2c-93ef-4ce68d04e25e","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:1eff42b8-e2c6-4296-92eb-f1fd17e53d75","date":"2026-08-09T00:00:00Z","homeTeam":{"slug":"argentinos-juniors-capital-federal-ciudad-de-buenos-aires","name":"Argentinos Juniors","code":"ARG","domesticLeagueRanking":3},"awayTeam":{"slug":"racing-club-avellaneda-provincia-de-buenos-aires","name":"Racing Club de Avellaneda","code":"RAC","domesticLeagueRanking":3},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:9333ef9d-92e9-4bf9-8864-7240a3f7c83b","date":"2026-08-16T00:00:00Z","playerGameScore":{"id":"So5Score:e1290973-c0b6-4715-9bcd-0fbadd7070b0","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:9333ef9d-92e9-4bf9-8864-7240a3f7c83b","date":"2026-08-16T00:00:00Z","homeTeam":{"slug":"racing-club-avellaneda-provincia-de-buenos-aires","name":"Racing Club de Avellaneda","code":"RAC","domesticLeagueRanking":3},"awayTeam":{"slug":"banfield-lomas-de-zamora-provincia-de-buenos-aires","name":"CA Banfield","code":"BAN","domesticLeagueRanking":15},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:2555c07f-3595-4a49-b6e0-6ea3428e5551","date":"2026-08-23T00:00:00Z","playerGameScore":{"id":"So5Score:7f6ea682-2600-4d64-86bf-7a7e4626d076","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:2555c07f-3595-4a49-b6e0-6ea3428e5551","date":"2026-08-23T00:00:00Z","homeTeam":{"slug":"racing-club-avellaneda-provincia-de-buenos-aires","name":"Racing Club de Avellaneda","code":"RAC","domesticLeagueRanking":3},"awayTeam":{"slug":"boca-juniors-capital-federal-ciudad-de-buenos-aires","name":"CA Boca Juniors","code":"BOC","domesticLeagueRanking":15},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
