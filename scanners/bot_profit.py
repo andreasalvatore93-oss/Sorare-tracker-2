@@ -1195,6 +1195,21 @@ TREND_SCORE_MULTIPLIER = {'up': 1.2, 'flat': 1.0, 'down': 0.5, None: 0.8}
 SOVRAPPREZZO_PENALTY_THRESHOLD_PERCENT = -15.0
 SOVRAPPREZZO_PENALTY_MULTIPLIER = 0.3
 
+# FIX 29/07 bis (richiesta esplicita utente, caso reale Jonathan Bond classic):
+# sconto_percent quasi zero (-1.22%, prezzo stabile 2-3EUR da sempre, nessuna
+# vera occasione) eppure score alto (0.3552) -- causa: ultima_partita_score=92.5
+# contro L5=L10=47 (gap di +45.5 punti, quasi il doppio della sua norma), un
+# singolo exploit isolato che pesa il 20% come se fosse forma consolidata.
+# Confrontato con casi validati dall'utente (Zimmerman/Gavran, sconto
+# altrettanto vicino a zero ma score giustificato da timing ottimale + forma
+# COERENTE, gap ultima/L5 di soli +17.9 o negativo) -- una soglia minima di
+# sconto avrebbe escluso anche questi, sbagliato (l'utente l'ha respinta).
+# Il difetto vero e' l'ultima_partita_score isolata dal contesto: clampata qui
+# a non superare L5 di piu' di ULTIMA_GAP_CAP punti, cosi' un exploit isolato
+# non puo' piu' da solo gonfiare lo score quanto una forma davvero buona e
+# ripetuta.
+ULTIMA_GAP_CAP = 20.0
+
 
 def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent, ore_alla_partita,
                               trend_recente=None):
@@ -1204,7 +1219,10 @@ def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent,
     if ore_alla_partita is None:
         return None
     peso_timing = timing_weight(ore_alla_partita)
-    ultima = (ultima_partita_score or 0.0) / 100.0
+    ultima_raw = ultima_partita_score or 0.0
+    if l5 is not None:
+        ultima_raw = min(ultima_raw, l5 + ULTIMA_GAP_CAP)
+    ultima = ultima_raw / 100.0
     media_generale = (0.5 * (l5 or 0.0) + 0.3 * (l10 or 0.0) + 0.2 * (l40 or 0.0)) / 100.0
     sconto_norm = _clamp(sconto_percent, -30.0, 100.0) / 100.0 if sconto_percent is not None else 0.0
     sconto_norm *= TREND_SCORE_MULTIPLIER.get(trend_recente, TREND_SCORE_MULTIPLIER[None])
