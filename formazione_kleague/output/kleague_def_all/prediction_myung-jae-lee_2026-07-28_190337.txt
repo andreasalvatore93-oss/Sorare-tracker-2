@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T19:03:37.387118Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) myung-jae-lee: 56 pt attesi (38-80)
+   ORDINAMENTO: 62.76
+   SQUADRA: daejeon-citizen-daejeon | AVVERSARIO: gwangju-gwangju
+======================================================================
+
+######################################################################
+# GIOCATORE: myung-jae-lee
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: myung-jae-lee (squadra: daejeon-citizen-daejeon)
+Generato: 2026-07-28T19:03:37.378169Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | POH vs DJO | k-league-1 | score=43.0 | peso=0.500
+  2026-04-12 | DJO vs GAN | k-league-1 | score=52.1 | peso=0.540
+  2026-04-22 | DJO vs JEJ | k-league-1 | score=44.2 | peso=0.583
+  2026-05-02 | GWA vs DJO | k-league-1 | score=84.2 | peso=0.630
+  2026-05-09 | DJO vs POH | k-league-1 | score=25.1 | peso=0.680
+  2026-07-04 | DJO vs BUC | k-league-1 | score=67.4 | peso=0.735
+  2026-07-12 | JEJ vs DJO | k-league-1 | score=70.6 | peso=0.794
+  2026-07-18 | DJO vs ULS | k-league-1 | score=83.9 | peso=0.857
+  2026-07-21 | JMO vs DJO | k-league-1 | score=68.9 | peso=0.926
+  2026-07-25 | SAN vs DJO | k-league-1 | score=41.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 59.06
+  di cui Punteggio decisivo (level_score) medio: 37.96 | Punteggio complessivo (granulari) medio: 21.10 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -1.11, delta avversario +0.11 | Passaggio condizionato: delta venue +0.94, delta avversario +0.58 | Clean sheet/disimpegni condizionato: delta venue -1.83, delta avversario +0.33 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.1 - 83.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.22 (differenza: +3.59)
+Media score in casa: 54.56 | Media score fuori casa: 61.54
+Fattore casa/trasferta applicato: 1.009 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.2
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.166
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.026
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.015
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 0.970
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.966
+Fattore trend (media ultime 5: 66.4 vs media ultime 10: 58.1): 1.100
+P(gioca): 66.67% (fonte: tasso di presenza storico (10/15))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Daejeon Citizen FC | Trasferta: Gwangju FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.6 (range 37.6 - 80.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 62.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.95
+Punteggio REALE ottenuto in quella partita: 41.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -20.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.6    70.6    +10.0    23.3        SI
+   7        7      44.1    83.9    +39.8    22.6        NO
+   8        8      52.8    68.9    +16.0    24.0        SI
+   9        9      73.0    41.1    -32.0    22.5        NO
+
+MAE (errore assoluto medio): 24.45
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
