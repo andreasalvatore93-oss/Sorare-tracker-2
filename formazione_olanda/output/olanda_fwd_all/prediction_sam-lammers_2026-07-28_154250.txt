@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T15:42:50.244004Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) sam-lammers: 24 pt attesi (2-54)
+   SQUADRA: twente-enschede | AVVERSARIO: ferencvaros-budapest
+======================================================================
+
+######################################################################
+# GIOCATORE: sam-lammers
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sam-lammers (squadra: twente-enschede)
+Generato: 2026-07-28T15:42:50.243339Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 19
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-21 | FEY vs TWE | eredivisie | score=34.3 | peso=0.445
+  2026-01-10 | TWE vs ZWO | eredivisie | score=37.7 | peso=0.472
+  2026-02-07 | TWE vs HEE | eredivisie | score=91.2 | peso=0.500
+  2026-02-15 | TEL vs TWE | eredivisie | score=78.9 | peso=0.530
+  2026-02-22 | TWE vs GRO | eredivisie | score=35.7 | peso=0.561
+  2026-03-01 | TWE vs FEY | eredivisie | score=42.3 | peso=0.595
+  2026-03-08 | GAE vs TWE | eredivisie | score=91.5 | peso=0.630
+  2026-03-15 | TWE vs UTR | eredivisie | score=30.7 | peso=0.667
+  2026-03-21 | FOR vs TWE | eredivisie | score=77.7 | peso=0.707
+  2026-04-04 | AJA vs TWE | eredivisie | score=64.1 | peso=0.749
+  2026-04-10 | TWE vs VOL | eredivisie | score=87.8 | peso=0.794
+  2026-04-25 | TWE vs NEC | eredivisie | score=43.2 | peso=0.841
+  2026-05-03 | AZ vs TWE | eredivisie | score=69.6 | peso=0.891
+  2026-05-10 | TWE vs SPA | eredivisie | score=44.8 | peso=0.944
+  2026-05-17 | PSV vs TWE | eredivisie | score=36.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 57.43
+  di cui Punteggio decisivo (level_score) medio: 49.17 | Punteggio complessivo (granulari) medio: 8.26 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.46 (delta -0.23) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 21.59
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.7 - 87.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.98 (differenza: +1.61)
+Media score in casa: 51.68 | Media score fuori casa: 64.59
+Fattore casa/trasferta applicato: 1.021 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 56.3 vs media ultime 10: 58.8): 0.958
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T18:30
+Casa: Ferencvárosi TC | Trasferta: FC Twente
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 24.1 (range 2.3 - 54.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 59.73
+Punteggio REALE ottenuto in quella partita: 36.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -23.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      61.9    91.5    +29.6    31.7        SI
+   7        7      51.0    30.7    -20.3    35.1        SI
+   8        8      66.6    77.7    +11.1    35.5        SI
+   9        9      55.9    64.1     +8.2    34.7        SI
+  10       10      73.1    87.8    +14.7    32.5        SI
+  11       11      52.4    43.2     -9.2    33.1        SI
+  12       12      56.4    69.6    +13.2    32.4        SI
+  13       13      69.0    44.8    -24.2    30.9        SI
+  14       14      48.6    36.0    -12.6    30.1        SI
+
+MAE (errore assoluto medio): 15.90
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
