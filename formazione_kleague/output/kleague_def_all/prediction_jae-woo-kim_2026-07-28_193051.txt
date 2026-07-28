@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T19:30:51.239996Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jae-woo-kim: 51 pt attesi (37-60)
+   ORDINAMENTO: 44.20
+   SQUADRA: jeju-united-seogwipo-jeju-do | AVVERSARIO: incheon-united-incheon
+======================================================================
+
+######################################################################
+# GIOCATORE: jae-woo-kim
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jae-woo-kim (squadra: jeju-united-seogwipo-jeju-do)
+Generato: 2026-07-28T19:30:51.238994Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | JEJ vs BUC | k-league-1 | score=52.7 | peso=0.630
+  2026-04-11 | POH vs JEJ | k-league-1 | score=42.2 | peso=0.680
+  2026-04-22 | DJO vs JEJ | k-league-1 | score=41.1 | peso=0.735
+  2026-04-25 | INC vs JEJ | k-league-1 | score=45.4 | peso=0.794
+  2026-05-02 | JEJ vs JMO | k-league-1 | score=35.5 | peso=0.857
+  2026-05-09 | JEJ vs SEO | k-league-1 | score=28.1 | peso=0.926
+  2026-05-13 | ULS vs JEJ | k-league-1 | score=50.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 41.84
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 6.84 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.19, delta avversario +1.22 | Passaggio condizionato: delta venue -1.34, delta avversario +0.17 | Clean sheet/disimpegni condizionato: delta venue -0.26, delta avversario +1.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 8.16
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.1 - 50.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.35 (differenza: +2.81)
+Media score in casa: 38.75 | Media score fuori casa: 44.84
+Fattore casa/trasferta applicato: 1.032 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.7
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.010
+Fattore falli (casa/trasferta, da dati reali): 1.029
+Fattore duelli (casa/trasferta, da dati reali): 0.965
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.037
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.966
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.046
+Fattore gol subiti (goals_conceded, con cap): 0.991
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.992
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 46.67% (fonte: tasso di presenza storico (7/15))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Jeju SK FC | Trasferta: Incheon United FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.9 (range 37.1 - 59.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 44.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.91
+Punteggio REALE ottenuto in quella partita: 50.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +10.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      36.0    50.8    +14.8     9.3        NO
+
+MAE (errore assoluto medio): 14.76
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
