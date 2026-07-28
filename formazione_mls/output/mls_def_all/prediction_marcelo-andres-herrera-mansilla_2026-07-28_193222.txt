@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T19:32:22.086189Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) marcelo-andres-herrera-mansilla: 50 pt attesi (38-61)
+   ORDINAMENTO: 47.13
+   SQUADRA: columbus-crew-columbus-ohio | AVVERSARIO: inter-miami
+======================================================================
+
+######################################################################
+# GIOCATORE: marcelo-andres-herrera-mansilla
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marcelo-andres-herrera-mansilla (squadra: columbus-crew-columbus-ohio)
+Generato: 2026-07-28T19:32:22.085076Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 12
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | ATL vs CLB | mlspa | score=60.0 | peso=0.794
+  2026-04-12 | CLB vs ORL | mlspa | score=53.6 | peso=0.857
+  2026-04-25 | CLB vs PHI | mlspa | score=36.4 | peso=0.926
+  2026-05-10 | NYC vs CLB | mlspa | score=45.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 48.42
+  di cui Punteggio decisivo (level_score) medio: 40.55 | Punteggio complessivo (granulari) medio: 7.87 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.77, delta avversario -0.74 | Passaggio condizionato: delta venue +0.38, delta avversario +0.18 | Clean sheet/disimpegni condizionato: delta venue -0.70, delta avversario -0.70 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 8.68
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.4 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 44.99 | Media score fuori casa: 52.97
+Fattore casa/trasferta applicato: 1.029 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.2
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.681
+Fattore falli (casa/trasferta, da dati reali): 1.011
+Fattore duelli (casa/trasferta, da dati reali): 1.013
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.028
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.978
+Fattore gol subiti (goals_conceded, con cap): 0.965
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.971
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 33.33% (fonte: tasso di presenza storico (4/12))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Inter Miami CF | Trasferta: Columbus Crew
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.8 (range 37.8 - 61.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 47.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.38
+Punteggio REALE ottenuto in quella partita: 45.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
