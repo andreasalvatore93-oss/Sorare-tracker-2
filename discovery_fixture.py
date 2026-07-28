@@ -63,6 +63,10 @@ LEAGUE_DIR = {
     'spor-toto-super-lig': 'turchia', 'superliga-dk': 'danimarca',
     'superliga-argentina-de-futbol': 'argentina', 'super-league-ch': 'svizzera',
     'super-league-1': 'grecia',
+    # Aggiunte 28/07 (richiesta esplicita utente, giocatori eleggibili visti
+    # su Sorare ma scartati come "lega senza pipeline"): Kacper Urbanski
+    # (Ekstraklasa, Polonia) e Francisco Gonzalez (Primera Division, Cile).
+    'ekstraklasa': 'polonia', 'primera-division-cl': 'cile',
 }
 
 FIXTURE_BY_GW = """
