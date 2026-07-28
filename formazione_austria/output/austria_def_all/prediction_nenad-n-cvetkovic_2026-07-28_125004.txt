@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T12:50:04.385937Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) nenad-n-cvetkovic: 20 pt attesi (4-32)
+   ORDINAMENTO: 19.28
+   SQUADRA: rapid-wien-wien | AVVERSARIO: fc-santa-coloma-andorra-la-vella
+======================================================================
+
+######################################################################
+# GIOCATORE: nenad-n-cvetkovic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: nenad-n-cvetkovic (squadra: rapid-wien-wien)
+Generato: 2026-07-28T12:50:04.385312Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 6
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-27 | RAK vs SCR | uefa-europa-conference-league | score=31.8 | peso=0.857
+  2025-12-11 | SCR vs OMO | uefa-europa-conference-league | score=51.2 | peso=0.926
+  2026-07-23 | FSC vs SCR | uefa-europa-conference-league | score=59.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 48.25
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 13.25 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.31, delta avversario +0.00 | Passaggio condizionato: delta venue +0.16, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.13, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 11.54
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.8 - 59.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 51.20 | Media score fuori casa: 45.71
+Fattore casa/trasferta applicato: 0.992 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): N/D
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.929
+Fattore duelli (casa/trasferta, da dati reali): 0.948
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.965
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.071
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.013
+Fattore gol subiti (goals_conceded, con cap): 1.035
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.951
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T18:30
+Casa: SK Rapid Wien | Trasferta: Don Denis FC Santa Coloma
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 20.3 (range 3.8 - 31.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 19.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.86
+Punteggio REALE ottenuto in quella partita: 59.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
