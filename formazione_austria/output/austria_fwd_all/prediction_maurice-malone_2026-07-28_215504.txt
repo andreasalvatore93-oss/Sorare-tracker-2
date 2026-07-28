@@ -1,0 +1,98 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T21:55:04.171899Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) maurice-malone: 42 pt attesi (30-52)
+   SQUADRA: sturm-graz-graz | AVVERSARIO: wattens-wattens
+======================================================================
+
+######################################################################
+# GIOCATORE: maurice-malone
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: maurice-malone (squadra: sturm-graz-graz)
+Generato: 2026-07-28T21:55:04.171337Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-02 | SCR vs STU | austrian-bundesliga | score=69.4 | peso=0.500
+  2025-11-09 | STU vs RBS | austrian-bundesliga | score=37.4 | peso=0.530
+  2025-12-03 | STU vs WSG | austrian-bundesliga | score=38.7 | peso=0.561
+  2025-12-07 | STU vs GAK | austrian-bundesliga | score=60.1 | peso=0.595
+  2025-12-14 | FAK vs STU | austrian-bundesliga | score=29.6 | peso=0.630
+  2026-02-08 | STU vs SVR | austrian-bundesliga | score=28.2 | peso=0.667
+  2026-02-14 | WSG vs STU | austrian-bundesliga | score=37.0 | peso=0.707
+  2026-03-01 | WAC vs STU | austrian-bundesliga | score=45.2 | peso=0.749
+  2026-04-19 | ASK vs STU | austrian-bundesliga | score=24.1 | peso=0.794
+  2026-04-22 | STU vs ASK | austrian-bundesliga | score=51.2 | peso=0.841
+  2026-04-26 | STU vs FAK | austrian-bundesliga | score=38.8 | peso=0.891
+  2026-05-03 | RBS vs STU | austrian-bundesliga | score=45.1 | peso=0.944
+  2026-05-17 | STU vs SCR | austrian-bundesliga | score=35.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 40.82
+  di cui Punteggio decisivo (level_score) medio: 37.91 | Punteggio complessivo (granulari) medio: 2.91 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.17 (delta +0.19) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 11.35
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.6 - 51.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.47 (differenza: +2.88)
+Media score in casa: 41.39 | Media score fuori casa: 41.73
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.5
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.088
+Fattore falli (casa/trasferta, da dati reali): 1.010
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.011
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore trend (media ultime 5: 38.9 vs media ultime 10: 39.5): 0.986
+P(gioca): 56.52% (fonte: tasso di presenza storico (13/23))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T15:00
+Casa: WSG Tirol | Trasferta: SK Puntigamer Sturm Graz
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.6 (range 30.3 - 51.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.48
+Punteggio REALE ottenuto in quella partita: 35.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.1    37.0    -10.1    21.3        SI
+   7        7      38.2    45.2     +7.0    19.7        SI
+   8        8      41.0    24.1    -16.9    18.2        SI
+   9        9      36.8    51.2    +14.4    19.1        SI
+  10       10      35.8    38.8     +3.0    18.6        SI
+  11       11      39.0    45.1     +6.1    17.5        SI
+  12       12      43.3    35.3     -8.0    16.6        SI
+
+MAE (errore assoluto medio): 9.36
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
