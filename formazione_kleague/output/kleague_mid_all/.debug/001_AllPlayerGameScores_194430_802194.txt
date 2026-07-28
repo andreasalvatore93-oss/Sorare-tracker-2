@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "gyu-seong-lee", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:44:30 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785267870', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'BLBLV5tjlVVa16LGKr_2FTECZWhnKkxTFYdqDdjeeroMQtW0PjZUXv7hlx8idPw5k2WcLXN9WFR2pmS4wR7w6w', 'etag': 'W/"338ad94a370c25c1bf1dc8219cf26419"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=ueOCGrBXP3pVzg2HgpMvHTxAALlWe50jQDPrABWmTm5Z3d4Vsckxxr1VW%2BKdtnIEH4UbopvQWBV1e3bwVOnmpsexORuYFcXOrQPLQJZ7ZsRHI9TJS9B8m2S4QrZY2EoJQXEp3P68%2B1jJlsLbkpo9kb19DqWr5bvUVf0CU2N%2F%2B5UfFzxNT8HBO5iBosswsw8bJPFx06p9C%2F1FjM9WOq6%2FAWpfdUJsIveLvWGDNTlEnzjkmrI0XKasOcDQGkfE6V3dn2EU1IyiQpJ7VNQb6%2FXsMvvuagOhSHSazYWkhw%2BL55Ef%2FeW3v733YpPG8%2BNwhAcE--c0hMPi0U1dI7AgCa--iF%2FedVGRM%2Bbx0UhBPxh3jg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:44:30 GMT; secure; httponly; samesite=none', 'x-request-id': '9ffa8925-1d3a-46d4-81ad-4258c200ff25', 'x-runtime': '0.073690', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 30d9e3a4b27e43a0df1da02819d5efec.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'ORD58-P3', 'x-amz-cf-id': 'tV-w8JVclPZSaqMOG6LhyMotIGYR9UN7bcafjn1Vr5DOC87gLVUGwg=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:88ee8152-9394-4fb7-9d46-bfdbbe5f2e81","score":39.1,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:95cbe9e1-f205-45ec-b937-93d0c3fe3441","date":"2026-07-26T10:30:00Z","statusTyped":"played","homeTeam":{"slug":"seoul-seoul","name":"FC Seoul","code":"SEO","domesticLeagueRanking":1},"awayTeam":{"slug":"ulsan-ulsan","name":"Ulsan Hyundai Horang-i","code":"ULS","domesticLeagueRanking":4},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":84,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:607bc06c-962a-47f7-a3f4-74792e18c98e","score":36.6,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:84039bea-1164-4d14-a50a-64c96b17b9c9","date":"2026-07-21T10:30:00Z","statusTyped":"played","homeTeam":{"slug":"ulsan-ulsan","name":"Ulsan Hyundai Horang-i","code":"ULS","domesticLeagueRanking":4},"awayTeam":{"slug":"incheon-united-incheon","name":"Incheon United FC","code":"INC","domesticLeagueRanking":6},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":0,"minsPlayed":45,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:f920b9ad-1a2f-450b-a102-cdcdb2bdebe3","date":"2026-08-02T10:30:00Z","playerGameScore":{"id":"So5Score:14449c9a-271e-4d2f-8daf-b1e61f8018a6","positionTyped":"Midfielder","projectedScore":53.0,"anyGame":{"id":"Game:f920b9ad-1a2f-450b-a102-cdcdb2bdebe3","date":"2026-08-02T10:30:00Z","homeTeam":{"slug":"ulsan-ulsan","name":"Ulsan Hyundai Horang-i","code":"ULS","domesticLeagueRanking":4},"awayTeam":{"slug":"anyang-anyang","name":"FC Anyang","code":"ANY","domesticLeagueRanking":5},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:b0e14eb0-f6b2-42e9-b8dd-bc530472749a","date":"2026-08-08T10:30:00Z","playerGameScore":{"id":"So5Score:9694a4de-ec28-48ac-816c-8d69fc076848","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:b0e14eb0-f6b2-42e9-b8dd-bc530472749a","date":"2026-08-08T10:30:00Z","homeTeam":{"slug":"pohang-steelers-pohang","name":"Pohang Steelers FC","code":"POH","domesticLeagueRanking":7},"awayTeam":{"slug":"ulsan-ulsan","name":"Ulsan Hyundai Horang-i","code":"ULS","domesticLeagueRanking":4},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:af7746eb-8925-4d98-a899-c7cf055a213e","date":"2026-08-16T10:30:00Z","playerGameScore":{"id":"So5Score:9e7bcb53-5a2d-48c0-82b2-c2f89edc960e","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:af7746eb-8925-4d98-a899-c7cf055a213e","date":"2026-08-16T10:30:00Z","homeTeam":{"slug":"ulsan-ulsan","name":"Ulsan Hyundai Horang-i","code":"ULS","domesticLeagueRanking":4},"awayTeam":{"slug":"gangwon-gangneung","name":"Gangwon FC","code":"GAN","domesticLeagueRanking":3},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:8498b804-2e10-4b12-bfe0-660b0de8266b","date":"2026-08-22T10:30:00Z","playerGameScore":{"id":"So5Score:da9fcdd8-b469-43ad-8737-e6415d3ab12f","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:8498b804-2e10-4b12-bfe0-660b0de8266b","date":"2026-08-22T10:30:00Z","homeTeam":{"slug":"jeonbuk-motors-jeonju","name":"Jeonbuk Hyundai Motors FC","code":"JMO","domesticLeagueRanking":2},"awayTeam":{"slug":"ulsan-ulsan","name":"Ulsan Hyundai Horang-i","code":"ULS","domesticLeagueRanking":4},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:bc426c33-198f-4994-8f84-d2e1206daea7","date":"2026-08-26T10:30:00Z","playerGameScore":{"id":"So5Score:a7ec8ffa-0e40-4d85-843a-513b68119b95","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:bc426c33-198f-4994-8f84-d2e1206daea7","date":"2026-08-26T10:30:00Z","homeTeam":{"slug":"daejeon-citizen-daejeon","name":"Daejeon Citizen FC","code":"DJO","domesticLeagueRanking":9},"awayTeam":{"slug":"ulsan-ulsan","name":"Ulsan Hyundai Horang-i","code":"ULS","domesticLeagueRanking":4},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
