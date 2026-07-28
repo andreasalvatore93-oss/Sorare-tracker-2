@@ -1020,7 +1020,7 @@ def build_prediction(player_slug):
     # dinamiche di punteggio strutturalmente diverse). Se questo filtro lascia
     # troppo poche partite (meno di min_history), si fa fallback su tutte le
     # competizioni per non restare senza dati.
-    MIN_SAME_COMPETITION = 6
+    MIN_SAME_COMPETITION = 10
     if target_competition:
         same_comp_games = [
             n for n in past_games
