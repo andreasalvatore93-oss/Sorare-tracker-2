@@ -1153,19 +1153,23 @@ def hours_until(date_str):
 
 
 # =====================================================================================
-# POTENZIALE SCORE (formula concordata 24/07, pesi ripesati 27/07) -- 4 fattori,
-# nessun peso su n_transazioni oltre a quanto segue (resta comunque in colonna
-# solo per valutazione finale manuale):
-#   0.35 x peso_timing (prossimita' partita, 3 bucket ricalibrati 27/07 sui
-#         dati reali di pattern_giorni_da_partita.csv)
-#   0.20 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5)
-#   0.15 x media_generale (0.5*L5 + 0.3*L10 + 0.2*L40)/100 -- pesi decrescenti
+# POTENZIALE SCORE (formula concordata 24/07, pesi ripesati 27/07, riequilibrati
+# di nuovo 29/07 ter -- richiesta esplicita utente) -- 4 fattori, nessun peso su
+# n_transazioni oltre a quanto segue (resta comunque in colonna solo per
+# valutazione finale manuale):
+#   0.40 x peso_timing (prossimita' partita, 3 bucket ricalibrati 27/07 sui
+#         dati reali di pattern_giorni_da_partita.csv) -- alzato da 0.35
+#         (FIX 29/07 ter, richiesta esplicita utente: piu' peso a timing/sconto,
+#         meno a ultima_partita/forma generale)
+#   0.15 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5) --
+#         abbassato da 0.20 (FIX 29/07 ter)
+#   0.10 x media_generale (0.5*L5 + 0.3*L10 + 0.2*L40)/100 -- pesi decrescenti
 #         (FIX 27/07, richiesta esplicita utente): prima era una media piatta
 #         (L5+L10+L40)/3, incoerente col fatto che L5 riflette la forma PIU'
-#         recente e deve pesare di piu' di L40 (che include partite di mesi fa)
-#   0.30 x sconto_normalizzato (sconto% clampato [-30,100] / 100) -- alzato da
-#         0.20 (FIX 27/07, richiesta esplicita utente: lo sconto deve pesare
-#         di piu'), tolto 0.05 a peso_timing e 0.05 a ultima_partita
+#         recente e deve pesare di piu' di L40 (che include partite di mesi fa).
+#         Abbassato da 0.15 (FIX 29/07 ter)
+#   0.35 x sconto_normalizzato (sconto% clampato [-30,100] / 100) -- alzato da
+#         0.30 (FIX 29/07 ter, richiesta esplicita utente)
 # =====================================================================================
 TIMING_WEIGHT_BUCKETS = (
     # (soglia_ore_esclusiva, peso) -- controllate in ordine, la prima che
@@ -1249,7 +1253,7 @@ def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent,
     media_generale = (0.5 * (l5 or 0.0) + 0.3 * (l10 or 0.0) + 0.2 * (l40 or 0.0)) / 100.0
     sconto_norm = _clamp(sconto_percent, -30.0, 100.0) / 100.0 if sconto_percent is not None else 0.0
     sconto_norm *= TREND_SCORE_MULTIPLIER.get(trend_recente, TREND_SCORE_MULTIPLIER[None])
-    score = (0.35 * peso_timing) + (0.20 * ultima) + (0.15 * media_generale) + (0.30 * sconto_norm)
+    score = (0.40 * peso_timing) + (0.15 * ultima) + (0.10 * media_generale) + (0.35 * sconto_norm)
     if sconto_percent is not None and sconto_percent < SOVRAPPREZZO_PENALTY_THRESHOLD_PERCENT:
         score *= SOVRAPPREZZO_PENALTY_MULTIPLIER
     return round(score, 4)
