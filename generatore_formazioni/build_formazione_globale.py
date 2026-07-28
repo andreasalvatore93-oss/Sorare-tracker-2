@@ -5,9 +5,11 @@ Terza versione, AGGIUNTIVA rispetto a formazione_mls/build_formazione_finale.py
 e formazione_kleague/build_formazione_finale.py (che restano invariati e
 continuano a funzionare da soli). Legge i consigli di ruolo GIA' PRODOTTI dai
 due tool esistenti (stessi file, nessuna nuova query storica -- la cache
-incrementale di entrambi viene riusata cosi' com'e'), applica un filtro
-qualita' aggiuntivo (vedi quality_filter.py) e costruisce fino a 8 TIPI di
-lineup Sorare in un colpo solo:
+incrementale di entrambi viene riusata cosi' com'e') e costruisce fino a 8
+TIPI di lineup Sorare in un colpo solo (filtro qualita' L5/L10/L40
+disattivato dal 28/07, vedi _NoFilterPool -- ridondante col filtro
+starter-odds ormai sempre attivo in discovery_fixture.py, ed escludeva
+candidati validi con una sola media bassa su tre):
 
   1. MLS_IN_SEASON       -- solo carte MLS, min 4 In Season + max 1 Classic
   2. KLEAGUE_IN_SEASON    -- identico, solo carte K League
@@ -44,7 +46,6 @@ import importlib.util
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import quality_filter  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.dirname(_HERE)
@@ -314,12 +315,32 @@ GROW_BATCH = int(os.environ.get('QUALITY_GROW_BATCH', '3'))
 SLOT_RE = re.compile(r'slot (\S+) \(')
 
 
+class _NoFilterPool:
+    """Sostituto di LazyQualityPool da quando il filtro qualita' L5/L10/L40
+    e' stato disattivato (28/07, richiesta esplicita utente): era ridondante
+    col filtro starter-odds ormai sempre attivo in discovery_fixture.py, ed
+    escludeva per intero candidati validi con una sola media bassa su tre --
+    caso reale: Inaki Pena, L10=46/L40=49 (solidi) ma L5=26 (una striscia
+    recente), escluso a prescindere dal fatto che il modello predittivo lo
+    valutasse comunque 32pt. Tutti i candidati scoperti sono gia' 'passing',
+    zero query di rete verso Sorare per questo filtro."""
+
+    def __init__(self, role, league, full_candidates):
+        self.role = role
+        self.league = league
+        self.full = full_candidates
+        self.checked_idx = len(full_candidates)
+        self.passing = list(full_candidates)
+
+    def grow(self, batch):
+        return 0
+
+
 def build_quality_pools(role_data):
-    """Un LazyQualityPool per (lega, ruolo), sulla lista COMPLETA (non
-    filtrata) letta dai consigli -- nessuna query finche' non serve davvero
-    (vedi build_one_lineup_with_growth)."""
+    """Un pool per (lega, ruolo) con TUTTI i candidati scoperti gia' inclusi
+    (filtro qualita' disattivato, vedi _NoFilterPool)."""
     return {
-        league: {role: quality_filter.LazyQualityPool(role, league, role_data[league][role])
+        league: {role: _NoFilterPool(role, league, role_data[league][role])
                   for role in ROLES}
         for league in LEAGUES
     }
@@ -387,20 +408,12 @@ def _raw_view_for(role_data, pool_league, role):
 def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool, l10_cap,
                                   apply_stack_guard, variance_mode, apply_positive_synergy=True,
                                   strict_gk_anti_synergy=False):
-    """Se il tipo ha un cap L10 obbligatorio (Arena dedicate/All Stars), il
-    filtro qualita' NON si applica (27/07, richiesta esplicita utente): sono
-    in tensione diretta -- L5/L10/L40>=35 esclude proprio le carte economiche
-    che servirebbero per stare sotto il cap, e il vincolo hard sul cap ora
-    vive in bff.build_one_lineup stesso (riserva di budget per gli slot
-    futuri, fallisce piuttosto che sforare). Si usa quindi il pool GREZZO
-    (tutte le carte scoperte per la lega/le leghe coinvolte), zero query di
-    qualita' per questi tipi.
-
-    Per i tipi SENZA cap (In Season, All Stars, Arena All Stars uncapped) il
-    filtro qualita' resta attivo: si interrogano solo i candidati che
-    servono, e se manca un candidato per uno slot si interrogano i prossimi
-    (GROW_BATCH alla volta) e si riprova, finche' la formazione si completa
-    o il pool scoperto e' davvero esaurito."""
+    """Se il tipo ha un cap L10 obbligatorio (Arena dedicate/All Stars) usa
+    il pool GREZZO via _raw_view_for; altrimenti (In Season, All Stars, Arena
+    All Stars uncapped) passa da 'pools' (_view_for) -- dal 28/07 entrambi i
+    percorsi vedono comunque TUTTI i candidati scoperti, perche' il filtro
+    qualita' e' disattivato (vedi _NoFilterPool): la distinzione resta solo
+    per come 'pools' viene fatto crescere/riletto, non piu' per COSA include."""
     if l10_cap is not None:
         role_data_view = {role: _raw_view_for(role_data, pool_league, role) for role in ROLES}
         return bff.build_one_lineup(shape, role_data_view, card_pool, l10_cap=l10_cap,
@@ -682,10 +695,19 @@ def main():
     print(f"Candidati non schierati in nessuna formazione: {tot_esclusi} "
           f"(" + ", ".join(f"{r}:{esclusi_per_ruolo[r]}" for r in ROLES) + ")")
 
-    tot_checked = sum(p.checked_idx for league in pools.values() for p in league.values())
-    tot_passed = sum(len(p.passing) for league in pools.values() for p in league.values())
-    print(f"Filtro qualita' (lazy): {tot_checked} carte interrogate, {tot_passed} promosse "
-          f"(su un pool scoperto totale di {sum(len(p.full) for league in pools.values() for p in league.values())}).")
+    # Elenco dettagliato (28/07, richiesta esplicita utente SOLO per questa
+    # run di verifica post-rimozione filtro qualita': vedere per nome quali
+    # candidati eleggibili restano fuori, per capire se recuperabili). Dietro
+    # env var, non stampato di default nelle run normali.
+    if os.environ.get('LIST_UNUSED_CANDIDATES', '').strip() not in ('', '0', 'false', 'no'):
+        print("\nCandidati eleggibili MAI schierati (nome, lega, ruolo, punteggio atteso):")
+        for r in ROLES:
+            righe = [(lg, row) for lg in LEAGUES for row in role_data[lg][r]
+                     if row['slug'] not in used_slugs]
+            righe.sort(key=lambda lr: lr[1].get('atteso', 0), reverse=True)
+            for lg, row in righe:
+                nome = player_names.get(row['slug'], row['slug'])
+                print(f"  [{r}] {nome} ({lg}) -- atteso {row.get('atteso')}")
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
@@ -698,8 +720,8 @@ def main():
                      ", ".join(f"{LABELS[t]}={counts[t]}" for t in PRIORITY_ORDER) + ")<br>"
                      f"Candidati non schierati in nessuna formazione: {tot_esclusi} (" +
                      ", ".join(f"{r}: {esclusi_per_ruolo[r]}" for r in ROLES) + ")")
-    footer_html = (f"Fusione {len(LEAGUES)} campionati. Max 1 carta CLASSIC solo per In Season. Filtro qualita' "
-                    f"L5/L10/L40 tutti >= {quality_filter.MIN_QUALITY_SCORE} applicato prima della scelta.")
+    footer_html = (f"Fusione {len(LEAGUES)} campionati. Max 1 carta CLASSIC solo per In Season. "
+                    f"Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.")
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)
     html_path = os.path.join(OUTPUT_DIR, f'generatore_formazioni{run_suffix}_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
