@@ -153,6 +153,7 @@ query FixtureCards($userSlug: String!, $page: Int!, $pageSize: Int!,
                 refinements: $refinements) {
       hits {
         slug
+        inSeasonEligible
         # u23Eligible/xp/powerBreakdown vivono sul tipo CONCRETO Card, non
         # sull'interfaccia AnyCardInterface restituita da 'hits' -- senza il
         # fragment esplicito la query fallisce per intero (stesso bug gia'
@@ -310,6 +311,14 @@ def main():
         visti = set()
         u23_di = {}
         power_di = {}
+        # Copie reali possedute per slug (28/07 sera, bug reale trovato
+        # dall'utente: prima si assumeva SEMPRE 1 copia in_season a
+        # prescindere, quindi un giocatore con 2+ copie (es. Messi, comprato
+        # apposta per schierarlo in piu' formazioni In Season) spariva dal
+        # pool dopo la prima formazione anche se una seconda copia reale era
+        # disponibile). CARDS_QUERY restituisce un hit per OGNI carta
+        # posseduta -- basta contarli invece di deduplicare per giocatore.
+        copie_di = defaultdict(lambda: {'in_season': 0, 'classic': 0})
         page = 1
         while page <= 50:
             d = base.graphql_query(CARDS_QUERY, {
@@ -340,6 +349,10 @@ def main():
                     continue
                 visti.add((p['slug'], (club.get('domesticLeague') or {}).get('slug'),
                            p.get('displayName') or ''))
+                if h.get('inSeasonEligible'):
+                    copie_di[p['slug']]['in_season'] += 1
+                else:
+                    copie_di[p['slug']]['classic'] += 1
                 # u23Eligible vive sulla CARTA (28/07, confermato dall'utente via
                 # DevTools -- il flag Sorare, non un calcolo nostro su birthDay:
                 # un 24enne puo' restare flaggato true se ha compiuto gli anni a
@@ -432,15 +445,14 @@ def main():
             per_lega_ruolo[dirname][role].add(slug)
             if nome_di.get(slug):
                 nomi_per_lega_ruolo[dirname][role][slug] = nome_di[slug]
-            # L10 (28/07): gia' ottenuta assieme alle odds nella stessa
-            # chiamata sopra. Copie possedute NON tracciate da questa
-            # pipeline veloce (a differenza delle vecchie discovery per-
-            # campionato): si tiene l'assunzione preesistente "1 copia
-            # in_season" gia' usata da CardPool come default per uno slug
-            # assente dal file -- qui va scritta esplicitamente perche' il
-            # file adesso include lo slug (per portarci l10), e altrimenti
-            # verrebbe letta come 0 copie.
-            entry = {'in_season': 1, 'classic': 0}
+            # L10 (28/07) gia' ottenuta assieme alle odds nella stessa
+            # chiamata sopra. Copie possedute (28/07 sera, bug reale
+            # -- vedi copie_di sopra): ora CONTATE per davvero dagli hit di
+            # CARDS_QUERY, non piu' assunte fisse a 1. Fallback a 1 copia
+            # in_season solo se per qualche motivo lo slug non risulta in
+            # copie_di (non dovrebbe succedere, e' popolato per lo stesso
+            # slug qui sopra nello stesso ciclo).
+            entry = dict(copie_di.get(slug) or {'in_season': 1, 'classic': 0})
             if l10 is not None:
                 entry['l10'] = l10
             if u23_di.get(slug):

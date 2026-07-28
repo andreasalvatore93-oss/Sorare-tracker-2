@@ -1177,7 +1177,7 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain, apply_xp_bon
     return (
         f'<div class="pcard" draggable="true" style="--role-color:{color}" '
         f'data-slug="{html.escape(row["slug"], quote=True)}" data-role="{role}" '
-        f'data-score="{row["atteso"]}" '
+        f'data-score="{row["atteso"]}" data-xp-frac="{xp_bonus_frac}" '
         f'data-name="{html.escape(card_pool.display_name(row["slug"]), quote=True)}" '
         f'data-body="{html.escape(body_html, quote=True)}">'
         f'<div class="pcard-stripe" style="background:{color}"></div>'
@@ -1203,7 +1203,22 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
     )
     totale_atteso = sum(row['atteso'] for _, row, _ in formazione)
     captain_bonus_pct = CAPTAIN_BONUS_BY_TYPE.get(tipo, 0.5)
-    bonus = round(captain_row['atteso'] * captain_bonus_pct)
+    # FIX 28/07 sera (bug reale trovato dall'utente): i bonus Sorare si
+    # SOMMANO in basis points e si applicano come UN SOLO moltiplicatore
+    # (season+collection+xp+capitano+antistack ecc., vedi memoria di
+    # sessione), MAI a cascata. 'captain_row[atteso]' qui include GIA' il
+    # bonus xp/collezione/stagione (vedi _apply_xp_bonus in
+    # build_formazione_globale.py, che moltiplica atteso PRIMA che arrivi
+    # qui) -- calcolare il +50% capitano su quel valore gia' gonfiato lo
+    # applica in cascata (1+xp)*(1+cap) invece che addizionato (1+xp+cap),
+    # sovrastimando il capitano (es. 59pt raw, +13% xp -> 67, poi +50% su 67
+    # = 34 pt extra, totale 101 invece dei 96 corretti = 59*1.63). Fix:
+    # riporta il punteggio al valore raw (pre-xp-bonus) prima di applicare
+    # la percentuale capitano, cosi' il bonus aggiuntivo mostrato e'
+    # esattamente cio' che manca per arrivare al totale corretto.
+    xp_frac = card_pool.power_bonus_fraction(captain_row['slug']) if apply_xp_bonus else 0.0
+    captain_raw_atteso = captain_row['atteso'] / (1 + xp_frac) if xp_frac else captain_row['atteso']
+    bonus = round(captain_raw_atteso * captain_bonus_pct)
     totale_con_capitano = totale_atteso + bonus
     l10_note = ''
     if l10_cap is not None:
@@ -1429,7 +1444,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   }}
 
   function swapPlayers(a, b) {{
-    ['slug', 'score', 'name', 'body'].forEach(function (k) {{
+    ['slug', 'score', 'name', 'body', 'xpFrac'].forEach(function (k) {{
       var tmp = a.dataset[k];
       a.dataset[k] = b.dataset[k];
       b.dataset[k] = tmp;
@@ -1454,7 +1469,15 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
     var bonus = 0, capName = '';
     if (capBadge) {{
       var capCard = capBadge.closest('.pcard');
-      bonus = Math.round((parseFloat(capCard.dataset.score) || 0) * capPct);
+      // FIX 28/07 sera: data-score include GIA' il bonus xp/collezione/
+      // stagione (se applicabile) -- calcolare il +50% capitano su quel
+      // valore gonfiato lo applica in cascata invece che addizionato
+      // (stesso bug fixato lato Python in render_lineup_html). Si riporta
+      // al valore raw dividendo per (1+xpFrac) prima di applicare capPct.
+      var capScore = parseFloat(capCard.dataset.score) || 0;
+      var xpFrac = parseFloat(capCard.dataset.xpFrac) || 0;
+      var capRaw = xpFrac ? capScore / (1 + xpFrac) : capScore;
+      bonus = Math.round(capRaw * capPct);
       capName = capCard.dataset.name || '';
     }}
     var withCap = totalEl.querySelector('.figure.with-captain');

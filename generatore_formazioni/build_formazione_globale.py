@@ -642,10 +642,13 @@ def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
     return picked
 
 
-def _render_alt_panel(chips, card_pool):
+def _render_alt_panel(chips, card_pool, apply_xp_bonus=False):
     """Ogni chip e' draggable e porta con se' data-body gia' pronto (28/07):
     il drag&drop lato client (script nel template condiviso, vedi bff) scambia
-    l'attributo con quello della pcard bersaglio senza ricalcolare nulla."""
+    l'attributo con quello della pcard bersaglio senza ricalcolare nulla.
+    'apply_xp_bonus' (28/07 sera): regola della formazione BERSAGLIO (dove il
+    chip puo' essere trascinato), non della formazione di provenienza -- una
+    stessa alternativa puo' comparire in piu' pannelli con regole diverse."""
     if not chips:
         return ''
     items = []
@@ -654,13 +657,15 @@ def _render_alt_panel(chips, card_pool):
         slug = row['slug']
         name = card_pool.display_name(slug)
         copie = card_pool.copies_owned(slug)
-        tags_html = bff._pcard_tags_html(ctype, copie)
+        xp_bonus_frac = card_pool.power_bonus_fraction(slug) if apply_xp_bonus else 0.0
+        tags_html = bff._pcard_tags_html(ctype, copie, xp_bonus_frac)
         l10 = card_pool.l10(slug)
         body_html = bff._pcard_body_html(slug, row['atteso'], row['low'], row['high'], l10, tags_html, card_pool)
         items.append(
             '<div class="alt-chip" draggable="true" '
             f'data-slug="{html.escape(slug, quote=True)}" data-role="{role or ""}" '
-            f'data-score="{row["atteso"]}" data-name="{html.escape(name, quote=True)}" '
+            f'data-score="{row["atteso"]}" data-xp-frac="{xp_bonus_frac}" '
+            f'data-name="{html.escape(name, quote=True)}" '
             f'data-body="{html.escape(body_html, quote=True)}">'
             f'<div class="alt-circle">{bff._slug_initials(slug)}</div>'
             f'<div class="alt-info"><div class="alt-name">{name}</div>'
@@ -799,7 +804,7 @@ def main():
             check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
             avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=r['tipo'] in XP_BONUS_TYPES)
         chips = _build_alt_chips(r['formazione'], r['label'], r['idx'], global_usage)
-        alt_panel = _render_alt_panel(chips, card_pool)
+        alt_panel = _render_alt_panel(chips, card_pool, apply_xp_bonus=r['tipo'] in XP_BONUS_TYPES)
         lineup_html_blocks.append(f'<div class="lineup-row">{lineup_html}{alt_panel}</div>')
 
     # Giocatori candidati (idonei per starter-odds + finestra giornata, vedi
