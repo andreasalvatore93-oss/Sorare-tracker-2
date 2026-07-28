@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T23:53:42.443600Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jackson-yueill: 40 pt attesi (29-56)
+   SQUADRA: new-england-foxborough-massachusetts | AVVERSARIO: montreal-impact-montreal-quebec
+======================================================================
+
+######################################################################
+# GIOCATORE: jackson-yueill
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jackson-yueill (squadra: new-england-foxborough-massachusetts)
+Generato: 2026-07-28T23:53:42.442471Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | NE vs CLT | mlspa | score=61.2 | peso=0.841
+  2025-09-07 | CHI vs NE | mlspa | score=34.5 | peso=0.891
+  2025-10-18 | NE vs CHI | mlspa | score=44.4 | peso=0.944
+  2026-04-11 | NE vs DC | mlspa | score=41.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 45.00
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 10.00 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 35.00 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue -0.04, delta avversario -0.07 | Passaggio condizionato: delta venue -0.22, delta avversario +0.47 | Gol subiti condizionato: delta venue -0.61, delta avversario +0.15 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 9.52
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.5 - 61.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 48.97 | Media score fuori casa: 34.50
+Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.8
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.250
+Fattore falli (casa/trasferta, da dati reali): 0.989
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 0.989
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 15.38% (fonte: tasso di presenza storico (4/26))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: CF Montreal | Trasferta: New England Revolution
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 39.8 (range 29.3 - 56.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.38
+Punteggio REALE ottenuto in quella partita: 41.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -5.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
