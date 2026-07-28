@@ -1053,7 +1053,16 @@ jobs:
 
   formazione:
     needs: [discovery_merge, predict]
-    if: always()
+    # if: always() (28/07, bug reale) girava ANCHE quando la giornata non si
+    # risolveva affatto (es. gameweek/fixture_slug mancanti o sbagliati):
+    # tutti i job discovery fallivano, predict veniva giustamente saltato
+    # (guardia sotto), ma questo job proseguiva comunque leggendo i CONSIGLI
+    # VECCHI gia' committati da run precedenti -- generava e notificava su
+    # Telegram una formazione "nuova" ma basata su dati stantii, senza alcun
+    # errore visibile. Stessa guardia di 'predict': gira solo se la discovery
+    # ha prodotto almeno una combinazione lega/ruolo, altrimenti salta tutto
+    # (formazione E notifica) invece di proseguire silenziosamente sul vecchio.
+    if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
