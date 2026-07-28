@@ -3117,9 +3117,15 @@ git log --oneline -- .github/workflows/formazione_giornata.yml discovery_fixture
 ```
 poi `git revert` (o `git checkout <commit-prima-del-test> -- .github/workflows/formazione_giornata.yml discovery_fixture.py`) del/dei commit con messaggio che menziona "discovery in 3 job paralleli" / "DISCOVERY_ROLES" — riporta al singolo job `discovery` che gira tutti e 4 i ruoli, già verificato funzionante e via via ottimizzato in 30.B. Non serve toccare altro (predict/formazione tornano automaticamente a leggere `needs: discovery` una volta ripristinato il workflow).
 
-**Implementazione conclusa, run di verifica lanciata dopo questo aggiornamento** — se questa riga
-non è seguita da un esito ("funziona"/"ripristinato"), il test è ancora aperto: controllare
-`gh run list --workflow formazione_giornata.yml` per lo stato dell'ultimo run.
+**ESITO (28/07, run 30348298610): FUNZIONA, tenuto attivo.** I 3 job discovery sono girati
+davvero in parallelo (stesso timestamp di avvio, 09:50:48Z) e hanno finito in **1m32s totali**
+(discovery_a, GK+DEF, il più lento) contro i 3m30s-6m del singolo job precedente. **Zero 429
+reali** su tutti e 3 i job nonostante l'esecuzione simultanea (i pochi match testuali "429" in
+discovery_a erano falsi positivi, nessuna riga "[429] tentativo"). Il rate limit di Sorare NON è
+quindi rigidamente condiviso/cumulativo fra job/runner diversi come temuto in apertura di 30.I —
+o almeno non abbastanza da annullare il beneficio a 3 job. Run totale sceso a **7m9s** (da 9m16s
+del run precedente, 15m18s a inizio sessione). Nessun rollback necessario: lo split resta il
+meccanismo di produzione.
 
 ## 30.J — Verifica copertura pool eleggibile, ruolo per ruolo (confronto manuale con screenshot Sorare)
 
