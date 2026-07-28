@@ -11,8 +11,11 @@ mai mescolati. Per TUTTI gli altri campionati: un giocatore = una riga sola,
 in_season+classic mescolati (stesso identico criterio di Bot Supremo).
 
 Esclusioni (per alleggerire ogni analisi futura):
-  - min_attuale < 1 EUR -> scartata SUBITO (prima query in assoluto), NESSUNA
-    blacklist (il prezzo puo' risalire, non e' un'esclusione permanente)
+  - min_attuale < 2 EUR (FIX 29/07, era 1 EUR: richiesta esplicita utente --
+    sotto questa soglia difficilmente ci sono variazioni di profit
+    significative, non vale la pena nemmeno tracciarle) -> scartata SUBITO
+    (prima query in assoluto), NESSUNA blacklist (il prezzo puo' risalire,
+    non e' un'esclusione permanente)
   con blacklist dedicata a decadenza ISO (sorare_lista_nera_profit.txt),
   controllata PRIMA di ogni query cosi' le carte gia' note vengono saltate a
   costo zero:
@@ -195,7 +198,7 @@ MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING'
 # viene scartata SUBITO, come prima query in assoluto -- niente tracciamento,
 # niente blacklist (il prezzo puo' risalire, non e' un'esclusione permanente
 # come coverage/L5/nessuna partita). Alleggerisce le chiamate successive.
-MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '1.0'))
+MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '2.0'))
 
 OUTPUT_DIR = 'bot_profit_output'
 # FIX 27/07 (richiesta esplicita utente: troppi file separati, "non so quale
