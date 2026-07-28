@@ -83,7 +83,6 @@ query CardBonusProbe($slug: String!) {
     slug
     ... on Card {
       xp
-      xpBonus
       seasonBonus
       collectionBonus
       experienceBonus
