@@ -82,15 +82,33 @@ def _discover_leagues():
     slot vale circa +2 punti attesi PER SLOT -- su 5 slot di movimento,
     ~+10 punti a formazione. E' il guadagno piu' grande misurato finora,
     molto oltre qualunque ritocco del modello (vedi sezione 27 del RIASSUNTO).
-    Le leghe si scoprono dal filesystem: aggiungerne una non richiede codice."""
+    Le leghe si scoprono dal filesystem: aggiungerne una non richiede codice.
+
+    FIX (29/07, bug reale trovato in audit log 'formazione giornata': 'cile'
+    ha SOLO la cartella FWD (mai avuta GK/DEF/MID -- l'utente possiede solo
+    carte Chile attaccanti). Il glob era ancorato su '*_gk_all' e il filtro
+    sotto richiedeva TUTTE e 4 le cartelle ruolo: la lega spariva per
+    intero da _DISCOVERED, quindi anche il ruolo FWD con candidati validi
+    generati ogni giorno (consiglio_cile_fwd) non veniva MAI considerato in
+    nessuna formazione -- lavoro sprecato e candidati buoni mai schierabili.
+    Ora si scopre una lega da QUALSIASI cartella ruolo trovata (non solo
+    GK) e basta che ALMENO UNA delle 4 esista per includere la lega; i
+    ruoli senza cartella restano semplicemente a 0 candidati, esattamente
+    come gia' tollerato oggi per ruoli con dati stantii (es. svizzera/GK,
+    che ha una cartella ma un consiglio vecchio/vuoto)."""
     found = {}
-    for consiglio_dir in sorted(glob.glob(os.path.join(_REPO_ROOT, 'formazione_*', 'output', '*_gk_all'))):
-        champ_dir = os.path.basename(os.path.dirname(os.path.dirname(consiglio_dir)))
-        league = champ_dir[len('formazione_'):]
-        prefix = os.path.basename(consiglio_dir)[:-len('_gk_all')]
+    league_prefix = {}
+    for role in ROLES:
+        suffix = f'_{role.lower()}_all'
+        for role_dir in sorted(glob.glob(os.path.join(_REPO_ROOT, 'formazione_*', 'output', f'*{suffix}'))):
+            champ_dir = os.path.basename(os.path.dirname(os.path.dirname(role_dir)))
+            league = champ_dir[len('formazione_'):]
+            prefix = os.path.basename(role_dir)[:-len(suffix)]
+            league_prefix.setdefault(league, (champ_dir, prefix))
+    for league, (champ_dir, prefix) in league_prefix.items():
         dirs = {r: os.path.join(champ_dir, 'output', f'{prefix}_{r.lower()}_all') for r in ROLES}
         disc = {r: os.path.join(champ_dir, 'output', f'{prefix}_{r.lower()}_discovery') for r in ROLES}
-        if all(os.path.isdir(os.path.join(_REPO_ROOT, d)) for d in dirs.values()):
+        if any(os.path.isdir(os.path.join(_REPO_ROOT, d)) for d in dirs.values()):
             found[league] = (dirs, disc)
     return found
 

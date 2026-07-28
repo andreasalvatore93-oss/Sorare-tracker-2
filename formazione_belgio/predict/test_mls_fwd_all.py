@@ -149,7 +149,7 @@ def _dump_debug(label, payload, resp=None, error=None):
 
 def log(msg):
     ts = datetime.datetime.utcnow().isoformat() + 'Z'
-    print(f"[{ts}] [test_owusu] {msg}")
+    print(f"[{ts}] [test_fwd] {msg}")
 
 
 MIN_QUERY_INTERVAL_SECONDS = 0.5  # pausa minima tra chiamate GraphQL consecutive, per non concentrare troppe richieste ravvicinate

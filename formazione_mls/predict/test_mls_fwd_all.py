@@ -181,7 +181,7 @@ def _dump_debug(label, payload, resp=None, error=None):
 
 def log(msg):
     ts = datetime.datetime.utcnow().isoformat() + 'Z'
-    print(f"[{ts}] [test_owusu] {msg}")
+    print(f"[{ts}] [test_fwd] {msg}")
 
 
 MIN_QUERY_INTERVAL_SECONDS = 0.5  # pausa minima tra chiamate GraphQL consecutive, per non concentrare troppe richieste ravvicinate
@@ -1951,10 +1951,17 @@ def main():
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
     summary_lines.append("=" * 70)
-    for idx, (slug, status, atteso, range_low, range_high, note, team_slug, opp_slug) in enumerate(ok_rows, 1):
+    for idx, (slug, status, atteso, range_low, range_high, note, team_slug, opp_slug,
+              ordinamento) in enumerate(ok_rows, 1):
         low = round(range_low)
         high = round(range_high)
         summary_lines.append(f"{idx}) {slug}: {round(atteso)} pt attesi ({low}-{high})")
+        # NUOVO (27/07, sezione 27.C): score usato per ORDINARE (senza
+        # shrinkage), distinto dai "pt attesi" mostrati sopra. Riga parseable
+        # letta da build_consiglio.py; se manca, a valle si ordina sui
+        # pt attesi come prima.
+        if ordinamento is not None:
+            summary_lines.append(f"   ORDINAMENTO: {ordinamento:.2f}")
         # NUOVO (26/07, tema correlazione GK-DEF): riga parseable con squadra/
         # avversario, letta da build_consiglio.py per portarla fino a
         # build_formazione_finale.py (evitare di schierare insieme portiere
