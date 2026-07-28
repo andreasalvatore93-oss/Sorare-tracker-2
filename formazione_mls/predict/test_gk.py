@@ -824,6 +824,7 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     away_avg = sum(away_vals) / len(away_vals) if away_vals else overall_avg
 
     context_avg = home_avg if target_is_home else away_avg
+    context_vals = home_vals if target_is_home else away_vals
 
     # FIX (25/07, audit logica): il delta viene normalizzato per la deviazione
     # standard STORICA del gruppo stesso, invece di una scala fissa "1%/punto"
@@ -839,7 +840,18 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     std_dev = variance ** 0.5
     delta = context_avg - overall_avg
     delta_normalizzato = (delta / std_dev) if std_dev > 0 else 0.0
-    fattore = 1.0 + (delta_normalizzato * SPLIT_FACTOR_SCALE_PER_STD)
+    # Shrinkage per campione piccolo (28/07, richiesta esplicita utente, caso
+    # reale Collodi: fattore casa/trasferta di 1.319 calcolato su 3-4 partite
+    # per bucket, rumore spacciato per segnale). Con pochi dati nel bucket
+    # (casa O trasferta, quello effettivamente usato per il target) il
+    # fattore viene tirato verso il neutro 1.0, proporzionalmente al numero
+    # di partite in quel bucket -- stesso principio Empirical Bayes dello
+    # shrinkage verso il prior di ruolo, applicato qui alla deviazione invece
+    # che al livello assoluto.
+    SPLIT_SHRINK_K = 5.0
+    n_context = len(context_vals)
+    shrink = n_context / (n_context + SPLIT_SHRINK_K)
+    fattore = 1.0 + (delta_normalizzato * SPLIT_FACTOR_SCALE_PER_STD * shrink)
     return max(0.7, min(1.3, fattore))  # limitato per evitare correzioni estreme
 
 
@@ -1062,7 +1074,7 @@ def build_prediction(player_slug):
     # PRIMA di ogni altro filtro, come se non esistessero. Date non
     # interpretabili restano incluse (permissivo, mai un'esclusione su dato
     # mancante).
-    MAX_HISTORY_DAYS = 120
+    MAX_HISTORY_DAYS = 365
     _cutoff_storico = datetime.datetime.utcnow() - datetime.timedelta(days=MAX_HISTORY_DAYS)
 
     def _game_dt(node):
@@ -1332,12 +1344,24 @@ def build_prediction(player_slug):
             next_own_rank, next_opp_rank, next_is_home = team_ranking_from_game(
                 next_detail['anyGame'], player_team_slug)
 
+    # Shrinkage per campione piccolo (28/07, richiesta esplicita utente, caso
+    # reale Collodi: 1.319 calcolato su 3-4 partite per bucket casa/trasferta,
+    # rumore spacciato per segnale). A differenza degli altri ruoli (che usano
+    # compute_split_factor, gia' corretto con lo stesso principio), GK calcola
+    # il fattore casa/trasferta con un rapporto grezzo home_avg/away_avg senza
+    # alcuna cautela sul campione -- qui il fattore viene tirato verso il
+    # neutro 1.0 proporzionalmente al numero di partite nel bucket usato.
+    SPLIT_SHRINK_K_GK = 5.0
     fattore_casa_trasferta = 1.0
     if overall_avg_for_factor > 0:
         if next_is_home:
-            fattore_casa_trasferta = home_avg / overall_avg_for_factor
+            _raw_fattore = home_avg / overall_avg_for_factor
+            _n_bucket = len(home_scores)
         else:
-            fattore_casa_trasferta = away_avg / overall_avg_for_factor
+            _raw_fattore = away_avg / overall_avg_for_factor
+            _n_bucket = len(away_scores)
+        _shrink_gk = _n_bucket / (_n_bucket + SPLIT_SHRINK_K_GK)
+        fattore_casa_trasferta = 1.0 + _shrink_gk * (_raw_fattore - 1.0)
 
     # --- Fattori granulari SEPARATI (26/07: falli/efficacia offensiva/eventi
     # rari rimossi, pesavano 0.0% su 268 partite reali -- vedi
@@ -1432,8 +1456,25 @@ def build_prediction(player_slug):
     # proiettato -- score_atteso e' "quanto rende SE gioca", il rischio di
     # assenza va gestito come filtro secco (starterOdds/MIN_STARTER_ODDS),
     # non come sconto continuo sul punteggio.
-    score_atteso = ((level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
-                    * fattore_casa_trasferta)
+    # Shrinkage verso il prior di ruolo (28/07, caso reale: Michael Collodi,
+    # 8 partite utilizzabili, preferito a Yohei Takaoka -- 10 partite -- per
+    # via di un fattore casa/trasferta enorme calcolato su 3-4 partite per
+    # bucket. GK non aveva MAI avuto questo shrinkage, a differenza di
+    # DEF/FWD -- un giocatore con 8 partite pesava uguale a uno con 40.
+    # Stesso principio EmpiricalBayes gia' in produzione su DEF (k=15) e FWD
+    # (k=5): con storico corto, il grezzo pesa meno e il prior di ruolo
+    # (MEDIA_RUOLO_GK_PRIOR, media reale calcolata su 2664 partite GK cache)
+    # pesa di piu'. k=5 scelto dopo backtest walk-forward (selection_quality,
+    # 45 giornate reali): differenza minima fra k testati (2.7%-3.7% lift,
+    # segnale GK debole in generale), k=5 e' un compromesso prudente.
+    SHRINK_K_OUTLIER_GK = 5.0
+    MEDIA_RUOLO_GK_PRIOR = 48.81
+    _grezzo_gk = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    _grezzo_gk_corretto = (
+        (n / (n + SHRINK_K_OUTLIER_GK)) * _grezzo_gk
+        + (SHRINK_K_OUTLIER_GK / (n + SHRINK_K_OUTLIER_GK)) * MEDIA_RUOLO_GK_PRIOR
+    )
+    score_atteso = _grezzo_gk_corretto * fattore_casa_trasferta
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo
