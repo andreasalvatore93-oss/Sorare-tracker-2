@@ -391,15 +391,44 @@ _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
 
+# ESPERIMENTO 29/07 (richiesta esplicita utente, osservazione su un log reale):
+# nella run delle 07:35 il primo 429 e' scattato solo dopo ~1m39s e ~250
+# giocatori analizzati SENZA NESSUN 429 -- poi, una volta scattato, e' stata
+# sostanzialmente una raffica ininterrotta. Ipotesi da testare: Sorare non
+# limita per "ritmo istantaneo" ma per QUANTITA' di richieste in una finestra
+# scorrevole -- una pausa fissa periodica (indipendente dai 429, non solo
+# reattiva a un 429 gia' avvenuto) potrebbe "svuotare" quella finestra prima
+# che scatti, invece di limitarsi a rallentare dopo il fatto. Ciclo: lavora a
+# ritmo FAST per GRAPHQL_BURST_WORK_SECONDS, poi pausa fissa di
+# GRAPHQL_BURST_PAUSE_SECONDS, poi riparte. 0 = disattivato (comportamento
+# precedente invariato).
+GRAPHQL_BURST_WORK_SECONDS = float(os.environ.get('GRAPHQL_BURST_WORK_SECONDS', '60.0'))
+GRAPHQL_BURST_PAUSE_SECONDS = float(os.environ.get('GRAPHQL_BURST_PAUSE_SECONDS', '20.0'))
+_burst_window_start = [None]
+_burst_paused_until = [0.0]
+
 
 def _graphql_throttle():
     with _graphql_throttle_lock:
         now = time.time()
+        pause_remaining = 0.0
+        if GRAPHQL_BURST_WORK_SECONDS > 0:
+            if _burst_window_start[0] is None:
+                _burst_window_start[0] = now
+            if now < _burst_paused_until[0]:
+                pause_remaining = _burst_paused_until[0] - now
+            elif now - _burst_window_start[0] >= GRAPHQL_BURST_WORK_SECONDS:
+                _burst_paused_until[0] = now + GRAPHQL_BURST_PAUSE_SECONDS
+                _burst_window_start[0] = _burst_paused_until[0]
+                pause_remaining = GRAPHQL_BURST_PAUSE_SECONDS
+                log(f"[burst] {GRAPHQL_BURST_WORK_SECONDS:.0f}s di lavoro completati, "
+                    f"pausa fissa di {GRAPHQL_BURST_PAUSE_SECONDS:.0f}s...")
         recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
         min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
         wait = min_interval - (now - _graphql_last_call_ts[0])
-        if wait > 0:
-            time.sleep(wait)
+        total_wait = max(wait, 0.0) + pause_remaining
+        if total_wait > 0:
+            time.sleep(total_wait)
         _graphql_last_call_ts[0] = time.time()
 
 
