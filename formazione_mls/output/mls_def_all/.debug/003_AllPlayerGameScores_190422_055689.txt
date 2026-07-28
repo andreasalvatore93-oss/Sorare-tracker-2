@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "andres-felipe-reyes-ambuila", "first": 30}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:04:22 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '970', 'x-gql-depth': '7', 'x-server-timestamp': '1785265462', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'H7PE40sPseKxviGp2C7TuY7gIOsop1PVkqEO7F_nDExLSejpaPE2_j8LIPUOrj_F_GGh_kt5BLqIMLB0XO2Psg', 'etag': 'W/"ddc8ee907440f36049e8f281554c712a"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=XAM23DQJPcmkJzv4SNZOjhXfrmtnlDeZI8XiX6pEp041gOY1ZcF4Y8e9WR6FOKSomoMgw5%2Fw04HzE6z6rrpv7HFlhqE6RZd7wWriGtkvpjCEynJNfXTyKPhx3AucDuKbXrXbB8KaWtOi2YvOQx5l4q3gFfH%2BSsJsbqS0x4iOuSiMEwiSYO%2FA%2F4Pbjw0sqRM5R4Pe2sJ8JT3ItKulJj4MKR0AgLk0ymohF6%2FSo1UzsUJXxKRKxV7TVUsOYSmm788SKkKjUMFyf4sUvPxqFz30DBxvQL7ByqRAEAnxjTPEUpl63whveDvOPeLuHQyT%2BceO--Mx1ACOIdOWPKurr7--CLin9GtkrPcJ0wk1c9YrFg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:04:22 GMT; secure; httponly; samesite=none', 'x-request-id': 'e571ae7d-86b1-4784-aef8-c0a61320559b', 'x-runtime': '0.012561', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 2f0d0ded74f2b28e7c1f019cd2b0a934.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'ORD58-P3', 'x-amz-cf-id': 'CtaYPxDo1Ru2NONFdBdCd0U0cfrjpOHCV3d4_rYiXsIt_XDGmVeNDw=='}
+body (integrale):
+{"errors":[{"message":"Query has complexity of 970, which exceeds max complexity of 500. Using an APIKEY the limit would be 30000."}]}
