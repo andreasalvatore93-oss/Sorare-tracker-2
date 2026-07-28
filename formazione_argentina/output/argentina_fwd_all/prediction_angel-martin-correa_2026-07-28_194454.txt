@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:44:54.566478Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) angel-martin-correa: 6 pt attesi (0-28)
+   SQUADRA: tigres-uanl-san-nicolas-de-los-garza | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: angel-martin-correa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: angel-martin-correa (squadra: tigres-uanl-san-nicolas-de-los-garza)
+Generato: 2026-07-28T19:44:54.565910Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 19
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-08 | TIG vs MON | liga-mx | score=44.0 | peso=0.445
+  2026-03-13 | CIN vs TIG | concacaf-champions-league | score=38.8 | peso=0.472
+  2026-03-20 | TIG vs CIN | concacaf-champions-league | score=44.7 | peso=0.500
+  2026-03-23 | JUA vs TIG | liga-mx | score=44.7 | peso=0.530
+  2026-04-04 | TIJ vs TIG | liga-mx | score=68.5 | peso=0.561
+  2026-04-09 | TIG vs SEA | concacaf-champions-league | score=33.5 | peso=0.595
+  2026-04-11 | TIG vs CHI | liga-mx | score=80.2 | peso=0.630
+  2026-04-16 | SEA vs TIG | concacaf-champions-league | score=41.7 | peso=0.667
+  2026-04-23 | ATS vs TIG | liga-mx | score=39.4 | peso=0.707
+  2026-04-25 | TIG vs MAZ | liga-mx | score=100.0 | peso=0.749
+  2026-04-29 | NSH vs TIG | concacaf-champions-league | score=75.5 | peso=0.794
+  2026-05-03 | TIG vs CHI | liga-mx | score=39.9 | peso=0.841
+  2026-05-06 | TIG vs NSH | concacaf-champions-league | score=64.5 | peso=0.891
+  2026-05-10 | CHI vs TIG | liga-mx | score=42.0 | peso=0.944
+  2026-05-31 | TOL vs TIG | concacaf-champions-league | score=40.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 53.67
+  di cui Punteggio decisivo (level_score) medio: 45.93 | Punteggio complessivo (granulari) medio: 7.74 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 6.84 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.4 - 75.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.66 (differenza: +4.62)
+Media score in casa: 58.11 | Media score fuori casa: 48.85
+Fattore casa/trasferta applicato: 0.991 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.1
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.008
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 52.4 vs media ultime 10: 55.7): 0.941
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T22:15
+Casa: Gimnasia y Esgrima La Plata | Trasferta: CA River Plate
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 5.7 (range 0.0 - 27.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.12
+Punteggio REALE ottenuto in quella partita: 40.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.6    80.2    +36.6    16.0        NO
+   7        7      55.4    41.7    -13.7    23.2        SI
+   8        8      42.7    39.4     -3.3    21.9        SI
+   9        9      64.9   100.0    +35.1    21.0        NO
+  10       10      47.7    75.5    +27.8    31.0        SI
+  11       11      67.6    39.9    -27.7    30.5        SI
+  12       12      47.1    64.5    +17.4    29.8        SI
+  13       13      61.5    42.0    -19.5    28.4        SI
+  14       14      62.6    40.2    -22.4    27.6        SI
+
+MAE (errore assoluto medio): 22.61
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
