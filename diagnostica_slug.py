@@ -20,6 +20,7 @@ query Diagnostica($slug: String!) {
   anyPlayer(slug: $slug) {
     slug
     displayName
+    birthDate
     activeClub {
       name
       domesticLeague { slug displayName }
