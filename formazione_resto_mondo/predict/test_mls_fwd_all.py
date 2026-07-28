@@ -1270,7 +1270,7 @@ def build_prediction(player_slug):
     # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
     # Il fattore resta calcolato sopra e nel result dict solo a scopo
     # diagnostico/di visualizzazione nell'output.
-    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
+    score_atteso = (media_pesata * fattore_casa_trasferta
                     * fattore_trend)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
@@ -1289,7 +1289,7 @@ def build_prediction(player_slug):
     media_passaggio_condizionata_venue = media_condizionata(
         passing_values, weights, is_home_flags, next_is_home, weighted_mean(passing_values, weights))
     delta_passaggio_venue = media_passaggio_condizionata_venue - weighted_mean(passing_values, weights)
-    score_atteso += p_gioca * delta_passaggio_venue
+    score_atteso += delta_passaggio_venue
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale

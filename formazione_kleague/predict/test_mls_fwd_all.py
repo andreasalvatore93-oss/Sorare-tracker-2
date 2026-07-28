@@ -1353,7 +1353,7 @@ def build_prediction(player_slug):
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
-    score_atteso = (p_gioca * (level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
+    score_atteso = ((level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
                     * fattore_casa_trasferta)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
@@ -1372,7 +1372,7 @@ def build_prediction(player_slug):
     media_passaggio_condizionata_venue = media_condizionata(
         passing_values, weights, is_home_flags, next_is_home, weighted_mean(passing_values, weights))
     delta_passaggio_venue = media_passaggio_condizionata_venue - weighted_mean(passing_values, weights)
-    score_atteso += p_gioca * delta_passaggio_venue
+    score_atteso += delta_passaggio_venue
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
