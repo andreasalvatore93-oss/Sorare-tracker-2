@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "jakob-maximilian-scholler", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:27:18 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785266838', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'fre3R_fky8bZ2Npqv1PxCy3P795Q0J7z9mjcjmn3jT1rrz1-95dX6ke0UGFvtH54i-P8qmSG3dSXjgQ38uW2lA', 'etag': 'W/"8a564a27c2389f72abb20a0c31083a03"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=vd%2B8ukHBlr2c5JKrLL2MBQ4ymlxLkRiVIQU03IDfN7XcUBgcC3b%2B5ednQwZacva3F5KP1FM%2BAyCHGLmc0ag3sJ4L829RQxCedNR8ZRKVSE%2BGKb7axqaBej1ZodYmQAmbk3ZFD774oUrL2w4Bc%2B3nFH5zR7uPh%2B0IvKffjyaDEVUfkL%2FsN5PIHOiho2Ckc8vZlS383NPY44Fn0ZP%2BuUY0a9xQPQlobUwOurdmX4SCBsdyxg3Y1vcMWHJESJjK8n9JqZ5XGLd3RoTpflOIqzc7TbwKpk0lzOg5MTPaB%2BWoEU%2B3TKjWpg67vo1OrKygMItd--AIwryvyENlcmsiu4--2UjomMCpUnGIm5cutbK%2BNg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:27:18 GMT; secure; httponly; samesite=none', 'x-request-id': 'c8f4d3d3-b708-4c16-91c1-06b2cb03089e', 'x-runtime': '0.068229', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 ee40b6fb86110741a6ccff39169674a0.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': 'FmnPQ1zyQ0ICYd7RqMdi1Rn0JWxFtV6o8ZcPANaIeXJtWVeKjS1hmw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:c334ebc9-5d76-42d8-9850-9132629b43de","score":38.06,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:6f4b3746-f6c6-4456-81eb-1991ac6f0a12","date":"2026-07-23T17:00:00Z","statusTyped":"played","homeTeam":{"slug":"fc-santa-coloma-andorra-la-vella","name":"Don Denis FC Santa Coloma","code":"FSC","domesticLeagueRanking":null},"awayTeam":{"slug":"rapid-wien-wien","name":"SK Rapid Wien","code":"SCR","domesticLeagueRanking":5},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":15,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:5980fc77-ab59-48ce-9f3a-9c687123a63c","score":100.0,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:6cfe72af-ea37-4e7a-a228-5be8f94d8d67","date":"2026-05-25T15:00:00Z","statusTyped":"played","homeTeam":{"slug":"rapid-wien-wien","name":"SK Rapid Wien","code":"SCR","domesticLeagueRanking":5},"awayTeam":{"slug":"ried-ried-im-innkreis","name":"SV Guntamatic Ried","code":"SVR","domesticLeagueRanking":1},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:cf425747-e21f-4618-8f47-07168bcc6a82","date":"2026-07-29T18:30:00Z","playerGameScore":{"id":"So5Score:6c799c28-b264-47c2-a0b4-6eba5f15368b","positionTyped":"Defender","projectedScore":52.0,"anyGame":{"id":"Game:cf425747-e21f-4618-8f47-07168bcc6a82","date":"2026-07-29T18:30:00Z","homeTeam":{"slug":"rapid-wien-wien","name":"SK Rapid Wien","code":"SCR","domesticLeagueRanking":5},"awayTeam":{"slug":"fc-santa-coloma-andorra-la-vella","name":"Don Denis FC Santa Coloma","code":"FSC","domesticLeagueRanking":null},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":7000,"reliability":"MEDIUM"}}}},{"id":"Game:5835879d-4b2a-4eea-97b4-df876d42abe0","date":"2026-08-02T17:00:00Z","playerGameScore":{"id":"So5Score:77f5ba2e-2e5a-459a-8dc5-18d0822f1ede","positionTyped":"Defender","projectedScore":47.0,"anyGame":{"id":"Game:5835879d-4b2a-4eea-97b4-df876d42abe0","date":"2026-08-02T17:00:00Z","homeTeam":{"slug":"rapid-wien-wien","name":"SK Rapid Wien","code":"SCR","domesticLeagueRanking":5},"awayTeam":{"slug":"rheindorf-altach-altach","name":"CASHPOINT SCR Altach","code":"ALT","domesticLeagueRanking":8},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:08d8d542-ed2d-4f40-b0e3-35c5607607fb","date":"2026-08-09T15:00:00Z","playerGameScore":{"id":"So5Score:11af7c82-46e9-4249-8ee5-57c225cecbc8","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:08d8d542-ed2d-4f40-b0e3-35c5607607fb","date":"2026-08-09T15:00:00Z","homeTeam":{"slug":"ried-ried-im-innkreis","name":"SV Guntamatic Ried","code":"SVR","domesticLeagueRanking":1},"awayTeam":{"slug":"rapid-wien-wien","name":"SK Rapid Wien","code":"SCR","domesticLeagueRanking":5},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:d7ffb909-fb79-4b55-bae4-1e6e2de2553d","date":"2026-08-16T17:00:00Z","playerGameScore":{"id":"So5Score:1efe4eb6-85c8-4db6-931e-a4402dcd8f0a","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:d7ffb909-fb79-4b55-bae4-1e6e2de2553d","date":"2026-08-16T17:00:00Z","homeTeam":{"slug":"rapid-wien-wien","name":"SK Rapid Wien","code":"SCR","domesticLeagueRanking":5},"awayTeam":{"slug":"grazer-ak-graz","name":"Liebherr Grazer AK","code":"GAK","domesticLeagueRanking":11},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:7c6e0a61-9818-4302-bf32-600c73036f99","date":"2026-08-23T17:00:00Z","playerGameScore":{"id":"So5Score:7c672d5c-32aa-4abf-8ca8-523b2c6a419c","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:7c6e0a61-9818-4302-bf32-600c73036f99","date":"2026-08-23T17:00:00Z","homeTeam":{"slug":"salzburg-wals-siezenheim","name":"FC Red Bull Salzburg","code":"RBS","domesticLeagueRanking":3},"awayTeam":{"slug":"rapid-wien-wien","name":"SK Rapid Wien","code":"SCR","domesticLeagueRanking":5},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}

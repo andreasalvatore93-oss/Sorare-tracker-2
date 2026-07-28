@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:25:28.576567Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) xherdan-shaqiri: 57 pt attesi (46-71)
+   SQUADRA: basel-basel | AVVERSARIO: lausanne-sport-lausanne
+======================================================================
+
+######################################################################
+# GIOCATORE: xherdan-shaqiri
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: xherdan-shaqiri (squadra: basel-basel)
+Generato: 2026-07-28T19:25:28.576218Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 8
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: super-league-ch (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | BAS vs YBB | super-league-ch | score=68.2 | peso=0.891
+  2026-04-18 | FCT vs BAS | super-league-ch | score=43.1 | peso=0.944
+  2026-07-25 | SER vs BAS | super-league-ch | score=52.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 54.37
+  di cui Punteggio decisivo (level_score) medio: 42.86 | Punteggio complessivo (granulari) medio: 11.52 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 45.71 (delta +2.86)
+  Efficacia offensiva condizionata: delta venue +1.18, delta avversario -1.07 | Passaggio condizionato: delta venue -0.67, delta avversario -0.09 | Gol subiti condizionato: delta venue -0.12, delta avversario +0.54 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 10.17
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.1 - 68.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 68.20 | Media score fuori casa: 47.90
+Fattore casa/trasferta applicato: 1.070 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.3
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.092
+Fattore falli (casa/trasferta, da dati reali): 0.929
+Fattore duelli (casa/trasferta, da dati reali): 0.947
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.062
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.942
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.965
+Fattore gol subiti (goals_conceded, con cap): 0.987
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 37.50% (fonte: tasso di presenza storico (3/8))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T16:00
+Casa: FC Basel 1893 | Trasferta: FC Lausanne Sport
+Competizione: super-league-ch
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.2 (range 46.0 - 71.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.29
+Punteggio REALE ottenuto in quella partita: 52.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
