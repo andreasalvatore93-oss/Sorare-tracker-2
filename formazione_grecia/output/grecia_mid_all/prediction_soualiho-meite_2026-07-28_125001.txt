@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T12:50:01.467098Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) soualiho-meite: 6 pt attesi (0-25)
+   SQUADRA: paok-thessaloniki | AVVERSARIO: dynamo-kyiv-kyiv-kiev
+======================================================================
+
+######################################################################
+# GIOCATORE: soualiho-meite
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: soualiho-meite (squadra: paok-thessaloniki)
+Generato: 2026-07-28T12:50:01.466628Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-02-13 | PKT vs FCS | uefa-europa-league | score=52.2 | peso=0.530
+  2025-08-07 | PKT vs WAC | uefa-europa-league | score=48.3 | peso=0.561
+  2025-08-14 | WAC vs PKT | uefa-europa-league | score=56.6 | peso=0.595
+  2025-08-21 | RIJ vs PKT | uefa-europa-league | score=35.0 | peso=0.630
+  2025-08-28 | PKT vs RIJ | uefa-europa-league | score=81.0 | peso=0.667
+  2025-09-24 | PKT vs MTA | uefa-europa-league | score=58.9 | peso=0.707
+  2025-10-23 | LIL vs PKT | uefa-europa-league | score=78.8 | peso=0.749
+  2025-11-06 | PKT vs YBB | uefa-europa-league | score=60.0 | peso=0.794
+  2025-11-27 | PKT vs BRA | uefa-europa-league | score=24.0 | peso=0.841
+  2025-12-11 | RAZ vs PKT | uefa-europa-league | score=50.0 | peso=0.891
+  2026-01-22 | PKT vs BET | uefa-europa-league | score=58.0 | peso=0.944
+  2026-01-29 | OL vs PKT | uefa-europa-league | score=76.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 57.10
+  di cui Punteggio decisivo (level_score) medio: 40.64 | Punteggio complessivo (granulari) medio: 16.46 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 38.11 (delta -2.54)
+  Efficacia offensiva condizionata: delta venue -0.27, delta avversario +0.00 | Passaggio condizionato: delta venue +0.57, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.98, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 16.57
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 76.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.33 (differenza: +4.24)
+Media score in casa: 54.63 | Media score fuori casa: 59.36
+Fattore casa/trasferta applicato: 0.986 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.7
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.981
+Fattore duelli (casa/trasferta, da dati reali): 0.984
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.019
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.019
+Fattore gol subiti (goals_conceded, con cap): 1.023
+Fattore trend (media ultime 5: 53.7 vs media ultime 10: 57.9): 0.949
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T17:45
+Casa: PAOK Thessaloniki FC | Trasferta: FC Dynamo Kyiv
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 5.9 (range 0.0 - 25.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.66
+Punteggio REALE ottenuto in quella partita: 76.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +21.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.9    78.8    +28.9    19.9        NO
+   7        7      57.7    60.0     +2.3    21.7        SI
+   8        8      73.5    24.0    -49.5    20.0        NO
+   9        9      53.1    50.0     -3.1    25.4        SI
+  10       10      58.0    58.0     +0.0    23.8        SI
+  11       11      52.7    76.4    +23.7    22.4        NO
+
+MAE (errore assoluto medio): 17.90
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
