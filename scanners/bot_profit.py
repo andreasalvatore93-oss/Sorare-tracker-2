@@ -384,14 +384,19 @@ def eur_price_from_amounts(amounts, eth_rate):
 # stesso), ritmo base/safe/cooldown solo moderatamente piu' veloci
 # dell'originale (non quanto il primo tentativo) per restare nella fascia
 # 5-6 min richiesta.
-# FIX 29/07 ter (richiesta esplicita utente): ora che il secondo giro dedicato
-# recupera i rate-limited invece di perderli (vedi run_snapshot_sweep), il
-# costo di un ritmo piu' aggressivo non e' piu' "carte perse per sempre" ma
-# solo "piu' carte nel pool di retry" -- si puo' spingere di piu' e verificare
-# se si risparmia tempo netto, il paracadute c'e' comunque.
-GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.12'))
-GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.25'))
-GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '20.0'))
+# FIX 29/07 ter (richiesta esplicita utente) PROVATO E SMENTITO: l'ipotesi era
+# che, col secondo giro dedicato a recuperare i rate-limited, un ritmo piu'
+# aggressivo nel primo giro (0.12s/0.25s/20s) avrebbe risparmiato tempo netto
+# visto che il paracadute del retry copre le perdite. Risultato reale: 6m03s,
+# PEGGIO del 5m14s del ritmo precedente -- 112 giocatori finiti nel pool di
+# retry (contro 12) hanno speso ciascuno fino a 2+4+16=22s di backoff nel
+# primo giro PRIMA di arrendersi, un costo che supera il guadagno di ritmo.
+# Ripristinato il compromesso precedente (0.2s/0.45s/30s), che resta il
+# miglior punto trovato finora (5m14s-5m28s, ~70 rate-limited di cui 0
+# persistenti dopo il secondo giro).
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.2'))
+GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.45'))
+GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '30.0'))
 _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
