@@ -799,7 +799,7 @@ def main():
             r['label'], r['idx'], r['formazione'], card_pool, l10_cap=r['l10_cap'],
             l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
             check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
-            avoid_captain_slugs=r['avoid_captain_slugs'])
+            avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=r['tipo'] in XP_BONUS_TYPES)
         chips = _build_alt_chips(r['formazione'], r['label'], r['idx'], global_usage)
         alt_panel = _render_alt_panel(chips, card_pool)
         lineup_html_blocks.append(f'<div class="lineup-row">{lineup_html}{alt_panel}</div>')

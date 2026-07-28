@@ -1042,12 +1042,20 @@ def _slot_role(slot_label):
     return m.group(1) if m and m.group(1) in ROLES_HTML else None
 
 
-def _pcard_tags_html(ctype, copie):
+def _pcard_tags_html(ctype, copie, xp_bonus_frac=0.0):
     tags = []
     if ctype == 'classic':
         tags.append('<span class="tag tag-classic">Classic</span>')
     if copie > 1:
         tags.append(f'<span class="tag tag-copies">{copie} copie</span>')
+    # Tag visibile del bonus power/xp/collezione/stagione (28/07, richiesta
+    # esplicita utente: senza questo tag non si vedeva se il bonus era stato
+    # applicato o se il punteggio era semplicemente piu' alto per altri
+    # motivi). Mostrato SOLO quando il chiamante passa xp_bonus_frac > 0 --
+    # cioe' SOLO per i tipi in XP_BONUS_TYPES (In Season/All Stars 7/U23),
+    # mai per le Arene, dove il bonus non e' applicato.
+    if xp_bonus_frac:
+        tags.append(f'<span class="tag tag-xpbonus">+{xp_bonus_frac:.0%} xp</span>')
     return ''.join(tags)
 
 
@@ -1069,12 +1077,13 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool):
     )
 
 
-def render_card_html(slot_label, row, ctype, card_pool, is_captain):
+def render_card_html(slot_label, row, ctype, card_pool, is_captain, apply_xp_bonus=False):
     color = _slot_role_color(slot_label)
     role_label = re.sub(r'^EXTRA \(([A-Z]+)\)$', r'EXTRA · \1', slot_label)
     role = _slot_role(slot_label) or ''
     copie = card_pool.copies_owned(row['slug'])
-    tags_html = _pcard_tags_html(ctype, copie)
+    xp_bonus_frac = card_pool.power_bonus_fraction(row['slug']) if apply_xp_bonus else 0.0
+    tags_html = _pcard_tags_html(ctype, copie, xp_bonus_frac)
     captain_badge = '<span class="pcard-captain">C</span>' if is_captain else ''
     l10 = card_pool.l10(row['slug'])
     body_html = _pcard_body_html(row['slug'], row['atteso'], row['low'], row['high'], l10, tags_html, card_pool)
@@ -1097,7 +1106,7 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain):
 
 def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10_cap_rispettato=True,
                         stack_bonus_perso=False, check_cap260=False, tipo=None, apply_stack_guard=False,
-                        avoid_captain_slugs=None):
+                        avoid_captain_slugs=None, apply_xp_bonus=False):
     captain_slot, captain_row, _captain_type = pick_captain(formazione, avoid_captain_slugs)
     # Tornati alla fila originale (28/07): sia il raggruppamento per ruolo
     # sia la diagonale non convincevano l'utente ("non ci siamo") -- niente
@@ -1105,7 +1114,7 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
     # orizzontale se serve. Carte piu' piccole restano (richiesta separata,
     # confermata).
     cards_html = ''.join(
-        render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'])
+        render_card_html(slot, row, ctype, card_pool, row['slug'] == captain_row['slug'], apply_xp_bonus)
         for slot, row, ctype in formazione
     )
     totale_atteso = sum(row['atteso'] for _, row, _ in formazione)
@@ -1240,6 +1249,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .tag {{ font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }}
   .tag-classic {{ background: rgba(240,168,59,0.16); color: #f0a83b; }}
   .tag-copies {{ background: var(--stripe); color: var(--muted); }}
+  .tag-xpbonus {{ background: rgba(76,175,80,0.16); color: #4caf50; }}
   .lineup-total {{
     margin-top: 12px; display: flex; align-items: center; gap: 18px; background: var(--surface);
     border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; flex-wrap: wrap;
