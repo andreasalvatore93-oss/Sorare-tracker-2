@@ -3219,3 +3219,15 @@ script Python e verificato con `yaml.safe_load` prima di scrivere).
 **Come ripristinare se fallisce**: stesso meccanismo di 30.I/30.K — `git log` sui due file e
 revert/checkout del commit "TEST v3" / "12 job discovery" per tornare alla v2 (6 job, 30.K),
 già confermata stabile.
+
+**ESITO (28/07, run 30350390404): FUNZIONA, tenuto attivo — non e' esploso niente.** Run totale
+**4m21s** (da 5m18s del v2, 15m18s a inizio sessione: -71% totale in questa sessione). Discovery
+(12 job in parallelo): ~1 minuto. **Zero 429 su tutti e 12 i job**, zero job falliti in tutta la
+pipeline (discovery/predict/formazione). Nessun rollback necessario: 12 job + max-parallel 14
+restano il meccanismo di produzione.
+
+**Non spingere oltre in questa sessione** — il rendimento marginale di ulteriore split è ormai
+piccolo (discovery già a ~1 minuto, il pavimento pratico è probabilmente il checkout+pip install
+di ogni job GitHub Actions, ~15-20s fissi per job, che con troppi job comincia a pesare più del
+lavoro utile). Se in futuro si vuole andare oltre, valutare prima di ridurre l'overhead fisso per
+job (es. cache pip) piuttosto che aumentare ancora il numero di shard.
