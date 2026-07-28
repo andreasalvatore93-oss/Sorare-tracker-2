@@ -29,6 +29,10 @@ TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
 # giocatori con partita fra una settimana (che per giunta non hanno ancora le
 # starter odds, quindi passavano indenni anche il filtro sulla soglia).
 KICKOFF_RE = re.compile(r'^Data:\s+(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\s*$')
+# NUOVO (28/07, sezione 27.C, estesa da DEF a FWD): score usato per ORDINARE,
+# calcolato senza shrinkage. Riga opzionale: se manca (file generati prima di
+# questo fix) si ordina come prima sui pt attesi.
+ORDINAMENTO_RE = re.compile(r'^ORDINAMENTO:\s+(-?[\d.]+)\s*$')
 
 
 def latest_file_for_slug(slug):
@@ -45,6 +49,7 @@ def parse_player_file(path):
     consiglio = None
     team_slug = opp_slug = None
     kickoff = None
+    ordinamento = None
     for line in content.splitlines():
         stripped = line.strip()
         m = CONSIGLIO_RE.match(stripped)
@@ -52,6 +57,10 @@ def parse_player_file(path):
             slug, atteso, low, high = m.groups()
             consiglio = {'slug': slug, 'status': 'OK', 'atteso': int(atteso),
                          'low': int(low), 'high': int(high)}
+            continue
+        m = ORDINAMENTO_RE.match(stripped)
+        if m:
+            ordinamento = float(m.group(1))
             continue
         m = KICKOFF_RE.match(stripped)
         if m:
@@ -70,6 +79,7 @@ def parse_player_file(path):
         consiglio['team_slug'] = None if team_slug == 'N/D' else team_slug
         consiglio['opponent_team_slug'] = None if opp_slug == 'N/D' else opp_slug
         consiglio['kickoff'] = kickoff
+        consiglio['ordinamento'] = ordinamento
         return consiglio
     return None
 
@@ -93,7 +103,14 @@ def main():
         else:
             excluded_count += 1
 
-    ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
+    # Ordina per lo score di ordinamento (senza shrinkage) -- stesso principio
+    # gia' in produzione su build_consiglio_def.py. Fallback TUTTO-O-NIENTE:
+    # se anche un solo giocatore non ha la riga, si ordina tutto per pt
+    # attesi come prima.
+    if ok_rows and all(r.get('ordinamento') is not None for r in ok_rows):
+        ok_rows.sort(key=lambda r: r['ordinamento'], reverse=True)
+    else:
+        ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
 
     lines = []
     lines.append(f"Consiglio attaccanti — {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')}Z")
@@ -105,6 +122,8 @@ def main():
         lines.append(f"   SQUADRA: {r.get('team_slug') or 'N/D'} | AVVERSARIO: {r.get('opponent_team_slug') or 'N/D'}")
         if r.get('kickoff'):
             lines.append(f"   KICKOFF: {r['kickoff']}")
+        if r.get('ordinamento') is not None:
+            lines.append(f"   ORDINAMENTO: {r['ordinamento']:.2f}")
     lines.append("")
     lines.append(f"({excluded_count} esclusi/non disponibili questa giornata)")
 

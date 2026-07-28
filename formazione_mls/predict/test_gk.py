@@ -113,6 +113,14 @@ RANGE_MULTIPLIER = 1.4  # AGGIORNATO (ricalibrazione su 10 campionati, sessione 
 OPPONENT_SENSITIVITY = 29.0  # AGGIORNATO (26/07): grid search allargato su 13 portieri qualificati (>=3 partite test, 26 qualificati totali) — opp_sens=29.0 batte 20.0 del -4.3% di MAE (18.96 vs 19.81), coerente con DEF/MID/FWD e col bootstrap di stabilita' (opp_sens=29.0 mai cambiato in nessun ruolo). range_multiplier=1.6 confermato invariato (tie con 1.4 in questo campione, nessun segnale per cambiarlo).
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.7  # FISSATO (25/07): idem
+# Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes di
+# DEF/FWD, mai avuto da GK prima -- caso reale: Michael Collodi, 8 partite,
+# preferito a Takaoka con 10 per un fattore casa/trasferta enorme su 3-4
+# partite per bucket). k=5 scelto con backtest walk-forward (selection_quality,
+# 45 giornate reali). MEDIA_RUOLO_GK_PRIOR = media reale su 2664 partite GK
+# cache multi-campionato.
+SHRINK_K_OUTLIER_GK = 5.0
+MEDIA_RUOLO_GK_PRIOR = 48.81
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1062,6 +1070,106 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
     return results
 
 
+def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
+                            pos_decisive_values, neg_decisive_values,
+                            target_is_home, p_gioca=1.0,
+                            half_life=None, trend_intensity=None,
+                            shrink_k=SHRINK_K_OUTLIER_GK,
+                            media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR):
+    """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` GK di PRODUZIONE,
+    da usare SIA in build_prediction (predizione reale) SIA nel backtest
+    walk-forward di calibrazione (rigorous_backtest_prod_gk) -- cosi' le due
+    non possono piu' divergere (stesso principio gia' in produzione su
+    DEF/FWD, mancante per GK fino ad oggi: rigorous_backtest usava una
+    formula duplicata indipendente, quindi qualunque backtest/calibrazione
+    ignorava silenziosamente lo shrinkage aggiunto oggi).
+
+    p_gioca accettato per simmetria di firma con gli altri ruoli ma non
+    usato (rimosso da score_atteso il 28/07, vedi commento in build_prediction).
+    Nessun opponent_rankings/Stadio D: entrambi rimossi da score_atteso GK
+    (vedi commenti storici in build_prediction), quindi non servono qui."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    n = len(scores)
+    weights = exponential_weights(n, half_life)
+
+    media_granulari_pesata = weighted_mean(granulari_values, weights)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _s, _l = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    grezzo_corretto = (
+        (n / (n + shrink_k)) * grezzo
+        + (shrink_k / (n + shrink_k)) * media_ruolo_prior
+    )
+
+    home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
+    away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
+    media_pesata = weighted_mean(scores, weights)
+    home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
+    away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
+    overall_avg_for_factor = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
+
+    SPLIT_SHRINK_K_GK = 5.0
+    fattore_casa_trasferta = 1.0
+    if overall_avg_for_factor > 0:
+        if target_is_home:
+            raw_fattore = home_avg / overall_avg_for_factor
+            n_bucket = len(home_scores)
+        else:
+            raw_fattore = away_avg / overall_avg_for_factor
+            n_bucket = len(away_scores)
+        shrink = n_bucket / (n_bucket + SPLIT_SHRINK_K_GK)
+        fattore_casa_trasferta = 1.0 + shrink * (raw_fattore - 1.0)
+
+    return grezzo_corretto * fattore_casa_trasferta
+
+
+def rigorous_backtest_prod_gk(scores, is_home_flags, granulari_values,
+                              pos_decisive_values, neg_decisive_values,
+                              min_history=6, half_life=None, trend_intensity=None,
+                              range_multiplier=1.0):
+    """Backtest walk-forward ALLINEATO ALLA PRODUZIONE per GK (28/07): ad ogni
+    partita richiama compute_score_atteso_gk() -- la STESSA funzione della
+    predizione reale -- sul solo storico precedente. Sostituisce, per gli usi
+    che richiedono coerenza con la produzione, il vecchio rigorous_backtest
+    (formula duplicata indipendente, non allineata dopo il fix shrinkage del
+    28/07). Stessa struttura di ritorno del vecchio rigorous_backtest."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    rows = []
+    n = len(scores)
+    for i in range(min_history, n):
+        predetto = compute_score_atteso_gk(
+            scores[:i], is_home_flags[:i], granulari_values[:i],
+            pos_decisive_values[:i], neg_decisive_values[:i],
+            target_is_home=is_home_flags[i], p_gioca=1.0,
+            half_life=half_life, trend_intensity=trend_intensity)
+        reale = scores[i]
+        w = exponential_weights(i, half_life)
+        dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
+        range_conf = dev_std * range_multiplier
+        dentro_range = abs(reale - predetto) <= range_conf if range_conf > 0 else None
+        rows.append({'i': i, 'predetto': predetto, 'reale': reale,
+                     'errore': reale - predetto, 'dentro_range': dentro_range})
+
+    if not rows:
+        return {'rows': [], 'mae': None, 'pct_dentro_range': None, 'n_test': 0}
+    errori = [abs(r['errore']) for r in rows]
+    mae = sum(errori) / len(errori)
+    coperti = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
+    pct = (sum(1 for c in coperti if c) / len(coperti) * 100.0) if coperti else None
+    return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct, 'n_test': len(rows)}
+
+
 def build_prediction(player_slug):
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
@@ -1456,25 +1564,16 @@ def build_prediction(player_slug):
     # proiettato -- score_atteso e' "quanto rende SE gioca", il rischio di
     # assenza va gestito come filtro secco (starterOdds/MIN_STARTER_ODDS),
     # non come sconto continuo sul punteggio.
-    # Shrinkage verso il prior di ruolo (28/07, caso reale: Michael Collodi,
-    # 8 partite utilizzabili, preferito a Yohei Takaoka -- 10 partite -- per
-    # via di un fattore casa/trasferta enorme calcolato su 3-4 partite per
-    # bucket. GK non aveva MAI avuto questo shrinkage, a differenza di
-    # DEF/FWD -- un giocatore con 8 partite pesava uguale a uno con 40.
-    # Stesso principio EmpiricalBayes gia' in produzione su DEF (k=15) e FWD
-    # (k=5): con storico corto, il grezzo pesa meno e il prior di ruolo
-    # (MEDIA_RUOLO_GK_PRIOR, media reale calcolata su 2664 partite GK cache)
-    # pesa di piu'. k=5 scelto dopo backtest walk-forward (selection_quality,
-    # 45 giornate reali): differenza minima fra k testati (2.7%-3.7% lift,
-    # segnale GK debole in generale), k=5 e' un compromesso prudente.
-    SHRINK_K_OUTLIER_GK = 5.0
-    MEDIA_RUOLO_GK_PRIOR = 48.81
-    _grezzo_gk = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
-    _grezzo_gk_corretto = (
-        (n / (n + SHRINK_K_OUTLIER_GK)) * _grezzo_gk
-        + (SHRINK_K_OUTLIER_GK / (n + SHRINK_K_OUTLIER_GK)) * MEDIA_RUOLO_GK_PRIOR
-    )
-    score_atteso = _grezzo_gk_corretto * fattore_casa_trasferta
+    # score_atteso calcolato tramite compute_score_atteso_gk (28/07, refactor
+    # a funzione condivisa: build_prediction e rigorous_backtest_prod_gk
+    # chiamano la STESSA funzione, non possono piu' divergere). Le variabili
+    # sopra (lambda_pos_dec/level_score_atteso/fattore_trend_granulare)
+    # restano calcolate qui solo per il result dict diagnostico/di
+    # visualizzazione -- lo stesso identico calcolo avviene dentro la funzione
+    # condivisa per lo score_atteso vero e proprio.
+    score_atteso = compute_score_atteso_gk(
+        scores, is_home_flags, granulari_values, pos_decisive_values, neg_decisive_values,
+        target_is_home=next_is_home)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo

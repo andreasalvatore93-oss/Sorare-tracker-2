@@ -229,18 +229,23 @@ SAME_TEAM_SYNERGY_BONUS_BY_PAIR = {
 
 def _same_team_synergy_bonus(role, row, chosen_roles_by_team):
     """Analogo a _cross_team_penalty ma per compagni di squadra (bonus, non
-    penalita'). Somma il bonus per ogni ruolo GIA' scelto nella STESSA
-    squadra di 'row' che forma una coppia con sinergia positiva misurata."""
+    penalita'). Somma il bonus per OGNI OCCORRENZA di ruolo gia' scelta nella
+    STESSA squadra di 'row' che forma una coppia con sinergia positiva
+    misurata -- FIX 28/07 (bug reale trovato dall'utente): chosen_roles_by_team
+    e' un CONTATORE per ruolo, non un set, altrimenti 2 compagni DEF gia'
+    scelti (caso strutturale in All Stars, che ha 2 slot DEF) valevano quanto
+    1 solo, sottostimando sistematicamente bonus/penalita' ogni volta che una
+    squadra ha 2+ giocatori dello stesso ruolo gia' in formazione."""
     if not chosen_roles_by_team:
         return 0
     team_slug = row.get('team_slug')
     if not team_slug:
         return 0
     bonus = 0
-    for prev_role in chosen_roles_by_team.get(team_slug, ()):
+    for prev_role, count in chosen_roles_by_team.get(team_slug, {}).items():
         w = SAME_TEAM_SYNERGY_BONUS_BY_PAIR.get(frozenset((role, prev_role)))
         if w:
-            bonus += w
+            bonus += w * count
     return bonus
 
 # Decorrelazione tra le N formazioni In Season (28/07, sez. 29.D/tema
@@ -292,20 +297,22 @@ CROSS_TEAM_PENALTY_BY_PAIR = {
 
 
 def _cross_team_penalty(role, row, chosen_roles_by_team):
-    """Somma la penalita' per ogni ruolo GIA' scelto nella squadra AVVERSARIA
-    di 'row' che forma una coppia cross-team confermata negativa (vedi
-    CROSS_TEAM_PENALTY_BY_PAIR). 'chosen_roles_by_team': dict
-    team_slug -> set di ruoli gia' presenti in formazione per quella squadra."""
+    """Somma la penalita' per OGNI OCCORRENZA di ruolo gia' scelta nella
+    squadra AVVERSARIA di 'row' che forma una coppia cross-team confermata
+    negativa (vedi CROSS_TEAM_PENALTY_BY_PAIR). 'chosen_roles_by_team': dict
+    team_slug -> CONTATORE di ruoli gia' presenti in formazione per quella
+    squadra (FIX 28/07: era un set, sottostimava la penalita' quando la
+    squadra avversaria ha 2+ giocatori dello stesso ruolo gia' scelti)."""
     if not chosen_roles_by_team:
         return 0
     opponent = row.get('opponent_team_slug')
     if not opponent:
         return 0
     penalty = 0
-    for prev_role in chosen_roles_by_team.get(opponent, ()):
+    for prev_role, count in chosen_roles_by_team.get(opponent, {}).items():
         w = CROSS_TEAM_PENALTY_BY_PAIR.get(frozenset((role, prev_role)))
         if w:
-            penalty += w
+            penalty += w * count
     return penalty
 
 
@@ -887,7 +894,10 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         row_team_slug = row.get('team_slug')
         if row_team_slug:
             team_counts[row_team_slug] = team_counts.get(row_team_slug, 0) + 1
-            chosen_roles_by_team.setdefault(row_team_slug, set()).add(role)
+            # Contatore per ruolo (FIX 28/07), non set: 2 compagni DEF gia'
+            # scelti devono contare 2x nel bonus/penalita', non 1x.
+            _team_roles = chosen_roles_by_team.setdefault(row_team_slug, {})
+            _team_roles[role] = _team_roles.get(role, 0) + 1
 
         if role == 'GK':
             gk_team_slug = row.get('team_slug')

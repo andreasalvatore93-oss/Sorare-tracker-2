@@ -102,6 +102,11 @@ RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.7  # FISSATO (26/07): calibrazione allargata pesata per n_test (65 centrocampisti, min 3 partite di backtest) -- combinazione vincente hl=12.0/range=1.4/opp_sens=29.0/trend_int=0.7 SENZA granulari, MAE medio 15.55, copertura 70.9%. Sostituisce il valore precedente (trend=1.0, 19 posseduti). Confermato dall'utente dopo confronto A/B su formazioni reali (caso Antino Lopez, vedi git log).
+# Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes di
+# DEF/FWD, mai avuto da MID). k=10 scelto con backtest walk-forward reale
+# (selection_quality, 113 giornate: lift 18.5-19.6% su k testati).
+SHRINK_K_OUTLIER_MID = 10.0
+MEDIA_RUOLO_MID_PRIOR = 53.94
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -988,6 +993,112 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
     return results
 
 
+def compute_score_atteso_mid(scores, is_home_flags, opponent_rankings,
+                             residual_values, granulari_values,
+                             pos_decisive_values, neg_decisive_values,
+                             offensive_values, passing_values, goals_conceded_values,
+                             target_is_home, target_opp_rank, p_gioca=1.0,
+                             half_life=None, trend_intensity=None,
+                             shrink_k=SHRINK_K_OUTLIER_MID,
+                             media_ruolo_prior=MEDIA_RUOLO_MID_PRIOR,
+                             use_stadio_d=True):
+    """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` MID di PRODUZIONE,
+    da usare SIA in build_prediction SIA nel backtest walk-forward di
+    calibrazione (rigorous_backtest_prod_mid) -- cosi' le due non possono
+    piu' divergere. Gemella di compute_score_atteso_def/gk, stessa struttura:
+    shrinkage con SHRINK_K_OUTLIER_MID/MEDIA_RUOLO_MID_PRIOR, Stadio D su
+    Efficacia offensiva/Passaggio/Gol subiti condizionati per venue+avversario.
+
+    p_gioca accettato per simmetria di firma ma non usato (rimosso da
+    score_atteso il 28/07)."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    n = len(scores)
+    weights = exponential_weights(n, half_life)
+
+    media_granulari_pesata = weighted_mean(granulari_values, weights)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _s, _l = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    grezzo_corretto = (
+        (n / (n + shrink_k)) * grezzo
+        + (shrink_k / (n + shrink_k)) * media_ruolo_prior
+    )
+    fattore_casa_trasferta = compute_split_factor(residual_values, is_home_flags, target_is_home)
+    score_atteso = grezzo_corretto * fattore_casa_trasferta
+
+    if not use_stadio_d:
+        return score_atteso
+    valid_opp_ranks = [r for r in opponent_rankings if r is not None]
+    avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
+    opponent_forte_flags = [
+        (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
+        for r in opponent_rankings
+    ]
+    next_forte = (target_opp_rank < avg_opp_rank_hist) if (
+        target_opp_rank is not None and avg_opp_rank_hist is not None) else None
+
+    def _delta_venue_avversario(values):
+        fallback = weighted_mean(values, weights)
+        cond_venue = media_condizionata(values, weights, is_home_flags, target_is_home, fallback)
+        cond_avv = media_condizionata(values, weights, opponent_forte_flags, next_forte, fallback)
+        return (cond_venue - fallback) + (cond_avv - fallback)
+
+    score_atteso += (
+        _delta_venue_avversario(offensive_values)
+        + _delta_venue_avversario(passing_values)
+        + _delta_venue_avversario(goals_conceded_values)
+    )
+    return score_atteso
+
+
+def rigorous_backtest_prod_mid(scores, is_home_flags, opponent_rankings,
+                               residual_values, granulari_values,
+                               pos_decisive_values, neg_decisive_values,
+                               offensive_values, passing_values, goals_conceded_values,
+                               min_history=6, half_life=None, trend_intensity=None,
+                               range_multiplier=1.0):
+    """Backtest walk-forward ALLINEATO ALLA PRODUZIONE per MID (28/07): ad ogni
+    partita richiama compute_score_atteso_mid() -- la STESSA funzione della
+    predizione reale. Stessa struttura di ritorno del vecchio rigorous_backtest."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    rows = []
+    n = len(scores)
+    for i in range(min_history, n):
+        predetto = compute_score_atteso_mid(
+            scores[:i], is_home_flags[:i], opponent_rankings[:i],
+            residual_values[:i], granulari_values[:i],
+            pos_decisive_values[:i], neg_decisive_values[:i],
+            offensive_values[:i], passing_values[:i], goals_conceded_values[:i],
+            target_is_home=is_home_flags[i], target_opp_rank=opponent_rankings[i],
+            p_gioca=1.0, half_life=half_life, trend_intensity=trend_intensity)
+        reale = scores[i]
+        w = exponential_weights(i, half_life)
+        dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
+        range_conf = dev_std * range_multiplier
+        dentro_range = abs(reale - predetto) <= range_conf if range_conf > 0 else None
+        rows.append({'i': i, 'predetto': predetto, 'reale': reale,
+                     'errore': reale - predetto, 'dentro_range': dentro_range})
+
+    if not rows:
+        return {'rows': [], 'mae': None, 'pct_dentro_range': None, 'n_test': 0}
+    errori = [abs(r['errore']) for r in rows]
+    mae = sum(errori) / len(errori)
+    coperti = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
+    pct = (sum(1 for c in coperti if c) / len(coperti) * 100.0) if coperti else None
+    return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct, 'n_test': len(rows)}
+
+
 def build_prediction(player_slug):
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
@@ -1367,20 +1478,16 @@ def build_prediction(player_slug):
     # proiettato -- score_atteso e' "quanto rende SE gioca", il rischio di
     # assenza va gestito come filtro secco (starterOdds/MIN_STARTER_ODDS),
     # non come sconto continuo sul punteggio.
-    # Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes
-    # gia' in produzione su DEF k=15/FWD k=5, mai avuto da MID): con storico
-    # corto, il grezzo pesa meno e il prior di ruolo (MEDIA_RUOLO_MID_PRIOR,
-    # media reale su 7830 partite MID cache) pesa di piu'. k=10 scelto dopo
-    # backtest walk-forward (selection_quality, 113 giornate reali: lift
-    # 18.5%-19.6% su k testati 15/10/5/2/0, k=10 il migliore misurato).
-    SHRINK_K_OUTLIER_MID = 10.0
-    MEDIA_RUOLO_MID_PRIOR = 53.94
-    _grezzo_mid = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
-    _grezzo_mid_corretto = (
-        (n / (n + SHRINK_K_OUTLIER_MID)) * _grezzo_mid
-        + (SHRINK_K_OUTLIER_MID / (n + SHRINK_K_OUTLIER_MID)) * MEDIA_RUOLO_MID_PRIOR
-    )
-    score_atteso = _grezzo_mid_corretto * fattore_casa_trasferta
+    # score_atteso calcolato tramite compute_score_atteso_mid (28/07, refactor
+    # a funzione condivisa: build_prediction e rigorous_backtest_prod_mid
+    # chiamano la STESSA funzione, non possono piu' divergere). Le variabili
+    # sopra restano calcolate qui solo per il result dict diagnostico -- lo
+    # stesso identico calcolo (shrinkage + Stadio D) avviene dentro la
+    # funzione condivisa.
+    score_atteso = compute_score_atteso_mid(
+        scores, is_home_flags, opponent_rankings, residual_values, granulari_values,
+        pos_decisive_values, neg_decisive_values, offensive_values, passing_values,
+        goals_conceded_values, target_is_home=next_is_home, target_opp_rank=next_opp_rank)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) ---
     opponent_forte_flags = [
@@ -1425,9 +1532,9 @@ def build_prediction(player_slug):
     (media_gol_subiti_condizionata_venue, media_gol_subiti_condizionata_avversario,
      delta_gol_subiti_venue, delta_gol_subiti_avversario) = _condiziona_venue_avversario(goals_conceded_values)
 
-    score_atteso += (delta_offensivo_venue + delta_offensivo_avversario
-                                + delta_passaggio_venue + delta_passaggio_avversario
-                                + delta_gol_subiti_venue + delta_gol_subiti_avversario)
+    # (delta_offensivo/passaggio/gol_subiti gia' inclusi in score_atteso dalla
+    # funzione condivisa compute_score_atteso_mid sopra -- qui restano solo
+    # calcolati per il result dict diagnostico, NON sommati una seconda volta)
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
