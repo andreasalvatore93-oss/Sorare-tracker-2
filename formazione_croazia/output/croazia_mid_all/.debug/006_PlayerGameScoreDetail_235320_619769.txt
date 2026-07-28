@@ -1,0 +1,38 @@
+=== RICHIESTA (PlayerGameScoreDetail) ===
+operationName: PlayerGameScoreDetail
+variables: {"id": "5aac2596-c3a3-4792-958c-9fd2117732c6"}
+query:
+
+query PlayerGameScoreDetail($id: ID!) {
+  so5 {
+    playerGameScore(id: $id) {
+      id
+      score
+      scoreStatus
+      position
+      anyGame {
+        date
+        statusTyped
+        homeTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        awayTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        competition { slug }
+      }
+      detailedScore { category stat statValue totalScore }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 23:53:20 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '64', 'x-gql-depth': '5', 'x-server-timestamp': '1785282800', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'rqd6nAIhmnJat3Yir5Z--ONzeUFC6cyhudpyR2Sr1kMloMpeoleZn0io5fJcdxbZpVFm9XeNZ0VybuavfCfdAw', 'etag': 'W/"f5be1edd5ea38b027f07663ec49246c1"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=ixH3EoU5Lk4MYPNI3UcqKycmWV5sDo07Bu4eE4hLsQyL%2BIwfG87oDOmGJ0BDsr%2BEn9zR2OanQsQoUsZouTrYDhfwPaZF0r6ALF7Swt7Kgj%2BdFsxBsmM1KiBUvHM%2FJIDLrAGhvlZ56wi6MCzE6ZKOAjUkN69ms90tsqaMndvADk9zdku8jVos2d0WnNy%2Fh22i5YqL5IpfaeU1AWjrv9byXTeFMufoGrsubUQaSz249i8AXlsznBRh4BN5ZN1BAd7Tbg8PQASDhqiAp0rM4MPiMToP62a3iHRzBOd6WfLmYPY9aypr0yNbHl%2Fo70cnx2k9--jOnl50e2BlyZ%2B0xH--NwNX1NyodYuy5hx60towgQ%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 23:53:20 GMT; secure; httponly; samesite=none', 'x-request-id': '7efd04db-ecd4-44ae-88fb-186b740652a8', 'x-runtime': '0.021802', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 4e1861cae2e31ab0312039be6e8f85b4.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'DFW57-P6', 'x-amz-cf-id': 'ZXJehz39OlKpzP0bo3BX1G0fKH2UtdEaiHLzHhM69_VXwmfdiD1hjQ=='}
+body (integrale):
+{"data":{"so5":{"playerGameScore":{"id":"So5Score:5aac2596-c3a3-4792-958c-9fd2117732c6","score":0.0,"scoreStatus":"PENDING","position":"Midfielder","anyGame":{"date":"2026-07-30T17:30:00Z","statusTyped":"scheduled","homeTeam":{"slug":"derry-city-derry","name":"Derry City FC","code":"DER","domesticLeagueRanking":null,"domesticLeagueRankingRatioRange":null},"awayTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4,"domesticLeagueRankingRatioRange":"MEDIUM"},"competition":{"slug":"uefa-europa-conference-league"}},"detailedScore":[{"category":"UNKNOWN","stat":"level_score","statValue":0.0,"totalScore":35.0}]}}}}
