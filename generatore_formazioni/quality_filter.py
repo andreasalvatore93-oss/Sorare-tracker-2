@@ -22,7 +22,9 @@ solo i candidati migliori man mano che servono per completare le formazioni
 richieste, mai l'intero pool scoperto in un colpo solo.
 """
 import os
+import re
 import time
+import json
 import datetime
 import requests
 
@@ -98,6 +100,82 @@ def fetch_l5_l10_l40(slug):
     return player.get('lastFiveAvgScore'), player.get('lastTenPlayedAvgScore'), player.get('lastFortyAvgScore')
 
 
+# NB (28/07): un tentativo di accorpare questa query con alias GraphQL multipli
+# (piu' 'anyPlayer(slug: ...)' aliasati nella stessa richiesta) NON e' stato
+# fatto perche' gia' documentato come RIFIUTATO da Sorare altrove nel repo
+# (vedi scanners/bot_profit.py riga ~491 e docs/RIASSUNTO_EVOLUZIONE_MODELLO_
+# PREDITTIVO.md riga 2659): errore 'Duplicated root field: anyPlayer' su ogni
+# batch. Niente aliasing di campi radice ripetuti verso questa API, anche se
+# lo standard GraphQL lo permetterebbe. Resta quindi 1 chiamata HTTP per
+# slug -- l'ottimizzazione qui sotto e' solo la cache su disco.
+
+
+# --- Cache su disco, valida per la giornata corrente (28/07) ---
+# Le medie L5/L10/L40 di una carta non cambiano infra-giornata (cambiano solo
+# dopo che nuove partite vengono giocate/processate), quindi e' sicuro
+# riusare un valore gia' controllato in una run precedente della stessa
+# giornata invece di richiederlo di nuovo. Nessuna distorsione: e' lo stesso
+# identico dato, letto invece che ri-scaricato.
+CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.quality_cache')
+_cache_state = {'date': None, 'data': {}}
+
+
+def _cache_path(today):
+    return os.path.join(CACHE_DIR, f'{today}.json')
+
+
+def _load_cache():
+    today = datetime.date.today().isoformat()
+    if _cache_state['date'] == today:
+        return _cache_state['data']
+    path = _cache_path(today)
+    data = {}
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+    _cache_state['date'] = today
+    _cache_state['data'] = data
+    return data
+
+
+def _save_cache():
+    today = _cache_state['date'] or datetime.date.today().isoformat()
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        with open(_cache_path(today), 'w', encoding='utf-8') as f:
+            json.dump(_cache_state['data'], f)
+    except Exception as e:
+        log(f"[CACHE] impossibile salvare cache: {e}")
+
+
+def fetch_l5_l10_l40_cached(slugs):
+    """Come fetch_l5_l10_l40, ma prima controlla la cache su disco del
+    giorno corrente e interroga via rete (1 chiamata per slug, come sempre --
+    Sorare non accetta il batching via alias) solo gli slug mancanti."""
+    cache = _load_cache()
+    result = {}
+    missing = []
+    for slug in slugs:
+        if slug in cache:
+            vals = cache[slug]
+            result[slug] = (vals[0], vals[1], vals[2])
+        else:
+            missing.append(slug)
+    if missing:
+        dirty = False
+        for slug in missing:
+            vals = fetch_l5_l10_l40(slug)
+            time.sleep(0.3)
+            result[slug] = vals
+            cache[slug] = list(vals)
+            dirty = True
+        if dirty:
+            _save_cache()
+    return result
+
+
 def _passes(l5, l10, l40, min_score):
     return (l5 is not None and l5 >= min_score
             and l10 is not None and l10 >= min_score
@@ -130,13 +208,19 @@ class LazyQualityPool:
         self.passing = []
 
     def grow(self, batch):
-        checked = 0
-        while checked < batch and self.checked_idx < len(self.full):
+        rows_batch = []
+        while len(rows_batch) < batch and self.checked_idx < len(self.full):
             row = self.full[self.checked_idx]
             self.checked_idx += 1
-            l5, l10, l40 = fetch_l5_l10_l40(row['slug'])
-            time.sleep(0.3)
-            checked += 1
+            rows_batch.append(row)
+        if not rows_batch:
+            return 0
+
+        slugs = [row['slug'] for row in rows_batch]
+        results = fetch_l5_l10_l40_cached(slugs)
+
+        for row in rows_batch:
+            l5, l10, l40 = results.get(row['slug'], (None, None, None))
             if _passes(l5, l10, l40, self.min_score):
                 self.passing.append(row)
-        return checked
+        return len(rows_batch)

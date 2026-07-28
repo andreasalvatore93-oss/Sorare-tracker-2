@@ -33,6 +33,16 @@ MIN_ODDS = float(os.environ.get('MIN_STARTER_ODDS', '0.80'))
 GAMEWEEK = os.environ.get('GAMEWEEK', '').strip()
 FIXTURE_SLUG = os.environ.get('FIXTURE_SLUG', '').strip()
 
+# Pausa fra una chiamata odds/L10 e la successiva (28/07, richiesta esplicita
+# utente dopo un run reale -- 30336178358 -- che ha preso due 429 consecutivi
+# con Retry-After di 192s e 243s durante la discovery). Controllato sui log
+# di 4 run precedenti andati a buon fine: il 429 scatta comunque quasi ogni
+# volta col ritmo precedente di 0.2s (~5 richieste/s), con attese registrate
+# fino a 255s -- costa molto piu' di quanto si guadagni andando veloci.
+# Alzato a 0.5s (~2 richieste/s) per restare sotto la soglia che lo fa
+# scattare; nessun cambiamento a COSA viene interrogato o al filtro.
+ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.5'))
+
 ROLE_BY_POSITION = {'Goalkeeper': 'gk', 'Defender': 'def',
                     'Midfielder': 'mid', 'Forward': 'fwd'}
 
@@ -284,7 +294,7 @@ def main():
         risultati = {}
         for sl in elenco:
             risultati[sl] = odds_singola(sl, inizio, fine)
-            time.sleep(0.2)
+            time.sleep(ODDS_L10_SLEEP)
         for slug in elenco:
             lega = lega_di[slug]
             odds, data = risultati.get(slug, (None, None))
@@ -314,7 +324,7 @@ def main():
             # scritta esplicitamente perche' il file adesso include lo slug
             # (per portarci l10), e altrimenti verrebbe letta come 0 copie.
             l10 = l10_singola(slug)
-            time.sleep(0.2)
+            time.sleep(ODDS_L10_SLEEP)
             entry = {'in_season': 1, 'classic': 0}
             if l10 is not None:
                 entry['l10'] = l10
