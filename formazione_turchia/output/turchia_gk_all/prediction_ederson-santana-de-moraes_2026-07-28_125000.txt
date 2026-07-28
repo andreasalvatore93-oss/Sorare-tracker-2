@@ -1,0 +1,104 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T12:50:00.505823Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) ederson-santana-de-moraes: 29 pt attesi (12-53)
+   SQUADRA: fenerbahce-istanbul | AVVERSARIO: gornik-zabrze-zabrze
+======================================================================
+
+######################################################################
+# GIOCATORE: ederson-santana-de-moraes
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ederson-santana-de-moraes (squadra: fenerbahce-istanbul)
+Generato: 2026-07-28T12:50:00.505229Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-25 | FB vs GÖZ | spor-toto-super-lig | score=41.8 | peso=0.445
+  2026-01-29 | FCS vs FB | uefa-europa-league | score=66.6 | peso=0.472
+  2026-02-02 | KOC vs FB | spor-toto-super-lig | score=70.4 | peso=0.500
+  2026-02-09 | FB vs GNÇ | spor-toto-super-lig | score=24.5 | peso=0.530
+  2026-02-14 | TS vs FB | spor-toto-super-lig | score=50.0 | peso=0.561
+  2026-02-19 | FB vs NOT | uefa-europa-league | score=48.5 | peso=0.595
+  2026-02-23 | FB vs KAS | spor-toto-super-lig | score=38.0 | peso=0.630
+  2026-03-01 | ANT vs FB | spor-toto-super-lig | score=43.3 | peso=0.667
+  2026-03-08 | FB vs SAM | spor-toto-super-lig | score=38.2 | peso=0.707
+  2026-03-17 | FB vs GAZ | spor-toto-super-lig | score=41.6 | peso=0.749
+  2026-03-26 | ? vs ? | friendlies | score=31.9 | peso=0.794
+  2026-04-05 | FB vs BJK | spor-toto-super-lig | score=64.3 | peso=0.841
+  2026-04-11 | KAY vs FB | spor-toto-super-lig | score=75.8 | peso=0.891
+  2026-04-17 | FB vs RIZ | spor-toto-super-lig | score=6.8 | peso=0.944
+  2026-04-26 | GS vs FB | spor-toto-super-lig | score=25.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 43.08
+  di cui Punteggio decisivo (level_score) medio: 35.61 | Punteggio complessivo (granulari) medio: 7.47 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 35.61 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.65, delta avversario +0.00 | Possesso condizionato per venue: delta -0.01 | Goalkeeping condizionato per venue: delta +2.67 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 19.39
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.4 - 66.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.08 (differenza: +5.31)
+Media score in casa: 37.96 | Media score fuori casa: 55.25
+Fattore casa/trasferta applicato: 1.185 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.991
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.028
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.028
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.013
+Tasso storico clean sheet (porta inviolata nei primi 60'): 20.0% (bonus atteso incorporato nella media pesata: ~5.0pt)
+Fattore trend (media ultime 5: 40.8 vs media ultime 10: 41.4): 0.991
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T18:00
+Casa: KS Górnik Zabrze | Trasferta: Fenerbahçe Spor Kulübü
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 29.4 (range 11.7 - 52.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.98
+Punteggio REALE ottenuto in quella partita: 25.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.2    38.0     -4.2    21.2        SI
+   7        7      71.1    43.3    -27.8    20.4        NO
+   8        8      32.3    38.2     +5.9    18.9        SI
+   9        9      38.4    41.6     +3.2    18.1        SI
+  10       10      50.7    31.9    -18.8    17.0        NO
+  11       11      24.2    64.3    +40.1    17.1        NO
+  12       12      64.5    75.8    +11.3    18.5        SI
+  13       13      39.2     6.8    -32.4    21.7        NO
+  14       14      37.5    25.4    -12.1    27.3        SI
+
+MAE (errore assoluto medio): 17.31
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
