@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T19:27:22.255955Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) rene-renner: 53 pt attesi (28-75)
+   ORDINAMENTO: 52.74
+   SQUADRA: wolfsberger-ac-wolfsberg | AVVERSARIO: austria-wien-wien
+======================================================================
+
+######################################################################
+# GIOCATORE: rene-renner
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rene-renner (squadra: wolfsberger-ac-wolfsberg)
+Generato: 2026-07-28T19:27:22.255548Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 9
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | WSG vs WAC | austrian-bundesliga | score=25.6 | peso=0.794
+  2026-04-25 | WAC vs GAK | austrian-bundesliga | score=60.7 | peso=0.857
+  2026-05-04 | ALT vs WAC | austrian-bundesliga | score=73.4 | peso=0.926
+  2026-05-09 | SVR vs WAC | austrian-bundesliga | score=42.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 51.20
+  di cui Punteggio decisivo (level_score) medio: 37.03 | Punteggio complessivo (granulari) medio: 14.17 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.54, delta avversario +0.54 | Passaggio condizionato: delta venue +0.55, delta avversario -0.85 | Clean sheet/disimpegni condizionato: delta venue +0.63, delta avversario +0.88 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.71
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.6 - 73.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 60.66 | Media score fuori casa: 47.29
+Fattore casa/trasferta applicato: 0.993 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.8
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.905
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.987
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.038
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.048
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.971
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.048
+Fattore gol subiti (goals_conceded, con cap): 1.043
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.042
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 44.44% (fonte: tasso di presenza storico (4/9))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T15:00
+Casa: RZ Pellets WAC | Trasferta: FK Austria Wien
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.2 (range 27.6 - 75.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 52.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.43
+Punteggio REALE ottenuto in quella partita: 42.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
