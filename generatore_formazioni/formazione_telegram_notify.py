@@ -25,8 +25,15 @@ OUTPUT_DIR = 'generatore_formazioni/output'
 
 
 def _latest_html():
-    candidates = sorted(glob.glob(os.path.join(OUTPUT_DIR, 'generatore_formazioni_run*.html')))
-    return candidates[-1] if candidates else None
+    """Il file PIU' RECENTE per data di modifica -- NON un sort alfabetico del
+    nome file (bug reale 28/07: 'run9' viene lessicograficamente DOPO 'run21'
+    perche' '9' > '2' come carattere, quindi sorted() prendeva un run vecchio
+    invece dell'ultimo generato -- scoperto dall'utente, notifica arrivata con
+    un report di ore prima)."""
+    candidates = glob.glob(os.path.join(OUTPUT_DIR, 'generatore_formazioni_run*.html'))
+    if not candidates:
+        return None
+    return max(candidates, key=os.path.getmtime)
 
 
 def _viewer_url(path):
