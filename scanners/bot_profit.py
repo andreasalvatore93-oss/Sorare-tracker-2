@@ -1097,7 +1097,19 @@ def _clamp(value, lo, hi):
     return max(lo, min(hi, value))
 
 
-def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent, ore_alla_partita):
+# Moltiplicatore di affidabilita' del trend_recente sullo sconto_percent --
+# stessa euristica gia' validata lato-viewer nel bottone Top 5 (29/07: promossa
+# a formula ufficiale su richiesta esplicita utente, dopo essere rimasta solo
+# visiva per una sessione). 'down' = sconto sospetto (mercato in caduta,
+# probabile inseguimento di un calo, non una vera occasione) -> penalizzato
+# forte; 'up' = sconto affidabile (mercato in salita) -> premiato; 'flat' =
+# nessuna correzione; mancante (storico insufficiente per lo split 2gg/7gg) =
+# leggera cautela.
+TREND_SCORE_MULTIPLIER = {'up': 1.2, 'flat': 1.0, 'down': 0.5, None: 0.8}
+
+
+def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent, ore_alla_partita,
+                              trend_recente=None):
     """Ritorna None se manca un ingrediente essenziale (timing sconosciuto --
     non dovrebbe succedere, le carte senza prossima partita sono gia' in
     blacklist prima di arrivare qui)."""
@@ -1107,6 +1119,7 @@ def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent,
     ultima = (ultima_partita_score or 0.0) / 100.0
     media_generale = (0.5 * (l5 or 0.0) + 0.3 * (l10 or 0.0) + 0.2 * (l40 or 0.0)) / 100.0
     sconto_norm = _clamp(sconto_percent, -30.0, 100.0) / 100.0 if sconto_percent is not None else 0.0
+    sconto_norm *= TREND_SCORE_MULTIPLIER.get(trend_recente, TREND_SCORE_MULTIPLIER[None])
     score = (0.35 * peso_timing) + (0.20 * ultima) + (0.15 * media_generale) + (0.30 * sconto_norm)
     return round(score, 4)
 
@@ -1205,9 +1218,9 @@ CSV_FIELDNAMES = [
 # verificato dall'utente su Sorare: crollo reale da ~8-10EUR a ~3.5EUR negli
 # ultimi 2 giorni). Aggiunta una media "recente" separata (ultimi
 # TREND_RECENT_WINDOW_DAYS giorni) confrontata con la media del resto della
-# finestra, per segnalare quando lo sconto e' meno affidabile -- NON cambia
-# ancora potenziale_score, solo un indicatore visivo (freccia) da valutare
-# insieme prima di deciderne il peso nello score.
+# finestra, per segnalare quando lo sconto e' meno affidabile. Dal 29/07 pesa
+# anche potenziale_score (vedi TREND_SCORE_MULTIPLIER sopra), non e' piu' solo
+# un indicatore visivo.
 TREND_RECENT_WINDOW_DAYS = int(os.environ.get('TREND_RECENT_WINDOW_DAYS', '2'))
 TREND_FLAT_THRESHOLD_PERCENT = float(os.environ.get('TREND_FLAT_THRESHOLD_PERCENT', '10.0'))
 
@@ -1567,6 +1580,7 @@ def run_listener(eth_rate):
                 l5=l5, l10=snapshot['l10'], l40=snapshot['l40'],
                 ultima_partita_score=snapshot['ultima_partita_score'],
                 sconto_percent=sconto_percent, ore_alla_partita=ore_alla_partita,
+                trend_recente=trend_recente,
             )
 
             excluded = is_excluded_league(league_slug)
@@ -1830,6 +1844,7 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
             l5=l5, l10=snapshot['l10'], l40=snapshot['l40'],
             ultima_partita_score=ultima_partita_score,
             sconto_percent=sconto_percent, ore_alla_partita=ore_alla_partita,
+            trend_recente=trend_recente,
         )
 
         excluded = is_excluded_league(league_slug)
