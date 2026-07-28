@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "ryun-sung-kim", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 22:46:13 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785278773', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'XJ6SPTi-_sn63k5Q2-k7A6KEl-g8M2zPV6dto_EgSnSgJdfdiVyZ8RU7hQk483KSNm2cwjCJPZg49X7ZdBvQow', 'etag': 'W/"8dff499a489584a000e83e76fa344038"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=BbGMiPmpI8wH6bvkuNB35UiYulm9bfo9UuDm802As0ew%2FGY3C%2B4SpB9Bo6TK7csoa7bS%2BoE0UliRuUyxPYlfiDb3IgzvhCbhiwHwxnMuUWLxpAtb8u022WcmIs55%2FnUK75YDf%2FmtPZL8hL5B%2F3ZAxRgoenUyiXAkV8f%2BbC3WhEN1fczuiX%2BsMYH16bKWr9sP65MxJq%2Budy9M55Y6lwAc4kff%2FIUsOu9k%2FqBfMLtijz0krHt7ulwwA4LoRv%2BSXjpH1jhE1zwxD98OGD7sAvf7mQJaI87qzJmK6yvA1YRPqqs%2FhI5rpSEXk4VmLm1nwQgw--D63xtugUarlGRMlx--D%2BbDH%2B4zmzOzgqLDoUMZhg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 22:46:13 GMT; secure; httponly; samesite=none', 'x-request-id': '07be8574-ca7d-42fb-94df-38d31af8a2a6', 'x-runtime': '0.055120', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 59f114ed467214ee473402e1ad4a7a96.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'DFW57-P6', 'x-amz-cf-id': 'L3VfnCIZRYn_GnLqlnjmg9VFPa4d49OW6j_OuzFnQYop4a5BTxlmPQ=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:fee08ab8-83d6-4933-a3f6-e27c52cf6ec2","score":57.34,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:d628fd48-2f34-440d-a2a2-8dd2eb576444","date":"2026-07-26T10:30:00Z","statusTyped":"played","homeTeam":{"slug":"gwangju-gwangju","name":"Gwangju FC","code":"GWA","domesticLeagueRanking":12},"awayTeam":{"slug":"jeju-united-seogwipo-jeju-do","name":"Jeju SK FC","code":"JEJ","domesticLeagueRanking":8},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:372d5874-a23e-446c-a802-9f4f98f7216c","score":34.9,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:c94db96d-142e-48f5-9e1a-91596f809dea","date":"2026-07-21T10:30:00Z","statusTyped":"played","homeTeam":{"slug":"jeju-united-seogwipo-jeju-do","name":"Jeju SK FC","code":"JEJ","domesticLeagueRanking":8},"awayTeam":{"slug":"gangwon-gangneung","name":"Gangwon FC","code":"GAN","domesticLeagueRanking":3},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":62,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:4b2a473f-59fa-4c7c-b64b-920a6c56ea72","date":"2026-08-02T10:30:00Z","playerGameScore":{"id":"So5Score:62cda214-d7c4-4055-9bfa-d5db82147762","positionTyped":"Defender","projectedScore":54.0,"anyGame":{"id":"Game:4b2a473f-59fa-4c7c-b64b-920a6c56ea72","date":"2026-08-02T10:30:00Z","homeTeam":{"slug":"jeju-united-seogwipo-jeju-do","name":"Jeju SK FC","code":"JEJ","domesticLeagueRanking":8},"awayTeam":{"slug":"incheon-united-incheon","name":"Incheon United FC","code":"INC","domesticLeagueRanking":6},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:5e85c3b7-ec45-4328-85e7-1371b1069e65","date":"2026-08-08T10:30:00Z","playerGameScore":{"id":"So5Score:006841c8-6a5c-4551-bee4-9e523f19abb2","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:5e85c3b7-ec45-4328-85e7-1371b1069e65","date":"2026-08-08T10:30:00Z","homeTeam":{"slug":"jeonbuk-motors-jeonju","name":"Jeonbuk Hyundai Motors FC","code":"JMO","domesticLeagueRanking":2},"awayTeam":{"slug":"jeju-united-seogwipo-jeju-do","name":"Jeju SK FC","code":"JEJ","domesticLeagueRanking":8},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:818e957d-25d3-4552-8810-e5aeeb0ecf7c","date":"2026-08-15T10:30:00Z","playerGameScore":{"id":"So5Score:e1095ed0-d8b6-4bea-a391-4851b03d43c1","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:818e957d-25d3-4552-8810-e5aeeb0ecf7c","date":"2026-08-15T10:30:00Z","homeTeam":{"slug":"jeju-united-seogwipo-jeju-do","name":"Jeju SK FC","code":"JEJ","domesticLeagueRanking":8},"awayTeam":{"slug":"anyang-anyang","name":"FC Anyang","code":"ANY","domesticLeagueRanking":5},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:0296c0e2-a384-4688-a7b5-2fc571358e3d","date":"2026-08-22T10:30:00Z","playerGameScore":{"id":"So5Score:2af905c4-862d-412b-ab28-8030f36c5536","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:0296c0e2-a384-4688-a7b5-2fc571358e3d","date":"2026-08-22T10:30:00Z","homeTeam":{"slug":"jeju-united-seogwipo-jeju-do","name":"Jeju SK FC","code":"JEJ","domesticLeagueRanking":8},"awayTeam":{"slug":"sangju-sangmu-sangju","name":"Gimcheon Sangmu","code":"SAN","domesticLeagueRanking":10},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:3e12a959-bd76-41ab-878d-4d06ac7b6b9e","date":"2026-08-25T10:30:00Z","playerGameScore":{"id":"So5Score:ff875aa0-2c8e-4077-af64-35e75e9c9437","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:3e12a959-bd76-41ab-878d-4d06ac7b6b9e","date":"2026-08-25T10:30:00Z","homeTeam":{"slug":"jeju-united-seogwipo-jeju-do","name":"Jeju SK FC","code":"JEJ","domesticLeagueRanking":8},"awayTeam":{"slug":"pohang-steelers-pohang","name":"Pohang Steelers FC","code":"POH","domesticLeagueRanking":7},"competition":{"slug":"k-league-1"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
