@@ -1,0 +1,80 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T19:03:27.937392Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) sergi-dominguez-viloria: 54 pt attesi (42-81)
+   ORDINAMENTO: 61.63
+   SQUADRA: dinamo-zagreb-zagreb | AVVERSARIO: slaven-koprivnica-koprivnica
+======================================================================
+
+######################################################################
+# GIOCATORE: sergi-dominguez-viloria
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sergi-dominguez-viloria (squadra: dinamo-zagreb-zagreb)
+Generato: 2026-07-28T19:03:27.936785Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 11
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: 1-hnl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | DIN vs OSI | 1-hnl | score=63.2 | peso=0.680
+  2026-04-13 | V91 vs DIN | 1-hnl | score=78.7 | peso=0.735
+  2026-04-18 | DIN vs RIJ | 1-hnl | score=10.7 | peso=0.794
+  2026-04-22 | IST vs DIN | 1-hnl | score=89.4 | peso=0.857
+  2026-04-26 | DIN vs VAR | 1-hnl | score=50.1 | peso=0.926
+  2026-07-21 | FCT vs DIN | uefa-champions-league | score=80.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 62.54
+  di cui Punteggio decisivo (level_score) medio: 39.79 | Punteggio complessivo (granulari) medio: 22.75 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.29, delta avversario +0.79 | Passaggio condizionato: delta venue -0.19, delta avversario +1.46 | Clean sheet/disimpegni condizionato: delta venue -0.81, delta avversario +1.05 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 26.07
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 50.1 - 89.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.72 (differenza: +13.35)
+Media score in casa: 41.30 | Media score fuori casa: 82.68
+Fattore casa/trasferta applicato: 0.964 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.7
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.080
+Fattore falli (casa/trasferta, da dati reali): 0.965
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.978
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.969
+Fattore gol subiti (goals_conceded, con cap): 0.988
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.981
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 54.55% (fonte: tasso di presenza storico (6/11))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T18:00
+Casa: GNK Dinamo Zagreb | Trasferta: NK Slaven Belupo
+Competizione: 1-hnl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.4 (range 41.9 - 81.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 61.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.18
+Punteggio REALE ottenuto in quella partita: 80.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +21.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
