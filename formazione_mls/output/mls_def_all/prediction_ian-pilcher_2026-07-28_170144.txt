@@ -1,0 +1,79 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T17:01:44.002126Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) ian-pilcher: 9 pt attesi (0-40)
+   ORDINAMENTO: 9.59
+   SQUADRA: san-diego-san-diego | AVVERSARIO: minnesota-united-minneapolis-saint-paul-minnesota
+======================================================================
+
+######################################################################
+# GIOCATORE: ian-pilcher
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ian-pilcher (squadra: san-diego-san-diego)
+Generato: 2026-07-28T17:01:44.000652Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-28 | SD vs SJ | mlspa | score=34.5 | peso=0.735
+  2025-10-27 | SD vs POR | mlspa | score=50.7 | peso=0.794
+  2025-11-02 | POR vs SD | mlspa | score=49.6 | peso=0.857
+  2025-11-10 | SD vs POR | mlspa | score=44.9 | peso=0.926
+  2025-11-25 | SD vs MIN | mlspa | score=84.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 54.39
+  di cui Punteggio decisivo (level_score) medio: 40.80 | Punteggio complessivo (granulari) medio: 13.60 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.30, delta avversario +0.15 | Passaggio condizionato: delta venue -0.70, delta avversario +0.64 | Clean sheet/disimpegni condizionato: delta venue -0.84, delta avversario +0.23 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.60
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.5 - 84.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 2.56 (differenza: +15.04)
+Media score in casa: 53.73 | Media score fuori casa: 49.62
+Fattore casa/trasferta applicato: 0.974 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 0.986
+Fattore falli (casa/trasferta, da dati reali): 1.053
+Fattore duelli (casa/trasferta, da dati reali): 1.035
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.958
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.947
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.100
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.076
+Fattore gol subiti (goals_conceded, con cap): 0.959
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.962
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 18.52% (fonte: tasso di presenza storico (5/27))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Minnesota United | Trasferta: San Diego FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 9.2 (range 0.0 - 39.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 9.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.19
+Punteggio REALE ottenuto in quella partita: 84.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +39.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

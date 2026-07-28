@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "micael-dos-santos-silva", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 17:03:33 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785258213', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'RAIZLhOShJ79ka1xWNfdHSHNTmO7UL40qxwHvJzbPYr_enHZaVYWbP_j6K9_fyaiLdEZYANg3o-6EMQTa4GLPw', 'etag': 'W/"08e10bfbc21ee9c36c2b41414534fd76"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=e8vYTwmDOtb9e7uJCar6KsBgI857sDxsDvIG0XDLWRRTcInEYkOwo9n7fDeIbOR4OjUplE5ljbbKMubbJ9l6yuMIUhlV2tFYHk8SU02n7s%2FTxs5LlZhm57YWtb73zr8QVtrqNS2DxplSnaBK9Grj8nYkG545NvWJSJzywy6Zgr5A%2FtqndLTZ9X9Rxw8BgOIPkQ1N0hW5RuXhmZmzKe80DiwPS%2FNJhS0IZkEhWjMg49PvhTw4ciZWdDXWitXqMfCe0v3607ABBddldxOVk3fvNzzSDdhK%2BJKUdwik%2BWM7tMzhw5VChvmf9SP1b2y6ysoT--Bc8V4FWuxu7IllW7--jyumaCHqEatC1cHWzvRAug%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 17:03:33 GMT; secure; httponly; samesite=none', 'x-request-id': '3c7e37ba-0a2e-49b3-be3a-86f4fc91b18d', 'x-runtime': '0.130084', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 28edb03169fa053a4a523d90d15ff6ae.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'SEA900-P9', 'x-amz-cf-id': 'uXwBaRIVuuw85APnBPKclXxdoC8YMNVq_fZ6vcit1zaSMOcy6PLOgw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:f67fbca8-a452-477e-b637-ed014b784557","score":64.08,"scoreStatus":"REVIEWING","positionTyped":"Defender","anyGame":{"id":"Game:a9938b4b-7a2e-47dc-947f-3e2e4b65492a","date":"2026-07-25T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"awayTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:fb1ee345-c449-44f8-bb55-5f1e78d3b3cd","score":58.16,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:55fa4cf7-bfc0-423d-bee8-bf5388a23a63","date":"2026-07-22T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"awayTeam":{"slug":"chicago-fire-bridgeview-illinois","name":"Chicago Fire FC","code":"CHI","domesticLeagueRanking":4},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:22c21a58-85c8-4952-8204-c43e87e225be","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:194e0697-7867-4835-b33f-87800d8624ee","positionTyped":"Defender","projectedScore":51.0,"anyGame":{"id":"Game:22c21a58-85c8-4952-8204-c43e87e225be","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"awayTeam":{"slug":"columbus-crew-columbus-ohio","name":"Columbus Crew","code":"CLB","domesticLeagueRanking":11},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:2bbe0472-1320-4aa8-9454-6c99fec00cae","date":"2026-08-05T23:30:00Z","playerGameScore":{"id":"So5Score:50dabd51-139f-4a03-ab1e-260ed91fb507","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:2bbe0472-1320-4aa8-9454-6c99fec00cae","date":"2026-08-05T23:30:00Z","homeTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"awayTeam":{"slug":"atletico-san-luis-san-luis-potosi","name":"Atlético San Luis","code":"ASL","domesticLeagueRanking":3},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:140baf34-0c55-40d3-b456-6ca020d797be","date":"2026-08-09T00:00:00Z","playerGameScore":{"id":"So5Score:8730f7df-1674-4951-b208-8daea4fce70a","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:140baf34-0c55-40d3-b456-6ca020d797be","date":"2026-08-09T00:00:00Z","homeTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"awayTeam":{"slug":"monterrey-monterrey","name":"CF Monterrey","code":"MON","domesticLeagueRanking":9},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:5fe867cd-3419-43a5-bc8e-75c00cf38e4c","date":"2026-08-12T23:30:00Z","playerGameScore":{"id":"So5Score:c501f2fb-e98c-4827-a94f-eb276192e6af","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:5fe867cd-3419-43a5-bc8e-75c00cf38e4c","date":"2026-08-12T23:30:00Z","homeTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"awayTeam":{"slug":"leon-leon-de-los-aldamas","name":"Club León","code":"LEO","domesticLeagueRanking":8},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:0cb9c487-afc4-454f-acaf-8eca611c45ca","date":"2026-08-16T00:30:00Z","playerGameScore":{"id":"So5Score:95b54402-5ce4-4116-a587-f91cb4c20708","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:0cb9c487-afc4-454f-acaf-8eca611c45ca","date":"2026-08-16T00:30:00Z","homeTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"awayTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
