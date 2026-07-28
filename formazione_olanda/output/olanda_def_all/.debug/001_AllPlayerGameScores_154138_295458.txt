@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "dies-janse", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 15:41:38 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785253298', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'VO0MoyYZXQSmgObhnsfTernsmZSeUINsobZcLoLBkw4mc5Z5qkjW4DafhLNeA3AvXB9Nmj31oGSFyWy2UsSYRw', 'etag': 'W/"3f2922ddbf786c8e5748bc6d643a668b"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=oR1bMuLVCMb8Bg7VD%2Foy4UfYoT3N%2BIzCeVCGj2BT7Q8%2FrzXIE1sU%2FyNmcl8c9deSkjM0sK5YuSBOLUcmOC2%2BK%2FZCzjUxncoVGL7HAckQ%2BZ%2BceFduItWaSeEwku3I4pFuyDkLO2YsElmu4TGSVujTqYCF98QzLAnhcjqYKTw5X6eFUY6zyIQ8Lq5%2FWr3B0Rbl1bSc0Z%2BaYrXhEyShUAjMaMxjvvXEEc5p2hgc5x4I2jZmEWnagbdla13COSfhPPwA4nRdkKTmmO75EKpkfIoUrQRllvCWI8paMvRRt0ol%2FQtZg8hRnJqc1%2BmGvXjrHFYF--n9Eo3HRzkQTQTxs0--v2%2F8Qq5qX4GGhU88RWsP6w%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 15:41:38 GMT; secure; httponly; samesite=none', 'x-request-id': 'ec557aeb-2402-4728-821a-3993612f02b7', 'x-runtime': '0.127185', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 95531ccb123bd3b0d5fdc04d3bc4457c.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': '44uCLsT6Yn8rEXghROW0nFAxfg3GfYcQ541fdl6Q514XxIJm_XG9_w=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:6692b8dd-a39e-4b92-ba9b-ad0bf168266f","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Defender","anyGame":{"id":"Game:e3c2ebd6-eb83-415a-bf7e-2256725106a4","date":"2026-07-23T18:00:00Z","statusTyped":"played","homeTeam":{"slug":"vojvodina-novi-sad","name":"FK Vojvodina Novi Sad","code":"VOJ","domesticLeagueRanking":null},"awayTeam":{"slug":"ajax-amsterdam","name":"AFC Ajax","code":"AJA","domesticLeagueRanking":5},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:f67f0a6a-efce-48fb-93dc-ba7e6ac1a8e7","score":60.0,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:43cc5688-b444-4de5-a696-71dd89a3b14f","date":"2026-05-21T16:45:00Z","statusTyped":"played","homeTeam":{"slug":"ajax-amsterdam","name":"AFC Ajax","code":"AJA","domesticLeagueRanking":5},"awayTeam":{"slug":"groningen-groningen","name":"FC Groningen","code":"GRO","domesticLeagueRanking":9},"competition":{"slug":"eredivisie"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":1,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:fbd2f1c1-796b-44df-be3f-dd2a9ae05b8a","date":"2026-07-30T18:00:00Z","playerGameScore":{"id":"So5Score:8ebc2009-642c-4eeb-86ec-93dfdaf25a8b","positionTyped":"Defender","projectedScore":61.0,"anyGame":{"id":"Game:fbd2f1c1-796b-44df-be3f-dd2a9ae05b8a","date":"2026-07-30T18:00:00Z","homeTeam":{"slug":"ajax-amsterdam","name":"AFC Ajax","code":"AJA","domesticLeagueRanking":5},"awayTeam":{"slug":"vojvodina-novi-sad","name":"FK Vojvodina Novi Sad","code":"VOJ","domesticLeagueRanking":null},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"MEDIUM"}}}},{"id":"Game:614f93aa-c70e-4509-a358-7eafcdc25019","date":"2026-08-09T12:30:00Z","playerGameScore":{"id":"So5Score:aeb4f865-d228-40db-80e4-091f4dc9c5a2","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:614f93aa-c70e-4509-a358-7eafcdc25019","date":"2026-08-09T12:30:00Z","homeTeam":{"slug":"pec-zwolle-zwolle","name":"PEC Zwolle","code":"ZWO","domesticLeagueRanking":15},"awayTeam":{"slug":"ajax-amsterdam","name":"AFC Ajax","code":"AJA","domesticLeagueRanking":5},"competition":{"slug":"eredivisie"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:fa5028c8-fc39-4282-b4ea-55333cc7fc42","date":"2026-08-16T14:45:00Z","playerGameScore":{"id":"So5Score:267e125a-bce6-4cea-b876-578812152261","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:fa5028c8-fc39-4282-b4ea-55333cc7fc42","date":"2026-08-16T14:45:00Z","homeTeam":{"slug":"ajax-amsterdam","name":"AFC Ajax","code":"AJA","domesticLeagueRanking":5},"awayTeam":{"slug":"heerenveen-heerenveen-1920","name":"sc Heerenveen","code":"HEE","domesticLeagueRanking":8},"competition":{"slug":"eredivisie"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:10a434e8-0d42-479a-b1a7-fa5386c2e1f4","date":"2026-08-30T14:45:00Z","playerGameScore":{"id":"So5Score:4d772e96-34bc-4140-896f-8a103b787d96","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:10a434e8-0d42-479a-b1a7-fa5386c2e1f4","date":"2026-08-30T14:45:00Z","homeTeam":{"slug":"telstar-velsen-zuid","name":"SC Telstar","code":"TEL","domesticLeagueRanking":14},"awayTeam":{"slug":"ajax-amsterdam","name":"AFC Ajax","code":"AJA","domesticLeagueRanking":5},"competition":{"slug":"eredivisie"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:91b8f0c1-3968-4a38-8d30-00f18fbeb121","date":"2026-09-05T18:00:00Z","playerGameScore":{"id":"So5Score:1a227fdc-4c2d-40b6-bb4f-a5b72bd14761","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:91b8f0c1-3968-4a38-8d30-00f18fbeb121","date":"2026-09-05T18:00:00Z","homeTeam":{"slug":"ajax-amsterdam","name":"AFC Ajax","code":"AJA","domesticLeagueRanking":5},"awayTeam":{"slug":"psv-eindhoven","name":"PSV Eindhoven","code":"PSV","domesticLeagueRanking":1},"competition":{"slug":"eredivisie"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
