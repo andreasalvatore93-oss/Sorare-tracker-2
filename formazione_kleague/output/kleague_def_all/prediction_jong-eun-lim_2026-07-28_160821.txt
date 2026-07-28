@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T16:08:21.064112Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jong-eun-lim: 4 pt attesi (0-18)
+   ORDINAMENTO: 3.13
+   SQUADRA: daejeon-citizen-daejeon | AVVERSARIO: gwangju-gwangju
+======================================================================
+
+######################################################################
+# GIOCATORE: jong-eun-lim
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jong-eun-lim (squadra: daejeon-citizen-daejeon)
+Generato: 2026-07-28T16:08:21.063383Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 28
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | POH vs DJO | k-league-1 | score=29.2 | peso=0.926
+  2026-04-12 | DJO vs GAN | k-league-1 | score=59.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 44.75
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 9.75 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.32, delta avversario +0.35 | Passaggio condizionato: delta venue +0.21, delta avversario -0.23 | Clean sheet/disimpegni condizionato: delta venue +0.04, delta avversario -0.04 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.98
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.2 - 59.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 59.16 | Media score fuori casa: 29.18
+Fattore casa/trasferta applicato: 1.050 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.0
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.241
+Fattore falli (casa/trasferta, da dati reali): 1.050
+Fattore duelli (casa/trasferta, da dati reali): 1.050
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.050
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.050
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.050
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.950
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.050
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 6.67% (fonte: tasso di presenza storico (2/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Daejeon Citizen FC | Trasferta: Gwangju FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 3.5 (range 0.0 - 18.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 3.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 29.18
+Punteggio REALE ottenuto in quella partita: 59.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +30.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
