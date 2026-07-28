@@ -326,6 +326,14 @@ def load_league_role_data():
             out_dir = CONSIGLIO_DIRS[league][role]
             path = bff.latest_consiglio(out_dir)
             rows = bff.parse_consiglio(path) if path else []
+            # 'league' (28/07, fix bug reale trovato dall'utente: alternative
+            # cross-lega non eleggibili proposte nel drag&drop, es. un
+            # centrocampista croato suggerito per una In Season MLS dove non
+            # e' nemmeno schierabile) -- serve a _build_alt_chips per
+            # filtrare le alternative alla lega/pool della formazione
+            # bersaglio, non solo al ruolo.
+            for row in rows:
+                row['league'] = league
             counts, _ = bff.load_card_counts(DISCOVERY_DIRS[league][role])
             names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
@@ -598,7 +606,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
 _slot_role = bff._slot_role  # canonico, condiviso col drag&drop lato pcard
 
 
-def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
+def _build_alt_chips(formazione, label, idx, tipo, global_usage, max_chips=6):
     """Per ogni SLOT della formazione, cerca alternative dello stesso ruolo
     usate in ALTRE formazioni (qualunque tipo) con punteggio atteso vicino
     (28/07, richiesta esplicita utente: "un attaccante con 57, alternative
@@ -608,7 +616,23 @@ def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
     prima versione con un top-4 flat, mai arrivato in produzione). Ritorna al
     massimo max_chips dict {row, ctype, role}, deduplicati per slug -- la riga
     completa (non solo lo score) serve al drag&drop per costruire in anticipo
-    l'HTML della pcard che l'alternativa diventerebbe se trascinata."""
+    l'HTML della pcard che l'alternativa diventerebbe se trascinata.
+
+    'tipo' (28/07, fix bug reale: un centrocampista croato, valutato solo nel
+    pool misto delle All Stars, veniva proposto come alternativa trascinabile
+    per una In Season MLS -- dove non e' nemmeno eleggibile, la lega e'
+    ristretta a mls). Le alternative sono filtrate alla lega/pool della
+    formazione BERSAGLIO (quella che stiamo arricchendo ora), non a quella di
+    provenienza del candidato."""
+    pool_league = POOL_LEAGUE_BY_TYPE.get(tipo)
+
+    def _eligible(u):
+        if pool_league in ('mixed', None):
+            return True
+        if pool_league == 'mixed_u23':
+            return bool(U23_ELIGIBLE.get(u['row']['slug']))
+        return u['row'].get('league') == pool_league
+
     seen_slugs = {row['slug'] for _, row, _ in formazione}
     per_slot = []
     for slot, row, _ctype in formazione:
@@ -619,7 +643,8 @@ def _build_alt_chips(formazione, label, idx, global_usage, max_chips=6):
         cands = sorted(
             ((abs(u['row']['atteso'] - own_score), u)
              for u in global_usage.get(role, ())
-             if (u['label'], u['idx']) != (label, idx) and u['row']['slug'] not in seen_slugs),
+             if (u['label'], u['idx']) != (label, idx) and u['row']['slug'] not in seen_slugs
+             and _eligible(u)),
             key=lambda t: t[0])
         per_slot.append(cands)
 
@@ -803,7 +828,7 @@ def main():
             l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
             check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
             avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=r['tipo'] in XP_BONUS_TYPES)
-        chips = _build_alt_chips(r['formazione'], r['label'], r['idx'], global_usage)
+        chips = _build_alt_chips(r['formazione'], r['label'], r['idx'], r['tipo'], global_usage)
         alt_panel = _render_alt_panel(chips, card_pool, apply_xp_bonus=r['tipo'] in XP_BONUS_TYPES)
         lineup_html_blocks.append(f'<div class="lineup-row">{lineup_html}{alt_panel}</div>')
 

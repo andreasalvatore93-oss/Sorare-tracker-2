@@ -985,6 +985,28 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
 def build_prediction(player_slug):
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
+    # Finestra temporale massima per lo storico (28/07, richiesta esplicita
+    # utente dopo un caso reale: Alejandro Alvarado Jr aveva 1 sola partita
+    # "piena" utilizzabile su 27 esaminate, alcune vecchie di oltre un anno --
+    # un giocatore che rientra da un lungo infortunio/stop non deve essere
+    # valutato su partite troppo vecchie che non riflettono piu' il suo stato
+    # attuale). Partite piu' vecchie di MAX_HISTORY_DAYS vengono scartate
+    # PRIMA di ogni altro filtro, come se non esistessero. Date non
+    # interpretabili restano incluse (permissivo, mai un'esclusione su dato
+    # mancante).
+    MAX_HISTORY_DAYS = 120
+    _cutoff_storico = datetime.datetime.utcnow() - datetime.timedelta(days=MAX_HISTORY_DAYS)
+
+    def _game_dt(node):
+        d = (node.get('anyGame') or {}).get('date')
+        if not d:
+            return None
+        try:
+            return datetime.datetime.fromisoformat(d.replace('Z', '+00:00')).replace(tzinfo=None)
+        except ValueError:
+            return None
+
+    past_games = [n for n in past_games if (_game_dt(n) or _cutoff_storico) >= _cutoff_storico]
     if not past_games:
         log("[FASE 1/4] INTERROTTO: nessuna partita passata trovata, impossibile procedere oltre.")
         return None
@@ -1070,9 +1092,17 @@ def build_prediction(player_slug):
         if len(usable) >= WINDOW_SIZE:
             break
 
-    if not usable:
-        log(f"[FASE 2/4] INTERROTTO: nessuna partita con status FINAL/REVIEWING e minutaggio "
-            f">= {MIN_MINUTES_PLAYED}' trovata su {total_considered} esaminate "
+    # Soglia minima partite PIENE (28/07, stesso caso Alvarado sopra): con meno
+    # di MIN_USABLE_GAMES partite da >= MIN_MINUTES_PLAYED minuti nella
+    # finestra di MAX_HISTORY_DAYS giorni, il dato e' troppo poco per fidarsi
+    # (un singolo risultato fuori scala diventerebbe l'intera "media"). Sotto
+    # soglia il giocatore e' trattato come DATI INSUFFICIENTI, stesso status
+    # gia' usato altrove per storico troppo corto -- non una nuova categoria.
+    MIN_USABLE_GAMES = 3
+    if len(usable) < MIN_USABLE_GAMES:
+        log(f"[FASE 2/4] INTERROTTO: solo {len(usable)} partita/e con status FINAL/REVIEWING "
+            f"e minutaggio >= {MIN_MINUTES_PLAYED}' negli ultimi {MAX_HISTORY_DAYS} giorni "
+            f"(< soglia minima {MIN_USABLE_GAMES}), su {total_considered} esaminate "
             f"({dnp_count} DID_NOT_PLAY, {low_minutes_count} sotto soglia minutaggio, "
             f"altri status: {other_status_count}).")
         return None
