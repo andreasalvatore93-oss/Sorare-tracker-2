@@ -1,0 +1,90 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:46:57.297907Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) rogers-mato: 12 pt attesi (6-38)
+   SQUADRA: lausanne-sport-lausanne | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: rogers-mato
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rogers-mato (squadra: lausanne-sport-lausanne)
+Generato: 2026-07-28T19:46:57.297289Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: premiership-gb-sct (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-31 | LAU vs VAR | uefa-europa-conference-league | score=41.2 | peso=0.630
+  2025-09-05 | ? vs ? | wc-qualification-africa | score=70.0 | peso=0.667
+  2025-09-08 | ? vs ? | wc-qualification-africa | score=35.0 | peso=0.707
+  2025-10-09 | ? vs ? | wc-qualification-africa | score=35.0 | peso=0.749
+  2025-10-14 | ? vs ? | wc-qualification-africa | score=35.0 | peso=0.794
+  2025-12-23 | ? vs ? | africa-cup-of-nations | score=51.3 | peso=0.841
+  2025-12-27 | ? vs ? | africa-cup-of-nations | score=39.6 | peso=0.891
+  2025-12-30 | ? vs ? | africa-cup-of-nations | score=66.3 | peso=0.944
+  2026-07-28 | HEA vs STU | uefa-champions-league | score=0.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 40.48
+  di cui Punteggio decisivo (level_score) medio: 41.50 | Punteggio complessivo (granulari) medio: -1.02 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 1.48 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 20.44
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 66.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.37 (differenza: +9.06)
+Media score in casa: 41.20 | Media score fuori casa: 40.48
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): N/D
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 32.14% (fonte: tasso di presenza storico (9/28))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T16:30
+Casa: Aberdeen FC | Trasferta: Heart of Midlothian FC
+Competizione: premiership-gb-sct
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 11.9 (range 6.4 - 37.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.99
+Punteggio REALE ottenuto in quella partita: 0.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -47.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.3    39.6     -4.7    17.5        SI
+   7        7      43.5    66.3    +22.8    16.1        NO
+   8        8      47.0     0.0    -47.0    18.7        NO
+
+MAE (errore assoluto medio): 24.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 33.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
