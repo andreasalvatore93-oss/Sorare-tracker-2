@@ -750,6 +750,7 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     away_avg = sum(away_vals) / len(away_vals) if away_vals else overall_avg
 
     context_avg = home_avg if target_is_home else away_avg
+    context_vals = home_vals if target_is_home else away_vals
 
     # FIX (25/07, audit logica): il delta viene normalizzato per la deviazione
     # standard STORICA del gruppo stesso, invece di una scala fissa "1%/punto"
@@ -765,7 +766,18 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     std_dev = variance ** 0.5
     delta = context_avg - overall_avg
     delta_normalizzato = (delta / std_dev) if std_dev > 0 else 0.0
-    fattore = 1.0 + (delta_normalizzato * SPLIT_FACTOR_SCALE_PER_STD)
+    # Shrinkage per campione piccolo (28/07, richiesta esplicita utente, caso
+    # reale Collodi: fattore casa/trasferta di 1.319 calcolato su 3-4 partite
+    # per bucket, rumore spacciato per segnale). Con pochi dati nel bucket
+    # (casa O trasferta, quello effettivamente usato per il target) il
+    # fattore viene tirato verso il neutro 1.0, proporzionalmente al numero
+    # di partite in quel bucket -- stesso principio Empirical Bayes dello
+    # shrinkage verso il prior di ruolo, applicato qui alla deviazione invece
+    # che al livello assoluto.
+    SPLIT_SHRINK_K = 5.0
+    n_context = len(context_vals)
+    shrink = n_context / (n_context + SPLIT_SHRINK_K)
+    fattore = 1.0 + (delta_normalizzato * SPLIT_FACTOR_SCALE_PER_STD * shrink)
     return max(0.7, min(1.3, fattore))  # limitato per evitare correzioni estreme
 
 
@@ -996,7 +1008,7 @@ def build_prediction(player_slug):
     # PRIMA di ogni altro filtro, come se non esistessero. Date non
     # interpretabili restano incluse (permissivo, mai un'esclusione su dato
     # mancante).
-    MAX_HISTORY_DAYS = 120
+    MAX_HISTORY_DAYS = 365
     _cutoff_storico = datetime.datetime.utcnow() - datetime.timedelta(days=MAX_HISTORY_DAYS)
 
     def _game_dt(node):
@@ -1358,8 +1370,17 @@ def build_prediction(player_slug):
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
-    score_atteso = ((level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
-                    * fattore_casa_trasferta)
+    # Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes
+    # di DEF/FWD, mai avuto da MID). k=10 scelto con backtest walk-forward
+    # reale (selection_quality, 113 giornate: lift 18.5-19.6% su k testati).
+    SHRINK_K_OUTLIER_MID = 10.0
+    MEDIA_RUOLO_MID_PRIOR = 53.94
+    _grezzo_mid = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    _grezzo_mid_corretto = (
+        (n / (n + SHRINK_K_OUTLIER_MID)) * _grezzo_mid
+        + (SHRINK_K_OUTLIER_MID / (n + SHRINK_K_OUTLIER_MID)) * MEDIA_RUOLO_MID_PRIOR
+    )
+    score_atteso = _grezzo_mid_corretto * fattore_casa_trasferta
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario,
     # DECISO CON L'UTENTE dopo diagnostica su 1228 partite MID in cache di
