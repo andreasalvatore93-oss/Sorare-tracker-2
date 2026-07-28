@@ -1,0 +1,94 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:25:35.023356Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) drena-beljo-dijon: 59 pt attesi (34-79)
+   SQUADRA: dinamo-zagreb-zagreb | AVVERSARIO: slaven-koprivnica-koprivnica
+======================================================================
+
+######################################################################
+# GIOCATORE: drena-beljo-dijon
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: drena-beljo-dijon (squadra: dinamo-zagreb-zagreb)
+Generato: 2026-07-28T19:25:35.022669Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 11
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: 1-hnl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | DIN vs OSI | 1-hnl | score=80.0 | peso=0.561
+  2026-04-13 | V91 vs DIN | 1-hnl | score=100.0 | peso=0.595
+  2026-04-18 | DIN vs RIJ | 1-hnl | score=72.7 | peso=0.630
+  2026-04-22 | IST vs DIN | 1-hnl | score=79.8 | peso=0.667
+  2026-04-26 | DIN vs VAR | 1-hnl | score=83.7 | peso=0.707
+  2026-05-02 | GOR vs DIN | 1-hnl | score=35.3 | peso=0.749
+  2026-05-09 | DIN vs HAJ | 1-hnl | score=69.4 | peso=0.794
+  2026-05-17 | SLA vs DIN | 1-hnl | score=66.8 | peso=0.841
+  2026-05-23 | DIN vs LOK | 1-hnl | score=36.6 | peso=0.891
+  2026-07-21 | FCT vs DIN | uefa-champions-league | score=42.0 | peso=0.944
+  2026-07-28 | DIN vs FCT | uefa-champions-league | score=32.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 60.31
+  di cui Punteggio decisivo (level_score) medio: 52.82 | Punteggio complessivo (granulari) medio: 7.50 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.70 (delta -0.18) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 21.94
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.3 - 80.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.57 (differenza: +3.38)
+Media score in casa: 62.53 | Media score fuori casa: 64.78
+Fattore casa/trasferta applicato: 1.006 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.3
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.094
+Fattore falli (casa/trasferta, da dati reali): 0.982
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.986
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 49.5 vs media ultime 10: 61.9): 0.800
+P(gioca): 100.00% (fonte: tasso di presenza storico (11/11))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T18:00
+Casa: GNK Dinamo Zagreb | Trasferta: NK Slaven Belupo
+Competizione: 1-hnl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 59.5 (range 34.4 - 79.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 64.04
+Punteggio REALE ottenuto in quella partita: 32.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -31.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.3    69.4     +9.1    28.6        SI
+   7        7      80.9    66.8    -14.1    26.2        SI
+   8        8      68.1    36.6    -31.5    24.3        NO
+   9        9      60.6    42.0    -18.6    28.4        SI
+  10       10      43.5    32.8    -10.7    29.0        SI
+
+MAE (errore assoluto medio): 16.78
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

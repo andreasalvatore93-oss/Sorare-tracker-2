@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:26:08.776502Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) blair-spittal: 44 pt attesi (31-60)
+   SQUADRA: hearts-edinburgh | AVVERSARIO: aberdeen-aberdeen
+======================================================================
+
+######################################################################
+# GIOCATORE: blair-spittal
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: blair-spittal (squadra: hearts-edinburgh)
+Generato: 2026-07-28T19:26:08.775916Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 9
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: premiership-gb-sct (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-11 | HEA vs MOT | premiership-gb-sct | score=35.6 | peso=0.841
+  2026-05-09 | MOT vs HEA | premiership-gb-sct | score=59.6 | peso=0.891
+  2026-05-13 | HEA vs FAL | premiership-gb-sct | score=64.4 | peso=0.944
+  2026-07-21 | STU vs HEA | uefa-champions-league | score=35.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 48.73
+  di cui Punteggio decisivo (level_score) medio: 41.42 | Punteggio complessivo (granulari) medio: 7.31 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 39.59 (delta -1.83)
+  Efficacia offensiva condizionata: delta venue -0.62, delta avversario -0.67 | Passaggio condizionato: delta venue +0.48, delta avversario -0.52 | Gol subiti condizionato: delta venue -0.59, delta avversario -0.81 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.42
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.3 - 64.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 50.00 | Media score fuori casa: 47.45
+Fattore casa/trasferta applicato: 0.976 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.8
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.974
+Fattore falli (casa/trasferta, da dati reali): 0.971
+Fattore duelli (casa/trasferta, da dati reali): 1.034
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.961
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.018
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.035
+Fattore gol subiti (goals_conceded, con cap): 0.967
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 44.44% (fonte: tasso di presenza storico (4/9))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T16:30
+Casa: Aberdeen FC | Trasferta: Heart of Midlothian FC
+Competizione: premiership-gb-sct
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.4 (range 31.0 - 60.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.75
+Punteggio REALE ottenuto in quella partita: 35.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
