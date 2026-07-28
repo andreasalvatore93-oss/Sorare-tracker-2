@@ -153,6 +153,7 @@ query FixtureCards($userSlug: String!, $page: Int!, $pageSize: Int!,
                 refinements: $refinements) {
       hits {
         slug
+        u23Eligible
         anyPlayer {
           slug
           displayName
@@ -289,6 +290,7 @@ def main():
 
     for position, role in ROLE_BY_POSITION.items():
         visti = set()
+        u23_di = {}
         page = 1
         while page <= 50:
             d = base.graphql_query(CARDS_QUERY, {
@@ -319,6 +321,14 @@ def main():
                     continue
                 visti.add((p['slug'], (club.get('domesticLeague') or {}).get('slug'),
                            p.get('displayName') or ''))
+                # u23Eligible vive sulla CARTA (28/07, confermato dall'utente via
+                # DevTools -- il flag Sorare, non un calcolo nostro su birthDay:
+                # un 24enne puo' restare flaggato true se ha compiuto gli anni a
+                # stagione iniziata), gia' nella stessa CARDS_QUERY -- zero query
+                # in piu'. OR fra le carte dello stesso giocatore: basta che una
+                # sia flaggata per considerarlo eleggibile.
+                if h.get('u23Eligible'):
+                    u23_di[p['slug']] = True
             if page >= (s.get('nbPages') or 1):
                 break
             page += 1
@@ -374,6 +384,8 @@ def main():
             entry = {'in_season': 1, 'classic': 0}
             if l10 is not None:
                 entry['l10'] = l10
+            if u23_di.get(slug):
+                entry['u23'] = True
             counts_per_lega_ruolo[dirname][role][slug] = entry
 
     log(f"\nGiocatori eleggibili esaminati: {tot_carte} | esclusi: "

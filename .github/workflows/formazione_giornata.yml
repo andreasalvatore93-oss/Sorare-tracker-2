@@ -28,6 +28,10 @@ on:
         description: 'Numero di All Stars da 7'
         required: false
         default: '1'
+      allstars_u23:
+        description: 'Numero di All Stars Under 23 (precedenza su All Stars da 7)'
+        required: false
+        default: '0'
       arena_allstars_260:
         description: 'Arena All Stars cap 260'
         required: false
@@ -1066,6 +1070,7 @@ jobs:
           ARENA_ALLSTARS_220: ${{ github.event.inputs.arena_allstars_220 }}
           ARENA_ALLSTARS_UNCAPPED: ${{ github.event.inputs.arena_allstars_uncapped }}
           ALLSTARS: ${{ github.event.inputs.allstars }}
+          ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}
           LIST_UNUSED_CANDIDATES: ${{ github.event.inputs.list_unused_candidates }}
           MATCH_WINDOW_DAYS: '7'
           PYTHONUNBUFFERED: "1"

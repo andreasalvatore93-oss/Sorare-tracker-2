@@ -138,6 +138,11 @@ FORMATION_SHAPES = {
     'ARENA_ALLSTARS_220': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ARENA_ALLSTARS_UNCAPPED': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ALLSTARS': {'role_slots': ['GK', 'DEF', 'DEF', 'MID', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
+    # Identica a ALLSTARS (stessa shape/regole, richiesta esplicita utente
+    # 28/07), unico vincolo aggiuntivo: pool filtrato ai soli giocatori con
+    # flag Sorare u23Eligible (vedi POOL_LEAGUE_BY_TYPE['ALLSTARS_U23'] =
+    # 'mixed_u23' e U23_ELIGIBLE piu' sotto). Priorita' subito sopra ALLSTARS.
+    'ALLSTARS_U23': {'role_slots': ['GK', 'DEF', 'DEF', 'MID', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
 }
 # Un tipo Arena dedicata per ogni lega di ARENA_LEAGUES, tutte con la stessa
 # struttura (5 slot, nessun limite Classic, cap L10 260 obbligatorio).
@@ -151,6 +156,7 @@ LABELS = {
     'MLS_IN_SEASON': 'In Season MLS', 'KLEAGUE_IN_SEASON': 'In Season K League',
     'ARENA_ALLSTARS_260': 'Arena All Stars (cap 260)', 'ARENA_ALLSTARS_220': 'Arena All Stars (cap 220)',
     'ARENA_ALLSTARS_UNCAPPED': 'Arena All Stars (uncapped)', 'ALLSTARS': 'All Stars',
+    'ALLSTARS_U23': 'All Stars Under 23',
 }
 LABELS.update({arena_type(lg): f'Arena {ARENA_LEAGUE_LABELS.get(lg, lg)} (cap 260)'
                for lg in ARENA_LEAGUES})
@@ -165,25 +171,26 @@ L10_CAP_BY_TYPE.update({arena_type(lg): 260.0 for lg in ARENA_LEAGUES})
 # regola gia' in produzione nei due tool singoli, confermata dall'utente
 # valida anche per le Arene dedicate fuse).
 VARIANCE_MODE_TYPES = {'ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220',
-                        'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS'}
+                        'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS', 'ALLSTARS_U23'}
 VARIANCE_MODE_TYPES.update(arena_type(lg) for lg in ARENA_LEAGUES)
 
 # Bonus anti-stack Sorare "Multi-club" (<3 stessa squadra): SOLO In Season e
 # All Stars, mai nelle Arene (hanno il loro cap L10 obbligatorio separato).
-STACK_GUARD_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS'}
+STACK_GUARD_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS', 'ALLSTARS_U23'}
 
 # Pannello bonus "Cap 260/370" (soft, solo segnalazione): SOLO In Season
 # (soglia 260) e All Stars (soglia 370) -- le Arene hanno gia' il loro cap
 # obbligatorio, non hanno questo bonus extra.
-CHECK_CAP260_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS'}
+CHECK_CAP260_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS', 'ALLSTARS_U23'}
 
 CAPTAIN_BONUS_BY_TYPE = {
     'MLS_IN_SEASON': 0.5, 'KLEAGUE_IN_SEASON': 0.5,
     'ARENA_ALLSTARS_260': 0.2, 'ARENA_ALLSTARS_220': 0.2, 'ARENA_ALLSTARS_UNCAPPED': 0.2,
-    'ALLSTARS': 0.5,
+    'ALLSTARS': 0.5, 'ALLSTARS_U23': 0.5,
 }
 CAPTAIN_BONUS_BY_TYPE.update({arena_type(lg): 0.2 for lg in ARENA_LEAGUES})
-CAP260_THRESHOLD_BY_TYPE = {'MLS_IN_SEASON': 260.0, 'KLEAGUE_IN_SEASON': 260.0, 'ALLSTARS': 370.0}
+CAP260_THRESHOLD_BY_TYPE = {'MLS_IN_SEASON': 260.0, 'KLEAGUE_IN_SEASON': 260.0,
+                            'ALLSTARS': 370.0, 'ALLSTARS_U23': 370.0}
 
 # Estende (SOLO in memoria di questo processo, nessuna modifica al file) le
 # tabelle per-tipo del modulo importato: render_lineup_html/format_lineup
@@ -200,14 +207,21 @@ bff.CAP260_L10_THRESHOLD_BY_TYPE.update(CAP260_THRESHOLD_BY_TYPE)
 PRIORITY_ORDER = (
     ['MLS_IN_SEASON', 'KLEAGUE_IN_SEASON']
     + [arena_type(lg) for lg in ARENA_LEAGUES]
-    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS']
+    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS_U23', 'ALLSTARS']
 )
 
 POOL_LEAGUE_BY_TYPE = {
     'MLS_IN_SEASON': 'mls', 'KLEAGUE_IN_SEASON': 'kleague',
     'ARENA_ALLSTARS_260': 'mixed', 'ARENA_ALLSTARS_220': 'mixed', 'ARENA_ALLSTARS_UNCAPPED': 'mixed',
-    'ALLSTARS': 'mixed',
+    'ALLSTARS': 'mixed', 'ALLSTARS_U23': 'mixed_u23',
 }
+
+# Flag Sorare u23Eligible per slug (28/07, richiesta esplicita utente: vive
+# sulla CARTA non sul giocatore, ma e' un flag di gioco -- non un calcolo
+# nostro su birthDay/eta', che l'utente ha esplicitamente scartato come
+# inaffidabile). Popolato in main() da role_counts (gia' caricato da
+# player_card_counts.json via load_card_counts, stesso file che porta L10).
+U23_ELIGIBLE = {}
 # Ogni Arena dedicata pesca SOLO dalla sua lega.
 POOL_LEAGUE_BY_TYPE.update({arena_type(lg): lg for lg in ARENA_LEAGUES})
 
@@ -347,17 +361,25 @@ def build_quality_pools(role_data):
     }
 
 
+def _sort_ordinamento(rows):
+    # Ordina per lo score di ordinamento (senza shrinkage) -- vedi sezione
+    # 27.C del RIASSUNTO. Fallback TUTTO-O-NIENTE: i due score stanno su
+    # scale diverse, mescolarli nella stessa sort non e' omogeneo.
+    if rows and all(r.get('ordinamento') is not None for r in rows):
+        rows.sort(key=lambda r: r['ordinamento'], reverse=True)
+    else:
+        rows.sort(key=lambda r: r['atteso'], reverse=True)
+    return rows
+
+
 def _view_for(pools, pool_league, role):
     if pool_league == 'mixed':
         combined = [r for lg in LEAGUES for r in pools[lg][role].passing]
-        # Ordina per lo score di ordinamento (senza shrinkage) -- vedi sezione
-        # 27.C del RIASSUNTO. Fallback TUTTO-O-NIENTE: i due score stanno su
-        # scale diverse, mescolarli nella stessa sort non e' omogeneo.
-        if combined and all(r.get('ordinamento') is not None for r in combined):
-            combined.sort(key=lambda r: r['ordinamento'], reverse=True)
-        else:
-            combined.sort(key=lambda r: r['atteso'], reverse=True)
-        return combined
+        return _sort_ordinamento(combined)
+    if pool_league == 'mixed_u23':
+        combined = [r for lg in LEAGUES for r in pools[lg][role].passing
+                    if U23_ELIGIBLE.get(r['slug'])]
+        return _sort_ordinamento(combined)
     return pools[pool_league][role].passing
 
 
@@ -370,7 +392,7 @@ def _next_unchecked_score(pool):
 
 
 def _grow_for(pools, pool_league, role, batch):
-    if pool_league != 'mixed':
+    if pool_league not in ('mixed', 'mixed_u23'):
         return pools[pool_league][role].grow(batch)
     # Pool misto su TUTTE le leghe (27/07): crescere batch carte PER LEGA
     # significherebbe moltiplicare per ~20 le query L5/L10/L40 -- e un 429
@@ -395,14 +417,10 @@ def _grow_for(pools, pool_league, role, batch):
 def _raw_view_for(role_data, pool_league, role):
     if pool_league == 'mixed':
         combined = [r for lg in LEAGUES for r in role_data[lg][role]]
-        # Ordina per lo score di ordinamento (senza shrinkage) -- vedi sezione
-        # 27.C del RIASSUNTO. Fallback TUTTO-O-NIENTE: i due score stanno su
-        # scale diverse, mescolarli nella stessa sort non e' omogeneo.
-        if combined and all(r.get('ordinamento') is not None for r in combined):
-            combined.sort(key=lambda r: r['ordinamento'], reverse=True)
-        else:
-            combined.sort(key=lambda r: r['atteso'], reverse=True)
-        return combined
+        return _sort_ordinamento(combined)
+    if pool_league == 'mixed_u23':
+        combined = [r for lg in LEAGUES for r in role_data[lg][role] if U23_ELIGIBLE.get(r['slug'])]
+        return _sort_ordinamento(combined)
     return role_data[pool_league][role]
 
 
@@ -475,7 +493,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
     # la generazione di una qualunque delle restanti All Stars richieste (pool
     # troppo eroso dal vincolo sulla prima), si rinuncia e si rigenera l'intera
     # serie senza forzare -- vedi retry sotto, mai un compromesso silenzioso.
-    force_cap370_first = tipo == 'ALLSTARS' and count >= 1
+    force_cap370_first = tipo in ('ALLSTARS', 'ALLSTARS_U23') and count >= 1
 
     def _run(force_first):
         # Varianza capitano (27/07, richiesta esplicita utente, stesso fix
@@ -623,11 +641,13 @@ def main():
     arena_allstars_220 = _read_int_env('ARENA_ALLSTARS_220', 0)
     arena_allstars_uncapped = _read_int_env('ARENA_ALLSTARS_UNCAPPED', 0)
     allstars_qty = _read_int_env('ALLSTARS', 0)
+    allstars_u23_qty = _read_int_env('ALLSTARS_U23', 0)
 
     counts = {
         'MLS_IN_SEASON': in_season_req['mls'], 'KLEAGUE_IN_SEASON': in_season_req['kleague'],
         'ARENA_ALLSTARS_260': arena_allstars_260, 'ARENA_ALLSTARS_220': arena_allstars_220,
         'ARENA_ALLSTARS_UNCAPPED': arena_allstars_uncapped, 'ALLSTARS': allstars_qty,
+        'ALLSTARS_U23': allstars_u23_qty,
     }
     counts.update({arena_type(lg): arena_dedicata_req.get(lg, 0) for lg in ARENA_LEAGUES})
     num_totale = sum(counts.values())
@@ -636,6 +656,16 @@ def main():
           (", ".join(f"{LABELS[t]}={counts[t]}" for t in richiesti) if richiesti else "nessuna"))
 
     role_data, role_counts, player_names = load_league_role_data()
+
+    # Flag u23Eligible per slug (28/07): estratto da role_counts, gia'
+    # caricato da player_card_counts.json (stesso file che porta L10) --
+    # nessuna query o file in piu'. Serve solo se ALLSTARS_U23 e' richiesta.
+    global U23_ELIGIBLE
+    for lg in LEAGUES:
+        for role in ROLES:
+            for slug, entry in role_counts.get(lg, {}).get(role, {}).items():
+                if entry.get('u23'):
+                    U23_ELIGIBLE[slug] = True
 
     prima = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
     role_data = filter_by_window(role_data)
