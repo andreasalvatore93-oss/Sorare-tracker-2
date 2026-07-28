@@ -431,14 +431,27 @@ _graphql_last_429_ts = [0.0]
 # per "ritmo istantaneo" ma per QUANTITA' di richieste in una finestra
 # scorrevole -- una pausa fissa periodica (60s lavoro / 20s pausa,
 # indipendente dai 429) avrebbe dovuto "svuotare" quella finestra prima che
-# scattasse. RISULTATO: SMENTITA. Run di verifica (07:52-07:54): primo 429
-# scattato comunque a ~2 minuti dall'inizio, stesso punto della run senza
-# pausa. Il limite sembra legato al TEMPO TRASCORSO, non al conteggio di
-# richieste in coda -- una pausa non "resetta" nulla. Lasciato disattivato di
-# default (0) ma il meccanismo resta disponibile via env var nel caso si
-# voglia testare un work/pause diverso in futuro.
-GRAPHQL_BURST_WORK_SECONDS = float(os.environ.get('GRAPHQL_BURST_WORK_SECONDS', '0'))
-GRAPHQL_BURST_PAUSE_SECONDS = float(os.environ.get('GRAPHQL_BURST_PAUSE_SECONDS', '20.0'))
+# scattasse. RISULTATO: SMENTITA (con 20s di pausa). Run di verifica
+# (07:52-07:54): primo 429 scattato comunque a ~2 minuti dall'inizio, stesso
+# punto della run senza pausa.
+#
+# ESPERIMENTO 29/07 quater (richiesta esplicita utente, test A/B tra due run
+# GitHub Actions reali e indipendenti sullo stesso branch): Run A (15 squadre
+# MLS) primo 429 a 2m56s dall'avvio; Run A cancellata; Run B (altre 15 squadre
+# MLS, stesso account/cookie Sorare) lanciata SOLO 45s dopo la fine di Run A --
+# primo 429 di Run B a 2m42s dal SUO avvio, praticamente identico a Run A.
+# Conclusione: il limite NON e' un conto cumulativo sull'account che si
+# esaurisce e basta (altrimenti Run B avrebbe dovuto sbattere subito) -- si
+# RICARICA in appena ~45s di inattivita' verso l'API. La pausa di 20s
+# dell'esperimento precedente era quindi probabilmente troppo breve per
+# ricaricare la finestra, non uno smentita della logica "pausa periodica" in
+# se'. Riprovato con pausa piu' lunga (default ora ATTIVO): lavoro
+# GRAPHQL_BURST_WORK_SECONDS=150s (margine di sicurezza sotto i ~2m45-2m56s
+# osservati prima del muro) seguito da GRAPHQL_BURST_PAUSE_SECONDS=60s (oltre
+# i 45s che si sono dimostrati sufficienti nel test A/B) -- da verificare con
+# una run reale prima di considerarlo risolto.
+GRAPHQL_BURST_WORK_SECONDS = float(os.environ.get('GRAPHQL_BURST_WORK_SECONDS', '150.0'))
+GRAPHQL_BURST_PAUSE_SECONDS = float(os.environ.get('GRAPHQL_BURST_PAUSE_SECONDS', '60.0'))
 _burst_window_start = [None]
 _burst_paused_until = [0.0]
 
