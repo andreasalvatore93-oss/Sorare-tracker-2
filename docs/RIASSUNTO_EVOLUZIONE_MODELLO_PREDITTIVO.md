@@ -3270,3 +3270,127 @@ Da 15m18s a 4m05s: **-73% sul tempo totale della run**, zero 429 e zero fallimen
 livelli testati. **Non riproporre altri test di scaling senza una richiesta esplicita** — il
 pavimento pratico e' stato raggiunto, ulteriori guadagni richiederebbero ridurre l'overhead fisso
 per job (checkout+pip install, ~15-20s/job) piuttosto che aumentare ancora gli shard.
+
+## 31.A — Sessione 28/07/2026 (notte) — Audit completo del modello richiesto dall'utente
+
+Dopo i test di scaling (sezione 30), richiesto un audit generale e adversariale di **tutto** il
+modello che porta a una prediction di formazione: "individuane incongruenze logiche, errori,
+discrepanze... ripercorri ogni singolo step". Regola di lavoro concordata: ogni bug trovato viene
+proposto via pop-up, l'utente risponde si/no, e solo poi si decide se fixare subito o mettere in
+coda. Trovati e confermati con dati reali (mai per assunzione) diversi bug distinti, elencati
+sotto in ordine di scoperta.
+
+## 31.B — Bug reale: `p_gioca` come moltiplicatore di `score_atteso` (rimosso, tutte le 28 leghe/4 ruoli)
+
+`score_atteso` era moltiplicato per `p_gioca` (probabilita' di scendere in campo) in tutti i ruoli.
+Decisione dell'utente: `score_atteso` deve rappresentare "quanto rende SE gioca", non un valore
+atteso pesato per l'incertezza sulla presenza — quel rischio va gestito a monte come filtro secco
+(`starterOdds`/`MIN_STARTER_ODDS`), non come sconto continuo che penalizza chi ha assenze
+irrilevanti nello storico (amichevoli, nazionale). Rimosso da GK/DEF/MID su tutte le 28 leghe e da
+FWD — **con un errore reale nel primo giro**: il batch-fix su FWD aveva riportato "Modificati: 81"
+(27 leghe × 3 ruoli, FWD silenziosamente a zero senza errore visibile) e solo una riverifica
+sistematica (`grep -rl "p_gioca \*"` su tutto il repo, non fidarsi del conteggio riportato dallo
+script) ha scoperto che FWD non era stato toccato su 27/28 leghe. Rifatto e riverificato: 27/27
+modificati, zero match residui, tutti i file compilano.
+
+## 31.C — Simulazione locale delle 6 formazioni MLS In Season: 3 bug reali trovati
+
+Su richiesta esplicita dell'utente ("niente piu' run finche' non risolvi tutti i bug, farai tu i
+calcoli in locale"), costruita una simulazione locale (no GitHub Actions) delle 6 migliori
+formazioni MLS In Season con la prossima giornata reale, solo giocatori posseduti. L'utente ha
+esaminato i risultati riga per riga e trovato 3 bug reali:
+
+1. **Bug allocazione budget classic (Gil)**: `build_one_lineup` processava gli slot in ordine
+   fisso (GK→DEF→MID→FWD→EXTRA) e assegnava il budget classic (1 sola carta classic per lineup
+   nelle formazioni IN_SEASON) al primo slot che ne aveva bisogno, non al piu' conveniente. Gil
+   (MID, classic-only, ~70 punti atteso) veniva scartato a favore di uno slot DEF molto meno
+   decisivo, con perdita netta di punteggio. **Fix**: `build_one_lineup` ora fa un dry-run
+   (`measure_gains=True`) per misurare il guadagno marginale di ogni slot se gli venisse assegnato
+   il budget classic, poi assegna il budget SOLO allo slot con guadagno massimo. Verificato con
+   test sintetico (scenario che rispecchia Gil): output corretto, +2 punti rispetto al
+   comportamento greedy precedente.
+2. **Bug discovery/paginazione (Zinckernagel scomparso)**: Zinckernagel non appariva in nessuna
+   delle 6 formazioni nonostante fosse un giocatore valido. Causa: in `discovery_fixture.py`, la
+   paginazione di `CARDS_QUERY` trattava una pagina vuota a meta' risultato (`hits` vuoto ma
+   `page < nbPages`) come "fine dei risultati raggiunta", perdendo silenziosamente in modo
+   silenzioso tutte le pagine successive — confermato riproducendo la query pulita (pagina 5/21
+   vuota per un glitch transitorio, poi di nuovo popolata a un retry immediato). **Fix**: la
+   paginazione ora distingue esplicitamente "ultima pagina raggiunta" (`page >= nbPages`, break
+   normale) da "pagina vuota a meta' senza motivo" (retry fino a 3 volte con 1s di pausa, poi
+   `return 2` con errore esplicito invece di troncare in silenzio).
+3. **Bug contatore sinergie same-team (gia' in coda da prima)**: `chosen_roles_by_team` usava un
+   `set()` di ruoli per squadra invece di un contatore — due compagni di squadra dello stesso ruolo
+   contavano come uno solo ai fini di bonus/penalita' di sinergia. Fix: sostituito con un `dict`
+   contatore per ruolo. Gia' committato in precedenza insieme a FWD ordinamento e allineamento
+   backtest GK/MID (commit `66baaf8f4`).
+
+## 31.D — Bug reale: prior di shrinkage fisso, indipendente dal tasso di presenza storico
+
+Indagando due casi segnalati dall'utente (Jack Skahan MID e David Vazquez DEF, entrambi con
+`score_atteso` sospettosamente alto per giocatori marginali), confermato che il prior di ruolo
+usato nello shrinkage-verso-il-ruolo (`MEDIA_RUOLO_X_PRIOR`) era una costante fissa uguale per
+tutti, panchinari e titolari. Misurato su dati reali (`.game_log_cache/*.json`, l'unica cache che
+conserva gli status `DID_NOT_PLAY` — un primo tentativo con `.cache/*.json` ha dato risultati
+palesemente sbagliati, tutti i giocatori a presence_rate=1.0, per lo stesso motivo) una
+correlazione positiva reale fra tasso di presenza storico e punteggio medio quando il giocatore
+gioca: GK n=115 corr=+0.245, DEF n=381 corr=+0.447, MID n=331 corr=+0.530, FWD n=287 corr=+0.522.
+Fittate 4 regressioni lineari (una per ruolo) e sostituito il prior fisso con
+`max(0.0, intercetta + pendenza*presence_rate)` quando il presence_rate e' disponibile (default
+`None` = comportamento vecchio invariato per i chiamanti di backtest che non lo passano).
+Implementato e propagato a GK/MID/DEF su tutte le 27 leghe con il meccanismo di shrinkage (esclusa
+`formazione_resto_mondo`, [[project_backlog_resto_mondo_modello_arretrato]]), FWD solo su MLS
+(decisione gia' presa in precedenza di non estendere lo shrinkage FWD alle altre 27 leghe — misurato
+che il non-shrinkage batte lo shrinkage li'). Verificato live su MID: Jack Skahan sceso da 52.76 a
+42.50, comportamento atteso per un panchinaro con storico di assenze. Dettaglio tecnico completo in
+memoria: `project_prior_dinamico_presence_rate.md`.
+
+**Scoperta collaterale durante la propagazione**: `compute_score_atteso_gk` e
+`compute_score_atteso_mid` come funzioni condivise (usate sia da `build_prediction` sia dal
+backtest) esistono SOLO in MLS — le altre 27 leghe hanno lo shrinkage calcolato inline dentro
+`build_prediction`, stesso debito tecnico gia' noto per FWD
+([[project_backlog_fwd_shared_function_solo_mls]]). Non bloccante per questo fix (adattato alla
+struttura inline dove serviva), ma da tenere presente per audit futuri di disallineamento
+backtest/produzione.
+
+## 31.E — Fix reale (gia' committato separatamente): `player_team_slug` a maggioranza invece che dall'ultima partita
+
+Trovato durante lo stesso audit: `player_team_slug` era calcolato per maggioranza di partite
+home/away sull'intera finestra storica invece che dalla squadra dell'ultima partita reale —
+rischio concreto di attribuzione alla squadra VECCHIA dopo un trasferimento a meta' finestra
+(sbagliando fattore casa/trasferta, sinergie di squadra, avversario nel report). Fix applicato e
+committato (commit `7e8f20714`) su tutti e 4 i ruoli, tutte le leghe.
+
+## 31.F — Decisioni prese dall'utente (NON riproporle)
+
+- `p_gioca` resta fuori da `score_atteso` in via definitiva (sezione 31.B) — il rischio di assenza
+  si gestisce solo col filtro starter-odds, non come sconto continuo.
+- Shrinkage FWD resta MLS-only, non va esteso alle altre 27 leghe (misurato: peggiora la
+  selezione li').
+- Il prior dinamico da presence rate (31.D) e' l'assetto di produzione per GK/MID/DEF su tutte le
+  leghe tranne `formazione_resto_mondo`.
+- "Delega ogni fix ad un agente": per lavoro ripetitivo di propagazione su molte leghe (stesso
+  pattern verificato su MLS da replicare 27 volte), usare Agent in background invece di farlo
+  turno per turno — ogni agente deve riverificare da solo con grep/conteggi reali, non limitarsi a
+  dichiarare successo (lezione imparata dall'errore di 31.B).
+
+## 31.G — Backlog aperto (non fatto in questa sessione)
+
+- `formazione_resto_mondo`: unica lega su 28 senza NESSUNO dei refactor recenti
+  (level_score/shrinkage/score_ordinamento/p_gioca-fuori-da-score/prior-dinamico) — valutare se
+  vale la pena riportarla al passo con le altre.
+- Verifica live puntuale di GK e DEF con un caso reale specifico dopo il fix del prior dinamico
+  (fatto solo per MID/Skahan finora — compilano entrambi ma non e' stato controllato un numero
+  reale prima/dopo).
+- Ri-simulazione locale delle 6 formazioni MLS In Season dopo tutti questi fix, per confermare che
+  siano finalmente "sensate" secondo il giudizio dell'utente.
+- Test del retry di paginazione (31.C, punto 2) contro un vero caso di fallimento transitorio —
+  finora solo verificato per compilazione, mai esercitato in produzione (difficile da riprodurre a
+  comando).
+
+## 31.H — Stato repo a fine sessione
+
+Tutto committato e pushato su `main` (commit `9fced5cab`, 84 file: prior dinamico su GK/MID/DEF
+27 leghe + FWD MLS, fix paginazione discovery, fix allocazione budget classic). `main` allineato
+con `origin/main`, nessun conflitto. Non incluse nel commit: le cartelle `.debug` sotto
+`formazione_mls/output/*/.debug/` (dump di debug non tracciati, accumulati da run reali con errori
+di complexity-limit — lasciate intatte, decisione di pulizia non presa).
