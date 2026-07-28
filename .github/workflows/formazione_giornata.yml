@@ -57,7 +57,15 @@ permissions:
   contents: write
 
 jobs:
-  discovery:
+  # TEST 28/07 (vedi sezione 30.I del riassunto): discovery spezzata in 3 job
+  # paralleli per sottoinsieme di ruoli invece di un solo job sequenziale sui
+  # 4 ruoli, per ridurre il tempo di parete. Ogni job scrive SOLO le sue
+  # cartelle di output per ruolo (nessuna sovrapposizione di file), poi
+  # discovery_merge combina i 3 MATRICE_JSON parziali in uno solo per il job
+  # predict. Se il test fallisce/non porta benefici, ripristinare un singolo
+  # job discovery con DISCOVERY_ROLES non impostata (gira tutti e 4 i ruoli,
+  # comportamento di prima -- vedi 30.I per le istruzioni di rollback).
+  discovery_a:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -75,17 +83,16 @@ jobs:
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_ROLES: 'gk,def'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
         run: |
           git config user.name "generatore-formazioni-bot"
           git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_discovery/player_slugs.json \
-                  formazione_*/output/*_discovery/player_card_counts.json \
-                  formazione_*/output/*_discovery/player_names.json || true
+          git add formazione_*/output/*_gk_discovery/ formazione_*/output/*_def_discovery/ || true
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili"
+          git commit -m "Formazione giornata: slug eleggibili (GK+DEF)"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -95,16 +102,113 @@ jobs:
             git merge --no-edit -X ours origin/main
           done
 
+  discovery_b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_ROLES: 'mid'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_*/output/*_mid_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: slug eleggibili (MID)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discovery_c:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_ROLES: 'fwd'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_*/output/*_fwd_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: slug eleggibili (FWD)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  discovery_merge:
+    needs: [discovery_a, discovery_b, discovery_c]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrice: ${{ steps.merge.outputs.matrice }}
+    env:
+      MATRICE_A: ${{ needs.discovery_a.outputs.matrice }}
+      MATRICE_B: ${{ needs.discovery_b.outputs.matrice }}
+      MATRICE_C: ${{ needs.discovery_c.outputs.matrice }}
+    steps:
+      - id: merge
+        run: |
+          python3 -c "
+          import json, os
+          a = json.loads(os.environ.get('MATRICE_A') or '[]')
+          b = json.loads(os.environ.get('MATRICE_B') or '[]')
+          c = json.loads(os.environ.get('MATRICE_C') or '[]')
+          combined = a + b + c
+          print('matrice=' + json.dumps(combined, separators=(',', ':')))
+          " >> "$GITHUB_OUTPUT"
+
   predict:
-    needs: discovery
-    if: needs.discovery.outputs.matrice != '' && needs.discovery.outputs.matrice != '[]'
+    needs: discovery_merge
+    if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       max-parallel: 6
       matrix:
-        combo: ${{ fromJson(needs.discovery.outputs.matrice) }}
+        combo: ${{ fromJson(needs.discovery_merge.outputs.matrice) }}
     env:
       LEGA: ${{ matrix.combo.league }}
       RUOLO: ${{ matrix.combo.role }}
@@ -152,7 +256,7 @@ jobs:
           done
 
   formazione:
-    needs: [discovery, predict]
+    needs: [discovery_merge, predict]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15

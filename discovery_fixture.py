@@ -49,6 +49,19 @@ ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.7'))
 ROLE_BY_POSITION = {'Goalkeeper': 'gk', 'Defender': 'def',
                     'Midfielder': 'mid', 'Forward': 'fwd'}
 
+# DISCOVERY_ROLES (28/07, TEST richiesto esplicitamente dall'utente -- vedi
+# sezione 30.I del riassunto -- per spezzare la discovery in piu' job
+# paralleli di GitHub Actions, uno per sottoinsieme di ruoli, per ridurre il
+# tempo totale di parete): sottoinsieme separato da virgole di gk/def/mid/fwd
+# da processare in QUESTA esecuzione. Default: tutti e 4 (comportamento
+# INVARIATO se la env non e' impostata). Ogni job scrive solo le cartelle di
+# output dei ruoli che gli competono -- nessuna sovrapposizione di file tra
+# job paralleli.
+_raw_roles = os.environ.get('DISCOVERY_ROLES', '').strip()
+if _raw_roles:
+    _wanted = {r.strip().lower() for r in _raw_roles.split(',') if r.strip()}
+    ROLE_BY_POSITION = {pos: role for pos, role in ROLE_BY_POSITION.items() if role in _wanted}
+
 # lega Sorare (domesticLeague.slug) -> cartella formazione_<x> nel repo
 LEAGUE_DIR = {
     'major-league-soccer': 'mls', 'mlspa': 'mls', 'k-league-1': 'kleague',
