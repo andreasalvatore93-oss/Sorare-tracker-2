@@ -60,8 +60,55 @@ CSRF_TOKEN = _extract_csrf_from_cookie(COOKIES) or os.environ.get('SORARE_CSRF')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
 
-AUTOBUY_LIVE_MODE = os.environ.get('AUTOBUY_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
-MAKEOFFER_LIVE_MODE = os.environ.get('MAKEOFFER_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+# MODALITA' AGGRESSIVA (28/07, richiesta esplicita utente -- nata come test isolato su
+# clone separato, poi integrata qui dopo verifica positiva): interruttore unico che
+# attiva insieme -- SOLO quando 'si' -- (1) filtro starter odds prossima partita >=80%
+# (soglia hardcoded, non configurabile da input su richiesta esplicita), (2) filtro thin
+# market disattivato, (3) filtro cooldown acquisti/offerte disattivato, (4) soglie di
+# margine (MakeOffer/AutoBuy) piu' aggressive del 10% (AGGRESSIVENESS_MARGIN_MULTIPLIER).
+# TUTTI gli altri filtri (blacklist manager/giocatore/campionato, forma bassa, fix
+# urgente, mercato poco popolato) restano SEMPRE attivi, anche in modalita' aggressiva --
+# invariato rispetto al comportamento normale. Default 'no': comportamento IDENTICO a
+# prima dell'introduzione di questa modalita' se non specificato.
+AGGRESSIVE_MODE = os.environ.get('AGGRESSIVE_MODE', 'no').strip().lower() in ('1', 'true', 'yes', 'si')
+MIN_STARTER_ODDS = 0.80  # hardcoded, nessun input dedicato (richiesta esplicita utente)
+AGGRESSIVENESS_MARGIN_MULTIPLIER = 0.90 if AGGRESSIVE_MODE else 1.0
+
+# SINERGIA DI SICUREZZA (richiesta esplicita utente): la modalita' aggressiva e' tarata
+# per lavorare con le soglie di default (curve dinamiche standard, nessun override
+# manuale dei margini) -- se e' attiva INSIEME a un qualunque input di soglia/sconto
+# modificato a mano rispetto al suo default di produzione, la combinazione non e' mai
+# stata validata, quindi si forza la modalita' SOLO DIAGNOSTICA per sicurezza (acquisti/
+# offerte reali disattivati), a prescindere da cosa arriva da autobuy_live_mode/
+# makeoffer_live_mode. Se invece e' attiva e questi input restano tutti al default,
+# funziona normalmente (rispetta autobuy_live_mode/makeoffer_live_mode, default 'si').
+_AGGRESSIVE_MODE_DEFAULT_INPUTS = {
+    'MAKEOFFER_MARGIN_PERCENT_INPUT': '15',
+    'MAKEOFFER_MAX_MARGIN_PERCENT_INPUT': '26',
+    'AUTOBUY_MARGIN_PERCENT_INPUT': '26',
+    'OFFER_DISCOUNT_PERCENT_INPUT': '15',
+    'PRICE_BASED_THRESHOLDS_ENABLED': 'si',
+}
+_aggressive_mode_forced_diagnostic = False
+_aggressive_mode_forced_diagnostic_reason = None
+if AGGRESSIVE_MODE:
+    for _env_name, _default_val in _AGGRESSIVE_MODE_DEFAULT_INPUTS.items():
+        _cur_val = os.environ.get(_env_name, _default_val).strip()
+        if _cur_val != _default_val:
+            _aggressive_mode_forced_diagnostic = True
+            _aggressive_mode_forced_diagnostic_reason = (
+                f"{_env_name}='{_cur_val}' (default '{_default_val}')")
+            break
+
+AUTOBUY_LIVE_MODE = (os.environ.get('AUTOBUY_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+                      and not _aggressive_mode_forced_diagnostic)
+MAKEOFFER_LIVE_MODE = (os.environ.get('MAKEOFFER_LIVE_MODE', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+                        and not _aggressive_mode_forced_diagnostic)
+if _aggressive_mode_forced_diagnostic:
+    print(f"[bot_definitivo] MODALITA' AGGRESSIVA attiva ma con input di soglia "
+          f"modificato manualmente ({_aggressive_mode_forced_diagnostic_reason}) -- "
+          f"combinazione non validata, forzata modalita' SOLO DIAGNOSTICA (nessun "
+          f"acquisto/offerta reale) per sicurezza.", flush=True)
 SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
 SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 
@@ -861,10 +908,11 @@ def compute_price_based_thresholds(price_eur):
     (margine minimo piu' alto) scendendo di prezzo, vedi AUTOBUY_MIN_MARGIN_CURVE.
     Fallback sui 2 valori statici originali se PRICE_BASED_THRESHOLDS_ENABLED e' 'no'."""
     if not PRICE_BASED_THRESHOLDS_ENABLED:
-        return MAKEOFFER_MARGIN_FRACTION, AUTOBUY_MARGIN_FRACTION
+        return (MAKEOFFER_MARGIN_FRACTION * AGGRESSIVENESS_MARGIN_MULTIPLIER,
+                AUTOBUY_MARGIN_FRACTION * AGGRESSIVENESS_MARGIN_MULTIPLIER)
 
-    makeoffer_min = _linear_interpolate(price_eur, MAKEOFFER_MIN_MARGIN_CURVE)
-    autobuy_min = _linear_interpolate(price_eur, AUTOBUY_MIN_MARGIN_CURVE)
+    makeoffer_min = _linear_interpolate(price_eur, MAKEOFFER_MIN_MARGIN_CURVE) * AGGRESSIVENESS_MARGIN_MULTIPLIER
+    autobuy_min = _linear_interpolate(price_eur, AUTOBUY_MIN_MARGIN_CURVE) * AGGRESSIVENESS_MARGIN_MULTIPLIER
     return makeoffer_min, autobuy_min
 
 
@@ -1261,6 +1309,61 @@ query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
   }
 }
 """
+
+# FILTRO STARTER ODDS -- MODALITA' AGGRESSIVA (28/07): stessa query usata da
+# discovery_fixture.py (ODDS_AND_L10_QUERY) per le formazioni, qui applicata a un singolo
+# player_slug alla volta invece che in batch su una giornata gia' risolta. Si prende la
+# PROSSIMA partita futura (primo nodo di anyFutureGames, nessun filtro di finestra
+# fixture -- qui non c'e' un gameweek di riferimento come nel tool formazioni, "prossima
+# partita" e' semplicemente la prima disponibile). Odds assenti (giocatore senza
+# prossima partita in calendario, o dato non ancora pubblicato da Sorare) = ESCLUSO,
+# stessa convenzione di discovery_fixture.py. Usata SOLO se AGGRESSIVE_MODE e' 'si'.
+NEXT_STARTER_ODDS_QUERY = """
+query NextStarterOdds($slug: String!) {
+  anyPlayer(slug: $slug) {
+    anyFutureGames(first: 1) {
+      nodes {
+        playerGameScore(playerSlug: $slug) {
+          anyGame { date }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+# Cache in RAM (slug -> odds frazionaria o None) per non ripetere la query se lo stesso
+# giocatore si ripresenta piu' volte nella stessa run (es. piu' carte in vendita).
+_starter_odds_cache = {}
+
+
+def get_next_starter_odds(player_slug):
+    """Restituisce le starter odds (frazione 0-1) per la prossima partita futura del
+    giocatore, o None se assenti/non disponibili. Una sola chiamata HTTP per slug per
+    run (cache in RAM). Chiamata SOLO in modalita' aggressiva."""
+    if player_slug in _starter_odds_cache:
+        return _starter_odds_cache[player_slug]
+    odds = None
+    try:
+        d = graphql_query(NEXT_STARTER_ODDS_QUERY, {"slug": player_slug})
+        p = (d.get('data') or {}).get('anyPlayer') or {}
+        nodes = ((p.get('anyFutureGames') or {}).get('nodes') or [])
+        if nodes:
+            pgs = nodes[0].get('playerGameScore') or {}
+            bp = ((pgs.get('anyPlayerGameStats') or {})
+                  .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
+            if bp is not None:
+                odds = bp / 10000.0
+    except Exception as e:
+        log(f"[starter odds] errore query per {player_slug}: {e}")
+    _starter_odds_cache[player_slug] = odds
+    return odds
+
 
 PAGE_SIZE = 50
 MAX_PAGES = 2
@@ -3178,13 +3281,30 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                 f"({league_slug})")
         return False
 
-    if player_slug and is_player_in_cooldown(player_slug, is_in_season):
+    # MODALITA' AGGRESSIVA: filtro cooldown disattivato quando attiva (vedi definizione
+    # di AGGRESSIVE_MODE sopra per il razionale completo).
+    if not AGGRESSIVE_MODE and player_slug and is_player_in_cooldown(player_slug, is_in_season):
         log(f"{player_name}: scarto -- gia' acquistato/offerto ({'in_season' if is_in_season else 'classic'}) "
             f"nelle ultime {PLAYER_COOLDOWN_HOURS}h (protezione anti-svendita/infortunio)")
         return False
 
     if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
         return False
+
+    # MODALITA' AGGRESSIVA: filtro starter odds prossima partita >=80% -- SOLO carte di
+    # titolari quasi certi. Tenuto qui, prima della scansione prezzi (la query piu'
+    # costosa del percorso), cosi' si paga la query odds (1 sola chiamata, cache in RAM)
+    # solo se il caso e' gia' passato i controlli istantanei sopra, ma si risparmia
+    # comunque la scansione mercato per i candidati che verranno scartati per odds
+    # insufficienti. Attivo SOLO se AGGRESSIVE_MODE e' 'si' -- comportamento normale
+    # (nessun filtro odds) altrimenti.
+    if AGGRESSIVE_MODE:
+        _next_odds = get_next_starter_odds(player_slug)
+        if _next_odds is None or _next_odds < MIN_STARTER_ODDS:
+            log(f"{player_name}: scarto -- starter odds prossima partita "
+                f"{'assenti' if _next_odds is None else f'{_next_odds:.1%}'} "
+                f"(soglia {MIN_STARTER_ODDS:.0%}, modalita' aggressiva)")
+            return False
 
     # OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente -- "ogni millisecondo
     # e' importante nello sniping"): il controllo di liquidita' (cache thin_market +
@@ -3297,7 +3417,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # Controllo liquidita' (thin_market cache + query di rete) spostato QUI: solo ora
     # sappiamo che la carta e' gia' un affare sulla carta, quindi vale la pena del
     # costo della verifica -- vedi nota sopra sul filtro prezzo per il razionale.
-    if player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
+    # MODALITA' AGGRESSIVA: filtro thin market disattivato quando attiva.
+    if not AGGRESSIVE_MODE and player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
         log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile nelle "
             f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
         return False
@@ -3346,7 +3467,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione, terzo_prezzo_transazione = \
         get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
     _t_liquidita = time.monotonic()
-    if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
+    # MODALITA' AGGRESSIVA: filtro transazioni minime (thin market) disattivato quando attiva.
+    if not AGGRESSIVE_MODE and count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
             f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
@@ -4239,7 +4361,8 @@ def _try_periodic_bid(candidato, eth_rate):
 
     # Stessi controlli di cooldown/offerte pendenti di una carta target normale --
     # possono essere cambiati nei ~2 minuti trascorsi dal tracciamento.
-    if player_slug and is_player_in_cooldown(player_slug, is_in_season):
+    # MODALITA' AGGRESSIVA: filtro cooldown/thin market disattivati quando attiva.
+    if not AGGRESSIVE_MODE and player_slug and is_player_in_cooldown(player_slug, is_in_season):
         log(f"[bid periodico] {player_name}: scarto -- gia' acquistato/offerto di "
             f"recente (cooldown), salto questo ciclo")
         return False
@@ -4247,14 +4370,14 @@ def _try_periodic_bid(candidato, eth_rate):
         log(f"[bid periodico] {player_name}: scarto -- in 'forma bassa ultime 5', "
             f"salto questo ciclo")
         return False
-    if player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
+    if not AGGRESSIVE_MODE and player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
         log(f"[bid periodico] {player_name}: scarto -- gia' segnalato come mercato "
             f"troppo sottile di recente, salto questo ciclo")
         return False
 
     count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione, terzo_prezzo_transazione = \
         get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
-    if count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
+    if not AGGRESSIVE_MODE and count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
         log(f"[bid periodico] {player_name}: scarto -- solo {count_7d} transazioni "
             f"negli ultimi {RECENT_TRANSACTIONS_WINDOW_DAYS} giorni, mercato troppo "
             f"sottile, salto questo ciclo")

@@ -94,6 +94,10 @@ on:
         description: "'si' = soglie basate sul prezzo (26/07). 'no' = torna alle 3 soglie statiche fisse (makeoffer_margin_percent/makeoffer_max_margin_percent/autobuy_margin_percent) -- utile per test diagnostici mirati (es. forzare molti AutoBuy per analisi timing)."
         required: false
         default: "si"
+      aggressive_mode:
+        description: "'si' = MODALITA' AGGRESSIVA: filtro starter odds prossima partita >=80% (hardcoded), thin market e cooldown disattivati, soglie di margine -10% (piu' sensibile). Manager/giocatore/campionato blacklist ecc. restano SEMPRE attivi. SICUREZZA: se attiva insieme a QUALUNQUE input di soglia/sconto modificato dal default (makeoffer_margin_percent/makeoffer_max_margin_percent/autobuy_margin_percent/offer_discount_percent/price_based_thresholds_enabled), forza automaticamente la modalita' SOLO DIAGNOSTICA (combinazione non validata) -- lasciare tutti quegli input al default per farla funzionare con acquisti/offerte reali. 'no' = disattivata, comportamento normale."
+        required: false
+        default: "no"
 permissions:
   contents: write
 concurrency:
@@ -154,6 +158,7 @@ jobs:
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: "20"
           PRICE_BASED_THRESHOLDS_ENABLED: ${{ github.event.inputs.price_based_thresholds_enabled || 'si' }}
+          AGGRESSIVE_MODE: ${{ github.event.inputs.aggressive_mode || 'no' }}
         run: |
           set -o pipefail
           export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
