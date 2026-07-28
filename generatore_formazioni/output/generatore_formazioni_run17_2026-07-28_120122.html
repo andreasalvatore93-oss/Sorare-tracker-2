@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Generatore Formazioni — run #17</title>
+<style>
+  :root {
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530; --stripe: #232d3a;
+    --text: #edf1f6; --muted: #8a93a6; --muted-2: #5f6879; --gold: #f4c542;
+    --border: rgba(255,255,255,0.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4; --stripe: #e3e6ec;
+      --text: #1a2029; --muted: #5b6474; --muted-2: #8a93a6; --border: rgba(20,25,35,0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 32px 64px; max-width: 1180px; margin: 0 auto;
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .subhead { color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }
+  .lineup-row { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 40px; }
+  .lineup-row .lineup-block { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
+  .alt-panel {
+    flex: 0 0 200px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; align-self: stretch;
+  }
+  .alt-panel-title {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 10px; line-height: 1.4;
+  }
+  .alt-list { display: flex; flex-direction: column; gap: 10px; }
+  .alt-chip { display: flex; align-items: center; gap: 8px; cursor: grab; border-radius: 8px; padding: 2px; }
+  .alt-chip[draggable="true"]:active { cursor: grabbing; }
+  .pcard[draggable="true"] { cursor: grab; }
+  .pcard[draggable="true"]:active { cursor: grabbing; }
+  .pcard.drop-target, .alt-chip.drop-target {
+    outline: 2px dashed var(--gold); outline-offset: 2px;
+  }
+  .alt-circle {
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700; color: var(--muted);
+  }
+  .alt-name { font-size: 0.72rem; font-weight: 600; line-height: 1.2; }
+  .alt-score { font-size: 0.64rem; color: var(--muted); }
+  .lineup-block { margin-bottom: 40px; }
+  .lineup-meta { margin-bottom: 12px; }
+  .lineup-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .lineup-title span { color: var(--text); }
+  .card-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .pcard {
+    position: relative; flex: 0 0 104px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .pcard-stripe { height: 4px; width: 100%; }
+  .pcard-body { padding: 8px 6px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .pcard-role {
+    position: absolute; top: 6px; left: 6px; font-size: 0.52rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 16%, transparent);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .pcard-captain {
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); color: #241c00; font-size: 0.58rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+  }
+  .pcard-avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.72rem; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
+    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 8px;
+  }
+  .pcard-name { font-size: 0.62rem; font-weight: 650; line-height: 1.2; min-height: 1.6em; display: flex; align-items: center; }
+  .pcard-score { font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }
+  .pcard-range { font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pcard-l10 { font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+  .pcard-tags { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }
+  .tag { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }
+  .tag-classic { background: rgba(240,168,59,0.16); color: #f0a83b; }
+  .tag-copies { background: var(--stripe); color: var(--muted); }
+  .lineup-total {
+    margin-top: 12px; display: flex; align-items: center; gap: 18px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; flex-wrap: wrap;
+  }
+  .lineup-total .figure { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .lineup-total .figure.with-captain { color: var(--gold); }
+  .lineup-total .label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }
+  .lineup-total .divider { width: 1px; height: 30px; background: var(--border); }
+  .lineup-total .captain-note { font-size: 0.74rem; color: var(--muted); margin-left: auto; }
+  .lineup-total .captain-note b { color: var(--gold); font-weight: 700; }
+  .error-block { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }
+</style>
+</head>
+<body>
+<h1>Generatore Formazioni — run #17</h1>
+<p class="subhead">Generato 28/07/2026 12:01Z — totale=1 (In Season MLS=0, In Season K League=0, Arena MLS (cap 260)=0, Arena K League (cap 260)=0, Arena Belgio (cap 260)=0, Arena Eredivisie (cap 260)=0, Arena Turchia (cap 260)=0, Arena Portogallo (cap 260)=0, Arena Spagna (cap 260)=0, Arena Germania (cap 260)=0, Arena Ligue 1 (cap 260)=0, Arena Croazia (cap 260)=0, Arena Scozia (cap 260)=0, Arena All Stars (cap 260)=0, Arena All Stars (cap 220)=0, Arena All Stars (uncapped)=0, All Stars=1)<br>Candidati non schierati in nessuna formazione: 66 (GK: 12, DEF: 17, MID: 20, FWD: 17)</p>
+<div class="lineup-row"><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">All Stars <span>#1</span></div></div><div class="card-strip"><div class="pcard" draggable="true" style="--role-color:#8b7cf6" data-slug="elias-rafn-olafsson" data-role="GK" data-score="61" data-name="Elías Ólafsson" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;ER&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Elías Ólafsson&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;61&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;46–78 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 49&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><div class="pcard-avatar">ER</div><div class="pcard-name">Elías Ólafsson</div><div class="pcard-score">61</div><div class="pcard-range">46–78 pt</div><div class="pcard-l10">L10: 49</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#3aa1e8" data-slug="mads-bech-sorensen" data-role="DEF" data-score="45" data-name="Mads Bech Sørensen" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;MB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Mads Bech Sørensen&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;45&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;33–56 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 47&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF1</span><div class="pcard-body"><div class="pcard-avatar">MB</div><div class="pcard-name">Mads Bech Sørensen</div><div class="pcard-score">45</div><div class="pcard-range">33–56 pt</div><div class="pcard-l10">L10: 47</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#3aa1e8" data-slug="marcos-johan-lopez-lanfranco" data-role="DEF" data-score="53" data-name="Marcos López" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;MJ&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Marcos López&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;53&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;34–72 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 61&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF2</span><div class="pcard-body"><div class="pcard-avatar">MJ</div><div class="pcard-name">Marcos López</div><div class="pcard-score">53</div><div class="pcard-range">34–72 pt</div><div class="pcard-l10">L10: 61</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="josip-misic-1994-06-28" data-role="MID" data-score="64" data-name="Josip Mišić" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;JM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Josip Mišić&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;64&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;47–78 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 73&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID1</span><div class="pcard-body"><div class="pcard-avatar">JM</div><div class="pcard-name">Josip Mišić</div><div class="pcard-score">64</div><div class="pcard-range">47–78 pt</div><div class="pcard-l10">L10: 73</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="miha-zajc" data-role="MID" data-score="56" data-name="Miha Zajc" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;MZ&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Miha Zajc&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;56&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;31–75 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 56&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID2</span><div class="pcard-body"><div class="pcard-avatar">MZ</div><div class="pcard-name">Miha Zajc</div><div class="pcard-score">56</div><div class="pcard-range">31–75 pt</div><div class="pcard-l10">L10: 56</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#ef5b5b" data-slug="mika-marcel-godts" data-role="FWD" data-score="68" data-name="Mika Godts" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;MM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Mika Godts&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;68&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42–98 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 72&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><span class="pcard-captain">C</span><div class="pcard-body"><div class="pcard-avatar">MM</div><div class="pcard-name">Mika Godts</div><div class="pcard-score">68</div><div class="pcard-range">42–98 pt</div><div class="pcard-l10">L10: 72</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="frederico-rodrigues-santos" data-role="MID" data-score="59" data-name="Fred" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;FR&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Fred&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;59&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42–83 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 60&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><div class="pcard-avatar">FR</div><div class="pcard-name">Fred</div><div class="pcard-score">59</div><div class="pcard-range">42–83 pt</div><div class="pcard-l10">L10: 60</div><div class="pcard-tags"></div></div></div></div><div class="lineup-total" data-captain-pct="0.5"><div><span class="label">Totale</span><span class="figure">406 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">440 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Mika Godts</b> <span class="cap-bonus">(+34 pt, +50%)</span></div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note" style="color:#d9534f">Cap 370: L10 418.0 / 370 (bonus +4% non ottenuto)</div></div></div></div>
+<footer>Fusione 25 campionati. Max 1 carta CLASSIC solo per In Season. Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.</footer>
+<script>
+// Drag&drop (28/07, richiesta esplicita utente): scambia un giocatore fra
+// una pcard schierata e un'alternativa (o un'altra pcard), stesso ruolo.
+// Puro swap di HTML/attributi gia' pronti lato server (data-body) -- NESSUN
+// ricalcolo di formula, NESSUNA persistenza (un refresh della pagina
+// riporta tutto allo stato generato). Limite noto: le note L10/cap/anti-stack
+// sotto ogni formazione restano quelle calcolate al momento della run, non
+// si aggiornano con lo scambio (solo totale e bonus capitano lo fanno).
+(function () {
+  var dragEl = null;
+
+  function isDraggable(el) {
+    return el && (el.classList.contains('pcard') || el.classList.contains('alt-chip'))
+      && el.getAttribute('draggable') === 'true';
+  }
+
+  document.addEventListener('dragstart', function (e) {
+    var el = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!el) return;
+    dragEl = el;
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', 'x'); } catch (err) {}
+  });
+
+  document.addEventListener('dragover', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+  });
+
+  document.addEventListener('dragenter', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (dragEl && target && target !== dragEl && target.dataset.role === dragEl.dataset.role) {
+      target.classList.add('drop-target');
+    }
+  });
+
+  document.addEventListener('dragleave', function (e) {
+    var target = e.target.closest('.pcard, .alt-chip');
+    if (target) target.classList.remove('drop-target');
+  });
+
+  document.addEventListener('dragend', function () {
+    document.querySelectorAll('.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
+    dragEl = null;
+  });
+
+  document.addEventListener('drop', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+    target.classList.remove('drop-target');
+    swapPlayers(dragEl, target);
+    dragEl = null;
+  });
+
+  function initials(name) {
+    return (name || '').split(' ').filter(Boolean).slice(0, 2)
+      .map(function (w) { return w[0].toUpperCase(); }).join('') || '??';
+  }
+
+  function refresh(el) {
+    if (el.classList.contains('pcard')) {
+      var body = el.querySelector('.pcard-body');
+      if (body) body.innerHTML = el.dataset.body;
+    } else {
+      var circle = el.querySelector('.alt-circle');
+      var name = el.querySelector('.alt-name');
+      var score = el.querySelector('.alt-score');
+      if (circle) circle.textContent = initials(el.dataset.name);
+      if (name) name.textContent = el.dataset.name;
+      if (score) score.textContent = el.dataset.score + ' pt · ' + el.dataset.role;
+    }
+  }
+
+  function swapPlayers(a, b) {
+    ['slug', 'score', 'name', 'body'].forEach(function (k) {
+      var tmp = a.dataset[k];
+      a.dataset[k] = b.dataset[k];
+      b.dataset[k] = tmp;
+    });
+    refresh(a);
+    refresh(b);
+    [a, b].forEach(function (el) {
+      var block = el.closest('.lineup-block');
+      if (block) recomputeTotal(block);
+    });
+  }
+
+  function recomputeTotal(block) {
+    var total = 0;
+    block.querySelectorAll('.pcard').forEach(function (c) { total += parseFloat(c.dataset.score) || 0; });
+    var totalEl = block.querySelector('.lineup-total');
+    if (!totalEl) return;
+    var figure = totalEl.querySelector('.figure:not(.with-captain)');
+    if (figure) figure.textContent = Math.round(total) + ' pt';
+    var capBadge = block.querySelector('.pcard-captain');
+    var capPct = parseFloat(totalEl.dataset.captainPct || '0.5');
+    var bonus = 0, capName = '';
+    if (capBadge) {
+      var capCard = capBadge.closest('.pcard');
+      bonus = Math.round((parseFloat(capCard.dataset.score) || 0) * capPct);
+      capName = capCard.dataset.name || '';
+    }
+    var withCap = totalEl.querySelector('.figure.with-captain');
+    if (withCap) withCap.textContent = Math.round(total + bonus) + ' pt';
+    var capNameEl = totalEl.querySelector('.cap-name');
+    if (capNameEl && capName) capNameEl.textContent = capName;
+    var capBonusEl = totalEl.querySelector('.cap-bonus');
+    if (capBonusEl) capBonusEl.textContent = '(+' + bonus + ' pt, +' + Math.round(capPct * 100) + '%)';
+  }
+})();
+</script>
+</body>
+</html>
