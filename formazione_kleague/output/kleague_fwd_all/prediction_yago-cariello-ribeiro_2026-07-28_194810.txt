@@ -1,0 +1,92 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:48:10.242541Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) yago-cariello-ribeiro: 30 pt attesi (11-46)
+   SQUADRA: ulsan-ulsan | AVVERSARIO: anyang-anyang
+======================================================================
+
+######################################################################
+# GIOCATORE: yago-cariello-ribeiro
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yago-cariello-ribeiro (squadra: ulsan-ulsan)
+Generato: 2026-07-28T19:48:10.241540Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-28 | ULS vs GAN | k-league-1 | score=89.2 | peso=0.595
+  2026-03-15 | BUC vs ULS | k-league-1 | score=71.5 | peso=0.630
+  2026-03-18 | JEJ vs ULS | k-league-1 | score=69.4 | peso=0.667
+  2026-03-22 | ULS vs SAN | k-league-1 | score=51.8 | peso=0.707
+  2026-04-04 | JMO vs ULS | k-league-1 | score=44.3 | peso=0.749
+  2026-04-11 | INC vs ULS | k-league-1 | score=71.5 | peso=0.794
+  2026-04-15 | ULS vs SEO | k-league-1 | score=48.4 | peso=0.841
+  2026-05-02 | ULS vs POH | k-league-1 | score=30.8 | peso=0.891
+  2026-07-05 | GWA vs ULS | k-league-1 | score=78.7 | peso=0.944
+  2026-07-11 | ULS vs JMO | k-league-1 | score=78.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 62.91
+  di cui Punteggio decisivo (level_score) medio: 50.57 | Punteggio complessivo (granulari) medio: 12.34 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.10 (delta -0.09) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.75
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.3 - 78.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.21 (differenza: +4.53)
+Media score in casa: 59.72 | Media score fuori casa: 67.08
+Fattore casa/trasferta applicato: 0.993 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.2
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.959
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore trend (media ultime 5: 61.6 vs media ultime 10: 63.4): 0.971
+P(gioca): 50.00% (fonte: tasso di presenza storico (10/20))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Ulsan Hyundai Horang-i | Trasferta: FC Anyang
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 30.0 (range 11.4 - 45.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.64
+Punteggio REALE ottenuto in quella partita: 78.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      54.1    48.4     -5.7    20.2        SI
+   7        7      66.2    30.8    -35.4    20.5        NO
+   8        8      70.1    78.7     +8.6    24.7        SI
+   9        9      50.4    78.4    +28.0    25.1        NO
+
+MAE (errore assoluto medio): 19.44
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
