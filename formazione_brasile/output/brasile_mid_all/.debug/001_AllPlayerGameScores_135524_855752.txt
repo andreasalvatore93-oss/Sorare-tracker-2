@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "luciano-federico-acosta", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 13:55:24 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785246924', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'zyX5ypdlU1S978T2mqbhQSgPV7GFoYz8S2meoPWqPjzOUc-68ntN6kvwRVJGsc_mY81Et1kB7c-Mq4HJLdhD5g', 'etag': 'W/"0928d84c21c22b5f848d7964b4bf5631"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=nmNgUfNp8bS5zSksWWDa5d6v7ZQaFOjeR9fhtbTdWYCUohS839N0xjYlOuG%2BPwwp9dFsmz5XAGD3Ux80gR6FCH%2B5c6YvHxuXCq9aSafQ5OLKe7cOYSPZwadi1kc%2B%2BrzrhViIS5aQsq9UnbgOnJnxMyVBjq7drnJ%2FBRkq98EVjJWYzDTAYk1dudKTVVS%2BCSFlWKussCoDyX2psHOfoPu6IGC2%2Fbz9rmQWDnScfBlRr9WqaWj46v4OWin30b6jaz2V2BRnhmv3w8na8sHreBqHnEsJwY8fHgS%2BXkTYiSgofY1Gr%2BxUXwGrHqa0k2GpAIIb--Qr6dEHukQwuS8lEQ--uY6sHlsId9AyGcsCqhJgCw%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 13:55:24 GMT; secure; httponly; samesite=none', 'x-request-id': '1e565b7e-e3ab-47df-b631-882c2459925c', 'x-runtime': '0.055410', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 5ab57c15647f8e2c6dc938f16e26fbf8.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': 'e0rgzWpDLa6CKCiv42Mhj0w52lOH4FQbAFLPw82T5FU2t10IoFgnAw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:5b007582-b0e4-4c37-854e-667459264a67","score":39.8,"scoreStatus":"REVIEWING","positionTyped":"Midfielder","anyGame":{"id":"Game:6d37ebf2-54be-4f0e-8b69-de9ee4bb33a4","date":"2026-07-26T21:30:00Z","statusTyped":"played","homeTeam":{"slug":"gremio-porto-alegre-rio-grande-do-sul","name":"Grêmio FB Porto Alegrense","code":"GRE","domesticLeagueRanking":15},"awayTeam":{"slug":"fluminense-rio-de-janeiro-rio-de-janeiro","name":"Fluminense FC","code":"FLU","domesticLeagueRanking":4},"competition":{"slug":"campeonato-brasileiro-serie-a"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":75,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:b7d41a72-5dc7-419d-845c-e76e41f68a0f","score":55.6,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:17559cd2-0b65-4764-9e06-d991f009de51","date":"2026-07-17T23:00:00Z","statusTyped":"played","homeTeam":{"slug":"fluminense-rio-de-janeiro-rio-de-janeiro","name":"Fluminense FC","code":"FLU","domesticLeagueRanking":4},"awayTeam":{"slug":"bragantino-braganca-paulista-sao-paulo","name":"Clube Atlético Bragantino","code":"BRA","domesticLeagueRanking":5},"competition":{"slug":"campeonato-brasileiro-serie-a"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":1,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:fab3be34-1440-4dfd-a9ee-df766a11716f","date":"2026-07-30T00:30:00Z","playerGameScore":{"id":"So5Score:10d296b6-d927-4b65-a052-2c8498de0573","positionTyped":"Midfielder","projectedScore":51.0,"anyGame":{"id":"Game:fab3be34-1440-4dfd-a9ee-df766a11716f","date":"2026-07-30T00:30:00Z","homeTeam":{"slug":"fluminense-rio-de-janeiro-rio-de-janeiro","name":"Fluminense FC","code":"FLU","domesticLeagueRanking":4},"awayTeam":{"slug":"bahia-salvador-bahia","name":"EC Bahia","code":"BAH","domesticLeagueRanking":6},"competition":{"slug":"campeonato-brasileiro-serie-a"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":8000,"reliability":"HIGH"}}}},{"id":"Game:e8fe26b0-b607-46c2-9d41-08a71a4670fa","date":"2026-08-09T00:00:00Z","playerGameScore":{"id":"So5Score:746dd803-d470-49ed-817a-7fda47dfdcaf","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:e8fe26b0-b607-46c2-9d41-08a71a4670fa","date":"2026-08-09T00:00:00Z","homeTeam":{"slug":"botafogo-rio-de-janeiro-rio-de-janeiro","name":"Botafogo FR","code":"BOT","domesticLeagueRanking":7},"awayTeam":{"slug":"fluminense-rio-de-janeiro-rio-de-janeiro","name":"Fluminense FC","code":"FLU","domesticLeagueRanking":4},"competition":{"slug":"campeonato-brasileiro-serie-a"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:7291da5a-3ead-4153-92e0-89dad17e1152","date":"2026-08-11T22:00:00Z","playerGameScore":{"id":"So5Score:635d4997-2847-4af5-af71-befadfb56cf6","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:7291da5a-3ead-4153-92e0-89dad17e1152","date":"2026-08-11T22:00:00Z","homeTeam":{"slug":"fluminense-rio-de-janeiro-rio-de-janeiro","name":"Fluminense FC","code":"FLU","domesticLeagueRanking":4},"awayTeam":{"slug":"independiente-rivadavia-mendoza-provincia-de-mendoza","name":"CS Independiente Rivadavia","code":"IND","domesticLeagueRanking":9},"competition":{"slug":"conmebol-libertadores"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:43d1a947-630d-488e-8ea8-f666ed99f3f2","date":"2026-08-15T19:30:00Z","playerGameScore":{"id":"So5Score:cf355e4b-08aa-489e-bda6-5e47eda6e561","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:43d1a947-630d-488e-8ea8-f666ed99f3f2","date":"2026-08-15T19:30:00Z","homeTeam":{"slug":"fluminense-rio-de-janeiro-rio-de-janeiro","name":"Fluminense FC","code":"FLU","domesticLeagueRanking":4},"awayTeam":{"slug":"palmeiras-sao-paulo-sao-paulo","name":"SE Palmeiras","code":"PAL","domesticLeagueRanking":1},"competition":{"slug":"campeonato-brasileiro-serie-a"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:98a73e57-81e4-46ad-ac58-5dd3e4a077a8","date":"2026-08-18T22:00:00Z","playerGameScore":{"id":"So5Score:95afbcf8-72ec-4a78-a66f-a4b2ce8ac32b","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:98a73e57-81e4-46ad-ac58-5dd3e4a077a8","date":"2026-08-18T22:00:00Z","homeTeam":{"slug":"independiente-rivadavia-mendoza-provincia-de-mendoza","name":"CS Independiente Rivadavia","code":"IND","domesticLeagueRanking":9},"awayTeam":{"slug":"fluminense-rio-de-janeiro-rio-de-janeiro","name":"Fluminense FC","code":"FLU","domesticLeagueRanking":4},"competition":{"slug":"conmebol-libertadores"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
