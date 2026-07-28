@@ -1,0 +1,63 @@
+# LISTA NERA DEL BOT SUPREMO
+# Sezioni giocatore/manager/campionato: ogni riga 'slug,durata' (es. 'clem777,5
+# giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni
+# scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').
+# Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora
+# ASSOLUTA di scadenza in UTC (fix 22/07: una durata testuale si 'rinnovava' da
+# sola ad ogni lettura se il file restava statico tra le run). Dopo la virgola, un
+# commento '# scade: ...' mostra lo stesso istante in ora di Roma (Europe/Rome, si
+# adatta automaticamente a legale/solare) solo per comodita' di lettura -- il bot
+# usa SEMPRE e SOLO il valore ISO prima della virgola/cancelletto, il commento e'
+# puramente informativo e viene ignorato in lettura. NON pensate per modifica a
+# mano, gestite automaticamente dal bot. Per rimuovere un blocco in ogni sezione,
+# cancella semplicemente la riga.
+
+## manager
+# MANAGER BLACKLISTATI -- da questi manager non compriamo carte ne' facciamo offerte, ma le loro carte contano comunque nel calcolo del prezzo minimo di mercato (non vengono escluse dal conteggio, solo dagli acquisti/offerte).
+clem44,365 giorni
+clem777,365 giorni
+eli-aquim,365 giorni
+satonio,365 giorni
+zenlock,365 giorni
+🔵 clem44 🔵,365 giorni
+
+## giocatore
+# GIOCATORI BLACKLISTATI -- questi giocatori vengono ignorati sia per gli acquisti diretti (AutoBuy) sia per le offerte (MakeOffer).
+aoto-nanamure,3 giorni
+cristiano-ronaldo-dos-santos-aveiro,3 giorni
+diegosorare85-trade-swap-bot-eth-counter-bot,3 giorni
+gustavo-adolfo-puerta-molano,3 giorni
+hugo-cuypers,3 giorni
+isak-dahlqvist,3 giorni
+kennet-eichhorn,3 giorni
+labian-londono-bedoya,3 giorni
+petar-musa,3 giorni
+satonio,3 giorni
+sir-hiss,3 giorni
+sir-hiss-the-swap-bot,3 giorni
+yi-seok-kim,3 giorni
+
+## cooldown_acquisto
+# COOLDOWN ACQUISTI/OFFERTE -- giocatori appena comprati o a cui abbiamo appena fatto un'offerta: ignorati per il tempo indicato, per non ricomprare/riproporre subito lo stesso giocatore.
+# (vuoto)
+
+## thin_market
+# THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare di comprare/offrire su un mercato poco liquido.
+# (vuoto)
+
+## campionato
+# CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla con le altre. Ogni carta di un giocatore attivo in uno di questi campionati viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
+# (vuoto)
+
+## campionato_inseason_temp
+# BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte in_season di questo campionato vengono ignorate (nessun acquisto, nessuna offerta), le carte classic dello stesso campionato restano valutate normalmente. Pensata per campionati con carte in_season appena uscite e dal prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati il confronto di mercato usa lo stesso modello di MLS/K League (classic confrontata solo con classic, in_season solo con in_season) -- vedi EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
+# (vuoto)
+
+## forma_bassa_ultime_5
+# FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), SEZIONE SEPARATA e distinta dai blacklist permanenti (coverage/media-zero restano in 'giocatore'), perche' questa e' una condizione transitoria che puo' rientrare -- non merita un blocco di 365gg.
+marcos-ledesma,2026-07-31T10:54:33.515061+00:00  # scade: 31/07/2026 12:54 ora di Roma
+
+## fix_urgente
+# FIX URGENTI -- sezione SEPARATA dalla blacklist 'giocatore' normale, per casi particolari/situazioni impreviste che richiedono uno stop immediato su un giocatore specifico (acquisti E offerte bloccati), senza mescolarli con la blacklist manuale ordinaria. Scadenza ASSOLUTA in ISO (come thin_market/cooldown_acquisto), non una durata testuale rinnovabile.
+# (vuoto)
+
