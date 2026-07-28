@@ -4,11 +4,12 @@ punta ne' offre: si limita a tracciare, per ogni carta incontrata (limited, in
 season + classic), i dati necessari a stimare il "potenziale di crescita di
 valore" verso la prossima partita del giocatore.
 
-REGOLA CHIAVE campionato MLS/K-League: in_season e classic sono due mercati
-completamente separati (due "giocatori diversi" ai fini del tracciamento) --
-due righe distinte, ognuna col proprio storico transazioni e proprio minimo,
-mai mescolati. Per TUTTI gli altri campionati: un giocatore = una riga sola,
-in_season+classic mescolati (stesso identico criterio di Bot Supremo).
+REGOLA CHIAVE campionati MLS/K-League/Eredivisie/Belgio (vedi EXCLUDED_LEAGUE_SLUGS):
+in_season e classic sono due mercati completamente separati (due "giocatori
+diversi" ai fini del tracciamento) -- due righe distinte, ognuna col proprio
+storico transazioni e proprio minimo, mai mescolati. Per TUTTI gli altri
+campionati: un giocatore = una riga sola, in_season+classic mescolati (stesso
+identico criterio di Bot Supremo).
 
 Esclusioni (per alleggerire ogni analisi futura):
   - min_attuale < 2 EUR (FIX 29/07, era 1 EUR: richiesta esplicita utente --
@@ -39,16 +40,19 @@ ancora (i pesi relativi vanno concordati prima di tradurli in un unico score).
 
 Output (FIX 27/07, richiesta esplicita utente: un solo output per run, niente
 ambiguita' su quale aprire; FIX 29/07 quater, estensione K-League: classifiche
-separate per lega invece di un unico file mescolato) in bot_profit_output/
-(cartella in root del repo, non sotto scanners/), CLASSIFICA PERSISTENTE che
-si aggiorna nel tempo (ricaricata ad ogni avvio, non riparte mai vuota) --
-in_season e classic mescolati nella stessa riga (distinti dalla colonna
-tipo_carta), ma MLS e K-League in due file separati:
+separate per lega; FIX 29/07 quinquies, estensione Eredivisie/Belgio:
+classifiche per GRUPPO, vedi OUTPUT_GROUPS -- Eredivisie e Belgio condividono
+lo stesso file, mescolate) in bot_profit_output/ (cartella in root del repo,
+non sotto scanners/), CLASSIFICA PERSISTENTE che si aggiorna nel tempo
+(ricaricata ad ogni avvio, non riparte mai vuota) -- in_season e classic
+mescolati nella stessa riga (distinti dalla colonna tipo_carta), un file per
+gruppo:
   - profit_tracking_mlspa_<timestamp_utc>.csv -> top 50 carte MLS per potenziale_score
   - profit_tracking_k-league-1_<timestamp_utc>.csv -> top 50 carte K-League per potenziale_score
+  - profit_tracking_eredivisie_belgio_<timestamp_utc>.csv -> top 50 carte Eredivisie+Belgio MESCOLATE per potenziale_score
 Il nome include data/ora UTC (formato YYYYMMDD_HHMM); ad ogni riscrittura il
-file con timestamp precedente (PER QUELLA LEGA) viene cancellato, quindi ne
-resta sempre e solo uno per lega (il piu' recente). Riscritto ad ogni commit
+file con timestamp precedente (PER QUEL GRUPPO) viene cancellato, quindi ne
+resta sempre e solo uno per gruppo (il piu' recente). Riscritto ad ogni commit
 periodico (default 5 minuti) con SOLO le prime 50 carte per potenziale_score
 decrescente.
 Il bot si ferma automaticamente anche quando raggiunge MAX_TRACKED_CARDS
@@ -100,9 +104,18 @@ SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 WS_URL = "wss://ws.sorare.com/cable"
 
-# Stessi 2 campionati "a due mercati separati" (MLS, K-League), identico a Bot
-# Supremo -- J League ESCLUSA da questo filtro (logica normale, mercato unico).
-EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
+# Campionati "a due mercati separati" (in_season e classic non si mescolano
+# mai, due righe distinte), identico a Bot Supremo -- J League ESCLUSA da
+# questo filtro (logica normale, mercato unico).
+# FIX 29/07 sexies (richiesta esplicita utente): aggiunte Eredivisie e Belgio --
+# da oggi sono uscite le nuove carte in season, quindi tutte le carte in
+# season fino a ieri sono ora classic, stesso identico ciclo gia' vissuto da
+# MLS/K-League. Prima erano trattate come campionati "normali" (mercato
+# unico, tipo_carta='misto') -- ora is_excluded_league() le tratta come le
+# altre due, nessun'altra modifica necessaria (gia' tutto generico su questa
+# funzione: _row_key, tipo_carta, _current_minimum_from_nodes,
+# _countable_transactions_from_nodes).
+EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1', 'eredivisie', 'jupiler-pro-league'}
 
 # FIX 29/07 quater (richiesta esplicita utente: estendere a K-League, INSIEME a
 # MLS in una sola run, con classifiche/CSV separati -- progettato nella
@@ -145,14 +158,42 @@ _KLEAGUE_TEAM_SLUGS_DEFAULT = (
     'jeonbuk-motors-jeonju,pohang-steelers-pohang,sangju-sangmu-sangju,seoul-seoul,'
     'ulsan-ulsan'
 )
+# FIX 29/07 quinquies (richiesta esplicita utente: estendere a Eredivisie e Belgio,
+# MESCOLATI in un solo output invece di uno per lega -- diverso da MLS/K-League
+# che restano separate). Slug squadre confermati DAL VIVO (29/07) con la query
+# pubblica gia' documentata per K-League (formazione_kleague/discovery/
+# kleague_mid_discovery_global.py): `football { competition(slug: "eredivisie") {
+# clubs(first: 50) { nodes { slug name } } } }` (18 squadre) e stesso pattern con
+# slug "jupiler-pro-league" (18 squadre) -- nessuna supposizione, verificato live.
+_EREDIVISIE_TEAM_SLUGS_DEFAULT = (
+    'ado-den-haag-den-haag,az-alkmaar,ajax-amsterdam,cambuur-leeuwarden,excelsior-rotterdam,'
+    'feyenoord-rotterdam,fortuna-sittard-sittard,go-ahead-eagles-deventer,groningen-groningen,'
+    'heerenveen-heerenveen-1920,nec-nijmegen,pec-zwolle-zwolle,psv-eindhoven,sparta-rotterdam-rotterdam,'
+    'telstar-velsen-zuid,twente-enschede,utrecht-utrecht,willem-ii-tilburg'
+)
+_BELGIO_TEAM_SLUGS_DEFAULT = (
+    'anderlecht-bruxelles-brussel,antwerp-deurne,cercle-brugge-brugge,club-brugge-brugge,'
+    'genk-genk,gent-gent,kortrijk-kortrijk,la-louviere-la-louviere,lommel-lommel,'
+    'mechelen-mechelen-malines,oh-leuven-heverlee,sint-truiden-sint-truiden-st-trond,'
+    'sporting-charleroi-charleroi,standard-liege-liege-luik,union-saint-gilloise-bruxelles-brussels,'
+    'waasland-beveren-beveren-waas,westerlo-westerlo,zulte-waregem-waregem'
+)
 MLS_TEAM_WHITELIST = [s.strip() for s in os.environ.get('TEAM_WHITELIST', _MLS_TEAM_SLUGS_DEFAULT).split(',') if s.strip()]
 KLEAGUE_TEAM_WHITELIST = [s.strip() for s in os.environ.get('KLEAGUE_TEAM_WHITELIST', _KLEAGUE_TEAM_SLUGS_DEFAULT).split(',') if s.strip()]
+EREDIVISIE_TEAM_WHITELIST = [s.strip() for s in os.environ.get('EREDIVISIE_TEAM_WHITELIST', _EREDIVISIE_TEAM_SLUGS_DEFAULT).split(',') if s.strip()]
+BELGIO_TEAM_WHITELIST = [s.strip() for s in os.environ.get('BELGIO_TEAM_WHITELIST', _BELGIO_TEAM_SLUGS_DEFAULT).split(',') if s.strip()]
 # Mappa squadra -> lega (sostituisce la vecchia costante globale SNAPSHOT_LEAGUE_SLUG,
-# che assumeva UNA sola lega per l'intera run): MLS e K-League vengono processate
+# che assumeva UNA sola lega per l'intera run): tutte le leghe vengono processate
 # insieme in una sola run, ciascuna squadra sa gia' a quale lega appartiene.
+# Eredivisie/Belgio NON sono in EXCLUDED_LEAGUE_SLUGS (non sono mercati "a due
+# binari" come MLS/K-League) -- in_season+classic si mescolano automaticamente
+# in una riga sola per giocatore (tipo_carta='misto'), stesso criterio identico
+# di Bot Supremo per tutti i campionati "normali".
 TEAM_LEAGUE_MAP = {}
 TEAM_LEAGUE_MAP.update({slug: 'mlspa' for slug in MLS_TEAM_WHITELIST})
 TEAM_LEAGUE_MAP.update({slug: 'k-league-1' for slug in KLEAGUE_TEAM_WHITELIST})
+TEAM_LEAGUE_MAP.update({slug: 'eredivisie' for slug in EREDIVISIE_TEAM_WHITELIST})
+TEAM_LEAGUE_MAP.update({slug: 'jupiler-pro-league' for slug in BELGIO_TEAM_WHITELIST})
 TEAM_WHITELIST = list(TEAM_LEAGUE_MAP.keys())
 
 # FIX 24/07 (richiesta esplicita utente, promemoria applicato ora): prima nessun
@@ -1153,19 +1194,23 @@ def hours_until(date_str):
 
 
 # =====================================================================================
-# POTENZIALE SCORE (formula concordata 24/07, pesi ripesati 27/07) -- 4 fattori,
-# nessun peso su n_transazioni oltre a quanto segue (resta comunque in colonna
-# solo per valutazione finale manuale):
-#   0.35 x peso_timing (prossimita' partita, 3 bucket ricalibrati 27/07 sui
-#         dati reali di pattern_giorni_da_partita.csv)
-#   0.20 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5)
-#   0.15 x media_generale (0.5*L5 + 0.3*L10 + 0.2*L40)/100 -- pesi decrescenti
+# POTENZIALE SCORE (formula concordata 24/07, pesi ripesati 27/07, riequilibrati
+# di nuovo 29/07 ter -- richiesta esplicita utente) -- 4 fattori, nessun peso su
+# n_transazioni oltre a quanto segue (resta comunque in colonna solo per
+# valutazione finale manuale):
+#   0.40 x peso_timing (prossimita' partita, 3 bucket ricalibrati 27/07 sui
+#         dati reali di pattern_giorni_da_partita.csv) -- alzato da 0.35
+#         (FIX 29/07 ter, richiesta esplicita utente: piu' peso a timing/sconto,
+#         meno a ultima_partita/forma generale)
+#   0.15 x ultima_partita/100 (prestazione ULTIMA gara secca, non L5) --
+#         abbassato da 0.20 (FIX 29/07 ter)
+#   0.10 x media_generale (0.5*L5 + 0.3*L10 + 0.2*L40)/100 -- pesi decrescenti
 #         (FIX 27/07, richiesta esplicita utente): prima era una media piatta
 #         (L5+L10+L40)/3, incoerente col fatto che L5 riflette la forma PIU'
-#         recente e deve pesare di piu' di L40 (che include partite di mesi fa)
-#   0.30 x sconto_normalizzato (sconto% clampato [-30,100] / 100) -- alzato da
-#         0.20 (FIX 27/07, richiesta esplicita utente: lo sconto deve pesare
-#         di piu'), tolto 0.05 a peso_timing e 0.05 a ultima_partita
+#         recente e deve pesare di piu' di L40 (che include partite di mesi fa).
+#         Abbassato da 0.15 (FIX 29/07 ter)
+#   0.35 x sconto_normalizzato (sconto% clampato [-30,100] / 100) -- alzato da
+#         0.30 (FIX 29/07 ter, richiesta esplicita utente)
 # =====================================================================================
 TIMING_WEIGHT_BUCKETS = (
     # (soglia_ore_esclusiva, peso) -- controllate in ordine, la prima che
@@ -1249,7 +1294,7 @@ def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent,
     media_generale = (0.5 * (l5 or 0.0) + 0.3 * (l10 or 0.0) + 0.2 * (l40 or 0.0)) / 100.0
     sconto_norm = _clamp(sconto_percent, -30.0, 100.0) / 100.0 if sconto_percent is not None else 0.0
     sconto_norm *= TREND_SCORE_MULTIPLIER.get(trend_recente, TREND_SCORE_MULTIPLIER[None])
-    score = (0.35 * peso_timing) + (0.20 * ultima) + (0.15 * media_generale) + (0.30 * sconto_norm)
+    score = (0.40 * peso_timing) + (0.15 * ultima) + (0.10 * media_generale) + (0.35 * sconto_norm)
     if sconto_percent is not None and sconto_percent < SOVRAPPREZZO_PENALTY_THRESHOLD_PERCENT:
         score *= SOVRAPPREZZO_PENALTY_MULTIPLIER
     return round(score, 4)
@@ -1419,12 +1464,13 @@ def load_previous_tracked():
     ne aggiungono di nuove, senza perdere quello che le run precedenti avevano
     gia' trovato.
 
-    FIX 29/07 quater (estensione K-League): ora esistono fino a 2 file (uno per
-    lega, vedi OUTPUT_LEAGUE_SLUGS) invece di un unico combinato -- carica
-    entrambi se presenti. Mantiene anche il fallback sul vecchio nome combinato
-    (profit_tracking_<timestamp>.csv, senza suffisso lega) per non perdere una
-    classifica scritta prima di questo cambio."""
-    paths = [p for p in (_find_latest_output_csv(_output_csv_prefix_for_league(l)) for l in OUTPUT_LEAGUE_SLUGS) if p]
+    FIX 29/07 quater (estensione K-League), FIX 29/07 quinquies (estensione
+    Eredivisie/Belgio): ora esistono fino a N file (uno per GRUPPO, vedi
+    OUTPUT_GROUPS) invece di un unico combinato -- carica tutti quelli
+    presenti. Mantiene anche il fallback sul vecchio nome combinato
+    (profit_tracking_<timestamp>.csv, senza suffisso gruppo) per non perdere
+    una classifica scritta prima di questo cambio."""
+    paths = [p for p in (_find_latest_output_csv(_output_csv_prefix_for_group(g)) for g in OUTPUT_GROUPS) if p]
     if not paths:
         legacy_path = _find_latest_output_csv()
         if legacy_path is None:
@@ -1504,14 +1550,25 @@ def _cleanup_and_write_ranked_csv(rows_liquidi, dir_path, prefix, timestamp, lab
 
 # FIX 29/07 quater (estensione K-League, richiesta esplicita utente: classifiche
 # separate MLS/Korea invece di un unico CSV mescolato -- vedi TEAM_LEAGUE_MAP
-# sopra). Un prefisso di file per lega, es. profit_tracking_mlspa_<ts>.csv e
-# profit_tracking_k-league-1_<ts>.csv -- stessi vincoli (soglia prezzo,
-# MIN_TRANSACTIONS_FOR_RANKING, TOP_N_OUTPUT) applicati identici a entrambe.
-OUTPUT_LEAGUE_SLUGS = ('mlspa', 'k-league-1')
+# sopra). Un prefisso di file per GRUPPO di output, es. profit_tracking_mlspa_<ts>.csv
+# e profit_tracking_k-league-1_<ts>.csv -- stessi vincoli (soglia prezzo,
+# MIN_TRANSACTIONS_FOR_RANKING, TOP_N_OUTPUT) applicati identici a tutte le leghe.
+#
+# FIX 29/07 quinquies (estensione Eredivisie/Belgio, richiesta esplicita utente:
+# "1 solo output mescolato" per queste due, a differenza di MLS/K-League che
+# restano separate): un GRUPPO puo' contenere piu' league_slug -- le righe di
+# tutte le leghe del gruppo finiscono nello STESSO file/classifica, competendo
+# tra loro per il taglio TOP_N_OUTPUT (non tagliate separatamente per lega
+# prima di unire).
+OUTPUT_GROUPS = {
+    'mlspa': ('mlspa',),
+    'k-league-1': ('k-league-1',),
+    'eredivisie_belgio': ('eredivisie', 'jupiler-pro-league'),
+}
 
 
-def _output_csv_prefix_for_league(league_slug):
-    return f"{OUTPUT_CSV_PREFIX}_{league_slug}"
+def _output_csv_prefix_for_group(group_name):
+    return f"{OUTPUT_CSV_PREFIX}_{group_name}"
 
 
 def _find_latest_output_csv(prefix=None):
@@ -1526,16 +1583,19 @@ def _find_latest_output_csv(prefix=None):
 
 
 def write_csv_snapshot():
-    """FIX 29/07 quater (estensione K-League, richiesta esplicita utente):
-    classifiche separate per lega invece di un unico CSV mescolato -- una
-    riga per riga viene assegnata al CSV della propria league_slug
-    (profit_tracking_mlspa_<ts>.csv / profit_tracking_k-league-1_<ts>.csv),
-    ciascuno top TOP_N_OUTPUT per potenziale_score, in_season+classic
-    mescolati come prima (colonna tipo_carta). Ad ogni scrittura viene
-    cancellato il file con timestamp precedente PER QUELLA LEGA (vedi
-    _cleanup_and_write_ranked_csv) -- ne resta sempre e solo uno per lega, il
-    piu' recente. Righe di leghe non in OUTPUT_LEAGUE_SLUGS (non dovrebbe mai
-    capitare in modalita' snapshot) non vengono scritte in nessun file."""
+    """FIX 29/07 quater (estensione K-League), FIX 29/07 quinquies (estensione
+    Eredivisie/Belgio, richiesta esplicita utente): classifiche separate PER
+    GRUPPO (vedi OUTPUT_GROUPS) invece di un unico CSV globale -- ogni riga
+    viene assegnata al gruppo la cui tupla di league_slug contiene la sua
+    league_slug (profit_tracking_mlspa_<ts>.csv / profit_tracking_k-league-1_<ts>.csv
+    / profit_tracking_eredivisie_belgio_<ts>.csv, quest'ultimo con le due leghe
+    MESCOLATE nella stessa classifica), ciascuno top TOP_N_OUTPUT per
+    potenziale_score, in_season+classic mescolati come prima (colonna
+    tipo_carta). Ad ogni scrittura viene cancellato il file con timestamp
+    precedente PER QUEL GRUPPO (vedi _cleanup_and_write_ranked_csv) -- ne
+    resta sempre e solo uno per gruppo, il piu' recente. Righe di leghe non
+    presenti in nessun gruppo di OUTPUT_GROUPS (non dovrebbe mai capitare in
+    modalita' snapshot) non vengono scritte in nessun file."""
     with _tracked_lock:
         rows = list(_tracked.values())
     if not os.path.exists(OUTPUT_DIR):
@@ -1564,11 +1624,11 @@ def write_csv_snapshot():
     timestamp = _run_timestamp_utc()
 
     per_lega_riepilogo = []
-    for league_slug in OUTPUT_LEAGUE_SLUGS:
-        rows_lega = [r for r in rows_liquidi if r.get('league_slug') == league_slug]
+    for group_name, group_leagues in OUTPUT_GROUPS.items():
+        rows_gruppo = [r for r in rows_liquidi if r.get('league_slug') in group_leagues]
         path, n_scritte = _cleanup_and_write_ranked_csv(
-            rows_lega, OUTPUT_DIR, f'profit_tracking_{league_slug}', timestamp, league_slug)
-        per_lega_riepilogo.append(f"{league_slug}: {n_scritte} nel file {path}")
+            rows_gruppo, OUTPUT_DIR, f'profit_tracking_{group_name}', timestamp, group_name)
+        per_lega_riepilogo.append(f"{group_name}: {n_scritte} nel file {path}")
 
     log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
         f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni "
@@ -2055,7 +2115,8 @@ RATE_LIMIT_RETRY_PAUSE_SECONDS = float(os.environ.get('RATE_LIMIT_RETRY_PAUSE_SE
 
 def run_snapshot_sweep(eth_rate):
     log(f"Avvio SNAPSHOT su {len(TEAM_WHITELIST)} squadra/e "
-        f"({len(MLS_TEAM_WHITELIST)} MLS + {len(KLEAGUE_TEAM_WHITELIST)} K-League): {TEAM_WHITELIST}")
+        f"({len(MLS_TEAM_WHITELIST)} MLS + {len(KLEAGUE_TEAM_WHITELIST)} K-League + "
+        f"{len(EREDIVISIE_TEAM_WHITELIST)} Eredivisie + {len(BELGIO_TEAM_WHITELIST)} Belgio): {TEAM_WHITELIST}")
 
     roster = {}  # slug -> (displayName, team_slug attesa, snapshot voto/partita, league_slug), deduplicato tra squadre
     for team_slug in TEAM_WHITELIST:

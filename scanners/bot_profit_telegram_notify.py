@@ -1,6 +1,7 @@
-"""Notifica Telegram di fine run Bot Profit con link cliccabili ai 2 CSV di
-output (uno per lega, vedi OUTPUT_LEAGUE_SLUGS in bot_profit.py) -- richiesta
-esplicita utente 29/07. Lanciato come step separato del workflow DOPO
+"""Notifica Telegram di fine run Bot Profit con link cliccabili ai CSV di
+output (uno per GRUPPO, vedi OUTPUT_GROUPS in bot_profit.py -- Eredivisie e
+Belgio condividono lo stesso gruppo/file, MLS e K-League restano separate)
+-- richiesta esplicita utente 29/07. Lanciato come step separato del workflow DOPO
 bot_profit.py (which git ha gia' pushato in quel punto il commit finale coi
 CSV), cosi' i link puntano a file effettivamente presenti su GitHub.
 
@@ -31,12 +32,12 @@ GIT_REF = os.environ.get('GIT_REF', 'main').strip() or 'main'
 REPO_SLUG = os.environ.get('GITHUB_REPOSITORY', 'andreasalvatore93-oss/Sorare-tracker-2').strip()
 
 OUTPUT_DIR = 'bot_profit_output'
-LEAGUE_LABELS = {'mlspa': 'MLS', 'k-league-1': 'K-League'}
+GROUP_LABELS = {'mlspa': 'MLS', 'k-league-1': 'K-League', 'eredivisie_belgio': 'Eredivisie+Belgio'}
 VIEWER_PATH = 'scanners/bot_profit_viewer.html'
 
 
-def _latest_csv_for_league(league_slug):
-    candidates = sorted(glob.glob(os.path.join(OUTPUT_DIR, f'profit_tracking_{league_slug}_*.csv')))
+def _latest_csv_for_group(group_name):
+    candidates = sorted(glob.glob(os.path.join(OUTPUT_DIR, f'profit_tracking_{group_name}_*.csv')))
     return candidates[-1] if candidates else None
 
 
@@ -56,8 +57,8 @@ def main():
         return
 
     righe = []
-    for league_slug, label in LEAGUE_LABELS.items():
-        path = _latest_csv_for_league(league_slug)
+    for group_name, label in GROUP_LABELS.items():
+        path = _latest_csv_for_group(group_name)
         if path:
             righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{label}: apri viewer</a>")
         else:
