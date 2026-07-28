@@ -77,6 +77,41 @@ def probe_xp():
         print(json.dumps(h, indent=2))
 
 
+CARD_BONUS_PROBE_QUERY = """
+query CardBonusProbe($slug: String!) {
+  anyCard(slug: $slug) {
+    slug
+    ... on Card {
+      xp
+      xpBonus
+      seasonBonus
+      collectionBonus
+      experienceBonus
+      powerBonus
+      totalBonus
+      bonusPercentage
+      scoreBonuses
+    }
+  }
+}
+"""
+
+
+def probe_card_bonus(card_slug):
+    print("\n" + "=" * 78)
+    print("PROBE bonus carta:", card_slug)
+    print("=" * 78)
+    try:
+        data = base.graphql_query(CARD_BONUS_PROBE_QUERY, {"slug": card_slug}, operation_name="CardBonusProbe")
+    except Exception as e:
+        print("ERRORE query:", repr(e))
+        return
+    if data.get('errors'):
+        print("ERRORI GraphQL:", json.dumps(data['errors'], indent=2)[:2000])
+    card = (data.get('data') or {}).get('anyCard')
+    print(json.dumps(card, indent=2) if card else "anyCard NULLO")
+
+
 def main():
     slugs = [s.strip() for s in os.environ.get('SLUGS', 'carlos-miguel').split(',') if s.strip()]
     for slug in slugs:
@@ -113,3 +148,6 @@ def main():
 if __name__ == '__main__':
     main()
     probe_xp()
+    card_slug = os.environ.get('CARD_SLUG', '').strip()
+    if card_slug:
+        probe_card_bonus(card_slug)

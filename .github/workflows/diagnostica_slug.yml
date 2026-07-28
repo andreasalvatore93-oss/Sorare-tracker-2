@@ -7,6 +7,10 @@ on:
         description: 'Slug giocatori separati da virgola (es. inaki-pena)'
         required: false
         default: 'inaki-pena'
+      card_slug:
+        description: 'Slug carta per il probe bonus (es. daniel-de-sousa-brito-2026-limited-181)'
+        required: false
+        default: ''
 
 jobs:
   diagnostica:
@@ -22,5 +26,6 @@ jobs:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SLUGS: ${{ github.event.inputs.slugs }}
+          CARD_SLUG: ${{ github.event.inputs.card_slug }}
           PYTHONUNBUFFERED: "1"
         run: python diagnostica_slug.py
