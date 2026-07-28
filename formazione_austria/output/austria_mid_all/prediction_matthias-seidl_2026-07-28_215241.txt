@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T21:52:41.445209Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) matthias-seidl: 57 pt attesi (34-73)
+   SQUADRA: rapid-wien-wien | AVVERSARIO: fc-santa-coloma-andorra-la-vella
+======================================================================
+
+######################################################################
+# GIOCATORE: matthias-seidl
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: matthias-seidl (squadra: rapid-wien-wien)
+Generato: 2026-07-28T21:52:41.444445Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-07 | SCR vs HTB | austrian-bundesliga | score=50.7 | peso=0.445
+  2026-02-15 | FAK vs SCR | austrian-bundesliga | score=30.1 | peso=0.472
+  2026-03-01 | ALT vs SCR | austrian-bundesliga | score=59.6 | peso=0.500
+  2026-03-08 | SCR vs RBS | austrian-bundesliga | score=35.4 | peso=0.530
+  2026-03-15 | RBS vs SCR | austrian-bundesliga | score=67.9 | peso=0.561
+  2026-03-22 | SCR vs ASK | austrian-bundesliga | score=70.0 | peso=0.595
+  2026-04-05 | SCR vs STU | austrian-bundesliga | score=60.6 | peso=0.630
+  2026-04-12 | FAK vs SCR | austrian-bundesliga | score=54.5 | peso=0.667
+  2026-04-19 | HTB vs SCR | austrian-bundesliga | score=90.2 | peso=0.707
+  2026-04-22 | SCR vs HTB | austrian-bundesliga | score=68.4 | peso=0.749
+  2026-04-26 | SCR vs RBS | austrian-bundesliga | score=62.0 | peso=0.794
+  2026-05-04 | ASK vs SCR | austrian-bundesliga | score=30.3 | peso=0.841
+  2026-05-22 | SVR vs SCR | austrian-bundesliga | score=43.3 | peso=0.891
+  2026-05-25 | SCR vs SVR | austrian-bundesliga | score=64.1 | peso=0.944
+  2026-07-23 | FSC vs SCR | uefa-europa-conference-league | score=75.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 58.44
+  di cui Punteggio decisivo (level_score) medio: 38.46 | Punteggio complessivo (granulari) medio: 19.98 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 39.03 (delta +0.57)
+  Efficacia offensiva condizionata: delta venue +0.12, delta avversario +0.00 | Passaggio condizionato: delta venue -0.13, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.40, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 16.48
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.4 - 75.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.64 (differenza: +2.84)
+Media score in casa: 58.74 | Media score fuori casa: 56.36
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.7
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.989
+Fattore duelli (casa/trasferta, da dati reali): 0.991
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.013
+Fattore gol subiti (goals_conceded, con cap): 1.008
+Fattore trend (media ultime 5: 54.9 vs media ultime 10: 61.8): 0.922
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T18:30
+Casa: SK Rapid Wien | Trasferta: Don Denis FC Santa Coloma
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.7 (range 33.7 - 73.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.66
+Punteggio REALE ottenuto in quella partita: 75.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +18.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.3    60.6    +14.3    21.5        SI
+   7        7      54.5    54.5     -0.0    20.0        SI
+   8        8      58.7    90.2    +31.5    18.4        NO
+   9        9      61.7    68.4     +6.7    24.3        SI
+  10       10      63.8    62.0     -1.8    23.1        SI
+  11       11      63.2    30.3    -32.9    21.7        NO
+  12       12      51.5    43.3     -8.2    24.4        SI
+  13       13      51.1    64.1    +13.0    23.9        SI
+  14       14      50.8    75.0    +24.2    22.9        NO
+
+MAE (errore assoluto medio): 14.72
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
