@@ -367,10 +367,19 @@ function buildColumns(fields, sampleRow) {
   });
 }
 
-// Priorita' per l'ordinamento di default (richiesta esplicita utente: le
-// occasioni 'flat'/'up' (sconto% affidabile) devono stare sopra le 'down'
-// (sconto probabilmente gonfiato da un mercato gia' in calo) invece di essere
-// sepolte in mezzo per via di uno score alto ma inaffidabile.
+// Priorita' per l'ordinamento di default -- USATO SOLO come chiave di sort
+// quando l'utente clicca la colonna Trend a mano, NON piu' come sort di
+// default (vedi sotto). Storicamente il trend era pinnato SOPRA lo score
+// (flat/up sempre in cima, down sempre sotto, indipendentemente dal
+// punteggio) -- FIX 29/07 (richiesta esplicita utente, caso reale
+// Fernandez-Mercau in season): uno sconto_percent fortemente negativo
+// (prezzo quasi doppio della media storica, un sovrapprezzo enorme) con
+// trend='up' finiva comunque catapultato in cima alla tabella SOLO perche'
+// 'up', anche se ormai (dopo la penalita' aggiunta in bot_profit.py,
+// SOVRAPPREZZO_PENALTY_MULTIPLIER) il suo punteggio reale era bassissimo.
+// Il trend adesso pesa gia' DENTRO potenziale_score (vedi
+// TREND_SCORE_MULTIPLIER lato Python) -- pinnarlo anche qui sopra lo score
+// era ridondante e in questo caso dannoso. Sort di default: solo score.
 const TREND_SORT_RANK = { up: 2, flat: 1, down: 0 };
 
 function loadCSVText(text) {
@@ -386,11 +395,11 @@ function loadCSVText(text) {
     if (hasTrend) row['_num_trend_recente'] = TREND_SORT_RANK[r.trend_recente] ?? -1;
     return row;
   });
-  // Ordine di default: prima per trend (flat/up sopra down), poi per score --
-  // trend pinnato cosi' resta fisso anche se l'utente clicca altre colonne per
-  // un sort secondario diverso da Score.
+  // Ordine di default: solo per score (FIX 29/07, il trend pesa gia' dentro
+  // potenziale_score lato Python -- pinnarlo anche qui sopra lo score
+  // permetteva a un sovrapprezzo estremo con trend='up' di restare comunque
+  // in cima, vedi nota su TREND_SORT_RANK).
   sortChain = [];
-  if (hasTrend) sortChain.push({ key: 'trend_recente', dir: -1, pinned: true });
   if (COLUMNS.some(c => c.key === 'potenziale_score')) {
     sortChain.push({ key: 'potenziale_score', dir: -1, pinned: false });
   }

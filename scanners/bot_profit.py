@@ -1182,6 +1182,19 @@ def _clamp(value, lo, hi):
 # leggera cautela.
 TREND_SCORE_MULTIPLIER = {'up': 1.2, 'flat': 1.0, 'down': 0.5, None: 0.8}
 
+# FIX 29/07 (richiesta esplicita utente, caso reale Nicolas Fernandez-Mercau
+# in season: sconto_percent=-79.6%, cioe' il prezzo minimo attuale e' quasi il
+# DOPPIO della media storica -- un premio enorme, l'opposto di un affare -- ma
+# con trend='up' finiva comunque in cima alla classifica/al viewer perche'
+# timing+forma (70% del peso) dominavano la componente sconto (30%, clampata
+# a [-30,100] quindi mai abbastanza negativa da farlo scendere sotto un vero
+# affare). Aggiunta una penalita' FORTE e SEPARATA dal peso dello sconto:
+# sotto questa soglia il punteggio intero viene moltiplicato (non solo la
+# fetta 30%), cosi' un sovrapprezzo estremo declassa la carta a prescindere
+# da quanto siano alti timing/forma.
+SOVRAPPREZZO_PENALTY_THRESHOLD_PERCENT = -15.0
+SOVRAPPREZZO_PENALTY_MULTIPLIER = 0.3
+
 
 def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent, ore_alla_partita,
                               trend_recente=None):
@@ -1196,6 +1209,8 @@ def compute_potenziale_score(ultima_partita_score, l5, l10, l40, sconto_percent,
     sconto_norm = _clamp(sconto_percent, -30.0, 100.0) / 100.0 if sconto_percent is not None else 0.0
     sconto_norm *= TREND_SCORE_MULTIPLIER.get(trend_recente, TREND_SCORE_MULTIPLIER[None])
     score = (0.35 * peso_timing) + (0.20 * ultima) + (0.15 * media_generale) + (0.30 * sconto_norm)
+    if sconto_percent is not None and sconto_percent < SOVRAPPREZZO_PENALTY_THRESHOLD_PERCENT:
+        score *= SOVRAPPREZZO_PENALTY_MULTIPLIER
     return round(score, 4)
 
 
