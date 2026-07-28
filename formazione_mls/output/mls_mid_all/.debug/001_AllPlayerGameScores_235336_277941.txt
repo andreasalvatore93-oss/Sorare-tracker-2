@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "cristian-omar-espinoza", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 23:53:36 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785282816', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'jnSjhcwmdBYKizTXtmaR-2mZfo-qGDVh9Uw5xfBc8Y7tXlhtVRCX3MIgvOiCWH-omcCuDVninVM8soePR9pOKQ', 'etag': 'W/"74ec3db66ffe6dc9bf7a9da951dce577"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=0puEwDwjdDnJ%2BknyRGrnCyBA40LYTIA7a1lILMVIfhubhwLOR52CuEH%2FYSs3ZDFtXA5ztQwQN9eqAAavQjDVu6%2BbPBDcxiSyl1MDxwAChLt%2BnAuIzJWGFzot%2FtlcwBpVvH5SbdiCN7jcffYWGZK5ZgBzaqrZpJTB6erojeyLDQoBw2Mv0OsedL5OnQxVlPhtB8byATxkcOtG3sKTZkqWoZ1AY8Tq9u6%2B53W5DpVm%2BICZeQCu7On%2Fe4ev1C94EvM3ZxZCSPpwVgNuf%2B7RKLOS5ggp8gAqZk9aF0ov%2F0lt4ByaNIla%2FRP3cMLp34T%2F4iM2--Fc55dYBWroR%2BhYvd--EPZs7JLkMII79LnU4sjFQA%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 23:53:36 GMT; secure; httponly; samesite=none', 'x-request-id': '202aa078-2ac8-4198-8dd5-b11c8c93c159', 'x-runtime': '0.058028', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 04d8137eba39d404a430316a46dde298.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'd-OWd4nyQg9it_9EgAmHHlfZtxTrAJ5yPzt0Qnsa8aRIPdGOFDxrkA=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:14ce95b6-4cc3-4ec8-9529-3d8346026159","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Forward","anyGame":{"id":"Game:a87c555c-3bcc-41ce-95b7-1c78fd3fe296","date":"2026-07-26T00:46:00Z","statusTyped":"played","homeTeam":{"slug":"orlando-city-lake-mary-florida","name":"Orlando City SC","code":"ORL","domesticLeagueRanking":10},"awayTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:124ddeb6-554b-4ae2-a44c-84ccdcdccdeb","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Forward","anyGame":{"id":"Game:26491ab9-7ca4-49aa-80d6-86396d263280","date":"2026-07-23T00:30:00Z","statusTyped":"played","homeTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"awayTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:3ae46fee-a27e-4acb-a54a-dc9204037901","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:8afc6e2f-3339-4b30-8e32-738961bf7676","positionTyped":"Forward","projectedScore":57.0,"anyGame":{"id":"Game:3ae46fee-a27e-4acb-a54a-dc9204037901","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"dc-united-washington-district-of-columbia","name":"DC United","code":"DC","domesticLeagueRanking":9},"awayTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:e4dad2ba-2efd-41f1-8aa0-04cb4f65f6fa","date":"2026-08-06T00:30:00Z","playerGameScore":{"id":"So5Score:c4887253-67fd-4bf4-ac3d-4ca450443c95","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:e4dad2ba-2efd-41f1-8aa0-04cb4f65f6fa","date":"2026-08-06T00:30:00Z","homeTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"awayTeam":{"slug":"leon-leon-de-los-aldamas","name":"Club León","code":"LEO","domesticLeagueRanking":8},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:7c280057-0549-43be-9387-46e6f4049750","date":"2026-08-10T00:00:00Z","playerGameScore":{"id":"So5Score:b60effe2-b0b4-4f58-ad1a-617f914c90a4","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:7c280057-0549-43be-9387-46e6f4049750","date":"2026-08-10T00:00:00Z","homeTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"awayTeam":{"slug":"atletico-san-luis-san-luis-potosi","name":"Atlético San Luis","code":"ASL","domesticLeagueRanking":3},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:b48538dc-cec2-4a68-b969-dd8c808f6b48","date":"2026-08-13T00:00:00Z","playerGameScore":{"id":"So5Score:89f1ac4d-e9ad-4e91-9b97-36abb0a311b7","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:b48538dc-cec2-4a68-b969-dd8c808f6b48","date":"2026-08-13T00:00:00Z","homeTeam":{"slug":"monterrey-monterrey","name":"CF Monterrey","code":"MON","domesticLeagueRanking":9},"awayTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:0cb9c487-afc4-454f-acaf-8eca611c45ca","date":"2026-08-16T00:30:00Z","playerGameScore":{"id":"So5Score:f6dcc78f-d872-4b4f-a50b-f2ae1a39b9d1","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:0cb9c487-afc4-454f-acaf-8eca611c45ca","date":"2026-08-16T00:30:00Z","homeTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"awayTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
