@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T10:09:58.559995Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) kacper-urbanski: 40 pt attesi (27-65)
+   SQUADRA: monza-monza | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: kacper-urbanski
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kacper-urbanski (squadra: monza-monza)
+Generato: 2026-07-28T10:09:58.559391Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-01-27 | GEN vs MON | serie-a-it | score=31.1 | peso=0.595
+  2025-02-01 | MON vs VER | serie-a-it | score=45.4 | peso=0.630
+  2025-02-09 | LAZ vs MON | serie-a-it | score=34.7 | peso=0.667
+  2025-02-16 | MON vs LEC | serie-a-it | score=41.7 | peso=0.707
+  2025-04-12 | VEN vs MON | serie-a-it | score=37.4 | peso=0.749
+  2025-10-02 | LEG vs SAM | uefa-europa-conference-league | score=32.5 | peso=0.794
+  2025-11-06 | CEL vs LEG | uefa-europa-conference-league | score=70.0 | peso=0.841
+  2025-12-11 | ART vs LEG | uefa-europa-conference-league | score=40.2 | peso=0.891
+  2025-12-18 | LEG vs LIN | uefa-europa-conference-league | score=76.1 | peso=0.944
+  2026-07-21 | FB vs GZA | uefa-champions-league | score=35.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 45.51
+  di cui Punteggio decisivo (level_score) medio: 40.71 | Punteggio complessivo (granulari) medio: 4.80 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 40.71 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue +0.00, delta avversario +0.00 | Passaggio condizionato: delta venue +0.00, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.61
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.5 - 70.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.51 (differenza: +4.10)
+Media score in casa: 43.55 | Media score fuori casa: 34.40
+Fattore casa/trasferta applicato: 0.972 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.4
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.984
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.969
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.018
+Fattore gol subiti (goals_conceded, con cap): 0.960
+Fattore trend (media ultime 5: 50.9 vs media ultime 10: 44.5): 1.101
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T18:00
+Casa: KS Górnik Zabrze | Trasferta: Fenerbahçe Spor Kulübü
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 40.3 (range 27.3 - 64.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.95
+Punteggio REALE ottenuto in quella partita: 35.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      35.6    70.0    +34.4     6.9        NO
+   7        7      39.7    40.2     +0.5    18.4        SI
+   8        8      38.8    76.1    +37.3    17.0        NO
+   9        9      42.2    35.7     -6.5    22.7        SI
+
+MAE (errore assoluto medio): 19.68
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
