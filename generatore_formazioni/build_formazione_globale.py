@@ -499,13 +499,14 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
         # Varianza capitano (27/07, richiesta esplicita utente, stesso fix
         # identico nei due tool singoli): scope per tipo (uno degli 8 qui).
         captained_slugs = set()
-        # Decorrelazione tra le N formazioni In Season (28/07, sez. 29.D/30 del
-        # riassunto -- vedi MATCH_REUSE_PENALTY in build_formazione_finale.py):
-        # accumula le partite reali (coppie squadra-avversario) gia' usate dalle
-        # formazioni precedenti di QUESTA serie, per rendere i tentativi
-        # successivi il piu' possibile indipendenti. Solo per In Season multiple,
-        # stesso gate di in_season_multi -- Arena/All Stars non toccate.
-        used_matches = set() if in_season_multi else None
+        # Decorrelazione tra le N formazioni In Season -- DISATTIVATA (28/07 sera,
+        # richiesta esplicita utente): il meccanismo (MATCH_REUSE_PENALTY in
+        # build_formazione_finale.py) e' implementato ma MAI misurato su dati
+        # reali, e la penalita' soft e' comunque enorme rispetto ai punteggi
+        # reali (rischia di escludere giocatori nettamente piu' forti solo per
+        # decorrelare). In BACKLOG: testare con un backtest prima di riattivare
+        # (basta rimettere `set() if in_season_multi else None` sotto).
+        used_matches = None
 
         risultati = []
         for idx in range(1, count + 1):
