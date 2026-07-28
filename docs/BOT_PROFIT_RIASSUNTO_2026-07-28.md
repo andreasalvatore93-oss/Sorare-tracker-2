@@ -125,3 +125,16 @@ Sessione di revisione output guidata dall'esperienza diretta dell'utente in comp
 2. **Continuare la revisione dell'output** con l'esperienza diretta dell'utente — il metodo (trovare un caso reale sospetto, scomporre la formula, confrontare con pick validati prima di proporre un fix) ha funzionato bene 2 volte di fila in questa sessione, probabilmente da ripetere.
 3. **~373 giocatori MLS ancora da revisionare** per la blacklist manuale (vedi D) — artifact da rigenerare quando l'utente vuole continuare.
 4. **`TREND_RECENT_WINDOW_DAYS`/`TREND_FLAT_THRESHOLD_PERCENT`** ancora mai ricalibrati su dati reali (invariato da stamattina, vedi sezione 4 sopra).
+
+## H. Aggiungere K-League insieme a MLS in una sola run, con classifiche separate (progettato, NON implementato — richiesta esplicita: solo annotare per dopo)
+
+Obiettivo utente: lanciare MLS+K-League **insieme in una sola run** (non due run separate) ma con **due classifiche/CSV distinti** (uno MLS, uno K-League), non un'unica classifica mescolata.
+
+**Perché non e' banale**: oggi `SNAPSHOT_LEAGUE_SLUG` e' UNA costante globale assunta uguale per TUTTE le squadre in `TEAM_WHITELIST` (usata in `run_snapshot_sweep`, nel controllo prezzo, in `_process_player_snapshot`, nel pool di retry rate-limit) — assume un solo campionato per run. `k-league-1` e' gia' presente in `EXCLUDED_LEAGUE_SLUGS` (stesso split in_season/classic di MLS, nessuna modifica li' serve) e le 12 squadre K-League sono gia' note nel repo: `formazione_kleague/discovery/kleague_mid_discovery_global.py:50` (`KLEAGUE_TEAM_SLUGS`: anyang-anyang, bucheon-1995-bucheon, daejeon-citizen-daejeon, gangwon-gangneung, gwangju-gwangju, incheon-united-incheon, jeju-united-seogwipo-jeju-do, jeonbuk-motors-jeonju, pohang-steelers-pohang, sangju-sangmu-sangju, seoul-seoul, ulsan-ulsan).
+
+**Piano (modo piu' rapido individuato, non ancora scritto)**:
+1. Sostituire `TEAM_WHITELIST` (lista piatta) con una mappa squadra→lega, costruita da due gruppi (MLS esistente + le 12 K-League sopra, ciascuno etichettato con la propria `league_slug`).
+2. Threadare la lega PER SQUADRA (non piu' una costante globale) attraverso `run_snapshot_sweep`: roster fetch, controllo prezzo (`_current_minimum_from_nodes`), chiamata a `_process_player_snapshot`, e le tuple nel pool di retry rate-limit (vedi Parte 2.C).
+3. Output: le righe hanno GIA' la colonna `league_slug` (nessuna modifica li'), ma **il taglio a `TOP_N_OUTPUT=50` va fatto PER LEGA prima di scrivere**, non sul totale mescolato — altrimenti se i punteggi MLS sono sistematicamente piu' alti, la classifica K-League rischia di sparire del tutto schiacciata dal taglio globale a 50. Scrivere due CSV separati (es. `profit_tracking_mlspa_<ts>.csv` e `profit_tracking_k-league-1_<ts>.csv`) riusando `_write_ranked_csv`/`_cleanup_and_write_ranked_csv` con prefissi diversi.
+
+**Costo collaterale da aspettarsi**: raddoppiare le squadre (30 MLS + 12 Korea = 42) raddoppia circa il volume di query verso Sorare -- la durata della run tornerebbe verso i ~10 minuti di partenza (prima di tutte le ottimizzazioni throttle/retry di oggi, vedi Parte 2.B/2.C), non piu' nella fascia 5-6 min faticosamente trovata. Da tenere presente PRIMA di implementare, magari riproponendo lo stesso ciclo di tuning gia' fatto oggi per MLS da solo.
