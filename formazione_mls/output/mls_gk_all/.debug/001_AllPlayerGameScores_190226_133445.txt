@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "daniel-de-sousa-brito", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:02:26 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785265346', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'rPJSO-YEhrvBAwRazc8_nb_Z9noNfQ2FTJ1VQMHYdAJorGXdQ7RK84j9s6PqPx2boBjsJGjGBvkzBB8PIdV7CQ', 'etag': 'W/"597aea7a19deca835dead606f1ddd008"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=x%2FF5ZmqmOPF7mHlV1lRXvxVbaoTiSvDKSHe%2F8ZZjklpD3BjZcpa0VsuTLxh%2B2Ig%2FrsH8d2ackz%2B36a%2FZSVVrbSKCc7MalbrVhdcruvxHP52sote2qDei2%2F1IzeD623CJPmquJpJFRgzlKV%2BpKVtB1lZFLhAjC3K6DCuvOt%2F6piP6ZiH3mlKxnGEvbKiwU%2FVn%2FPErFlu4%2BLf%2FBwIaEoVhqhubMjMKniKsXzdPCwUZyNk%2F%2B8bGoXr4TtFGPe9w0FlmIb%2BaOyA1g6qkzhYmQ8rcmvslcpwDrw3%2F9Hk2GIMspE%2F4neoX3FKbPeR6Xsf0Dphk--fEdh7dTdn%2FXLt15U--UIE%2FKBOh67OyZL0nywpKIA%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:02:26 GMT; secure; httponly; samesite=none', 'x-request-id': '664a65f2-080e-4b69-b2e3-c4d10e79b077', 'x-runtime': '0.058506', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 594d6e43a4b7edb10443ddc27d344208.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': '_gVzH5yVZ5aDulO1faQArvxyWMekDs_tcrnjpxi0amG46f4tE0fXNg=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:9450c726-b9b1-4cb4-85c3-2c50c7e6938b","score":47.2,"scoreStatus":"FINAL","positionTyped":"Goalkeeper","anyGame":{"id":"Game:bb064691-ac68-45c8-ba03-fef559215c99","date":"2026-07-26T01:30:00Z","statusTyped":"played","homeTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"awayTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":19,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:3e424a9a-a317-423b-b195-acd051e9150a","score":33.9,"scoreStatus":"FINAL","positionTyped":"Goalkeeper","anyGame":{"id":"Game:db7b7ffb-6036-4e2f-9e27-6818e503debb","date":"2026-07-23T02:30:00Z","statusTyped":"played","homeTeam":{"slug":"portland-timbers-portland-oregon","name":"Portland Timbers","code":"POR","domesticLeagueRanking":10},"awayTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:e4d09ee4-372a-46c8-8480-c1bad72077c9","date":"2026-08-02T02:30:00Z","playerGameScore":{"id":"So5Score:cfb595cc-c541-4044-9dd6-dbb69a436ebf","positionTyped":"Goalkeeper","projectedScore":47.0,"anyGame":{"id":"Game:e4d09ee4-372a-46c8-8480-c1bad72077c9","date":"2026-08-02T02:30:00Z","homeTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"awayTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:87359304-ae55-43b0-8bb2-74b928dd9af6","date":"2026-08-06T00:30:00Z","playerGameScore":{"id":"So5Score:8bb39b60-ea5e-4bae-a00a-bfb718262d6b","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:87359304-ae55-43b0-8bb2-74b928dd9af6","date":"2026-08-06T00:30:00Z","homeTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"awayTeam":{"slug":"queretaro-queretaro","name":"Querétaro FC","code":"QUE","domesticLeagueRanking":10},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:78c2b057-c752-4ad7-888c-3195a7ed9ea6","date":"2026-08-09T01:00:00Z","playerGameScore":{"id":"So5Score:cbffafea-5fc0-4514-9172-fd05848b48dd","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:78c2b057-c752-4ad7-888c-3195a7ed9ea6","date":"2026-08-09T01:00:00Z","homeTeam":{"slug":"guadalajara-zapopan-guadalajara","name":"CD Guadalajara","code":"CHI","domesticLeagueRanking":6},"awayTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:3699f9b6-41f1-4fab-8762-9f380c7b3735","date":"2026-08-13T02:00:00Z","playerGameScore":{"id":"So5Score:e878c613-4027-4ac7-9e80-36a14c157653","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:3699f9b6-41f1-4fab-8762-9f380c7b3735","date":"2026-08-13T02:00:00Z","homeTeam":{"slug":"toluca-toluca-de-lerdo","name":"Deportivo Toluca FC","code":"TOL","domesticLeagueRanking":7},"awayTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:fcec1a8e-f926-40ad-9745-128995bffa40","date":"2026-08-17T00:30:00Z","playerGameScore":{"id":"So5Score:98447ab3-fe6e-42a1-9133-8dc400b9c704","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:fcec1a8e-f926-40ad-9745-128995bffa40","date":"2026-08-17T00:30:00Z","homeTeam":{"slug":"austin-austin-texas","name":"Austin FC","code":"ATX","domesticLeagueRanking":14},"awayTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
