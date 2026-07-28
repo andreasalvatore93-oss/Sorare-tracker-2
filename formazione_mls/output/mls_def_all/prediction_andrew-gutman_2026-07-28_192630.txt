@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T19:26:30.541953Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) andrew-gutman: 50 pt attesi (34-71)
+   ORDINAMENTO: 47.91
+   SQUADRA: chicago-fire-bridgeview-illinois | AVVERSARIO: charlotte-fc-charlotte-north-carolina
+======================================================================
+
+######################################################################
+# GIOCATORE: andrew-gutman
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andrew-gutman (squadra: chicago-fire-bridgeview-illinois)
+Generato: 2026-07-28T19:26:30.540528Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 11
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-05 | CHI vs NSH | mlspa | score=49.8 | peso=0.540
+  2026-04-12 | CHI vs ATL | mlspa | score=53.8 | peso=0.583
+  2026-04-18 | CIN vs CHI | mlspa | score=29.7 | peso=0.630
+  2026-04-26 | CHI vs SKC | mlspa | score=79.6 | peso=0.680
+  2026-05-03 | CHI vs CIN | mlspa | score=31.7 | peso=0.735
+  2026-05-09 | CHI vs RBNY | mlspa | score=36.5 | peso=0.794
+  2026-05-13 | DC vs CHI | mlspa | score=45.7 | peso=0.857
+  2026-05-24 | CHI vs TOR | mlspa | score=68.9 | peso=0.926
+  2026-07-22 | MIA vs CHI | mlspa | score=37.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 48.05
+  di cui Punteggio decisivo (level_score) medio: 40.95 | Punteggio complessivo (granulari) medio: 7.10 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.70, delta avversario -1.07 | Passaggio condizionato: delta venue -0.05, delta avversario -0.30 | Clean sheet/disimpegni condizionato: delta venue +0.58, delta avversario -0.26 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.98
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.7 - 68.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.26 (differenza: +3.73)
+Media score in casa: 53.37 | Media score fuori casa: 37.73
+Fattore casa/trasferta applicato: 1.014 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.9
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.935
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.982
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.015
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.013
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 81.82% (fonte: tasso di presenza storico (9/11))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Chicago Fire FC | Trasferta: Charlotte FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.2 (range 33.9 - 71.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 47.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.84
+Punteggio REALE ottenuto in quella partita: 37.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.7    45.7     +1.0    20.9        SI
+   7        7      52.7    68.9    +16.2    18.9        SI
+   8        8      37.4    37.8     +0.3    20.0        SI
+
+MAE (errore assoluto medio): 5.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
