@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "jayden-oosterwolde", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 13:55:13 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785246913', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'v0ss1W67UhAKRyyCBbDEk3wA3uG2vGtgdNnmoau-Q4L_F3cLvtQF-7GjRLo80EqR3dwQrFaIdYNbvFkHcM1QGg', 'etag': 'W/"4559a75f79ec457b6734e52ab8c76d78"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=b9Gnh%2BWPztN1Sq4tfYzapeT7HUqy8lhcPyHylxp3TG10WGH%2BgmIJLpHsMH8jvdhIOpNedtq58u2tYxb82Aa%2BsPKZjeqoaLgNQZyPKzkoQY9Q8lRdVQCh61BhxPkBCqW9yUKhVPeRyAJyXo%2FQBG2eds384fkIEt7v4T%2FVJcVnGSLyQTcXjYLKv4QcHm4SBbi6AtEehwaV5c99SlucO5V7MdLK%2BLSwBDm%2FB2g%2Bh%2B7GB6jBRp9tHr2JimHsLTx8y9MrpHv7RMYALLGdT9xD160mAoY7iK5q8oWiFreWvKi62HJgmya0N5XbQzhXXie8%2BtBm--DgkCIg0zFoDVj7YP--LAIeCE4NVLRq9MpSJDbh5w%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 13:55:13 GMT; secure; httponly; samesite=none', 'x-request-id': 'aae4f1f4-7955-44e7-8c20-8ed4e76d5639', 'x-runtime': '0.041482', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 58e5a0ee8f665c3cee2df5b8285c5964.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': '2Od8AuhJWc0JFMy13Bu0jwnr091cZXH8wit5bLaykA9egMt3TcgbMw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:9f1c24e0-58ea-47c2-a600-1f914c96a4a7","score":73.14,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:30ff6838-0ea6-44f8-bcc5-4c5a802028f5","date":"2026-07-21T18:00:00Z","statusTyped":"played","homeTeam":{"slug":"fenerbahce-istanbul","name":"Fenerbahçe Spor Kulübü","code":"FB","domesticLeagueRanking":2},"awayTeam":{"slug":"gornik-zabrze-zabrze","name":"KS Górnik Zabrze","code":"GZA","domesticLeagueRanking":null},"competition":{"slug":"uefa-champions-league"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:411d6f46-3480-4435-8c7e-da74f7c74f07","score":19.5,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:e516168e-bc27-4a0d-b418-e28f476a3dd2","date":"2026-05-17T17:00:00Z","statusTyped":"played","homeTeam":{"slug":"fenerbahce-istanbul","name":"Fenerbahçe Spor Kulübü","code":"FB","domesticLeagueRanking":2},"awayTeam":{"slug":"eyupspor-istanbul","name":"Eyüp Spor Kulübü","code":"EYÜ","domesticLeagueRanking":15},"competition":{"slug":"spor-toto-super-lig"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":45,"yellowCard":1,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:2afbb00d-5374-435d-860f-80b24d8f8c85","date":"2026-07-29T18:00:00Z","playerGameScore":{"id":"So5Score:cc373a4c-c7d7-40f6-8878-84bd8e6076d7","positionTyped":"Defender","projectedScore":54.0,"anyGame":{"id":"Game:2afbb00d-5374-435d-860f-80b24d8f8c85","date":"2026-07-29T18:00:00Z","homeTeam":{"slug":"gornik-zabrze-zabrze","name":"KS Górnik Zabrze","code":"GZA","domesticLeagueRanking":null},"awayTeam":{"slug":"fenerbahce-istanbul","name":"Fenerbahçe Spor Kulübü","code":"FB","domesticLeagueRanking":2},"competition":{"slug":"uefa-champions-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":8000,"reliability":"HIGH"}}}}]}}}}
