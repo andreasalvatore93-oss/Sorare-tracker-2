@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:31:12.395864Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jon-gorenc-stankovic: 58 pt attesi (42-69)
+   SQUADRA: sturm-graz-graz | AVVERSARIO: wattens-wattens
+======================================================================
+
+######################################################################
+# GIOCATORE: jon-gorenc-stankovic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jon-gorenc-stankovic (squadra: sturm-graz-graz)
+Generato: 2026-07-28T19:31:12.351218Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 11
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-05 | SCR vs STU | austrian-bundesliga | score=42.6 | peso=0.667
+  2026-04-12 | STU vs HTB | austrian-bundesliga | score=58.8 | peso=0.707
+  2026-04-19 | ASK vs STU | austrian-bundesliga | score=60.2 | peso=0.749
+  2026-04-22 | STU vs ASK | austrian-bundesliga | score=41.3 | peso=0.794
+  2026-04-26 | STU vs FAK | austrian-bundesliga | score=44.1 | peso=0.841
+  2026-05-03 | RBS vs STU | austrian-bundesliga | score=60.8 | peso=0.891
+  2026-05-17 | STU vs SCR | austrian-bundesliga | score=68.9 | peso=0.944
+  2026-07-21 | STU vs HEA | uefa-champions-league | score=79.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 58.13
+  di cui Punteggio decisivo (level_score) medio: 38.79 | Punteggio complessivo (granulari) medio: 19.34 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 37.37 (delta -1.42)
+  Efficacia offensiva condizionata: delta venue -0.34, delta avversario -0.24 | Passaggio condizionato: delta venue -0.66, delta avversario +2.06 | Gol subiti condizionato: delta venue -0.16, delta avversario +0.20 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.98
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.6 - 68.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.51 (differenza: +3.47)
+Media score in casa: 58.44 | Media score fuori casa: 54.53
+Fattore casa/trasferta applicato: 0.982 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.9
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.108
+Fattore falli (casa/trasferta, da dati reali): 0.985
+Fattore duelli (casa/trasferta, da dati reali): 1.014
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.981
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.983
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.036
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 0.983
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 72.73% (fonte: tasso di presenza storico (8/11))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T15:00
+Casa: WSG Tirol | Trasferta: SK Puntigamer Sturm Graz
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.8 (range 42.3 - 68.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.38
+Punteggio REALE ottenuto in quella partita: 79.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +24.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.9    68.9    +19.0    12.2        NO
+   7        7      50.0    79.1    +29.1    14.4        NO
+
+MAE (errore assoluto medio): 24.04
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
