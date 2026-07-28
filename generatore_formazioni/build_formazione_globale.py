@@ -41,7 +41,6 @@ import re
 import sys
 import copy
 import glob
-import html
 import datetime
 import importlib.util
 from collections import defaultdict
@@ -603,107 +602,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
     return risultati
 
 
-_slot_role = bff._slot_role  # canonico, condiviso col drag&drop lato pcard
-
-
-def _build_alt_chips(formazione, label, idx, tipo, global_usage, max_chips=6):
-    """Per ogni SLOT della formazione, cerca alternative dello stesso ruolo
-    usate in ALTRE formazioni (qualunque tipo) con punteggio atteso vicino
-    (28/07, richiesta esplicita utente: "un attaccante con 57, alternative
-    con 55/54"). Round-robin per slot (non un top-N globale per vicinanza):
-    altrimenti uno slot puo' restare senza alcuna alternativa se un altro
-    ruolo nella stessa formazione ha piu' candidati vicini (bug trovato nella
-    prima versione con un top-4 flat, mai arrivato in produzione). Ritorna al
-    massimo max_chips dict {row, ctype, role}, deduplicati per slug -- la riga
-    completa (non solo lo score) serve al drag&drop per costruire in anticipo
-    l'HTML della pcard che l'alternativa diventerebbe se trascinata.
-
-    'tipo' (28/07, fix bug reale: un centrocampista croato, valutato solo nel
-    pool misto delle All Stars, veniva proposto come alternativa trascinabile
-    per una In Season MLS -- dove non e' nemmeno eleggibile, la lega e'
-    ristretta a mls). Le alternative sono filtrate alla lega/pool della
-    formazione BERSAGLIO (quella che stiamo arricchendo ora), non a quella di
-    provenienza del candidato."""
-    pool_league = POOL_LEAGUE_BY_TYPE.get(tipo)
-
-    def _eligible(u):
-        if pool_league in ('mixed', None):
-            return True
-        if pool_league == 'mixed_u23':
-            return bool(U23_ELIGIBLE.get(u['row']['slug']))
-        return u['row'].get('league') == pool_league
-
-    seen_slugs = {row['slug'] for _, row, _ in formazione}
-    per_slot = []
-    for slot, row, _ctype in formazione:
-        role = _slot_role(slot)
-        if not role:
-            continue
-        own_score = row['atteso']
-        cands = sorted(
-            ((abs(u['row']['atteso'] - own_score), u)
-             for u in global_usage.get(role, ())
-             if (u['label'], u['idx']) != (label, idx) and u['row']['slug'] not in seen_slugs
-             and _eligible(u)),
-            key=lambda t: t[0])
-        per_slot.append(cands)
-
-    picked, picked_slugs = [], set()
-    exhausted = False
-    while len(picked) < max_chips and not exhausted:
-        exhausted = True
-        for cands in per_slot:
-            while cands:
-                _diff, u = cands.pop(0)
-                slug = u['row']['slug']
-                if slug in picked_slugs:
-                    continue
-                picked_slugs.add(slug)
-                picked.append({'row': u['row'], 'ctype': u['ctype'], 'role': u['role']})
-                exhausted = False
-                break
-            if len(picked) >= max_chips:
-                break
-    return picked
-
-
-def _render_alt_panel(chips, card_pool, apply_xp_bonus=False):
-    """Ogni chip e' draggable e porta con se' data-body gia' pronto (28/07):
-    il drag&drop lato client (script nel template condiviso, vedi bff) scambia
-    l'attributo con quello della pcard bersaglio senza ricalcolare nulla.
-    'apply_xp_bonus' (28/07 sera): regola della formazione BERSAGLIO (dove il
-    chip puo' essere trascinato), non della formazione di provenienza -- una
-    stessa alternativa puo' comparire in piu' pannelli con regole diverse."""
-    if not chips:
-        return ''
-    items = []
-    for chip in chips:
-        row, ctype, role = chip['row'], chip['ctype'], chip['role']
-        slug = row['slug']
-        name = card_pool.display_name(slug)
-        copie = card_pool.copies_owned(slug)
-        xp_bonus_frac = card_pool.power_bonus_fraction(slug) if apply_xp_bonus else 0.0
-        tags_html = bff._pcard_tags_html(ctype, copie, xp_bonus_frac)
-        l10 = card_pool.l10(slug)
-        body_html = bff._pcard_body_html(slug, row['atteso'], row['low'], row['high'], l10, tags_html, card_pool)
-        items.append(
-            '<div class="alt-chip" draggable="true" '
-            f'data-slug="{html.escape(slug, quote=True)}" data-role="{role or ""}" '
-            f'data-score="{row["atteso"]}" data-xp-frac="{xp_bonus_frac}" '
-            f'data-name="{html.escape(name, quote=True)}" '
-            f'data-body="{html.escape(body_html, quote=True)}">'
-            f'<div class="alt-circle">{bff._slug_initials(slug)}</div>'
-            f'<div class="alt-info"><div class="alt-name">{name}</div>'
-            f'<div class="alt-score">{row["atteso"]} pt · {role}</div></div>'
-            '</div>'
-        )
-    return (
-        '<div class="alt-panel">'
-        '<div class="alt-panel-title">Alternative (vicinanza punteggio,<br>da altre formazioni) — '
-        'trascina per sostituire</div>'
-        f'<div class="alt-list">{"".join(items)}</div>'
-        '</div>'
-    )
+_slot_role = bff._slot_role  # canonico, usato per _apply_xp_bonus/altre logiche
 
 
 def main():
@@ -802,22 +701,8 @@ def main():
     if total_generated > 1:
         print(f"TOTALE COMPLESSIVO: {grand_total} pt")
 
-    # Indice globale: ruolo -> [{row, ctype, role, label, idx}, ...] su TUTTE
-    # le formazioni di TUTTI i tipi (28/07) -- usato per proporre alternative
-    # per vicinanza di punteggio, cross-formazione/cross-tipo. La riga
-    # completa (non solo lo score) serve al drag&drop per ricostruire l'HTML
-    # esatto della pcard che l'alternativa diventerebbe se trascinata.
-    global_usage = defaultdict(list)
-    for r in all_results:
-        if 'error' in r:
-            continue
-        for slot, row, ctype in r['formazione']:
-            role = _slot_role(slot)
-            if role:
-                global_usage[role].append(
-                    {'row': row, 'ctype': ctype, 'role': role, 'label': r['label'], 'idx': r['idx']})
-
-    # FASE 2: rendering, con il pannello alternative a fianco di ogni formazione.
+    # FASE 2: rendering (28/07: pannello alternative/drag&drop RIMOSSO su
+    # richiesta esplicita utente -- non serviva piu', bastano le formazioni).
     lineup_html_blocks = []
     for r in all_results:
         if 'error' in r:
@@ -828,9 +713,7 @@ def main():
             l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
             check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
             avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=r['tipo'] in XP_BONUS_TYPES)
-        chips = _build_alt_chips(r['formazione'], r['label'], r['idx'], r['tipo'], global_usage)
-        alt_panel = _render_alt_panel(chips, card_pool, apply_xp_bonus=r['tipo'] in XP_BONUS_TYPES)
-        lineup_html_blocks.append(f'<div class="lineup-row">{lineup_html}{alt_panel}</div>')
+        lineup_html_blocks.append(lineup_html)
 
     # Giocatori candidati (idonei per starter-odds + finestra giornata, vedi
     # discovery_fixture.py) MAI schierati in nessuna formazione di questa run
