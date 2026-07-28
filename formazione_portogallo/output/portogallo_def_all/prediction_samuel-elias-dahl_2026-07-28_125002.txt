@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T12:50:02.454023Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) samuel-elias-dahl: 33 pt attesi (25-44)
+   ORDINAMENTO: 31.41
+   SQUADRA: benfica-lisboa | AVVERSARIO: st-gallen-st-gallen
+======================================================================
+
+######################################################################
+# GIOCATORE: samuel-elias-dahl
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: samuel-elias-dahl (squadra: benfica-lisboa)
+Generato: 2026-07-28T12:50:02.453449Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-13 | SCL vs SLB | primeira-liga-pt | score=44.2 | peso=0.340
+  2026-02-17 | SLB vs RMA | uefa-champions-league | score=63.6 | peso=0.367
+  2026-02-25 | RMA vs SLB | uefa-champions-league | score=38.8 | peso=0.397
+  2026-03-02 | GIL vs SLB | primeira-liga-pt | score=37.4 | peso=0.429
+  2026-03-08 | SLB vs POR | primeira-liga-pt | score=48.3 | peso=0.463
+  2026-03-14 | ARO vs SLB | primeira-liga-pt | score=72.5 | peso=0.500
+  2026-03-21 | SLB vs VIG | primeira-liga-pt | score=59.1 | peso=0.540
+  2026-04-06 | CSP vs SLB | primeira-liga-pt | score=50.1 | peso=0.583
+  2026-04-12 | SLB vs NAC | primeira-liga-pt | score=52.3 | peso=0.630
+  2026-04-19 | SCP vs SLB | primeira-liga-pt | score=40.1 | peso=0.680
+  2026-04-25 | SLB vs MOR | primeira-liga-pt | score=2.9 | peso=0.735
+  2026-05-02 | FAM vs SLB | primeira-liga-pt | score=52.7 | peso=0.794
+  2026-05-11 | SLB vs BRA | primeira-liga-pt | score=58.1 | peso=0.857
+  2026-05-16 | EST vs SLB | primeira-liga-pt | score=54.7 | peso=0.926
+  2026-07-23 | STG vs SLB | uefa-europa-league | score=46.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 47.71
+  di cui Punteggio decisivo (level_score) medio: 33.41 | Punteggio complessivo (granulari) medio: 14.30 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.46, delta avversario -1.11 | Passaggio condizionato: delta venue +0.88, delta avversario +0.11 | Clean sheet/disimpegni condizionato: delta venue +0.88, delta avversario -0.73 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.58
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.8 - 58.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.14 (differenza: +8.43)
+Media score in casa: 47.40 | Media score fuori casa: 48.56
+Fattore casa/trasferta applicato: 0.980 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.9
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.901
+Fattore falli (casa/trasferta, da dati reali): 0.985
+Fattore duelli (casa/trasferta, da dati reali): 0.983
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.984
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.012
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.013
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 1.015
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.024
+Fattore trend (media ultime 5: 43.0 vs media ultime 10: 48.9): 0.915
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T19:00
+Casa: SL Benfica | Trasferta: FC Sankt Gallen 1879
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 33.5 (range 24.6 - 43.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 31.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.84
+Punteggio REALE ottenuto in quella partita: 46.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.7    59.1     -3.6    16.1        SI
+   7        7      66.7    50.1    -16.6    15.0        NO
+   8        8      71.7    52.3    -19.4    13.8        NO
+   9        9      40.0    40.1     +0.0    12.7        SI
+  10       10      56.4     2.9    -53.4    12.9        NO
+  11       11      37.9    52.7    +14.8    22.7        SI
+  12       12      35.9    58.1    +22.2    21.5        NO
+  13       13      48.0    54.7     +6.7    20.8        SI
+  14       14      38.7    46.6     +7.9    19.8        SI
+
+MAE (errore assoluto medio): 16.08
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
