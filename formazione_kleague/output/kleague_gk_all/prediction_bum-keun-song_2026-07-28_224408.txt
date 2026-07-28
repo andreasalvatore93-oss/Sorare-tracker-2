@@ -1,0 +1,104 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T22:44:08.234588Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) bum-keun-song: 58 pt attesi (41-71)
+   SQUADRA: jeonbuk-motors-jeonju | AVVERSARIO: seoul-seoul
+======================================================================
+
+######################################################################
+# GIOCATORE: bum-keun-song
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: bum-keun-song (squadra: jeonbuk-motors-jeonju)
+Generato: 2026-07-28T22:44:08.233765Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-21 | DJO vs JMO | k-league-1 | score=76.4 | peso=0.445
+  2026-04-04 | JMO vs ULS | k-league-1 | score=72.6 | peso=0.472
+  2026-04-11 | SEO vs JMO | k-league-1 | score=34.8 | peso=0.500
+  2026-04-18 | GAN vs JMO | k-league-1 | score=49.3 | peso=0.530
+  2026-04-21 | JMO vs INC | k-league-1 | score=36.1 | peso=0.561
+  2026-04-26 | JMO vs POH | k-league-1 | score=47.8 | peso=0.595
+  2026-05-02 | JEJ vs JMO | k-league-1 | score=100.0 | peso=0.630
+  2026-05-05 | JMO vs GWA | k-league-1 | score=81.5 | peso=0.667
+  2026-05-10 | ANY vs JMO | k-league-1 | score=54.5 | peso=0.707
+  2026-05-13 | BUC vs JMO | k-league-1 | score=67.2 | peso=0.749
+  2026-05-17 | JMO vs SAN | k-league-1 | score=72.7 | peso=0.794
+  2026-07-11 | ULS vs JMO | k-league-1 | score=54.9 | peso=0.841
+  2026-07-18 | INC vs JMO | k-league-1 | score=46.9 | peso=0.891
+  2026-07-21 | JMO vs DJO | k-league-1 | score=72.1 | peso=0.944
+  2026-07-25 | POH vs JMO | k-league-1 | score=76.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 63.63
+  di cui Punteggio decisivo (level_score) medio: 48.80 | Punteggio complessivo (granulari) medio: 14.83 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 42.28 (delta -6.52 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.04, delta avversario -1.34 | Possesso condizionato per venue: delta +0.18 | Goalkeeping condizionato per venue: delta -1.11 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 16.87
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 46.9 - 76.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.53 (differenza: +3.35)
+Media score in casa: 63.80 | Media score fuori casa: 62.29
+Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.8
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.800
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.983
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.994
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.997
+Tasso storico clean sheet (porta inviolata nei primi 60'): 53.3% (bonus atteso incorporato nella media pesata: ~13.3pt)
+Fattore trend (media ultime 5: 64.6 vs media ultime 10: 67.4): 0.971
+P(gioca): 93.75% (fonte: tasso di presenza storico (15/16))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T10:30
+Casa: Jeonbuk Hyundai Motors FC | Trasferta: FC Seoul
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.8 (range 41.1 - 70.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 62.24
+Punteggio REALE ottenuto in quella partita: 76.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +14.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.8   100.0    +42.2    22.0        NO
+   7        7      65.3    81.5    +16.2    32.3        SI
+   8        8      63.2    54.5     -8.7    31.7        SI
+   9        9      74.5    67.2     -7.3    29.7        SI
+  10       10      73.8    72.7     -1.1    27.9        SI
+  11       11      67.1    54.9    -12.2    26.5        SI
+  12       12      66.0    46.9    -19.1    25.3        SI
+  13       13      65.6    72.1     +6.5    24.9        SI
+  14       14      60.6    76.6    +16.0    24.1        SI
+
+MAE (errore assoluto medio): 14.35
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 88.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
