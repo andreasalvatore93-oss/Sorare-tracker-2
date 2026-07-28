@@ -500,8 +500,27 @@ def main():
     if not scritti:
         print("  nessuna: nessun giocatore posseduto e' titolare probabile in questa giornata")
 
-    matrice = [{"league": lg, "role": r} for lg, ruoli in sorted(scritti.items())
-               for r in sorted(ruoli)]
+    # Sharding del job 'predict' per le leghe piu' numerose (28/07, richiesta
+    # esplicita utente): mls/kleague hanno spesso decine di giocatori per
+    # ruolo elaborati IN SEQUENZA in un solo job (un TARGET_SLUG alla volta),
+    # mentre le altre leghe (1-2 giocatori tipici) finiscono in fretta --
+    # collo di bottiglia sul tempo totale. Ogni combinazione lega/ruolo di
+    # queste leghe viene sdoppiata in PREDICT_SHARD_N sotto-job paralleli
+    # (stessa lega/ruolo, quota diversa), che si dividono la lista di slug.
+    # Le altre leghe restano un solo job (comportamento INVARIATO). Il
+    # consiglio finale (aggregazione di TUTTI gli slug del ruolo) si genera
+    # in un job separato 'consiglio', dopo che TUTTI gli shard di 'predict'
+    # sono completati -- vedi formazione_giornata.yml.
+    PREDICT_SHARD_LEAGUES = {'mls', 'kleague'}
+    PREDICT_SHARD_N = 4
+    matrice = []
+    for lg, ruoli in sorted(scritti.items()):
+        for r in sorted(ruoli):
+            if lg in PREDICT_SHARD_LEAGUES:
+                for i in range(PREDICT_SHARD_N):
+                    matrice.append({"league": lg, "role": r, "shard": f"{i}:{PREDICT_SHARD_N}"})
+            else:
+                matrice.append({"league": lg, "role": r})
     print("\nMATRICE_JSON=" + json.dumps(matrice, separators=(',', ':')))
     gh_out = os.environ.get('GITHUB_OUTPUT')
     if gh_out:
