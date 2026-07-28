@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:05:00.254859Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) hassani-dotson: 54 pt attesi (43-83)
+   SQUADRA: seattle-sounders-renton-washington | AVVERSARIO: portland-timbers-portland-oregon
+======================================================================
+
+######################################################################
+# GIOCATORE: hassani-dotson
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: hassani-dotson (squadra: seattle-sounders-renton-washington)
+Generato: 2026-07-28T19:05:00.253758Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 13
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-26 | SEA vs DAL | mlspa | score=69.6 | peso=0.749
+  2026-05-17 | SEA vs LA | mlspa | score=46.8 | peso=0.794
+  2026-05-25 | LAFC vs SEA | mlspa | score=46.0 | peso=0.841
+  2026-07-17 | SEA vs POR | mlspa | score=85.3 | peso=0.891
+  2026-07-23 | ATX vs SEA | mlspa | score=45.1 | peso=0.944
+  2026-07-25 | PHI vs SEA | mlspa | score=46.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 56.15
+  di cui Punteggio decisivo (level_score) medio: 39.27 | Punteggio complessivo (granulari) medio: 16.88 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 37.67 (delta -1.60)
+  Efficacia offensiva condizionata: delta venue +0.09, delta avversario +0.05 | Passaggio condizionato: delta venue -1.43, delta avversario +0.55 | Gol subiti condizionato: delta venue +0.49, delta avversario -0.61 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.52
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 45.1 - 85.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.62 (differenza: +5.90)
+Media score in casa: 67.23 | Media score fuori casa: 45.87
+Fattore casa/trasferta applicato: 0.976 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.011
+Fattore falli (casa/trasferta, da dati reali): 0.983
+Fattore duelli (casa/trasferta, da dati reali): 0.988
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.010
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.965
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.978
+Fattore gol subiti (goals_conceded, con cap): 1.020
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 46.15% (fonte: tasso di presenza storico (6/13))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T02:30
+Casa: Portland Timbers | Trasferta: Seattle Sounders FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.7 (range 42.7 - 82.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.44
+Punteggio REALE ottenuto in quella partita: 46.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
