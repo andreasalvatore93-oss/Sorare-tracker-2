@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "kieran-tierney", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 16:06:48 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785254808', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'u2tf42IhAwkI-T6esw7tYsk-5T7fXAyXfUWSKsiTEcVdgsiNgH7EByHC8qlLf2iFxIUEJbxSqpomDBYqGaAtCg', 'etag': 'W/"e464cd0e7272fd11f309f526178f6f27"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=NgQY4%2FdgGrIjHNBvv4Bps3IAGqJy4bUU4HJgQx%2B%2Bsy7%2BxMcFFSgx2XO7XXCV0m8OoJgUxsW145B%2F5hA6RaWK2sQAT7JOz5kldZ72b7V04%2FFtQePbZk38leW2rJTWFNAU5AADThpMSShkyiXl06GYKQjXTAzcRPYCYUjE6XAdcrFPaMEppNa4w19mLyZdvtwA3H%2BfouZU%2FSj01GNdNyCA76kAbfmQQA9ageqWVpYiCMcQ3gJV%2Bc6HEo%2FEYtSPeA6i6uhBWQUgCQSAdvAn76xdrELTh2cJ%2BlJBLt9iNF8HJgGR5kStTZZ4K3vI7FO16pCr--ndqT83RyjllijfqY--nqvRbA75dxKnV2pA1a1G4w%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 16:06:48 GMT; secure; httponly; samesite=none', 'x-request-id': '88b0c99a-587d-45c7-aa40-765f06cbe14f', 'x-runtime': '0.055712', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 5ec2b95241693f962e2ff4afc726b38e.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'HIO52-P4', 'x-amz-cf-id': 'm3MH_Qn_RWmVUwcih0XOoSIbiunb62K4lQF8pXxMn5PoR_1cxbQfhw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:a28141c1-acf4-4ba4-ba1e-cf2bc6c2cbb1","score":34.84,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:5ad3acb9-116c-4a11-b645-9b65a69aeb46","date":"2026-06-24T22:00:00Z","statusTyped":"played","homeTeam":{},"awayTeam":{},"competition":{"slug":"global-cup"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":45,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:a24f577c-52cf-4b44-8254-87997de7b921","score":43.28,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:cea525ad-fc1e-4ab1-9c04-24752b81982b","date":"2026-06-19T22:00:00Z","statusTyped":"played","homeTeam":{},"awayTeam":{},"competition":{"slug":"global-cup"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":60,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:c19cd867-c89b-45af-9620-c721f49ec747","date":"2026-08-03T18:30:00Z","playerGameScore":{"id":"So5Score:bf66bfc5-3520-4d19-afa8-b022b3950a55","positionTyped":"Defender","projectedScore":56.0,"anyGame":{"id":"Game:c19cd867-c89b-45af-9620-c721f49ec747","date":"2026-08-03T18:30:00Z","homeTeam":{"slug":"celtic-glasgow","name":"Celtic FC","code":"CEL","domesticLeagueRanking":1},"awayTeam":{"slug":"dundee-dundee","name":"Dundee FC","code":"DUN","domesticLeagueRanking":2},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:a285e0ac-07d4-41c6-94b1-4c7902cad8af","date":"2026-08-09T12:30:00Z","playerGameScore":{"id":"So5Score:d6c1da45-612e-4fb0-b1ca-b2e46cef749d","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:a285e0ac-07d4-41c6-94b1-4c7902cad8af","date":"2026-08-09T12:30:00Z","homeTeam":{"slug":"kilmarnock-kilmarnock","name":"Kilmarnock FC","code":"KIL","domesticLeagueRanking":4},"awayTeam":{"slug":"celtic-glasgow","name":"Celtic FC","code":"CEL","domesticLeagueRanking":1},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:fc6cfd6e-a338-437a-af0a-984ff0ff7320","date":"2026-08-22T14:00:00Z","playerGameScore":{"id":"So5Score:eaf6309e-8a18-467c-87aa-87571df6350e","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:fc6cfd6e-a338-437a-af0a-984ff0ff7320","date":"2026-08-22T14:00:00Z","homeTeam":{"slug":"st-johnstone-perth","name":"Saint Johnstone FC","code":"STJ","domesticLeagueRanking":12},"awayTeam":{"slug":"celtic-glasgow","name":"Celtic FC","code":"CEL","domesticLeagueRanking":1},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:974b8354-a034-41bd-a0f3-702568f0e4ca","date":"2026-08-29T14:00:00Z","playerGameScore":{"id":"So5Score:918230f0-be91-4fd0-8ef3-ec36a9cca22d","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:974b8354-a034-41bd-a0f3-702568f0e4ca","date":"2026-08-29T14:00:00Z","homeTeam":{"slug":"celtic-glasgow","name":"Celtic FC","code":"CEL","domesticLeagueRanking":1},"awayTeam":{"slug":"falkirk-falkirk","name":"Falkirk FC","code":"FAL","domesticLeagueRanking":6},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:4ebdca71-55f7-45ab-a89a-2481007e8bdb","date":"2026-09-02T18:45:00Z","playerGameScore":{"id":"So5Score:2a578540-13e2-47d7-870c-91bd3fe74886","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:4ebdca71-55f7-45ab-a89a-2481007e8bdb","date":"2026-09-02T18:45:00Z","homeTeam":{"slug":"celtic-glasgow","name":"Celtic FC","code":"CEL","domesticLeagueRanking":1},"awayTeam":{"slug":"aberdeen-aberdeen","name":"Aberdeen FC","code":"ABE","domesticLeagueRanking":3},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
