@@ -183,6 +183,14 @@ STACK_GUARD_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS', 'ALLSTARS
 # obbligatorio, non hanno questo bonus extra.
 CHECK_CAP260_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS', 'ALLSTARS_U23'}
 
+# Bonus power Sorare (season/collection/xp personale/scarcity/special edition/
+# active clubs/nationality/positions, vedi CardPool.power_bonus_fraction):
+# SOLO In Season e All Stars (7 e Under 23), MAI nelle Arene -- confermato
+# dall'utente 28/07 ("tutto a 0 nelle arene, solo il 20% fisso capitano").
+# Stessi membri di CHECK_CAP260_TYPES oggi, ma concetti distinti (un domani
+# potrebbero divergere) -- tenuti come costanti separate apposta.
+XP_BONUS_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS', 'ALLSTARS_U23'}
+
 CAPTAIN_BONUS_BY_TYPE = {
     'MLS_IN_SEASON': 0.5, 'KLEAGUE_IN_SEASON': 0.5,
     'ARENA_ALLSTARS_260': 0.2, 'ARENA_ALLSTARS_220': 0.2, 'ARENA_ALLSTARS_UNCAPPED': 0.2,
@@ -424,9 +432,40 @@ def _raw_view_for(role_data, pool_league, role):
     return role_data[pool_league][role]
 
 
+def _apply_xp_bonus(rows, card_pool):
+    """Ritorna una COPIA delle righe con atteso/ordinamento/low/high
+    moltiplicati per (1 + bonus power della carta, vedi
+    CardPool.power_bonus_fraction) -- MAI muta le righe originali (condivise
+    fra tutti i tipi di formazione nella stessa run, incluse le Arene dove
+    questo bonus NON si applica, vedi XP_BONUS_TYPES). Righe senza bonus noto
+    (frazione 0.0) restano le stesse istanze, nessuna copia inutile.
+    RI-ORDINA sempre il risultato (non solo per i ruoli/tipi che poi passano
+    da synergy_adjusted_rows, es. il portiere non ci passa mai se non c'e'
+    used_matches): senza questo il boost cambierebbe i punteggi ma non
+    l'ordine di scelta, vanificando "preferire un giocatore piu' debole ma
+    con bonus" per lo slot GK."""
+    out = []
+    for r in rows:
+        frac = card_pool.power_bonus_fraction(r['slug'])
+        if not frac:
+            out.append(r)
+            continue
+        r2 = dict(r)
+        mult = 1.0 + frac
+        r2['atteso'] = round(r['atteso'] * mult)
+        if r.get('ordinamento') is not None:
+            r2['ordinamento'] = round(r['ordinamento'] * mult)
+        if r.get('low') is not None:
+            r2['low'] = round(r['low'] * mult)
+        if r.get('high') is not None:
+            r2['high'] = round(r['high'] * mult)
+        out.append(r2)
+    return _sort_ordinamento(out)
+
+
 def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool, l10_cap,
                                   apply_stack_guard, variance_mode, apply_positive_synergy=True,
-                                  strict_gk_anti_synergy=False, used_matches=None):
+                                  strict_gk_anti_synergy=False, used_matches=None, apply_xp_bonus=False):
     """Se il tipo ha un cap L10 obbligatorio (Arena dedicate/All Stars) usa
     il pool GREZZO via _raw_view_for; altrimenti (In Season, All Stars, Arena
     All Stars uncapped) passa da 'pools' (_view_for) -- dal 28/07 entrambi i
@@ -435,6 +474,8 @@ def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool
     per come 'pools' viene fatto crescere/riletto, non piu' per COSA include."""
     if l10_cap is not None:
         role_data_view = {role: _raw_view_for(role_data, pool_league, role) for role in ROLES}
+        if apply_xp_bonus:
+            role_data_view = {role: _apply_xp_bonus(rows, card_pool) for role, rows in role_data_view.items()}
         return bff.build_one_lineup(shape, role_data_view, card_pool, l10_cap=l10_cap,
                                      apply_stack_guard=apply_stack_guard, variance_mode=variance_mode,
                                      apply_positive_synergy=apply_positive_synergy,
@@ -442,6 +483,8 @@ def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool
 
     while True:
         role_data_view = {role: _view_for(pools, pool_league, role) for role in ROLES}
+        if apply_xp_bonus:
+            role_data_view = {role: _apply_xp_bonus(rows, card_pool) for role, rows in role_data_view.items()}
         formazione, error, l10_ok, stack_perso = bff.build_one_lineup(
             shape, role_data_view, card_pool, l10_cap=l10_cap,
             apply_stack_guard=apply_stack_guard, variance_mode=variance_mode,
@@ -494,6 +537,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
     # troppo eroso dal vincolo sulla prima), si rinuncia e si rigenera l'intera
     # serie senza forzare -- vedi retry sotto, mai un compromesso silenzioso.
     force_cap370_first = tipo in ('ALLSTARS', 'ALLSTARS_U23') and count >= 1
+    apply_xp_bonus = tipo in XP_BONUS_TYPES
 
     def _run(force_first):
         # Varianza capitano (27/07, richiesta esplicita utente, stesso fix
@@ -515,7 +559,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
             idx_cap = 370.0 if (force_first and idx == 1) else cap
             formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
                 shape, pool_league, role_data, pools, card_pool, idx_cap, stack_guard, variance_mode,
-                apply_positive_synergy, strict_gk_anti_synergy, used_matches)
+                apply_positive_synergy, strict_gk_anti_synergy, used_matches, apply_xp_bonus)
             if error:
                 msg = f"Formazione {label} #{idx}: NON GENERATA — {error}"
                 print(msg)
