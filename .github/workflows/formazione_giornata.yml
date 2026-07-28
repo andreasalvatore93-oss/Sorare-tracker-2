@@ -1085,3 +1085,11 @@ jobs:
             git fetch origin main
             git merge --no-edit -X ours origin/main
           done
+      - name: Notifica Telegram con link al report HTML
+        if: always()
+        env:
+          # Stesso canale Telegram gia' usato da bot_profit/manager_bundle_scan
+          # (secrets.BUNDLE_TELEGRAM_TOKEN/_CHAT_ID -> env TELEGRAM_TOKEN/TELEGRAM_CHAT_ID).
+          TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
+        run: python generatore_formazioni/formazione_telegram_notify.py
