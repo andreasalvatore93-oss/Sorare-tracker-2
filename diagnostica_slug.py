@@ -90,6 +90,8 @@ query CardBonusProbe($slug: String!) {
       totalBonus
       bonusPercentage
       scoreBonuses
+      u23Eligible
+      isU23
     }
   }
 }
