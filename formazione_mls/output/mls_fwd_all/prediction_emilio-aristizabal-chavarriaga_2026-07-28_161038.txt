@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T16:10:38.217031Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) emilio-aristizabal-chavarriaga: 22 pt attesi (15-37)
+   SQUADRA: fortaleza-ceif-soacha | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: emilio-aristizabal-chavarriaga
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: emilio-aristizabal-chavarriaga (squadra: fortaleza-ceif-soacha)
+Generato: 2026-07-28T16:10:38.216269Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-24 | FOR vs PAS | primera-a | score=40.7 | peso=0.472
+  2025-10-29 | EQU vs FOR | primera-a | score=60.0 | peso=0.500
+  2025-11-08 | FOR vs JUN | primera-a | score=70.2 | peso=0.530
+  2025-11-14 | MAG vs FOR | primera-a | score=47.8 | peso=0.561
+  2025-11-18 | FOR vs TOL | primera-a | score=32.3 | peso=0.595
+  2025-11-22 | SFE vs FOR | primera-a | score=39.7 | peso=0.630
+  2025-11-26 | BUC vs FOR | primera-a | score=60.0 | peso=0.667
+  2025-11-30 | FOR vs BUC | primera-a | score=37.8 | peso=0.707
+  2025-12-03 | FOR vs SFE | primera-a | score=22.2 | peso=0.749
+  2025-12-08 | TOL vs FOR | primera-a | score=42.3 | peso=0.794
+  2026-03-08 | CIN vs TOR | mlspa | score=43.3 | peso=0.841
+  2026-04-25 | TOR vs ATL | mlspa | score=61.6 | peso=0.891
+  2026-05-02 | TOR vs SJ | mlspa | score=39.0 | peso=0.944
+  2026-05-16 | CLT vs TOR | mlspa | score=39.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 44.70
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.02, n=14): 46.89 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 40.03 | Punteggio complessivo (granulari) medio: 4.66 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.25 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 12.21
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.8 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.33 (differenza: +2.88)
+Media score in casa: 40.64 | Media score fuori casa: 49.96
+Fattore casa/trasferta applicato: 1.017 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 45.1 vs media ultime 10: 41.7): 1.080
+P(gioca): 45.16% (fonte: tasso di presenza storico (14/31))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T23:30
+Casa: New York City FC | Trasferta: Toronto FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 21.7 (range 14.8 - 37.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.33
+Punteggio REALE ottenuto in quella partita: 39.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.4    60.0     +2.6    18.1        SI
+   7        7      58.7    37.8    -20.9    17.7        NO
+   8        8      44.8    22.2    -22.6    17.4        NO
+   9        9      45.4    42.3     -3.1    20.4        SI
+  10       10      39.8    43.3     +3.5    19.1        SI
+  11       11      40.0    61.6    +21.6    17.9        NO
+  12       12      41.9    39.0     -2.9    18.6        SI
+  13       13      44.7    39.1     -5.6    17.8        SI
+
+MAE (errore assoluto medio): 10.35
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
