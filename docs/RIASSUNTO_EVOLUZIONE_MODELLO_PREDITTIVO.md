@@ -3244,3 +3244,29 @@ test precedenti, verificato con `yaml.safe_load` prima di applicare.
 
 **Come ripristinare se fallisce**: `git log` + revert/checkout del commit "TEST v4" / "24 job
 discovery" per tornare a v3 (12 job, 30.L), già confermata stabile.
+
+**ESITO (28/07, run 30351006630): FUNZIONA, tenuto attivo — non e' esploso niente, ultimo test
+della serie ("ultimo test promesso").** Run totale **4m05s** (v3 era 4m21s — guadagno marginale di
+soli ~16s, come previsto: il pavimento pratico e' vicino). Zero 429, zero job falliti su
+discovery/predict/formazione, nonostante 24 job discovery + max-parallel 28 simultanei.
+
+**Decisione presa con l'utente**: nonostante il guadagno marginale minimo, **v4 (24 job) resta
+l'assetto di produzione** invece di tornare a v3 — motivazione esplicita: con giornate piu'
+affollate (piu' formazioni richieste, pool piu' grandi) il margine di sharding piu' fine potrebbe
+contare di piu' di quanto misurato su questa giornata specifica (GW95, pool relativamente piccolo).
+Non e' una scelta guidata dai numeri di OGGI, ma da un margine di sicurezza per il futuro.
+
+**Riepilogo finale della serie di test (stessa sessione, stessa giornata GW95)**:
+
+| Versione | Job discovery | max-parallel predict | Discovery | Run totale |
+|---|---|---|---|---|
+| Iniziale | 1 | 6 | 9m19s | 15m18s |
+| v1 | 3 | 6 | 1m32s | 7m9s |
+| v2 | 6 | 10 | 1m14s | 5m18s |
+| v3 | 12 | 14 | ~1min | 4m21s |
+| **v4 (finale)** | **24** | **28** | **~1min23s** | **4m05s** |
+
+Da 15m18s a 4m05s: **-73% sul tempo totale della run**, zero 429 e zero fallimenti in tutti i 5
+livelli testati. **Non riproporre altri test di scaling senza una richiesta esplicita** — il
+pavimento pratico e' stato raggiunto, ulteriori guadagni richiederebbero ridurre l'overhead fisso
+per job (checkout+pip install, ~15-20s/job) piuttosto che aumentare ancora gli shard.
