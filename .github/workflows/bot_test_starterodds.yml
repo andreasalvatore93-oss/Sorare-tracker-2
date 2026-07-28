@@ -58,10 +58,6 @@ on:
         description: "Controlla anche gli annunci CLASSIC (tutti i campionati) -- vale per ENTRAMBI i rami, AutoBuy e MakeOffer, un solo interruttore condiviso"
         required: false
         default: "si"
-      min_recent_transactions:
-        description: "Transazioni minime (3gg) per non scartare il caso -- protezione mercato sottile"
-        required: false
-        default: "3"
       min_listed_cards_for_purchase:
         description: "Carte MINIME dello stesso giocatore attualmente IN VENDITA (annunci vivi, non storico) perche' il caso proceda -- protezione mercato poco popolato. MLS/K-League confrontano solo la stagione giusta (season/classic separate), altri campionati mescolano in_season+classic come sempre"
         required: false
@@ -155,7 +151,6 @@ jobs:
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '10' }}
           BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
-          MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
           MIN_LISTED_CARDS_FOR_PURCHASE: ${{ github.event.inputs.min_listed_cards_for_purchase || '3' }}
           MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
           RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT: ${{ github.event.inputs.recent_avg_price_max_deviation_percent || '15' }}
