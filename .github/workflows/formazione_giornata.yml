@@ -1780,7 +1780,18 @@ jobs:
           import json, os
           names = ['MATRICE_0', 'MATRICE_1', 'MATRICE_2', 'MATRICE_3', 'MATRICE_4', 'MATRICE_5', 'MATRICE_6', 'MATRICE_7', 'MATRICE_8', 'MATRICE_9', 'MATRICE_10', 'MATRICE_11', 'MATRICE_12', 'MATRICE_13', 'MATRICE_14', 'MATRICE_15', 'MATRICE_16', 'MATRICE_17', 'MATRICE_18', 'MATRICE_19', 'MATRICE_20', 'MATRICE_21', 'MATRICE_22', 'MATRICE_23', 'MATRICE_24', 'MATRICE_25', 'MATRICE_26', 'MATRICE_27', 'MATRICE_28', 'MATRICE_29', 'MATRICE_30', 'MATRICE_31', 'MATRICE_32', 'MATRICE_33', 'MATRICE_34', 'MATRICE_35', 'MATRICE_36', 'MATRICE_37', 'MATRICE_38', 'MATRICE_39', 'MATRICE_40', 'MATRICE_41', 'MATRICE_42', 'MATRICE_43']
           parts = [json.loads(os.environ.get(v) or '[]') for v in names]
-          combined = [x for p in parts for x in p]
+          raw = [x for p in parts for x in p]
+          # Dedup (28/07, bug reale: con piu' sotto-quote discovery per la
+          # STESSA lega pesante -- HEAVY_LEAGUE_SHARD, mls/kleague -- ognuna
+          # genera indipendentemente l'intera lista di shard predict per
+          # quella lega/ruolo, quindi la stessa combinazione finiva
+          # duplicata N volte -- N sotto-quote invece di 1).
+          combined, seen_combo = [], set()
+          for x in raw:
+              key = json.dumps(x, sort_keys=True)
+              if key not in seen_combo:
+                  seen_combo.add(key)
+                  combined.append(x)
           print('matrice=' + json.dumps(combined, separators=(',', ':')))
           # matrice_unique (28/07, sharding predict): un'unica coppia
           # lega/ruolo per il job 'consiglio' a valle, senza il campo
