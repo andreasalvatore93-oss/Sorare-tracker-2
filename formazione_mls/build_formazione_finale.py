@@ -209,9 +209,30 @@ STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non e
 GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA = 8  # extra oltre POSITIVE_SYNERGY_BONUS, per un totale di 11 in Arena/All Stars (corr +0.40)
 TEAMMATE_SYNERGY_BONUS_VARIANCE = 5  # GK-MID stessa squadra (corr +0.26) o DEF/MID che raggiunge un compagno gia' scelto (corr +0.23/+0.27)
 
+# Decorrelazione tra le N formazioni In Season (28/07, sez. 29.D/tema
+# "portafoglio": il premio scatta se ALMENO UNA delle N formazioni supera il
+# target di giornata, non sulla media -- quindi le N formazioni rendono di piu'
+# se sono tentativi il piu' possibile INDIPENDENTI. Se piu' formazioni
+# condividono la stessa partita reale (stessa coppia squadra-avversario) e
+# quella partita va male, falliscono insieme: nessun vantaggio dai tentativi
+# multipli). Soft, come ANTI_SYNERGY_PENALTY/STACK_GUARD_PENALTY: deprioritizza
+# (non esclude mai) i candidati la cui partita e' gia' "occupata" da una
+# formazione precedente della stessa serie. Piu' debole dello stack guard
+# (8_000): se non ci sono alternative valide nello slot, meglio riusare la
+# partita che perdere il bonus anti-stack o rompere lo schieramento.
+MATCH_REUSE_PENALTY = 6_000
+
+
+def _match_key(row):
+    team = row.get('team_slug')
+    opponent = row.get('opponent_team_slug')
+    if not team or not opponent:
+        return None
+    return frozenset((team, opponent))
+
 
 def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
-                      variance_mode=False, apply_positive_synergy=True):
+                      variance_mode=False, apply_positive_synergy=True, used_matches=None):
     """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
     dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
@@ -250,11 +271,13 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
             adjusted += TEAMMATE_SYNERGY_BONUS_VARIANCE
     if apply_stack_guard and team_slug and team_counts and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT:
         adjusted -= STACK_GUARD_PENALTY
+    if used_matches and _match_key(row) in used_matches:
+        adjusted -= MATCH_REUSE_PENALTY
     return adjusted
 
 
 def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
-                           variance_mode=False, apply_positive_synergy=True):
+                           variance_mode=False, apply_positive_synergy=True, used_matches=None):
     """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
     anti-sinergia col portiere scelto (vedi synergy_sort_key), la sinergia
     da correlazione misurata (SOLO variance_mode) ed eventualmente per il
@@ -263,11 +286,13 @@ def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_count
     aggiornamento, o dato di calendario mancante) e non c'e' ne' vincolo
     anti-stack ne' variance_mode ne' sinergia positiva da applicare, non
     cambia nulla -- comportamento identico a prima."""
-    if not apply_stack_guard and not variance_mode and not (apply_positive_synergy and (gk_team_slug or gk_opponent_slug)):
+    if (not apply_stack_guard and not variance_mode
+            and not (apply_positive_synergy and (gk_team_slug or gk_opponent_slug))
+            and not used_matches):
         return rows
     return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug,
                                                            team_counts, apply_stack_guard, variance_mode,
-                                                           apply_positive_synergy),
+                                                           apply_positive_synergy, used_matches),
                   reverse=True)
 
 
@@ -610,7 +635,7 @@ def _consume_pick(card_pool, slug):
 
 
 def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False, variance_mode=False,
-                      apply_positive_synergy=True, strict_gk_anti_synergy=False):
+                      apply_positive_synergy=True, strict_gk_anti_synergy=False, used_matches=None):
     """Costruisce UNA formazione secondo 'shape' (uno dei FORMATION_SHAPES),
     tenendo conto delle copie gia' esaurite (card_pool) e del vincolo
     max_classic della shape (None = nessun vincolo). Se l10_cap e' impostato
@@ -734,14 +759,17 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                 [row for r in shape['extra_roles'] for row in role_data[r]], used_this_lineup, card_pool)
 
         if role == 'GK':
-            row, ctype = pick(role_data['GK'], l10_cap is not None, reserve)
+            gk_candidates = role_data['GK']
+            if used_matches:
+                gk_candidates = synergy_adjusted_rows(role, gk_candidates, None, None, used_matches=used_matches)
+            row, ctype = pick(gk_candidates, l10_cap is not None, reserve)
         else:
             pool_rows = role_data[role]
             if strict_gk_anti_synergy and role in ('MID', 'FWD') and gk_opponent_slug:
                 pool_rows = [r for r in pool_rows if r.get('team_slug') != gk_opponent_slug]
             candidates = synergy_adjusted_rows(role, pool_rows, gk_team_slug, gk_opponent_slug,
                                                 team_counts, apply_stack_guard, variance_mode,
-                                                apply_positive_synergy)
+                                                apply_positive_synergy, used_matches)
             row, ctype = pick(candidates, l10_cap is not None, reserve)
 
         if row is None:
@@ -777,7 +805,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
             combined.append((role, row))
     combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
                                                     team_counts, apply_stack_guard, variance_mode,
-                                                    apply_positive_synergy), reverse=True)
+                                                    apply_positive_synergy, used_matches), reverse=True)
 
     extra_candidates = [(role, row) for role, row in combined if row['slug'] not in used_this_lineup]
     if l10_cap is not None:

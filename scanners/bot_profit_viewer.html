@@ -501,6 +501,23 @@ document.addEventListener('paste', (e) => {
   if (text && text.includes(',') && text.includes('\n')) loadCSVText(text);
 });
 
+// FIX 29/07 quinquies (richiesta esplicita utente): il link Telegram deve aprire
+// direttamente il viewer gia' organizzato, non il CSV grezzo da scaricare -- se
+// l'URL contiene ?csv=<link>, lo scarica e lo carica automaticamente, stessa
+// identica pipeline (loadCSVText) usata per drag&drop/file picker/incolla.
+(function autoLoadFromQueryParam() {
+  const csvUrl = new URLSearchParams(window.location.search).get('csv');
+  if (!csvUrl) return;
+  const zoneText = loadZone.querySelector('p');
+  if (zoneText) zoneText.textContent = 'Caricamento automatico in corso...';
+  fetch(csvUrl)
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
+    .then(text => loadCSVText(text))
+    .catch(err => {
+      if (zoneText) zoneText.textContent = `Errore nel caricamento automatico (${err.message}) -- trascina un file qui sotto.`;
+    });
+})();
+
 function applyFilters(rows) {
   const search = $('fSearch').value.trim().toLowerCase();
   const tipo = $('fTipo').value;

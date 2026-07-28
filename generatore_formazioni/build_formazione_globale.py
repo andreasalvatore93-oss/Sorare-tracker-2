@@ -39,6 +39,7 @@ Output: SOLO HTML (richiesta esplicita utente), in generatore_formazioni/output/
 import os
 import re
 import sys
+import copy
 import glob
 import html
 import datetime
@@ -407,7 +408,7 @@ def _raw_view_for(role_data, pool_league, role):
 
 def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool, l10_cap,
                                   apply_stack_guard, variance_mode, apply_positive_synergy=True,
-                                  strict_gk_anti_synergy=False):
+                                  strict_gk_anti_synergy=False, used_matches=None):
     """Se il tipo ha un cap L10 obbligatorio (Arena dedicate/All Stars) usa
     il pool GREZZO via _raw_view_for; altrimenti (In Season, All Stars, Arena
     All Stars uncapped) passa da 'pools' (_view_for) -- dal 28/07 entrambi i
@@ -419,14 +420,15 @@ def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool
         return bff.build_one_lineup(shape, role_data_view, card_pool, l10_cap=l10_cap,
                                      apply_stack_guard=apply_stack_guard, variance_mode=variance_mode,
                                      apply_positive_synergy=apply_positive_synergy,
-                                     strict_gk_anti_synergy=strict_gk_anti_synergy)
+                                     strict_gk_anti_synergy=strict_gk_anti_synergy, used_matches=used_matches)
 
     while True:
         role_data_view = {role: _view_for(pools, pool_league, role) for role in ROLES}
         formazione, error, l10_ok, stack_perso = bff.build_one_lineup(
             shape, role_data_view, card_pool, l10_cap=l10_cap,
             apply_stack_guard=apply_stack_guard, variance_mode=variance_mode,
-            apply_positive_synergy=apply_positive_synergy, strict_gk_anti_synergy=strict_gk_anti_synergy)
+            apply_positive_synergy=apply_positive_synergy, strict_gk_anti_synergy=strict_gk_anti_synergy,
+            used_matches=used_matches)
         if not error:
             return formazione, None, l10_ok, stack_perso
 
@@ -466,35 +468,69 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
     # diventa DURO. Con 1 sola In Season di quella lega, comportamento
     # INVARIATO. Le Arene (dedicate o All Stars) non sono toccate.
     in_season_multi = tipo in ('MLS_IN_SEASON', 'KLEAGUE_IN_SEASON') and count >= 2
-    # Varianza capitano (27/07, richiesta esplicita utente, stesso fix
-    # identico nei due tool singoli): scope per tipo (uno degli 8 qui).
-    captained_slugs = set()
+    # Cap 370 forzato sulla PRIMA All Stars da 7 (28/07, richiesta esplicita
+    # utente): la prima delle N All Stars generate, in teoria la piu' forte,
+    # prova a rispettare il cap 370 (oggi solo un bonus segnalato via
+    # check_cap260, mai un vincolo di generazione). Se forzarlo comprometterebbe
+    # la generazione di una qualunque delle restanti All Stars richieste (pool
+    # troppo eroso dal vincolo sulla prima), si rinuncia e si rigenera l'intera
+    # serie senza forzare -- vedi retry sotto, mai un compromesso silenzioso.
+    force_cap370_first = tipo == 'ALLSTARS' and count >= 1
 
-    risultati = []
-    for idx in range(1, count + 1):
-        strict_gk_anti_synergy = in_season_multi
-        apply_positive_synergy = not in_season_multi or idx == 1
-        formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
-            shape, pool_league, role_data, pools, card_pool, cap, stack_guard, variance_mode,
-            apply_positive_synergy, strict_gk_anti_synergy)
-        if error:
-            msg = f"Formazione {label} #{idx}: NON GENERATA — {error}"
-            print(msg)
-            risultati.append({'error': msg})
-            break
-        # avoid_captain_slugs va catturato COSI' com'e' ORA (solo i capitani
-        # delle formazioni precedenti dello stesso tipo) -- render_lineup_html
-        # lo user' in fase 2 per decidere lo stesso identico capitano scelto qui.
-        avoid_snapshot = set(captained_slugs)
-        _cap_slot, cap_row, _cap_type = bff.pick_captain(formazione, captained_slugs)
-        captained_slugs.add(cap_row['slug'])
-        risultati.append({
-            'tipo': tipo, 'label': label, 'idx': idx, 'formazione': formazione,
-            'l10_cap': cap, 'l10_ok': l10_ok, 'stack_perso': stack_perso,
-            'check_cap260': check_cap260, 'stack_guard': stack_guard,
-            'avoid_captain_slugs': avoid_snapshot,
-        })
-        print(f"Formazione {label} #{idx}: generata ({sum(r['atteso'] for _, r, _ in formazione)} pt)")
+    def _run(force_first):
+        # Varianza capitano (27/07, richiesta esplicita utente, stesso fix
+        # identico nei due tool singoli): scope per tipo (uno degli 8 qui).
+        captained_slugs = set()
+        # Decorrelazione tra le N formazioni In Season (28/07, sez. 29.D/30 del
+        # riassunto -- vedi MATCH_REUSE_PENALTY in build_formazione_finale.py):
+        # accumula le partite reali (coppie squadra-avversario) gia' usate dalle
+        # formazioni precedenti di QUESTA serie, per rendere i tentativi
+        # successivi il piu' possibile indipendenti. Solo per In Season multiple,
+        # stesso gate di in_season_multi -- Arena/All Stars non toccate.
+        used_matches = set() if in_season_multi else None
+
+        risultati = []
+        for idx in range(1, count + 1):
+            strict_gk_anti_synergy = in_season_multi
+            apply_positive_synergy = not in_season_multi or idx == 1
+            idx_cap = 370.0 if (force_first and idx == 1) else cap
+            formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
+                shape, pool_league, role_data, pools, card_pool, idx_cap, stack_guard, variance_mode,
+                apply_positive_synergy, strict_gk_anti_synergy, used_matches)
+            if error:
+                msg = f"Formazione {label} #{idx}: NON GENERATA — {error}"
+                print(msg)
+                risultati.append({'error': msg})
+                break
+            if used_matches is not None:
+                for _, row, _ in formazione:
+                    team, opponent = row.get('team_slug'), row.get('opponent_team_slug')
+                    if team and opponent:
+                        used_matches.add(frozenset((team, opponent)))
+            # avoid_captain_slugs va catturato COSI' com'e' ORA (solo i capitani
+            # delle formazioni precedenti dello stesso tipo) -- render_lineup_html
+            # lo user' in fase 2 per decidere lo stesso identico capitano scelto qui.
+            avoid_snapshot = set(captained_slugs)
+            _cap_slot, cap_row, _cap_type = bff.pick_captain(formazione, captained_slugs)
+            captained_slugs.add(cap_row['slug'])
+            risultati.append({
+                'tipo': tipo, 'label': label, 'idx': idx, 'formazione': formazione,
+                'l10_cap': idx_cap, 'l10_ok': l10_ok, 'stack_perso': stack_perso,
+                'check_cap260': check_cap260, 'stack_guard': stack_guard,
+                'avoid_captain_slugs': avoid_snapshot,
+            })
+            print(f"Formazione {label} #{idx}: generata ({sum(r['atteso'] for _, r, _ in formazione)} pt)")
+        return risultati
+
+    if not force_cap370_first:
+        return _run(False)
+
+    used_snapshot = copy.deepcopy(card_pool._used)
+    risultati = _run(True)
+    if any('error' in r for r in risultati):
+        print(f"Formazione {label}: cap 370 forzato sulla #1 comprometteva la serie, rigenero senza forzarlo.")
+        card_pool._used = used_snapshot
+        risultati = _run(False)
     return risultati
 
 

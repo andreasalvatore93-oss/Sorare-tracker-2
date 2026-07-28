@@ -38,16 +38,19 @@ Nessuna decisione di acquisto/offerta, nessun punteggio composito calcolato
 ancora (i pesi relativi vanno concordati prima di tradurli in un unico score).
 
 Output (FIX 27/07, richiesta esplicita utente: un solo output per run, niente
-ambiguita' su quale aprire): un solo CSV in bot_profit_output/ (cartella in
-root del repo, non sotto scanners/), CLASSIFICA PERSISTENTE che si aggiorna
-nel tempo (ricaricata ad ogni avvio, non riparte mai vuota) -- in_season e
-classic mescolati nella stessa riga, distinti dalla colonna tipo_carta, tutte
-le leghe insieme:
-  - profit_tracking_<timestamp_utc>.csv -> top 50 carte per potenziale_score
+ambiguita' su quale aprire; FIX 29/07 quater, estensione K-League: classifiche
+separate per lega invece di un unico file mescolato) in bot_profit_output/
+(cartella in root del repo, non sotto scanners/), CLASSIFICA PERSISTENTE che
+si aggiorna nel tempo (ricaricata ad ogni avvio, non riparte mai vuota) --
+in_season e classic mescolati nella stessa riga (distinti dalla colonna
+tipo_carta), ma MLS e K-League in due file separati:
+  - profit_tracking_mlspa_<timestamp_utc>.csv -> top 50 carte MLS per potenziale_score
+  - profit_tracking_k-league-1_<timestamp_utc>.csv -> top 50 carte K-League per potenziale_score
 Il nome include data/ora UTC (formato YYYYMMDD_HHMM); ad ogni riscrittura il
-file con timestamp precedente viene cancellato, quindi ne resta sempre e solo
-uno (il piu' recente). Riscritto ad ogni commit periodico (default 5 minuti)
-con SOLO le prime 50 carte per potenziale_score decrescente.
+file con timestamp precedente (PER QUELLA LEGA) viene cancellato, quindi ne
+resta sempre e solo uno per lega (il piu' recente). Riscritto ad ogni commit
+periodico (default 5 minuti) con SOLO le prime 50 carte per potenziale_score
+decrescente.
 Il bot si ferma automaticamente anche quando raggiunge MAX_TRACKED_CARDS
 (default 500) di carte NUOVE, oltre che a fine LISTEN_SECONDS.
 """
@@ -101,6 +104,16 @@ WS_URL = "wss://ws.sorare.com/cable"
 # Supremo -- J League ESCLUSA da questo filtro (logica normale, mercato unico).
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1'}
 
+# FIX 29/07 quater (richiesta esplicita utente: estendere a K-League, INSIEME a
+# MLS in una sola run, con classifiche/CSV separati -- progettato nella
+# sessione pomeridiana del 28/07, vedi docs/BOT_PROFIT_RIASSUNTO_2026-07-28.md
+# sezione H per il piano originale). Prima TEAM_WHITELIST era una lista piatta
+# con UNA SOLA lega globale (SNAPSHOT_LEAGUE_SLUG) valida per tutte le squadre
+# -- ora ogni squadra porta la propria lega, cosi' MLS e K-League convivono
+# nella stessa run senza mescolarsi (stessi identici vincoli per entrambe:
+# soglia 2 EUR, MIN_TRANSACTIONS_FOR_RANKING, TOP_N_OUTPUT -- nessuna
+# differenziazione richiesta dall'utente).
+
 CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
 
 # =====================================================================================
@@ -126,11 +139,21 @@ _MLS_TEAM_SLUGS_DEFAULT = (
     'colorado-rapids-denver-colorado,portland-timbers-portland-oregon,san-diego-san-diego,'
     'austin-austin-texas,sporting-kc-kansas-city-kansas'
 )
-TEAM_WHITELIST = [s.strip() for s in os.environ.get('TEAM_WHITELIST', _MLS_TEAM_SLUGS_DEFAULT).split(',') if s.strip()]
-# Lega di appartenenza delle squadre in TEAM_WHITELIST -- oggi supportiamo solo un
-# giro per volta su un solo campionato (mlspa o k-league-1), coerente con la
-# richiesta "oggi ci concentriamo solo su MLS e Korea".
-SNAPSHOT_LEAGUE_SLUG = os.environ.get('SNAPSHOT_LEAGUE_SLUG', 'mlspa')
+_KLEAGUE_TEAM_SLUGS_DEFAULT = (
+    'anyang-anyang,bucheon-1995-bucheon,daejeon-citizen-daejeon,gangwon-gangneung,'
+    'gwangju-gwangju,incheon-united-incheon,jeju-united-seogwipo-jeju-do,'
+    'jeonbuk-motors-jeonju,pohang-steelers-pohang,sangju-sangmu-sangju,seoul-seoul,'
+    'ulsan-ulsan'
+)
+MLS_TEAM_WHITELIST = [s.strip() for s in os.environ.get('TEAM_WHITELIST', _MLS_TEAM_SLUGS_DEFAULT).split(',') if s.strip()]
+KLEAGUE_TEAM_WHITELIST = [s.strip() for s in os.environ.get('KLEAGUE_TEAM_WHITELIST', _KLEAGUE_TEAM_SLUGS_DEFAULT).split(',') if s.strip()]
+# Mappa squadra -> lega (sostituisce la vecchia costante globale SNAPSHOT_LEAGUE_SLUG,
+# che assumeva UNA sola lega per l'intera run): MLS e K-League vengono processate
+# insieme in una sola run, ciascuna squadra sa gia' a quale lega appartiene.
+TEAM_LEAGUE_MAP = {}
+TEAM_LEAGUE_MAP.update({slug: 'mlspa' for slug in MLS_TEAM_WHITELIST})
+TEAM_LEAGUE_MAP.update({slug: 'k-league-1' for slug in KLEAGUE_TEAM_WHITELIST})
+TEAM_WHITELIST = list(TEAM_LEAGUE_MAP.keys())
 
 # FIX 24/07 (richiesta esplicita utente, promemoria applicato ora): prima nessun
 # default (obbligatorio ad ogni run), ora default 100 minuti -- resta comunque
@@ -1394,44 +1417,55 @@ def load_previous_tracked():
     27/07: il nome ora cambia ad ogni scrittura, vedi _find_latest_output_csv);
     le carte incontrate in questa run aggiornano (upsert) le righe esistenti o
     ne aggiungono di nuove, senza perdere quello che le run precedenti avevano
-    gia' trovato."""
-    latest_path = _find_latest_output_csv()
-    if latest_path is None:
-        log("[classifica persistente] nessun CSV precedente trovato, parto da zero")
-        return
+    gia' trovato.
+
+    FIX 29/07 quater (estensione K-League): ora esistono fino a 2 file (uno per
+    lega, vedi OUTPUT_LEAGUE_SLUGS) invece di un unico combinato -- carica
+    entrambi se presenti. Mantiene anche il fallback sul vecchio nome combinato
+    (profit_tracking_<timestamp>.csv, senza suffisso lega) per non perdere una
+    classifica scritta prima di questo cambio."""
+    paths = [p for p in (_find_latest_output_csv(_output_csv_prefix_for_league(l)) for l in OUTPUT_LEAGUE_SLUGS) if p]
+    if not paths:
+        legacy_path = _find_latest_output_csv()
+        if legacy_path is None:
+            log("[classifica persistente] nessun CSV precedente trovato, parto da zero")
+            return
+        paths = [legacy_path]
+
     caricate = 0
-    with open(latest_path, 'r', newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        with _tracked_lock:
-            for row in reader:
-                key = _key_from_csv_row(row)
-                _tracked[key] = {
-                    'player_slug': row.get('player_slug'),
-                    'player_name': row.get('player_name'),
-                    'link_sorare': _sorare_market_link(row.get('player_slug')) if row.get('player_slug') else None,
-                    'league_slug': row.get('league_slug') or None,
-                    'tipo_carta': row.get('tipo_carta'),
-                    'potenziale_score': _parse_float_or_none(row.get('potenziale_score')),
-                    'squadra': row.get('squadra') or None,
-                    'prossimo_avversario': row.get('prossimo_avversario') or None,
-                    'ultima_partita_score': _parse_float_or_none(row.get('ultima_partita_score')),
-                    'l5': _parse_float_or_none(row.get('l5')),
-                    'l10': _parse_float_or_none(row.get('l10')),
-                    'l40': _parse_float_or_none(row.get('l40')),
-                    'min_attuale_eur': _parse_float_or_none(row.get('min_attuale_eur')),
-                    'media_transazioni_7gg_trimmed_eur': _parse_float_or_none(
-                        row.get('media_transazioni_7gg_trimmed_eur')),
-                    'n_transazioni_usate': row.get('n_transazioni_usate'),
-                    'sconto_percent': _parse_float_or_none(row.get('sconto_percent')),
-                    'trend_recente': row.get('trend_recente') or None,
-                    'media_transazioni_recente_eur': _parse_float_or_none(row.get('media_transazioni_recente_eur')),
-                    'media_transazioni_storica_eur': _parse_float_or_none(row.get('media_transazioni_storica_eur')),
-                    'prossima_partita_data': row.get('prossima_partita_data') or None,
-                    'ore_alla_partita': _parse_float_or_none(row.get('ore_alla_partita')),
-                    'ultimo_tipo_evento': row.get('ultimo_tipo_evento') or None,
-                }
-                caricate += 1
-    log(f"[classifica persistente] caricate {caricate} righe dal CSV precedente come stato di partenza")
+    for latest_path in paths:
+        with open(latest_path, 'r', newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            with _tracked_lock:
+                for row in reader:
+                    key = _key_from_csv_row(row)
+                    _tracked[key] = {
+                        'player_slug': row.get('player_slug'),
+                        'player_name': row.get('player_name'),
+                        'link_sorare': _sorare_market_link(row.get('player_slug')) if row.get('player_slug') else None,
+                        'league_slug': row.get('league_slug') or None,
+                        'tipo_carta': row.get('tipo_carta'),
+                        'potenziale_score': _parse_float_or_none(row.get('potenziale_score')),
+                        'squadra': row.get('squadra') or None,
+                        'prossimo_avversario': row.get('prossimo_avversario') or None,
+                        'ultima_partita_score': _parse_float_or_none(row.get('ultima_partita_score')),
+                        'l5': _parse_float_or_none(row.get('l5')),
+                        'l10': _parse_float_or_none(row.get('l10')),
+                        'l40': _parse_float_or_none(row.get('l40')),
+                        'min_attuale_eur': _parse_float_or_none(row.get('min_attuale_eur')),
+                        'media_transazioni_7gg_trimmed_eur': _parse_float_or_none(
+                            row.get('media_transazioni_7gg_trimmed_eur')),
+                        'n_transazioni_usate': row.get('n_transazioni_usate'),
+                        'sconto_percent': _parse_float_or_none(row.get('sconto_percent')),
+                        'trend_recente': row.get('trend_recente') or None,
+                        'media_transazioni_recente_eur': _parse_float_or_none(row.get('media_transazioni_recente_eur')),
+                        'media_transazioni_storica_eur': _parse_float_or_none(row.get('media_transazioni_storica_eur')),
+                        'prossima_partita_data': row.get('prossima_partita_data') or None,
+                        'ore_alla_partita': _parse_float_or_none(row.get('ore_alla_partita')),
+                        'ultimo_tipo_evento': row.get('ultimo_tipo_evento') or None,
+                    }
+                    caricate += 1
+    log(f"[classifica persistente] caricate {caricate} righe da {len(paths)} CSV precedente/i come stato di partenza")
 
 
 def _write_ranked_csv(rows_liquidi, path, label):
@@ -1468,21 +1502,40 @@ def _cleanup_and_write_ranked_csv(rows_liquidi, dir_path, prefix, timestamp, lab
     return path, _write_ranked_csv(rows_liquidi, path, label)
 
 
-def _find_latest_output_csv():
-    """Trova il file profit_tracking_<timestamp>.csv piu' recente (ordinamento
+# FIX 29/07 quater (estensione K-League, richiesta esplicita utente: classifiche
+# separate MLS/Korea invece di un unico CSV mescolato -- vedi TEAM_LEAGUE_MAP
+# sopra). Un prefisso di file per lega, es. profit_tracking_mlspa_<ts>.csv e
+# profit_tracking_k-league-1_<ts>.csv -- stessi vincoli (soglia prezzo,
+# MIN_TRANSACTIONS_FOR_RANKING, TOP_N_OUTPUT) applicati identici a entrambe.
+OUTPUT_LEAGUE_SLUGS = ('mlspa', 'k-league-1')
+
+
+def _output_csv_prefix_for_league(league_slug):
+    return f"{OUTPUT_CSV_PREFIX}_{league_slug}"
+
+
+def _find_latest_output_csv(prefix=None):
+    """Trova il file <prefix>_<timestamp>.csv piu' recente (ordinamento
     lessicografico = cronologico col formato YYYYMMDD_HHMM) -- serve a
-    load_previous_tracked() dato che il nome cambia ad ogni run."""
-    candidates = sorted(glob.glob(f"{OUTPUT_CSV_PREFIX}_*.csv"))
+    load_previous_tracked() dato che il nome cambia ad ogni run. Senza prefix,
+    usa il vecchio nome combinato profit_tracking_<timestamp>.csv (compatibilita'
+    con classifiche scritte prima dello split per lega)."""
+    base = prefix or OUTPUT_CSV_PREFIX
+    candidates = sorted(glob.glob(f"{base}_*.csv"))
     return candidates[-1] if candidates else None
 
 
 def write_csv_snapshot():
-    """Scrive (richiesta esplicita utente 27/07: un solo output per run, niente
-    file per campionato ne' file di consigli separati) UN solo CSV, top 50 per
-    potenziale_score, in_season+classic mescolati, tutte le leghe insieme --
-    profit_tracking_<timestamp_utc>.csv. Ad ogni scrittura viene cancellato il
-    file con timestamp precedente (vedi _cleanup_and_write_ranked_csv) -- ne
-    resta sempre e solo uno, il piu' recente."""
+    """FIX 29/07 quater (estensione K-League, richiesta esplicita utente):
+    classifiche separate per lega invece di un unico CSV mescolato -- una
+    riga per riga viene assegnata al CSV della propria league_slug
+    (profit_tracking_mlspa_<ts>.csv / profit_tracking_k-league-1_<ts>.csv),
+    ciascuno top TOP_N_OUTPUT per potenziale_score, in_season+classic
+    mescolati come prima (colonna tipo_carta). Ad ogni scrittura viene
+    cancellato il file con timestamp precedente PER QUELLA LEGA (vedi
+    _cleanup_and_write_ranked_csv) -- ne resta sempre e solo uno per lega, il
+    piu' recente. Righe di leghe non in OUTPUT_LEAGUE_SLUGS (non dovrebbe mai
+    capitare in modalita' snapshot) non vengono scritte in nessun file."""
     with _tracked_lock:
         rows = list(_tracked.values())
     if not os.path.exists(OUTPUT_DIR):
@@ -1510,12 +1563,16 @@ def write_csv_snapshot():
 
     timestamp = _run_timestamp_utc()
 
-    combinato_path, n_combinato = _cleanup_and_write_ranked_csv(
-        rows_liquidi, OUTPUT_DIR, 'profit_tracking', timestamp, 'combinato')
+    per_lega_riepilogo = []
+    for league_slug in OUTPUT_LEAGUE_SLUGS:
+        rows_lega = [r for r in rows_liquidi if r.get('league_slug') == league_slug]
+        path, n_scritte = _cleanup_and_write_ranked_csv(
+            rows_lega, OUTPUT_DIR, f'profit_tracking_{league_slug}', timestamp, league_slug)
+        per_lega_riepilogo.append(f"{league_slug}: {n_scritte} nel file {path}")
 
     log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
         f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni "
-        f"({n_combinato} nel file {combinato_path})")
+        f"({'; '.join(per_lega_riepilogo)})")
 
 
 # =====================================================================================
@@ -1997,12 +2054,14 @@ RATE_LIMIT_RETRY_PAUSE_SECONDS = float(os.environ.get('RATE_LIMIT_RETRY_PAUSE_SE
 
 
 def run_snapshot_sweep(eth_rate):
-    log(f"Avvio SNAPSHOT su {len(TEAM_WHITELIST)} squadra/e (league={SNAPSHOT_LEAGUE_SLUG}): {TEAM_WHITELIST}")
+    log(f"Avvio SNAPSHOT su {len(TEAM_WHITELIST)} squadra/e "
+        f"({len(MLS_TEAM_WHITELIST)} MLS + {len(KLEAGUE_TEAM_WHITELIST)} K-League): {TEAM_WHITELIST}")
 
-    roster = {}  # slug -> (displayName, team_slug attesa, snapshot voto/partita), deduplicato tra squadre
+    roster = {}  # slug -> (displayName, team_slug attesa, snapshot voto/partita, league_slug), deduplicato tra squadre
     for team_slug in TEAM_WHITELIST:
+        league_slug = TEAM_LEAGUE_MAP[team_slug]
         for player_slug, player_name, snapshot in fetch_team_roster(team_slug):
-            roster.setdefault(player_slug, (player_name, team_slug, snapshot))
+            roster.setdefault(player_slug, (player_name, team_slug, snapshot, league_slug))
 
     log(f"Roster totale (deduplicato): {len(roster)} giocatori.")
 
@@ -2040,7 +2099,7 @@ def run_snapshot_sweep(eth_rate):
     rate_limited_pool = []
     rate_limited_lock = threading.Lock()
 
-    def _worker(player_slug, player_name, expected_team_slug, snapshot, is_retry=False):
+    def _worker(player_slug, player_name, expected_team_slug, snapshot, league_slug, is_retry=False):
         if not is_retry and is_player_blacklisted(player_slug):
             _registra_esito(player_name, player_slug, 'blacklist')
             return
@@ -2051,10 +2110,10 @@ def run_snapshot_sweep(eth_rate):
                 _registra_esito(player_name, player_slug, 'rate_limited_persistente')
             else:
                 with rate_limited_lock:
-                    rate_limited_pool.append((player_slug, player_name, expected_team_slug, snapshot))
+                    rate_limited_pool.append((player_slug, player_name, expected_team_slug, snapshot, league_slug))
             return
         prezzo_ok = any(
-            (m := _current_minimum_from_nodes(live_offer_nodes, tipo, SNAPSHOT_LEAGUE_SLUG, eth_rate)) is not None
+            (m := _current_minimum_from_nodes(live_offer_nodes, tipo, league_slug, eth_rate)) is not None
             and m >= MIN_PRICE_EUR_THRESHOLD
             for tipo in tipi_da_provare
         )
@@ -2062,7 +2121,7 @@ def run_snapshot_sweep(eth_rate):
             _registra_esito(player_name, player_slug, 'prezzo_basso_o_senza_annunci')
             return
         esito = _process_player_snapshot(
-            player_slug, player_name, expected_team_slug, SNAPSHOT_LEAGUE_SLUG, eth_rate,
+            player_slug, player_name, expected_team_slug, league_slug, eth_rate,
             live_offer_nodes, snapshot, next_game_date_str, prossimo_avversario,
             ultima_partita_score, past_game_dates, tx_nodes, tx_cutoff,
         )
@@ -2071,8 +2130,8 @@ def run_snapshot_sweep(eth_rate):
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=SNAPSHOT_WORKER_THREADS, thread_name_prefix='snap') as executor:
         futures = [
-            executor.submit(_worker, player_slug, player_name, expected_team_slug, snapshot)
-            for player_slug, (player_name, expected_team_slug, snapshot) in roster.items()
+            executor.submit(_worker, player_slug, player_name, expected_team_slug, snapshot, league_slug)
+            for player_slug, (player_name, expected_team_slug, snapshot, league_slug) in roster.items()
         ]
         for future in concurrent.futures.as_completed(futures):
             future.result()  # rilancia eventuali eccezioni non gestite dentro _worker
@@ -2088,8 +2147,8 @@ def run_snapshot_sweep(eth_rate):
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=SNAPSHOT_WORKER_THREADS, thread_name_prefix='snap-retry') as executor:
             futures = [
-                executor.submit(_worker, player_slug, player_name, expected_team_slug, snapshot, True)
-                for player_slug, player_name, expected_team_slug, snapshot in rate_limited_pool
+                executor.submit(_worker, player_slug, player_name, expected_team_slug, snapshot, league_slug, True)
+                for player_slug, player_name, expected_team_slug, snapshot, league_slug in rate_limited_pool
             ]
             for future in concurrent.futures.as_completed(futures):
                 future.result()

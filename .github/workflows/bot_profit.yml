@@ -43,13 +43,13 @@ on:
         required: false
         default: "si"
       team_whitelist:
-        description: "Modalita' snapshot: slug squadre separati da virgola (es. vancouver-whitecaps-vancouver-british-columbia). Vuoto = errore se snapshot_mode=si."
+        description: "Modalita' snapshot: slug squadre MLS separati da virgola (lega mlspa). Vuoto = errore se snapshot_mode=si."
         required: false
         default: "nashville-sc,inter-miami,chicago-fire-bridgeview-illinois,new-england-foxborough-massachusetts,cincinnati-cincinnati-ohio,new-york-city-new-york-new-york,charlotte-fc-charlotte-north-carolina,new-york-rb-secaucus-new-jersey,dc-united-washington-district-of-columbia,orlando-city-lake-mary-florida,columbus-crew-columbus-ohio,toronto-toronto,montreal-impact-montreal-quebec,atlanta-united-atlanta-georgia,philadelphia-union-chester-pennsylvania,vancouver-whitecaps-vancouver-british-columbia,sj-earthquakes-santa-clara-california,los-angeles-fc-los-angeles-california,real-salt-lake-salt-lake-city-utah,dallas-frisco-texas,seattle-sounders-renton-washington,houston-dynamo-houston-texas,st-louis-city-st-louis-missouri,minnesota-united-minneapolis-saint-paul-minnesota,la-galaxy-los-angeles-california,colorado-rapids-denver-colorado,portland-timbers-portland-oregon,san-diego-san-diego,austin-austin-texas,sporting-kc-kansas-city-kansas"
-      snapshot_league_slug:
-        description: "Modalita' snapshot: lega di appartenenza delle squadre in team_whitelist (mlspa o k-league-1)"
+      kleague_team_whitelist:
+        description: "Modalita' snapshot: slug squadre K-League separati da virgola (lega k-league-1), processate INSIEME a team_whitelist nella stessa run con classifica separata"
         required: false
-        default: "mlspa"
+        default: "anyang-anyang,bucheon-1995-bucheon,daejeon-citizen-daejeon,gangwon-gangneung,gwangju-gwangju,incheon-united-incheon,jeju-united-seogwipo-jeju-do,jeonbuk-motors-jeonju,pohang-steelers-pohang,sangju-sangmu-sangju,seoul-seoul,ulsan-ulsan"
       snapshot_worker_threads:
         description: "Modalita' snapshot: quanti giocatori processare in parallelo (il rate limit verso Sorare resta comunque governato da _graphql_throttle, condiviso tra i worker)"
         required: false
@@ -89,9 +89,18 @@ jobs:
           MIN_PRICE_EUR_THRESHOLD: ${{ github.event.inputs.min_price_eur_threshold || '1.0' }}
           SNAPSHOT_MODE: ${{ github.event.inputs.snapshot_mode || 'si' }}
           TEAM_WHITELIST: ${{ github.event.inputs.team_whitelist || 'nashville-sc,inter-miami,chicago-fire-bridgeview-illinois,new-england-foxborough-massachusetts,cincinnati-cincinnati-ohio,new-york-city-new-york-new-york,charlotte-fc-charlotte-north-carolina,new-york-rb-secaucus-new-jersey,dc-united-washington-district-of-columbia,orlando-city-lake-mary-florida,columbus-crew-columbus-ohio,toronto-toronto,montreal-impact-montreal-quebec,atlanta-united-atlanta-georgia,philadelphia-union-chester-pennsylvania,vancouver-whitecaps-vancouver-british-columbia,sj-earthquakes-santa-clara-california,los-angeles-fc-los-angeles-california,real-salt-lake-salt-lake-city-utah,dallas-frisco-texas,seattle-sounders-renton-washington,houston-dynamo-houston-texas,st-louis-city-st-louis-missouri,minnesota-united-minneapolis-saint-paul-minnesota,la-galaxy-los-angeles-california,colorado-rapids-denver-colorado,portland-timbers-portland-oregon,san-diego-san-diego,austin-austin-texas,sporting-kc-kansas-city-kansas' }}
-          SNAPSHOT_LEAGUE_SLUG: ${{ github.event.inputs.snapshot_league_slug || 'mlspa' }}
+          KLEAGUE_TEAM_WHITELIST: ${{ github.event.inputs.kleague_team_whitelist || 'anyang-anyang,bucheon-1995-bucheon,daejeon-citizen-daejeon,gangwon-gangneung,gwangju-gwangju,incheon-united-incheon,jeju-united-seogwipo-jeju-do,jeonbuk-motors-jeonju,pohang-steelers-pohang,sangju-sangmu-sangju,seoul-seoul,ulsan-ulsan' }}
           SNAPSHOT_WORKER_THREADS: ${{ github.event.inputs.snapshot_worker_threads || '10' }}
         run: python scanners/bot_profit.py
+      - name: Notifica Telegram con link ai 2 CSV
+        if: always()
+        env:
+          # Stesso canale Telegram gia' usato da manager_bundle_scan.py/my_cards_profit.py
+          # (secrets.BUNDLE_TELEGRAM_TOKEN/_CHAT_ID -> env TELEGRAM_TOKEN/TELEGRAM_CHAT_ID).
+          TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
+          GIT_REF: ${{ github.event.inputs.git_ref || 'main' }}
+        run: python scanners/bot_profit_telegram_notify.py
       - name: Commit CSV (globale + per campionato) + blacklist dedicata (fallback, se il commit periodico non ha gia' salvato tutto)
         if: always()
         run: |
