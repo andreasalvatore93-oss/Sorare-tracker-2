@@ -3082,3 +3082,37 @@ disattivato).
 Run di verifica lanciata con `starter_odds_min=0` dopo questo commit, per controllare se con le
 leghe Polonia/Cile aggiunte e il secondo filtro rimosso il pool eleggibile combacia finalmente al
 100% con la collezione reale dell'utente su tutti i ruoli, non solo GK.
+
+## 30.I — TEST IN CORSO (28/07, sera): discovery spezzata in 3 job paralleli + merge
+
+**ATTENZIONE se questa sezione è ancora qui SENZA un aggiornamento successivo che dice "test
+concluso" o "ripristinato": il test è stato interrotto a metà sessione. Prima di continuare
+qualunque altro lavoro sul generatore formazioni, controllare lo stato reale del workflow
+(`.github/workflows/formazione_giornata.yml`) e di `discovery_fixture.py` — se la discovery è
+ancora spezzata in 3 job e non è stata confermata funzionante da un run completo verificato
+dall'utente, va ripristinato il meccanismo precedente a un singolo job `discovery` (vedi sotto
+"Come ripristinare se fallisce").**
+
+**Perché**: la discovery singola (dopo i fix di 30.B) impiega ~3m30s-6m a seconda di quanti
+giocatori risultano eleggibili nella giornata (in una run con pool allargato per il controllo di
+30.F ci ha messo 6 minuti). L'utente vuole verificare se spezzare la discovery in 3 job paralleli
+(per sottoinsieme di ruoli) più un job di merge, eseguiti da GitHub Actions su runner diversi,
+riduce il tempo totale — È UN TEST, esplicitamente a rischio noto: il rate limit di Sorare osservato
+finora (~60-70 richieste/minuto) potrebbe essere legato all'account/cookie condiviso da tutti i job,
+non alla singola connessione — in quel caso 3 job paralleli non aumentano il throughput reale,
+rischiano solo più 429 complessivi. Va giudicato SOLO sul risultato di un run reale.
+
+**Come funziona il test**: `discovery_fixture.py` accetta una nuova env `DISCOVERY_ROLES`
+(sottoinsieme di `gk,def,mid,fwd`, default tutti e 4) per processare solo quei ruoli. Tre job
+paralleli nel workflow (`discovery_a`: gk+def, `discovery_b`: mid, `discovery_c`: fwd — bilanciati
+approssimativamente sul numero di candidati visti finora, non un criterio esatto), ciascuno scrive
+SOLO le sue cartelle di output per ruolo (nessuna sovrapposizione di file tra job, quindi nessun
+vero conflitto di merge sui contenuti). Un quarto job `discovery_merge` (needs: tutti e 3) combina i
+tre `MATRICE_JSON` parziali in uno solo, che alimenta il job `predict` (ora `needs: discovery_merge`
+invece di `needs: discovery`); il job `formazione` ora ha `needs: [discovery_merge, predict]`.
+
+**Come ripristinare se fallisce (o se questa sessione si interrompe senza conferma)**:
+```
+git log --oneline -- .github/workflows/formazione_giornata.yml discovery_fixture.py
+```
+poi `git revert` (o `git checkout <commit-prima-del-test> -- .github/workflows/formazione_giornata.yml discovery_fixture.py`) del/dei commit con messaggio che menziona "discovery in 3 job paralleli" / "DISCOVERY_ROLES" — riporta al singolo job `discovery` che gira tutti e 4 i ruoli, già verificato funzionante e via via ottimizzato in 30.B. Non serve toccare altro (predict/formazione tornano automaticamente a leggere `needs: discovery` una volta ripristinato il workflow).
