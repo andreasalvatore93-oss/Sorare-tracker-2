@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:43:32.134460Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) edimilson-fernandes: 54 pt attesi (39-70)
+   SQUADRA: young-boys-bern | AVVERSARIO: thun-thun
+======================================================================
+
+######################################################################
+# GIOCATORE: edimilson-fernandes
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: edimilson-fernandes (squadra: young-boys-bern)
+Generato: 2026-07-28T19:43:32.133892Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: super-league-ch (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-01 | YBB vs FCZ | super-league-ch | score=53.6 | peso=0.445
+  2026-02-07 | GCZ vs YBB | super-league-ch | score=64.5 | peso=0.472
+  2026-02-11 | STG vs YBB | super-league-ch | score=75.2 | peso=0.500
+  2026-02-22 | SIO vs YBB | super-league-ch | score=36.8 | peso=0.530
+  2026-03-01 | YBB vs FCZ | super-league-ch | score=65.6 | peso=0.561
+  2026-03-04 | LUZ vs YBB | super-league-ch | score=42.5 | peso=0.595
+  2026-03-08 | YBB vs FCT | super-league-ch | score=41.8 | peso=0.630
+  2026-03-22 | YBB vs LUG | super-league-ch | score=54.7 | peso=0.667
+  2026-04-04 | BAS vs YBB | super-league-ch | score=73.6 | peso=0.707
+  2026-04-12 | YBB vs SER | super-league-ch | score=72.5 | peso=0.749
+  2026-04-26 | YBB vs STG | super-league-ch | score=56.7 | peso=0.794
+  2026-05-03 | LUG vs YBB | super-league-ch | score=42.7 | peso=0.841
+  2026-05-10 | YBB vs BAS | super-league-ch | score=58.4 | peso=0.891
+  2026-05-14 | FCT vs YBB | super-league-ch | score=73.9 | peso=0.944
+  2026-07-26 | YBB vs SIO | super-league-ch | score=47.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 57.45
+  di cui Punteggio decisivo (level_score) medio: 41.35 | Punteggio complessivo (granulari) medio: 16.10 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 45.98 (delta +4.63)
+  Efficacia offensiva condizionata: delta venue -0.07, delta avversario +0.02 | Passaggio condizionato: delta venue -0.76, delta avversario -0.79 | Gol subiti condizionato: delta venue -0.49, delta avversario -0.12 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.56
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.5 - 73.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.58 (differenza: +0.99)
+Media score in casa: 56.39 | Media score fuori casa: 58.46
+Fattore casa/trasferta applicato: 1.018 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.4
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.848
+Fattore falli (casa/trasferta, da dati reali): 0.987
+Fattore duelli (casa/trasferta, da dati reali): 0.983
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.990
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 0.986
+Fattore trend (media ultime 5: 55.9 vs media ultime 10: 56.5): 0.993
+P(gioca): 83.33% (fonte: tasso di presenza storico (15/18))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T18:30
+Casa: FC Thun | Trasferta: BSC Young Boys
+Competizione: super-league-ch
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.3 (range 39.4 - 70.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.48
+Punteggio REALE ottenuto in quella partita: 47.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.8    41.8     -3.0    19.1        SI
+   7        7      45.7    54.7     +9.0    18.9        SI
+   8        8      49.7    73.6    +23.9    17.4        NO
+   9        9      63.1    72.5     +9.4    18.8        SI
+  10       10      53.0    56.7     +3.7    19.1        SI
+  11       11      49.7    42.7     -7.0    17.9        SI
+  12       12      58.5    58.4     -0.1    18.3        SI
+  13       13      49.7    73.9    +24.2    17.3        NO
+  14       14      73.4    47.8    -25.6    17.9        NO
+
+MAE (errore assoluto medio): 11.76
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
