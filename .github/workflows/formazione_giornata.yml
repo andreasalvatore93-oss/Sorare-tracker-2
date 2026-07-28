@@ -1111,6 +1111,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       matrice: ${{ steps.merge.outputs.matrice }}
+      matrice_unique: ${{ steps.merge.outputs.matrice_unique }}
     env:
       MATRICE_0: ${{ needs.discovery_gk_0.outputs.matrice }}
       MATRICE_1: ${{ needs.discovery_gk_1.outputs.matrice }}
@@ -1149,6 +1150,16 @@ jobs:
           parts = [json.loads(os.environ.get(v) or '[]') for v in names]
           combined = [x for p in parts for x in p]
           print('matrice=' + json.dumps(combined, separators=(',', ':')))
+          # matrice_unique (28/07, sharding predict): un'unica coppia
+          # lega/ruolo per il job 'consiglio' a valle, senza il campo
+          # 'shard' -- che nella matrice sharded (mls/kleague) compare
+          # ripetuto N volte per la stessa coppia lega/ruolo.
+          seen = []
+          for x in combined:
+              pair = {'league': x['league'], 'role': x['role']}
+              if pair not in seen:
+                  seen.append(pair)
+          print('matrice_unique=' + json.dumps(seen, separators=(',', ':')))
           " >> "$GITHUB_OUTPUT"
 
   predict:
@@ -1164,13 +1175,14 @@ jobs:
     env:
       LEGA: ${{ matrix.combo.league }}
       RUOLO: ${{ matrix.combo.role }}
+      SHARD: ${{ matrix.combo.shard }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install requests curl_cffi
-      - name: Predict e consiglio
+      - name: Predict
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
@@ -1178,18 +1190,81 @@ jobs:
         run: |
           set -u
           case "$RUOLO" in
-            gk)  PY=test_gk.py;          CO=build_consiglio_gk.py ;;
-            def) PY=test_def.py;         CO=build_consiglio_def.py ;;
-            mid) PY=test_mid.py;         CO=build_consiglio_mid.py ;;
-            fwd) PY=test_mls_fwd_all.py; CO=build_consiglio.py ;;
+            gk)  PY=test_gk.py ;;
+            def) PY=test_def.py ;;
+            mid) PY=test_mid.py ;;
+            fwd) PY=test_mls_fwd_all.py ;;
           esac
           FILE="formazione_$LEGA/output/${LEGA}_${RUOLO}_discovery/player_slugs.json"
-          SLUGS=$(python -c "import json,sys; print(' '.join(json.load(open(sys.argv[1]))))" "$FILE")
-          echo "Giocatori da elaborare: $SLUGS"
+          # Sharding predict (28/07, leghe numerose mls/kleague, vedi
+          # discovery_fixture.py): SHARD e' 'idx:n' (es. '1:4') se questa
+          # combinazione lega/ruolo e' stata spezzata in piu' job paralleli,
+          # vuoto altrimenti (comportamento INVARIATO, un solo job con TUTTI
+          # gli slug). Split deterministico per indice (idx % n), stesso
+          # criterio di DISCOVERY_LEAGUE_SHARD.
+          SLUGS=$(python -c "
+          import json, os
+          slugs = json.load(open('$FILE'))
+          shard = os.environ.get('SHARD', '').strip()
+          if shard:
+              idx, n = (int(x) for x in shard.split(':'))
+              slugs = [s for i, s in enumerate(slugs) if i % n == idx]
+          print(' '.join(slugs))
+          ")
+          echo "Giocatori da elaborare (shard '${SHARD:-nessuno}'): $SLUGS"
           for SLUG in $SLUGS; do
             echo "--- $LEGA/$RUOLO: $SLUG ---"
             TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY" || echo "predict fallito per $SLUG"
           done
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add "formazione_$LEGA/output/" || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: $LEGA $RUOLO predict${SHARD:+ (quota $SHARD)}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+
+  # Aggregazione consiglio (28/07, sharding predict): il job 'predict' sopra
+  # ora puo' spezzare una combinazione lega/ruolo in piu' shard paralleli
+  # (mls/kleague), quindi il consiglio (che legge TUTTI i file
+  # prediction_<slug>_*.txt di quel ruolo) va costruito UNA volta sola, dopo
+  # che TUTTI gli shard sono completati -- da qui 'needs: predict' a livello
+  # di job intero (aspetta l'intera matrice, non solo la propria combo).
+  # Usa matrice_unique (una sola voce per coppia lega/ruolo, senza 'shard').
+  consiglio:
+    needs: [discovery_merge, predict]
+    if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        combo: ${{ fromJson(needs.discovery_merge.outputs.matrice_unique) }}
+    env:
+      LEGA: ${{ matrix.combo.league }}
+      RUOLO: ${{ matrix.combo.role }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Costruisci consiglio
+        run: |
+          set -u
+          case "$RUOLO" in
+            gk)  CO=build_consiglio_gk.py ;;
+            def) CO=build_consiglio_def.py ;;
+            mid) CO=build_consiglio_mid.py ;;
+            fwd) CO=build_consiglio.py ;;
+          esac
           python "formazione_$LEGA/consiglio/$CO" || echo "consiglio non generato"
       - if: always()
         run: |
@@ -1197,7 +1272,7 @@ jobs:
           git config user.email "generatore-formazioni-bot@users.noreply.github.com"
           git add "formazione_$LEGA/output/" || true
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: $LEGA $RUOLO"
+          git commit -m "Formazione giornata: $LEGA $RUOLO consiglio"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -1208,7 +1283,7 @@ jobs:
           done
 
   formazione:
-    needs: [discovery_merge, predict]
+    needs: [discovery_merge, predict, consiglio]
     # if: always() (28/07, bug reale) girava ANCHE quando la giornata non si
     # risolveva affatto (es. gameweek/fixture_slug mancanti o sbagliati):
     # tutti i job discovery fallivano, predict veniva giustamente saltato
