@@ -154,6 +154,17 @@ query FixtureCards($userSlug: String!, $page: Int!, $pageSize: Int!,
       hits {
         slug
         u23Eligible
+        xp
+        powerBreakdown {
+          seasonBasisPoints
+          collectionBasisPoints
+          xpBasisPoints
+          scarcityBasisPoints
+          specialEditionCardsBasisPoints
+          activeClubsBasisPoints
+          nationalityBasisPoints
+          positionsBasisPoints
+        }
         anyPlayer {
           slug
           displayName
@@ -291,6 +302,7 @@ def main():
     for position, role in ROLE_BY_POSITION.items():
         visti = set()
         u23_di = {}
+        power_di = {}
         page = 1
         while page <= 50:
             d = base.graphql_query(CARDS_QUERY, {
@@ -329,6 +341,28 @@ def main():
                 # sia flaggata per considerarlo eleggibile.
                 if h.get('u23Eligible'):
                     u23_di[p['slug']] = True
+                # Bonus xp/collezione/stagione (28/07, richiesta esplicita
+                # utente: il bot non li considerava affatto nello schieramento
+                # -- da qui in poi solo RACCOLTA dato, l'integrazione nello
+                # score e' un passo successivo, ancora da progettare). Vive
+                # sulla CARTA, stessa query di u23Eligible, zero costo in piu'.
+                # Season/collection/xp contano SOLO in In Season/All Stars
+                # (7 e U23), MAI nelle Arene (dove xp=0 di default per tutti,
+                # solo il capitano ha un bonus fisso) -- quella distinzione va
+                # applicata a valle, qui si salva il dato grezzo per tutti.
+                pb = h.get('powerBreakdown') or {}
+                if pb or h.get('xp') is not None:
+                    power_di[p['slug']] = {
+                        'xp': h.get('xp'),
+                        'season_bp': pb.get('seasonBasisPoints'),
+                        'collection_bp': pb.get('collectionBasisPoints'),
+                        'xp_bp': pb.get('xpBasisPoints'),
+                        'scarcity_bp': pb.get('scarcityBasisPoints'),
+                        'special_edition_bp': pb.get('specialEditionCardsBasisPoints'),
+                        'active_clubs_bp': pb.get('activeClubsBasisPoints'),
+                        'nationality_bp': pb.get('nationalityBasisPoints'),
+                        'positions_bp': pb.get('positionsBasisPoints'),
+                    }
             if page >= (s.get('nbPages') or 1):
                 break
             page += 1
@@ -386,6 +420,8 @@ def main():
                 entry['l10'] = l10
             if u23_di.get(slug):
                 entry['u23'] = True
+            if power_di.get(slug):
+                entry['power'] = power_di[slug]
             counts_per_lega_ruolo[dirname][role][slug] = entry
 
     log(f"\nGiocatori eleggibili esaminati: {tot_carte} | esclusi: "
