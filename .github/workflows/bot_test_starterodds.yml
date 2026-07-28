@@ -1,0 +1,188 @@
+name: Bot test starter-odds
+on:
+  workflow_dispatch:
+    inputs:
+      min_starter_odds_percent:
+        description: "Soglia MINIMA starter odds (prossima partita) per valutare la carta, in % (0-100) -- carte sotto soglia o senza odds disponibili vengono ignorate"
+        required: false
+        default: "80"
+      starter_odds_diagnostic_log:
+        description: "'si' = logga il risultato del filtro starter odds per OGNI valutazione (passa/scarta/assenti), non solo gli scarti -- utile per verificare che la query funzioni. 'no' = logga solo gli scarti."
+        required: false
+        default: "si"
+      min_price_eur:
+        description: "Prezzo minimo carta da valutare (EUR)"
+        required: false
+        default: "1.50"
+      max_price_eur:
+        description: "Prezzo massimo carta da valutare (EUR)"
+        required: false
+        default: "30"
+      makeoffer_margin_percent:
+        description: "Margine MINIMO per il ramo MakeOffer (offerta scontata), in % (es. 10 = 10%)"
+        required: false
+        default: "15"
+      makeoffer_max_margin_percent:
+        description: "Margine MASSIMO per il ramo MakeOffer -- oltre questa soglia interviene AutoBuy"
+        required: false
+        default: "26"
+      offer_discount_percent:
+        description: "Sconto ULTERIORE sul minimo per calcolare il prezzo dell'offerta MakeOffer, in %"
+        required: false
+        default: "15"
+      autobuy_margin_percent:
+        description: "Margine MINIMO per il ramo AutoBuy (accetta offerta esistente), in % -- deve essere >= makeoffer_max_margin_percent"
+        required: false
+        default: "26"
+      listen_seconds:
+        description: "Secondi di ascolto massimi, max 18000 (5h)"
+        required: false
+        default: "18000"
+      commit_interval_seconds:
+        description: "Ogni quanti secondi il bot fa commit+push della lista nera DURANTE la run (protezione da interruzioni) -- default 300 = 5 minuti"
+        required: false
+        default: "300"
+      rate_limit_notify_cooldown_seconds:
+        description: "Ogni quanti secondi (minimo) notificare su Telegram un HTTP 429 -- una raffica di piu' 429 nella stessa finestra manda UN SOLO avviso"
+        required: false
+        default: "300"
+      target_matches:
+        description: "Quanti casi totali (AutoBuy + MakeOffer) notificare prima di fermarsi (1-100)"
+        required: false
+        default: "10"
+      blacklisted_player_slugs:
+        description: "Slug giocatori da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
+        required: false
+        default: ""
+      check_classic:
+        description: "Controlla anche gli annunci CLASSIC (tutti i campionati) -- vale per ENTRAMBI i rami, AutoBuy e MakeOffer, un solo interruttore condiviso"
+        required: false
+        default: "si"
+      min_recent_transactions:
+        description: "Transazioni minime (3gg) per non scartare il caso -- protezione mercato sottile"
+        required: false
+        default: "3"
+      min_listed_cards_for_purchase:
+        description: "Carte MINIME dello stesso giocatore attualmente IN VENDITA (annunci vivi, non storico) perche' il caso proceda -- protezione mercato poco popolato. MLS/K-League confrontano solo la stagione giusta (season/classic separate), altri campionati mescolano in_season+classic come sempre"
+        required: false
+        default: "3"
+      min_listed_cards_diagnostic:
+        description: "'si' = logga anche quando il controllo 'carte in vendita minime' PASSA (utile per verificare che il controllo giri su ogni candidato durante il test). 'no' = logga solo gli scarti, come tutti gli altri controlli."
+        required: false
+        default: "no"
+      recent_avg_price_max_deviation_percent:
+        description: "Scarta se il prezzo da pagare/offrire supera di questa percentuale la MEDIA delle ultime (fino a 3) transazioni reali del giocatore -- protezione contro prezzi anomali rispetto allo storico recente"
+        required: false
+        default: "15"
+      recent_avg_price_diagnostic_log:
+        description: "'si' = logga il calcolo (prezzi usati, media, deviazione) per OGNI valutazione, non solo quando scarta -- utile per capire quanto spesso il controllo scarterebbe. RICORDARSI DI RIMETTERE 'no' dopo la sessione di verifica, altrimenti resta rumoroso nei log."
+        required: false
+        default: "si"
+      blacklisted_manager_slugs:
+        description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
+        required: false
+        default: ""
+      blacklisted_league_slugs:
+        description: "Slug CAMPIONATI da aggiungere alla blacklist unita (separati da virgola, es. premiership-gb-sct) -- carte di questi campionati vengono ignorate completamente, default 15gg rinnovabile"
+        required: false
+        default: ""
+      league_blacklist_verbose_log:
+        description: "'si' = log dettagliato per OGNI carta scartata per campionato blacklistato (utile per il primo test). 'no' = filtro silenzioso."
+        required: false
+        default: "no"
+      offer_duration_days:
+        description: "Durata dell'offerta MakeOffer in giorni interi, 1-7"
+        required: false
+        default: "1"
+      periodic_bid_enabled:
+        description: "'si' = attivo il bid periodico ogni 3 minuti (fascia 2-30EUR fissa, sconto 25% fisso sul candidato piu' vicino alla soglia MakeOffer, SOLO offerte mai acquisto diretto). 'no' = disattivato."
+        required: false
+        default: "no"
+      price_based_thresholds_enabled:
+        description: "'si' = soglie basate sul prezzo (26/07). 'no' = torna alle 3 soglie statiche fisse (makeoffer_margin_percent/makeoffer_max_margin_percent/autobuy_margin_percent) -- utile per test diagnostici mirati (es. forzare molti AutoBuy per analisi timing)."
+        required: false
+        default: "si"
+permissions:
+  contents: write
+concurrency:
+  group: sorare-bot-test-starterodds
+  cancel-in-progress: false
+jobs:
+  bot-test-starterodds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install sorare-sign dependencies
+        run: |
+          cd bots/sorare-sign
+          npm install
+      - run: pip install requests websocket-client curl_cffi
+      - name: Run Bot test starter-odds
+        env:
+          LISTA_NERA_PATH: "sorare_lista_nera_test_starterodds.txt"
+          MIN_STARTER_ODDS_PERCENT_INPUT: ${{ github.event.inputs.min_starter_odds_percent || '80' }}
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+          AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1.50' }}
+          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
+          MAKEOFFER_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_margin_percent || '15' }}
+          MAKEOFFER_MAX_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.makeoffer_max_margin_percent || '26' }}
+          AUTOBUY_MARGIN_PERCENT_INPUT: ${{ github.event.inputs.autobuy_margin_percent || '26' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
+          COMMIT_INTERVAL_SECONDS: ${{ github.event.inputs.commit_interval_seconds || '300' }}
+          LIQUIDITY_DIAGNOSTIC: "no"
+          RATE_LIMIT_NOTIFY_COOLDOWN_SECONDS: ${{ github.event.inputs.rate_limit_notify_cooldown_seconds || '300' }}
+          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '10' }}
+          BLACKLISTED_PLAYER_SLUGS: ${{ github.event.inputs.blacklisted_player_slugs || '' }}
+          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
+          MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
+          MIN_LISTED_CARDS_FOR_PURCHASE: ${{ github.event.inputs.min_listed_cards_for_purchase || '3' }}
+          MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
+          RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT: ${{ github.event.inputs.recent_avg_price_max_deviation_percent || '15' }}
+          RECENT_AVG_PRICE_DIAGNOSTIC_LOG: ${{ github.event.inputs.recent_avg_price_diagnostic_log || 'si' }}
+          BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
+          BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
+          LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
+          STARTER_ODDS_DIAGNOSTIC_LOG: ${{ github.event.inputs.starter_odds_diagnostic_log || 'si' }}
+          OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '15' }}
+          OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
+          MAX_PENDING_OFFERS: "20"
+          PERIODIC_BID_ENABLED: ${{ github.event.inputs.periodic_bid_enabled || 'no' }}
+          PRICE_BASED_THRESHOLDS_ENABLED: ${{ github.event.inputs.price_based_thresholds_enabled || 'si' }}
+        run: |
+          set -o pipefail
+          export MAKEOFFER_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export MAKEOFFER_MAX_MARGIN_FRACTION=$(awk -v p="$MAKEOFFER_MAX_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export AUTOBUY_MARGIN_FRACTION=$(awk -v p="$AUTOBUY_MARGIN_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export OFFER_DISCOUNT_FRACTION=$(awk -v p="$OFFER_DISCOUNT_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          export MIN_STARTER_ODDS=$(awk -v p="$MIN_STARTER_ODDS_PERCENT_INPUT" 'BEGIN { printf "%.4f", p / 100 }')
+          python bots/bot_test_starterodds.py
+      - name: Commit lista nera test starter-odds (isolata da quella di produzione)
+        if: always()
+        run: |
+          if [ -z "$(git status --porcelain -- sorare_lista_nera_test_starterodds.txt)" ]; then
+            echo "Nessuna modifica alla lista nera, niente da committare."
+          else
+            git config user.name "bot-test-starterodds"
+            git config user.email "bot-test-starterodds@users.noreply.github.com"
+            git add sorare_lista_nera_test_starterodds.txt
+            git commit -m "Bot test starter-odds: aggiorna lista nera"
+            git pull --rebase --autostash origin main
+            git push
+          fi

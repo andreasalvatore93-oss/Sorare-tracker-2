@@ -1,0 +1,4641 @@
+import json
+import os
+import random
+import time
+import datetime
+import threading
+import concurrent.futures
+from zoneinfo import ZoneInfo
+
+import requests
+import websocket  # pip install websocket-client
+
+try:
+    from curl_cffi import requests as curl_requests
+    _HAS_CURL_CFFI = True
+except ImportError:
+    _HAS_CURL_CFFI = False
+
+# OTTIMIZZAZIONE VELOCITA' (21/07, richiesta esplicita utente -- "altri modi per
+# renderlo piu' veloce"): prima ogni chiamata GraphQL usava curl_requests.post()/
+# requests.post() a livello di modulo, che aprono una connessione NUOVA (handshake
+# TCP + TLS da zero) ad OGNI singola chiamata verso api.sorare.com. Con una Session
+# persistente (stessa identica interfaccia .post(), stessi header/payload/timeout --
+# nessun cambio di comportamento) la connessione resta aperta (keep-alive) e viene
+# RIUSATA tra una chiamata e l'altra: l'handshake TLS (spesso 50-150ms) si paga una
+# volta sola invece che ad ogni singola query/mutation. Impatta OGNI chiamata
+# GraphQL della run (ricerca prezzi, liquidita', tassi di cambio), non solo il
+# momento dell'acquisto.
+if _HAS_CURL_CFFI:
+    _http_session = curl_requests.Session(impersonate="chrome")
+else:
+    _http_session = requests.Session()
+
+# =====================================================================================
+# BOT SUPREMO -- fusione di AutoBuy + MakeOffer in un unico scanner/bot (20/07)
+# =====================================================================================
+# Un solo scan di mercato per evento: se il margine e' nella fascia MAKEOFFER_MARGIN_
+# FRACTION-MAKEOFFER_MAX_MARGIN_FRACTION -> crea un'offerta scontata (ramo MakeOffer);
+# se e' >= AUTOBUY_MARGIN_FRACTION -> accetta direttamente l'offerta (ramo AutoBuy).
+# Elimina il doppio scan/doppia richiesta e la race condition tra i due bot separati
+# (blacklist ora lette insieme da entrambi i file, vedi sotto).
+# =====================================================================================
+
+COOKIES = os.environ.get('SORARE_COOKIE')
+
+
+def _extract_csrf_from_cookie(cookie_string):
+    """Il CSRF token cambia ad ogni refresh pagina -- estratto dal cookie stesso
+    (campo csrftoken=...) invece di un secret statico che scadrebbe subito."""
+    if not cookie_string:
+        return None
+    for pair in cookie_string.split(';'):
+        pair = pair.strip()
+        if pair.startswith('csrftoken='):
+            return pair.split('=', 1)[1].strip()
+    return None
+
+
+CSRF_TOKEN = _extract_csrf_from_cookie(COOKIES) or os.environ.get('SORARE_CSRF')
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
+
+# SOLO DIAGNOSTICA OBBLIGATORIA (bot_test_starterodds, 28/07, richiesta esplicita utente):
+# per questo test isolato acquisti/offerte reali sono disattivati SEMPRE, a prescindere
+# da cosa arriva dal workflow_dispatch (non solo un default, un vero e proprio blocco --
+# niente env che possa riattivarli per errore). Le notifiche Telegram "LO AVREI
+# ACQUISTATO/OFFERTO" restano invariate: send_autobuy_alert/send_makeoffer_alert le
+# mandano comunque quando live_mode e' False, vedi sotto.
+AUTOBUY_LIVE_MODE = False
+MAKEOFFER_LIVE_MODE = False
+SORARE_WALLET_PASSWORD = os.environ.get('SORARE_WALLET_PASSWORD')
+SORARE_DEVICE_FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
+
+GRAPHQL_URL = 'https://api.sorare.com/graphql'
+WS_URL = "wss://ws.sorare.com/cable"
+
+# Stessa blacklist manager storica di track.py (venditori solo ETH o esplicitamente
+# esclusi dall'utente).
+BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
+
+
+# =====================================================================================
+# LISTA NERA DEL BOT SUPREMO -- file unico (richiesta esplicita utente 21/07)
+# =====================================================================================
+# Sostituisce TUTTI i vecchi file separati (sorare_blacklist.txt, sorare_manager_
+# blacklist.txt, i legacy autobuy/makeoffer, autobuy_purchases.json, makeoffer_cooldown.
+# json, bot_supremo_thin_market_cache.json) con un solo file di testo a righe, editabile
+# a mano su GitHub, con 4 tipi di riga:
+#   manager,<slug>,<scadenza_iso>
+#   giocatore,<slug>,<scadenza_iso>
+#   thin_market,<slug>,<scadenza_iso>
+#   cooldown_acquisto,<slug>,<scadenza_iso>
+# La scadenza e' editabile a mano riga per riga: basta cambiare la data ISO. Una riga
+# con scadenza nel passato viene ignorata in lettura ma NON cancellata automaticamente
+# (resta li' finche' non la si toglie a mano o finche' il bot non la rinnova scrivendo
+# una nuova scadenza per lo stesso slug/tipo).
+LISTA_NERA_PATH = os.environ.get('LISTA_NERA_PATH', 'sorare_lista_nera.txt')
+# Cache in memoria per _lista_nera_leggi_righe (ottimizzazione velocita' 21/07) --
+# None finche' non e' stata fatta la prima lettura, poi lista di dict finche' non
+# viene invalidata da _lista_nera_scrivi_righe dopo ogni scrittura.
+_lista_nera_cache = None
+
+# Durate di default (giorni), usate quando il bot AGGIUNGE una riga per conto suo
+# (es. dal workflow_dispatch, o registrando un acquisto/offerta/thin-market skip).
+# Tutte modificabili qui O a mano nel file cambiando la scadenza di ogni riga.
+MANAGER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('MANAGER_BLACKLIST_DEFAULT_DAYS', '365'))
+PLAYER_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_DAYS', '3'))
+# FIX 21/07: durata SEPARATA (365gg) per la blacklist AUTOMATICA quando un giocatore
+# viene scartato per coverageStatus=NOT_COVERED o media punti 0 -- diversa dalla
+# blacklist manuale/da workflow (PLAYER_BLACKLIST_DEFAULT_DAYS, 3gg), perche' un
+# giocatore con questi problemi resta problematico a lungo, non solo per pochi giorni.
+PLAYER_BLACKLIST_DEFAULT_365_DAYS = float(os.environ.get('PLAYER_BLACKLIST_DEFAULT_365_DAYS', '365'))
+# FIX 22/07 (richiesta esplicita utente): la blacklist per MEDIA PUNTI ZERO
+# (ultime 10 e/o ultime 40) e' stata SEPARATA da quella di coverage -- e' una
+# condizione TRANSITORIA (il giocatore puo' tornare a giocare e segnare), quindi
+# durata breve (3gg, come forma_bassa_ultime_5) invece dei 365gg permanenti usati
+# per coverageStatus=NOT_COVERED (quella si', condizione strutturale/permanente).
+MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS', '3'))
+THIN_MARKET_DEFAULT_DAYS = float(os.environ.get('THIN_MARKET_DEFAULT_DAYS', '2'))
+COOLDOWN_ACQUISTO_DEFAULT_DAYS = float(os.environ.get('COOLDOWN_ACQUISTO_DEFAULT_DAYS', '1'))
+# FIX 21/07 (richiesta esplicita utente): durata default per la blacklist CAMPIONATI --
+# 15 giorni, rinnovabile/modificabile a mano nel file come tutte le altre sezioni.
+LEAGUE_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_BLACKLIST_DEFAULT_DAYS', '15'))
+# FIX 26/07 (richiesta esplicita utente): durata default per la blacklist TRANSITORIA
+# solo-in_season (sezione 'campionato_inseason_temp') -- stessi 15gg della blacklist
+# campionato totale, ma qui blocca SOLO le carte in_season, non le classic.
+LEAGUE_INSEASON_BLACKLIST_DEFAULT_DAYS = float(os.environ.get('LEAGUE_INSEASON_BLACKLIST_DEFAULT_DAYS', '15'))
+
+_LISTA_NERA_TIPI_VALIDI = ('manager', 'giocatore', 'thin_market', 'cooldown_acquisto', 'campionato',
+                           'campionato_inseason_temp', 'forma_bassa_ultime_5', 'fix_urgente')
+
+# Vecchi file, letti SOLO per la migrazione automatica una tantum (prima run dopo
+# l'aggiornamento). Una volta migrati in sorare_lista_nera.txt possono essere eliminati
+# dal repo -- vedi messaggio di log a fine migrazione.
+_LEGACY_FILES_DA_MIGRARE = {
+    'manager': ['sorare_manager_blacklist.txt', 'sorare_autobuy_manager_blacklist.txt',
+                'sorare_makeoffer_manager_blacklist.txt'],
+    'giocatore': ['sorare_blacklist.txt', 'sorare_autobuy_blacklist.txt',
+                  'sorare_makeoffer_blacklist.txt'],
+}
+_LEGACY_JSON_DA_MIGRARE = {
+    'cooldown_acquisto': ['autobuy_purchases.json', 'makeoffer_cooldown.json'],
+    'thin_market': ['bot_supremo_thin_market_cache.json'],
+}
+
+
+_LISTA_NERA_INTESTAZIONI = {
+    'manager': (
+        "MANAGER BLACKLISTATI -- da questi manager non compriamo carte ne' facciamo "
+        "offerte, ma le loro carte contano comunque nel calcolo del prezzo minimo di "
+        "mercato (non vengono escluse dal conteggio, solo dagli acquisti/offerte)."
+    ),
+    'giocatore': (
+        "GIOCATORI BLACKLISTATI -- questi giocatori vengono ignorati sia per gli "
+        "acquisti diretti (AutoBuy) sia per le offerte (MakeOffer)."
+    ),
+    'cooldown_acquisto': (
+        "COOLDOWN ACQUISTI/OFFERTE -- giocatori appena comprati o a cui abbiamo appena "
+        "fatto un'offerta: ignorati per il tempo indicato, per non ricomprare/riproporre "
+        "subito lo stesso giocatore."
+    ),
+    'thin_market': (
+        "THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni "
+        "recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare "
+        "di comprare/offrire su un mercato poco liquido."
+    ),
+    'campionato': (
+        "CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), "
+        "SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla "
+        "con le altre. Ogni carta di un giocatore attivo in uno di questi campionati "
+        "viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato "
+        "PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default "
+        "15 giorni, rinnovabile o modificabile a mano come le altre sezioni."
+    ),
+    'campionato_inseason_temp': (
+        "BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte "
+        "in_season di questo campionato vengono ignorate (nessun acquisto, nessuna "
+        "offerta), le carte classic dello stesso campionato restano valutate "
+        "normalmente. Pensata per campionati con carte in_season appena uscite e dal "
+        "prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati "
+        "il confronto di mercato usa lo stesso modello di MLS/K League (classic "
+        "confrontata solo con classic, in_season solo con in_season) -- vedi "
+        "EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni, rinnovabile o "
+        "modificabile a mano come le altre sezioni."
+    ),
+    'forma_bassa_ultime_5': (
+        "FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite "
+        "giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), "
+        "SEZIONE SEPARATA e distinta dai blacklist permanenti (coverage/media-zero "
+        "restano in 'giocatore'), perche' questa e' una condizione transitoria che "
+        "puo' rientrare -- non merita un blocco di 365gg."
+    ),
+    'fix_urgente': (
+        "FIX URGENTI -- sezione SEPARATA dalla blacklist 'giocatore' normale, per casi "
+        "particolari/situazioni impreviste che richiedono uno stop immediato su un "
+        "giocatore specifico (acquisti E offerte bloccati), senza mescolarli con la "
+        "blacklist manuale ordinaria. Scadenza ASSOLUTA in ISO (come thin_market/"
+        "cooldown_acquisto), non una durata testuale rinnovabile."
+    ),
+}
+_LISTA_NERA_ORDINE_SEZIONI = ('manager', 'giocatore', 'cooldown_acquisto', 'thin_market', 'campionato',
+                              'campionato_inseason_temp', 'forma_bassa_ultime_5', 'fix_urgente')
+
+
+def _durata_a_leggibile(delta_secondi):
+    """Converte un numero di secondi in una stringa leggibile in italiano, es.
+    '5 giorni', '1 giorno', '3 ore', '20 minuti'. Arrotonda per eccesso all'unita'
+    piu' grande sensata, cosi' il file resta leggibile senza troppi decimali."""
+    if delta_secondi <= 0:
+        return "scaduto"
+    giorni = delta_secondi / 86400
+    if giorni >= 1:
+        giorni_interi = max(1, round(giorni))
+        return f"{giorni_interi} giorno" if giorni_interi == 1 else f"{giorni_interi} giorni"
+    ore = delta_secondi / 3600
+    if ore >= 1:
+        ore_intere = max(1, round(ore))
+        return f"{ore_intere} ora" if ore_intere == 1 else f"{ore_intere} ore"
+    minuti = max(1, round(delta_secondi / 60))
+    return f"{minuti} minuto" if minuti == 1 else f"{minuti} minuti"
+
+
+def _leggibile_a_secondi(testo):
+    """Converte una stringa italiana ('7 giorni', '24 ore', '30 minuti') in secondi.
+    Accetta anche forme abbreviate (7g, 24h, 30m) per chi preferisce scrivere veloce.
+    Ritorna None se non riconosciuta."""
+    testo = testo.strip().lower()
+    parts = testo.split()
+    if len(parts) == 2:
+        numero_str, unita = parts
+    elif len(parts) == 1 and len(testo) > 1 and testo[-1] in ('g', 'h', 'm'):
+        numero_str, unita = testo[:-1], testo[-1]
+    else:
+        return None
+    try:
+        numero = float(numero_str)
+    except ValueError:
+        return None
+    if unita.startswith('giorn') or unita == 'g':
+        return numero * 86400
+    if unita.startswith('or') or unita == 'h':
+        return numero * 3600
+    if unita.startswith('minut') or unita == 'm':
+        return numero * 60
+    return None
+
+
+def _lista_nera_migra_vecchio_formato_riga_se_serve():
+    """Il primo formato del file unico (righe 'tipo,slug,scadenza_iso' senza sezioni)
+    e' stato sostituito da questo formato a sezioni con durata leggibile. Se il file
+    esiste ma e' ancora nel vecchio formato (nessuna intestazione '## tipo' trovata,
+    ma righe con 3 campi separati da virgola), lo convertiamo automaticamente UNA
+    TANTUM preservando tutte le scadenze gia' presenti."""
+    try:
+        with open(LISTA_NERA_PATH, 'r', encoding='utf-8') as f:
+            raw_lines = f.readlines()
+    except FileNotFoundError:
+        return
+    ha_sezioni = any(l.strip().startswith('## ') for l in raw_lines)
+    if ha_sezioni:
+        return  # gia' nel nuovo formato
+    righe_vecchie = []
+    for raw in raw_lines:
+        stripped = raw.strip()
+        if not stripped or stripped.startswith('#'):
+            continue
+        parts = [p.strip() for p in stripped.split(',')]
+        if len(parts) != 3:
+            continue
+        tipo, slug, scadenza_str = parts
+        tipo = tipo.lower()
+        if tipo not in _LISTA_NERA_TIPI_VALIDI:
+            continue
+        try:
+            scadenza = datetime.datetime.fromisoformat(scadenza_str)
+            if scadenza.tzinfo is None:
+                scadenza = scadenza.replace(tzinfo=datetime.timezone.utc)
+        except ValueError:
+            continue
+        righe_vecchie.append({'tipo': tipo, 'slug': slug.lower(), 'scadenza': scadenza})
+    if righe_vecchie:
+        _lista_nera_scrivi_righe(righe_vecchie)
+        print(f"[lista nera] convertite {len(righe_vecchie)} righe dal vecchio formato "
+              f"(tipo,slug,scadenza_iso) al nuovo formato a sezioni leggibili.", flush=True)
+
+
+def _lista_nera_leggi_righe():
+    """Legge tutte le righe valide dal file unico (nuovo formato a sezioni:
+    slug,durata_leggibile sotto un'intestazione '## tipo'). Ritorna lista di dict
+    {tipo, slug, scadenza (datetime)}. Righe malformate vengono ignorate con log.
+
+    OTTIMIZZAZIONE VELOCITA' (21/07, richiesta esplicita utente -- "trova qualcosa
+    da ottimizzare senza rischiare di rompere niente"): CACHATA in memoria per tutta
+    la run. Questa funzione viene chiamata per OGNI singolo evento del mercato
+    valutato (is_player_in_cooldown + is_player_in_thin_market_cache, dentro
+    evaluate_event) -- con centinaia di eventi al minuto, prima del fix questo
+    significava altrettante aperture+letture+parsing dell'intero file da disco,
+    anche quando il contenuto non era affatto cambiato dall'ultima lettura. La
+    cache viene invalidata automaticamente da _lista_nera_scrivi_righe (unico punto
+    che modifica il file), quindi resta sempre sincronizzata con lo stato vero --
+    zero rischio di leggere dati stantii. NON tocca la logica di
+    acquisto/firma/Playwright, solo il path di lettura di questo file."""
+    global _lista_nera_cache
+    if _lista_nera_cache is not None:
+        return _lista_nera_cache
+
+    righe = []
+    try:
+        with open(LISTA_NERA_PATH, 'r', encoding='utf-8') as f:
+            raw_lines = f.readlines()
+    except FileNotFoundError:
+        _lista_nera_cache = righe
+        return righe
+    ora = datetime.datetime.now(datetime.timezone.utc)
+    tipo_corrente = None
+    for n, raw in enumerate(raw_lines, start=1):
+        raw = raw.rstrip('\n')
+        stripped = raw.strip()
+        if not stripped:
+            continue
+        if stripped.startswith('## '):
+            candidato = stripped[3:].strip().lower()
+            if candidato in _LISTA_NERA_TIPI_VALIDI:
+                tipo_corrente = candidato
+            continue
+        if stripped.startswith('#'):
+            continue  # commento/descrizione, non una riga dati
+        if tipo_corrente is None:
+            log(f"[lista nera] riga {n} fuori da qualunque sezione, ignorata: {raw!r}")
+            continue
+        # FIX 22/07 (leggibilita' ora locale): un eventuale commento inline '# scade: ...'
+        # (aggiunto in scrittura per mostrare l'orario in ora di Roma, puramente
+        # informativo) va scartato PRIMA di dividere sulla virgola -- altrimenti
+        # finirebbe attaccato al valore ISO/durata e ne romperebbe il parsing.
+        stripped_dati = stripped.split('#', 1)[0].strip()
+        parts = [p.strip() for p in stripped_dati.split(',')]
+        if len(parts) != 2:
+            log(f"[lista nera] riga {n} malformata (attesi 2 campi slug,durata), ignorata: {raw!r}")
+            continue
+        slug, valore_str = parts
+        slug = slug.lower()
+        # FIX 22/07 (richiesta esplicita utente): thin_market e cooldown_acquisto usano
+        # ora una SCADENZA ASSOLUTA (ISO), non piu' una durata testuale -- una durata
+        # testuale viene reinterpretata "da adesso" ad OGNI lettura, quindi una riga
+        # mai piu' riscritta non scade mai davvero se il file resta statico tra le
+        # letture. giocatore/manager/campionato restano a durata leggibile (l'utente
+        # vuole poter scrivere/editare "X giorni" a mano per questi).
+        if tipo_corrente in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5', 'fix_urgente'):
+            try:
+                scadenza = datetime.datetime.fromisoformat(valore_str.replace('Z', '+00:00'))
+                if scadenza.tzinfo is None:
+                    scadenza = scadenza.replace(tzinfo=datetime.timezone.utc)
+                righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': scadenza})
+                continue
+            except ValueError:
+                pass  # non e' ISO -- prova il vecchio formato durata testuale (compatibilita'
+                      # con entry scritte prima di questo fix, verranno convertite in ISO alla
+                      # prossima riscrittura del file)
+            secondi_legacy = _leggibire_wrapper(valore_str, n, raw)
+            if secondi_legacy is None:
+                continue
+            righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi_legacy)})
+            continue
+        secondi = _leggibire_wrapper(valore_str, n, raw)
+        if secondi is None:
+            continue
+        righe.append({'tipo': tipo_corrente, 'slug': slug, 'scadenza': ora + datetime.timedelta(seconds=secondi)})
+    _lista_nera_cache = righe
+    return righe
+
+
+def _leggibire_wrapper(durata_str, n, raw):
+    secondi = _leggibile_a_secondi(durata_str)
+    if secondi is None:
+        log(f"[lista nera] riga {n} durata non riconosciuta ('{durata_str}'), ignorata: {raw!r}")
+    return secondi
+
+
+def _lista_nera_scrivi_righe(righe):
+    """Riscrive il file unico in sezioni per tipo (ordine fisso, thin_market per
+    ultimo perche' e' la sezione piu' numerosa), ognuna con intestazione descrittiva.
+    La durata scritta e' SEMPRE il tempo RIMANENTE alla scadenza (ricalcolato ogni
+    volta), non la durata originale -- cosi' l'utente vede sempre quanto manca.
+    Invalida la cache di lettura (vedi _lista_nera_leggi_righe) dopo la scrittura,
+    cosi' la prossima lettura riflette sempre lo stato vero del file."""
+    global _lista_nera_cache
+    ora = datetime.datetime.now(datetime.timezone.utc)
+    dedup = {}
+    for r in righe:
+        if r['scadenza'] <= ora:
+            continue  # non riscriviamo righe gia' scadute
+        chiave = (r['tipo'], r['slug'])
+        if chiave not in dedup or r['scadenza'] > dedup[chiave]['scadenza']:
+            dedup[chiave] = r
+    per_tipo = {t: [] for t in _LISTA_NERA_TIPI_VALIDI}
+    for r in dedup.values():
+        per_tipo[r['tipo']].append(r)
+
+    with open(LISTA_NERA_PATH, 'w', encoding='utf-8') as f:
+        f.write("# LISTA NERA DEL BOT SUPREMO\n")
+        f.write("# Sezioni giocatore/manager/campionato: ogni riga 'slug,durata' (es. 'clem777,5\n")
+        f.write("# giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni\n")
+        f.write("# scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').\n")
+        f.write("# Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora\n")
+        f.write("# ASSOLUTA di scadenza in UTC (fix 22/07: una durata testuale si 'rinnovava' da\n")
+        f.write("# sola ad ogni lettura se il file restava statico tra le run). Dopo la virgola, un\n")
+        f.write("# commento '# scade: ...' mostra lo stesso istante in ora di Roma (Europe/Rome, si\n")
+        f.write("# adatta automaticamente a legale/solare) solo per comodita' di lettura -- il bot\n")
+        f.write("# usa SEMPRE e SOLO il valore ISO prima della virgola/cancelletto, il commento e'\n")
+        f.write("# puramente informativo e viene ignorato in lettura. NON pensate per modifica a\n")
+        f.write("# mano, gestite automaticamente dal bot. Per rimuovere un blocco in ogni sezione,\n")
+        f.write("# cancella semplicemente la riga.\n\n")
+        for tipo in _LISTA_NERA_ORDINE_SEZIONI:
+            righe_tipo = sorted(per_tipo[tipo], key=lambda r: r['slug'])
+            f.write(f"## {tipo}\n")
+            f.write(f"# {_LISTA_NERA_INTESTAZIONI[tipo]}\n")
+            if not righe_tipo:
+                f.write("# (vuoto)\n")
+            for r in righe_tipo:
+                if tipo in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5', 'fix_urgente'):
+                    scadenza_roma = r['scadenza'].astimezone(ZoneInfo('Europe/Rome'))
+                    f.write(f"{r['slug']},{r['scadenza'].isoformat()}  "
+                            f"# scade: {scadenza_roma.strftime('%d/%m/%Y %H:%M')} ora di Roma\n")
+                else:
+                    delta = (r['scadenza'] - ora).total_seconds()
+                    f.write(f"{r['slug']},{_durata_a_leggibile(delta)}\n")
+            f.write("\n")
+    # Invalida la cache: la prossima chiamata a _lista_nera_leggi_righe ricarichera'
+    # dal file appena scritto, cosi' resta sempre sincronizzata con lo stato vero.
+    _lista_nera_cache = None
+
+
+def _lista_nera_upsert(tipo, slug, giorni_da_ora):
+    """Aggiunge o rinnova una riga (tipo, slug) con nuova scadenza = ora + giorni_da_ora.
+    Se la riga esiste gia', la sostituisce (rinnovo); altrimenti la aggiunge.
+    Protetto da _lista_nera_lock (22/07): con piu' eventi valutati in parallelo,
+    senza lock due thread potrebbero leggere lo stesso stato e scriversi sopra a
+    vicenda, perdendo un aggiornamento."""
+    slug = slug.lower()
+    with _lista_nera_lock:
+        righe = _lista_nera_leggi_righe()
+        scadenza = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=giorni_da_ora)
+        trovata = False
+        for r in righe:
+            if r['tipo'] == tipo and r['slug'] == slug:
+                r['scadenza'] = scadenza
+                trovata = True
+                break
+        if not trovata:
+            righe.append({'tipo': tipo, 'slug': slug, 'scadenza': scadenza})
+        _lista_nera_scrivi_righe(righe)
+
+
+def _lista_nera_attiva(tipo, slug):
+    """True se (tipo, slug) e' presente con scadenza non ancora passata."""
+    slug = (slug or '').lower()
+    if not slug:
+        return False
+    ora = datetime.datetime.now(datetime.timezone.utc)
+    for r in _lista_nera_leggi_righe():
+        if r['tipo'] == tipo and r['slug'] == slug and r['scadenza'] > ora:
+            return True
+    return False
+
+
+def _migra_vecchi_file_una_tantum():
+    """Migrazione automatica una tantum: se sorare_lista_nera.txt non esiste ancora,
+    legge tutti i vecchi file separati e popola il nuovo file unico. Blacklist
+    manager/giocatore migrate con scadenza 7 giorni da ora (default). Cooldown
+    acquisto/thin_market migrati preservando la data originale + la loro durata
+    default (cosi' un giocatore comprato ieri non riparte da zero oggi)."""
+    if os.path.exists(LISTA_NERA_PATH):
+        return  # gia' migrato in una run precedente, non rifare
+    righe = []
+    ora = datetime.datetime.now(datetime.timezone.utc)
+    migrate_da = []
+
+    for tipo, file_paths in _LEGACY_FILES_DA_MIGRARE.items():
+        giorni_default = (MANAGER_BLACKLIST_DEFAULT_DAYS if tipo == 'manager'
+                          else PLAYER_BLACKLIST_DEFAULT_DAYS)
+        for fp in file_paths:
+            try:
+                with open(fp, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+            except FileNotFoundError:
+                continue
+            migrate_da.append(fp)
+            for line in lines:
+                slug = line.strip().lower()
+                if not slug or slug.startswith('#'):
+                    continue
+                righe.append({'tipo': tipo, 'slug': slug,
+                              'scadenza': ora + datetime.timedelta(days=giorni_default)})
+
+    for tipo, file_paths in _LEGACY_JSON_DA_MIGRARE.items():
+        giorni_default = (THIN_MARKET_DEFAULT_DAYS if tipo == 'thin_market'
+                          else COOLDOWN_ACQUISTO_DEFAULT_DAYS)
+        for fp in file_paths:
+            try:
+                with open(fp, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            migrate_da.append(fp)
+            for slug, last_iso in data.items():
+                try:
+                    last_dt = datetime.datetime.fromisoformat(last_iso)
+                    if last_dt.tzinfo is None:
+                        last_dt = last_dt.replace(tzinfo=datetime.timezone.utc)
+                except (ValueError, TypeError):
+                    last_dt = ora
+                righe.append({'tipo': tipo, 'slug': slug.lower(),
+                              'scadenza': last_dt + datetime.timedelta(days=giorni_default)})
+
+    if not righe and not migrate_da:
+        # Nessun vecchio file trovato: crea comunque il file vuoto con intestazione,
+        # cosi' l'utente puo' iniziare ad editarlo a mano.
+        _lista_nera_scrivi_righe([])
+        print("[lista nera] nessun vecchio file trovato, creato sorare_lista_nera.txt vuoto",
+              flush=True)
+        return
+
+    _lista_nera_scrivi_righe(righe)
+    print(f"[lista nera] MIGRAZIONE completata da {len(migrate_da)} vecchi file "
+          f"({', '.join(migrate_da)}) -> {len(righe)} righe in {LISTA_NERA_PATH}. "
+          f"Puoi ora eliminare dal repo i vecchi file elencati sopra.", flush=True)
+
+
+_lista_nera_migra_vecchio_formato_riga_se_serve()
+_migra_vecchi_file_una_tantum()
+
+
+class _SetTipoLive:
+    """Wrapper minimale per mantenere l'API 'set' (operatore 'in', len(), sorted())
+    usata nel resto del codice per BLACKLISTED_PLAYER_SLUGS/BLACKLISTED_MANAGER_SLUGS,
+    ma leggendo SEMPRE dal vivo dal file unico -- cosi' una modifica al file a mano
+    (o un aggiornamento da un altro ramo durante la stessa run) e' vista subito,
+    senza dover ricaricare/riavviare il bot."""
+
+    def __init__(self, tipo):
+        self._tipo = tipo
+
+    def _slugs_attivi(self):
+        ora = datetime.datetime.now(datetime.timezone.utc)
+        return {r['slug'] for r in _lista_nera_leggi_righe()
+                if r['tipo'] == self._tipo and r['scadenza'] > ora}
+
+    def __contains__(self, slug):
+        return _lista_nera_attiva(self._tipo, slug or '')
+
+    def __iter__(self):
+        return iter(self._slugs_attivi())
+
+    def __len__(self):
+        return len(self._slugs_attivi())
+
+
+# Stessa blacklist manager storica di track.py (venditori solo ETH o esplicitamente
+# esclusi dall'utente) -- questa resta hardcoded, non fa parte della lista nera editabile.
+BLACKLISTED_SELLER_SLUGS = {'privacy', 'eli-aquim', 'clem777'}
+
+BLACKLISTED_PLAYER_SLUGS = _SetTipoLive('giocatore')
+BLACKLISTED_MANAGER_SLUGS = _SetTipoLive('manager')
+BLACKLISTED_LEAGUE_SLUGS = _SetTipoLive('campionato')
+BLACKLISTED_INSEASON_LEAGUE_SLUGS = _SetTipoLive('campionato_inseason_temp')
+BLACKLISTED_FIX_URGENTE_SLUGS = _SetTipoLive('fix_urgente')
+# Alias per compatibilita' col nome usato nel codice AutoBuy originale.
+BLACKLISTED_AUTOBUY_MANAGER_SLUGS = BLACKLISTED_MANAGER_SLUGS
+
+# Blacklist extra passate da workflow_dispatch (input singola run, oltre al file):
+# vengono scritte anche loro nel file unico, cosi' restano visibili/editabili li'.
+_extra_blacklisted_players = os.environ.get('BLACKLISTED_PLAYER_SLUGS', '')
+if _extra_blacklisted_players.strip():
+    for _s in _extra_blacklisted_players.split(','):
+        _s = _s.strip().lower()
+        if _s:
+            _lista_nera_upsert('giocatore', _s, PLAYER_BLACKLIST_DEFAULT_DAYS)
+
+_extra_blacklisted_managers = os.environ.get('BLACKLISTED_MANAGER_SLUGS', '')
+if _extra_blacklisted_managers.strip():
+    for _s in _extra_blacklisted_managers.split(','):
+        _s = _s.strip().lower()
+        if _s:
+            _lista_nera_upsert('manager', _s, MANAGER_BLACKLIST_DEFAULT_DAYS)
+
+# FIX 21/07 (richiesta esplicita utente): stesso pattern per campionati -- lo
+# slug del primo campionato da blacklistare (es. 'premiership-gb-sct', il
+# campionato scozzese) viene passato da workflow_dispatch e scritto nella
+# sezione '## campionato' del file unico, editabile a mano in seguito come
+# tutte le altre sezioni.
+_extra_blacklisted_leagues = os.environ.get('BLACKLISTED_LEAGUE_SLUGS', '')
+if _extra_blacklisted_leagues.strip():
+    for _s in _extra_blacklisted_leagues.split(','):
+        _s = _s.strip().lower()
+        if _s:
+            _lista_nera_upsert('campionato', _s, LEAGUE_BLACKLIST_DEFAULT_DAYS)
+
+# Log verboso opzionale per il filtro campionati (richiesta esplicita utente per il
+# primo test) -- se attivo, logga OGNI carta scartata per campionato blacklistato con
+# dettagli; se spento (default), il filtro funziona comunque ma resta silenzioso per
+# non riempire i log di rumore una volta che il comportamento e' stato verificato.
+LEAGUE_BLACKLIST_VERBOSE_LOG = os.environ.get('LEAGUE_BLACKLIST_VERBOSE_LOG', 'no').strip().lower() in ('si', 'true', '1', 'yes')
+
+# FILTRI DISATTIVATI SOLO PER QUESTO TEST (bot_test_starterodds, 28/07, richiesta
+# esplicita utente): thin market e cooldown acquisti/offerte spenti, TUTTI gli altri
+# filtri restano attivi (manager/giocatore/campionato blacklist, forma bassa, ecc.).
+# Default True per questo clone -- in bot_definitivo.py questi filtri non esistono
+# nemmeno come interruttore, restano sempre attivi.
+TEST_DISABLE_THIN_MARKET_FILTER = os.environ.get(
+    'TEST_DISABLE_THIN_MARKET_FILTER', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+TEST_DISABLE_COOLDOWN_FILTER = os.environ.get(
+    'TEST_DISABLE_COOLDOWN_FILTER', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+
+# --- Parametri regolabili ---
+AUTOBUY_MIN_PRICE_EUR = float(os.environ.get('AUTOBUY_MIN_PRICE_EUR', '1.00'))
+AUTOBUY_MAX_PRICE_EUR = float(os.environ.get('AUTOBUY_MAX_PRICE_EUR', '30'))
+
+# Due soglie SEPARATE per fascia, nessuna sovrapponibile per costruzione:
+# MAKEOFFER_MARGIN_FRACTION <= margine < MAKEOFFER_MAX_MARGIN_FRACTION -> ramo MakeOffer
+# margine >= AUTOBUY_MARGIN_FRACTION -> ramo AutoBuy (deve essere >= al tetto MakeOffer)
+MAKEOFFER_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MARGIN_FRACTION', '0.10'))
+MAKEOFFER_MAX_MARGIN_FRACTION = float(os.environ.get('MAKEOFFER_MAX_MARGIN_FRACTION', '0.20'))
+AUTOBUY_MARGIN_FRACTION = float(os.environ.get('AUTOBUY_MARGIN_FRACTION', '0.20'))
+
+# =====================================================================================
+# SOGLIE BASATE SUL PREZZO (26/07) -- sostituisce il sistema a percentili storici del
+# 25/07 (soglie dinamiche calcolate sulla distribuzione dei margini osservati negli
+# ultimi N giorni). Quel sistema rispondeva alla domanda sbagliata ("quanto e' raro
+# questo margine rispetto al mercato recente") invece di quella che conta davvero
+# ("a questo margine, su una carta di questo prezzo, l'avrei comprata io?"). La
+# risposta a QUELLA domanda e' stata raccolta caso per caso (~45 casi reali e
+# ipotetici, prezzo 0.50-30EUR, discussi uno alla volta con l'utente il 25-26/07 --
+# dettaglio completo nella memoria di progetto "bot_definitivo_margin_calibration").
+#
+# TRE REGOLE INDIPENDENTI EMERSE DAI CASI:
+#
+# 1) MARGINE MINIMO PER AGIRE (MakeOffer o AutoBuy) dipende dal PREZZO, non e' un
+#    singolo numero globale: sotto ~4EUR serve un margine alto (~13%, il guadagno
+#    assoluto in EUR e' cosi' piccolo sotto quella soglia che non vale il rischio/
+#    tempo di negoziare -- es. Bombino 2.81EUR/6.5%->scarto, Ferreira 1.50EUR/10.4%->
+#    scarto, contro Trossard 3.49EUR/16.5%->offerta OK); da ~4EUR in su basta un
+#    margine molto piu' basso (~7% -- es. Johnson 5.52EUR/7.3%->OK, Gill 6.00EUR/
+#    7.7%->OK, contro Pickford 10.50EUR/4.5%->scarto).
+#
+# 2) SPLIT AutoBuy (prezzo pieno, accetta l'offerta esistente) vs MakeOffer (offerta
+#    ribassata) dipende da PREZZO *E* MARGINE insieme, non da una soglia di margine
+#    globale come nella versione precedente: sotto ~3EUR l'utente non vuole MAI il
+#    prezzo pieno, a nessun margine (verificato fino al 44%: Vera 1.50EUR/44.4%,
+#    Reichert 1.00EUR/42.5%, Diaw 1.55EUR/39.9%, Robinson 2.20EUR/30.2% -> sempre
+#    "avrei negoziato piu' basso, non autobuy"). Sopra ~3EUR il margine necessario
+#    per l'autobuy diretto SCENDE al crescere del prezzo (tabella sotto) -- testato
+#    su ~15 casi a margini/prezzi diversi, zero contraddizioni con questa forma.
+#
+# 3) SCONTO DELL'OFFERTA MakeOffer: la versione precedente lo scalava CON il margine
+#    (piu' margine = sconto piu' profondo). I casi raccolti mostrano il contrario:
+#    conta il PREZZO della carta, non il margine -- su carte economiche l'utente
+#    vuole sconti profondi (~20-25%, poco da perdere a chiedere basso), su carte
+#    care bastano sconti miti (~9-11%, il guadagno assoluto e' gia' sostanzioso).
+#    Eccezione: giocatori molto liquidi (tante transazioni recenti, count_7d gia'
+#    calcolato da get_liquidity_and_last_price) -> sconto mite a prescindere dal
+#    prezzo, rivendita quasi garantita (caso reale: Barcola).
+#
+# FAIL-SAFE: interruttore PRICE_BASED_THRESHOLDS_ENABLED (default 'si') -- se 'no',
+# comportamento COMPLETAMENTE statico originale (le 3 costanti fisse sopra piu' lo
+# sconto sempre = OFFER_DISCOUNT_FRACTION). Le tabelle sotto sono tarate su ~45 casi
+# discussi con l'utente -- ragionevole ma non enorme; se il comportamento in
+# produzione si rivela sbagliato su casi reali, l'interruttore permette di tornare
+# indietro senza modificare il codice, poi si ricalibra con altri casi reali.
+PRICE_BASED_THRESHOLDS_ENABLED = os.environ.get(
+    'PRICE_BASED_THRESHOLDS_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+
+# Regola 1: margine minimo per considerare un caso, a seconda del prezzo del vero minimo.
+# FIX 25/07 (curva continua): sostituisce il vecchio gradino secco a 2 valori (13%/7% a
+# 4.0EUR). Sessione di calibrazione del 25/07 sera ha trovato piu' coppie reali "stesso
+# margine, prezzo diverso, decisione diversa" DENTRO la vecchia fascia >=4EUR unica --
+# Cherki (11.60EUR/6.8%->agisci) vs Cucurella (6.00EUR/6.8%->scarta), Talisca (3.00EUR/
+# 11.8%->agisci) vs Pedro Neto (1.50EUR/11.8%->scarta), Camavinga (3.80EUR/12.2%->agisci)
+# vs Ansu Fati (1.80EUR/12.2%->scarta), Elliot Anderson (9.50EUR/7.8%->scarta, REALE da
+# log). Il floor decresce con continuita' al crescere del prezzo, non a un singolo
+# gradino. Curva a interpolazione lineare tra i punti sotto (MAKEOFFER_MIN_MARGIN_CURVE),
+# tarata per rispettare TUTTI i casi sopra piu' quelli gia' noti (Bombino, Ferreira,
+# Trossard, Johnson, Gill, Pickford, Isak, Saka, Rodrygo, Chiesa) -- il singolo punto
+# Elliot Anderson resta un'imperfezione accettata (vedi memoria calibrazione): in
+# contrasto diretto con Johnson/Gill gia' piu' volte confermati a margini/prezzi simili,
+# trattato come rumore residuo (l'utente ha spiegato piu' volte che una parte della
+# variabilita' riflette conoscenza personale del giocatore, non modellabile).
+MAKEOFFER_MIN_MARGIN_CURVE = [
+    (1.50, 0.13),
+    (4.00, 0.073),
+    (11.60, 0.068),
+    (30.00, 0.065),
+    # 27/07: estesa la fascia 30-40EUR (soglia minima per OFFRIRE invece di scartare).
+    # L'utente ragiona in utile assoluto: soglia ~= 2EUR di utile potenziale a prescindere
+    # dal prezzo -> 30EUR/5-6% scarta (1.5-1.8EUR), 35EUR/6% offre (2.1EUR)/4% scarta,
+    # 40EUR/5% offre (2EUR)/4% scarta. Da cui ~2EUR/prezzo: 35EUR->5.7%, 40EUR->5.0%.
+    (35.00, 0.057),
+    (40.00, 0.050),
+]
+
+# Regola 2: il margine minimo per l'AutoBuy diretto scende con continuita' al crescere
+# del prezzo (FIX 25/07: sostituisce i 4 gradini fissi 3/5/8/15EUR con una curva a
+# interpolazione lineare -- trovato lo stesso pattern "gradiente dentro-fascia" gia'
+# visto sopra, confermato in TRE fasce diverse con coppie stesso-margine-prezzo-diverso:
+# 3-5EUR (Giocatore C 3.20EUR/35.4%->negozia vs Giocatore D 4.80EUR/35.1%->autobuy),
+# 5-8EUR (Giocatore E 5.00-5.20EUR/27-30%->al limite vs Odegaard 6.50EUR/32%->autobuy
+# netto), 15-30EUR (De Jong 18EUR/16.3%->negozia vs Saka bis 20EUR/16%->autobuy "al
+# pelo" vs Thuram 25EUR/13.8%->negozia). La fascia 8-15EUR e' risultata invece
+# GENUINAMENTE piatta (Giocatore A 8.50EUR/22% e Giocatore B 14.00EUR/22%, stesso
+# margine, stessa decisione autobuy in entrambi) -- riflessa qui come un plateau nella
+# curva, non forzata a decrescere anche li'. PRINCIPIO GUIDA esplicito dell'utente per i
+# punti rumorosi/incoerenti (es. 24.50EUR/15.5%->autobuy vs 26.00EUR/15.3%->negozia,
+# riprodotta identica 2 volte, non risolta): "se c'e' incoerenza in una fascia, meglio
+# offrire che comprare" -- i valori 22-30EUR sono stati arrotondati per eccesso (verso
+# un margine richiesto piu' alto, quindi verso MakeOffer) nelle zone piu' rumorose
+# invece di inseguire esattamente ogni singolo punto.
+# FIX 26/07 (settima ricalibrazione, notte -- sessione a popup su casi ipotetici/reali,
+# dato che nessun AutoBuy reale era scattato in nessuno dei run di oggi): il plateau
+# 8-14EUR sopra (basato su 2 punti della sessione del 25/07, Giocatore A/B a 22%) non
+# regge piu' contro 9 nuovi punti raccolti oggi -- in particolare 8.00EUR riprodotto
+# IDENTICO due volte (James Pantemis e Guillaume Restes, entrambi ~27.3%, non 22%).
+# Altri punti (3EUR, 15EUR, 17.5EUR, 21EUR) confermano invece la curva esistente quasi
+# esatta (scarto <=1 punto percentuale), quindi corretto solo il punto a 8EUR
+# (22%->27%) -- l'interpolazione sistema da sola anche 7EUR (->27.7%, vicino al 29.6%
+# voluto) e 11EUR (->24.5%, quasi esatto al 24.1% voluto) senza toccare altri punti.
+# Un punto (McGlynn, 22.50EUR-> voluto 19.35% contro il 15.9% attuale) resta fuori
+# pattern -- il vicino 21EUR combacia gia' bene, trattato come rumore isolato non
+# inseguito (stesso principio guida di sempre).
+# FIX 26/07 (ottava ricalibrazione): rimosso il cutoff assoluto sotto i 3EUR (prima
+# "mai AutoBuy sotto 3EUR" a prescindere dal margine) -- l'utente ha chiarito che non e'
+# una regola fissa, solo un margine minimo molto piu' alto. Casi ipotetici mirati:
+# 1.90EUR/margine 55%->autobuy; 2.00EUR/33%->negozia ma 2.00EUR/44%->autobuy (soglia
+# ~38-40%, in continuita' col punto 3EUR gia' esistente); 1.00EUR/44%->negozia,
+# 1.00EUR/55%->ANCORA negozia, 1.00EUR/67%->autobuy; 0.50EUR/61%->autobuy. Forma
+# risultante: plateau ~58-60% tra 0.50EUR e 1EUR, poi scende rapido verso il 38% gia'
+# noto a 3EUR. Aggiunto anche un punto a 13EUR (soglia reale ~24.5%, la vecchia
+# interpolazione 8->14EUR dava solo 22.8%, scarto oltre la soglia di rumore accettata).
+# Punto di controllo a 16EUR confermato invariato (scarto <1 punto percentuale, rumore).
+# FIX 26/27 (nona ricalibrazione, run diagnostica di 1h + revisione dei 14 match
+# MakeOffer "in chiave AutoBuy" -- per ognuno chiesto a quale prezzo minimo, a parita'
+# di secondo prezzo, sarebbe scattato l'AutoBuy): il punto 1.00EUR->60% era troppo alto,
+# 3 conferme consistenti (Aktuerkoglu, Guzman, Gibbs-White) vogliono ~50-54% -> abbassato
+# a 52%. Aggiunti anche 1.50EUR->~48% e 1.70EUR->~45% (Sargent/Lee Chang-Min) come punti
+# ESPLICITI invece di lasciarli alla sola interpolazione 1.00->2.00EUR: un singolo
+# aggiustamento del punto 1.00EUR da solo spostava questi due valori fuori dal range
+# osservato (curva troppo dritta su un segmento lungo 1EUR), i 4 punti insieme
+# descrivono meglio la vera forma, leggermente concava. 1.10EUR resta coerente di
+# riflesso (->50.4%, vicino al ~50% osservato). La fascia 3-5EUR scendeva troppo lentamente:
+# Enzo Fernandez (REALE, 4.10EUR/margine 29.9%) conferma di voler AutoBuy la', non
+# MakeOffer -- la vecchia curva richiedeva 33.6%. Pacho (derivato, 4.50EUR/~30%)
+# conferma lo stesso valore. Aggiunto un punto a 4.10EUR (0.30) cosi' che 4.10-5.00EUR
+# resti piatto a 30% invece di continuare a scendere solo a 5EUR. Punti scartati perche'
+# in contraddizione con dati gia' consolidati o rumorosi: 6.50EUR (Van Dijk conferma
+# esattamente il 28% gia' presente, Lewandowski vuole 23% sullo stesso prezzo -- tenuto
+# il valore gia' confermato); 15.50EUR (Godts vuole 16%, ma quella fascia ha gia' oscillato
+# piu' volte tra 16% e 20-22% in sessioni precedenti -- un solo nuovo punto non basta a
+# spostarla di nuovo).
+AUTOBUY_MIN_MARGIN_CURVE = [
+    (0.50, 0.58),
+    (1.00, 0.52),
+    (1.50, 0.48),
+    (1.70, 0.45),
+    (2.00, 0.39),
+    (3.00, 0.38),
+    (4.10, 0.30),
+    (5.00, 0.30),
+    (6.50, 0.28),
+    (8.00, 0.27),
+    (13.00, 0.245),
+    (14.00, 0.22),
+    (15.50, 0.20),
+    (18.00, 0.175),
+    (20.00, 0.175),  # 27/07 (decima ricalibrazione): 20EUR/16% -> l'utente sceglie
+                     # offerta, non autobuy -> floor alzato 0.165->0.175 (17.5%).
+    # 27/07 (undicesima ricalibrazione): estesa/ricalibrata la fascia 25-40EUR dopo aver
+    # alzato il prezzo max carta da 30 a 40EUR. La vecchia coda (22->0.16, 25->0.155,
+    # 30->0.15) era estrapolata e MAI validata con l'utente: risultava troppo bassa. Da
+    # ~20 casi ipotetici l'utente vuole un floor a GOBBA -- ~19-20% sui 25-30EUR (25/20%
+    # e 30/20-22% -> autobuy, 25/17% e 30/16-18% -> offerta), poi in calo verso ~15.5% a
+    # 40EUR (35/19% si ma 35/18% no; 37/17% si; 40/16-18% si ma 40/15% no).
+    (25.00, 0.19),
+    (30.00, 0.195),
+    (35.00, 0.185),
+    (37.00, 0.165),
+    (40.00, 0.155),
+]
+
+# Regola 3: sconto dell'offerta MakeOffer per fascia di prezzo (lista crescente), piu'
+# l'eccezione giocatore liquido. FIX 25/07 (terza ricalibrazione, sera): dopo il primo
+# run reale di 30 min con le nuove curve di soglia (Regole 1/2), 5 disaccordi su 5 sugli
+# importi offerti andavano TUTTI nella stessa direzione (sconto piu' profondo di quanto
+# calcolato) -- 5.49EUR/fascia 4-7 voleva 23.5% (non 19%), 4.00EUR/fascia 4-7 voleva 25%
+# (non 19%), 2.20EUR/fascia <4 voleva 36.4% (non 27%), 20.00EUR/fascia 15-30 voleva
+# 12.5% (non 10%). Conferma sistematica di un pattern gia' visto piu' volte in sessioni
+# precedenti (Fernandes, Reguilon, Abde, Calum Ward, Gloukh, Mauro Junior, Saibari, Rice
+# bis -- vedi memoria calibrazione) mai completamente risolto dalla seconda ricalibrazione
+# (27%/19%).
+# FIX 26/07 (quarta ricalibrazione): la fascia 7-15EUR, rimasta invariata dalla terza
+# ricalibrazione, ha avuto 2 richieste consecutive di sconto piu' profondo in 2 run reali
+# diversi -- 9.00EUR voleva 7.50EUR (16.7%, non 11.5%), 9.90EUR voleva 8.50EUR (14.1%, non
+# 11.5%). Alzata a 15% (media dei due punti, ~15.4%, arrotondata).
+#
+# FIX 26/07 (quinta ricalibrazione, sera -- curva continua): stesso identico problema
+# "gradiente dentro la fascia" gia' risolto per le Regole 1/2 (MAKEOFFER_MIN_MARGIN_CURVE/
+# AUTOBUY_MIN_MARGIN_CURVE), qui pero' non solo ai bordi -- coinvolge quasi tutta la fascia
+# 4-7EUR. Confermato al confine dei 4EUR con una coppia esatta (3.95EUR/margine 20.9%->
+# voluto ~24%, non 34%; ipotetico 4.05EUR/margine 20.6%-> voluto ~26%, coerente) e al
+# confine dei 7EUR con un'altra coppia (ipotetico 6.95EUR-> voluto ~14%; ipotetico 7.05EUR->
+# voluto ~15%, in linea con la fascia sopra). Ma anche a META' della vecchia fascia 4-7EUR,
+# lontano da ogni confine, lo sconto voluto era gia' molto piu' basso del 24% fisso: Joseph
+# Paintsil (4.80EUR reale, margine 10.3%)-> voluto ~17%; Ismael Saibari (6.00EUR reale,
+# margine 11.8%)-> voluto ~17% (identico). Il confine dei 15EUR e' risultato invece rumoroso/
+# inconcludente (14.90EUR-> ~12.75%, 15.10EUR-> ~9.3%, nessun pattern chiaro su due prezzi
+# quasi identici) -- lasciato invariato. Punti di controllo che CONFERMANO il 34% fisso resta
+# corretto lontano dal confine dei 4EUR: Antony (2.32EUR reale, margine 15.7%)-> voluto 35.3%
+# (match esatto col bot), ipotetico 2.00EUR-> voluto 35% (match quasi esatto). Curva a
+# interpolazione lineare, stessa tecnica delle Regole 1/2.
+# FIX 26/07 (sesta ricalibrazione, primo run reale in live mode con la curva sopra):
+# 2 casi reali nella fascia 7-15EUR (Germán Berterame, 12.88EUR/margine 8.4%, offerta
+# 11.00EUR/13.2%) confermati "andava bene" dall'utente -- fascia INVARIATA. Il caso
+# reale Berke Özer (16.00EUR/margine 6.9%, offerta 14.00EUR/12.5%) e' stato ACCETTATO
+# dal venditore -- segnale che si poteva chiedere ancora piu' sconto (utente: "avrei
+# offerto 50 centesimi in meno", ~13.50EUR/15.6%). Aggiunto un nuovo punto a 16EUR per
+# alzare lo sconto SOLO oltre i 15EUR (dove ricade Özer), senza toccare l'interpolazione
+# 7-15EUR gia' confermata corretta.
+# FIX 26/07 (settima ricalibrazione, run diagnostico 15min post auto-cancel): fascia
+# 4-6EUR corretta con 3 casi reali/ipotetici mirati. Baumgartl (4.39EUR reale, margine
+# 8.5%)-> voluto ~27% (non 21% come dava la curva); Gallagher (4.50EUR ipotetico)->
+# confermato ~27%, stesso valore, coerente. Jackson (5.20EUR ipotetico)-> ~22%, punto di
+# transizione. Fofana (6.00EUR ipotetico)-> confermato 17% invariato. Tielemans (4.00EUR
+# esatto, ipotetico)-> unico punto fuori pattern (voluto 15-20%, contraddetto dai 2 punti
+# vicini 4.39/4.50 che vogliono 27%), trattato come rumore isolato e non inseguito.
+OFFER_DISCOUNT_CURVE = [
+    (1.50, 0.34),
+    (4.00, 0.27),
+    (4.50, 0.27),
+    (5.20, 0.22),
+    (6.00, 0.17),
+    (7.00, 0.15),
+    (15.00, 0.125),
+    (16.00, 0.156),
+    # 27/07: prima la curva si fermava a 16EUR -> tutto il range 16-40EUR usava il 15.6%
+    # fisso, troppo profondo per carte care (offrire 15.6% sotto un minimo da 40EUR = gap
+    # ~6EUR, irrealistico). Su casi reali l'utente offre uno SHAVE ASSOLUTO ~2-3EUR sotto
+    # il minimo su queste carte (min35->33, min40->38/37, min32->30, min30->28), cioe'
+    # sconti % miti e calanti: 30EUR->~7%, 35EUR->~6%, 40EUR->~6%. Il segmento 16->30EUR
+    # cosi' interpola su ~11.9% a 22EUR e ~8.9% a 27EUR, coerente coi dati storici in
+    # memoria (22EUR->11-13%, 27EUR->9.3%) -- niente ancore intermedie necessarie.
+    (30.00, 0.070),
+    (35.00, 0.060),
+    (40.00, 0.060),
+]
+
+
+def _linear_interpolate(price_eur, curve):
+    """curve = lista di (prezzo, valore) ordinata crescente per prezzo. Interpola
+    linearmente tra i due punti che racchiudono price_eur; sotto il primo punto o sopra
+    l'ultimo, ritorna il valore all'estremo piu' vicino (clamp, nessuna estrapolazione)."""
+    if price_eur <= curve[0][0]:
+        return curve[0][1]
+    if price_eur >= curve[-1][0]:
+        return curve[-1][1]
+    for (p1, v1), (p2, v2) in zip(curve, curve[1:]):
+        if p1 <= price_eur <= p2:
+            if p2 == p1:
+                return v1
+            t = (price_eur - p1) / (p2 - p1)
+            return v1 + (v2 - v1) * t
+    return curve[-1][1]  # non raggiungibile, difesa
+
+
+# AGGRESSIVITA' TEST (bot_test_starterodds, 28/07, richiesta esplicita utente): le curve
+# MAKEOFFER_MIN_MARGIN_CURVE/AUTOBUY_MIN_MARGIN_CURVE sopra restano IDENTICHE a
+# bot_definitivo.py (stesso ~55 casi di calibrazione, storia intatta) -- l'aggressivita'
+# maggiore per questo test si applica come un moltiplicatore separato sul risultato
+# finale, non alterando i punti tarati. -10% sul margine minimo richiesto (sia MakeOffer
+# che AutoBuy) = piu' facile superare la soglia = piu' offerte/acquisti "virtuali"
+# rispetto a bot_definitivo.py, a parita' di condizioni di mercato. Reversibile con una
+# sola costante, non serve toccare le curve.
+AGGRESSIVENESS_MARGIN_MULTIPLIER = float(os.environ.get('AGGRESSIVENESS_MARGIN_MULTIPLIER', '0.90'))
+
+
+def compute_price_based_thresholds(price_eur):
+    """Ritorna (makeoffer_min_margin, autobuy_min_margin). FIX 26/07 (ottava
+    ricalibrazione): l'AutoBuy diretto non ha piu' un cutoff assoluto sotto cui e'
+    impossibile -- e' sempre teoricamente disponibile, solo sempre piu' difficile
+    (margine minimo piu' alto) scendendo di prezzo, vedi AUTOBUY_MIN_MARGIN_CURVE.
+    Fallback sui 2 valori statici originali se PRICE_BASED_THRESHOLDS_ENABLED e' 'no'."""
+    if not PRICE_BASED_THRESHOLDS_ENABLED:
+        return (MAKEOFFER_MARGIN_FRACTION * AGGRESSIVENESS_MARGIN_MULTIPLIER,
+                AUTOBUY_MARGIN_FRACTION * AGGRESSIVENESS_MARGIN_MULTIPLIER)
+
+    makeoffer_min = _linear_interpolate(price_eur, MAKEOFFER_MIN_MARGIN_CURVE) * AGGRESSIVENESS_MARGIN_MULTIPLIER
+    autobuy_min = _linear_interpolate(price_eur, AUTOBUY_MIN_MARGIN_CURVE) * AGGRESSIVENESS_MARGIN_MULTIPLIER
+    return makeoffer_min, autobuy_min
+
+
+def _round_offer_to_nice_number(price_eur, ceiling_eur):
+    """FIX 26/07 (richiesta esplicita utente, caso reale 3.00EUR -> offerta 1.98EUR:
+    'sempre meglio arrotondare, venditore piu' propenso ad accettare 2 che 1.98'):
+    arrotonda l'offerta calcolata (i venditori accettano piu' volentieri una cifra
+    tonda). Non arrotonda mai SOPRA ceiling_eur (il vero minimo di mercato -- non ha
+    senso offrire quanto o piu' del minimo) ne' sotto 0. Se l'arrotondamento al piu'
+    vicino supera il ceiling, arrotonda per difetto invece.
+    FIX 26/07 (settima ricalibrazione): passo ridotto da 0.50EUR a 0.10EUR -- l'utente ha
+    chiarito che il numero tondo e' solo preferibile, non vincolante, il vero obiettivo
+    e' lo sconto% esatto (caso Heuer Fernandes: calcolo vero 1.36EUR, il vecchio passo da
+    0.50 arrotondava a 1.50EUR, gia' troppo generoso secondo l'utente)."""
+    rounded = round(price_eur * 10) / 10
+    if rounded >= ceiling_eur:
+        rounded = (price_eur * 10) // 1 / 10  # arrotonda per difetto al decimo di euro
+    return max(0.0, round(rounded, 2))
+
+
+def compute_price_based_offer_discount(price_eur):
+    """Sconto da applicare al vero minimo per calcolare il prezzo dell'offerta MakeOffer.
+    Dipende dal PREZZO della carta (Regola 3 sopra), non dal margine del caso specifico.
+    FIX 26/07 (rimossa l'eccezione "giocatore liquido"): l'override
+    LIQUID_PLAYER_OFFER_DISCOUNT (10% flat per count_7d>=15) e' stato rimosso -- validato
+    su 5 casi reali in 2 run diagnostici consecutivi, 4/5 volte l'utente voleva lo sconto
+    standard della fascia (non quello mite), incluso lo STESSO identico caso reale
+    ripetuto identico in entrambi i run (minimo 20.00EUR, override dava 18.00EUR, utente
+    voleva 17.50EUR = esattamente il valore della fascia 15-30EUR senza eccezione)."""
+    if not PRICE_BASED_THRESHOLDS_ENABLED:
+        return OFFER_DISCOUNT_FRACTION
+    return _linear_interpolate(price_eur, OFFER_DISCOUNT_CURVE)
+# =====================================================================================
+
+LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '18000'))
+LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
+
+# FIX 26/07 (richiesta esplicita utente): aggiunti i 4 campionati con carte in_season
+# appena uscite e ancora troppo instabili di prezzo -- portoghese, austriaco,
+# scozzese, croato. Per tutti i campionati in questo set (confermato dall'utente,
+# vale in ENTRAMBE le direzioni) il confronto di mercato separa sempre in_season e
+# classic: una carta in_season si confronta solo con altre in_season
+# (get_in_season_prices), una carta classic si confronta solo con altre classic
+# (get_classic_prices). Tutti gli altri campionati restano con in_season+classic
+# uniti in un solo confronto, comportamento invariato. Per questi 4 nuovi, inoltre,
+# le in_season sono anche bloccate del tutto dalla blacklist transitoria
+# 'campionato_inseason_temp' (15gg, vedi BLACKLISTED_INSEASON_LEAGUE_SLUGS) --
+# quindi finche' resta attiva viene di fatto valutato solo il ramo classic.
+EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1', 'primeira-liga-pt', 'austrian-bundesliga',
+                          'premiership-gb-sct', '1-hnl'}
+
+AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '10'))
+AUTOBUY_TARGET_MATCHES = max(1, min(100, AUTOBUY_TARGET_MATCHES))
+
+CHECK_CLASSIC = os.environ.get('CHECK_CLASSIC', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+
+# Parametri MakeOffer (ramo offerta scontata)
+# Tetto/fallback statico per compute_price_based_offer_discount() -- con
+# PRICE_BASED_THRESHOLDS_ENABLED='no' lo sconto e' ESATTAMENTE questo valore fisso
+# (comportamento originale pre-25/07).
+OFFER_DISCOUNT_FRACTION = float(os.environ.get('OFFER_DISCOUNT_FRACTION', '0.20'))
+
+OFFER_DURATION_DAYS = max(1, min(7, int(os.environ.get('OFFER_DURATION_DAYS', '1'))))
+OFFER_DURATION_SECONDS = OFFER_DURATION_DAYS * 86400
+MAX_PENDING_OFFERS = int(os.environ.get('MAX_PENDING_OFFERS', '10'))
+pending_offers_count = [0]  # contatore in-memory per run, richiesto da create_direct_offer
+
+# Set in-memory (per-run, non persistito) dei giocatori gia' scritti in blacklist per
+# copertura/media punti zero -- evita upsert ripetuti (lettura+riscrittura file) sullo
+# stesso slug se ricompare piu' volte nello stesso scan, senza rallentare il flusso.
+_gia_blacklistati_coverage_o_media_zero = set()
+
+# Stessa idea, per la nuova sezione 'forma_bassa_ultime_5' (22/07, richiesta esplicita
+# utente): evita upsert ripetuti sullo stesso slug se ricompare piu' volte nello stesso
+# scan.
+_gia_in_forma_bassa_ultime_5 = set()
+
+# --- Stop automatico su fondi insufficienti (20/07, richiesta esplicita utente) ---
+# Se un tentativo di acquisto/offerta reale fallisce per mancanza di fondi, non ha
+# senso continuare l'esecuzione: ogni tentativo successivo fallirebbe allo stesso modo,
+# quindi il bot si ferma subito (chiude la connessione WebSocket) invece di continuare a
+# girare a vuoto per ore, e manda una notifica Telegram esplicita e diversa dalle
+# normali notifiche di caso trovato/fallito.
+INSUFFICIENT_FUNDS_STOP = [False]
+
+# --- Protezione "no ri-acquisto/ri-offerta stesso giocatore entro N giorni" -- ora un
+# unico tipo di riga nella lista nera (cooldown_acquisto), condiviso tra i due rami cosi'
+# uno non ripropone/ricompra un giocatore appena gestito dall'altro.
+PLAYER_COOLDOWN_HOURS = 24  # mantenuto per compatibilita' log/commenti esistenti
+
+
+def _slug_cooldown(player_slug, is_in_season):
+    """Chiave usata SOLO per il cooldown acquisto/offerta: suffissa lo slug con
+    '-inseason' o '-classic' cosi' lo stesso giocatore, se esiste sia come carta
+    in_season che come classic, ha DUE cooldown indipendenti -- comprare/offrire
+    sulla versione in_season non blocca piu' la versione classic dello stesso
+    giocatore per 24h (richiesta esplicita utente 21/07). Le altre sezioni della
+    lista nera (blacklist manager/giocatore, thin_market) NON usano questo suffisso,
+    restano sullo slug puro."""
+    suffisso = 'inseason' if is_in_season else 'classic'
+    return f"{player_slug}-{suffisso}"
+
+
+def is_player_in_cooldown(player_slug, is_in_season=True):
+    return _lista_nera_attiva('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season))
+
+
+def record_player_purchase(player_slug, is_in_season=True):
+    _lista_nera_upsert('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season),
+                        COOLDOWN_ACQUISTO_DEFAULT_DAYS)
+    log(f"[lista nera] registrato acquisto di {player_slug} "
+        f"({'in_season' if is_in_season else 'classic'}), cooldown "
+        f"{COOLDOWN_ACQUISTO_DEFAULT_DAYS:.1f}gg")
+
+
+def record_player_offer(player_slug, is_in_season=True):
+    _lista_nera_upsert('cooldown_acquisto', _slug_cooldown(player_slug, is_in_season),
+                        COOLDOWN_ACQUISTO_DEFAULT_DAYS)
+    log(f"[lista nera] registrata offerta a {player_slug} "
+        f"({'in_season' if is_in_season else 'classic'}), cooldown "
+        f"{COOLDOWN_ACQUISTO_DEFAULT_DAYS:.1f}gg")
+
+
+# --- Cache "mercato troppo sottile" -- ora tipo di riga 'thin_market' nella lista nera
+# unica (stesso principio della blacklist unita: se un ramo scarta un giocatore per
+# liquidita', l'altro non deve rifare la stessa query).
+THIN_MARKET_SKIP_HOURS = THIN_MARKET_DEFAULT_DAYS * 24  # mantenuto per compatibilita' log
+
+
+def is_player_in_thin_market_cache(player_slug, is_in_season=True):
+    """FIX 21/07 (bug segnalato dall'utente: classic thin market bloccava anche
+    l'in_season dello stesso giocatore, che aveva liquidita' normale): stesso
+    principio gia' applicato al cooldown acquisto -- suffisso -inseason/-classic
+    sullo slug, cosi' le due stagioni sono tracciate separatamente e una classic
+    sottile non blocca piu' la ricerca sull'in_season (e viceversa)."""
+    return _lista_nera_attiva('thin_market', _slug_cooldown(player_slug, is_in_season))
+
+
+def record_thin_market_skip(player_slug, is_in_season=True):
+    _lista_nera_upsert('thin_market', _slug_cooldown(player_slug, is_in_season), THIN_MARKET_DEFAULT_DAYS)
+
+
+# FORMA BASSA ULTIME 5 (22/07, richiesta esplicita utente): media punti SO5 nelle
+# ultime 5 partite giocate -- se < 30 (strettamente, non <=), il giocatore viene
+# ignorato per FORMA_BASSA_DEFAULT_DAYS (default 30gg = 1 mese). A differenza di
+# coverage/media-zero (condizioni quasi permanenti, blacklist 365gg in 'giocatore'),
+# questa e' una condizione TRANSITORIA (un giocatore puo' tornare in forma), quindi
+# sezione separata e scadenza molto piu' breve. Nessun suffisso stagione: la media
+# ultime 5 e' una statistica del GIOCATORE, identica per la sua carta in_season e
+# classic -- lo stesso della logica coverage/media-zero esistente.
+FORMA_BASSA_DEFAULT_DAYS = float(os.environ.get('FORMA_BASSA_DEFAULT_DAYS', '3'))
+LAST_FIVE_AVG_SCORE_THRESHOLD = float(os.environ.get('LAST_FIVE_AVG_SCORE_THRESHOLD', '10'))
+
+
+def is_player_in_forma_bassa(player_slug):
+    return _lista_nera_attiva('forma_bassa_ultime_5', (player_slug or '').lower())
+
+
+def record_forma_bassa(player_slug):
+    _lista_nera_upsert('forma_bassa_ultime_5', player_slug, FORMA_BASSA_DEFAULT_DAYS)
+    log(f"[lista nera] {player_slug} in 'forma bassa ultime 5' per {FORMA_BASSA_DEFAULT_DAYS:.0f}gg "
+        f"-- media SO5 ultime 5 partite sotto soglia ({LAST_FIVE_AVG_SCORE_THRESHOLD:.0f})")
+
+_FIAT_RATE_CACHE = {}
+
+
+def log(message):
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{ts}] {message}", flush=True)
+
+
+def get_eth_rate():
+    try:
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur",
+            timeout=5
+        )
+        return float(r.json()['ethereum']['eur'])
+    except Exception:
+        return 3000.0
+
+
+def get_usd_eur_rate():
+    if 'usd' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['usd']
+    try:
+        r = requests.get("https://api.frankfurter.app/latest?from=USD&to=EUR", timeout=5)
+        rate = float(r.json()['rates']['EUR'])
+    except Exception:
+        rate = 0.92
+    _FIAT_RATE_CACHE['usd'] = rate
+    return rate
+
+
+def get_gbp_eur_rate():
+    if 'gbp' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['gbp']
+    try:
+        r = requests.get("https://api.frankfurter.app/latest?from=GBP&to=EUR", timeout=5)
+        rate = float(r.json()['rates']['EUR'])
+    except Exception:
+        rate = 1.17
+    _FIAT_RATE_CACHE['gbp'] = rate
+    return rate
+
+
+def get_sol_eur_rate():
+    if 'sol' in _FIAT_RATE_CACHE:
+        return _FIAT_RATE_CACHE['sol']
+    try:
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur",
+            timeout=5
+        )
+        rate = float(r.json()['solana']['eur'])
+    except Exception:
+        rate = 150.0
+    _FIAT_RATE_CACHE['sol'] = rate
+    return rate
+
+
+def eur_price_from_amounts(amounts, eth_rate):
+    """Identica alla versione in track.py: legge il prezzo di un annuncio in qualunque
+    valuta Sorare accetti (EUR/ETH/USD/GBP/SOL) e lo converte sempre in EUR."""
+    if not amounts:
+        return None
+    if amounts.get('eurCents') is not None:
+        return amounts['eurCents'] / 100
+    if amounts.get('wei') is not None:
+        try:
+            return float(amounts['wei']) / 1e18 * eth_rate
+        except (TypeError, ValueError):
+            return None
+    if amounts.get('usdCents') is not None:
+        try:
+            return amounts['usdCents'] / 100 * get_usd_eur_rate()
+        except (TypeError, ValueError):
+            return None
+    if amounts.get('gbpCents') is not None:
+        try:
+            return amounts['gbpCents'] / 100 * get_gbp_eur_rate()
+        except (TypeError, ValueError):
+            return None
+    if amounts.get('lamport') is not None:
+        try:
+            return float(amounts['lamport']) / 1e9 * get_sol_eur_rate()
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = 0.05
+GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = 0.35
+GRAPHQL_429_COOLDOWN_SECONDS = 30.0
+_graphql_throttle_lock = threading.Lock()
+_graphql_last_call_ts = [0.0]
+_graphql_last_429_ts = [0.0]
+
+
+def _graphql_throttle(critical=False):
+    # OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente -- "velocizzare il
+    # processo da rilevazione ad acquisto"): le chiamate CRITICHE del percorso di
+    # acquisto (prepareAcceptOffer, fetchEncryptedPrivateKey, acceptOffer, e il
+    # fallback exchange rate dentro quel percorso) NON aspettano piu' il throttle.
+    # Prima pagavano SEMPRE il minimo di 50ms di distanza dall'ultima chiamata
+    # qualsiasi (anche uno scan prezzi di un ALTRO evento in parallelo), e fino a
+    # 350ms se un 429 era avvenuto nei 30s precedenti (modalita' SAFE) -- proprio
+    # sull'accept, il passo dove ogni millisecondo decide la corsa contro gli
+    # altri bot. Sono 2-3 chiamate per acquisto, pochi acquisti per run: il
+    # rischio 429 aggiunto e' trascurabile. Il timestamp dell'ultima chiamata
+    # viene comunque aggiornato, cosi' le chiamate NORMALI successive si
+    # distanziano correttamente anche da quelle critiche. Nessun controllo di
+    # business toccato: pura prioritizzazione del traffico.
+    with _graphql_throttle_lock:
+        now = time.time()
+        if not critical:
+            recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
+            min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
+            wait = min_interval - (now - _graphql_last_call_ts[0])
+            if wait > 0:
+                time.sleep(wait)
+        _graphql_last_call_ts[0] = time.time()
+
+
+# VERSIONE NO-PLAYWRIGHT (test): niente browser Chrome -- anche le chiamate prima
+# "critiche" (prepareAcceptOffer, fetchEncryptedPrivateKey, acceptOffer, prepareOffer,
+# createDirectOffer) usano ora curl_cffi via graphql_query(), come il resto del bot.
+# get_browser_page/close_browser rimosse (non piu' necessarie).
+
+
+def _graphql_call_via_browser_raw(query, variables=None, critical=False):
+    """VERSIONE NO-PLAYWRIGHT (test): nome mantenuto per non toccare i moltissimi call
+    site esistenti (call_fn = _call_fn or graphql_query_via_browser), ma qui delega
+    direttamente a graphql_query (curl_cffi + header identificati mesi fa nel percorso
+    unknown_fingerprint) -- nessun browser, nessun dispatch necessario. Se Sorare
+    dovesse rifiutare queste chiamate con lo stesso errore di allora, e' il segnale che
+    il fingerprint via browser resta necessario e si torna alla versione con Playwright."""
+    return graphql_query(query, variables, critical=critical)
+
+
+def graphql_query_via_browser(query, variables=None, timeout_ms=20000, critical=False):
+    """VERSIONE NO-PLAYWRIGHT (test): nome/firma mantenuti per compatibilita' con tutti
+    i call site esistenti (call_fn = _call_fn or graphql_query_via_browser) -- delega
+    a _graphql_call_via_browser_raw, che a sua volta usa graphql_query. Nessun dispatch
+    a thread dedicato necessario (graphql_query/curl_cffi e' gia' thread-safe, usato
+    altrove in concorrenza)."""
+    return _graphql_call_via_browser_raw(query, variables, critical=critical)
+
+
+def graphql_query(query, variables=None, max_retries=3, extra_headers=None, critical=False):
+    """Versione semplificata (stessa base di track.py) del client GraphQL con backoff sui
+    429 -- niente rilevamento "ban a tempo fisso" qui, il volume di query di questo bot e'
+    molto piu' basso (esecuzioni brevi, manuali).
+    FIX 20/07 (ipotesi unknown_fingerprint): aggiunti header custom mancanti, confermati
+    dal vivo ispezionando una richiesta reale di PrepareAcceptOfferMutation dal browser
+    (sorare-client, sorare-version, sorare-build, sec-fetch-*, accept-language, origin,
+    referer) -- il bot prima mandava SOLO Content-Type/Cookie/x-csrf-token/User-Agent,
+    mancavano tutti questi header che identificano la richiesta come proveniente da un
+    client Web legittimo. sorare-version/sorare-build sono valori specifici di un
+    deployment del sito (cambiano ad ogni release) -- usiamo gli ultimi visti dal vivo
+    come default ragionevole, ma potrebbero invecchiare: se il problema persiste,
+    andrebbero riletti da una richiesta fresca del browser."""
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Cookie': COOKIES,
+        'x-csrf-token': CSRF_TOKEN,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                       '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+        'Origin': 'https://sorare.com',
+        'Referer': 'https://sorare.com/',
+        'Accept-Language': 'it',
+        'sorare-client': 'Web',
+        'sorare-version': os.environ.get('SORARE_VERSION', '20260717144535'),
+        'sorare-build': os.environ.get(
+            'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+    }
+    if SORARE_DEVICE_FINGERPRINT:
+        headers['device_fingerprint'] = SORARE_DEVICE_FINGERPRINT
+    if extra_headers and isinstance(extra_headers, dict):
+        headers.update(extra_headers)
+    payload = {"query": query, "variables": variables or {}}
+    for attempt in range(max_retries):
+        _graphql_throttle(critical=critical)
+        if _HAS_CURL_CFFI:
+            r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+        else:
+            r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+        if r.status_code == 429:
+            _graphql_last_429_ts[0] = time.time()
+            wait_seconds = min((2 ** attempt) * 2, 8.0)
+            log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
+                f"attendo {wait_seconds:.1f}s...")
+            time.sleep(wait_seconds)
+            continue
+        return r.json()
+    return {"errors": [{"message": "rate_limited_max_retries_exceeded"}]}
+
+
+LIVE_OFFERS_QUERY = """
+query LiveOffersForPlayer($slug: String!, $n: Int!, $cursor: String) {
+  tokens {
+    liveSingleSaleOffers(playerSlug: $slug, last: $n, before: $cursor) {
+      totalCount
+      pageInfo { hasPreviousPage startCursor }
+      nodes {
+        status
+        sender { ... on User { slug } }
+        receiverSide { amounts { eurCents wei usdCents gbpCents lamport } anyCards { slug } }
+        senderSide {
+          anyCards {
+            slug
+            rarityTyped
+            sport
+            sportSeason { name }
+            inSeasonEligible
+            ... on Card {
+              coverageStatus
+            }
+            anyPlayer {
+              activeClub { domesticLeague { slug } }
+              lastTenSo5Appearances
+              lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+              lastFortyAvgScore: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
+              lastFiveAvgScore: averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+# FILTRO STARTER ODDS (bot_test_starterodds, clone isolato di bot_definitivo -- 28/07):
+# stessa query usata da discovery_fixture.py (ODDS_AND_L10_QUERY) per le formazioni, qui
+# applicata a un singolo player_slug alla volta invece che in batch su una giornata gia'
+# risolta. Si prende la PROSSIMA partita futura (primo nodo di anyFutureGames, nessun
+# filtro di finestra fixture -- qui non c'e' un gameweek di riferimento come nel tool
+# formazioni, "prossima partita" e' semplicemente la prima disponibile). Odds assenti
+# (giocatore senza prossima partita in calendario, o dato non ancora pubblicato da
+# Sorare) = ESCLUSO, stessa convenzione di discovery_fixture.py.
+MIN_STARTER_ODDS = float(os.environ.get('MIN_STARTER_ODDS', '0.80'))
+# 'si' = logga il risultato del filtro (odds trovate/assenti, passa/scarta) per OGNI
+# valutazione, non solo gli scarti -- richiesta esplicita utente per verificare dal vivo
+# che la query risponda con dati sensati prima di fidarsene.
+STARTER_ODDS_DIAGNOSTIC_LOG = os.environ.get(
+    'STARTER_ODDS_DIAGNOSTIC_LOG', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+
+NEXT_STARTER_ODDS_QUERY = """
+query NextStarterOdds($slug: String!) {
+  anyPlayer(slug: $slug) {
+    anyFutureGames(first: 1) {
+      nodes {
+        playerGameScore(playerSlug: $slug) {
+          anyGame { date }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+# Cache in RAM (slug -> odds frazionaria o None) per non ripetere la query se lo stesso
+# giocatore si ripresenta piu' volte nella stessa run (es. piu' carte in vendita).
+_starter_odds_cache = {}
+
+
+def get_next_starter_odds(player_slug):
+    """Restituisce le starter odds (frazione 0-1) per la prossima partita futura del
+    giocatore, o None se assenti/non disponibili. Una sola chiamata HTTP per slug per
+    run (cache in RAM)."""
+    if player_slug in _starter_odds_cache:
+        if STARTER_ODDS_DIAGNOSTIC_LOG:
+            log(f"[starter odds diagnostica] {player_slug}: da cache -> "
+                f"{_starter_odds_cache[player_slug]}")
+        return _starter_odds_cache[player_slug]
+    odds = None
+    _debug = "risposta vuota/errore"
+    try:
+        d = graphql_query(NEXT_STARTER_ODDS_QUERY, {"slug": player_slug})
+        if d.get('errors'):
+            _debug = f"GraphQL errors: {d['errors']}"
+        p = (d.get('data') or {}).get('anyPlayer') or {}
+        nodes = ((p.get('anyFutureGames') or {}).get('nodes') or [])
+        if not nodes:
+            _debug = "nessuna partita futura in calendario (anyFutureGames vuoto)"
+        else:
+            pgs = nodes[0].get('playerGameScore') or {}
+            game_date = (pgs.get('anyGame') or {}).get('date')
+            bp = ((pgs.get('anyPlayerGameStats') or {})
+                  .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
+            if bp is not None:
+                odds = bp / 10000.0
+                _debug = f"prossima partita {game_date}, starterOddsBasisPoints={bp} -> {odds:.1%}"
+            else:
+                _debug = f"prossima partita {game_date}, starterOddsBasisPoints assente"
+    except Exception as e:
+        _debug = f"eccezione: {e}"
+        log(f"[starter odds] errore query per {player_slug}: {e}")
+    if STARTER_ODDS_DIAGNOSTIC_LOG:
+        log(f"[starter odds diagnostica] {player_slug}: {_debug}")
+    _starter_odds_cache[player_slug] = odds
+    return odds
+
+
+PAGE_SIZE = 50
+MAX_PAGES = 2
+
+
+def fetch_all_live_offers(player_slug):
+    """Identica alla versione in track.py: pagina TUTTI gli annunci live di un giocatore
+    (il server tronca a ~50 per richiesta). FIX 19/07 (richiesta esplicita utente, caso
+    Julien Celestine): i venditori blacklistati (es. Clem777) NON vengono piu' esclusi qui
+    -- le loro carte contano comunque per il vero minimo/secondo prezzo di mercato, altrimenti
+    il margine calcolato risulta gonfiato (visto dal vivo: un annuncio intermedio di Clem777
+    veniva "saltato", facendo sembrare il margine piu' alto di quanto fosse in realta').
+    L'esclusione dei blacklistati resta, ma solo al momento di DECIDERE se acquistare (vedi
+    evaluate_event): se il vero minimo risulta di un venditore blacklistato, il bot scarta il
+    caso invece di comprare da lui."""
+    all_nodes = []
+    cursor = None
+    for _ in range(MAX_PAGES):
+        data = graphql_query(LIVE_OFFERS_QUERY, {"slug": player_slug, "n": PAGE_SIZE, "cursor": cursor})
+        if data.get('errors'):
+            log(f"[paginazione annunci live] errore per {player_slug}: {data['errors']}")
+            break
+        conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        page_info = conn.get('pageInfo') or {}
+        if not page_info.get('hasPreviousPage'):
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            break
+    return all_nodes
+
+
+def get_bucket_prices(player_slug, eth_rate):
+    """Legge TUTTI gli annunci live in_season/classic del giocatore in un solo fetch, come
+    get_bucket_prices in track.py. Restituisce {'in_season': [(prezzo, card_slug, seller_slug), ...],
+    'classic': [(prezzo, card_slug, seller_slug), ...]}, entrambe ordinate per prezzo crescente.
+    seller_slug incluso (FIX 19/07) per poter distinguere, a valle, se il vero minimo e' di un
+    venditore blacklistato -- vedi nota in fetch_all_live_offers ed evaluate_event."""
+    nodes = fetch_all_live_offers(player_slug)
+    raw = {'in_season': [], 'classic': []}
+    # FIX 21/07 (richiesta esplicita utente: il log per-carta era troppo ridondante --
+    # un giocatore con tanti annunci scartati per lo stesso motivo produceva decine di
+    # righe identiche). Contiamo gli scarti per motivo e logghiamo UNA riga di riepilogo
+    # per giocatore/chiamata invece di una riga per ogni singola carta.
+    skipped_coverage = []
+    skipped_zero_avg = []
+    skipped_forma_bassa = []
+    for node in nodes:
+        if node.get('status') != 'opened':
+            continue
+        if (node.get('receiverSide') or {}).get('anyCards'):
+            continue  # scambio carta-per-carta, non una vendita in denaro
+        seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
+        cards = (node.get('senderSide') or {}).get('anyCards') or []
+        match = None
+        for c in cards:
+            if c.get('rarityTyped') != 'limited':
+                continue
+            if c.get('sport') != 'FOOTBALL':
+                continue
+            if c.get('coverageStatus') == 'NOT_COVERED':
+                skipped_coverage.append(c.get('slug'))
+                # FIX 21/07 (correzione): oltre a scartare la carta per questo confronto,
+                # blacklista il giocatore permanentemente (365gg) -- non solo per questa
+                # run, richiesta esplicita utente. Set in-memory evita upsert ripetuti
+                # (lettura+riscrittura file) se lo stesso slug ricompare piu' volte
+                # nello stesso scan.
+                if player_slug not in _gia_blacklistati_coverage_o_media_zero:
+                    _lista_nera_upsert('giocatore', player_slug, PLAYER_BLACKLIST_DEFAULT_365_DAYS)
+                    _gia_blacklistati_coverage_o_media_zero.add(player_slug)
+                    log(f"[lista nera] {player_slug} blacklistato 365gg -- carta non coperta "
+                        f"da SO5 (coverageStatus=NOT_COVERED)")
+                continue  # carta in una squadra non coperta da SO5 (es. finita in un
+                          # campionato che Sorare non copre), punti non conteggiati --
+                          # richiesta esplicita utente 21/07, non va considerata
+                          # nemmeno per il calcolo del minimo/margine
+            player_c = c.get('anyPlayer') or {}
+            last_ten_avg = player_c.get('lastTenPlayedAvgScore')
+            last_forty_avg = player_c.get('lastFortyAvgScore')
+            if last_ten_avg == 0.0 or last_forty_avg == 0.0:
+                skipped_zero_avg.append(c.get('slug'))
+                # FIX 22/07 (richiesta esplicita utente): non piu' blacklist permanente
+                # condivisa con coverage -- ora durata breve dedicata
+                # (MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS, default 3gg), perche' un giocatore
+                # puo' tornare a giocare e la media si aggiorna da sola alla query
+                # successiva -- niente senso tenerlo fuori per un anno.
+                if player_slug not in _gia_blacklistati_coverage_o_media_zero:
+                    _lista_nera_upsert('giocatore', player_slug, MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS)
+                    _gia_blacklistati_coverage_o_media_zero.add(player_slug)
+                    log(f"[lista nera] {player_slug} blacklistato "
+                        f"{MEDIA_ZERO_BLACKLIST_DEFAULT_DAYS:.0f}gg -- media punti 0 "
+                        f"nelle ultime 10 e/o nelle ultime 40 giocate")
+                continue  # media punti 0 nelle ultime 10 o nelle ultime 40 -- stesso
+                          # filtro/motivazione di coverageStatus, richiesta utente 21/07
+            last_five_avg = player_c.get('lastFiveAvgScore')
+            if last_five_avg is not None and last_five_avg <= LAST_FIVE_AVG_SCORE_THRESHOLD:
+                skipped_forma_bassa.append(c.get('slug'))
+                # NUOVO 22/07 (richiesta esplicita utente): media SO5 ultime 5 partite
+                # sotto soglia -- condizione TRANSITORIA, sezione separata
+                # 'forma_bassa_ultime_5' con scadenza breve (default 30gg), non la
+                # blacklist permanente 365gg usata per coverage/media-zero sopra.
+                if player_slug not in _gia_in_forma_bassa_ultime_5:
+                    record_forma_bassa(player_slug)
+                    _gia_in_forma_bassa_ultime_5.add(player_slug)
+                continue
+            match = c
+            break
+        if not match:
+            continue
+        price = eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
+        if price is None:
+            continue
+        bucket = 'in_season' if match.get('inSeasonEligible') else 'classic'
+        raw[bucket].append((price, match.get('slug'), seller_slug))
+    if skipped_coverage:
+        log(f"[scarto coverage] {player_slug}: {len(skipped_coverage)} carta/e esclusa/e dal "
+            f"confronto -- coverageStatus=NOT_COVERED (squadra non coperta da SO5)")
+    if skipped_zero_avg:
+        log(f"[scarto media 0] {player_slug}: {len(skipped_zero_avg)} carta/e esclusa/e dal "
+            f"confronto -- media 0 nelle ultime 10 giocate e/o nelle ultime 40")
+    if skipped_forma_bassa:
+        log(f"[scarto forma bassa] {player_slug}: {len(skipped_forma_bassa)} carta/e esclusa/e "
+            f"dal confronto -- media SO5 ultime 5 sotto soglia ({LAST_FIVE_AVG_SCORE_THRESHOLD:.0f})")
+    for key in ('in_season', 'classic'):
+        raw[key].sort(key=lambda p: p[0])
+    return raw
+
+
+def validate_live_offers_schema():
+    """Self-check di avvio (FIX diagnostica 'bot piantato'): fa UNA query di prova con
+    LIVE_OFFERS_QUERY (gli stessi campi SO5/coverageStatus usati per ogni valutazione)
+    su un giocatore reale e molto scambiato, cosi' se un campo dello schema (es.
+    coverageStatus, lastTenSo5Appearances, ecc.) e' invalido o e' cambiato lato Sorare,
+    lo scopriamo SUBITO con un errore chiaro invece di scoprirlo dopo ore di ascolto
+    a vuoto (fetch_all_live_offers fallisce silenziosamente per OGNI evento e
+    evaluate_event scarta tutto con 'if not prices: return False', senza che il bot
+    sembri fare nulla di sbagliato nei log)."""
+    probe_slug = "kylian-mbappe"
+    data = graphql_query(LIVE_OFFERS_QUERY, {"slug": probe_slug, "n": 1, "cursor": None})
+    if data.get('errors'):
+        msg = (f"[SELF-CHECK FALLITO] La query LIVE_OFFERS_QUERY (campi SO5/coverageStatus) "
+               f"ritorna errore GraphQL su un giocatore di prova ({probe_slug}): {data['errors']}. "
+               f"Questo significa che OGNI valutazione durante l'ascolto fallirebbe silenziosamente "
+               f"(nessun caso verrebbe mai trovato, ma il bot sembrerebbe girare normalmente). "
+               f"Controlla i nomi dei campi coverageStatus/lastTenSo5Appearances/"
+               f"lastTenPlayedSo5AverageScore/lastFortySo5AverageScore nello schema Sorare.")
+        log(msg)
+        send_telegram_msg(f"BOT SUPREMO -- ERRORE CRITICO ALL'AVVIO\n\n{msg}")
+        return False
+    log("[self-check] Schema LIVE_OFFERS_QUERY (coverageStatus/SO5) validato correttamente.")
+
+    return True
+
+
+def is_asia_americas_excluded_league(league_slug):
+    """I 2 campionati (MLS, K League) per cui il confronto con il classic va escluso --
+    restano solo con la logica in_season pura gia' in produzione. J League ESCLUSA da questo
+    filtro su decisione dell'utente (19/07): per J League vale la logica normale in_season+
+    classic come tutti gli altri campionati. Vedi nota nell'area di memoria del progetto:
+    motivazione non tecnica, richiesta esplicita dell'utente. Se league_slug e' None/
+    sconosciuto (es. giocatore attualmente senza squadra), NON viene considerato escluso --
+    si applica comunque in_season+classic, comportamento di default corretto e verificato."""
+    return league_slug in EXCLUDED_LEAGUE_SLUGS
+
+
+def get_in_season_prices(player_slug, eth_rate, league_slug):
+    """Restituisce (prices_da_confrontare, is_excluded_league) dove prices_da_confrontare
+    e' una lista (prezzo, card_slug) ordinata crescente:
+    - Per MLS/K League/J League (is_excluded_league=True): SOLO in_season, comportamento
+      identico a prima del confronto con classic (nessuna modifica di logica per questi 3).
+    - Per tutti gli altri campionati: in_season + classic UNITI in un'unica lista ordinata,
+      trattando il classic come "un ulteriore annuncio in_season" ai fini del vero minimo/
+      secondo prezzo -- criterio esplicito richiesto dall'utente."""
+    buckets = get_bucket_prices(player_slug, eth_rate)
+    excluded = is_asia_americas_excluded_league(league_slug)
+    if excluded:
+        return buckets['in_season'], True
+    combined = buckets['in_season'] + buckets['classic']
+    combined.sort(key=lambda p: p[0])
+    return combined, False
+
+
+def get_classic_prices(player_slug, eth_rate, league_slug):
+    """Simmetrica a get_in_season_prices, ma per la valutazione di una carta CLASSIC.
+    Confermato esplicitamente dall'utente (26/07): la separazione classic/in_season
+    per MLS/K League (e ora anche portoghese/austriaco/scozzese/croato, i 4 campionati
+    aggiunti alla blacklist transitoria in_season) vale in ENTRAMBE le direzioni --
+    non solo quando si valuta una carta in_season (che gia' escludeva il classic dal
+    confronto), ma anche quando si valuta una carta classic (che deve escludere
+    l'in_season dal confronto). Per tutti gli altri campionati resta il comportamento
+    di sempre: in_season+classic uniti in un solo confronto di mercato."""
+    buckets = get_bucket_prices(player_slug, eth_rate)
+    excluded = is_asia_americas_excluded_league(league_slug)
+    if excluded:
+        return buckets['classic'], True
+    combined = buckets['in_season'] + buckets['classic']
+    combined.sort(key=lambda p: p[0])
+    return combined, False
+
+
+def send_telegram_msg(message):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML'}
+    try:
+        r = requests.post(url, json=payload, timeout=10)
+        if not r.ok:
+            log(f"Errore invio Telegram (HTTP {r.status_code}): {r.text[:500]}")
+    except Exception as e:
+        log(f"Errore invio Telegram: {e}")
+
+
+def build_card_link(player_slug, card_slug):
+    base_link = f"https://sorare.com/it/football/market/shop/manager-sales/{player_slug}/limited"
+    return f"{base_link}?card={card_slug}" if card_slug else base_link
+
+
+# --- Protezione "liquidita' minima del giocatore" (richiesta esplicita utente, 19/07) ---
+# Motivazione: se un giocatore ha pochissime transazioni recenti, un annuncio "affare" puo'
+# essere frutto di un evento anomalo (es. infortunio, con manager che svendono a raffica le
+# poche carte rimaste) piuttosto che un vero errore di prezzo su un mercato liquido -- meglio
+# ignorare il caso piuttosto che rischiare di comprare su un mercato cosi' sottile. Query
+# riusata da track.py (funzione fetch_player_recent_direct_buys, gia' confermata funzionante
+# dal vivo): tokens.tokenPrices(playerSlug, rarity: limited) con deal.type -- a differenza di
+# track.py (che filtra SOLO deal.type == 'SINGLE_SALE_OFFER' per isolare lo sniping), qui
+# contiamo QUALSIASI transazione (deal.type presente, qualunque valore: SINGLE_SALE_OFFER,
+# SINGLE_BUY_OFFER, DIRECT_OFFER, aste, ecc. -- richiesta esplicita "di qualunque tipo incluso
+# le aste, offerta diretta, scambio"), perche' qui l'obiettivo e' misurare la liquidita'
+# generale del giocatore, non isolare un tipo di transazione specifico.
+# FIX 22/07 (unificazione, richiesta esplicita utente -- "perche' funziona solo per
+# MLS/Korea, risolvi anche per le altre leghe"): esisteva una SECONDA query,
+# RECENT_TRANSACTIONS_QUERY su tokens.tokenPrices(playerSlug), usata per tutti i
+# campionati "normali" -- ma quel campo e' CONFERMATO dal server essere una lista
+# piatta senza alcuna paginazione (last/before rifiutati esplicitamente). Il campo
+# QUI SOTTO (anyPlayer.tokenPrices) e' invece un vero TokenPriceConnection con
+# paginazione Relay CONFERMATA FUNZIONANTE dal vivo (last/before/pageInfo). Non c'e'
+# alcun motivo di continuare a usare il campo rotto quando lo stesso dato (transazioni
+# di un giocatore) e' raggiungibile con paginazione vera tramite questo secondo campo
+# -- quindi ora e' l'UNICA query usata, per tutti i campionati. Il filtro per stagione
+# (season_filter, via card.inSeasonEligible) viene applicato lato Python SOLO per
+# MLS/K-League, esattamente come prima; per gli altri campionati passa None e conta
+# tutte le transazioni (in_season+classic mescolate, coerente col resto della logica).
+RECENT_TRANSACTIONS_QUERY_BY_SEASON = """
+query RecentTransactionsBySeasonQuery($p: String!, $n: Int!, $cursor: String) {
+  anyPlayer(slug: $p) {
+    tokenPrices(rarity: limited, last: $n, before: $cursor) {
+      nodes {
+        date
+        deal {
+          __typename
+          ... on TokenOffer {
+            type
+          }
+        }
+        card {
+          inSeasonEligible
+        }
+        amounts { eurCents wei usdCents gbpCents lamport }
+      }
+      pageInfo { hasPreviousPage startCursor }
+    }
+  }
+}
+"""
+# FIX 22/07 v4 (richiesta esplicita utente -- ottimizzazione velocita', "prova a
+# fonderle e facciamo un test con diagnostica"): campo 'amounts' AGGIUNTO qui,
+# fondendo questa query con quella (ora ex) dedicata al prezzo -- un solo
+# round-trip di rete invece di due, anche se gia' in parallelo. RISCHIO ACCETTATO
+# ESPLICITAMENTE dall'utente: questa fusione va CONTRO la scelta originale di
+# tenerle separate (vedi nota storica sotto, rimasta per contesto) -- se il campo
+# 'amounts' (mai confermato al 100% contro lo schema) dovesse rompersi, ora
+# romperebbe ANCHE il conteggio liquidita' (prima isolato e protetto). Fail-safe
+# di entrambi i controlli INVARIATO (nessun blocco su acquisti/offerte in caso di
+# errore), ma non piu' indipendenti l'uno dall'altro come prima.
+
+# Doppio layer di protezione liquidita' (richiesta esplicita utente, 19/07): la finestra
+# breve (7gg) da sola potrebbe far passare un giocatore con un breve picco isolato di
+# transazioni ma comunque poco liquido nel complesso -- aggiunta una seconda soglia su
+# una finestra piu' lunga (30gg) come controllo incrociato. ENTRAMBE le condizioni devono
+# essere soddisfatte perche' il giocatore passi (basta che UNA delle due fallisca per
+# scartare il caso).
+MIN_RECENT_TRANSACTIONS = int(os.environ.get('MIN_RECENT_TRANSACTIONS', '3'))
+RECENT_TRANSACTIONS_WINDOW_DAYS = int(os.environ.get('RECENT_TRANSACTIONS_WINDOW_DAYS', '3'))
+MIN_TRANSACTIONS_30D = int(os.environ.get('MIN_TRANSACTIONS_30D', '6'))
+TRANSACTIONS_WINDOW_30D_DAYS = int(os.environ.get('TRANSACTIONS_WINDOW_30D_DAYS', '30'))
+
+# NUOVO CONTROLLO (26/07, richiesta esplicita utente, caso reale André Ferreira --
+# 3 transazioni precedenti tutte intorno a 2.52-2.65EUR, la sua offerta accettata
+# era in linea, ma voleva un tetto esplicito per i casi in cui NON lo sarebbe stata):
+# oltre ai controlli esistenti (ultima/penultima transazione, soglia assoluta), scarta
+# se il prezzo da pagare/offrire supera del RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT% la
+# MEDIA delle ultime fino-a-3 transazioni reali (stesso identico dato gia' fetchato per
+# ultimo/penultimo/terzo prezzo, nessuna query aggiuntiva). Fail-open se non c'e'
+# nessuna transazione recente disponibile (nessun blocco per mancanza dati, stesso
+# principio degli altri controlli su ultimo/penultimo prezzo).
+RECENT_AVG_PRICE_CHECK_ENABLED = os.environ.get(
+    'RECENT_AVG_PRICE_CHECK_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT = float(
+    os.environ.get('RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT', '15'))
+# Diagnostica ESPLICITA (richiesta esplicita utente, run mirata a capire se questo e'
+# un caso raro o scarta molti casi validi): logga il calcolo (prezzi usati, media,
+# deviazione) per OGNI valutazione che arriva a questo punto, non solo quando scarta.
+# Default 'si' VOLUTAMENTE (come EVENT_TIMING_DIAGNOSTIC) cosi' resta acceso finche'
+# non lo si disattiva esplicitamente dopo aver revisionato i risultati -- promemoria
+# per l'utente: spegnere (o rimuovere) dopo la sessione di verifica.
+RECENT_AVG_PRICE_DIAGNOSTIC_LOG = os.environ.get(
+    'RECENT_AVG_PRICE_DIAGNOSTIC_LOG', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+
+
+LIQUIDITY_DIAGNOSTIC = os.environ.get('LIQUIDITY_DIAGNOSTIC', 'no').strip().lower() == 'si'
+
+# STORIA (22/07, superata dalla fusione sopra, lasciata per contesto): il prezzo da
+# pagare (AutoBuy) o da offrire (MakeOffer, gia' scontato) deve essere INFERIORE
+# all'ultima transazione reale (vendita/scambio/asta) di quella carta -- altrimenti
+# si rischia di pagare piu' di quanto qualcuno abbia gia' accettato di recente.
+# In origine questa era una query SEPARATA e DEDICATA proprio per isolare il rischio
+# del campo 'amounts' non confermato -- ora fusa nella query di liquidita' sopra su
+# richiesta esplicita dell'utente, che ha accettato il rischio di accoppiamento.
+# NOTA 22/07 v4: _LAST_PRICE_CHECK_DISABLED/_last_price_warning_logged (kill-switch
+# manuale per un errore di schema sul campo 'amounts') sono state RIMOSSE -- non
+# avevano piu' un punto di attivazione chiaro dopo la fusione delle query (il
+# fallimento del fetch ora e' gestito a monte in get_liquidity_and_last_price,
+# fail-open su entrambi i risultati).
+
+
+def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate, nodes):
+    """Ritorna una tupla (ultimo_prezzo, penultimo_prezzo, terzo_prezzo) delle
+    transazioni reali (vendita/scambio/asta) piu' recenti di player_slug, in EUR --
+    ciascuno None se non disponibile/query fallita (fail-safe, il chiamante NON deve
+    bloccare l'acquisto solo per questo).
+
+    FIX 26/07 (richiesta esplicita utente, controllo "prezzo vs media ultime 3
+    transazioni"): aggiunto un terzo prezzo (terzo_prezzo) rispetto alle due gia'
+    presenti -- stessa logica identica di derivazione (nodi gia' ordinati per data
+    decrescente), solo la raccolta si ferma a 3 invece che a 2.
+
+    FIX 22/07 v2 (richiesta esplicita utente, secondo layer di protezione): oltre
+    all'ultima transazione, ora si guarda anche la PENULTIMA -- protezione in piu'
+    contro il caso in cui l'ultima transazione sia un singolo valore anomalo/outlier
+    (es. una svendita isolata) che da sola non rappresenta il vero prezzo di mercato,
+    mentre la penultima racconta una storia diversa. Rinominata al plurale (era
+    get_last_transaction_price) per riflettere che ora ritorna piu' di un valore --
+    nessun'altra logica cambiata.
+
+    Stessa differenziazione per campionato gia' in uso altrove (richiesta esplicita
+    utente): MLS/K-League confrontano SOLO la stagione giusta (season vs season,
+    classic vs classic); altri campionati prendono le transazioni in assoluto,
+    mescolando in_season+classic (coerente col resto della logica per questi
+    campionati).
+
+    FUSIONE 22/07 (richiesta esplicita utente): non fa piu' una query di rete
+    propria -- riceve 'nodes', gia' scaricati una volta sola da
+    get_liquidity_and_last_price (stessa lista usata anche per il conteggio
+    liquidita'). Funzione pura, stessa identica logica di derivazione di prima
+    (ordinamento esplicito per data decrescente + filtro stagione solo sui
+    campionati esclusi)."""
+    def _parse_date_per_ordinamento(nodo):
+        try:
+            return datetime.datetime.fromisoformat((nodo.get('date') or '').replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+    nodes_ordinati = sorted(nodes or [], key=_parse_date_per_ordinamento, reverse=True)
+
+    excluded_league = is_asia_americas_excluded_league(league_slug)
+    prezzi_trovati = []
+    for node in nodes_ordinati:
+        if excluded_league:
+            card = node.get('card') or {}
+            if bool(card.get('inSeasonEligible')) != is_in_season:
+                continue
+        price = eur_price_from_amounts(node.get('amounts'), eth_rate)
+        if price is not None:
+            prezzi_trovati.append(price)
+            if len(prezzi_trovati) == 3:
+                break
+    ultimo = prezzi_trovati[0] if len(prezzi_trovati) >= 1 else None
+    penultimo = prezzi_trovati[1] if len(prezzi_trovati) >= 2 else None
+    terzo = prezzi_trovati[2] if len(prezzi_trovati) >= 3 else None
+    return ultimo, penultimo, terzo
+
+# NUOVA PROTEZIONE (22/07, richiesta esplicita utente): oltre alla liquidita' storica
+# (transazioni passate), controlla anche quante carte dello stesso giocatore sono
+# ATTUALMENTE in vendita in questo momento -- un mercato con pochissimi annunci vivi
+# e' rischioso anche se lo storico transazioni sembra ok. Usa la stessa lista 'prices'
+# gia' calcolata per il margine (nessuna query aggiuntiva), che segue gia' la stessa
+# separazione per stagione del resto della logica: MLS/K-League confrontano SOLO la
+# stagione giusta (season vs season, classic vs classic), gli altri campionati
+# mescolano in_season+classic come sempre.
+MIN_LISTED_CARDS_FOR_PURCHASE = int(os.environ.get('MIN_LISTED_CARDS_FOR_PURCHASE', '3'))
+MIN_LISTED_CARDS_DIAGNOSTIC = os.environ.get('MIN_LISTED_CARDS_DIAGNOSTIC', 'no').strip().lower() == 'si'
+
+
+def _count_transactions_from_nodes(nodes, season_filter=None, player_slug=None, force_log=False):
+    """Fattorizzata da count_recent_transactions: conta le transazioni valide (short/long
+    window) da una lista di nodi tokenPrices, qualunque sia la query che li ha prodotti.
+
+    season_filter: se non None (True=in_season, False=classic), scarta i nodi il cui
+    campo card.inSeasonEligible non corrisponde -- usato solo dalla query per stagione
+    (RECENT_TRANSACTIONS_QUERY_BY_SEASON, che porta quel campo); la query combinata di
+    fallback non ha quel campo nei nodi quindi li passa tutti (season_filter=None).
+
+    DIAGNOSTICA (22/07, richiesta esplicita utente -- giocatori con transazioni reali
+    visibili sul sito segnalati come 'mercato sottile' dal bot): se LIQUIDITY_DIAGNOSTIC='si'
+    logga, per player_slug, il totale nodi ricevuti dal server e quanti vengono scartati
+    da ciascun filtro (season_filter, is_countable, data non parsabile, fuori finestra
+    30gg) -- permette di capire SENZA ambiguita' se il problema e' il filtro is_countable
+    (deal.__typename non previsto), la finestra data, o il numero di nodi che il server
+    restituisce per quella query (possibile troncamento lato server, mai verificato).
+
+    force_log (22/07, seconda diagnostica -- permanente, non opt-in): se True, stampa
+    lo stesso identico blocco diagnostico indipendentemente da LIQUIDITY_DIAGNOSTIC.
+    Usato da evaluate_event proprio nel momento in cui una carta rischia di essere
+    scartata per mercato sottile, cosi' la PROSSIMA volta che succede dal vivo il log
+    del run contiene gia' tutto il dettaglio necessario, senza dover rilanciare un
+    test isolato a posteriori."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff_short = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
+    cutoff_long = now - datetime.timedelta(days=TRANSACTIONS_WINDOW_30D_DAYS)
+    count_short = 0
+    count_long = 0
+    diag_totale = len(nodes)
+    diag_scartati_stagione = 0
+    diag_scartati_tipo = 0
+    _diag_on = LIQUIDITY_DIAGNOSTIC or force_log
+    diag_typename_visti = {} if _diag_on else None
+    diag_scartati_data = 0
+    diag_scartati_finestra = 0
+    for n in nodes:
+        if season_filter is not None:
+            card = n.get('card') or {}
+            if bool(card.get('inSeasonEligible')) != season_filter:
+                diag_scartati_stagione += 1
+                continue
+        deal = n.get('deal') or {}
+        deal_typename = deal.get('__typename')
+        if _diag_on:
+            diag_typename_visti[str(deal_typename)] = diag_typename_visti.get(str(deal_typename), 0) + 1
+        is_countable = bool(deal.get('type')) or deal_typename in ('TokenAuction', 'TokenPrimaryOffer')
+        if not is_countable:
+            diag_scartati_tipo += 1
+            continue
+        date_str = n.get('date') or ''
+        try:
+            dt = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            diag_scartati_data += 1
+            continue
+        if dt >= cutoff_long:
+            count_long += 1
+            if dt >= cutoff_short:
+                count_short += 1
+        else:
+            diag_scartati_finestra += 1
+    if _diag_on:
+        log(f"[diagnostica liquidita'] {player_slug or '?'}: season_filter={season_filter}, "
+            f"nodi totali ricevuti dal server={diag_totale}, scartati per stagione={diag_scartati_stagione}, "
+            f"scartati per tipo deal (is_countable=False)={diag_scartati_tipo}, "
+            f"tipi __typename visti={diag_typename_visti}, "
+            f"scartati per data non parsabile={diag_scartati_data}, "
+            f"scartati perche' fuori finestra 30gg={diag_scartati_finestra}, "
+            f"risultato finale: count_7d={count_short}, count_30d={count_long}")
+    return count_short, count_long
+
+
+TRANSACTIONS_PAGE_SIZE = 50
+TRANSACTIONS_MAX_PAGES = 2
+
+
+def _fetch_paginated_transaction_nodes(player_slug):
+    """Pagina davvero le transazioni di un giocatore tramite anyPlayer.tokenPrices, un
+    vero TokenPriceConnection con paginazione Relay CONFERMATA funzionante dal vivo
+    (last/before/pageInfo). Usata per TUTTI i campionati (22/07: unificata, prima
+    esisteva un secondo campo -- tokens.tokenPrices(playerSlug) -- confermato invece
+    essere una lista piatta senza paginazione, rimosso perche' ridondante e peggiore).
+    Si ferma quando il nodo piu' vecchio della pagina esce dalla finestra 7gg (i nodi
+    arrivano dal piu' recente al piu' vecchio con 'last', ordine Relay standard), quando
+    il server non ha piu' pagine, o dopo TRANSACTIONS_MAX_PAGES di sicurezza.
+    FIX 22/07 v5 (richiesta esplicita utente, chiave del rallentamento su giocatori
+    molto scambiati come Angus Gunn/Hrvoje Babec): il taglio era ancora a 30gg
+    (TRANSACTIONS_WINDOW_30D_DAYS) nonostante count_30d non sia piu' usato per
+    nessuna decisione dal fix che ha rimosso la soglia 30gg -- solo un log
+    diagnostico opzionale lo legge. Per un giocatore molto scambiato, le prime 50
+    transazioni possono coprire solo pochi giorni, costringendo la paginazione a
+    tirare dentro pagine su pagine pur di arrivare a 30gg -- tempo sprecato per un
+    dato che non serve piu'. Ora si ferma a 7gg (RECENT_TRANSACTIONS_WINDOW_DAYS,
+    la stessa finestra dell'unica soglia ancora attiva): count_7d resta identico e
+    accurato (la finestra e' comunque sempre coperta per intero), ultimo/penultimo
+    prezzo restano identici (derivati da qualunque nodo gia' fetchato, indipendenti
+    dal taglio), count_30d diventa potenzialmente sottostimato ma e' innocuo (mai
+    usato per decisioni, solo diagnostica).
+    FIX 22/07 (richiesta esplicita utente -- ripristino log puliti): il log dettagliato
+    per pagina torna OPT-IN (LIQUIDITY_DIAGNOSTIC='si'), non piu' permanente su ogni
+    chiamata -- era stato reso permanente durante l'indagine sul falso mercato sottile,
+    ora che la causa e' stata isolata ed esclusa non serve piu' di default."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff_pagine = now - datetime.timedelta(days=RECENT_TRANSACTIONS_WINDOW_DAYS)
+    all_nodes = []
+    cursor = None
+    for page_num in range(1, TRANSACTIONS_MAX_PAGES + 1):
+        data = graphql_query(RECENT_TRANSACTIONS_QUERY_BY_SEASON,
+                              {"p": player_slug, "n": TRANSACTIONS_PAGE_SIZE, "cursor": cursor})
+        if data.get('errors'):
+            log(f"[liquidita' paginazione] {player_slug}: pagina {page_num} errore GraphQL: {data['errors']}")
+            break
+        conn = ((data.get('data') or {}).get('anyPlayer') or {}).get('tokenPrices') or {}
+        nodes = conn.get('nodes') or []
+        all_nodes.extend(nodes)
+        page_info = conn.get('pageInfo') or {}
+        oldest_date_str = nodes[-1].get('date') if nodes else None
+        if LIQUIDITY_DIAGNOSTIC:
+            log(f"[liquidita' paginazione] {player_slug}: pagina {page_num}, "
+                f"{len(nodes)} nodi (totale {len(all_nodes)}), piu' vecchio: {oldest_date_str or 'n/d'}")
+        if not nodes:
+            break
+        try:
+            oldest_dt = datetime.datetime.fromisoformat((oldest_date_str or '').replace('Z', '+00:00'))
+            if oldest_dt < cutoff_pagine:
+                if LIQUIDITY_DIAGNOSTIC:
+                    log(f"[liquidita' paginazione] {player_slug}: nodo piu' vecchio "
+                        f"della pagina {page_num} fuori dalla finestra {RECENT_TRANSACTIONS_WINDOW_DAYS}gg, mi fermo")
+                break
+        except (ValueError, AttributeError):
+            pass
+        if not page_info.get('hasPreviousPage'):
+            break
+        cursor = page_info.get('startCursor')
+        if not cursor:
+            break
+    return all_nodes
+
+
+def get_liquidity_and_last_price(player_slug, is_in_season=True, league_slug=None, eth_rate=None,
+                                  force_diagnostic=False):
+    """FUSIONE 22/07 (richiesta esplicita utente -- "prova a fonderle"): un SOLO
+    fetch paginato (_fetch_paginated_transaction_nodes) al posto delle due query
+    separate di prima (conteggio liquidita' + ultimo/penultimo prezzo) -- un solo
+    round-trip di rete invece di due, anche se gia' in parallelo. Da questa stessa
+    lista di nodi si derivano ENTRAMBI i risultati:
+    - count_7d/count_30d via _count_transactions_from_nodes (season_filter=
+      is_in_season SEMPRE, per tutti i campionati -- fix Souleymane Isaak Touré,
+      invariato)
+    - ultimo/penultimo prezzo via get_last_transaction_prices (ora funzione pura,
+      nessuna chiamata di rete propria, riceve i nodi gia' scaricati)
+
+    RISCHIO ACCETTATO ESPLICITAMENTE dall'utente: le due query erano separate DI
+    PROPOSITO (vedi nota storica sopra la vecchia LAST_TRANSACTION_PRICE_QUERY)
+    per isolare il campo 'amounts' (mai confermato al 100% contro lo schema) dal
+    conteggio liquidita' gia' validato -- fondendole, un problema sul campo
+    'amounts' ora romperebbe ANCHE il conteggio liquidita' (prima restava isolato).
+    Fail-safe INVARIATO: se il fetch fallisce, i nodi tornano vuoti, count_7d
+    risulta 0 (sotto soglia -> scarto per mercato sottile, esito sicuro) e
+    ultimo/penultimo tornano None (controllo prezzo saltato, non blocca).
+
+    Ritorna (count_7d, count_30d, ultimo_prezzo, penultimo_prezzo, terzo_prezzo)."""
+    season_filter = is_in_season
+    if force_diagnostic:
+        excluded_league = is_asia_americas_excluded_league(league_slug)
+        log(f"[diagnostica liquidita'] {player_slug}: chiamata con is_in_season={is_in_season}, "
+            f"league_slug={league_slug!r}, excluded_league(MLS/K-League)={excluded_league}, "
+            f"season_filter effettivo={season_filter}")
+    try:
+        nodes = _fetch_paginated_transaction_nodes(player_slug)
+    except Exception as e:
+        log(f"[liquidita'+ultimo prezzo] eccezione per {player_slug}: {e}")
+        return None, None, None, None, None
+
+    count_7d, count_30d = _count_transactions_from_nodes(
+        nodes, season_filter=season_filter, player_slug=player_slug, force_log=force_diagnostic)
+    ultimo, penultimo, terzo = get_last_transaction_prices(
+        player_slug, is_in_season, league_slug, eth_rate, nodes)
+
+    if LIQUIDITY_DIAGNOSTIC:
+        log(f"[diagnostica fusione] {player_slug}: {len(nodes)} nodi fetched (1 sola query) -- "
+            f"count_7d={count_7d}, count_30d={count_30d}, ultimo={ultimo}, penultimo={penultimo}, "
+            f"terzo={terzo}")
+
+    return count_7d, count_30d, ultimo, penultimo, terzo
+
+
+def check_recent_avg_price(player_name, prezzo_da_pagare, ultimo, penultimo, terzo):
+    """NUOVO CONTROLLO (26/07, richiesta esplicita utente): scarta se prezzo_da_pagare
+    supera del RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT% la media delle transazioni reali
+    disponibili (fino a 3, quante ce ne sono -- fail-open a zero transazioni, stesso
+    principio degli altri controlli su ultimo/penultimo prezzo). Ritorna True se il
+    controllo passa (o e' disattivato/non applicabile), False se deve scartare -- in
+    quel caso ha gia' loggato il motivo, il chiamante deve solo fare 'return False'.
+    Log diagnostico esplicito (RECENT_AVG_PRICE_DIAGNOSTIC_LOG) SEMPRE, anche quando il
+    controllo passa -- richiesto esplicitamente per capire quanto spesso scarterebbe."""
+    prezzi_disponibili = [p for p in (ultimo, penultimo, terzo) if p is not None]
+    if not RECENT_AVG_PRICE_CHECK_ENABLED or not prezzi_disponibili:
+        return True
+    media = sum(prezzi_disponibili) / len(prezzi_disponibili)
+    deviazione_percent = ((prezzo_da_pagare - media) / media) * 100 if media > 0 else 0.0
+    supera_soglia = deviazione_percent > RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT
+    if RECENT_AVG_PRICE_DIAGNOSTIC_LOG:
+        log(f"[media ultime transazioni] {player_name}: prezzo da pagare/offrire "
+            f"{prezzo_da_pagare:.2f}EUR vs media {media:.2f}EUR "
+            f"(da {len(prezzi_disponibili)} transazioni: {[round(p, 2) for p in prezzi_disponibili]}) "
+            f"-- deviazione {deviazione_percent:+.1f}% (soglia {RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT:.0f}%)"
+            f"{' -- SUPERA LA SOGLIA' if supera_soglia else ''}")
+    if supera_soglia:
+        log(f"{player_name}: scarto -- prezzo da pagare/offrire ({prezzo_da_pagare:.2f}EUR) "
+            f"supera del {deviazione_percent:.1f}% la media delle ultime "
+            f"{len(prezzi_disponibili)} transazioni reali ({media:.2f}EUR), soglia "
+            f"{RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT:.0f}%")
+        return False
+    return True
+
+
+EXCHANGE_RATE_QUERY = """
+query ExchangeRateQuery {
+  config {
+    exchangeRate { id }
+  }
+}
+"""
+
+
+# OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente): l'exchange_rate_id
+# NON viene piu' richiesto in serie DENTRO prepare_accept_offer/prepare_offer (un
+# round-trip di rete intero nel percorso critico di ogni acquisto). Un thread in
+# background lo rinfresca ogni EXCHANGE_RATE_REFRESH_SECONDS e lo tiene pronto in
+# questa cache. LEZIONE DAL BUG 21/07 ('exchange rate has expired' riusando lo
+# stesso id su piu' acquisti): l'id e' trattato come USA E GETTA -- ogni prelievo
+# per un acquisto/offerta lo CONSUMA (rimosso dalla cache) e sveglia subito il
+# refresher perche' ne prepari uno nuovo. Due acquisti ravvicinati non possono
+# quindi mai riusare lo stesso id: il secondo, se il refresher non ha ancora
+# fatto in tempo, ripiega sulla fetch diretta identica a oggi (zero regressione).
+# In piu' l'id in cache non puo' mai essere piu' vecchio del ciclo di refresh,
+# quindi nemmeno la scadenza temporale puo' ripresentarsi.
+EXCHANGE_RATE_REFRESH_SECONDS = 45
+_exchange_rate_cache = {'id': None, 'ts': 0.0}
+_exchange_rate_lock = threading.Lock()
+_stop_exchange_rate_refresh = threading.Event()
+_exchange_rate_refresh_now = threading.Event()
+
+
+def _fetch_exchange_rate_id_from_server(critical=False):
+    """Fetch diretta dell'id dal server (l'unica che contatta la rete). critical=True
+    quando chiamata dal percorso di acquisto (fallback cache vuota) -- salta il
+    throttle come le altre chiamate critiche (vedi _graphql_throttle)."""
+    try:
+        data = graphql_query(EXCHANGE_RATE_QUERY, critical=critical)
+        return (((data.get('data') or {}).get('config') or {}).get('exchangeRate') or {}).get('id')
+    except Exception as e:
+        log(f"[prepare accept] errore lettura tasso di cambio: {e}")
+        return None
+
+
+def _exchange_rate_refresh_loop():
+    """Thread daemon: tiene sempre pronto un exchange_rate_id fresco e mai usato.
+    Si sveglia ogni EXCHANGE_RATE_REFRESH_SECONDS oppure IMMEDIATAMENTE quando un
+    acquisto/offerta consuma l'id in cache (evento _exchange_rate_refresh_now)."""
+    while not _stop_exchange_rate_refresh.is_set():
+        rate_id = _fetch_exchange_rate_id_from_server(critical=False)
+        if rate_id:
+            with _exchange_rate_lock:
+                _exchange_rate_cache['id'] = rate_id
+                _exchange_rate_cache['ts'] = time.monotonic()
+        _exchange_rate_refresh_now.clear()
+        # attende il prossimo ciclo O un consumo dell'id (whichever first)
+        _exchange_rate_refresh_now.wait(timeout=EXCHANGE_RATE_REFRESH_SECONDS)
+
+
+def get_exchange_rate_id(critical=False):
+    """Restituisce un exchange_rate_id pronto all'uso. Percorso veloce: preleva
+    (e CONSUMA) l'id tenuto fresco dal thread di refresh -- istantaneo, zero rete
+    nel percorso critico. Fallback (cache vuota, refresher non ancora partito o
+    id appena consumato da un altro acquisto): fetch diretta identica al
+    comportamento precedente."""
+    with _exchange_rate_lock:
+        rate_id = _exchange_rate_cache['id']
+        if rate_id:
+            _exchange_rate_cache['id'] = None  # usa e getta: mai riusato due volte
+    if rate_id:
+        _exchange_rate_refresh_now.set()  # sveglia subito il refresher per il prossimo
+        return rate_id
+    return _fetch_exchange_rate_id_from_server(critical=critical)
+
+PREPARE_ACCEPT_OFFER_MUTATION = """
+mutation PrepareAcceptOfferMutation($input: prepareAcceptOfferInput!) {
+  prepareAcceptOffer(input: $input) {
+    authorizations {
+      fingerprint
+      id
+      request {
+        ... on MangopayWalletTransferAuthorizationRequest {
+          currency
+          amount
+          mangopayWalletId
+          nonce
+          operationHash
+        }
+      }
+    }
+    errors { message }
+    primaryOffer { id }
+  }
+}
+"""
+
+
+def classify_prepare_accept_error(root_errors, payload_errors):
+    """Classifica gli errori di PrepareAcceptOfferMutation/AcceptOfferMutation in categorie
+    note, per poter loggare/notificare in modo chiaro E per dare a fase 2 (automazione
+    completa) un segnale univoco su cosa e' successo. Finche' non osserviamo dal vivo i
+    messaggi esatti per fondi insufficienti / valuta non supportata / offerta scaduta,
+    questa funzione e' VOLUTAMENTE conservativa: qualunque errore non riconosciuto finisce
+    in 'sconosciuto', mai in una categoria che potrebbe indurre un retry o un tentativo
+    alternativo automatico. Principio fisso per fase 2: ogni categoria = STOP, mai retry.
+    Ritorna (category, raw_errors) dove category e' una delle stringhe:
+    'fondi_insufficienti', 'valuta_non_supportata', 'offerta_non_disponibile',
+    'nessun_errore', 'sconosciuto'."""
+    all_errors = list(root_errors or []) + list(payload_errors or [])
+    if not all_errors:
+        return 'nessun_errore', all_errors
+
+    combined_text = ' '.join(
+        str(e.get('message', '')) + ' ' + str(e.get('extensions', {}).get('code', ''))
+        for e in all_errors if isinstance(e, dict)
+    ).lower()
+
+    # Parole chiave PROVVISORIE (da confermare/affinare al primo caso reale osservato) --
+    # non togliamo mai un errore dalla categoria 'sconosciuto' solo per somiglianza vaga.
+    if any(kw in combined_text for kw in
+           ('insufficient', 'not_enough', 'balance', 'fondi', 'saldo')):
+        return 'fondi_insufficienti', all_errors
+    if any(kw in combined_text for kw in
+           ('currency', 'payment_method', 'unsupported', 'valuta')):
+        return 'valuta_non_supportata', all_errors
+    if any(kw in combined_text for kw in
+           ('not_found', 'expired', 'already', 'sold', 'unavailable', 'not_available')):
+        return 'offerta_non_disponibile', all_errors
+
+    return 'sconosciuto', all_errors
+
+
+# FIX BUG CRITICO (20/07): durante la fusione dei due bot, la funzione di
+# classificazione errori del ramo MakeOffer (classify_prepare_offer_error) e' stata
+# accorpata in classify_prepare_accept_error, ma create_direct_offer/prepare_offer
+# continuavano a chiamare il vecchio nome -- causava NameError ad OGNI offerta live
+# reale (visto dal vivo: caso Sean Johnson e Leandro Paredes, quest'ultimo sniperato
+# nel frattempo perche' l'offerta non e' mai partita a causa di questo crash). La
+# logica di classificazione e' identica per entrambi i rami (stessi messaggi
+# GraphQL/categorie), quindi alias diretto, nessuna duplicazione.
+classify_prepare_offer_error = classify_prepare_accept_error
+
+
+def prepare_accept_offer(offer_id, _call_fn=None):
+    """FASE 2 (prima meta'): 'prenota'/valida l'offerta lato server chiamando la stessa
+    PrepareAcceptOfferMutation usata dal sito quando l'utente clicca 'Acquista', PRIMA
+    ancora che l'utente clicchi -- riduce la finestra in cui un altro manager potrebbe
+    comprare la carta nel frattempo. NON firma nulla (nessuna chiave privata coinvolta):
+    restituisce solo l'operationHash/nonce che servirebbero alla firma, dati utili da
+    includere nella notifica per velocizzare la conferma manuale. Ritorna la tupla
+    (dict 'authorizations[0].request', categoria_errore) -- il dict e' None se la
+    chiamata fallisce, e categoria_errore e' valorizzata SOLO in quel caso (es.
+    'valuta_non_supportata' per annunci in ETH/crypto, non gestibili dall'acquisto
+    automatico) cosi' il chiamante puo' distinguere questo caso da un fallimento
+    generico invece di loggare sempre lo stesso messaggio. Il click finale
+    dell'utente sul sito resta INVARIATO e necessario (fase 2 = opzione "conferma manuale",
+    vedi nota progetto).
+    _call_fn (22/07 v6, ottimizzazione velocita'): vedi nota su fetch_encrypted_private_key
+    -- passare _graphql_call_via_browser_raw quando gia' dentro un dispatch a
+    _run_on_browser_thread, per fondere piu' chiamate in un solo hop."""
+    call_fn = _call_fn or graphql_query_via_browser
+    exchange_rate_id = get_exchange_rate_id(critical=True)
+    if not exchange_rate_id:
+        log("[prepare accept] exchange_rate_id non ottenuto, impossibile procedere")
+        return None, None
+    variables = {
+        "input": {
+            "offerId": offer_id,
+            "attemptReference": None,
+            "settlementInfo": {
+                "currency": "EUR",
+                "exchangeRateId": exchange_rate_id,
+                "paymentMethod": "WALLET",
+                "platform": "WEB",
+                "useAvailableCredits": False,
+            },
+        }
+    }
+    try:
+        data = call_fn(PREPARE_ACCEPT_OFFER_MUTATION, variables, critical=True)
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('prepareAcceptOffer') or {}
+        payload_errors = payload.get('errors') or []
+
+        if root_errors or payload_errors:
+            category, all_errors = classify_prepare_accept_error(root_errors, payload_errors)
+            log(f"[prepare accept] fallita, categoria='{category}', errori={all_errors}")
+            return None, category
+
+        auths = payload.get('authorizations') or []
+        if not auths:
+            log("[prepare accept] nessuna authorization restituita, categoria='sconosciuto'")
+            return None, 'sconosciuto'
+        # Restituiamo fingerprint + request (con __typename incluso) -- servono ENTRAMBI a
+        # sign_authorization_via_node/signAuthorizationRequest quando si attivera' la firma
+        # automatica (opzione 1, non ancora collegata a nulla qui). Oggi 'fingerprint' non
+        # viene ancora usato da nessuna parte del bot.
+        auth = auths[0]
+        request = dict(auth.get('request') or {})
+        request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
+        # FIX 19/07 (velocizzazione sniping): esponiamo anche exchange_rate_id gia'
+        # ottenuto qui, cosi' execute_live_purchase puo' riusarlo invece di rifare la
+        # stessa query GraphQL una seconda volta -- ogni millisecondo conta nello sniping.
+        # FIX 20/07 (nuovo tentativo unknown_fingerprint): espongo anche l'id completo
+        # dell'authorization ("TokenService::Core::MangopayWalletTransferAuthorization:
+        # UUID"), diverso dal fingerprint (che e' sempre lo stesso valore fisso in ogni
+        # test, confermato anche nel caso riuscito -- probabilmente identifica il TIPO
+        # di authorization, non l'istanza specifica). L'id invece cambia sempre, ad ogni
+        # chiamata -- e' l'ipotesi piu' plausibile di identificatore reale da correlare
+        # con fetchEncryptedPrivateKey.
+        return {'fingerprint': auth.get('fingerprint'), 'request': request,
+                'exchange_rate_id': exchange_rate_id, 'authorization_id': auth.get('id')}, None
+    except Exception as e:
+        log(f"[prepare accept] eccezione: {e}")
+        return None, 'sconosciuto'
+
+
+import subprocess
+import queue
+import collections
+import itertools
+
+# OTTIMIZZAZIONE VELOCITA' SNIPING (21/07, richiesta esplicita utente): il processo
+# Node per la firma non viene piu' avviato da zero ad OGNI acquisto/offerta -- resta
+# vivo per tutta la run e riceve richieste ripetute via un protocollo a righe
+# (NDJSON) su stdin/stdout, vedi sorare-sign/decrypt_and_sign.js. Avviare Node e
+# caricare @sorare/crypto costa tipicamente qualche centinaio di millisecondi:
+# prima veniva pagato ad ogni singolo tentativo, ora si paga UNA SOLA VOLTA
+# (idealmente gia' durante il warm-up all'avvio, vedi main()). Un thread separato
+# legge le risposte dallo stdout del processo cosi' il chiamante puo' aspettarle
+# con un timeout vero (niente rischio di restare bloccati per sempre se il
+# processo Node si pianta senza rispondere).
+_NODE_POOL_SIZE = int(os.environ.get('NODE_POOL_SIZE', '3'))
+# OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita utente,
+# rischio accettato): con piu' eventi valutati in parallelo (vedi run_listener/
+# on_message piu' sotto), queste risorse condivise NON erano protette prima
+# (bastava un solo thread alla volta). _lista_nera_lock protegge il ciclo
+# leggi-modifica-scrivi di _lista_nera_upsert (senza lock, due thread potrebbero
+# leggere lo stesso stato e poi sovrascriversi a vicenda, perdendo un
+# aggiornamento -- "lost update"). _browser_lock protegge l'uso della singola
+# pagina Playwright condivisa (graphql_query_via_browser) -- non e' pensata per
+# essere usata da piu' thread contemporaneamente. Il processo Node di firma NON
+# usa piu' un singolo lock globale -- vedi il pool _node_pool piu' sotto (versione
+# no-playwright, 23/07): con Playwright il lock globale non era mai conteso
+# davvero (la serializzazione la faceva gia' il thread browser unico); rimosso
+# quel vincolo, un solo processo Node avrebbe messo in coda le firme che ora
+# possono arrivare quasi insieme da thread diversi.
+_lista_nera_lock = threading.Lock()
+# FIX 22/07 v2 (bug reale confermato dal vivo, 3 casi -- "Cannot switch to a
+# different thread" / greenlet): un _browser_lock semplice NON basta per
+# Playwright in modalita' sync -- la sua API e' legata (via greenlet) al thread
+# ESATTO che l'ha creata/usata, non solo serializzata nell'accesso. Chiamarla da
+# un thread DIVERSO fallisce sempre, anche con un lock che garantisce "un thread
+# alla volta" -- il problema non e' la concorrenza, e' l'identita' del thread.
+# VERSIONE NO-PLAYWRIGHT (test): _browser_executor rimosso -- non serve piu' un
+# thread dedicato (era un vincolo esclusivo di Playwright/greenlet). graphql_query()
+# via curl_cffi e' gia' thread-safe (usato altrove in concorrenza senza problemi).
+# OTTIMIZZAZIONE VELOCITA' 23/07 (stessa idea del parallelismo prepare_accept_offer/
+# liquidita', estesa al ramo MakeOffer): pool DEDICATO e leggero per chiamate che
+# possono partire in anticipo (get_card_offer_details, e ora anche prepare_accept_offer
+# speculativo) in parallelo alla query di liquidita' -- separato da event_executor per
+# non contendere con la valutazione di altri eventi in corso.
+_speculative_executor = concurrent.futures.ThreadPoolExecutor(max_workers=6, thread_name_prefix='speculative')
+
+
+def _run_on_browser_thread(fn, *args, **kwargs):
+    """VERSIONE NO-PLAYWRIGHT (test): nome mantenuto per non toccare i call site
+    esistenti (es. _run_autobuy_merged/_run_makeoffer_merged chiamano
+    _run_on_browser_thread(_sequenza_completa)), ma qui esegue fn direttamente sul
+    thread chiamante -- nessun dispatch necessario, non c'e' piu' un browser/thread
+    dedicato a cui vincolarsi."""
+    return fn(*args, **kwargs)
+_node_stderr_tail = collections.deque(maxlen=20)  # condiviso tra tutti gli slot, solo diagnostica testuale
+
+# POOL di processi Node persistenti (versione no-playwright, 23/07 -- vedi nota
+# sopra su _lista_nera_lock/_browser_lock per il perche'): ogni slot ha il proprio
+# processo/coda/lock, cosi' fino a _NODE_POOL_SIZE firme possono avvenire
+# DAVVERO in parallelo invece di mettersi in coda dietro un processo unico.
+_node_pool = [{'process': None, 'queue': None, 'lock': threading.Lock()} for _ in range(_NODE_POOL_SIZE)]
+_node_pool_rr = itertools.count()  # contatore round-robin per la scelta dello slot di partenza
+
+
+def _node_stdout_reader(proc, q):
+    """Gira in un thread dedicato per tutta la vita di UN processo Node del pool:
+    legge una riga alla volta dal suo stdout e la mette in coda. Quando lo stdout si
+    chiude (processo terminato/crashato), mette None in coda cosi' chi e' in attesa
+    lo sa subito invece di restare appeso fino al timeout."""
+    try:
+        for line in proc.stdout:
+            q.put(line)
+    except Exception:
+        pass
+    q.put(None)
+
+
+def _node_stderr_reader(proc, tail):
+    """Thread dedicato per lo stderr di UN processo Node del pool: lo teniamo solo
+    per diagnostica (ultime righe, condivise tra tutti gli slot -- utili nei log se
+    una richiesta fallisce o un processo muore), non blocca mai nessuno."""
+    try:
+        for line in proc.stderr:
+            tail.append(line.rstrip('\n'))
+    except Exception:
+        pass
+
+
+def _ensure_node_pool_slot(idx):
+    """Ritorna il processo Node persistente dello slot idx del pool, avviandolo (o
+    riavviandolo se e' morto) se necessario. Chiamata sempre col lock di QUELLO
+    slot gia' preso dal chiamante (stessa convenzione di prima, ora per-slot
+    invece che su un unico lock globale)."""
+    slot = _node_pool[idx]
+    proc = slot['process']
+    if proc is not None and proc.poll() is None:
+        return proc
+
+    if proc is not None:
+        log(f"[firma Node] slot {idx}: il processo persistente precedente non e' piu' "
+            f"attivo (codice uscita {proc.poll()}), lo riavvio -- ultime righe stderr: "
+            f"{list(_node_stderr_tail)}")
+
+    script_path = os.path.join('bots', 'sorare-sign', 'decrypt_and_sign.js')  # relativo a repo root (cwd), non a __file__: risorsa condivisa
+    log(f"[firma Node] avvio processo Node persistente per la firma, slot {idx}/{_NODE_POOL_SIZE - 1} "
+        f"(una tantum/riavvio, poi resta vivo e riusato per tutta la run)...")
+    proc = subprocess.Popen(
+        ['node', script_path],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, bufsize=1,  # line-buffered, essenziale per il protocollo a righe
+    )
+    q = queue.Queue()
+    threading.Thread(target=_node_stdout_reader, args=(proc, q), daemon=True).start()
+    threading.Thread(target=_node_stderr_reader, args=(proc, _node_stderr_tail), daemon=True).start()
+    slot['process'] = proc
+    slot['queue'] = q
+    return proc
+
+
+def _acquire_node_slot():
+    """Sceglie uno slot libero del pool Node (round-robin, tentativo NON
+    bloccante prima su tutti gli slot) -- se sono tutti occupati nello stesso
+    istante, aspetta sul primo in sequenza (bloccante). Con un pool piccolo
+    (default 3) la contesa vera resta rara, ma non serializza piu' tutte le firme
+    su un unico processo come prima. Ritorna (idx, secondi_di_attesa) per la
+    diagnostica timing in sign_authorization_via_node."""
+    _t0 = time.monotonic()
+    start = next(_node_pool_rr) % _NODE_POOL_SIZE
+    for offset in range(_NODE_POOL_SIZE):
+        idx = (start + offset) % _NODE_POOL_SIZE
+        if _node_pool[idx]['lock'].acquire(blocking=False):
+            return idx, time.monotonic() - _t0
+    idx = start
+    _node_pool[idx]['lock'].acquire(blocking=True)
+    return idx, time.monotonic() - _t0
+
+
+def close_node_sign_process():
+    """Chiude TUTTI i processi Node persistenti del pool a fine run (chiamata da
+    finally in main()), stesso principio di pulizia gia' applicato al browser
+    Playwright -- non lasciare processi appesi al termine del workflow."""
+    for idx, slot in enumerate(_node_pool):
+        with slot['lock']:
+            proc = slot['process']
+            if proc is not None:
+                try:
+                    if proc.poll() is None:
+                        proc.stdin.close()
+                        proc.wait(timeout=5)
+                except Exception as e:
+                    log(f"[firma Node] slot {idx}: errore chiudendo il processo persistente: {e}")
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                slot['process'] = None
+
+
+def sign_authorization_via_node(password, encrypted_private_key, iv, salt, authorization_request,
+                                 warmup_only=False):
+    """Invia una richiesta di firma a UNO SLOT del pool di processi Node
+    PERSISTENTI (vedi _node_pool/_acquire_node_slot sopra) tramite il protocollo a
+    righe di sorare-sign/decrypt_and_sign.js: una riga JSON in stdin, una riga
+    JSON in risposta da stdout, timeout vero via thread separato.
+
+    Lo script Node decripta la chiave privata (PBKDF2 + AES-GCM, stesso algoritmo usato
+    dal sito sorare.com) e poi chiama @sorare/crypto.signAuthorizationRequest per
+    ottenere la signature.
+
+    OTTIMIZZAZIONE VELOCITA' (20/07 + 21/07, richiesta esplicita utente -- ogni
+    millisecondo conta nello sniping): la chiave privata decriptata e' SEMPRE la
+    stessa per tutta la sessione (stessa password/encrypted_private_key/iv/salt,
+    gia' cachati a monte in _encrypted_key_cache) -- rifare il decrypt PBKDF2(50000
+    iterazioni)+AES-GCM ad OGNI singolo acquisto/offerta e' uno spreco puro. Dalla
+    SECONDA chiamata in poi nella stessa sessione, saltiamo il decrypt passando
+    direttamente la chiave gia' in chiaro allo script Node (campo
+    'decryptedPrivateKey'). IN PIU' (21/07): il processo Node stesso non viene piu'
+    riavviato ad ogni chiamata -- resta vivo per tutta la run, eliminando anche il
+    costo fisso di avvio Node + caricamento di @sorare/crypto da ogni singolo
+    tentativo (prima pagato sempre, ora pagato una volta sola).
+
+    VERSIONE NO-PLAYWRIGHT (23/07): il processo unico e' diventato un POOL di
+    _NODE_POOL_SIZE processi persistenti -- ogni chiamata prende uno slot libero
+    (round-robin, _acquire_node_slot) invece di mettersi sempre in coda dietro lo
+    stesso processo. Diagnostica: se acquisire uno slot richiede piu' di 10ms
+    (tutti occupati nello stesso istante), logga l'attesa -- utile per verificare
+    quanto la contesa sia reale con un pool di questa dimensione.
+
+    Ritorna la stringa signature (da usare in approvals[0].mangopayWalletTransferApproval)
+    oppure None se qualcosa fallisce (password sbagliata, script non trovato, dipendenze
+    npm non installate, timeout, processo morto, ecc.) -- logga sempre il motivo."""
+    if warmup_only:
+        # OTTIMIZZAZIONE VELOCITA' 24/07: richiesta di SOLO decrypt (nessuna firma,
+        # nessuna authorization coinvolta) -- usata dal pre-warm all'avvio per
+        # popolare _decrypted_key_cache PRIMA del primo acquisto reale, che
+        # altrimenti pagava da solo il decrypt PBKDF2(50000 iterazioni)+AES-GCM
+        # completo proprio durante la corsa contro gli altri bot. Lo script Node
+        # risponde {decryptedPrivateKey} che viene messo in cache qui sotto dal
+        # ramo comune, come per una firma normale. Ritorna True/None.
+        if 'decrypted_private_key' in _decrypted_key_cache:
+            return True
+        payload = {
+            'password': password,
+            'encryptedPrivateKey': encrypted_private_key,
+            'iv': iv,
+            'salt': salt,
+            'warmupOnly': True,
+        }
+    elif 'decrypted_private_key' in _decrypted_key_cache:
+        payload = {
+            'decryptedPrivateKey': _decrypted_key_cache['decrypted_private_key'],
+            'authorizationRequest': authorization_request,
+        }
+    else:
+        payload = {
+            'password': password,
+            'encryptedPrivateKey': encrypted_private_key,
+            'iv': iv,
+            'salt': salt,
+            'authorizationRequest': authorization_request,
+        }
+        # DIAGNOSTICA (23/07, richiesta esplicita utente -- capire cosa spiega
+        # firma_node piu' lento del solito): questo ramo fa il decrypt COMPLETO
+        # PBKDF2(50000 iterazioni)+AES-GCM, molto piu' lento del percorso rapido
+        # sopra. Dovrebbe scattare UNA SOLA VOLTA per run (prima firma reale --
+        # il pre-warm avvia il processo Node ma non chiama mai sign_authorization_
+        # via_node, quindi la cache resta vuota fino al primo acquisto/offerta
+        # vero). Se compare PIU' di una volta nello stesso run, la cache non sta
+        # reggendo come previsto -- da investigare.
+        log("[firma Node] decrypt completo (prima chiamata della sessione o cache "
+            "non popolata) -- piu' lento delle chiamate successive che useranno "
+            "la chiave gia' in chiaro")
+    line = json.dumps(payload)
+
+    idx, wait_s = _acquire_node_slot()
+    if wait_s > 0.01:
+        log(f"[firma Node] slot {idx}: atteso {wait_s:.3f}s per uno slot libero nel pool "
+            f"(diagnostica contesa, {_NODE_POOL_SIZE} slot totali)")
+    slot = _node_pool[idx]
+    try:
+        try:
+            proc = _ensure_node_pool_slot(idx)
+            q = slot['queue']
+            proc.stdin.write(line + '\n')
+            proc.stdin.flush()
+        except Exception as e:
+            log(f"[firma Node] slot {idx}: eccezione scrivendo la richiesta al processo "
+                f"persistente (lo forzo a ripartire al prossimo tentativo): {e}")
+            try:
+                if slot['process'] is not None:
+                    slot['process'].kill()
+            except Exception:
+                pass
+            slot['process'] = None
+            return None
+
+        try:
+            raw = q.get(timeout=30)
+        except queue.Empty:
+            log(f"[firma Node] slot {idx}: timeout (30s) in attesa della risposta dal "
+                f"processo persistente -- lo forzo a ripartire al prossimo tentativo")
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            slot['process'] = None
+            return None
+
+        if raw is None:
+            log(f"[firma Node] slot {idx}: il processo persistente e' terminato mentre "
+                f"aspettavo la risposta (ultime righe stderr: {list(_node_stderr_tail)}) -- "
+                f"ripartira' al prossimo tentativo")
+            slot['process'] = None
+            return None
+    finally:
+        slot['lock'].release()
+
+    try:
+        output = json.loads(raw.strip())
+    except json.JSONDecodeError:
+        log(f"[firma Node] risposta non JSON valida: {raw!r}")
+        return None
+    if 'error' in output:
+        log(f"[firma Node] errore riportato dallo script: {output['error']}")
+        return None
+    # Se lo script ha restituito la chiave decriptata (prima chiamata della sessione),
+    # la mettiamo in cache per le chiamate successive.
+    if output.get('decryptedPrivateKey'):
+        _decrypted_key_cache['decrypted_private_key'] = output['decryptedPrivateKey']
+    if warmup_only:
+        return True if output.get('decryptedPrivateKey') else None
+    return output.get('signature')
+
+
+FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION = """
+mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
+  fetchEncryptedPrivateKey(input: $input) {
+    errors { message }
+    sorarePrivateKey {
+      encryptedPrivateKey
+      iv
+      salt
+    }
+  }
+}
+"""
+
+# FIX 20/07 (nuovo tentativo, dopo che cache+header non hanno risolto unknown_fingerprint):
+# proviamo a passare l'id completo dell'authorization (o il fingerprint) come possibile
+# parametro atteso da fetchEncryptedPrivateKey -- finora chiamata sempre con input
+# completamente vuoto. Se il campo non esiste nello schema, GraphQL rispondera' con un
+# errore esplicito del tipo "Field 'xxx' is not defined" (stesso pattern gia' visto con
+# coverageStatus), in tal caso ripieghiamo silenziosamente sulla chiamata con input vuoto
+# (comportamento precedente, per non introdurre una regressione se l'ipotesi e' sbagliata).
+FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION = """
+mutation FetchEncryptedPrivateKey($input: fetchEncryptedPrivateKeyInput!) {
+  fetchEncryptedPrivateKey(input: $input) {
+    errors { message }
+    sorarePrivateKey {
+      encryptedPrivateKey
+      iv
+      salt
+    }
+  }
+}
+"""
+
+# FIX 20/07 (scoperta chiave, confermata dal vivo su un acquisto reale completato con
+# successo): il flusso REALE del browser va DIRETTAMENTE da PrepareAcceptOfferMutation
+# ad AcceptOfferMutation -- fetchEncryptedPrivateKey non compare MAI nel network
+# catturato durante un acquisto vero, nemmeno subito dopo aver inserito la password nel
+# popup "Sblocca il tuo wallet" (0 richieste GraphQL in quel momento). La chiave e'
+# quindi probabilmente decriptata/tenuta in memoria LOCALE dal browser per tutta la
+# sessione, non richiesta al server ad ogni singolo acquisto. Il bot invece la
+# richiamava ad ogni tentativo -- comportamento anomalo rispetto al pattern reale,
+# sospettato causa di "unknown_fingerprint". Fix: cache in-memory a livello di modulo,
+# la chiave viene recuperata dal server SOLO alla prima chiamata della sessione/run,
+# poi riusata per tutti gli acquisti successivi.
+_encrypted_key_cache = {}
+
+# Cache separata per la chiave privata GIA' DECRIPTATA (in chiaro, esadecimale) --
+# diversa da _encrypted_key_cache sopra (quella tiene encryptedPrivateKey/iv/salt
+# ancora cifrati, cosi' come arrivano dal server). Popolata da sign_authorization_via_node
+# dopo il primo decrypt riuscito della sessione, poi riusata per saltare PBKDF2+AES-GCM
+# nelle chiamate successive (vedi commento dettagliato in sign_authorization_via_node).
+_decrypted_key_cache = {}
+
+
+def fetch_encrypted_private_key(authorization_id=None, fingerprint=None, offer_id=None, _call_fn=None):
+    """Recupera encryptedPrivateKey/iv/salt tramite la mutation FetchEncryptedPrivateKey
+    (nome/struttura CONFERMATI dal vivo il 19/07 catturando via DevTools la vera
+    richiesta che il sito manda durante un'offerta reale -- NON e' una query su
+    currentUser.sorarePrivateKey, quella torna sempre null). Ritorna il dict
+    {encryptedPrivateKey, iv, salt} o None se fallisce per qualunque motivo.
+    CACHATA in memoria (vedi nota sopra): la query GraphQL viene fatta solo la prima
+    volta per l'intera esecuzione del bot, le chiamate successive riusano lo stesso
+    risultato senza contattare di nuovo il server (in pratica, dato il precarico
+    all'avvio, questa funzione durante lo sniping vero e proprio ritorna sempre
+    dalla cache, riga sopra, senza mai eseguire il resto del corpo).
+    FIX 20/07 (nona ipotesi -- body-based scartato in precedenza, schema rifiuta
+    authorizationId/fingerprint/offerId come campi dell'input): proviamo stavolta a
+    passare fingerprint/authorizationId come HEADER HTTP della richiesta invece che nel
+    body GraphQL -- variante concettualmente diversa, mai testata finora.
+    _call_fn (22/07 v6, ottimizzazione velocita'): permette di passare
+    _graphql_call_via_browser_raw quando questa funzione viene chiamata da
+    dentro un'altra funzione gia' sottomessa a _run_on_browser_thread (evita un
+    doppio dispatch annidato/deadlock) -- default None, che equivale al
+    comportamento precedente (graphql_query_via_browser, sicura da qualunque
+    thread)."""
+    if 'key_data' in _encrypted_key_cache:
+        return _encrypted_key_cache['key_data']
+    call_fn = _call_fn or graphql_query_via_browser
+
+    extra_headers = {}
+    if fingerprint:
+        extra_headers['fingerprint'] = fingerprint
+        extra_headers['Fingerprint'] = fingerprint
+        extra_headers['x-fingerprint'] = fingerprint
+    if authorization_id:
+        extra_headers['authorization-id'] = authorization_id
+
+    try:
+        data = call_fn(FETCH_ENCRYPTED_PRIVATE_KEY_MUTATION, {"input": {}}, critical=True)
+        if data.get('errors'):
+            log(f"[chiave cifrata] errore GraphQL: {data['errors']}")
+            log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
+            return None
+        payload = (data.get('data') or {}).get('fetchEncryptedPrivateKey') or {}
+        payload_errors = payload.get('errors') or []
+        if payload_errors:
+            log(f"[chiave cifrata] errore payload: {payload_errors}")
+            log(f"[chiave cifrata] risposta grezza completa (diagnostica): {json.dumps(data)}")
+            return None
+        key_data = payload.get('sorarePrivateKey')
+        if not key_data:
+            log("[chiave cifrata] sorarePrivateKey assente nella risposta")
+            return None
+        log("[chiave cifrata] recuperata dal server e messa in cache per il resto della run "
+            "(non verra' richiesta di nuovo finche' il bot non riparte)")
+        _encrypted_key_cache['key_data'] = key_data
+        return key_data
+    except Exception as e:
+        log(f"[chiave cifrata] eccezione: {e}")
+        return None
+
+
+ACCEPT_OFFER_MUTATION = """
+mutation AcceptOfferMutation($input: acceptOfferInput!) {
+  acceptOffer(input: $input) {
+    errors { message }
+  }
+}
+"""
+
+
+def accept_offer(offer_id, fingerprint, nonce, signature, exchange_rate_id, _call_fn=None):
+    """Ultimo passo del flusso di acquisto reale: completa DAVVERO l'operazione.
+    Fail-safe assoluto -- qualunque errore ritorna (False, categoria, messaggio_errore),
+    MAI un'eccezione non gestita, MAI un retry automatico. La categoria riusa
+    classify_prepare_accept_error (stessa logica gia' usata per prepare_accept_offer:
+    fondi_insufficienti/valuta_non_supportata/offerta_non_disponibile/sconosciuto) cosi'
+    l'utente capisce SUBITO dal log/notifica il tipo di problema, senza dover decifrare
+    il messaggio GraphQL grezzo.
+    _call_fn (22/07 v6): vedi nota su fetch_encrypted_private_key -- passare
+    _graphql_call_via_browser_raw quando gia' dentro un dispatch a
+    _run_on_browser_thread."""
+    call_fn = _call_fn or graphql_query_via_browser
+    variables = {
+        "input": {
+            "offerId": offer_id,
+            "migrationData": None,
+            "approvals": [{
+                "fingerprint": fingerprint,
+                "mangopayWalletTransferApproval": {
+                    "nonce": nonce,
+                    "signature": signature,
+                },
+            }],
+            "settlementInfo": {
+                "currency": "EUR",
+                "exchangeRateId": exchange_rate_id,
+                "paymentMethod": "WALLET",
+                "platform": "WEB",
+                "useAvailableCredits": False,
+            },
+        },
+    }
+    try:
+        data = call_fn(ACCEPT_OFFER_MUTATION, variables, critical=True)
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('acceptOffer') or {}
+        payload_errors = payload.get('errors') or []
+        if root_errors or payload_errors:
+            category, all_errors = classify_prepare_accept_error(root_errors, payload_errors)
+            log(f"[accept offer] fallita, categoria='{category}', errori={all_errors}")
+            return False, category, str(all_errors)
+        # FIX 20/07: il campo 'offer' non esiste piu' nello schema acceptOfferPayload
+        # (errore "Field 'offer' doesn't exist" osservato dal vivo) -- probabilmente
+        # Sorare ha cambiato la struttura del payload di risposta. Senza introspection
+        # disponibile (disabilitata su Sorare) non possiamo vedere il nome esatto del
+        # campo sostitutivo -- determiniamo il successo SOLO dall'assenza di errori
+        # (root_errors/payload_errors), gia' verificata sopra.
+        log("[accept offer] successo (nessun errore restituito dal server)")
+        return True, None, None
+    except Exception as e:
+        log(f"[accept offer] eccezione: {e}")
+        return False, 'eccezione', str(e)
+
+
+def execute_live_purchase(offer_id, prepared, _call_fn=None, sign_future=None):
+    """Orchestrazione FASE 2 completa (automazione totale, attiva SOLO se
+    AUTOBUY_LIVE_MODE e' 'si'): chiave cifrata -> firma -> accept. Fail-safe assoluto:
+    ritorna (True, None) se l'acquisto e' andato a buon fine, (False, motivo_esatto)
+    altrimenti -- MAI retry, MAI tentativi alternativi, un solo tentativo secco. Ogni
+    step logga il proprio esito (successo o fallimento) per poter capire SUBITO dai log
+    quale step specifico e' fallito, senza dover dedurlo dal messaggio finale.
+    IMPORTANTE (20/07): fetch_encrypted_private_key() va chiamata SOLO ora, DOPO che
+    prepare_accept_offer() e' gia' stata completata con successo (vedi nota in
+    evaluate_event) -- un tentativo di parallelizzare le due chiamate ha causato
+    "unknown_fingerprint" in 3 test su 3 dal vivo, il fingerprint deve esistere
+    lato server prima che questa chiamata possa risolversi.
+    _call_fn (22/07 v6, ottimizzazione velocita'): se valorizzato (con
+    _graphql_call_via_browser_raw), indica che questa funzione gira gia' dentro
+    un dispatch a _run_on_browser_thread (fusa con prepare_accept_offer in un
+    solo hop, vedi _run_autobuy_merged) -- viene passato a sua volta a
+    fetch_encrypted_private_key/accept_offer per evitare un doppio dispatch
+    annidato. sign_authorization_via_node NON e' toccata: usa il proprio canale
+    IPC verso il pool di processi Node, gia' thread-safe (ogni slot protetto dal
+    proprio lock) indipendentemente da quale thread la chiami."""
+    log(f"[acquisto live] avvio -- offer_id={offer_id}")
+
+    if not SORARE_WALLET_PASSWORD:
+        log("[acquisto live] STOP: SORARE_WALLET_PASSWORD non impostata")
+        return False, "SORARE_WALLET_PASSWORD non impostata"
+
+    fingerprint = prepared.get('fingerprint')
+    request = prepared.get('request') or {}
+    nonce = request.get('nonce')
+    authorization_id = prepared.get('authorization_id')
+
+    # 23/07: timing granulare per capire dove va il tempo dentro esecuzione_finale
+    # (fetch_key/firma_node/accept separati) -- nessuna logica toccata, solo misure.
+    _t0 = time.monotonic()
+    key_data = fetch_encrypted_private_key(
+        authorization_id=authorization_id, fingerprint=fingerprint, offer_id=offer_id,
+        _call_fn=_call_fn)
+    _t_fetch_key = time.monotonic() - _t0
+    if not key_data:
+        log("[acquisto live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
+        return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)"
+    log(f"[acquisto live] step 1/3 OK: chiave cifrata recuperata (fetch_key={_t_fetch_key:.3f}s)")
+
+    _t1 = time.monotonic()
+    signature = None
+    # OTTIMIZZAZIONE VELOCITA' 24/07: se la firma speculativa (lanciata da
+    # evaluate_event appena prepare e' risolta, in parallelo alla liquidita') e' gia'
+    # pronta, la riusiamo -- il timeout breve e' solo una rete di sicurezza: in
+    # pratica la firma (locale, ~70ms dopo prepare) e' SEMPRE gia' conclusa quando
+    # si arriva qui (dopo liquidita' + controlli). Se per qualunque motivo manca o
+    # e' fallita, fallback: firma rifatta da capo qui, identica a prima.
+    if sign_future is not None:
+        try:
+            signature = sign_future.result(timeout=5)
+        except Exception:
+            signature = None
+    _firma_speculativa = bool(signature)
+    if not signature:
+        signature = sign_authorization_via_node(
+            SORARE_WALLET_PASSWORD,
+            key_data.get('encryptedPrivateKey'),
+            key_data.get('iv'),
+            key_data.get('salt'),
+            request,
+        )
+    _t_firma = time.monotonic() - _t1
+    if not signature:
+        log("[acquisto live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
+        return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)"
+    log(f"[acquisto live] step 2/3 OK: firma {'speculativa riusata' if _firma_speculativa else 'generata'} "
+        f"(firma_node={_t_firma:.3f}s)")
+
+    # FIX 19/07 (velocizzazione sniping): riusiamo l'exchange_rate_id gia' ottenuto da
+    # prepare_accept_offer invece di rifare la stessa query GraphQL una seconda volta --
+    # una chiamata di rete in meno nel percorso critico dell'acquisto.
+    exchange_rate_id = prepared.get('exchange_rate_id')
+    if not exchange_rate_id:
+        log("[acquisto live] STOP: exchange_rate_id non disponibile da prepared")
+        return False, "exchange_rate_id non disponibile"
+
+    _t2 = time.monotonic()
+    success, category, error = accept_offer(offer_id, fingerprint, nonce, signature,
+                                             exchange_rate_id, _call_fn=_call_fn)
+    _t_accept = time.monotonic() - _t2
+    if not success:
+        log(f"[acquisto live] STOP: step 3/3 fallito, categoria='{category}' (accept={_t_accept:.3f}s)")
+        return False, f"AcceptOfferMutation fallita [{category}]: {error}"
+    log(f"[acquisto live] step 3/3 OK: acquisto completato "
+        f"(fetch_key={_t_fetch_key:.3f}s, firma_node={_t_firma:.3f}s, accept={_t_accept:.3f}s)")
+    return True, None
+
+
+PREPARE_OFFER_MUTATION = """
+mutation PrepareOfferMutation($input: prepareOfferInput!) {
+  prepareOffer(input: $input) {
+    authorizations {
+      fingerprint
+      id
+      request {
+        ... on MangopayWalletTransferAuthorizationRequest {
+          currency
+          amount
+          mangopayWalletId
+          nonce
+          operationHash
+        }
+      }
+    }
+    errors { message }
+  }
+}
+"""
+
+
+def prepare_offer(card_asset_id, receiver_slug, offer_amount_eur, _call_fn=None):
+    """Prenota/valida la creazione di un'offerta diretta lato server -- mutation
+    confermata dal vivo (19/07, catturata via DevTools mentre l'utente faceva un'offerta
+    reale su una carta di test). NON invia ancora l'offerta: restituisce
+    {fingerprint, request, exchange_rate_id} da usare per firmare e poi chiamare
+    create_direct_offer. card_asset_id e' l'assetId ESADECIMALE della carta (campo
+    'assetId' della carta, es. "0x0400...", NON lo slug) -- confermato nel payload reale
+    catturato (receiveAssetIds contiene l'assetId, non lo slug).
+    _call_fn (22/07 v6, ottimizzazione velocita'): vedi nota su fetch_encrypted_private_key
+    -- passare _graphql_call_via_browser_raw quando gia' dentro un dispatch a
+    _run_on_browser_thread, per fondere piu' chiamate in un solo hop."""
+    call_fn = _call_fn or graphql_query_via_browser
+    exchange_rate_id = get_exchange_rate_id()
+    if not exchange_rate_id:
+        log("[prepare offer] exchange_rate_id non ottenuto, impossibile procedere")
+        return None
+    # FIX BUG CRITICO (20/07): confermato dal vivo che il campo 'amount' restituito
+    # dal server dentro l'authorization request (quello REALMENTE firmato ed
+    # eseguito, vedi execute_live_offer) e' in CENTESIMI interi, non in euro con
+    # decimali. Mandando "6.0" EUR il server rispondeva amount=6 (troncando i
+    # decimali), e quell'intero veniva poi eseguito come 6 CENTESIMI = 0.06EUR
+    # (caso reale Alex Roldan, offerta 6.00EUR eseguita a 0.06EUR, poi annullata
+    # manualmente dall'utente). Ora inviamo l'importo gia' in centesimi interi.
+    amount_cents = int(round(offer_amount_eur * 100))
+    variables = {
+        "input": {
+            "sendAssetIds": [],
+            "receiveAssetIds": [card_asset_id],
+            "receiverSlug": receiver_slug,
+            "sendAmount": {"amount": str(amount_cents), "currency": "EUR"},
+            "receiveAmount": {"amount": "0", "currency": "EUR"},
+            "settlementCurrencies": ["EUR"],
+        }
+    }
+    try:
+        data = call_fn(PREPARE_OFFER_MUTATION, variables)
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('prepareOffer') or {}
+        payload_errors = payload.get('errors') or []
+
+        if root_errors or payload_errors:
+            category, all_errors = classify_prepare_offer_error(root_errors, payload_errors)
+            log(f"[prepare offer] fallita, categoria='{category}', errori={all_errors}")
+            return None
+
+        auths = payload.get('authorizations') or []
+        if not auths:
+            log("[prepare offer] nessuna authorization restituita")
+            return None
+        auth = auths[0]
+        request = dict(auth.get('request') or {})
+        request['__typename'] = 'MangopayWalletTransferAuthorizationRequest'
+        # FIX 21/07 (sospetta causa di 'invalid Mangopay wallet transfer signature'):
+        # in precedenza qui si sovrascriveva 'amount' col valore lordo (amount_cents)
+        # quando il server ne restituiva uno diverso (es. 152 invece di 160, probabile
+        # netto post-fee 5% venditore) -- ma il server verifica la firma contro IL SUO
+        # 'amount' originale, non contro un valore che gli rimandiamo indietro
+        # modificato. Sovrascriverlo rompeva la firma. L'importo che l'utente paga
+        # resta comunque quello giusto: e' gia' fissato da sendAmount/amount_cents
+        # inviato SOPRA nella richiesta PrepareOfferMutation (il buyer paga sempre
+        # l'importo dichiarato, il venditore incassa il 95% -- confermato
+        # dall'utente). Qui firmiamo l'amount ESATTO restituito dal server, senza
+        # toccarlo, cosi' la firma corrisponde a quello che lui stesso verifica.
+        server_amount = request.get('amount')
+        if server_amount is not None and int(server_amount) != amount_cents:
+            log(f"[prepare offer] diagnostica: amount del server ({server_amount}) "
+                f"diverso dal lordo inviato ({amount_cents}) -- probabile netto "
+                f"post-fee 5% venditore. NON lo sovrascrivo piu', firmo il valore "
+                f"esatto del server (fix 21/07 per invalid signature).")
+        return {'fingerprint': auth.get('fingerprint'), 'request': request,
+                'exchange_rate_id': exchange_rate_id}
+    except Exception as e:
+        log(f"[prepare offer] eccezione: {e}")
+        return None
+
+
+
+CREATE_DIRECT_OFFER_MUTATION = """
+mutation CreateDirectOfferMutation($input: createDirectOfferInput!) {
+  createDirectOffer(input: $input) {
+    errors { message }
+    tokenOffer {
+      id
+      blockchainId
+      senderSide {
+        amounts { eurCents }
+      }
+    }
+  }
+}
+"""
+
+
+import uuid
+
+
+def generate_deal_id():
+    """dealId CONFERMATO (20/07, verifica dal vivo) essere un UUID v4 generato
+    CLIENT-SIDE (dal browser), NON restituito da PrepareOfferMutation (verificato che
+    la risposta contiene solo authorizations+errors, mai un dealId). Lunghezza del
+    dealId reale osservato (39 cifre decimali) coincide esattamente con un UUID v4
+    convertito in intero. Lo stesso valore generato qui va riusato IDENTICO sia nella
+    prepare (se mai richiesto in futuro) sia nella create_direct_offer finale."""
+    return str(uuid.uuid4().int)
+
+
+def create_direct_offer(card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature,
+                         deal_id, _call_fn=None):
+    """Ultimo passo: invia DAVVERO l'offerta diretta al venditore -- mutation confermata
+    dal vivo (19/07, caso reale David Alaba/satonio, offerta di test inviata con
+    successo). Fail-safe assoluto: qualunque errore ritorna (False, categoria, msg), MAI
+    un'eccezione non gestita, MAI un retry automatico.
+    _call_fn (22/07 v6): vedi nota su fetch_encrypted_private_key -- passare
+    _graphql_call_via_browser_raw quando gia' dentro un dispatch a
+    _run_on_browser_thread."""
+    call_fn = _call_fn or graphql_query_via_browser
+    # FIX BUG CRITICO (20/07): stesso fix di prepare_offer, per coerenza -- vedi
+    # commento dettagliato li'. sendAmount va in centesimi interi.
+    amount_cents = int(round(offer_amount_eur * 100))
+    variables = {
+        "input": {
+            "dealId": deal_id,
+            "sendAssetIds": [],
+            "receiveAssetIds": [card_asset_id],
+            "receiverSlug": receiver_slug,
+            "sendAmount": {"amount": str(amount_cents), "currency": "EUR"},
+            "duration": OFFER_DURATION_SECONDS,
+            "migrationData": None,
+            "approvals": [{
+                "fingerprint": fingerprint,
+                "mangopayWalletTransferApproval": {
+                    "nonce": nonce,
+                    "signature": signature,
+                },
+            }],
+        }
+    }
+    try:
+        data = call_fn(CREATE_DIRECT_OFFER_MUTATION, variables)
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('createDirectOffer') or {}
+        payload_errors = payload.get('errors') or []
+        if root_errors or payload_errors:
+            category, all_errors = classify_prepare_offer_error(root_errors, payload_errors)
+            log(f"[create offer] fallita, categoria='{category}', errori={all_errors}")
+            return False, category, str(all_errors), None
+        token_offer = payload.get('tokenOffer')
+        if not token_offer:
+            # FIX 20/07 (prudenza, stesso pattern gia' visto su acceptOffer -- il
+            # campo 'offer' e' scomparso dallo schema di acceptOfferPayload, quindi e'
+            # plausibile che anche 'tokenOffer' possa mancare qui senza che sia un
+            # vero fallimento): se NON ci sono errori, trattiamo comunque come
+            # successo, solo con un log di avviso.
+            log(f"[create offer] risposta senza 'tokenOffer' ma NESSUN errore -- "
+                f"probabile successo (schema Sorare potrebbe non restituire piu' "
+                f"questo campo, vedi caso analogo 'offer' in acceptOffer): "
+                f"{json.dumps(data)[:500]}")
+            return True, None, None, None
+        blockchain_id = token_offer.get('blockchainId')
+        log(f"[create offer] successo, offer id={token_offer.get('id')}, "
+            f"blockchainId={blockchain_id}")
+        return True, None, None, blockchain_id
+    except Exception as e:
+        log(f"[create offer] eccezione: {e}")
+        return False, 'eccezione', str(e), None
+
+
+def execute_live_offer(card_asset_id, receiver_slug, offer_amount_eur, prepared, _call_fn=None):
+    """Orchestrazione completa (attiva SOLO se MAKEOFFER_LIVE_MODE e' 'si'): chiave
+    cifrata -> firma -> create_direct_offer. Fail-safe assoluto: MAI retry, un solo
+    tentativo secco. Logga ogni step con OK/STOP esplicito.
+    _call_fn (22/07 v6, ottimizzazione velocita'): se valorizzato (con
+    _graphql_call_via_browser_raw), indica che questa funzione gira gia' dentro
+    un dispatch a _run_on_browser_thread (fusa con prepare_offer in un solo
+    hop, vedi _run_makeoffer_merged) -- passato a fetch_encrypted_private_key/
+    create_direct_offer per evitare un doppio dispatch annidato."""
+    log(f"[offerta live] avvio -- carta={card_asset_id}, venditore={receiver_slug}, "
+        f"offerta={offer_amount_eur:.2f}EUR")
+
+    if not SORARE_WALLET_PASSWORD:
+        log("[offerta live] STOP: SORARE_WALLET_PASSWORD non impostata")
+        return False, "SORARE_WALLET_PASSWORD non impostata", None
+
+    key_data = fetch_encrypted_private_key(_call_fn=_call_fn)
+    if not key_data:
+        log("[offerta live] STOP: chiave cifrata non recuperata (vedi log [chiave cifrata] sopra)")
+        return False, "impossibile recuperare la chiave cifrata (fetchEncryptedPrivateKey)", None
+    log("[offerta live] step 1/3 OK: chiave cifrata recuperata")
+
+    fingerprint = prepared.get('fingerprint')
+    request = prepared.get('request') or {}
+    nonce = request.get('nonce')
+
+    signature = sign_authorization_via_node(
+        SORARE_WALLET_PASSWORD,
+        key_data.get('encryptedPrivateKey'),
+        key_data.get('iv'),
+        key_data.get('salt'),
+        request,
+    )
+    if not signature:
+        log("[offerta live] STOP: firma fallita (vedi log [firma Node] sopra per il dettaglio esatto)")
+        return False, "firma fallita (vedi log [firma Node] per il dettaglio esatto)", None
+    log("[offerta live] step 2/3 OK: firma generata")
+
+    deal_id = generate_deal_id()
+    success, category, error, blockchain_id = create_direct_offer(
+        card_asset_id, receiver_slug, offer_amount_eur, fingerprint, nonce, signature, deal_id,
+        _call_fn=_call_fn)
+    if not success:
+        log(f"[offerta live] STOP: step 3/3 fallito, categoria='{category}'")
+        return False, f"CreateDirectOfferMutation fallita [{category}]: {error}", None
+    log("[offerta live] step 3/3 OK: offerta inviata")
+    return True, None, blockchain_id
+
+CARD_OFFER_DETAILS_QUERY = """
+query CardOfferDetailsQuery($slug: String!) {
+  anyCard(slug: $slug) {
+    slug
+    assetId
+    liveSingleBuyOffers {
+      id
+      sender { ... on User { slug } }
+    }
+    liveSingleSaleOffer {
+      settlementCurrencies
+    }
+  }
+}
+"""
+
+
+def get_card_offer_details(card_slug):
+    """Recupera assetId (necessario per creare l'offerta), le eventuali offerte
+    pendenti gia' presenti su questa carta (liveSingleBuyOffers, per lo skip "gia' ho
+    un'offerta pendente" richiesto esplicitamente dall'utente), e le valute accettate
+    dal venditore (settlementCurrencies, per lo skip "se non accetta EUR" richiesto
+    esplicitamente). Fail-safe: se la query fallisce, ritorna None e il chiamante deve
+    SALTARE il caso (senza assetId non si puo' fare l'offerta comunque)."""
+    try:
+        data = graphql_query(CARD_OFFER_DETAILS_QUERY, {"slug": card_slug})
+        if data.get('errors'):
+            log(f"[dettagli carta] errore per {card_slug}: {data['errors']}")
+            return None
+        card = (data.get('data') or {}).get('anyCard')
+        if not card:
+            return None
+        return card
+    except Exception as e:
+        log(f"[dettagli carta] eccezione per {card_slug}: {e}")
+        return None
+
+def send_autobuy_alert(player_name, player_slug, price_eur, second_price, margin_percent,
+                        card_slug, excluded_league, prepared=None, is_in_season=True,
+                        live_mode=False, purchase_completed=False, purchase_error=None,
+                        threshold_used=None):
+    link = build_card_link(player_slug, card_slug)
+    if not is_in_season:
+        categoria = ("CLASSIC (solo classic, confronto separato)" if excluded_league
+                     else "CLASSIC (modalita' check_classic, confronto su tutti i campionati)")
+    else:
+        categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
+    prenotazione = (
+        "\u2705 Offerta prenotata lato server (piu' veloce da confermare)\n"
+        if prepared else
+        "\u26A0\uFE0F Prenotazione lato server non riuscita, apri e conferma normalmente\n"
+    )
+    if live_mode:
+        if purchase_completed:
+            titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (AutoBuy) -- ACQUISTATO IN AUTOMATICO</b>"
+            esito = "\u2705 <b>Acquisto completato con successo, nessuna azione richiesta.</b>\n\n"
+        else:
+            titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (AutoBuy) -- ACQUISTO AUTOMATICO FALLITO</b>"
+            esito = (f"\u274C <b>Acquisto automatico NON riuscito</b>: {purchase_error}\n"
+                      f"Apri e valuta se confermare a mano.\n\n")
+    else:
+        titolo = "\U0001F916\U0001F4B0 <b>Bot Supremo (AutoBuy) -- LO AVREI ACQUISTATO</b>"
+        esito = "\u26A0\uFE0F Fase di test: nessun acquisto reale eseguito, controlla a mano.\n\n"
+    msg_text = (
+        f"{titolo}\n\n"
+        f"Giocatore: {player_name}\n"
+        f"Categoria: {categoria}\n"
+        f"Prezzo minimo attuale: {price_eur:.2f}EUR\n"
+        f"Secondo prezzo attuale: {second_price:.2f}EUR (margine {margin_percent:.1%}, "
+        f"soglia richiesta {(threshold_used if threshold_used is not None else AUTOBUY_MARGIN_FRACTION):.1%})\n\n"
+        f"{prenotazione}"
+        f"{esito}"
+        f"\U0001F449 <b><a href='{link}'>APRI SU SORARE</a></b> \U0001F448"
+    )
+    send_telegram_msg(msg_text)
+
+
+def send_makeoffer_alert(player_name, player_slug, price_eur, second_price, margin_percent,
+                          card_slug, excluded_league, prepared=None, is_in_season=True,
+                          live_mode=False, purchase_completed=False, purchase_error=None,
+                          offer_amount_eur=None, via_periodic_bid=False, threshold_used=None):
+    link = build_card_link(player_slug, card_slug)
+    if not is_in_season:
+        categoria = ("CLASSIC (solo classic, confronto separato)" if excluded_league
+                     else "CLASSIC (modalita' check_classic, confronto su tutti i campionati)")
+    else:
+        categoria = "In Season" if excluded_league else "In Season + Classic (confronto unito)"
+    prenotazione = (
+        "\u2705 Offerta prenotata lato server (piu' veloce da confermare)\n"
+        if prepared else
+        "\u26A0\uFE0F Prenotazione lato server non riuscita, apri e conferma normalmente\n"
+    )
+    offer_line = f"Offerta calcolata: {offer_amount_eur:.2f}EUR\n" if offer_amount_eur is not None else ""
+    tag_periodico = " [Bid periodico]" if via_periodic_bid else ""
+    if live_mode:
+        if purchase_completed:
+            titolo = f"\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer){tag_periodico} -- OFFERTA INVIATA IN AUTOMATICO</b>"
+            esito = "\u2705 <b>Offerta inviata con successo, in attesa che il venditore risponda.</b>\n\n"
+        else:
+            titolo = f"\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer){tag_periodico} -- OFFERTA AUTOMATICA FALLITA</b>"
+            esito = (f"\u274C <b>Offerta automatica NON inviata</b>: {purchase_error}\n"
+                      f"Apri e valuta se fare l'offerta a mano.\n\n")
+    else:
+        titolo = f"\U0001F916\U0001F4B0 <b>Bot Supremo (MakeOffer){tag_periodico} -- FAREI UN'OFFERTA</b>"
+        esito = "\u26A0\uFE0F Fase di test: nessuna offerta reale inviata, controlla a mano.\n\n"
+    msg_text = (
+        f"{titolo}\n\n"
+        f"Giocatore: {player_name}\n"
+        f"Categoria: {categoria}\n"
+        f"Prezzo minimo attuale: {price_eur:.2f}EUR\n"
+        f"Secondo prezzo attuale: {second_price:.2f}EUR (margine {margin_percent:.1%}, "
+        f"soglia richiesta {(threshold_used if threshold_used is not None else MAKEOFFER_MARGIN_FRACTION):.1%})\n"
+        f"{offer_line}\n"
+        f"{prenotazione}"
+        f"{esito}"
+        f"\U0001F449 <b><a href='{link}'>APRI SU SORARE</a></b> \U0001F448"
+    )
+    send_telegram_msg(msg_text)
+
+
+def _is_insufficient_funds_error(error_message):
+    """Rileva se un messaggio di errore (gia' formattato da execute_live_purchase/
+    execute_live_offer, es. 'AcceptOfferMutation fallita [fondi_insufficienti]: ...')
+    indica fondi insufficienti -- la categoria e' gia' classificata a monte da
+    classify_prepare_accept_error/classify_prepare_offer_error, qui controlliamo solo
+    che compaia nel messaggio finale."""
+    if not error_message:
+        return False
+    return '[fondi_insufficienti]' in error_message
+
+
+def _is_invalid_signature_error(error_message):
+    """Rileva se un messaggio di errore indica una firma non valida ('invalid Mangopay
+    wallet transfer signature') -- errore visto dal vivo il 20/07 solo nel ramo
+    MakeOffer, causa non ancora confermata. Serve per attivare la diagnostica dedicata
+    in send_invalid_signature_diagnostic_alert (vedi sotto)."""
+    if not error_message:
+        return False
+    return 'invalid mangopay wallet transfer signature' in error_message.lower()
+
+
+def send_invalid_signature_diagnostic_alert(player_name, seller_slug, offer_amount_eur):
+    """Notifica diagnostica DEDICATA (20/07, richiesta esplicita utente) per il caso
+    'invalid Mangopay wallet transfer signature' nel ramo MakeOffer -- NON confermiamo
+    la causa (e' solo un'ipotesi dell'utente, non un fatto accertato): potrebbe essere
+    che il venditore/manager abbia bloccato il nostro account dalle offerte dirette
+    (Sorare lo permette, pur consentendo la vendita diretta allo stesso account), oppure
+    un problema di firma/cache lato bot. La notifica elenca il fatto osservato (verso
+    quale manager e' fallita) senza affermare la causa, cosi' l'utente puo' verificare
+    manualmente se accumula ripetutamente sullo stesso manager (indizio di blocco)."""
+    send_telegram_msg(
+        f"\U0001F50D <b>Bot Supremo -- DIAGNOSTICA: firma non valida (MakeOffer)</b>\n\n"
+        f"Giocatore: {player_name}\n"
+        f"Venditore/manager: {seller_slug}\n"
+        f"Offerta tentata: {offer_amount_eur:.2f}EUR\n\n"
+        f"Causa non confermata -- possibili ipotesi: questo manager potrebbe averti "
+        f"bloccato dalle offerte dirette (Sorare lo permette anche se accetta la "
+        f"vendita diretta allo stesso account), oppure un problema di firma/cache. "
+        f"Se questo errore si ripete SEMPRE con lo stesso manager, e' un indizio "
+        f"a favore dell'ipotesi del blocco."
+    )
+
+
+def send_insufficient_funds_alert(player_name, ramo):
+    send_telegram_msg(
+        f"\U0001F6D1 <b>Bot Supremo -- FONDI INSUFFICIENTI, ESECUZIONE FERMATA</b>\n\n"
+        f"Rilevato durante il tentativo su {player_name} (ramo {ramo}).\n"
+        f"Il bot si e' fermato subito invece di continuare a tentare a vuoto -- "
+        f"ricarica il wallet prima di rilanciare."
+    )
+
+
+def send_startup_msg():
+    classic_msg = "\nModalita' CLASSIC attiva (tutti i campionati)" if CHECK_CLASSIC else ""
+    autobuy_stato = "ATTIVO" if AUTOBUY_LIVE_MODE else "solo diagnostica"
+    makeoffer_stato = "ATTIVO" if MAKEOFFER_LIVE_MODE else "solo diagnostica"
+    soglie_msg = (
+        f"Soglie per-prezzo attive (AutoBuy: {autobuy_stato}, MakeOffer: {makeoffer_stato})"
+        if PRICE_BASED_THRESHOLDS_ENABLED else
+        f"AutoBuy: margine >= {AUTOBUY_MARGIN_FRACTION:.0%} ({autobuy_stato})\n"
+        f"MakeOffer: margine >= {MAKEOFFER_MARGIN_FRACTION:.0%} ({makeoffer_stato})"
+    )
+    send_telegram_msg(
+        f"\U0001F916 <b>Bot Supremo avviato</b>\n"
+        f"{soglie_msg}\n"
+        f"Fascia prezzo: {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR\n"
+        f"Ascolto per {LISTEN_SECONDS}s o fino a {AUTOBUY_TARGET_MATCHES} casi trovati.{classic_msg}"
+    )
+
+
+def send_end_msg(matches_found, target_reached):
+    esito = (
+        f"\u2705 Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati"
+        if target_reached else
+        f"\u23F1 Tempo scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati"
+    )
+    send_telegram_msg(
+        f"\U0001F916 <b>Bot Supremo terminato</b>\n"
+        f"{esito}"
+    )
+
+
+# NOTA 22/07 v4: _parallel_liquidity_and_last_price (due thread paralleli) e'
+# stata RIMOSSA -- superata dalla fusione delle due query in una sola
+# (get_liquidity_and_last_price), che fa un solo fetch di rete invece di due
+# (nemmeno piu' bisogno del parallelismo, dato che non c'e' piu' una seconda
+# query da parallelizzare).
+
+
+def _speculative_sign_after_prepare(prepare_future):
+    """OTTIMIZZAZIONE VELOCITA' 24/07 (richiesta esplicita utente): appena
+    prepare_accept_offer (gia' speculativa) risolve con successo, calcola SUBITO la
+    firma -- in parallelo alla query di liquidita' ancora in corso -- invece di
+    aspettare che liquidita' e tutti i controlli finiscano. La firma e' un'operazione
+    PURAMENTE LOCALE (fetch_key torna dalla cache in-memory, la firma vera la fa il
+    pool Node sul runner): NULLA viene inviato al server, quindi se i controlli a
+    valle scartano il caso la firma viene semplicemente buttata via, esattamente come
+    gia' avviene per il risultato di prepare. L'accept (l'unico passo che muove soldi)
+    resta rigorosamente DOPO tutti i controlli, invariato. Beneficio: esecuzione_finale
+    si riduce al solo accept. Ritorna la signature (str) o None (in tal caso
+    execute_live_purchase rifa' la firma da capo, fallback identico a prima)."""
+    try:
+        prepared, _categoria = prepare_future.result()
+    except Exception:
+        return None
+    if not prepared or not AUTOBUY_LIVE_MODE or not SORARE_WALLET_PASSWORD:
+        return None
+    _t0 = time.monotonic()
+    key_data = fetch_encrypted_private_key(
+        authorization_id=prepared.get('authorization_id'),
+        fingerprint=prepared.get('fingerprint'),
+        _call_fn=_graphql_call_via_browser_raw)
+    if not key_data:
+        return None
+    signature = sign_authorization_via_node(
+        SORARE_WALLET_PASSWORD,
+        key_data.get('encryptedPrivateKey'),
+        key_data.get('iv'),
+        key_data.get('salt'),
+        prepared.get('request') or {},
+    )
+    if signature:
+        log(f"[firma speculativa] pronta in {time.monotonic() - _t0:.3f}s (calcolata in "
+            f"parallelo alla liquidita', verra' usata SOLO se tutti i controlli passano)")
+    return signature
+
+
+def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, league_slug=None,
+                    offer_id=None, seller_slug=None, is_in_season=True):
+    """Valutazione UNICA condivisa (un solo scan di mercato per evento, niente doppio
+    lavoro tra i due bot separati). Dopo il calcolo del margine, biforca:
+    - margine >= AUTOBUY_MARGIN_FRACTION -> ramo AutoBuy (accetta offerta esistente)
+    - MAKEOFFER_MARGIN_FRACTION <= margine < AUTOBUY_MARGIN_FRACTION (tetto MakeOffer
+      MAKEOFFER_MAX_MARGIN_FRACTION incluso in questo range per costruzione) -> ramo
+      MakeOffer (crea offerta scontata)
+    Ritorna True se questo evento ha portato a un caso valido (di QUALSIASI ramo),
+    False altrimenti -- usato dal listener per decidere se fermarsi."""
+    _t0 = time.monotonic()
+    if INSUFFICIENT_FUNDS_STOP[0]:
+        return False  # bot gia' fermato per fondi insufficienti, non valutare altro
+
+    if player_slug and player_slug.lower() in BLACKLISTED_PLAYER_SLUGS:
+        log(f"{player_name}: scarto -- giocatore in blacklist manuale ({player_slug})")
+        return False
+
+    if player_slug and player_slug.lower() in BLACKLISTED_FIX_URGENTE_SLUGS:
+        log(f"{player_name}: scarto -- giocatore in blacklist 'fix urgenti' ({player_slug})")
+        return False
+
+    if player_slug and is_player_in_forma_bassa(player_slug.lower()):
+        log(f"{player_name}: scarto -- in 'forma bassa ultime 5' (media SO5 sotto soglia, "
+            f"registrata in precedenza)")
+        return False
+
+    # FIX 21/07 (richiesta esplicita utente): filtro campionato, controllato IL PIU'
+    # PRESTO POSSIBILE (subito dopo i check istantanei in RAM, prima di qualunque I/O
+    # su file/rete) per risparmiare secondi preziosi su carte che verranno comunque
+    # ignorate -- niente query di liquidita', niente fetch prezzi, niente altro lavoro
+    # sprecato su un campionato che non vogliamo toccare.
+    if league_slug and league_slug.lower() in BLACKLISTED_LEAGUE_SLUGS:
+        if LEAGUE_BLACKLIST_VERBOSE_LOG:
+            log(f"{player_name}: scarto -- campionato blacklistato ({league_slug})")
+        return False
+
+    # FIX 26/07 (richiesta esplicita utente): blacklist TRANSITORIA solo-in_season --
+    # stesso controllo veloce di quella totale sopra, ma si applica solo se la carta
+    # e' in_season; le classic dello stesso campionato proseguono la valutazione.
+    if is_in_season and league_slug and league_slug.lower() in BLACKLISTED_INSEASON_LEAGUE_SLUGS:
+        if LEAGUE_BLACKLIST_VERBOSE_LOG:
+            log(f"{player_name}: scarto -- campionato in blacklist transitoria in_season "
+                f"({league_slug})")
+        return False
+
+    # FILTRO COOLDOWN DISATTIVATO (bot_test_starterodds, richiesta esplicita utente, solo
+    # per questo test isolato -- in bot_definitivo.py resta attivo).
+    if TEST_DISABLE_COOLDOWN_FILTER:
+        pass
+    elif player_slug and is_player_in_cooldown(player_slug, is_in_season):
+        log(f"{player_name}: scarto -- gia' acquistato/offerto ({'in_season' if is_in_season else 'classic'}) "
+            f"nelle ultime {PLAYER_COOLDOWN_HOURS}h (protezione anti-svendita/infortunio)")
+        return False
+
+    if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
+        return False
+
+    # FILTRO STARTER ODDS (bot_test_starterodds, clone isolato -- 28/07): unica differenza
+    # strutturale rispetto a bot_definitivo.py. Tenuto qui, PRIMA della scansione prezzi
+    # (la query piu' costosa del percorso), cosi' si paga la query odds (1 sola chiamata,
+    # cache in RAM) solo se il caso e' gia' passato i controlli istantanei sopra, ma si
+    # risparmia comunque la scansione mercato per i candidati che verranno comunque
+    # scartati per odds insufficienti.
+    _next_odds = get_next_starter_odds(player_slug)
+    if _next_odds is None or _next_odds < MIN_STARTER_ODDS:
+        log(f"{player_name}: scarto -- starter odds prossima partita "
+            f"{'assenti' if _next_odds is None else f'{_next_odds:.1%}'} "
+            f"(soglia {MIN_STARTER_ODDS:.0%})")
+        return False
+    if STARTER_ODDS_DIAGNOSTIC_LOG:
+        log(f"{player_name}: starter odds prossima partita {_next_odds:.1%} "
+            f"(soglia {MIN_STARTER_ODDS:.0%}), controllo superato")
+
+    # OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente -- "ogni millisecondo
+    # e' importante nello sniping"): il controllo di liquidita' (cache thin_market +
+    # query di rete get_liquidity_and_last_price) e' stato SPOSTATO piu' in basso, DOPO
+    # il calcolo del margine, invece di stare qui subito dopo il filtro prezzo. Motivo:
+    # la query di liquidita' e' la piu' costosa del percorso (fino a 6 round-trip
+    # GraphQL paginati) ed era pagata SEMPRE, anche per carte che poi risultavano
+    # scartate per margine insufficiente (la maggioranza dei casi nei log reali) --
+    # lavoro di rete sprecato. Ora si paga solo per candidati che sono gia' un affare
+    # sulla carta (margine sufficiente), zero costo aggiuntivo sui veri affari (la
+    # query serve comunque prima di procedere), risparmio netto sui casi scartati.
+    # La cache thin_market (istantanea, RAM/file) resta comunque a costo quasi zero
+    # ovunque si trovi nell'ordine -- il vero risparmio e' sulla query di rete.
+
+    if is_in_season:
+        prices, excluded_league = get_in_season_prices(player_slug, eth_rate, league_slug)
+    else:
+        prices, excluded_league = get_classic_prices(player_slug, eth_rate, league_slug)
+    if not prices:
+        return False
+    _t_scan_prezzi = time.monotonic()
+
+    true_min_price, true_min_card_slug, true_min_seller_slug = prices[0]
+
+    # NUOVO 22/07 (richiesta esplicita utente -- "trigger su minimo non allineato"):
+    # quando l'annuncio triggerante NON e' il minimo assoluto di mercato, invece di
+    # scartare subito il caso proviamo comunque il minimo assoluto come bersaglio di
+    # un'offerta (ramo MakeOffer soltanto, MAI AutoBuy) -- il minimo era gia' sul
+    # mercato ed e' probabile che sia gia' stato preso da qualcun altro, ma tentare
+    # un'offerta scontata su di esso non costa nulla in piu' (stesso identico
+    # calcolo/lista prices gia' fatto sopra, zero query extra). Il flag qui sotto
+    # viene riusato piu' avanti per impedire al router di instradare questo caso
+    # verso AutoBuy anche se il margine risultasse sufficiente.
+    trigger_su_minimo_non_allineato = False
+    if true_min_card_slug != card_slug:
+        if price_eur < true_min_price:
+            log(f"{player_name}: minimo query non aggiornato ({true_min_price:.2f}EUR), "
+                f"ma evento a {price_eur:.2f}EUR e' piu' basso -- procedo con l'evento")
+            true_min_price, true_min_card_slug, true_min_seller_slug = price_eur, card_slug, seller_slug
+            prices = [(price_eur, card_slug, seller_slug)] + [p for p in prices if p[1] != card_slug]
+        else:
+            if not (AUTOBUY_MIN_PRICE_EUR <= true_min_price <= AUTOBUY_MAX_PRICE_EUR):
+                log(f"{player_name}: scarto -- il vero minimo ({true_min_price:.2f}EUR, carta "
+                    f"{true_min_card_slug}) e' fuori dal range prezzo consentito "
+                    f"({AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR), 'trigger su "
+                    f"minimo non allineato' non si applica")
+                return False
+            trigger_su_minimo_non_allineato = True
+
+    if true_min_seller_slug in BLACKLISTED_SELLER_SLUGS or \
+            true_min_seller_slug in BLACKLISTED_MANAGER_SLUGS:
+        log(f"{player_name}: scarto -- il minimo attuale ({true_min_price:.2f}EUR) e' di un "
+            f"venditore blacklistato ({true_min_seller_slug}), non acquistabile")
+        return False
+
+    if len(prices) < MIN_LISTED_CARDS_FOR_PURCHASE:
+        log(f"{player_name}: scarto -- solo {len(prices)} carta/e in vendita (minimo richiesto "
+            f"{MIN_LISTED_CARDS_FOR_PURCHASE}), mercato poco popolato")
+        return False
+    if MIN_LISTED_CARDS_DIAGNOSTIC:
+        log(f"[diagnostica carte in vendita] {player_name}: {len(prices)} carte in vendita "
+            f"(soglia {MIN_LISTED_CARDS_FOR_PURCHASE}), controllo superato")
+
+    second_min_price, _, _ = prices[1]
+    if second_min_price <= 0:
+        return False
+
+    margin_percent = (second_min_price - true_min_price) / second_min_price
+
+    # Soglie basate sul PREZZO del vero minimo (vedi sezione "SOGLIE BASATE SUL PREZZO"
+    # sopra le costanti statiche per il razionale completo -- ~45+ casi discussi con
+    # l'utente il 25-26/07).
+    eff_makeoffer_min, eff_autobuy = compute_price_based_thresholds(true_min_price)
+    eff_makeoffer_max = eff_autobuy
+    _autobuy_eligible = margin_percent >= eff_autobuy
+    log(f"{player_name}: minimo {true_min_price:.2f}EUR, secondo {second_min_price:.2f}EUR, "
+        f"margine {margin_percent:.1%} (soglie per-prezzo: MakeOffer >= {eff_makeoffer_min:.1%}, "
+        f"AutoBuy >= {eff_autobuy:.1%})")
+
+    if margin_percent < eff_makeoffer_min:
+        # BID PERIODICO (22/07, richiesta esplicita utente): prima di scartare per
+        # margine insufficiente, se la carta e' nella fascia 2-30EUR fissa del
+        # meccanismo periodico, la confrontiamo col candidato gia' tracciato per il
+        # ciclo di 2 minuti corrente -- se e' PIU' VICINA alla soglia MakeOffer
+        # (margine piu' alto, anche restando sotto), diventa la nuova "migliore del
+        # periodo". Zero query extra: riusa margin_percent/true_min_price gia'
+        # calcolati qui sopra. Il candidato tracciato viene poi verificato DA CAPO
+        # (liquidita', cooldown, offerte pendenti, ecc.) dal thread del timer prima
+        # di offrire -- questo e' solo il tracciamento, nessuna offerta parte da qui.
+        if (PERIODIC_BID_ENABLED and player_slug
+                and PERIODIC_BID_MIN_PRICE_EUR <= true_min_price <= PERIODIC_BID_MAX_PRICE_EUR):
+            global _periodic_bid_best
+            with _periodic_bid_lock:
+                gia_migliore = (_periodic_bid_best is not None
+                                 and _periodic_bid_best['margin_percent'] >= margin_percent)
+                if not gia_migliore:
+                    _periodic_bid_best = {
+                        'player_slug': player_slug,
+                        'player_name': player_name,
+                        'card_slug': true_min_card_slug,
+                        'seller_slug': true_min_seller_slug,
+                        'true_min_price': true_min_price,
+                        'margin_percent': margin_percent,
+                        'is_in_season': is_in_season,
+                        'league_slug': league_slug,
+                        'excluded_league': excluded_league,
+                    }
+        return False  # margine insufficiente per qualunque ramo -- niente query liquidita' sprecata
+
+    # Controllo liquidita' (thin_market cache + query di rete) spostato QUI: solo ora
+    # sappiamo che la carta e' gia' un affare sulla carta, quindi vale la pena del
+    # costo della verifica -- vedi nota sopra sul filtro prezzo per il razionale.
+    # FILTRO THIN MARKET DISATTIVATO (bot_test_starterodds, richiesta esplicita utente,
+    # solo per questo test isolato -- in bot_definitivo.py resta attivo).
+    if not TEST_DISABLE_THIN_MARKET_FILTER and player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
+        log(f"{player_name}: scarto -- gia' segnalato come mercato troppo sottile nelle "
+            f"ultime {THIN_MARKET_SKIP_HOURS:.0f}h, salto la riverifica")
+        return False
+
+    # OTTIMIZZAZIONE VELOCITA' 23/07 (richiesta esplicita utente -- casi Edier Ocampo/
+    # Alex Roldan persi a prepare_accept_offer per "Too late"): se questo evento
+    # portera' comunque al ramo AutoBuy (margine gia' sufficiente, non e' un caso
+    # "trigger su minimo non allineato" che e' sempre MakeOffer), lanciamo
+    # prepare_accept_offer ORA, in parallelo alla query di liquidita' che segue,
+    # invece di aspettare che liquidita' finisca prima di partire. Nessun controllo
+    # rimosso: se liquidita' (o i controlli successivi) scartano il caso, il
+    # risultato speculativo viene semplicemente ignorato -- prepare_accept_offer non
+    # firma nulla e non muove soldi (solo prenotazione/validazione), quindi non c'e'
+    # nulla da annullare. Costo accettato: un prepare_accept_offer "sprecato" in piu'
+    # nei rari casi in cui liquidita' scarta un candidato gia' qualificato per AutoBuy.
+    # STESSA IDEA estesa al ramo MakeOffer (dati reali 23/07: dettagli_carta pesa
+    # 0.16-0.31s SEMPRE dopo liquidita', mai in parallelo) -- se il margine e' gia'
+    # noto e NON portera' ad AutoBuy, a questo punto sappiamo GIA' con certezza che
+    # andra' a MakeOffer (il caso margine < soglia MakeOffer e' gia' stato scartato
+    # sopra), quindi get_card_offer_details puo' partire subito, in parallelo alla
+    # stessa query di liquidita' -- e' una chiamata indipendente (curl_cffi, non
+    # Playwright), nessun conflitto di thread. Stesso costo accettato: sprecata se
+    # liquidita' scarta il caso.
+    _prepare_future = None
+    _t_prepare_fired = None
+    _card_details_future = None
+    _t_card_details_fired = None
+    _va_verso_autobuy = not trigger_su_minimo_non_allineato and _autobuy_eligible
+    _sign_future = None
+    if _va_verso_autobuy and offer_id:
+        _t_prepare_fired = time.monotonic()
+        _prepare_future = _speculative_executor.submit(
+            prepare_accept_offer, offer_id, _call_fn=_graphql_call_via_browser_raw)
+        # OTTIMIZZAZIONE VELOCITA' 24/07: firma speculativa concatenata -- parte da
+        # sola appena prepare risolve, mentre liquidita' gira ancora. Vedi
+        # _speculative_sign_after_prepare per razionale e garanzie di sicurezza.
+        if AUTOBUY_LIVE_MODE and SORARE_WALLET_PASSWORD:
+            _sign_future = _speculative_executor.submit(
+                _speculative_sign_after_prepare, _prepare_future)
+    elif not _va_verso_autobuy:
+        _makeoffer_target_card_slug = true_min_card_slug if trigger_su_minimo_non_allineato else card_slug
+        _t_card_details_fired = time.monotonic()
+        _card_details_future = _speculative_executor.submit(
+            get_card_offer_details, _makeoffer_target_card_slug)
+
+    count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione, terzo_prezzo_transazione = \
+        get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
+    _t_liquidita = time.monotonic()
+    if not TEST_DISABLE_THIN_MARKET_FILTER and count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
+        log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
+            f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
+            f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
+        if player_slug:
+            record_thin_market_skip(player_slug, is_in_season)
+        return False
+    # NOTA 22/07 (richiesta esplicita utente): rimossa l'imposizione della soglia a
+    # 30gg (MIN_TRANSACTIONS_30D) -- quella a 7gg basta e avanza. count_30d viene
+    # ancora calcolato dalla stessa identica logica (nessuna modifica a
+    # _count_transactions_from_nodes), semplicemente non viene piu' confrontato con
+    # nessuna soglia qui.
+
+    # --- ROUTER: nessuna sovrapposizione per costruzione ---
+    # NUOVO 22/07: il caso "trigger su minimo non allineato" e' SOLO MakeOffer per
+    # richiesta esplicita -- anche se il margine calcolato risultasse >= soglia
+    # AutoBuy, non deve MAI finire nel ramo AutoBuy (non stiamo accettando
+    # un'offerta esistente su quella carta specifica, stiamo proponendo
+    # un'offerta scontata su un'altra carta che risulta essere il vero minimo).
+    # FIX 25/07 (bug scoperto dall'utente su casi reali Rodrigo/Ethan Mbappe': scarto
+    # SILENZIOSO, zero log, zero notifica): il tetto eff_makeoffer_max coincide sempre
+    # con eff_autobuy per costruzione (riga ~2963), quindi un margine sopra la soglia
+    # AutoBuy faceva cadere questo ramo nell'else e tornava False senza fare nulla --
+    # comportamento MAI voluto ("doveva funzionare cosi' anche prima"): un caso
+    # trigger-non-allineato deve SEMPRE tentare un'offerta quando supera almeno il
+    # floor MakeOffer (gia' garantito qui, controllato piu' sopra alla riga ~2970 per
+    # OGNI caso), a prescindere da quanto e' alto il margine -- nessun tetto superiore
+    # per questo ramo, solo il ramo AutoBuy resta escluso per design.
+    # Sconto offerta (ramo MakeOffer): calcolato UNA SOLA VOLTA qui col margine gia'
+    # noto e riusato identico in _handle_makeoffer_branch (passato come offer_discount)
+    # -- evita che la verifica ultima/penultima transazione qui sotto usi un prezzo
+    # diverso da quello poi effettivamente offerto.
+    effective_discount = None
+    if trigger_su_minimo_non_allineato:
+        effective_discount = compute_price_based_offer_discount(true_min_price)
+        prezzo_da_pagare = _round_offer_to_nice_number(
+            true_min_price * (1 - effective_discount), true_min_price)
+    elif _autobuy_eligible:
+        prezzo_da_pagare = true_min_price
+    elif eff_makeoffer_min <= margin_percent <= eff_makeoffer_max:
+        effective_discount = compute_price_based_offer_discount(true_min_price)
+        prezzo_da_pagare = _round_offer_to_nice_number(
+            true_min_price * (1 - effective_discount), true_min_price)
+    else:
+        return False
+
+    # OTTIMIZZAZIONE VELOCITA' (22/07, richiesta esplicita utente -- "prova a
+    # fonderle"): count_7d/count_30d e ultimo/penultimo prezzo ora derivano da UN
+    # SOLO fetch di rete (get_liquidity_and_last_price), non piu' due query
+    # separate (nemmeno parallele) -- un intero round-trip risparmiato. Nessun
+    # controllo saltato: entrambi i risultati arrivano comunque insieme prima di
+    # decidere, esattamente come prima.
+    if ultimo_prezzo_transazione is not None and prezzo_da_pagare >= ultimo_prezzo_transazione:
+        log(f"{player_name}: scarto -- prezzo di acquisto/offerta e' inferiore ad "
+            f"ultima/penultima transazione ({prezzo_da_pagare:.2f}EUR >= ultima "
+            f"{ultimo_prezzo_transazione:.2f}EUR)")
+        return False
+    if penultimo_prezzo_transazione is not None and prezzo_da_pagare >= penultimo_prezzo_transazione:
+        log(f"{player_name}: scarto -- prezzo di acquisto/offerta e' inferiore ad "
+            f"ultima/penultima transazione ({prezzo_da_pagare:.2f}EUR >= penultima "
+            f"{penultimo_prezzo_transazione:.2f}EUR)")
+        return False
+    if not check_recent_avg_price(player_name, prezzo_da_pagare, ultimo_prezzo_transazione,
+                                   penultimo_prezzo_transazione, terzo_prezzo_transazione):
+        return False
+
+    _timing = (_t0, _t_scan_prezzi, _t_liquidita)
+
+    if trigger_su_minimo_non_allineato:
+        # Offerta sempre sulla carta del VERO minimo (true_min_card_slug/
+        # true_min_seller_slug), non su quella dell'evento triggerante -- e' il
+        # minimo ad essere il bersaglio dell'offerta, l'evento ha solo fatto
+        # scattare la rivalutazione del mercato.
+        return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
+                                         margin_percent, true_min_card_slug, excluded_league,
+                                         is_in_season, true_min_seller_slug,
+                                         via_trigger_non_allineato=True, timing=_timing,
+                                         card_details_future=_card_details_future,
+                                         card_details_started_at=_t_card_details_fired,
+                                         offer_discount=effective_discount,
+                                         threshold_used=eff_makeoffer_min)
+
+    if _autobuy_eligible:
+        return _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
+                                       margin_percent, card_slug, excluded_league, is_in_season,
+                                       offer_id, timing=_timing, prepare_future=_prepare_future,
+                                       prepare_started_at=_t_prepare_fired, sign_future=_sign_future,
+                                       threshold_used=eff_autobuy)
+    return _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
+                                     margin_percent, card_slug, excluded_league, is_in_season,
+                                     seller_slug, timing=_timing, card_details_future=_card_details_future,
+                                     card_details_started_at=_t_card_details_fired,
+                                     offer_discount=effective_discount,
+                                     threshold_used=eff_makeoffer_min)
+
+
+def _run_autobuy_merged(player_name, offer_id, prepare_future=None, prepare_started_at=None,
+                         sign_future=None):
+    """OTTIMIZZAZIONE VELOCITA' 22/07 v6 + 23/07 (richiesta esplicita utente -- casi
+    Edier Ocampo/Alex Roldan persi a prepare_accept_offer per "Too late"):
+    prepare_accept_offer puo' ora arrivare GIA' lanciata (prepare_future, sottomessa
+    da evaluate_event in parallelo alla query di liquidita') -- la riusiamo qui invece
+    di rifare la chiamata da capo. Questo riporta execute_live_purchase a un dispatch
+    SEPARATO (invece del singolo dispatch fuso del 22/07 v6) SOLO quando prepare e'
+    stata pre-lanciata: costa un hop in piu' (~0.25-0.3s) ma SOLO DOPO aver gia' vinto
+    la prenotazione (prepare riuscita = carta gia' assicurata), quindi non costa piu'
+    la corsa contro altri bot. prepare_started_at preserva il tempo REALE di durata
+    di prepare_accept_offer nel log [timing] anche se il .result() qui sotto ritorna
+    subito perche' il lavoro era gia' in corso da prima. Se prepare_future non e'
+    stata lanciata (fallback), stesso comportamento di prima (fusa in un dispatch).
+    Ritorna (prepared, prepare_category, purchase_completed, purchase_error,
+    durata_prepare, durata_esecuzione)."""
+    if prepare_future is not None:
+        _t_a = prepare_started_at if prepare_started_at is not None else time.monotonic()
+        prepared, prepare_category = prepare_future.result()
+        _t_b = time.monotonic()
+        if not prepared or not AUTOBUY_LIVE_MODE:
+            return prepared, prepare_category, False, None, _t_b - _t_a, 0.0
+        try:
+            purchase_completed, purchase_error = execute_live_purchase(
+                offer_id, prepared, _call_fn=_graphql_call_via_browser_raw,
+                sign_future=sign_future)
+        except Exception as e:
+            log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
+            return prepared, prepare_category, False, f"eccezione imprevista: {e}", \
+                _t_b - _t_a, time.monotonic() - _t_b
+        return (prepared, prepare_category, purchase_completed, purchase_error,
+                _t_b - _t_a, time.monotonic() - _t_b)
+
+    def _sequenza_completa():
+        _t_a = time.monotonic()
+        prepared, prepare_category = prepare_accept_offer(
+            offer_id, _call_fn=_graphql_call_via_browser_raw)
+        _t_b = time.monotonic()
+        if not prepared or not AUTOBUY_LIVE_MODE:
+            return prepared, prepare_category, False, None, _t_b - _t_a, 0.0
+        try:
+            purchase_completed, purchase_error = execute_live_purchase(
+                offer_id, prepared, _call_fn=_graphql_call_via_browser_raw)
+        except Exception as e:
+            log(f"{player_name}: ECCEZIONE IMPREVISTA durante acquisto live -- {e}")
+            return prepared, prepare_category, False, f"eccezione imprevista: {e}", \
+                _t_b - _t_a, time.monotonic() - _t_b
+        return (prepared, prepare_category, purchase_completed, purchase_error,
+                _t_b - _t_a, time.monotonic() - _t_b)
+    return _run_on_browser_thread(_sequenza_completa)
+
+
+def _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_eur):
+    """Stessa ottimizzazione di _run_autobuy_merged, per il ramo MakeOffer:
+    prepare_offer + execute_live_offer (che include create_direct_offer) fusi
+    in UN SOLO dispatch al thread dedicato Playwright, invece di due. Usata sia
+    dal MakeOffer normale (_handle_makeoffer_branch) sia dal bid periodico
+    (_try_periodic_bid) -- stessa logica di offerta, stesso beneficio.
+    Rispetta MAKEOFFER_LIVE_MODE internamente (esegue create_direct_offer SOLO
+    se e' 'si' e prepare_offer e' riuscita), stessa logica di prima.
+    Ritorna (prepared, offer_sent, offer_error, blockchain_id, durata_prepare,
+    durata_esecuzione). blockchain_id (FIX 26/07, meccanismo auto-annullamento offerte)
+    e' None a meno che offer_sent sia True."""
+    def _sequenza_completa():
+        _t_a = time.monotonic()
+        prepared = prepare_offer(card_asset_id, seller_slug, offer_amount_eur,
+                                  _call_fn=_graphql_call_via_browser_raw)
+        _t_b = time.monotonic()
+        if not prepared or not MAKEOFFER_LIVE_MODE:
+            return prepared, False, None, None, _t_b - _t_a, 0.0
+        try:
+            offer_sent, offer_error, blockchain_id = execute_live_offer(
+                card_asset_id, seller_slug, offer_amount_eur, prepared,
+                _call_fn=_graphql_call_via_browser_raw)
+        except Exception as e:
+            log(f"{player_name}: ECCEZIONE IMPREVISTA durante offerta live -- {e}")
+            return (prepared, False, f"eccezione imprevista: {e}", None,
+                    _t_b - _t_a, time.monotonic() - _t_b)
+        return prepared, offer_sent, offer_error, blockchain_id, _t_b - _t_a, time.monotonic() - _t_b
+    return _run_on_browser_thread(_sequenza_completa)
+
+
+def _handle_autobuy_branch(player_name, player_slug, true_min_price, second_min_price,
+                            margin_percent, card_slug, excluded_league, is_in_season, offer_id,
+                            timing=None, prepare_future=None, prepare_started_at=None,
+                            sign_future=None, threshold_used=None):
+    log(f"AUTOBUY: {player_name} -- LO AVREI ACQUISTATO ({true_min_price:.2f}EUR, "
+        f"margine {margin_percent:.1%})")
+
+    prepared = None
+    prepare_category = None
+    purchase_completed = False
+    purchase_error = None
+    _durata_prepare = None
+    _durata_esecuzione = None
+
+    # FIX 22/07 v6 + 23/07 (ottimizzazione velocita'): se prepare_future e' gia' stata
+    # lanciata in parallelo al controllo di liquidita' (vedi evaluate_event), la
+    # riusiamo qui -- nessuna doppia chiamata prepareAcceptOffer. In quel caso
+    # execute_live_purchase parte come dispatch SEPARATO (un hop in piu', ma solo
+    # DOPO aver gia' vinto la prenotazione, quindi non costa piu' la corsa). Se
+    # prepare_future non e' stata lanciata (fallback), stessa fusione di prima.
+    if offer_id:
+        prepared, prepare_category, purchase_completed, purchase_error, \
+            _durata_prepare, _durata_esecuzione = _run_autobuy_merged(
+                player_name, offer_id, prepare_future=prepare_future,
+                prepare_started_at=prepare_started_at, sign_future=sign_future)
+        if prepared:
+            nonce = (prepared.get('request') or {}).get('nonce')
+            log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
+        elif prepare_category == 'valuta_non_supportata':
+            log(f"{player_name}: prenotazione non riuscita -- annuncio in valuta "
+                f"crypto/ETH non gestibile dall'acquisto automatico (stesso motivo "
+                f"per cui MakeOffer scarterebbe un annuncio solo-ETH)")
+        else:
+            log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
+
+    if AUTOBUY_LIVE_MODE and offer_id and prepared:
+        if purchase_completed:
+            log(f"{player_name}: ACQUISTO COMPLETATO CON SUCCESSO")
+            if player_slug:
+                record_player_purchase(player_slug, is_in_season)
+        else:
+            log(f"{player_name}: acquisto automatico fallito -- {purchase_error}")
+            if _is_insufficient_funds_error(purchase_error):
+                log(f"{player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot, "
+                    f"nessun tentativo successivo avrebbe senso")
+                INSUFFICIENT_FUNDS_STOP[0] = True
+                send_insufficient_funds_alert(player_name, "AutoBuy")
+    elif AUTOBUY_LIVE_MODE and offer_id and not prepared:
+        purchase_error = "prenotazione (prepareAcceptOffer) non riuscita, acquisto automatico saltato"
+        log(f"{player_name}: {purchase_error}")
+
+    # DIAGNOSTICA TEMPORANEA TEMPI (22/07, richiesta esplicita utente -- capire
+    # dove va il tempo nei casi persi per velocita' contro altri bot). Da
+    # rimuovere quando l'indagine e' conclusa (EVENT_TIMING_DIAGNOSTIC).
+    if EVENT_TIMING_DIAGNOSTIC and timing:
+        _t0, _t_scan, _t_liq = timing
+        _t_fine = time.monotonic()
+        _parti = [f"scan_prezzi={_t_scan - _t0:.3f}s", f"liquidita+ultimo_prezzo={_t_liq - _t_scan:.3f}s"]
+        if _durata_prepare is not None:
+            _parti.append(f"prepare_accept_offer={_durata_prepare:.3f}s")
+            _parti.append(f"esecuzione_finale={_durata_esecuzione:.3f}s")
+        _nota_parallelo = " [prepare in parallelo con liquidita']" if prepare_started_at is not None else ""
+        log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s{_nota_parallelo}")
+
+    send_autobuy_alert(player_name, player_slug, true_min_price, second_min_price,
+                        margin_percent, card_slug, excluded_league, prepared, is_in_season,
+                        live_mode=AUTOBUY_LIVE_MODE, purchase_completed=purchase_completed,
+                        purchase_error=purchase_error, threshold_used=threshold_used)
+    return True
+
+
+def _handle_makeoffer_branch(player_name, player_slug, true_min_price, second_min_price,
+                              margin_percent, card_slug, excluded_league, is_in_season, seller_slug,
+                              via_trigger_non_allineato=False, timing=None, card_details_future=None,
+                              card_details_started_at=None, offer_discount=None, threshold_used=None):
+    if via_trigger_non_allineato:
+        log(f"MAKEOFFER [trigger su minimo non allineato]: {player_name} -- TROVATO AFFARE "
+            f"({true_min_price:.2f}EUR, margine {margin_percent:.1%}) -- valuto se fare un'offerta "
+            f"sul vero minimo (carta {card_slug}, diversa dall'annuncio che ha fatto scattare "
+            f"l'evento)")
+    else:
+        log(f"MAKEOFFER: {player_name} -- TROVATO AFFARE ({true_min_price:.2f}EUR, "
+            f"margine {margin_percent:.1%}) -- valuto se fare un'offerta")
+
+    # OTTIMIZZAZIONE VELOCITA' 23/07: se card_details_future e' gia' stata lanciata in
+    # parallelo alla query di liquidita' (vedi evaluate_event), la riusiamo qui invece
+    # di rifare la chiamata da capo. Fallback (nessuna future) = comportamento di prima.
+    if card_details_future is not None:
+        card_details = card_details_future.result()
+    else:
+        card_details = get_card_offer_details(card_slug)
+    _t_card_details = time.monotonic()
+    if not card_details:
+        log(f"{player_name}: scarto -- impossibile recuperare i dettagli della carta "
+            f"({card_slug}), niente assetId disponibile")
+        return False
+
+    card_asset_id = card_details.get('assetId')
+    if not card_asset_id:
+        log(f"{player_name}: scarto -- assetId assente per {card_slug}")
+        return False
+
+    existing_offers = card_details.get('liveSingleBuyOffers') or []
+    if existing_offers:
+        log(f"{player_name}: scarto -- offerta gia' pendente su questa carta "
+            f"({len(existing_offers)} offerta/e attiva/e), non ne faccio una seconda")
+        return False
+
+    sale_offer = card_details.get('liveSingleSaleOffer') or {}
+    settlement_currencies = sale_offer.get('settlementCurrencies') or []
+    crypto_only_currencies = {'WEI', 'ETH'}
+    if settlement_currencies and set(settlement_currencies).issubset(crypto_only_currencies):
+        log(f"{player_name}: scarto -- venditore accetta solo cripto, niente fiat "
+            f"(valute accettate: {settlement_currencies})")
+        return False
+
+    if pending_offers_count[0] >= MAX_PENDING_OFFERS:
+        log(f"{player_name}: scarto -- gia' raggiunto il tetto di {MAX_PENDING_OFFERS} "
+            f"offerte pendenti in questa esecuzione")
+        return False
+
+    # offer_discount arriva gia' calcolato da evaluate_event (stesso valore usato li'
+    # per il controllo ultima/penultima transazione) -- se assente (fallback, es.
+    # chiamata diretta senza passare per il router), ricalcola qui col margine noto.
+    effective_discount = (offer_discount if offer_discount is not None
+                           else compute_price_based_offer_discount(true_min_price))
+    offer_amount_eur = _round_offer_to_nice_number(
+        true_min_price * (1 - effective_discount), true_min_price)
+    if offer_amount_eur <= 0:
+        log(f"{player_name}: scarto -- offerta calcolata non positiva ({offer_amount_eur}EUR)")
+        return False
+
+    log(f"{player_name}: offerta calcolata: {offer_amount_eur:.2f}EUR "
+        f"(minimo {true_min_price:.2f}EUR - sconto per-prezzo {effective_discount:.1%}), "
+        f"durata {OFFER_DURATION_DAYS} giorni")
+
+    prepared, offer_sent, offer_error, blockchain_id, _durata_prepare, _durata_esecuzione = \
+        _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_eur)
+    if prepared:
+        nonce = (prepared.get('request') or {}).get('nonce')
+        log(f"{player_name}: offerta prenotata lato server (nonce={nonce})")
+    else:
+        log(f"{player_name}: prenotazione offerta non riuscita, procedo comunque con la notifica")
+
+    if MAKEOFFER_LIVE_MODE and prepared:
+        if offer_sent:
+            log(f"{player_name}: OFFERTA INVIATA CON SUCCESSO")
+            if player_slug:
+                record_player_offer(player_slug, is_in_season)
+            pending_offers_count[0] += 1
+            register_offer_for_auto_cancel(blockchain_id, player_name)
+        else:
+            log(f"{player_name}: offerta automatica fallita -- {offer_error}")
+            if _is_insufficient_funds_error(offer_error):
+                log(f"{player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot, "
+                    f"nessun tentativo successivo avrebbe senso")
+                INSUFFICIENT_FUNDS_STOP[0] = True
+                send_insufficient_funds_alert(player_name, "MakeOffer")
+            elif _is_invalid_signature_error(offer_error):
+                log(f"{player_name}: FIRMA NON VALIDA rilevata verso il manager "
+                    f"'{seller_slug}' -- invio notifica diagnostica (causa non "
+                    f"confermata, vedi Telegram)")
+                send_invalid_signature_diagnostic_alert(player_name, seller_slug, offer_amount_eur)
+    elif MAKEOFFER_LIVE_MODE and not prepared:
+        offer_error = "prenotazione (prepareOffer) non riuscita, offerta automatica saltata"
+        log(f"{player_name}: {offer_error}")
+
+    # DIAGNOSTICA TEMPORANEA TEMPI (22/07, richiesta esplicita utente -- capire
+    # dove va il tempo nei casi persi per velocita' contro altri bot, in
+    # particolare per il ramo MakeOffer che ha uno step in piu' (dettagli carta)
+    # rispetto ad AutoBuy. Da rimuovere quando l'indagine e' conclusa
+    # (EVENT_TIMING_DIAGNOSTIC).
+    if EVENT_TIMING_DIAGNOSTIC and timing:
+        _t0, _t_scan, _t_liq = timing
+        _t_fine = time.monotonic()
+        _base_dettagli = card_details_started_at if card_details_started_at is not None else _t_liq
+        _parti = [f"scan_prezzi={_t_scan - _t0:.3f}s", f"liquidita+ultimo_prezzo={_t_liq - _t_scan:.3f}s",
+                  f"dettagli_carta={_t_card_details - _base_dettagli:.3f}s",
+                  f"prepare_offer={_durata_prepare:.3f}s",
+                  f"esecuzione_finale={_durata_esecuzione:.3f}s"]
+        _nota_parallelo = " [dettagli_carta in parallelo con liquidita']" \
+            if card_details_started_at is not None else ""
+        log(f"[timing] {player_name}: {', '.join(_parti)} -- TOTALE={_t_fine - _t0:.3f}s{_nota_parallelo}")
+
+    send_makeoffer_alert(player_name, player_slug, true_min_price, second_min_price,
+                          margin_percent, card_slug, excluded_league, prepared, is_in_season,
+                          live_mode=MAKEOFFER_LIVE_MODE, purchase_completed=offer_sent,
+                          purchase_error=offer_error, offer_amount_eur=offer_amount_eur,
+                          threshold_used=threshold_used)
+    return True
+SUBSCRIPTION_QUERY = """
+subscription OnTokenOfferUpdated {
+  tokenOfferWasUpdated {
+    id
+    status
+    sender { ... on User { slug } }
+    senderSide {
+      amounts { eurCents wei usdCents gbpCents lamport }
+      anyCards {
+        slug
+        rarityTyped
+        sport
+        anyPlayer { slug displayName activeClub { domesticLeague { slug } } }
+        sportSeason { name }
+        inSeasonEligible
+      }
+    }
+    receiverSide {
+      amounts { eurCents wei usdCents gbpCents lamport }
+      anyCards { slug }
+    }
+  }
+}
+"""
+
+
+def run_listener(eth_rate):
+    identifier = json.dumps({"channel": "GraphqlChannel"})
+    subscription_payload = {
+        "query": SUBSCRIPTION_QUERY,
+        "variables": {},
+        "operationName": "OnTokenOfferUpdated",
+        "action": "execute",
+    }
+
+    stats = {"received": 0, "processed": 0, "matches_found": 0, "price_filtered": 0,
+              "_closed_target": False, "_closed_insufficient_funds": False}
+    seen_offer_status = set()
+    # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07): stats_lock protegge gli
+    # incrementi/controlli su stats fatti dai thread worker (sotto), e le due
+    # flag "_closed_*" evitano di chiudere il WebSocket piu' di una volta se piu'
+    # thread arrivano alla condizione di stop quasi insieme.
+    stats_lock = threading.Lock()
+    # Pool di thread per valutare piu' eventi IN PARALLELO invece che uno alla
+    # volta -- vedi nota su EVENT_WORKER_THREADS. on_message torna subito dopo
+    # aver sottomesso il lavoro, restando libero di leggere il prossimo evento.
+    event_executor = concurrent.futures.ThreadPoolExecutor(
+        max_workers=EVENT_WORKER_THREADS, thread_name_prefix='evt')
+
+    def on_open(ws):
+        log("Connesso al canale eventi Sorare, sottoscrizione in corso...")
+        ws.send(json.dumps({"command": "subscribe", "identifier": identifier}))
+        time.sleep(1)
+        ws.send(json.dumps({
+            "command": "message",
+            "identifier": identifier,
+            "data": json.dumps(subscription_payload),
+        }))
+
+    def _process_one_card_event(player_slug, player_name, price_eur, card_slug,
+                                 league_slug, offer_id, seller_slug, is_in_season):
+        """Gira in un thread del pool: valuta UN candidato per intero (stessa
+        identica logica di prima), senza bloccare on_message/il lettore
+        WebSocket nel frattempo. Ogni eccezione e' catturata qui (on_message
+        NON puo' piu' farlo per questo pezzo, dato che ora gira in un thread
+        separato) -- stesso principio 'mai un crash silenzioso' di sempre."""
+        try:
+            found = evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate,
+                                    league_slug, offer_id, seller_slug, is_in_season)
+        except Exception as e:
+            log(f"[ERRORE in valutazione evento] {player_name}: eccezione non gestita "
+                f"durante la valutazione (thread worker), la salto e continuo: {e}")
+            found = False
+
+        if INSUFFICIENT_FUNDS_STOP[0]:
+            with stats_lock:
+                gia_chiuso = stats["_closed_insufficient_funds"]
+                stats["_closed_insufficient_funds"] = True
+            if not gia_chiuso:
+                log("STOP: fondi insufficienti rilevati, chiudo la connessione -- "
+                    "nessun tentativo successivo avrebbe senso")
+                ws.close()
+            return
+
+        if found:
+            with stats_lock:
+                stats["matches_found"] += 1
+                trovati = stats["matches_found"]
+                target_raggiunto = trovati >= AUTOBUY_TARGET_MATCHES and not stats["_closed_target"]
+                if target_raggiunto:
+                    stats["_closed_target"] = True
+            log(f"Casi trovati finora: {trovati}/{AUTOBUY_TARGET_MATCHES}")
+            if target_raggiunto:
+                ws.close()
+
+    def on_message(ws, raw_message):
+        try:
+            message = json.loads(raw_message)
+        except json.JSONDecodeError:
+            return
+
+        msg_type = message.get('type')
+        if msg_type in ('welcome', 'ping'):
+            return
+        if msg_type == 'confirm_subscription':
+            log("Sottoscrizione confermata, in ascolto...")
+            return
+        if msg_type == 'reject_subscription':
+            log(f"ERRORE: sottoscrizione rifiutata: {message}")
+            return
+
+        payload = message.get('message')
+        if not payload:
+            return
+        if payload.get('errors'):
+            log(f"ERRORE GraphQL nella subscription: {payload['errors']}")
+            return
+
+        # FIX diagnostica 'bot piantato': tutto il corpo di valutazione dell'evento e'
+        # ora dentro un try/except generale. Prima, un'eccezione imprevista in un
+        # qualunque punto (evaluate_event, playwright, parsing di un campo mancante,
+        # ecc.) usciva dal callback on_message senza essere loggata da noi -- a seconda
+        # della versione di websocket-client questo puo' interrompere silenziosamente
+        # il thread che legge dal socket, dando l'impressione che il bot sia
+        # "piantato" dopo la connessione, senza nessun log ne' su Telegram ne' in
+        # console che lo spieghi.
+        try:
+            stats["received"] += 1
+            offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
+            if not offer:
+                return
+
+            offer_id = offer.get('id') or ''
+            if not offer_id.startswith('SingleSaleOffer:'):
+                return
+
+            offer_status = offer.get('status')
+            dedup_key = (offer_id, offer_status)
+            if dedup_key in seen_offer_status:
+                return
+            seen_offer_status.add(dedup_key)
+
+            if offer_status != 'opened':
+                return
+
+            seller_slug = ((offer.get('sender') or {}).get('slug') or '').lower()
+            if seller_slug in BLACKLISTED_SELLER_SLUGS:
+                return
+            if seller_slug in BLACKLISTED_MANAGER_SLUGS:
+                return
+
+            sender_side = offer.get('senderSide') or {}
+            receiver_side = offer.get('receiverSide') or {}
+            if receiver_side.get('anyCards'):
+                return  # scambio carta-per-carta
+
+            price_eur = eur_price_from_amounts(receiver_side.get('amounts'), eth_rate)
+            if price_eur is None:
+                return
+
+            # OTTIMIZZAZIONE VELOCITA' (23/07, richiesta esplicita utente -- priorita'
+            # alta): scarta QUI, prima del dispatch al thread pool, gli eventi fuori
+            # dalla fascia di prezzo -- stessa identica condizione che evaluate_event
+            # applica comunque come primo controllo sostanziale (subito dopo i check
+            # RAM di blacklist/cooldown), quindi ZERO cambio di comportamento: un
+            # evento fuori range veniva scartato la' dentro, solo DOPO aver gia'
+            # occupato uno dei 6 thread worker per niente. Lasciato ANCHE dentro
+            # evaluate_event (costo di una singola comparazione, trascurabile) come
+            # rete di sicurezza per eventuali altri chiamanti futuri.
+            if not (AUTOBUY_MIN_PRICE_EUR <= price_eur <= AUTOBUY_MAX_PRICE_EUR):
+                stats["price_filtered"] += 1
+                return
+
+            sender_cards = sender_side.get('anyCards') or []
+            if len(sender_cards) > 1:
+                return  # bundle multi-carta, prezzo per-carta non ricavabile
+
+            for card in sender_cards:
+                if card.get('rarityTyped') != 'limited':
+                    continue
+                if card.get('sport') != 'FOOTBALL':
+                    continue
+
+                player = card.get('anyPlayer') or {}
+                player_slug = player.get('slug')
+                player_name = player.get('displayName', player_slug)
+                card_slug = card.get('slug')
+
+                is_in_season = bool(card.get('inSeasonEligible'))
+                if not is_in_season and not CHECK_CLASSIC:
+                    continue  # modalita' base: SOLO in season
+                league_slug = ((player.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
+                if not player_slug:
+                    continue
+
+                stats["processed"] += 1
+                # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita
+                # utente): invece di valutare qui (bloccando la lettura del prossimo
+                # evento WebSocket per tutta la durata di evaluate_event), il lavoro
+                # viene sottomesso al pool e on_message torna subito -- il bot resta
+                # libero di leggere/valutare il prossimo evento mentre questo e'
+                # ancora in corso. Stessa identica logica di valutazione, solo non
+                # piu' bloccante per il lettore WebSocket.
+                event_executor.submit(_process_one_card_event, player_slug, player_name,
+                                       price_eur, card_slug, league_slug, offer_id,
+                                       seller_slug, is_in_season)
+        except Exception as e:
+            log(f"[ERRORE in on_message] eccezione non gestita durante la valutazione "
+                f"di un evento, la salto e continuo ad ascoltare: {e}")
+
+    def on_error(ws, error):
+        log(f"Errore WebSocket: {error}")
+
+    def on_close(ws, close_status_code, close_message):
+        log(f"Connessione chiusa (codice {close_status_code}). Eventi ricevuti: "
+            f"{stats['received']}, scartati per fascia prezzo (pre-dispatch): "
+            f"{stats['price_filtered']}, carte in season elaborate: {stats['processed']}, "
+            f"casi validi trovati: {stats['matches_found']}/{AUTOBUY_TARGET_MATCHES}")
+
+    # FIX 25/07 (richiesta esplicita utente -- run interrotta a 0/10 senza motivo
+    # apparente, causa piu' probabile una disconnessione WebSocket normale, rete o
+    # lato Sorare): prima un singolo ws.run_forever() chiudeva l'intera run non
+    # appena la connessione cadeva per QUALUNQUE motivo, anche molto prima di
+    # LISTEN_SECONDS o di AUTOBUY_TARGET_MATCHES. Ora si riconnette automaticamente
+    # finche' resta tempo sulla deadline totale, fermandosi SOLO per: deadline
+    # raggiunta, target di casi raggiunto, o stop per fondi insufficienti.
+    RECONNECT_DELAY_SECONDS = float(os.environ.get('RECONNECT_DELAY_SECONDS', '5'))
+    deadline = time.monotonic() + LISTEN_SECONDS
+    tentativo = 0
+    while True:
+        tempo_rimanente = deadline - time.monotonic()
+        if tempo_rimanente <= 0:
+            log("[listener] tempo LISTEN_SECONDS esaurito, chiudo.")
+            break
+        if stats["_closed_target"] or stats["_closed_insufficient_funds"]:
+            break
+
+        tentativo += 1
+        if tentativo > 1:
+            log(f"[riconnessione] tentativo #{tentativo}, tempo rimanente "
+                f"~{tempo_rimanente / 60:.1f} minuti")
+
+        ws = websocket.WebSocketApp(
+            WS_URL,
+            header=[f"Cookie: {COOKIES}"] if COOKIES else [],
+            on_open=on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
+        )
+
+        timer = threading.Timer(tempo_rimanente, ws.close)
+        timer.daemon = True
+        timer.start()
+
+        ws.run_forever(ping_interval=60, ping_timeout=45)
+        timer.cancel()
+
+        if stats["_closed_target"] or stats["_closed_insufficient_funds"]:
+            break
+        if deadline - time.monotonic() <= 0:
+            log("[listener] tempo LISTEN_SECONDS esaurito, chiudo.")
+            break
+        log(f"[riconnessione] connessione WebSocket chiusa inaspettatamente (rete o lato "
+            f"Sorare), riconnessione tra {RECONNECT_DELAY_SECONDS:.0f}s...")
+        time.sleep(RECONNECT_DELAY_SECONDS)
+
+    # Aspetta che eventuali valutazioni ancora in corso nel pool finiscano
+    # (es. un'offerta/acquisto gia' avviato) prima di chiudere -- niente
+    # tentativi troncati a meta' solo perche' la connessione WebSocket si e'
+    # chiusa nel frattempo.
+    event_executor.shutdown(wait=True)
+
+    return stats["matches_found"]
+
+
+# COMMIT PERIODICO LISTA NERA (21/07, richiesta esplicita utente -- "evitare che
+# un'interruzione della run perda blacklist/cooldown accumulati"): il file
+# sorare_lista_nera.txt viene gia' scritto su disco ad ogni upsert (vedi
+# _lista_nera_scrivi_righe), ma restava solo LOCALE fino al commit finale del
+# workflow -- se la run si interrompeva a meta' (timeout, cancellazione manuale,
+# crash), tutto cio' che il bot aveva imparato in quella sessione (nuovi cooldown,
+# nuove blacklist automatiche 365gg) andava perso. Un thread separato, parallelo
+# al listener WebSocket (che resta l'UNICA cosa che deve restare vivo/continuo --
+# niente piu' restart a chunk come per MLS Sentiment, qui romperebbe la sessione
+# live), fa git add/commit/push ogni COMMIT_INTERVAL_SECONDS (default 300s = 5
+# minuti) SOLO se il file e' effettivamente cambiato dall'ultimo commit.
+COMMIT_INTERVAL_SECONDS = int(os.environ.get('COMMIT_INTERVAL_SECONDS', '300'))
+# BID PERIODICO OGNI 2 MINUTI (22/07, richiesta esplicita utente, specifica completa
+# concordata) -- meccanismo INDIPENDENTE dal listener WebSocket, CONVIVE in parallelo.
+# Ogni PERIODIC_BID_INTERVAL_SECONDS, prende il candidato che durante la finestra si
+# e' avvicinato di piu' alla soglia MakeOffer (anche restando sotto), e gli fa
+# un'offerta secca al PERIODIC_BID_DISCOUNT sotto il minimo REGISTRATO in quel
+# momento -- bypassando la sola soglia minima di margine. SOLO offerte (MakeOffer),
+# MAI acquisto diretto. Fascia prezzo e sconto FISSI nel codice (non configurabili),
+# solo l'attivazione e' un input del workflow (default 'si').
+PERIODIC_BID_ENABLED = os.environ.get('PERIODIC_BID_ENABLED', 'no').strip().lower() == 'si'
+PERIODIC_BID_INTERVAL_SECONDS = 180
+PERIODIC_BID_MIN_PRICE_EUR = 2.0
+PERIODIC_BID_MAX_PRICE_EUR = 30.0
+PERIODIC_BID_DISCOUNT_FRACTION = 0.25
+
+# Stato condiviso tra i thread worker di evaluate_event (che scrivono il candidato
+# migliore del ciclo corrente) e il thread del timer periodico (che legge e svuota).
+# Protetto da _periodic_bid_lock -- scritture concorrenti da piu' thread evaluate_event,
+# lettura+svuotamento dal thread del timer.
+_periodic_bid_lock = threading.Lock()
+_periodic_bid_best = None  # dict col candidato migliore del ciclo corrente, o None
+# OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07, richiesta esplicita utente,
+# rischio accettato): quanti eventi valutare IN PARALLELO invece che uno alla
+# volta. Prima, on_message chiamava evaluate_event in modo sincrono/bloccante --
+# mentre il bot era occupato a valutare un candidato (anche uno che poi risultava
+# uno scarto, dopo una o piu' query di rete), non poteva nemmeno leggere il
+# prossimo evento in arrivo dal WebSocket, restando "cieco" proprio nel momento
+# in cui poteva arrivare il vero affare. Non esposta nel workflow_dispatch
+# (il file .yml e' gia' al limite di 25 input) -- modificabile qui o con una env
+# var settata direttamente nel job se mai servisse.
+EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '6'))
+# DIAGNOSTICA TEMPORANEA TEMPI (22/07, richiesta esplicita utente -- capire dove
+# va il tempo nei casi persi per velocita' contro altri bot). Default 'si'
+# apposta (non 'no' come le altre diagnostiche opt-in) perche' e' esattamente
+# quello che serve ORA per l'indagine in corso -- non esposta nel
+# workflow_dispatch (.yml gia' al limite di 25 input), disattivabile con una env
+# var se mai servisse. RIMUOVERE (variabile + tutti i blocchi 'if
+# EVENT_TIMING_DIAGNOSTIC') quando l'indagine e' conclusa.
+EVENT_TIMING_DIAGNOSTIC = os.environ.get('EVENT_TIMING_DIAGNOSTIC', 'si').strip().lower() == 'si'
+_stop_periodic_commit = threading.Event()
+_stop_periodic_bid = threading.Event()
+
+# AUTO-ANNULLAMENTO OFFERTE MAKEOFFER (26/07, richiesta esplicita utente): il venditore
+# spesso non risponde a un'offerta MakeOffer -- se il bot ne accumula molte senza mai
+# annullarle, il budget resta bloccato inutilmente su offerte pendenti che non
+# porteranno mai a un acquisto. Ogni offerta inviata con successo (sia dal ramo
+# MakeOffer normale sia dal bid periodico) viene registrata qui con un timer
+# INDIPENDENTE e proprio -- un thread dedicato controlla ogni OFFER_AUTO_CANCEL_
+# CHECK_INTERVAL_SECONDS e annulla (mutation CancelOfferMutation, blockchainId --
+# recuperato dalla risposta di CreateDirectOfferMutation, confermata dal vivo il
+# 26/07 annullando un'offerta a mano e catturando la request) SOLO le singole offerte
+# che hanno individualmente superato OFFER_AUTO_CANCEL_SECONDS dalla propria
+# creazione -- non un annullamento "a ondata" di tutte insieme.
+OFFER_AUTO_CANCEL_ENABLED = os.environ.get('OFFER_AUTO_CANCEL_ENABLED', 'si').strip().lower() in ('1', 'true', 'yes', 'si')
+OFFER_AUTO_CANCEL_SECONDS = int(os.environ.get('OFFER_AUTO_CANCEL_SECONDS', '240'))
+OFFER_AUTO_CANCEL_CHECK_INTERVAL_SECONDS = 30
+_stop_auto_cancel = threading.Event()
+_pending_cancel_lock = threading.Lock()
+_pending_cancel_offers = []  # lista di dict {'blockchain_id', 'player_name', 'creata_a' (monotonic)}
+
+CANCEL_OFFER_MUTATION = """
+mutation CancelOfferMutation($input: cancelOfferInput!) {
+  cancelOffer(input: $input) {
+    errors { message }
+    tokenOffer {
+      id
+      status
+    }
+  }
+}
+"""
+
+
+def register_offer_for_auto_cancel(blockchain_id, player_name):
+    """Aggiunge un'offerta appena inviata al tracker di auto-annullamento, col suo
+    timer che parte da ADESSO (monotonic, non influenzato dall'ora di sistema).
+    Se blockchain_id e' None (risposta della create senza quel campo -- fail-open
+    gia' gestito altrove, caso raro), non c'e' nulla da tracciare: l'offerta resta
+    viva finche' non scade da sola (OFFER_DURATION_DAYS), nessun crash."""
+    if not OFFER_AUTO_CANCEL_ENABLED or not blockchain_id:
+        return
+    with _pending_cancel_lock:
+        _pending_cancel_offers.append({
+            'blockchain_id': blockchain_id,
+            'player_name': player_name,
+            'creata_a': time.monotonic(),
+        })
+
+
+def cancel_direct_offer(blockchain_id):
+    """Un solo tentativo, fail-safe assoluto (MAI eccezione non gestita, MAI retry --
+    stesso principio delle altre mutation critiche). Non richiede firma/approvazione
+    wallet (confermato dalla request reale catturata il 26/07 -- solo blockchainId),
+    quindi usa graphql_query() diretta invece del percorso via browser thread."""
+    try:
+        data = graphql_query(CANCEL_OFFER_MUTATION, {'input': {'blockchainId': blockchain_id}})
+        root_errors = data.get('errors')
+        payload = (data.get('data') or {}).get('cancelOffer') or {}
+        payload_errors = payload.get('errors') or []
+        if root_errors or payload_errors:
+            return False, str(root_errors or payload_errors)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
+def _auto_cancel_offers_scan():
+    """Un giro di controllo: sposta fuori dal lock (per non bloccare i thread che
+    registrano nuove offerte durante le chiamate di rete) solo le offerte che HANNO
+    GIA' superato individualmente OFFER_AUTO_CANCEL_SECONDS, poi le annulla una per
+    una. Le altre restano nel tracker col proprio timer intatto."""
+    ora = time.monotonic()
+    da_annullare = []
+    with _pending_cancel_lock:
+        rimaste = []
+        for entry in _pending_cancel_offers:
+            if ora - entry['creata_a'] >= OFFER_AUTO_CANCEL_SECONDS:
+                da_annullare.append(entry)
+            else:
+                rimaste.append(entry)
+        _pending_cancel_offers[:] = rimaste
+    for entry in da_annullare:
+        eta_secondi = ora - entry['creata_a']
+        success, error = cancel_direct_offer(entry['blockchain_id'])
+        if success:
+            log(f"[auto-annulla offerte] {entry['player_name']}: offerta annullata dopo "
+                f"{eta_secondi:.0f}s (nessuna risposta dal venditore), budget liberato")
+            pending_offers_count[0] = max(0, pending_offers_count[0] - 1)
+        else:
+            # Fail-safe: se l'annullamento fallisce (es. offerta gia' accettata/scaduta
+            # nel frattempo), non ritentiamo -- loggato e basta, l'offerta esce
+            # comunque dal tracker per non ritentare all'infinito su un caso morto.
+            log(f"[auto-annulla offerte] {entry['player_name']}: annullamento fallito dopo "
+                f"{eta_secondi:.0f}s ({error}) -- probabile gia' accettata/scaduta, "
+                f"non ritento")
+
+
+def _auto_cancel_offers_loop():
+    while not _stop_auto_cancel.wait(OFFER_AUTO_CANCEL_CHECK_INTERVAL_SECONDS):
+        try:
+            _auto_cancel_offers_scan()
+        except Exception as e:
+            log(f"[auto-annulla offerte] eccezione non bloccante, ritento al prossimo giro: {e}")
+
+
+def _cancel_all_pending_offers_on_shutdown():
+    """Chiamata una sola volta in chiusura (finally di main()), PRIMA che il processo
+    esca: il thread _auto_cancel_offers_loop annulla solo le offerte che hanno GIA'
+    superato OFFER_AUTO_CANCEL_SECONDS, quindi qualunque offerta fatta negli ultimi
+    OFFER_AUTO_CANCEL_SECONDS del run (es. a ridosso di LISTEN_SECONDS) resterebbe
+    pendente per sempre col processo morto -- niente piu' thread a controllarla, scade
+    solo da sola dopo OFFER_DURATION_DAYS. Qui annulliamo TUTTE le offerte ancora nel
+    tracker, indipendentemente dalla loro eta'."""
+    with _pending_cancel_lock:
+        da_annullare = list(_pending_cancel_offers)
+        _pending_cancel_offers.clear()
+    if not da_annullare:
+        return
+    log(f"[auto-annulla offerte] chiusura bot: {len(da_annullare)} offerta/e ancora "
+        f"pendente/i, annullamento forzato prima di uscire")
+    for entry in da_annullare:
+        eta_secondi = time.monotonic() - entry['creata_a']
+        success, error = cancel_direct_offer(entry['blockchain_id'])
+        if success:
+            log(f"[auto-annulla offerte] {entry['player_name']}: offerta annullata a "
+                f"chiusura bot dopo {eta_secondi:.0f}s, budget liberato")
+            pending_offers_count[0] = max(0, pending_offers_count[0] - 1)
+        else:
+            log(f"[auto-annulla offerte] {entry['player_name']}: annullamento a chiusura "
+                f"bot fallito dopo {eta_secondi:.0f}s ({error}) -- probabile gia' "
+                f"accettata/scaduta, non ritento")
+
+
+def _commit_lista_nera_se_serve():
+    """Un solo tentativo di commit+push, non bloccante per il resto del bot in
+    caso di errore (rete, conflitto git, ecc.) -- logga e continua, la prossima
+    esecuzione periodica ritentera' comunque."""
+    try:
+        status = subprocess.run(
+            ['git', 'status', '--porcelain', '--', LISTA_NERA_PATH],
+            capture_output=True, text=True, timeout=30
+        )
+        if not status.stdout.strip():
+            return  # nessuna modifica, niente da committare
+        subprocess.run(['git', 'config', 'user.name', 'bot-test-starterodds'], timeout=30)
+        subprocess.run(['git', 'config', 'user.email',
+                         'bot-test-starterodds@users.noreply.github.com'], timeout=30)
+        subprocess.run(['git', 'add', LISTA_NERA_PATH], timeout=30)
+        commit = subprocess.run(
+            ['git', 'commit', '-m', 'Bot test starter-odds: commit periodico lista nera (run in corso)'],
+            capture_output=True, text=True, timeout=30
+        )
+        if commit.returncode != 0:
+            log(f"[commit periodico] nulla da committare o commit fallito: {commit.stdout.strip()} {commit.stderr.strip()}")
+            return
+        pull = subprocess.run(
+            ['git', 'pull', '--rebase', '--autostash', 'origin', 'main'],
+            capture_output=True, text=True, timeout=60
+        )
+        if pull.returncode != 0:
+            log(f"[commit periodico] git pull --rebase fallito, salto il push di questo giro: {pull.stderr.strip()}")
+            return
+        push = subprocess.run(['git', 'push'], capture_output=True, text=True, timeout=60)
+        if push.returncode == 0:
+            log("[commit periodico] lista nera committata e pushata con successo (run ancora in corso)")
+        else:
+            log(f"[commit periodico] push fallito: {push.stderr.strip()}")
+    except Exception as e:
+        log(f"[commit periodico] eccezione non bloccante, ritento al prossimo giro: {e}")
+
+
+def _periodic_commit_loop():
+    while not _stop_periodic_commit.wait(COMMIT_INTERVAL_SECONDS):
+        _commit_lista_nera_se_serve()
+
+
+def _try_periodic_bid(candidato, eth_rate):
+    """Verifica DA CAPO il candidato scelto (cooldown, offerte pendenti, liquidita',
+    ultimo/penultimo prezzo -- esattamente come una carta target normale del
+    MakeOffer) e, se passa tutto, invia un'offerta secca al PERIODIC_BID_DISCOUNT_
+    FRACTION sotto il minimo REGISTRATO al momento del tracciamento (non ricalcolato
+    fresco, scelta esplicita dell'utente). SOLO offerte, MAI acquisto diretto. Se un
+    qualunque controllo fallisce, salta il giro -- NESSUN ripiego su altri candidati
+    (confermato esplicitamente dall'utente)."""
+    player_slug = candidato['player_slug']
+    player_name = candidato['player_name']
+    card_slug = candidato['card_slug']
+    seller_slug = candidato['seller_slug']
+    true_min_price = candidato['true_min_price']
+    is_in_season = candidato['is_in_season']
+    league_slug = candidato['league_slug']
+
+    log(f"[bid periodico] {player_name}: candidato del ciclo -- minimo registrato "
+        f"{true_min_price:.2f}EUR, margine registrato {candidato['margin_percent']:.1%} "
+        f"-- rivalidazione in corso prima dell'offerta")
+
+    # Stessi controlli di cooldown/offerte pendenti di una carta target normale --
+    # possono essere cambiati nei ~2 minuti trascorsi dal tracciamento.
+    # FILTRO COOLDOWN/THIN MARKET DISATTIVATI (bot_test_starterodds, richiesta esplicita
+    # utente, solo per questo test isolato -- in bot_definitivo.py restano attivi).
+    if not TEST_DISABLE_COOLDOWN_FILTER and player_slug and is_player_in_cooldown(player_slug, is_in_season):
+        log(f"[bid periodico] {player_name}: scarto -- gia' acquistato/offerto di "
+            f"recente (cooldown), salto questo ciclo")
+        return False
+    if player_slug and is_player_in_forma_bassa(player_slug.lower()):
+        log(f"[bid periodico] {player_name}: scarto -- in 'forma bassa ultime 5', "
+            f"salto questo ciclo")
+        return False
+    if not TEST_DISABLE_THIN_MARKET_FILTER and player_slug and is_player_in_thin_market_cache(player_slug, is_in_season):
+        log(f"[bid periodico] {player_name}: scarto -- gia' segnalato come mercato "
+            f"troppo sottile di recente, salto questo ciclo")
+        return False
+
+    count_7d, count_30d, ultimo_prezzo_transazione, penultimo_prezzo_transazione, terzo_prezzo_transazione = \
+        get_liquidity_and_last_price(player_slug, is_in_season, league_slug, eth_rate)
+    if not TEST_DISABLE_THIN_MARKET_FILTER and count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
+        log(f"[bid periodico] {player_name}: scarto -- solo {count_7d} transazioni "
+            f"negli ultimi {RECENT_TRANSACTIONS_WINDOW_DAYS} giorni, mercato troppo "
+            f"sottile, salto questo ciclo")
+        if player_slug:
+            record_thin_market_skip(player_slug, is_in_season)
+        return False
+
+    offer_amount_eur = _round_offer_to_nice_number(
+        true_min_price * (1 - PERIODIC_BID_DISCOUNT_FRACTION), true_min_price)
+    if offer_amount_eur <= 0:
+        log(f"[bid periodico] {player_name}: scarto -- offerta calcolata non positiva")
+        return False
+    if ultimo_prezzo_transazione is not None and offer_amount_eur >= ultimo_prezzo_transazione:
+        log(f"[bid periodico] {player_name}: scarto -- offerta ({offer_amount_eur:.2f}EUR) "
+            f"non inferiore all'ultima transazione ({ultimo_prezzo_transazione:.2f}EUR), "
+            f"salto questo ciclo")
+        return False
+    if penultimo_prezzo_transazione is not None and offer_amount_eur >= penultimo_prezzo_transazione:
+        log(f"[bid periodico] {player_name}: scarto -- offerta ({offer_amount_eur:.2f}EUR) "
+            f"non inferiore alla penultima transazione ({penultimo_prezzo_transazione:.2f}EUR), "
+            f"salto questo ciclo")
+        return False
+    if not check_recent_avg_price(f"[bid periodico] {player_name}", offer_amount_eur,
+                                   ultimo_prezzo_transazione, penultimo_prezzo_transazione,
+                                   terzo_prezzo_transazione):
+        return False
+
+    # Da qui in poi, IDENTICO a _handle_makeoffer_branch: dettagli carta, offerta
+    # pendente gia' esistente, valute accettate, invio -- stessi identici controlli
+    # di una carta target normale.
+    card_details = get_card_offer_details(card_slug)
+    if not card_details:
+        log(f"[bid periodico] {player_name}: scarto -- impossibile recuperare i "
+            f"dettagli della carta, salto questo ciclo")
+        return False
+    card_asset_id = card_details.get('assetId')
+    if not card_asset_id:
+        log(f"[bid periodico] {player_name}: scarto -- assetId assente, salto questo ciclo")
+        return False
+    existing_offers = card_details.get('liveSingleBuyOffers') or []
+    if existing_offers:
+        log(f"[bid periodico] {player_name}: scarto -- offerta gia' pendente su "
+            f"questa carta, salto questo ciclo")
+        return False
+    sale_offer = card_details.get('liveSingleSaleOffer') or {}
+    settlement_currencies = sale_offer.get('settlementCurrencies') or []
+    crypto_only_currencies = {'WEI', 'ETH'}
+    if settlement_currencies and set(settlement_currencies).issubset(crypto_only_currencies):
+        log(f"[bid periodico] {player_name}: scarto -- venditore accetta solo cripto, "
+            f"salto questo ciclo")
+        return False
+    if pending_offers_count[0] >= MAX_PENDING_OFFERS:
+        log(f"[bid periodico] {player_name}: scarto -- gia' raggiunto il tetto di "
+            f"offerte pendenti in questa esecuzione, salto questo ciclo")
+        return False
+
+    log(f"[bid periodico] {player_name}: offerta calcolata {offer_amount_eur:.2f}EUR "
+        f"(minimo registrato {true_min_price:.2f}EUR - sconto "
+        f"{PERIODIC_BID_DISCOUNT_FRACTION:.0%}), durata {OFFER_DURATION_DAYS} giorni")
+
+    prepared, offer_sent, offer_error, blockchain_id, _durata_prepare, _durata_esecuzione = \
+        _run_makeoffer_merged(player_name, card_asset_id, seller_slug, offer_amount_eur)
+    if not prepared:
+        log(f"[bid periodico] {player_name}: prenotazione offerta non riuscita, "
+            f"salto questo ciclo")
+        send_makeoffer_alert(player_name, player_slug, true_min_price, true_min_price,
+                              candidato['margin_percent'], card_slug, candidato['excluded_league'],
+                              prepared, is_in_season, live_mode=MAKEOFFER_LIVE_MODE,
+                              purchase_completed=False,
+                              purchase_error="prenotazione (prepareOffer) non riuscita",
+                              offer_amount_eur=offer_amount_eur, via_periodic_bid=True)
+        return False
+    nonce = (prepared.get('request') or {}).get('nonce')
+    log(f"[bid periodico] {player_name}: offerta prenotata lato server (nonce={nonce})")
+
+    if not MAKEOFFER_LIVE_MODE:
+        log(f"[bid periodico] {player_name}: MAKEOFFER_LIVE_MODE spento, offerta non inviata")
+        return False
+
+    if offer_sent:
+        log(f"[bid periodico] {player_name}: OFFERTA INVIATA CON SUCCESSO")
+        if player_slug:
+            record_player_offer(player_slug, is_in_season)
+        pending_offers_count[0] += 1
+        register_offer_for_auto_cancel(blockchain_id, player_name)
+        send_makeoffer_alert(player_name, player_slug, true_min_price, true_min_price,
+                              candidato['margin_percent'], card_slug, candidato['excluded_league'],
+                              prepared, is_in_season, live_mode=MAKEOFFER_LIVE_MODE,
+                              purchase_completed=True, offer_amount_eur=offer_amount_eur,
+                              via_periodic_bid=True)
+        return True
+
+    log(f"[bid periodico] {player_name}: offerta fallita -- {offer_error}")
+    if _is_insufficient_funds_error(offer_error):
+        log(f"[bid periodico] {player_name}: FONDI INSUFFICIENTI rilevati -- fermo il bot")
+        INSUFFICIENT_FUNDS_STOP[0] = True
+        send_insufficient_funds_alert(player_name, "Bid periodico")
+    send_makeoffer_alert(player_name, player_slug, true_min_price, true_min_price,
+                          candidato['margin_percent'], card_slug, candidato['excluded_league'],
+                          prepared, is_in_season, live_mode=MAKEOFFER_LIVE_MODE,
+                          purchase_completed=False, purchase_error=offer_error,
+                          offer_amount_eur=offer_amount_eur, via_periodic_bid=True)
+    return False
+
+
+def _periodic_bid_loop(eth_rate):
+    """Gira in un thread dedicato per tutta la run, indipendente dal listener
+    WebSocket -- ogni PERIODIC_BID_INTERVAL_SECONDS (default 120s = 2 minuti),
+    prende il candidato migliore del ciclo appena concluso (se c'e'), svuota
+    SUBITO il tracciamento per il ciclo successivo, poi lo rivalida da capo e
+    prova l'offerta. Se non c'e' nessun candidato, o se fallisce un controllo,
+    salta semplicemente il giro -- il timer riparte comunque."""
+    global _periodic_bid_best
+    while not _stop_periodic_bid.wait(PERIODIC_BID_INTERVAL_SECONDS):
+        if INSUFFICIENT_FUNDS_STOP[0]:
+            continue
+        with _periodic_bid_lock:
+            candidato = _periodic_bid_best
+            _periodic_bid_best = None
+        if candidato is None:
+            log("[bid periodico] nessun candidato idoneo in questo ciclo, salto")
+            continue
+        try:
+            _try_periodic_bid(candidato, eth_rate)
+        except Exception as e:
+            log(f"[bid periodico] eccezione non gestita, salto questo ciclo e continuo: {e}")
+
+
+def main():
+    eth_rate = get_eth_rate()
+    log(f"Tasso ETH/EUR: {eth_rate}")
+    autobuy_modalita = "ACQUISTO REALE ATTIVO" if AUTOBUY_LIVE_MODE else "solo diagnostica"
+    makeoffer_modalita = "OFFERTE REALI ATTIVE" if MAKEOFFER_LIVE_MODE else "solo diagnostica"
+    log(f"Bot Supremo -- AutoBuy: {autobuy_modalita} | MakeOffer: {makeoffer_modalita}")
+    log(f"[network] curl_cffi (impronta TLS Chrome) {'ATTIVO' if _HAS_CURL_CFFI else 'NON DISPONIBILE, uso requests standard'}")
+    csrf_source = "estratto dal cookie (csrftoken=...)" if _extract_csrf_from_cookie(COOKIES) else "da secret SORARE_CSRF (fallback)"
+    log(f"[auth] CSRF token in uso: {csrf_source}, valore: {(CSRF_TOKEN or '')[:20]}...")
+    log(f"Fascia prezzo {AUTOBUY_MIN_PRICE_EUR:.2f}-{AUTOBUY_MAX_PRICE_EUR:.2f}EUR, "
+        f"target casi da trovare: {AUTOBUY_TARGET_MATCHES}")
+    log(f"[soglie per-prezzo] {'ATTIVO' if PRICE_BASED_THRESHOLDS_ENABLED else 'DISATTIVO (uso solo soglie statiche legacy)'}"
+        f" -- MakeOffer minimo (curva continua): "
+        f"{', '.join(f'{p:.2f}EUR->{m:.1%}' for p, m in MAKEOFFER_MIN_MARGIN_CURVE)}. "
+        f"AutoBuy diretto (curva continua, nessun cutoff assoluto): "
+        f"{', '.join(f'{p:.2f}EUR->{m:.0%}' for p, m in AUTOBUY_MIN_MARGIN_CURVE)}. "
+        f"Sconto offerta (curva continua): {', '.join(f'{p:.2f}EUR->{d:.1%}' for p, d in OFFER_DISCOUNT_CURVE)}")
+    log(f"Giocatori in blacklist unita: {len(BLACKLISTED_PLAYER_SLUGS)}")
+    log(f"Manager in blacklist unita: {len(BLACKLISTED_MANAGER_SLUGS)}")
+    if AUTOBUY_LIVE_MODE or MAKEOFFER_LIVE_MODE:
+        log("[no-playwright] nessun browser da aprire -- chiamate dirette via curl_cffi")
+
+        # OTTIMIZZAZIONE VELOCITA' SNIPING: exchange_rate_id e la chiave cifrata del
+        # wallet sono entrambe cachate in memoria per tutta la run (vedi
+        # get_exchange_rate_id/fetch_encrypted_private_key) -- ma finora la CACHE
+        # veniva popolata solo al PRIMO acquisto/offerta reale, cioe' proprio nel
+        # momento in cui ogni millisecondo conta per battere altri bot sullo stesso
+        # annuncio. Le pre-carichiamo qui, all'avvio (stesso principio del warm-up
+        # del browser sopra), cosi' quando arriva il primo evento buono queste due
+        # chiamate di rete sono gia' state fatte e la pipeline di acquisto/offerta
+        # parte direttamente dal passo di firma, senza aspettarle. Nessuna modifica
+        # alla logica di acquisto/decisione -- solo l'ordine in cui il lavoro
+        # (comunque necessario) viene svolto.
+        log("[precarico velocita'] recupero anticipato chiave cifrata del wallet...")
+        # NOTA 21/07: exchange_rate_id NON viene piu' precaricato/cachato -- causava
+        # 'exchange rate has expired' riusando lo stesso id gia' consumato su piu'
+        # acquisti. Ora richiesto fresco ad ogni prepare_accept_offer.
+        if SORARE_WALLET_PASSWORD:
+            pre_key = fetch_encrypted_private_key()
+            if pre_key:
+                log("[precarico velocita'] chiave cifrata del wallet gia' in cache")
+            else:
+                log("[precarico velocita'] ATTENZIONE: precarico chiave cifrata fallito, "
+                    "verra' ritentato al primo acquisto/offerta reale")
+            # OTTIMIZZAZIONE VELOCITA' (21/07, estesa 23/07 al pool intero): avviamo
+            # qui TUTTI gli slot del pool Node persistente per la firma
+            # (sorare-sign/decrypt_and_sign.js), invece di lasciare che partano al
+            # primo acquisto/offerta reale -- l'avvio di Node e il caricamento di
+            # @sorare/crypto costano qualche centinaio di millisecondi ciascuno, e
+            # non vogliamo pagarli proprio mentre stiamo competendo con altri bot
+            # sullo stesso annuncio.
+            for _pool_idx in range(_NODE_POOL_SIZE):
+                with _node_pool[_pool_idx]['lock']:
+                    _ensure_node_pool_slot(_pool_idx)
+            log(f"[precarico velocita'] pool di {_NODE_POOL_SIZE} processi Node "
+                f"persistenti per la firma avviato e pronto (restera' vivo per tutta la run)")
+            # OTTIMIZZAZIONE VELOCITA' 24/07: decrypt della chiave del wallet
+            # anticipato QUI (richiesta warmupOnly al processo Node, solo decrypt,
+            # nessuna firma) -- prima il decrypt completo PBKDF2+AES-GCM veniva
+            # pagato dal PRIMO acquisto reale della run, l'unico momento in cui
+            # non possiamo permettercelo. Dopo questo warmup anche il primo
+            # acquisto usa il percorso rapido (chiave gia' in chiaro in cache).
+            if pre_key:
+                _t_warm = time.monotonic()
+                warm_ok = sign_authorization_via_node(
+                    SORARE_WALLET_PASSWORD, pre_key.get('encryptedPrivateKey'),
+                    pre_key.get('iv'), pre_key.get('salt'), None, warmup_only=True)
+                if warm_ok:
+                    log(f"[precarico velocita'] decrypt chiave wallet completato in "
+                        f"{time.monotonic() - _t_warm:.3f}s -- anche il PRIMO acquisto "
+                        f"della run usera' il percorso di firma rapido")
+                else:
+                    log("[precarico velocita'] ATTENZIONE: warmup decrypt fallito "
+                        "(vedi log [firma Node]), il primo acquisto fara' il decrypt "
+                        "completo come prima -- nessuna regressione, solo niente anticipo")
+        else:
+            log("[precarico velocita'] SORARE_WALLET_PASSWORD non impostata, salto il "
+                "precarico della chiave cifrata e del processo Node di firma")
+    if not validate_live_offers_schema():
+        log("STOP: self-check dello schema GraphQL fallito, esco senza avviare l'ascolto "
+            "(evita ore di ascolto a vuoto senza mai trovare un caso valido).")
+        return
+    send_startup_msg()
+    # OTTIMIZZAZIONE VELOCITA' 24/07: refresher exchange_rate_id in background --
+    # vedi nota sopra _exchange_rate_refresh_loop. Avviato SEMPRE (serve sia ad
+    # AutoBuy sia a MakeOffer via prepare_offer, costo: 1 query leggera ogni 45s).
+    exchange_rate_thread = threading.Thread(target=_exchange_rate_refresh_loop, daemon=True)
+    exchange_rate_thread.start()
+    log(f"[precarico velocita'] refresher exchange_rate_id avviato (id sempre fresco, "
+        f"usa-e-getta, refresh ogni {EXCHANGE_RATE_REFRESH_SECONDS}s o subito dopo ogni consumo)")
+    commit_thread = threading.Thread(target=_periodic_commit_loop, daemon=True)
+    commit_thread.start()
+    log(f"[commit periodico] thread avviato, commit+push lista nera ogni "
+        f"{COMMIT_INTERVAL_SECONDS}s se ci sono modifiche")
+    periodic_bid_thread = threading.Thread(target=_periodic_bid_loop, args=(eth_rate,), daemon=True)
+    periodic_bid_thread.start()
+    log(f"[bid periodico] thread avviato -- ogni {PERIODIC_BID_INTERVAL_SECONDS}s, "
+        f"attivo={PERIODIC_BID_ENABLED}")
+    auto_cancel_thread = threading.Thread(target=_auto_cancel_offers_loop, daemon=True)
+    auto_cancel_thread.start()
+    log(f"[auto-annulla offerte] thread avviato -- controllo ogni "
+        f"{OFFER_AUTO_CANCEL_CHECK_INTERVAL_SECONDS}s, annulla offerte pendenti da piu' di "
+        f"{OFFER_AUTO_CANCEL_SECONDS}s, attivo={OFFER_AUTO_CANCEL_ENABLED}")
+    try:
+        matches_found = run_listener(eth_rate)
+        target_reached = matches_found >= AUTOBUY_TARGET_MATCHES
+        send_end_msg(matches_found, target_reached)
+        if target_reached:
+            log(f"Target raggiunto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi trovati e "
+                f"notificati -- esecuzione terminata.")
+        else:
+            log(f"Tempo di ascolto scaduto: {matches_found}/{AUTOBUY_TARGET_MATCHES} casi "
+                f"trovati -- esecuzione terminata.")
+    finally:
+        _stop_periodic_commit.set()
+        _stop_periodic_bid.set()
+        _stop_exchange_rate_refresh.set()
+        _stop_auto_cancel.set()
+        _exchange_rate_refresh_now.set()  # sveglia il refresher cosi' vede lo stop subito
+        _cancel_all_pending_offers_on_shutdown()  # nessuna offerta lasciata pendente col bot spento
+        _commit_lista_nera_se_serve()  # ultimo commit sincrono, cattura eventuali modifiche recenti
+        _speculative_executor.shutdown(wait=True)
+        close_node_sign_process()
+
+
+if __name__ == "__main__":
+    main()
