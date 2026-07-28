@@ -384,9 +384,14 @@ def eur_price_from_amounts(amounts, eth_rate):
 # stesso), ritmo base/safe/cooldown solo moderatamente piu' veloci
 # dell'originale (non quanto il primo tentativo) per restare nella fascia
 # 5-6 min richiesta.
-GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.2'))
-GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.45'))
-GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '30.0'))
+# FIX 29/07 ter (richiesta esplicita utente): ora che il secondo giro dedicato
+# recupera i rate-limited invece di perderli (vedi run_snapshot_sweep), il
+# costo di un ritmo piu' aggressivo non e' piu' "carte perse per sempre" ma
+# solo "piu' carte nel pool di retry" -- si puo' spingere di piu' e verificare
+# se si risparmia tempo netto, il paracadute c'e' comunque.
+GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.12'))
+GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.25'))
+GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '20.0'))
 _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
