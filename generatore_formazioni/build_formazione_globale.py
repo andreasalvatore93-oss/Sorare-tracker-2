@@ -712,6 +712,18 @@ def main():
                 if entry.get('u23'):
                     U23_ELIGIBLE[slug] = True
 
+    # Esclusione manuale per slug (28/07, richiesta esplicita utente: carte
+    # gia' bloccate in un'Arena confermata di questa giornata -- lockedForLeaderboard
+    # resta false anche su lineup confermate, vedi sez. E del RIASSUNTO, quindi
+    # l'unico modo affidabile e' passare gli slug a mano da qui). Formato:
+    # EXCLUDE_SLUGS='slug-uno,slug-due'. Vuoto di default, nessun effetto.
+    exclude_slugs = {s.strip() for s in os.environ.get('EXCLUDE_SLUGS', '').split(',') if s.strip()}
+    if exclude_slugs:
+        print(f"\nEsclusi manualmente {len(exclude_slugs)} slug (gia' bloccati altrove): "
+              f"{sorted(exclude_slugs)}")
+        role_data = {lg: {role: [r for r in role_data[lg][role] if r['slug'] not in exclude_slugs]
+                           for role in ROLES} for lg in LEAGUES}
+
     prima = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
     role_data = filter_by_window(role_data)
     dopo = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}

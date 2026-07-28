@@ -56,6 +56,10 @@ on:
         description: 'Stampa nel log i candidati eleggibili mai schierati (debug, 0/1)'
         required: false
         default: '0'
+      exclude_slugs:
+        description: 'Slug giocatori da escludere manualmente, separati da virgola (es. gia bloccati in un Arena)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
