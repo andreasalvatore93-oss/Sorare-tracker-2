@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "jahkeele-marshall-rutty", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 23:55:24 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785282924', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'esXezVq-K4wyqwPZvo9KK9RrGsEXV2d2Fc2Kt_xrQ_UJUHSGirhIBUOB73qJS3e4XW46zi5Hce2snrz-RTir2g', 'etag': 'W/"f716c77b4aeb02ef228b0342bf3fa390"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=QR2hY8nFqIp%2F5lRnaQU6SYYibFUMZEg6bDy6zm%2FOgZiKNOZlqSo7QgPYm4YUOkdbbtQZ6XM0M2HQPJhekcrULuqulIUNxOgvwMw3E5yvOWwAp%2Fo0FNm2Nh7xe2gQdedbJgJSbDRZy6jIlD0UE1dcSHUtwesLAdN5pNp4Ce5XmWSnz9SPst8N%2BwngLEf%2BrU0eau%2F%2B5lE3sCouezork0QoKFRJoklaJITwnuhBIGrB%2BDBHT%2Fn6A%2BfLkqwabH%2FrimedtR%2F%2Fo6WFyaCz82hlCDnTpCCumU%2FHUWZgVv0B1vHrfYnr%2Blrr4nOvZryhnMW%2B2o6O--y96ZKjhuDapwFZSo--DBxcCH2LmbhV%2BK8bPhE%2BrQ%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 23:55:24 GMT; secure; httponly; samesite=none', 'x-request-id': 'e6dab019-4402-4e33-a28e-6142d00f95fc', 'x-runtime': '0.048866', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 360c95db80eb83f6ef4d2330b4faaa80.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': 'Ky7OnZM-IhDRmkOonzH4-yfJHaSbx2jnf4TOQSMKf8pXSQoRZrw6Jg=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:bdbe64ca-de88-492b-9741-300509773335","score":34.78,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:4057c215-539e-468b-9fe7-69fc2ed094ca","date":"2026-07-25T22:30:00Z","statusTyped":"played","homeTeam":{"slug":"new-york-rb-secaucus-new-jersey","name":"New York Red Bulls","code":"RBNY","domesticLeagueRanking":8},"awayTeam":{"slug":"charlotte-fc-charlotte-north-carolina","name":"Charlotte FC","code":"CLT","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":20,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:d49bc306-19bb-4861-be70-2376c59cb43d","score":33.96,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:e9c9bed4-83e7-4094-90b8-9077639c8944","date":"2026-07-22T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"philadelphia-union-chester-pennsylvania","name":"Philadelphia Union","code":"PHI","domesticLeagueRanking":14},"awayTeam":{"slug":"new-york-rb-secaucus-new-jersey","name":"New York Red Bulls","code":"RBNY","domesticLeagueRanking":8},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":74,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:b3656950-12e1-4fab-8728-3e267d2c4b76","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:0e3320ef-2779-4c71-b8c0-3d9d76979224","positionTyped":"Defender","projectedScore":46.0,"anyGame":{"id":"Game:b3656950-12e1-4fab-8728-3e267d2c4b76","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"new-york-rb-secaucus-new-jersey","name":"New York Red Bulls","code":"RBNY","domesticLeagueRanking":8},"awayTeam":{"slug":"orlando-city-lake-mary-florida","name":"Orlando City SC","code":"ORL","domesticLeagueRanking":10},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:72bb9218-e763-47e9-8bf0-5a58904c6f75","date":"2026-08-15T23:30:00Z","playerGameScore":{"id":"So5Score:a13e8fe1-037a-46d4-832b-eb64f240ec61","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:72bb9218-e763-47e9-8bf0-5a58904c6f75","date":"2026-08-15T23:30:00Z","homeTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"awayTeam":{"slug":"new-york-rb-secaucus-new-jersey","name":"New York Red Bulls","code":"RBNY","domesticLeagueRanking":8},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:39e50774-e83c-447e-acd4-b9b2c641229a","date":"2026-08-19T23:30:00Z","playerGameScore":{"id":"So5Score:302549a8-f641-4c90-bb49-1bfd3c6c2b77","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:39e50774-e83c-447e-acd4-b9b2c641229a","date":"2026-08-19T23:30:00Z","homeTeam":{"slug":"new-york-rb-secaucus-new-jersey","name":"New York Red Bulls","code":"RBNY","domesticLeagueRanking":8},"awayTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:bf12afc6-ef07-4e19-9a03-e25238e790f9","date":"2026-08-22T23:30:00Z","playerGameScore":{"id":"So5Score:a2be4247-3194-4f54-bcd6-1f2a4700c874","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:bf12afc6-ef07-4e19-9a03-e25238e790f9","date":"2026-08-22T23:30:00Z","homeTeam":{"slug":"new-york-rb-secaucus-new-jersey","name":"New York Red Bulls","code":"RBNY","domesticLeagueRanking":8},"awayTeam":{"slug":"chicago-fire-bridgeview-illinois","name":"Chicago Fire FC","code":"CHI","domesticLeagueRanking":4},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:26aaa851-aed1-4b12-a244-b41bb6baa64d","date":"2026-08-29T23:30:00Z","playerGameScore":{"id":"So5Score:91a9a5ee-f2df-47d0-9474-cb4de748ea0d","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:26aaa851-aed1-4b12-a244-b41bb6baa64d","date":"2026-08-29T23:30:00Z","homeTeam":{"slug":"new-york-rb-secaucus-new-jersey","name":"New York Red Bulls","code":"RBNY","domesticLeagueRanking":8},"awayTeam":{"slug":"philadelphia-union-chester-pennsylvania","name":"Philadelphia Union","code":"PHI","domesticLeagueRanking":14},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
