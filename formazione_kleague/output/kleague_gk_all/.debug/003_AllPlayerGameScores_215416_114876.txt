@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "byeong-geun-hwang", "first": 30}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 21:54:16 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '970', 'x-gql-depth': '7', 'x-server-timestamp': '1785275656', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'PnVPKFEeYHB9_JX9RGuBBz-g1Vknetvg7JPz8kDERAp-Euj1ua2vDBROuYWQlRXtymTpPEfkmXkYoJelwrITeQ', 'etag': 'W/"ddc8ee907440f36049e8f281554c712a"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=yTfF%2BZxRjob%2FBRpS%2B30tzQMW1KIzCL05nMKoNvqwdN1lLOEN4AcEJl6c0HD1fz7xjKLr0eq5VOVhMO9Qjsuw0fHmngFQ1Gp%2BmXDH4VcuPUlv0KF4g%2BqBiN8O55XfHODnfQpIdqT5d8Dfk5FsTsRR7lf7uyVseIy%2F5hDt9Lc7w1KLixChRQsL4l0I2myZvloAt8Zl%2F%2FxEiEQ8SFF8bziveOfG6S13Wme3VxurzUytrQZbWKczYNs3qNZXwltxKcvz6zX31igStM4RmQCYmR5Hi1bKABG9mb3x6v4HsOmEKD3iRLNiNEt8k2pwrS61dPPr--Vs02bEiyteg5KmhG--lePrRMPtIewN4d97k5lENg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 21:54:16 GMT; secure; httponly; samesite=none', 'x-request-id': '5bb0cd80-0640-4873-aa0f-3d1c7e0bf291', 'x-runtime': '0.011282', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 7702c285649a506a494c034917127a38.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'DFW57-P6', 'x-amz-cf-id': 'sOAZvIFPQOPEpKN64cQF-kTaLo8sHAL9YWWyuB_zqlbis63xgS7YdA=='}
+body (integrale):
+{"errors":[{"message":"Query has complexity of 970, which exceeds max complexity of 500. Using an APIKEY the limit would be 30000."}]}
