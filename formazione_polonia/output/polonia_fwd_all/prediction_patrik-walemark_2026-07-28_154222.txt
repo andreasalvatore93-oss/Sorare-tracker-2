@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T15:42:22.883569Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) patrik-walemark: 20 pt attesi (7-56)
+   SQUADRA: heerenveen-heerenveen-1920 | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: patrik-walemark
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: patrik-walemark (squadra: heerenveen-heerenveen-1920)
+Generato: 2026-07-28T15:42:22.883120Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2024-03-10 | NEC vs HEE | eredivisie | score=40.3 | peso=0.749
+  2024-03-30 | RKC vs HEE | eredivisie | score=39.4 | peso=0.794
+  2024-04-25 | HEE vs PSV | eredivisie | score=39.6 | peso=0.841
+  2024-05-12 | HEE vs VIT | eredivisie | score=47.0 | peso=0.891
+  2026-02-26 | LPO vs KUP | uefa-europa-conference-league | score=36.2 | peso=0.944
+  2026-07-21 | AGF vs LPO | uefa-champions-league | score=85.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 49.13
+  di cui Punteggio decisivo (level_score) medio: 41.71 | Punteggio complessivo (granulari) medio: 7.43 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.03 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.06
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.2 - 85.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 3.24 (differenza: +14.82)
+Media score in casa: 43.30 | Media score fuori casa: 39.85
+Fattore casa/trasferta applicato: 0.978 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.973
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.950
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T17:00
+Casa: KKS Lech Poznań | Trasferta: Aarhus Gymnastikforening
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 20.0 (range 7.0 - 56.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.49
+Punteggio REALE ottenuto in quella partita: 85.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +45.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T15:42:22.090585Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) allahyar-sayyadmanesh: 32 pt attesi (12-59)
+   SQUADRA: westerlo-westerlo | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: allahyar-sayyadmanesh
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: allahyar-sayyadmanesh (squadra: westerlo-westerlo)
+Generato: 2026-07-28T15:42:22.090039Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-14 | GNK vs WES | jupiler-pro-league | score=37.8 | peso=0.445
+  2025-12-20 | WES vs LAL | jupiler-pro-league | score=46.8 | peso=0.472
+  2025-12-27 | GNT vs WES | jupiler-pro-league | score=33.9 | peso=0.500
+  2026-01-17 | WES vs CER | jupiler-pro-league | score=52.4 | peso=0.530
+  2026-01-25 | KVM vs WES | jupiler-pro-league | score=35.4 | peso=0.561
+  2026-01-31 | ZWA vs WES | jupiler-pro-league | score=59.2 | peso=0.595
+  2026-02-06 | WES vs STV | jupiler-pro-league | score=54.3 | peso=0.630
+  2026-02-15 | ANT vs WES | jupiler-pro-league | score=91.0 | peso=0.667
+  2026-02-22 | WES vs CHA | jupiler-pro-league | score=81.6 | peso=0.707
+  2026-03-01 | WES vs USG | jupiler-pro-league | score=30.5 | peso=0.749
+  2026-04-18 | WES vs GNK | jupiler-pro-league | score=70.5 | peso=0.794
+  2026-04-25 | WES vs ANT | jupiler-pro-league | score=35.0 | peso=0.841
+  2026-05-02 | WES vs OHL | jupiler-pro-league | score=88.4 | peso=0.891
+  2026-05-10 | GNK vs WES | jupiler-pro-league | score=45.7 | peso=0.944
+  2026-05-19 | WES vs STA | jupiler-pro-league | score=45.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 54.87
+  di cui Punteggio decisivo (level_score) medio: 43.92 | Punteggio complessivo (granulari) medio: 10.95 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 5.01 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 20.00
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 81.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.76 (differenza: +2.24)
+Media score in casa: 56.07 | Media score fuori casa: 50.50
+Fattore casa/trasferta applicato: 0.992 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.5
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.985
+Fattore duelli (casa/trasferta, da dati reali): 0.987
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.987
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore trend (media ultime 5: 56.9 vs media ultime 10: 60.1): 0.947
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T17:00
+Casa: KKS Lech Poznań | Trasferta: Aarhus Gymnastikforening
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 31.9 (range 12.1 - 58.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.92
+Punteggio REALE ottenuto in quella partita: 45.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.2    54.3    +11.1    13.5        SI
+   7        7      50.6    91.0    +40.4    13.3        NO
+   8        8      65.2    81.6    +16.4    25.5        SI
+   9        9      49.7    30.5    -19.2    27.4        SI
+  10       10      68.6    70.5     +1.9    28.5        SI
+  11       11      76.9    35.0    -41.9    27.8        NO
+  12       12      73.5    88.4    +14.9    27.7        SI
+  13       13      56.1    45.7    -10.4    30.3        SI
+  14       14      43.6    45.1     +1.5    29.1        SI
+
+MAE (errore assoluto medio): 17.53
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
