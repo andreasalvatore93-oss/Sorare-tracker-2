@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "brandon-soppy", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 16:56:25 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785257785', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'yK_4w6g4BjBmfDdzU6ijAJ8KDfptb4ZrirQNhSMlD8HTWpPaZwacNxrRQKEIgr_2V-qoVhCjYmbTQXjYqZLeUQ', 'etag': 'W/"49242f24b1479010db73a0095a2b9db0"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=WY3e5JMdZEiY8Bxqb9j37VCGAfk5QOT4XzU6z%2Fqygs4a69JwPIEkDGckxAoYLpZ4aFJSXp14D9J%2BE5rP9RTh1bpe1YDXW1KCGGlDlbXN1Gbz0jyVInplzr27rwtT1W7WTLXBvAZqNGEu0mWGNBiJSMrpSMeRfsN%2FOWxGinZFcdofagYVww0FSKoXvBuot472rnZr%2F9r1boNpY3pXWsrI4HvtG87xvKxWE51m3%2BuFZtKpqUB448ZA2%2B48LIcOhpY9KiqEt5%2BIzzzNYv85eAZglVWmst4%2Fdo2P6N0ASkzgq7stkGXPlbKGVLc4Fc2%2B5WrL--qC3BM%2F7yGsOkktfS--YQJFZjLjZmpwCS6%2Bd0KNHg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 16:56:25 GMT; secure; httponly; samesite=none', 'x-request-id': '9d57cb8e-6141-4f4a-b0ea-3c8add62af83', 'x-runtime': '0.058018', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 cd7dae0c96563a292a61aa72a3e889e0.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'ORD58-P3', 'x-amz-cf-id': 'ErB6eE9fTZ8g1t2H9YhNpUWeL37bo0KDihEsbVTaDakAG9NCP1PIGg=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:5628387d-de5d-44cc-a2e3-57b6d405b084","score":75.28,"scoreStatus":"REVIEWING","positionTyped":"Defender","anyGame":{"id":"Game:2ce7f854-6baf-47d8-96fd-29f9b5d5f53a","date":"2026-07-25T16:00:00Z","statusTyped":"played","homeTeam":{"slug":"lausanne-sport-lausanne","name":"FC Lausanne Sport","code":"LAU","domesticLeagueRanking":7},"awayTeam":{"slug":"grasshopper-niederhasli","name":"Grasshopper Club Zürich","code":"GCZ","domesticLeagueRanking":6},"competition":{"slug":"super-league-ch"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:3b3c5a22-0b43-4cd5-b7a6-fe7cb43db1fb","score":32.76,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:cd863975-7c1e-4984-8c7d-436009a440c0","date":"2026-05-16T16:00:00Z","statusTyped":"played","homeTeam":{"slug":"lausanne-sport-lausanne","name":"FC Lausanne Sport","code":"LAU","domesticLeagueRanking":7},"awayTeam":{"slug":"grasshopper-niederhasli","name":"Grasshopper Club Zürich","code":"GCZ","domesticLeagueRanking":6},"competition":{"slug":"super-league-ch"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:b32dd57f-1295-4b79-b600-a30f98a04ce0","date":"2026-08-01T16:00:00Z","playerGameScore":{"id":"So5Score:fb59d959-d3b6-4374-b4c8-7974e5bf29f4","positionTyped":"Defender","projectedScore":49.0,"anyGame":{"id":"Game:b32dd57f-1295-4b79-b600-a30f98a04ce0","date":"2026-08-01T16:00:00Z","homeTeam":{"slug":"basel-basel","name":"FC Basel 1893","code":"BAS","domesticLeagueRanking":5},"awayTeam":{"slug":"lausanne-sport-lausanne","name":"FC Lausanne Sport","code":"LAU","domesticLeagueRanking":7},"competition":{"slug":"super-league-ch"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:b15587fe-8923-4dfb-b3a4-1da4ef831324","date":"2026-08-08T16:00:00Z","playerGameScore":{"id":"So5Score:2c437b89-8102-4427-beca-03cea1e03c6d","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:b15587fe-8923-4dfb-b3a4-1da4ef831324","date":"2026-08-08T16:00:00Z","homeTeam":{"slug":"lausanne-sport-lausanne","name":"FC Lausanne Sport","code":"LAU","domesticLeagueRanking":7},"awayTeam":{"slug":"young-boys-bern","name":"BSC Young Boys","code":"YBB","domesticLeagueRanking":1},"competition":{"slug":"super-league-ch"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:81aa9eac-01bf-4575-b14d-f5ddc24c926a","date":"2026-08-22T16:00:00Z","playerGameScore":{"id":"So5Score:02029900-0f87-450d-9fe7-91cb8b888693","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:81aa9eac-01bf-4575-b14d-f5ddc24c926a","date":"2026-08-22T16:00:00Z","homeTeam":{"slug":"luzern-luzern","name":"FC Luzern","code":"LUZ","domesticLeagueRanking":12},"awayTeam":{"slug":"lausanne-sport-lausanne","name":"FC Lausanne Sport","code":"LAU","domesticLeagueRanking":7},"competition":{"slug":"super-league-ch"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:09cbd414-b1d1-4f24-aa1f-3e62d2cbea1a","date":"2026-08-29T16:00:00Z","playerGameScore":{"id":"So5Score:c34b2739-48ab-4db5-836f-d5e0bcb1b7b4","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:09cbd414-b1d1-4f24-aa1f-3e62d2cbea1a","date":"2026-08-29T16:00:00Z","homeTeam":{"slug":"lausanne-sport-lausanne","name":"FC Lausanne Sport","code":"LAU","domesticLeagueRanking":7},"awayTeam":{"slug":"zurich-zurich","name":"FC Zürich","code":"FCZ","domesticLeagueRanking":9},"competition":{"slug":"super-league-ch"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:e782bc69-a132-47cc-90e3-7eb42175c07c","date":"2026-09-02T18:30:00Z","playerGameScore":{"id":"So5Score:290234ac-bdaa-49e3-98aa-b64ed0a2c52c","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:e782bc69-a132-47cc-90e3-7eb42175c07c","date":"2026-09-02T18:30:00Z","homeTeam":{"slug":"thun-thun","name":"FC Thun","code":"FCT","domesticLeagueRanking":2},"awayTeam":{"slug":"lausanne-sport-lausanne","name":"FC Lausanne Sport","code":"LAU","domesticLeagueRanking":7},"competition":{"slug":"super-league-ch"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
