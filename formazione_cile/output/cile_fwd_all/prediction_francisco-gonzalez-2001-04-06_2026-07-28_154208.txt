@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T15:42:08.056266Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) francisco-gonzalez-2001-04-06: 59 pt attesi (39-76)
+   SQUADRA: o-higgins-rancagua | AVVERSARIO: boca-juniors-capital-federal-ciudad-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: francisco-gonzalez-2001-04-06
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: francisco-gonzalez-2001-04-06 (squadra: o-higgins-rancagua)
+Generato: 2026-07-28T15:42:08.055822Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: conmebol-sudamericana (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-03 | OHI vs AUD | primera-division-cl | score=84.9 | peso=0.445
+  2026-04-08 | OHI vs MIL | conmebol-sudamericana | score=83.4 | peso=0.472
+  2026-04-11 | OHI vs HUA | primera-division-cl | score=59.9 | peso=0.500
+  2026-04-14 | SPA vs OHI | conmebol-sudamericana | score=57.3 | peso=0.530
+  2026-04-19 | CBR vs OHI | primera-division-cl | score=72.0 | peso=0.561
+  2026-04-25 | NUB vs OHI | primera-division-cl | score=83.3 | peso=0.595
+  2026-04-29 | OHI vs BOS | conmebol-sudamericana | score=97.4 | peso=0.630
+  2026-05-07 | OHI vs SPA | conmebol-sudamericana | score=60.8 | peso=0.667
+  2026-05-16 | OHI vs UCO | primera-division-cl | score=62.0 | peso=0.707
+  2026-05-20 | BOS vs OHI | conmebol-sudamericana | score=69.9 | peso=0.749
+  2026-05-26 | MIL vs OHI | conmebol-sudamericana | score=77.9 | peso=0.794
+  2026-05-31 | OHI vs EVE | primera-division-cl | score=90.9 | peso=0.841
+  2026-06-13 | COQ vs OHI | primera-division-cl | score=47.7 | peso=0.891
+  2026-06-19 | UCH vs OHI | primera-division-cl | score=47.4 | peso=0.944
+  2026-07-24 | BOC vs OHI | conmebol-sudamericana | score=49.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 67.83
+  di cui Punteggio decisivo (level_score) medio: 49.36 | Punteggio complessivo (granulari) medio: 18.47 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 9.21 (delta +0.96) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.24
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 47.7 - 84.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.26 (differenza: +1.98)
+Media score in casa: 77.04 | Media score fuori casa: 63.10
+Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.183
+Fattore falli (casa/trasferta, da dati reali): 1.012
+Fattore duelli (casa/trasferta, da dati reali): 1.022
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.019
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.022
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.015
+Fattore trend (media ultime 5: 62.6 vs media ultime 10: 68.7): 0.912
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T00:30
+Casa: CD O'Higgins | Trasferta: CA Boca Juniors
+Competizione: conmebol-sudamericana
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 59.1 (range 39.0 - 76.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 69.81
+Punteggio REALE ottenuto in quella partita: 49.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -20.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      75.8    97.4    +21.6    15.8        NO
+   7        7      87.9    60.8    -27.1    19.1        NO
+   8        8      82.7    62.0    -20.7    19.5        NO
+   9        9      67.7    69.9     +2.2    19.1        SI
+  10       10      67.2    77.9    +10.7    17.9        SI
+  11       11      72.6    90.9    +18.3    17.0        NO
+  12       12      56.2    47.7     -8.5    17.8        SI
+  13       13      49.3    47.4     -1.9    20.6        SI
+  14       14      72.2    49.3    -22.9    22.2        NO
+
+MAE (errore assoluto medio): 14.89
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 44.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
