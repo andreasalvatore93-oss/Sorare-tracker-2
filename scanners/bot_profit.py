@@ -1015,7 +1015,15 @@ def fetch_player_combined_snapshot(player_slug):
     })
     if data.get('errors'):
         log(f"[combined snapshot] errore GraphQL per {player_slug}: {data['errors']}")
-        return [], None, None, None, [], [], None
+        # FIX 29/07 (richiesta esplicita utente): distinguere un errore (quasi
+        # sempre rate_limited_max_retries_exceeded) da un "davvero nessuna
+        # offerta/dato" -- prima venivano confusi (entrambi tornavano liste
+        # vuote), un giocatore rate-limitato finiva silenziosamente
+        # scartato come 'prezzo_basso_o_senza_annunci', indistinguibile da chi
+        # non aveva davvero annunci. L'ultimo elemento (errored=True) permette
+        # di isolare questi casi per un secondo giro dedicato (vedi
+        # run_snapshot_sweep) invece di perderli senza appello.
+        return [], None, None, None, [], [], None, True
 
     root = data.get('data') or {}
 
@@ -1082,7 +1090,8 @@ def fetch_player_combined_snapshot(player_slug):
                 break
             cursor = page_info.get('startCursor')
 
-    return live_nodes, next_game_date_str, prossimo_avversario, ultima_partita_score, past_game_dates, tx_nodes, tx_cutoff
+    return (live_nodes, next_game_date_str, prossimo_avversario, ultima_partita_score,
+            past_game_dates, tx_nodes, tx_cutoff, False)
 
 
 def trimmed_average(prices):
@@ -1941,6 +1950,9 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
     return 'ok' if righe_scritte else 'prezzo_basso_o_senza_annunci'
 
 
+RATE_LIMIT_RETRY_PAUSE_SECONDS = float(os.environ.get('RATE_LIMIT_RETRY_PAUSE_SECONDS', '30.0'))
+
+
 def run_snapshot_sweep(eth_rate):
     log(f"Avvio SNAPSHOT su {len(TEAM_WHITELIST)} squadra/e (league={SNAPSHOT_LEAGUE_SLUG}): {TEAM_WHITELIST}")
 
@@ -1976,12 +1988,28 @@ def run_snapshot_sweep(eth_rate):
     # piu' tre round-trip separati -- vedi quella funzione per il dettaglio.
     tipi_da_provare = (True, False) if CHECK_CLASSIC else (True,)
 
-    def _worker(player_slug, player_name, expected_team_slug, snapshot):
-        if is_player_blacklisted(player_slug):
+    # FIX 29/07 (richiesta esplicita utente): i giocatori la cui query fallisce
+    # per rate-limit esaurito venivano persi senza appello, confusi con un
+    # "davvero nessuna offerta" -- finiscono qui invece, per un secondo giro
+    # dedicato DOPO che il primo e' finito (quando il rate-limit di Sorare si
+    # e' presumibilmente allentato, la raffica di 429 osservata era comunque
+    # concentrata nella seconda meta' della run).
+    rate_limited_pool = []
+    rate_limited_lock = threading.Lock()
+
+    def _worker(player_slug, player_name, expected_team_slug, snapshot, is_retry=False):
+        if not is_retry and is_player_blacklisted(player_slug):
             _registra_esito(player_name, player_slug, 'blacklist')
             return
         (live_offer_nodes, next_game_date_str, prossimo_avversario, ultima_partita_score,
-         past_game_dates, tx_nodes, tx_cutoff) = fetch_player_combined_snapshot(player_slug)
+         past_game_dates, tx_nodes, tx_cutoff, errored) = fetch_player_combined_snapshot(player_slug)
+        if errored:
+            if is_retry:
+                _registra_esito(player_name, player_slug, 'rate_limited_persistente')
+            else:
+                with rate_limited_lock:
+                    rate_limited_pool.append((player_slug, player_name, expected_team_slug, snapshot))
+            return
         prezzo_ok = any(
             (m := _current_minimum_from_nodes(live_offer_nodes, tipo, SNAPSHOT_LEAGUE_SLUG, eth_rate)) is not None
             and m >= MIN_PRICE_EUR_THRESHOLD
@@ -2005,6 +2033,24 @@ def run_snapshot_sweep(eth_rate):
         ]
         for future in concurrent.futures.as_completed(futures):
             future.result()  # rilancia eventuali eccezioni non gestite dentro _worker
+
+    log(f"SNAPSHOT primo giro completato. Riepilogo: {stats}")
+
+    if rate_limited_pool:
+        log(f"[retry rate-limit] {len(rate_limited_pool)} giocatori scartati per rate-limit nel primo "
+            f"giro, secondo giro dedicato dopo {RATE_LIMIT_RETRY_PAUSE_SECONDS:.0f}s di pausa...")
+        time.sleep(RATE_LIMIT_RETRY_PAUSE_SECONDS)
+        done[0] = 0
+        total = len(rate_limited_pool)
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=SNAPSHOT_WORKER_THREADS, thread_name_prefix='snap-retry') as executor:
+            futures = [
+                executor.submit(_worker, player_slug, player_name, expected_team_slug, snapshot, True)
+                for player_slug, player_name, expected_team_slug, snapshot in rate_limited_pool
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+        log(f"[retry rate-limit] secondo giro completato. Riepilogo aggiornato: {stats}")
 
     log(f"SNAPSHOT completato. Riepilogo per giocatore: {stats}")
     return stats
