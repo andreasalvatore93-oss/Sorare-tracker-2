@@ -236,8 +236,48 @@ def _match_key(row):
     return frozenset((team, opponent))
 
 
+# Estensione anti-sinergia CROSS-team (28/07 sera, richiesta esplicita utente
+# dopo ri-misurazione su 25 campionati/1213 partite -- vedi
+# diagnostics/measure_teammate_correlation.py, sezione "Cross-team"). L'unica
+# anti-sinergia cross-team gia' in produzione era GK-vs-MID/FWD della squadra
+# avversaria del portiere (ANTI_SYNERGY_PENALTY sotto). I dati confermano
+# ALTRE coppie cross-team negative e STABILI split-half (segno identico prima/
+# seconda meta' cronologica): DEF-DEF -0.137 (split -0.101/-0.167), DEF-FWD
+# -0.126 (split -0.189/-0.118), MID-MID -0.118 (split -0.187/-0.105). DEF-MID
+# (-0.167, p=0.001) e' risultata SIGNIFICATIVA ma NON stabile split-half
+# (-0.006 prima meta' vs -0.210 seconda -- probabile rumore/effetto
+# recente non consolidato) e resta ESCLUSA finche' non si ri-conferma.
+# Scala ~20x la correlazione misurata, stessa convenzione di
+# GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA/TEAMMATE_SYNERGY_BONUS_VARIANCE (nudge
+# soft, mai un'esclusione). Chiave = coppia di ruoli non ordinata.
+CROSS_TEAM_PENALTY_BY_PAIR = {
+    frozenset(('DEF', 'DEF')): 3,   # -0.137 * 20 ~= 2.7
+    frozenset(('DEF', 'FWD')): 3,   # -0.126 * 20 ~= 2.5
+    frozenset(('MID', 'MID')): 2,   # -0.118 * 20 ~= 2.4
+}
+
+
+def _cross_team_penalty(role, row, chosen_roles_by_team):
+    """Somma la penalita' per ogni ruolo GIA' scelto nella squadra AVVERSARIA
+    di 'row' che forma una coppia cross-team confermata negativa (vedi
+    CROSS_TEAM_PENALTY_BY_PAIR). 'chosen_roles_by_team': dict
+    team_slug -> set di ruoli gia' presenti in formazione per quella squadra."""
+    if not chosen_roles_by_team:
+        return 0
+    opponent = row.get('opponent_team_slug')
+    if not opponent:
+        return 0
+    penalty = 0
+    for prev_role in chosen_roles_by_team.get(opponent, ()):
+        w = CROSS_TEAM_PENALTY_BY_PAIR.get(frozenset((role, prev_role)))
+        if w:
+            penalty += w
+    return penalty
+
+
 def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
-                      variance_mode=False, apply_positive_synergy=True, used_matches=None):
+                      variance_mode=False, apply_positive_synergy=True, used_matches=None,
+                      chosen_roles_by_team=None):
     """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
     dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
@@ -263,6 +303,7 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
             adjusted -= ANTI_SYNERGY_PENALTY
         elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
             adjusted += POSITIVE_SYNERGY_BONUS
+        adjusted -= _cross_team_penalty(role, row, chosen_roles_by_team)
     if variance_mode and team_slug:
         if role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
             adjusted += GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA
@@ -282,7 +323,8 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
 
 
 def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
-                           variance_mode=False, apply_positive_synergy=True, used_matches=None):
+                           variance_mode=False, apply_positive_synergy=True, used_matches=None,
+                           chosen_roles_by_team=None):
     """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
     anti-sinergia col portiere scelto (vedi synergy_sort_key), la sinergia
     da correlazione misurata (SOLO variance_mode) ed eventualmente per il
@@ -292,12 +334,13 @@ def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_count
     anti-stack ne' variance_mode ne' sinergia positiva da applicare, non
     cambia nulla -- comportamento identico a prima."""
     if (not apply_stack_guard and not variance_mode
-            and not (apply_positive_synergy and (gk_team_slug or gk_opponent_slug))
+            and not (apply_positive_synergy and (gk_team_slug or gk_opponent_slug or chosen_roles_by_team))
             and not used_matches):
         return rows
     return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug,
                                                            team_counts, apply_stack_guard, variance_mode,
-                                                           apply_positive_synergy, used_matches),
+                                                           apply_positive_synergy, used_matches,
+                                                           chosen_roles_by_team),
                   reverse=True)
 
 
@@ -764,6 +807,13 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
 
     picks = []
     gk_team_slug = gk_opponent_slug = None
+    # Ruoli gia' scelti per squadra (28/07, estensione anti-sinergia
+    # cross-team -- vedi CROSS_TEAM_PENALTY_BY_PAIR): a differenza di
+    # gk_team_slug/gk_opponent_slug (solo il portiere), qui si accumula la
+    # squadra di OGNI giocatore gia' piazzato, per penalizzare candidati la
+    # cui squadra e' avversaria di una gia' scelta in una coppia di ruoli
+    # confermata negativa (non solo GK-vs-attaccante).
+    chosen_roles_by_team = {}
 
     role_slot_counts = {}
     for role in shape['role_slots']:
@@ -783,8 +833,10 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
 
         if role == 'GK':
             gk_candidates = role_data['GK']
-            if used_matches:
-                gk_candidates = synergy_adjusted_rows(role, gk_candidates, None, None, used_matches=used_matches)
+            if used_matches or chosen_roles_by_team:
+                gk_candidates = synergy_adjusted_rows(role, gk_candidates, None, None, used_matches=used_matches,
+                                                       apply_positive_synergy=apply_positive_synergy,
+                                                       chosen_roles_by_team=chosen_roles_by_team)
             row, ctype = pick(gk_candidates, l10_cap is not None, reserve)
         else:
             pool_rows = role_data[role]
@@ -792,7 +844,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                 pool_rows = [r for r in pool_rows if r.get('team_slug') != gk_opponent_slug]
             candidates = synergy_adjusted_rows(role, pool_rows, gk_team_slug, gk_opponent_slug,
                                                 team_counts, apply_stack_guard, variance_mode,
-                                                apply_positive_synergy, used_matches)
+                                                apply_positive_synergy, used_matches, chosen_roles_by_team)
             row, ctype = pick(candidates, l10_cap is not None, reserve)
 
         if row is None:
@@ -810,6 +862,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         row_team_slug = row.get('team_slug')
         if row_team_slug:
             team_counts[row_team_slug] = team_counts.get(row_team_slug, 0) + 1
+            chosen_roles_by_team.setdefault(row_team_slug, set()).add(role)
 
         if role == 'GK':
             gk_team_slug = row.get('team_slug')
@@ -828,7 +881,8 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
             combined.append((role, row))
     combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
                                                     team_counts, apply_stack_guard, variance_mode,
-                                                    apply_positive_synergy, used_matches), reverse=True)
+                                                    apply_positive_synergy, used_matches,
+                                                    chosen_roles_by_team), reverse=True)
 
     extra_candidates = [(role, row) for role, row in combined if row['slug'] not in used_this_lineup]
     if l10_cap is not None:
