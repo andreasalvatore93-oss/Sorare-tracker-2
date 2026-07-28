@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T23:53:39.329273Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) oberdan-alionco-de-lima: 56 pt attesi (47-62)
+   SQUADRA: jeonbuk-motors-jeonju | AVVERSARIO: seoul-seoul
+======================================================================
+
+######################################################################
+# GIOCATORE: oberdan-alionco-de-lima
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: oberdan-alionco-de-lima (squadra: jeonbuk-motors-jeonju)
+Generato: 2026-07-28T23:53:39.328584Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | JMO vs ULS | k-league-1 | score=60.7 | peso=0.445
+  2026-04-11 | SEO vs JMO | k-league-1 | score=60.9 | peso=0.472
+  2026-04-18 | GAN vs JMO | k-league-1 | score=44.8 | peso=0.500
+  2026-04-21 | JMO vs INC | k-league-1 | score=48.0 | peso=0.530
+  2026-04-26 | JMO vs POH | k-league-1 | score=47.5 | peso=0.561
+  2026-05-02 | JEJ vs JMO | k-league-1 | score=48.6 | peso=0.595
+  2026-05-05 | JMO vs GWA | k-league-1 | score=100.0 | peso=0.630
+  2026-05-10 | ANY vs JMO | k-league-1 | score=60.6 | peso=0.667
+  2026-05-13 | BUC vs JMO | k-league-1 | score=51.8 | peso=0.707
+  2026-05-17 | JMO vs SAN | k-league-1 | score=47.6 | peso=0.749
+  2026-07-04 | JMO vs GAN | k-league-1 | score=39.2 | peso=0.794
+  2026-07-11 | ULS vs JMO | k-league-1 | score=51.1 | peso=0.841
+  2026-07-18 | INC vs JMO | k-league-1 | score=54.4 | peso=0.891
+  2026-07-21 | JMO vs DJO | k-league-1 | score=74.1 | peso=0.944
+  2026-07-25 | POH vs JMO | k-league-1 | score=46.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 55.58
+  di cui Punteggio decisivo (level_score) medio: 37.14 | Punteggio complessivo (granulari) medio: 18.44 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 8.63 (delta +0.22) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.38
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 46.5 - 60.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.56 (differenza: +5.81)
+Media score in casa: 59.59 | Media score fuori casa: 52.34
+Fattore casa/trasferta applicato: 1.012 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.4
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.814
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore trend (media ultime 5: 53.1 vs media ultime 10: 57.4): 0.925
+P(gioca): 100.00% (fonte: tasso di presenza storico (15/15))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T10:30
+Casa: Jeonbuk Hyundai Motors FC | Trasferta: FC Seoul
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.5 (range 47.4 - 61.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.55
+Punteggio REALE ottenuto in quella partita: 46.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.3   100.0    +35.7     8.8        NO
+   7        7      55.5    60.6     +5.1    26.8        SI
+   8        8      68.2    51.8    -16.4    24.7        SI
+   9        9      68.4    47.6    -20.8    23.2        SI
+  10       10      55.1    39.2    -15.9    22.3        SI
+  11       11      54.7    51.1     -3.6    22.4        SI
+  12       12      50.0    54.4     +4.4    21.2        SI
+  13       13      53.5    74.1    +20.6    20.1        NO
+  14       14      53.0    46.5     -6.5    20.7        SI
+
+MAE (errore assoluto medio): 14.33
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
