@@ -809,147 +809,204 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         picks.append((f'EXTRA ({extra_role})', extra_row, extra_ctype))
         return picks, None, True, False
 
-    used_this_lineup = set()
-    classic_budget_used = [0]
-    l10_used = [0.0]
-    l10_cap_rispettato = [True]
-    team_counts = {}
+    # Ottimizzazione allocazione classic (28/07, bug reale trovato dall'utente:
+    # Carles Gil, 70pt, restava fuori perche' il difensore -- 63pt -- aveva
+    # gia' "preso" l'unico slot classic disponibile per la formazione, solo
+    # perche' processato prima nell'ordine fisso GK->DEF->MID->FWD. Il
+    # vincolo "max 1 classic per formazione" e' giusto, ma va assegnato allo
+    # slot che ne guadagna di piu', non al primo che lo richiede. Con
+    # max_classic finito (oggi sempre 1, solo In Season), si esegue prima
+    # una passata "base" a classic disattivato ovunque per misurare, slot per
+    # slot, quanto varrebbe abilitare il classic PROPRIO li' (differenza di
+    # punteggio col miglior candidato in_season-only) -- poi si rifa' la
+    # passata vera abilitando il classic solo nello slot che ne trae il
+    # massimo guadagno. Con max_classic=None (Arena/All Stars) il classic e'
+    # illimitato, questa ottimizzazione non serve e non si attiva.
+    def _run(allow_classic_slot, measure_gains=False):
+        used_this_lineup = set()
+        classic_budget_used = [0]
+        l10_used = [0.0]
+        l10_cap_rispettato = [True]
+        team_counts = {}
+        gains = {}
+        picks = []
 
-    def pick(pool_rows, role_slot_l10_check, reserve=0.0):
-        """role_slot_l10_check: se l10_cap e' impostato, filtra i candidati
-        rispettando il budget residuo (MENO 'reserve', la somma dei minimi
-        L10 disponibili per tutti gli slot ANCORA da riempire dopo questo --
-        27/07, fix: senza riserva i primi slot potevano spendere tutto il
-        budget sui punteggi migliori, lasciando lo slot EXTRA finale sempre
-        sforato). Se nessun candidato rientra nemmeno riservando, la
-        formazione FALLISCE (nessun fallback che sfora il cap in silenzio --
-        il cap e' un vincolo vero, non un suggerimento)."""
-        candidates = [r for r in pool_rows if r['slug'] not in used_this_lineup]
-        if l10_cap is not None and role_slot_l10_check:
-            budget_residuo = l10_cap - l10_used[0] - reserve
-            candidates = [r for r in candidates if (card_pool.l10(r['slug']) or 0.0) <= budget_residuo]
+        def pick(pool_rows, role_slot_l10_check, reserve=0.0, slot_label=None):
+            candidates = [r for r in pool_rows if r['slug'] not in used_this_lineup]
+            if l10_cap is not None and role_slot_l10_check:
+                budget_residuo = l10_cap - l10_used[0] - reserve
+                candidates = [r for r in candidates if (card_pool.l10(r['slug']) or 0.0) <= budget_residuo]
 
-        for row in candidates:
-            slug = row['slug']
-            if card_pool.remaining_in_season(slug) > 0:
-                return row, 'in_season'
-            if (max_classic is None or classic_budget_used[0] < max_classic) and card_pool.remaining_classic(slug) > 0:
-                return row, 'classic'
-        return None, None
+            slot_allows_classic = (max_classic is None) or (allow_classic_slot == '__ANY__') or (allow_classic_slot is not None and slot_label == allow_classic_slot)
+            best_in_season = best_classic = None
+            for row in candidates:
+                slug = row['slug']
+                if best_in_season is None and card_pool.remaining_in_season(slug) > 0:
+                    best_in_season = row
+                if best_classic is None and card_pool.remaining_classic(slug) > 0:
+                    best_classic = row
+                if best_in_season is not None and (best_classic is not None or not measure_gains):
+                    break
+            if measure_gains and slot_label is not None and max_classic is not None:
+                # Guadagno di abilitare il classic PROPRIO in questo slot,
+                # tenendo tutti gli altri slot fissi a in_season-only: se il
+                # miglior candidato assoluto (in_season O classic, quello che
+                # verrebbe scelto con priorita' in_season) e' diverso dal
+                # miglior candidato in_season-only, la differenza di
+                # punteggio e' il valore di riservare qui lo slot classic.
+                if best_in_season is not None and best_classic is not None:
+                    # il primo candidato in ordine (piu' alto punteggio) tra i due
+                    top = candidates[0] if candidates else None
+                    if top is best_classic and best_classic is not best_in_season:
+                        gains[slot_label] = best_classic['atteso'] - best_in_season['atteso']
+                    else:
+                        gains[slot_label] = 0
+                elif best_in_season is None and best_classic is not None:
+                    # nessun candidato in_season disponibile: il classic e'
+                    # OBBLIGATORIO per riempire questo slot, priorita' massima.
+                    gains[slot_label] = float('inf')
+                else:
+                    gains[slot_label] = 0
+            if slot_allows_classic:
+                for row in candidates:
+                    slug = row['slug']
+                    if card_pool.remaining_in_season(slug) > 0:
+                        return row, 'in_season'
+                    if (max_classic is None or classic_budget_used[0] < max_classic) and card_pool.remaining_classic(slug) > 0:
+                        return row, 'classic'
+                return None, None
+            else:
+                return (best_in_season, 'in_season') if best_in_season is not None else (None, None)
 
-    picks = []
-    gk_team_slug = gk_opponent_slug = None
-    # Ruoli gia' scelti per squadra (28/07, estensione anti-sinergia
-    # cross-team -- vedi CROSS_TEAM_PENALTY_BY_PAIR): a differenza di
-    # gk_team_slug/gk_opponent_slug (solo il portiere), qui si accumula la
-    # squadra di OGNI giocatore gia' piazzato, per penalizzare candidati la
-    # cui squadra e' avversaria di una gia' scelta in una coppia di ruoli
-    # confermata negativa (non solo GK-vs-attaccante).
-    chosen_roles_by_team = {}
+        gk_team_slug = gk_opponent_slug = None
+        # Ruoli gia' scelti per squadra (28/07, estensione anti-sinergia
+        # cross-team -- vedi CROSS_TEAM_PENALTY_BY_PAIR): a differenza di
+        # gk_team_slug/gk_opponent_slug (solo il portiere), qui si accumula la
+        # squadra di OGNI giocatore gia' piazzato, per penalizzare candidati la
+        # cui squadra e' avversaria di una gia' scelta in una coppia di ruoli
+        # confermata negativa (non solo GK-vs-attaccante).
+        chosen_roles_by_team = {}
 
-    role_slot_counts = {}
-    for role in shape['role_slots']:
-        role_slot_counts[role] = role_slot_counts.get(role, 0) + 1
-    role_occurrence = {role: 0 for role in role_slot_counts}
+        role_slot_counts = {}
+        for role in shape['role_slots']:
+            role_slot_counts[role] = role_slot_counts.get(role, 0) + 1
+        role_occurrence = {role: 0 for role in role_slot_counts}
 
-    for slot_idx, role in enumerate(shape['role_slots']):
-        role_occurrence[role] += 1
-        slot_label = role if role_slot_counts[role] == 1 else f"{role}{role_occurrence[role]}"
+        for slot_idx, role in enumerate(shape['role_slots']):
+            role_occurrence[role] += 1
+            slot_label = role if role_slot_counts[role] == 1 else f"{role}{role_occurrence[role]}"
 
-        reserve = 0.0
-        if l10_cap is not None:
-            reserve = sum(_min_available_l10(role_data[r], used_this_lineup, card_pool)
-                          for r in shape['role_slots'][slot_idx + 1:])
-            reserve += _min_available_l10(
-                [row for r in shape['extra_roles'] for row in role_data[r]], used_this_lineup, card_pool)
+            reserve = 0.0
+            if l10_cap is not None:
+                reserve = sum(_min_available_l10(role_data[r], used_this_lineup, card_pool)
+                              for r in shape['role_slots'][slot_idx + 1:])
+                reserve += _min_available_l10(
+                    [row for r in shape['extra_roles'] for row in role_data[r]], used_this_lineup, card_pool)
 
-        if role == 'GK':
-            gk_candidates = role_data['GK']
-            if used_matches or chosen_roles_by_team:
-                gk_candidates = synergy_adjusted_rows(role, gk_candidates, None, None, used_matches=used_matches,
-                                                       apply_positive_synergy=apply_positive_synergy,
-                                                       chosen_roles_by_team=chosen_roles_by_team)
-            row, ctype = pick(gk_candidates, l10_cap is not None, reserve)
-        else:
-            pool_rows = role_data[role]
-            if strict_gk_anti_synergy and role in ('MID', 'FWD') and gk_opponent_slug:
-                pool_rows = [r for r in pool_rows if r.get('team_slug') != gk_opponent_slug]
-            candidates = synergy_adjusted_rows(role, pool_rows, gk_team_slug, gk_opponent_slug,
-                                                team_counts, apply_stack_guard, variance_mode,
-                                                apply_positive_synergy, used_matches, chosen_roles_by_team)
-            row, ctype = pick(candidates, l10_cap is not None, reserve)
-
-        if row is None:
-            reason = ("vincolo di schieramento (portiere vs avversario) + copie esaurite o consiglio vuoto"
-                      if strict_gk_anti_synergy else "copie esaurite o consiglio vuoto")
-            return None, f"Nessun candidato disponibile per lo slot {slot_label} ({reason}).", l10_cap_rispettato[0], False
-
-        used_this_lineup.add(row['slug'])
-        if ctype == 'classic':
-            classic_budget_used[0] += 1
-        if l10_cap is not None:
-            l10_used[0] += card_pool.l10(row['slug']) or 0.0
-        picks.append((slot_label, row, ctype))
-
-        row_team_slug = row.get('team_slug')
-        if row_team_slug:
-            team_counts[row_team_slug] = team_counts.get(row_team_slug, 0) + 1
-            # Contatore per ruolo (FIX 28/07), non set: 2 compagni DEF gia'
-            # scelti devono contare 2x nel bonus/penalita', non 1x.
-            _team_roles = chosen_roles_by_team.setdefault(row_team_slug, {})
-            _team_roles[role] = _team_roles.get(role, 0) + 1
-
-        if role == 'GK':
-            gk_team_slug = row.get('team_slug')
-            gk_opponent_slug = row.get('opponent_team_slug')
-
-    # Extra: il migliore rimanente tra i ruoli ammessi dalla shape (esclusi i
-    # titolari di QUESTA lineup, le copie gia' esaurite, e rispettando
-    # classic_budget/l10_cap), a prescindere dal ruolo specifico -- stessa
-    # sinergia/anti-sinergia applicata anche qui.
-    combined = []
-    for role in shape['extra_roles']:
-        for row in role_data[role]:
-            if (strict_gk_anti_synergy and role in ('MID', 'FWD') and gk_opponent_slug
-                    and row.get('team_slug') == gk_opponent_slug):
-                continue
-            combined.append((role, row))
-    combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
+            if role == 'GK':
+                gk_candidates = role_data['GK']
+                if used_matches or chosen_roles_by_team:
+                    gk_candidates = synergy_adjusted_rows(role, gk_candidates, None, None, used_matches=used_matches,
+                                                           apply_positive_synergy=apply_positive_synergy,
+                                                           chosen_roles_by_team=chosen_roles_by_team)
+                row, ctype = pick(gk_candidates, l10_cap is not None, reserve, slot_label=slot_label)
+            else:
+                pool_rows = role_data[role]
+                if strict_gk_anti_synergy and role in ('MID', 'FWD') and gk_opponent_slug:
+                    pool_rows = [r for r in pool_rows if r.get('team_slug') != gk_opponent_slug]
+                candidates = synergy_adjusted_rows(role, pool_rows, gk_team_slug, gk_opponent_slug,
                                                     team_counts, apply_stack_guard, variance_mode,
-                                                    apply_positive_synergy, used_matches,
-                                                    chosen_roles_by_team), reverse=True)
+                                                    apply_positive_synergy, used_matches, chosen_roles_by_team)
+                row, ctype = pick(candidates, l10_cap is not None, reserve, slot_label=slot_label)
 
-    extra_candidates = [(role, row) for role, row in combined if row['slug'] not in used_this_lineup]
-    if l10_cap is not None:
-        budget_residuo = l10_cap - l10_used[0]
-        extra_candidates = [(role, row) for role, row in extra_candidates
-                             if (card_pool.l10(row['slug']) or 0.0) <= budget_residuo]
+            if row is None:
+                reason = ("vincolo di schieramento (portiere vs avversario) + copie esaurite o consiglio vuoto"
+                          if strict_gk_anti_synergy else "copie esaurite o consiglio vuoto")
+                return None, f"Nessun candidato disponibile per lo slot {slot_label} ({reason}).", l10_cap_rispettato[0], False, gains
 
-    extra_role = extra_pick = extra_type = None
-    for role, row in extra_candidates:
-        slug = row['slug']
-        if card_pool.remaining_in_season(slug) > 0:
-            extra_role, extra_pick, extra_type = role, row, 'in_season'
-            break
-        if (max_classic is None or classic_budget_used[0] < max_classic) and card_pool.remaining_classic(slug) > 0:
-            extra_role, extra_pick, extra_type = role, row, 'classic'
-            break
+            used_this_lineup.add(row['slug'])
+            if ctype == 'classic':
+                classic_budget_used[0] += 1
+            if l10_cap is not None:
+                l10_used[0] += card_pool.l10(row['slug']) or 0.0
+            picks.append((slot_label, row, ctype))
 
-    if extra_pick is None:
-        reason = "vincolo di schieramento (portiere vs avversario) + copie esaurite" if strict_gk_anti_synergy else "copie esaurite"
-        return None, f"Nessun candidato disponibile per lo slot extra ({reason}).", l10_cap_rispettato[0], False
+            row_team_slug = row.get('team_slug')
+            if row_team_slug:
+                team_counts[row_team_slug] = team_counts.get(row_team_slug, 0) + 1
+                # Contatore per ruolo (FIX 28/07), non set: 2 compagni DEF gia'
+                # scelti devono contare 2x nel bonus/penalita', non 1x.
+                _team_roles = chosen_roles_by_team.setdefault(row_team_slug, {})
+                _team_roles[role] = _team_roles.get(role, 0) + 1
 
-    picks.append((f'EXTRA ({extra_role})', extra_pick, extra_type))
+            if role == 'GK':
+                gk_team_slug = row.get('team_slug')
+                gk_opponent_slug = row.get('opponent_team_slug')
 
-    extra_team_slug = extra_pick.get('team_slug')
-    if extra_team_slug:
-        team_counts[extra_team_slug] = team_counts.get(extra_team_slug, 0) + 1
+        # Extra: il migliore rimanente tra i ruoli ammessi dalla shape (esclusi i
+        # titolari di QUESTA lineup, le copie gia' esaurite, e rispettando
+        # classic_budget/l10_cap), a prescindere dal ruolo specifico -- stessa
+        # sinergia/anti-sinergia applicata anche qui.
+        combined = []
+        for role in shape['extra_roles']:
+            for row in role_data[role]:
+                if (strict_gk_anti_synergy and role in ('MID', 'FWD') and gk_opponent_slug
+                        and row.get('team_slug') == gk_opponent_slug):
+                    continue
+                combined.append((role, row))
+        combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
+                                                        team_counts, apply_stack_guard, variance_mode,
+                                                        apply_positive_synergy, used_matches,
+                                                        chosen_roles_by_team), reverse=True)
 
-    for _slot, row, ctype in picks:
-        card_pool.use(row['slug'], ctype)
+        extra_rows = [row for _role, row in combined]
+        extra_role_by_slug = {row['slug']: role for role, row in combined}
+        extra_row, extra_type = pick(extra_rows, l10_cap is not None, 0.0, slot_label='EXTRA')
 
-    stack_bonus_perso = apply_stack_guard and any(c >= 3 for c in team_counts.values())
-    return picks, None, l10_cap_rispettato[0], stack_bonus_perso
+        if extra_row is None:
+            reason = "vincolo di schieramento (portiere vs avversario) + copie esaurite" if strict_gk_anti_synergy else "copie esaurite"
+            return None, f"Nessun candidato disponibile per lo slot extra ({reason}).", l10_cap_rispettato[0], False, gains
+
+        extra_role = extra_role_by_slug[extra_row['slug']]
+        picks.append((f'EXTRA ({extra_role})', extra_row, extra_type))
+
+        extra_team_slug = extra_row.get('team_slug')
+        if extra_team_slug:
+            team_counts[extra_team_slug] = team_counts.get(extra_team_slug, 0) + 1
+
+        if not measure_gains:
+            for _slot, row, ctype in picks:
+                card_pool.use(row['slug'], ctype)
+
+        stack_bonus_perso = apply_stack_guard and any(c >= 3 for c in team_counts.values())
+        return picks, None, l10_cap_rispettato[0], stack_bonus_perso, gains
+
+    if max_classic is None:
+        picks, error, l10_ok, stack_perso, _gains = _run(allow_classic_slot=None)
+        return picks, error, l10_ok, stack_perso
+
+    # Passata di misura (28/07, fix allocazione classic): nessuno slot puo'
+    # usare il classic, ma per ognuno si registra quanto varrebbe abilitarlo
+    # li' (gains dict). Non consuma il card_pool (measure_gains=True).
+    _baseline_picks, baseline_error, _l10_ok, _stack, gains = _run(allow_classic_slot=None, measure_gains=True)
+    if baseline_error:
+        # Nessuna combinazione e' possibile senza classic da NESSUNA parte:
+        # fallback al comportamento storico (classic al primo slot che lo
+        # richiede, ordine fisso) -- meglio una formazione completa che
+        # nessuna formazione.
+        picks, error, l10_ok, stack_perso, _gains = _run(allow_classic_slot='__ANY__')
+        return picks, error, l10_ok, stack_perso
+
+    winner_slot = max(gains, key=gains.get) if gains else None
+    if winner_slot is None or gains.get(winner_slot, 0) <= 0:
+        # Nessuno slot trae beneficio dal classic: la passata base (tutta
+        # in_season) e' gia' la migliore, ma non e' stata consumata sul
+        # card_pool -- rifarla con measure_gains=False per il consumo reale.
+        picks, error, l10_ok, stack_perso, _gains = _run(allow_classic_slot=None)
+        return picks, error, l10_ok, stack_perso
+
+    picks, error, l10_ok, stack_perso, _gains = _run(allow_classic_slot=winner_slot)
+    return picks, error, l10_ok, stack_perso
 
 
 # Bonus capitano NON uniforme tra i tipi di formazione (verificato dall'utente

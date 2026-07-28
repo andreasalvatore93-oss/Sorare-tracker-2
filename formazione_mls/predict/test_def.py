@@ -1083,7 +1083,7 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
                              half_life=None, trend_intensity=None,
                              shrink_k=SHRINK_K_OUTLIER_DEF,
                              media_ruolo_prior=MEDIA_RUOLO_DEF_PRIOR,
-                             use_stadio_d=True):
+                             use_stadio_d=True, presence_rate=None):
     """FUNZIONE CONDIVISA (27/07): calcola lo `score_atteso` DEF di PRODUZIONE, da
     usare SIA in build_prediction (predizione reale) SIA nel backtest walk-forward
     di calibrazione -- cosi' le due non possono piu' divergere (prima il backtest
@@ -1111,6 +1111,13 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    # Prior di ruolo DINAMICO (28/07, bug reale: giocatori di riserva veri
+    # tirati dallo shrinkage verso la media di TUTTI i difensori invece che
+    # verso un prior realistico per chi gioca poco. Misurato su dati reali,
+    # n=381, corr presenza/punteggio +0.45. presence_rate=None (backtest)
+    # ricade sul prior fisso, comportamento INVARIATO.
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 38.08 + 14.95 * presence_rate)
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     grezzo_nuovo_corretto = (
         (n / (n + shrink_k)) * grezzo_nuovo
@@ -1601,13 +1608,15 @@ def build_prediction(player_slug):
     # --- P(gioca) ---
     p_gioca = None
     p_source = None
+    # presence_rate (28/07): calcolata SEMPRE, serve al prior dinamico dello
+    # shrinkage sotto, non solo come fallback qui.
+    presence_rate = len(usable) / total_considered if total_considered else 1.0
     next_odds = ((next_node.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {})
     starter_odds = next_odds.get('starterOddsBasisPoints')
     if starter_odds is not None:
         p_gioca = starter_odds / 10000.0
         p_source = f"starterOddsBasisPoints ({starter_odds})"
     else:
-        presence_rate = len(usable) / total_considered if total_considered else 1.0
         p_gioca = presence_rate
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
@@ -1649,9 +1658,12 @@ def build_prediction(player_slug):
     # --- Shrinkage outlier/hot-streak (27/07, vedi SHRINK_K_OUTLIER_DEF sopra):
     # si applica al grezzo (level_score_atteso + granulare_atteso), PRIMA di
     # fattore_casa_trasferta e delle correzioni additive Stadio D sotto.
+    # Prior di ruolo DINAMICO (28/07): vedi commento esteso nella gemella
+    # compute_score_atteso_def sopra -- stessa formula, stessi coefficienti.
+    _media_ruolo_prior_dinamico = max(0.0, 38.08 + 14.95 * presence_rate)
     grezzo_nuovo_corretto = (
         (n / (n + SHRINK_K_OUTLIER_DEF)) * grezzo_nuovo
-        + (SHRINK_K_OUTLIER_DEF / (n + SHRINK_K_OUTLIER_DEF)) * MEDIA_RUOLO_DEF_PRIOR
+        + (SHRINK_K_OUTLIER_DEF / (n + SHRINK_K_OUTLIER_DEF)) * _media_ruolo_prior_dinamico
     )
     # RIMOSSO p_gioca da score_atteso (28/07, richiesta esplicita utente):
     # vedi commento esteso nella gemella compute_score_atteso_def sopra.

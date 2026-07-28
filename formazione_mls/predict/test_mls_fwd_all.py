@@ -1015,7 +1015,8 @@ def compute_score_atteso_fwd(scores, is_home_flags,
                              half_life=None, trend_intensity=None,
                              shrink_k=SHRINK_K_OUTLIER_FWD,
                              media_ruolo_prior=MEDIA_RUOLO_FWD_PRIOR,
-                             use_stadio_d=True):
+                             use_stadio_d=True,
+                             presence_rate=None):
     """FUNZIONE CONDIVISA (27/07, punto 26.D.4): calcola lo `score_atteso` FWD di
     PRODUZIONE, da usare SIA in build_prediction SIA nel backtest di calibrazione,
     cosi' le due non possono divergere. Gemella di compute_score_atteso_def in
@@ -1042,6 +1043,8 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 34.42 + 18.71 * presence_rate)
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     grezzo_nuovo_corretto = (
         (n / (n + shrink_k)) * grezzo_nuovo
@@ -1451,11 +1454,11 @@ def build_prediction(player_slug):
     p_source = None
     next_odds = ((next_node.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {})
     starter_odds = next_odds.get('starterOddsBasisPoints')
+    presence_rate = len(usable) / total_considered if total_considered else 1.0
     if starter_odds is not None:
         p_gioca = starter_odds / 10000.0
         p_source = f"starterOddsBasisPoints ({starter_odds})"
     else:
-        presence_rate = len(usable) / total_considered if total_considered else 1.0
         p_gioca = presence_rate
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
@@ -1493,10 +1496,11 @@ def build_prediction(player_slug):
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
+    _media_ruolo_prior_dinamico = max(0.0, 34.42 + 18.71 * presence_rate)
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     grezzo_nuovo_corretto = (
         (n / (n + SHRINK_K_OUTLIER_FWD)) * grezzo_nuovo
-        + (SHRINK_K_OUTLIER_FWD / (n + SHRINK_K_OUTLIER_FWD)) * MEDIA_RUOLO_FWD_PRIOR
+        + (SHRINK_K_OUTLIER_FWD / (n + SHRINK_K_OUTLIER_FWD)) * _media_ruolo_prior_dinamico
     )
     # RIMOSSO p_gioca da score_atteso (28/07, richiesta esplicita utente):
     # vedi commento esteso nella gemella compute_score_atteso_fwd sopra.

@@ -1416,13 +1416,19 @@ def build_prediction(player_slug):
     # --- P(gioca) ---
     p_gioca = None
     p_source = None
+    # presence_rate (28/07, propagato da formazione_mls): calcolata SEMPRE,
+    # non solo come fallback di p_gioca -- serve al prior dinamico dello
+    # shrinkage verso il prior di ruolo (vedi sotto, blocco
+    # MEDIA_RUOLO_GK_PRIOR), che deve sapere se il giocatore e' un titolare
+    # o una riserva a prescindere da starterOdds disponibili o meno per la
+    # prossima partita specifica.
+    presence_rate = len(usable) / total_considered if total_considered else 1.0
     next_odds = ((next_node.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {})
     starter_odds = next_odds.get('starterOddsBasisPoints')
     if starter_odds is not None:
         p_gioca = starter_odds / 10000.0
         p_source = f"starterOddsBasisPoints ({starter_odds})"
     else:
-        presence_rate = len(usable) / total_considered if total_considered else 1.0
         p_gioca = presence_rate
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
@@ -1470,10 +1476,22 @@ def build_prediction(player_slug):
     # per bucket). k=5 scelto con backtest walk-forward reale (selection_quality).
     SHRINK_K_OUTLIER_GK = 5.0
     MEDIA_RUOLO_GK_PRIOR = 48.81
+    # Prior di ruolo DINAMICO (28/07, propagato da formazione_mls: bug reale
+    # trovato dall'utente, giocatori di riserva veri con P(gioca) storico
+    # basso venivano tirati dallo shrinkage verso la media di TUTTI i
+    # giocatori, dominata dai titolari, gonfiando artificialmente il
+    # punteggio di chi gioca poco. Misurato sui dati reali, n=115 portieri,
+    # corr presenza/punteggio +0.245: chi gioca poco rende MENO anche quando
+    # gioca, non solo per varianza campionaria. Prior = intercetta + pendenza
+    # * presenza storica (regressione reale), non piu' un numero fisso
+    # uguale per titolari e riserve).
+    media_ruolo_prior = MEDIA_RUOLO_GK_PRIOR
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 45.41 + 4.36 * presence_rate)
     _grezzo_gk = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     _grezzo_gk_corretto = (
         (n / (n + SHRINK_K_OUTLIER_GK)) * _grezzo_gk
-        + (SHRINK_K_OUTLIER_GK / (n + SHRINK_K_OUTLIER_GK)) * MEDIA_RUOLO_GK_PRIOR
+        + (SHRINK_K_OUTLIER_GK / (n + SHRINK_K_OUTLIER_GK)) * media_ruolo_prior
     )
     score_atteso = _grezzo_gk_corretto * fattore_casa_trasferta
 

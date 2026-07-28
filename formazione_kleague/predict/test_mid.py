@@ -1333,13 +1333,15 @@ def build_prediction(player_slug):
     # --- P(gioca) ---
     p_gioca = None
     p_source = None
+    # presence_rate (28/07): calcolata SEMPRE, serve al prior dinamico dello
+    # shrinkage (vedi sotto, MEDIA_RUOLO_MID_PRIOR), non solo come fallback qui.
+    presence_rate = len(usable) / total_considered if total_considered else 1.0
     next_odds = ((next_node.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {})
     starter_odds = next_odds.get('starterOddsBasisPoints')
     if starter_odds is not None:
         p_gioca = starter_odds / 10000.0
         p_source = f"starterOddsBasisPoints ({starter_odds})"
     else:
-        presence_rate = len(usable) / total_considered if total_considered else 1.0
         p_gioca = presence_rate
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
@@ -1383,6 +1385,14 @@ def build_prediction(player_slug):
     # reale (selection_quality, 113 giornate: lift 18.5-19.6% su k testati).
     SHRINK_K_OUTLIER_MID = 10.0
     MEDIA_RUOLO_MID_PRIOR = 53.94
+    # Prior di ruolo DINAMICO (28/07, bug reale: riserve vere con P(gioca)
+    # storico basso tirate dallo shrinkage verso la media di TUTTI i
+    # centrocampisti invece che verso un prior realistico per chi gioca cosi'
+    # poco. Misurato su dati reali, n=331, corr presenza/punteggio +0.53: chi
+    # gioca poco rende MENO anche quando gioca. presence_rate=None ricade sul
+    # prior fisso sopra, comportamento INVARIATO.
+    if presence_rate is not None:
+        MEDIA_RUOLO_MID_PRIOR = max(0.0, 34.89 + 19.42 * presence_rate)
     _grezzo_mid = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     _grezzo_mid_corretto = (
         (n / (n + SHRINK_K_OUTLIER_MID)) * _grezzo_mid

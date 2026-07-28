@@ -1075,7 +1075,8 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
                             target_is_home, p_gioca=1.0,
                             half_life=None, trend_intensity=None,
                             shrink_k=SHRINK_K_OUTLIER_GK,
-                            media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR):
+                            media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR,
+                            presence_rate=None):
     """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` GK di PRODUZIONE,
     da usare SIA in build_prediction (predizione reale) SIA nel backtest
     walk-forward di calibrazione (rigorous_backtest_prod_gk) -- cosi' le due
@@ -1102,6 +1103,20 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    # Prior di ruolo DINAMICO (28/07, bug reale trovato dall'utente: Jack
+    # Skahan, David Vazquez -- giocatori di riserva veri, P(gioca) storico
+    # 19-26%, non sfortunati con pochi dati -- venivano tirati dallo
+    # shrinkage verso la media di TUTTI i giocatori (dominata dai titolari),
+    # gonfiando artificialmente il punteggio di chi gioca poco PERCHE'
+    # strutturalmente debole. Misurato sui dati reali (n=115 portieri, corr
+    # presenza/punteggio +0.245): chi gioca poco rende MENO anche quando
+    # gioca, non solo per varianza campionaria. Prior = intercetta + pendenza
+    # * presenza storica (regressione reale), non piu' un numero fisso
+    # uguale per titolari e riserve. presence_rate=None (calibrazione/
+    # backtest, nessun concetto di "storico totale esaminato" disponibile)
+    # ricade sul prior fisso originale, comportamento INVARIATO.
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 45.41 + 4.36 * presence_rate)
     grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     grezzo_corretto = (
         (n / (n + shrink_k)) * grezzo
@@ -1521,13 +1536,18 @@ def build_prediction(player_slug):
     # --- P(gioca) ---
     p_gioca = None
     p_source = None
+    # presence_rate (28/07): calcolata SEMPRE, non solo come fallback di
+    # p_gioca -- serve al prior dinamico dello shrinkage (vedi
+    # compute_score_atteso_gk), che deve sapere se il giocatore e' un
+    # titolare o una riserva a prescindere da starterOdds disponibili o meno
+    # per la prossima partita specifica.
+    presence_rate = len(usable) / total_considered if total_considered else 1.0
     next_odds = ((next_node.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {})
     starter_odds = next_odds.get('starterOddsBasisPoints')
     if starter_odds is not None:
         p_gioca = starter_odds / 10000.0
         p_source = f"starterOddsBasisPoints ({starter_odds})"
     else:
-        presence_rate = len(usable) / total_considered if total_considered else 1.0
         p_gioca = presence_rate
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
@@ -1581,7 +1601,7 @@ def build_prediction(player_slug):
     # condivisa per lo score_atteso vero e proprio.
     score_atteso = compute_score_atteso_gk(
         scores, is_home_flags, granulari_values, pos_decisive_values, neg_decisive_values,
-        target_is_home=next_is_home)
+        target_is_home=next_is_home, presence_rate=presence_rate)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo

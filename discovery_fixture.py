@@ -367,17 +367,38 @@ def main():
         copie_di = defaultdict(lambda: {'in_season': 0, 'classic': 0})
         page = 1
         while page <= 50:
-            d = base.graphql_query(CARDS_QUERY, {
-                "userSlug": base.USER_SLUG, "page": page, "pageSize": base.PAGE_SIZE,
-                "advancedFilters": advanced,
-                "refinements": [{"field": "position", "operator": "EQUAL",
-                                 "values": [{"stringValue": position}]}],
-            }, operation_name="FixtureCards")
-            if d.get('errors'):
-                log(f"GraphQL ({position}): {json.dumps(d['errors'])[:300]}")
+            # Retry (28/07, bug reale trovato dall'utente: Zinckernagel perso
+            # in silenzio da una run locale -- ripetuto con paginazione pulita
+            # lo trovava a pagina 5/21). Una pagina con hits vuoti a META'
+            # paginazione (page < nbPages) e' un glitch transitorio, non la
+            # fine dei risultati -- prima veniva scambiata per "fine" e tutte
+            # le pagine/giocatori successivi sparivano senza alcun errore.
+            # Fino a 3 tentativi prima di arrendersi con un errore VISIBILE
+            # (mai piu' un troncamento silenzioso).
+            for _retry in range(3):
+                d = base.graphql_query(CARDS_QUERY, {
+                    "userSlug": base.USER_SLUG, "page": page, "pageSize": base.PAGE_SIZE,
+                    "advancedFilters": advanced,
+                    "refinements": [{"field": "position", "operator": "EQUAL",
+                                     "values": [{"stringValue": position}]}],
+                }, operation_name="FixtureCards")
+                if d.get('errors'):
+                    log(f"GraphQL ({position}): {json.dumps(d['errors'])[:300]}")
+                    return 2
+                s = ((d.get('data') or {}).get('user') or {}).get('searchCards') or {}
+                hits = s.get('hits') or []
+                nb_pages = s.get('nbPages') or 1
+                if hits or page >= nb_pages:
+                    break
+                log(f"ATTENZIONE ({position}): pagina {page}/{nb_pages} vuota ma non "
+                    f"dovrebbe esserlo -- probabile glitch transitorio, riprovo "
+                    f"(tentativo {_retry + 1}/3).")
+                time.sleep(1.0)
+            else:
+                log(f"ERRORE ({position}): pagina {page}/{nb_pages} resta vuota dopo 3 "
+                    f"tentativi -- interrotto per non troncare la discovery in silenzio "
+                    f"(prima questo caso veniva scambiato per fine paginazione).")
                 return 2
-            s = ((d.get('data') or {}).get('user') or {}).get('searchCards') or {}
-            hits = s.get('hits') or []
             if page == 1:
                 log(f"{position}: {s.get('nbHits')} carte ELEGGIBILI per la giornata "
                     f"(filtro lato server, non scaricate tutte le possedute)")
