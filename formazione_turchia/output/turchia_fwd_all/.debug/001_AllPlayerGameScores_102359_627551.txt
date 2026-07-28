@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "vaclav-cerny", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 10:23:59 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785234239', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'K9XB6cl4iPrPgL_cw4V9AhG-6oanisX1x7rF5cEsGz6cX51n_MklJMNg_coGNAii_tU4OQ9dyP29FANi_dS91Q', 'etag': 'W/"f832960021008f5d9400eb69352c0052"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=I1rt0UIao0eMS9vtNeAgiwe%2Fiwlke1LCBOLCllmMLhB5b6zUuNY8fbbkl26g09BRypdb5J3dNGgv5POsW1AIeiu15OMWQKId7QlcAns02uWmhRz9tkY6QIhXE5tqNuAXWA6qB9xJ0F6uMfRBQsM%2FoE2TZfml16UxilxJo8lb7dEYJa%2BuQd5dksd2RqtJq%2BtZnpc63tXC4FWv0Sb8uwPdDeKYdMB4Jp0%2FUcpAGUvH1B6nyiiWbxnCv0XLXGKZZwc2brD6dLhauHFIYPTYxQbLLjVFHyp8ESAsgGJJZLgbhy0FJVTITCHDnCrY9ZuWihtf--7Z3%2F3lpBab1JUx3U--gJG0Wjub9HUKEO1wIdkSbg%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 10:23:59 GMT; secure; httponly; samesite=none', 'x-request-id': '3b4413f0-e748-463e-a355-24b8d1f2807f', 'x-runtime': '0.044670', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 bc9652c4daed492c741e024f09f72ddc.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'LAX54-P11', 'x-amz-cf-id': 'xBEDiPwwY7jNLTtD9P_svLAP3McL1yu8spWS-Ukhm55NKzXYztA2WA=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:08f602b5-ca74-4fd2-9338-c3f1f8aee745","score":73.5,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:8e5547a5-831c-4189-84d7-83b8e2adbc78","date":"2026-07-23T18:00:00Z","statusTyped":"played","homeTeam":{"slug":"besiktas-istanbul","name":"Beşiktaş Jimnastik Kulübü","code":"BJK","domesticLeagueRanking":4},"awayTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:b6aa47f8-4261-4920-a4c0-e9636a34b678","score":74.7,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:edf9e016-d472-4785-814f-409edff65d82","date":"2026-05-15T17:00:00Z","statusTyped":"played","homeTeam":{"slug":"rizespor-rize","name":"Çaykur Rize Spor Kulübü","code":"RIZ","domesticLeagueRanking":8},"awayTeam":{"slug":"besiktas-istanbul","name":"Beşiktaş Jimnastik Kulübü","code":"BJK","domesticLeagueRanking":4},"competition":{"slug":"spor-toto-super-lig"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":45,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:54477667-5432-4d57-8a29-7a1ab412481d","date":"2026-07-30T17:00:00Z","playerGameScore":{"id":"So5Score:923ce813-af46-475d-b2aa-c3c8b5b13c37","positionTyped":"Forward","projectedScore":50.0,"anyGame":{"id":"Game:54477667-5432-4d57-8a29-7a1ab412481d","date":"2026-07-30T17:00:00Z","homeTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"awayTeam":{"slug":"besiktas-istanbul","name":"Beşiktaş Jimnastik Kulübü","code":"BJK","domesticLeagueRanking":4},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":8000,"reliability":"HIGH"}}}}]}}}}
