@@ -3152,3 +3152,36 @@ a cui Sorare stesso non ha ancora assegnato starter-odds (dato assente alla font
 lato nostro finché Sorare non lo pubblica). Nessuna lega mancante oltre a Ekstraklasa/Primera
 División cilena già trovate. **Non riproporre questo controllo per la stessa giornata** — ripeterlo
 eventualmente su una giornata futura diversa se emergono nuovi sospetti di copertura incompleta.
+
+## 30.K — TEST v2 IN CORSO (28/07, sera): 6 job discovery + max-parallel predict a 10
+
+**ATTENZIONE se questa sezione è ancora qui SENZA un aggiornamento successivo con l'esito: il test
+è stato interrotto a metà sessione. Controllare `gh run list --workflow formazione_giornata.yml`
+per lo stato dell'ultimo run prima di continuare altro lavoro sul generatore formazioni.**
+
+Dopo il successo del test a 3 job (30.I/30.J: discovery da 9m19s a 1m32s, run totale 7m9s),
+richiesto un test ancora più estremo: **6 job discovery** invece di 3, e **max-parallel del job
+predict alzato da 6 a 10** (richiesta iniziale "alza a 15", poi corretta esplicitamente
+dall'utente a 10 — "mi sembra troppo").
+
+**Come funziona il nuovo split**: GK e FWD restano un job intero ciascuno (pool più piccoli,
+20 e 37 giocatori su GW95). DEF e MID (i più affollati, 40 e 38) sono spezzati ANCHE per metà
+delle leghe di destinazione, non solo per ruolo — nuova env `DISCOVERY_LEAGUE_HALF` ('A'/'B') in
+`discovery_fixture.py`, split alfabetico fisso e deterministico delle cartelle `formazione_<lega>`
+(incluso `senza_lega`). Il filtro si applica PRIMA di interrogare odds+L10 (il vero costo), non
+dopo — quindi il numero di richieste HTTP per job è davvero dimezzato, non solo il lavoro di
+scrittura. La paginazione `CARDS_QUERY` (piccolo costo) resta duplicata fra i due job dello stesso
+ruolo, effetto collaterale accettato. 6 job: `discovery_gk`, `discovery_def_a`, `discovery_def_b`,
+`discovery_mid_a`, `discovery_mid_b`, `discovery_fwd`, poi `discovery_merge` (needs tutti e 6)
+combina i `MATRICE_JSON` parziali.
+
+**Rischio noto esplicitamente**: nessuno nuovo rispetto al test precedente — stesso dubbio se il
+rate limit di Sorare sia condiviso per account, già NON confermato nel test a 3 job (zero 429 con
+3 job simultanei). Il rischio incrementale qui è solo l'aumento di `max-parallel` sul job predict
+(più checkout/job GitHub Actions simultanei che condividono lo stesso `SORARE_COOKIE` per le
+chiamate di predizione, non ancora testato a questo grado di parallelismo).
+
+**Come ripristinare se fallisce**: stesso meccanismo di 30.I — `git log` sui due file
+(`.github/workflows/formazione_giornata.yml`, `discovery_fixture.py`) e `git revert`/`checkout` dei
+commit col messaggio "TEST v2" / "6 job discovery" per tornare alla versione a 3 job (30.I),
+oppure ulteriormente indietro al singolo job se anche quella andasse ripristinata.

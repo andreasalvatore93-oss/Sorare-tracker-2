@@ -62,6 +62,16 @@ if _raw_roles:
     _wanted = {r.strip().lower() for r in _raw_roles.split(',') if r.strip()}
     ROLE_BY_POSITION = {pos: role for pos, role in ROLE_BY_POSITION.items() if role in _wanted}
 
+# DISCOVERY_LEAGUE_HALF (28/07, TEST piu' estremo richiesto esplicitamente
+# dall'utente -- vedi 30.I/30.K del riassunto): 'A' o 'B' per processare solo
+# meta' delle leghe di destinazione (split alfabetico fisso, deterministico),
+# usato per spezzare ULTERIORMENTE un ruolo affollato (es. DEF, MID) in due
+# job paralleli. La query CARDS_QUERY (paginazione carte) resta duplicata fra
+# i due job -- costo piccolo -- ma le chiamate odds+L10 (il vero costo) sono
+# filtrate PRIMA di essere fatte, quindi davvero dimezzate a testa. Default:
+# non impostata = nessun filtro (comportamento INVARIATO).
+DISCOVERY_LEAGUE_HALF = os.environ.get('DISCOVERY_LEAGUE_HALF', '').strip().upper()
+
 # lega Sorare (domesticLeague.slug) -> cartella formazione_<x> nel repo
 LEAGUE_DIR = {
     'major-league-soccer': 'mls', 'mlspa': 'mls', 'k-league-1': 'kleague',
@@ -81,6 +91,15 @@ LEAGUE_DIR = {
     # (Ekstraklasa, Polonia) e Francisco Gonzalez (Primera Division, Cile).
     'ekstraklasa': 'polonia', 'primera-division-cl': 'cile',
 }
+
+# Split alfabetico fisso delle cartelle di destinazione (incluso 'senza_lega')
+# in due meta' -- usato solo se DISCOVERY_LEAGUE_HALF e' impostata.
+_ALL_DIRNAMES = sorted(set(LEAGUE_DIR.values()) | {'senza_lega'})
+_HALF_A = set(_ALL_DIRNAMES[:len(_ALL_DIRNAMES) // 2 + len(_ALL_DIRNAMES) % 2])
+_HALF_B = set(_ALL_DIRNAMES) - _HALF_A
+_WANTED_DIRNAMES = (_HALF_A if DISCOVERY_LEAGUE_HALF == 'A'
+                    else _HALF_B if DISCOVERY_LEAGUE_HALF == 'B'
+                    else None)
 
 FIXTURE_BY_GW = """
 query FixtureList($first: Int!) {
@@ -301,6 +320,11 @@ def main():
         lega_di = {slug: lega for slug, lega, _nome in visti}
         nome_di = {slug: nome for slug, _lega, nome in visti if nome}
         elenco = sorted(lega_di)
+        if _WANTED_DIRNAMES is not None:
+            # Filtra PRIMA di interrogare odds+L10 (il vero costo): tiene solo
+            # gli slug la cui lega di destinazione ricade nella meta' voluta.
+            elenco = [sl for sl in elenco
+                      if (LEAGUE_DIR.get(lega_di[sl]) if lega_di[sl] else 'senza_lega') in _WANTED_DIRNAMES]
         log(f"  {position}: {len(elenco)} giocatori di squadre che giocano "
             f"(su {s.get('nbHits')} carte possedute) -> interrogo le odds")
         # odds + L10 in UNA chiamata per giocatore (28/07, vedi
