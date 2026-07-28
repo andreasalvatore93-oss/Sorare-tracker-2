@@ -78,6 +78,23 @@ if _raw_shard:
     _idx_s, _n_s = _raw_shard.split(':')
     DISCOVERY_LEAGUE_SHARD = (int(_idx_s), int(_n_s))
 
+# HEAVY_LEAGUE_SHARD (28/07, richiesta esplicita utente): le quote isolate di
+# mls/kleague (vedi _HEAVY_LEAGUES sotto) restano piu' lente delle altre
+# anche da sole -- hanno oggettivamente piu' carte possedute, quindi piu'
+# chiamate odds+L10 (il vero costo). Formato 'idx:n', stesso principio dello
+# sharding predict: divide gli slug SOPRAVVISSUTI di QUELLA lega (dopo il
+# filtro club-in-campo, prima delle chiamate odds+L10) in n quote, cosi' piu'
+# job possono condividere la STESSA DISCOVERY_LEAGUE_SHARD (isolano sempre e
+# solo quella lega pesante) ma processano ciascuno solo 1/n dei suoi
+# giocatori. Non tocca la paginazione CARDS_QUERY (costo piccolo, resta
+# duplicato) ne' _WANTED_DIRNAMES. Default: non impostata = nessun filtro
+# (comportamento INVARIATO, un solo job con tutti gli slug della lega).
+_raw_heavy_shard = os.environ.get('HEAVY_LEAGUE_SHARD', '').strip()
+HEAVY_LEAGUE_SHARD = None
+if _raw_heavy_shard:
+    _hidx_s, _hn_s = _raw_heavy_shard.split(':')
+    HEAVY_LEAGUE_SHARD = (int(_hidx_s), int(_hn_s))
+
 # lega Sorare (domesticLeague.slug) -> cartella formazione_<x> nel repo
 LEAGUE_DIR = {
     'major-league-soccer': 'mls', 'mlspa': 'mls', 'k-league-1': 'kleague',
@@ -432,6 +449,12 @@ def main():
             # gli slug la cui lega di destinazione ricade nella meta' voluta.
             elenco = [sl for sl in elenco
                       if (LEAGUE_DIR.get(lega_di[sl]) if lega_di[sl] else 'senza_lega') in _WANTED_DIRNAMES]
+        if HEAVY_LEAGUE_SHARD is not None:
+            # Ulteriore sotto-shard della lega pesante isolata (mls/kleague,
+            # vedi HEAVY_LEAGUE_SHARD sopra): split deterministico per
+            # indice, stesso criterio degli altri shard.
+            _hidx, _hn = HEAVY_LEAGUE_SHARD
+            elenco = [sl for i, sl in enumerate(elenco) if i % _hn == _hidx]
         log(f"  {position}: {len(elenco)} giocatori di squadre che giocano "
             f"(su {s.get('nbHits')} carte possedute) -> interrogo le odds")
         # odds + L10 in UNA chiamata per giocatore (28/07, vedi
