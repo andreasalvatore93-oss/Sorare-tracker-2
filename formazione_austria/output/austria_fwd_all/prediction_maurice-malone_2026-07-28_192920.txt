@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:29:20.423591Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) maurice-malone: 18 pt attesi (0-32)
+   SQUADRA: sturm-graz-graz | AVVERSARIO: wattens-wattens
+======================================================================
+
+######################################################################
+# GIOCATORE: maurice-malone
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: maurice-malone (squadra: sturm-graz-graz)
+Generato: 2026-07-28T19:29:20.423117Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 10
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-19 | ASK vs STU | austrian-bundesliga | score=24.1 | peso=0.749
+  2026-04-22 | STU vs ASK | austrian-bundesliga | score=51.2 | peso=0.794
+  2026-04-26 | STU vs FAK | austrian-bundesliga | score=38.8 | peso=0.841
+  2026-05-03 | RBS vs STU | austrian-bundesliga | score=45.1 | peso=0.891
+  2026-05-17 | STU vs SCR | austrian-bundesliga | score=35.3 | peso=0.944
+  2026-07-28 | HEA vs STU | uefa-champions-league | score=0.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 31.58
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: -3.42 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 1.55 (delta -0.14) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.31
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 0.0 - 45.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.38 (differenza: +9.93)
+Media score in casa: 41.77 | Media score fuori casa: 23.07
+Fattore casa/trasferta applicato: 0.978 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.3
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.126
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.977
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.985
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.983
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.978
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 60.00% (fonte: tasso di presenza storico (6/10))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T15:00
+Casa: WSG Tirol | Trasferta: SK Puntigamer Sturm Graz
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 18.4 (range 0.0 - 32.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.07
+Punteggio REALE ottenuto in quella partita: 0.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -39.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

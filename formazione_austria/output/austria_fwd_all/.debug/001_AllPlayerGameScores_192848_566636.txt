@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "markus-pink", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:28:48 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785266928', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': '3629kfCCCGmCfOu9qUuTY1qho7dm0xNKMqgxXTMwaztF_upBU-BzpiaFsdr3dG_zDlFKP_FLx7pMcXd9tIuVBg', 'etag': 'W/"980aa07a7b59c136e74ef1796b293560"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=TeMA7NF6Spy7nDGBvMh%2Frzi522sLYi4ode%2B99wqbrPU7hz6Pa2zSuHyXgq4xGH2Vxm9buja9SO7AX6M9DUtKOHubD7CcnQbvera6%2FOifLHP10AzKZL8B5xpv9%2F5FWrIoYWvQzQhTBcUCewS1O1bS717bQAUVrmRMdSL6hR5HWDO6u7DNXlv6rIJfFnvSMIHBJdv79qkmuVDR86LotX2aX2JLWXCU3YA%2FWKfY6ibI44VSzWOIb%2BI%2F%2B1ab52a2r8IIGbBz6aBo4qRo4tB9eXxb5jAJYsm4IK8Hbi%2Bl4lzP3Sgd2qKZfc0KVEUh34Rc%2BHlq--%2Bl3XpfNHCAdak9Zf--t%2BzyAL2INZT4zIIvAFvlyA%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:28:48 GMT; secure; httponly; samesite=none', 'x-request-id': 'a3c14b08-4e8d-434d-a4d4-61f6bb4eb267', 'x-runtime': '0.069344', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 f1558f9342310964ab873537313daedc.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': 'mR7SCF1FnQiDHH16Kppp7v4Xdz40_isf5x1bXYJHyF3cO60OOsPt3Q=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:f73082ea-cd06-4de1-9dee-dbda59c8221f","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Forward","anyGame":{"id":"Game:3dbd6c03-d3a5-4a0e-923f-8420eb524105","date":"2026-05-19T16:30:00Z","statusTyped":"played","homeTeam":{"slug":"ried-ried-im-innkreis","name":"SV Guntamatic Ried","code":"SVR","domesticLeagueRanking":1},"awayTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:082f5b78-440e-4832-8bfd-886926a10fa5","score":31.7,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:c1760e0e-72ee-48fc-aa4b-9994bb31f577","date":"2026-05-16T15:00:00Z","statusTyped":"played","homeTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"awayTeam":{"slug":"wattens-wattens","name":"WSG Tirol","code":"WSG","domesticLeagueRanking":7},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":45,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:913a1cae-9a3c-478d-8a4f-8312170bbf28","date":"2026-08-02T15:00:00Z","playerGameScore":{"id":"So5Score:f7e90571-6657-4788-95de-8288e3d33a4c","positionTyped":"Forward","projectedScore":44.0,"anyGame":{"id":"Game:913a1cae-9a3c-478d-8a4f-8312170bbf28","date":"2026-08-02T15:00:00Z","homeTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"awayTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:56de890b-dfb3-4529-b8cb-5599c7a26cb9","date":"2026-08-09T15:00:00Z","playerGameScore":{"id":"So5Score:58be9552-acd8-423b-88cc-1b6e44310836","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:56de890b-dfb3-4529-b8cb-5599c7a26cb9","date":"2026-08-09T15:00:00Z","homeTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"awayTeam":{"slug":"salzburg-wals-siezenheim","name":"FC Red Bull Salzburg","code":"RBS","domesticLeagueRanking":3},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:796d8970-b9e5-40ef-a6d9-d5245e2ec416","date":"2026-08-15T15:00:00Z","playerGameScore":{"id":"So5Score:c99d7145-e843-48ac-811c-d84c7ffe37eb","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:796d8970-b9e5-40ef-a6d9-d5245e2ec416","date":"2026-08-15T15:00:00Z","homeTeam":{"slug":"austria-lustenau-lustenau","name":"SC Austria Lustenau","code":"ALU","domesticLeagueRanking":6},"awayTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:151fe6d3-ebd5-4c2c-94a0-56530a96df2d","date":"2026-08-22T17:30:00Z","playerGameScore":{"id":"So5Score:c12b7913-b296-4129-8a8d-637157a17f5c","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:151fe6d3-ebd5-4c2c-94a0-56530a96df2d","date":"2026-08-22T17:30:00Z","homeTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"awayTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:59faa634-1c19-4000-b214-b8a011588161","date":"2026-08-29T15:00:00Z","playerGameScore":{"id":"So5Score:fca7bac6-c022-4214-a678-5315a29eb421","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:59faa634-1c19-4000-b214-b8a011588161","date":"2026-08-29T15:00:00Z","homeTeam":{"slug":"grazer-ak-graz","name":"Liebherr Grazer AK","code":"GAK","domesticLeagueRanking":11},"awayTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
