@@ -1,0 +1,38 @@
+=== RICHIESTA (PlayerGameScoreDetail) ===
+operationName: PlayerGameScoreDetail
+variables: {"id": "1daba7af-bd8c-4209-8cdb-3a481855457d"}
+query:
+
+query PlayerGameScoreDetail($id: ID!) {
+  so5 {
+    playerGameScore(id: $id) {
+      id
+      score
+      scoreStatus
+      position
+      anyGame {
+        date
+        statusTyped
+        homeTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        awayTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        competition { slug }
+      }
+      detailedScore { category stat statValue totalScore }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 17:01:07 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '64', 'x-gql-depth': '5', 'x-server-timestamp': '1785258067', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'YEhbwKfE-oCZczHk91rfa60IJLP55s6aOD5oiKXrYn7MSLqSZMtSGOfHHTKR0MV5F5gBhI6zcciyx9seoX4MlA', 'etag': 'W/"ca8e61cd7b92a3cf8988140b9c78463c"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=EdsV2aPCwlG2V5wSmmvAyrdKvYqSAAm5VUPH8g8R7HbtggzXVEkz36xr3cIjY50BLvJBvLZbeoazKlSVxHb9IZWl%2Bilj%2F0ELAFbPnXnSQBhSct%2FEFmp2ku52Lxp%2Bvck1G9sraex69Z8nigVqS%2FFRasshV7m5AAySTqG9LEujdR4KGwcAj1EMAvMJpb7tyZbIyyykB%2FLQrQhXRq0MuAffEjCeZb6bgsHtrRuAIUfJ0XhwnFG0uPFanennlqPxWT540xAYTak35AmZKetpEv9JsNrffv92y5dvLjeDo%2FNhBdzt0y7zgqDwCb7MjES6fivF--XCbo%2Fjwx5KPFZHjC--DTFKhMDZDHbZKzFT6%2FKnzw%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 17:01:07 GMT; secure; httponly; samesite=none', 'x-request-id': 'd82daa54-27cd-463b-bfd6-3af28d02d394', 'x-runtime': '0.023505', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 4e65e40699a5e85cdc5b08cf225325c4.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'DWAhuB-5nOO0jcyAtJ25GHLw4Mc4u7iEsAOfK1DuS6WihVLkiIYRTw=='}
+body (integrale):
+{"data":{"so5":{"playerGameScore":{"id":"So5Score:1daba7af-bd8c-4209-8cdb-3a481855457d","score":35.0,"scoreStatus":"REVIEWING","position":"Forward","anyGame":{"date":"2025-10-09T16:00:00Z","statusTyped":"played","homeTeam":{},"awayTeam":{},"competition":{"slug":"wc-qualification-africa"}},"detailedScore":[{"category":"UNKNOWN","stat":"level_score","statValue":0.0,"totalScore":35.0}]}}}}
