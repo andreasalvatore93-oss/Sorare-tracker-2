@@ -1,0 +1,72 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:10:03.105050Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) ousmane-diawara: 12 pt attesi (0-24)
+   SQUADRA: rheindorf-altach-altach | AVVERSARIO: rapid-wien-wien
+======================================================================
+
+######################################################################
+# GIOCATORE: ousmane-diawara
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ousmane-diawara (squadra: rheindorf-altach-altach)
+Generato: 2026-07-28T19:10:03.104462Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 8
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-18 | WSG vs ALT | austrian-bundesliga | score=21.0 | peso=0.891
+  2026-04-21 | ALT vs WSG | austrian-bundesliga | score=45.4 | peso=0.944
+  2026-05-04 | ALT vs WAC | austrian-bundesliga | score=32.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 33.18
+  di cui Punteggio decisivo (level_score) medio: 28.71 | Punteggio complessivo (granulari) medio: 4.47 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 1.32 (delta -0.14) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 9.82
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 21.0 - 45.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 38.95 | Media score fuori casa: 21.00
+Fattore casa/trasferta applicato: 0.929 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.3
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.989
+Fattore falli (casa/trasferta, da dati reali): 1.053
+Fattore duelli (casa/trasferta, da dati reali): 1.022
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.965
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.963
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 37.50% (fonte: tasso di presenza storico (3/8))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T17:00
+Casa: SK Rapid Wien | Trasferta: CASHPOINT SCR Altach
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 11.7 (range 0.0 - 23.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 33.55
+Punteggio REALE ottenuto in quella partita: 32.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
