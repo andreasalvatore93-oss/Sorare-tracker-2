@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "niko-sigur", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:40:12 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785267612', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'o-fD7-oLfLH3E2tiQ0xcfTqKsaDwbHKOa4MdliUS_i7coTr_BC2l-NDcQ5o5z48Jl54x5_vZmAIVUg1p8ehmMQ', 'etag': 'W/"952cc779b9ebac72da67f366d2111e79"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=yOboK4jrbJLmLpq1VkWBrebowP5oud%2Fk5XmwmGxPnNgn75GJgHDMGnWRR071dmTfCJuI5bytMguWPdbZvLmo%2FsgTfjwDAHxzS0LpHnCG%2BLAE%2BZBBaEjRnUPi5G65FS9buYUA4YDsDXAq6UPpUUVLjlE%2BU2vuFEknBlsFCYn5RRsfJ6dlh1wZDU17trUarEEo34Wt9%2FzERVzCRz0IsAcrLz%2BrgXJrVdT8%2FvR4iHuS%2FTu5KRx9g%2FcKDaWSbTzKYET7m3MXN6iwVoBo4lViugZtr0xzZUFRnDjd9N2cxwGAO97NIjo02HM8Lr54nAOp3F7W--yyNKNpeYu0Eeh%2F8H--EgQPRmlYMBRISMkZzRtqDA%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:40:12 GMT; secure; httponly; samesite=none', 'x-request-id': '9de80a8f-d8c7-4ee9-9d4a-b6b43df9f9e1', 'x-runtime': '0.057523', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 5f97742663b008cb887bd33fb14e6260.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'DFW57-P6', 'x-amz-cf-id': 'tBJWznUvj7gjVJFlx4ha1TAATWVYDnw1SNQVCUYfadzs32hft1b_4w=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:7a8f4576-e9ac-4459-a8ea-7f1836cf9b4e","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:a641d3cc-b554-419b-8c0e-69a8445fd654","date":"2026-07-23T19:00:00Z","statusTyped":"played","homeTeam":{"slug":"hajduk-split-split","name":"HNK Hajduk Split","code":"HAJ","domesticLeagueRanking":2},"awayTeam":{"slug":"paphos-paphos","name":"Paphos FC","code":"PFC","domesticLeagueRanking":null},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:cf4c10de-6acb-4ce8-b067-f44192d6b033","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:d8dd1fc8-5f0d-46f5-acda-f8e6290823a5","date":"2026-07-16T18:30:00Z","statusTyped":"played","homeTeam":{"slug":"zilina-zilina","name":"MŠK Žilina","code":"ŽIL","domesticLeagueRanking":null},"awayTeam":{"slug":"hajduk-split-split","name":"HNK Hajduk Split","code":"HAJ","domesticLeagueRanking":2},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:1677c39b-7f12-4f79-8b4c-495abdb5e5a5","date":"2026-07-30T17:00:00Z","playerGameScore":{"id":"So5Score:e346a00b-3b31-4a76-8f93-40db56346d9f","positionTyped":"Midfielder","projectedScore":51.0,"anyGame":{"id":"Game:1677c39b-7f12-4f79-8b4c-495abdb5e5a5","date":"2026-07-30T17:00:00Z","homeTeam":{"slug":"paphos-paphos","name":"Paphos FC","code":"PFC","domesticLeagueRanking":null},"awayTeam":{"slug":"hajduk-split-split","name":"HNK Hajduk Split","code":"HAJ","domesticLeagueRanking":2},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:3c183e78-5cae-44e2-924b-580fa2c2fb2e","date":"2026-08-02T16:30:00Z","playerGameScore":{"id":"So5Score:b4cf0a8a-25e2-4f7e-9f06-19ab50c6ab73","positionTyped":"Midfielder","projectedScore":49.0,"anyGame":{"id":"Game:3c183e78-5cae-44e2-924b-580fa2c2fb2e","date":"2026-08-02T16:30:00Z","homeTeam":{"slug":"varazdin-varazdin","name":"NK Varaždin","code":"VAR","domesticLeagueRanking":3},"awayTeam":{"slug":"hajduk-split-split","name":"HNK Hajduk Split","code":"HAJ","domesticLeagueRanking":2},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:a1ad1489-7339-4370-87e3-0f85814cdc57","date":"2026-08-08T00:00:00Z","playerGameScore":{"id":"So5Score:03d598ae-cdfa-4bd5-8ad6-0fbdd949785d","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:a1ad1489-7339-4370-87e3-0f85814cdc57","date":"2026-08-08T00:00:00Z","homeTeam":{"slug":"hajduk-split-split","name":"HNK Hajduk Split","code":"HAJ","domesticLeagueRanking":2},"awayTeam":{"slug":"istra-1961-pula","name":"NK Istra 1961","code":"IST","domesticLeagueRanking":6},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:d91428e0-31d4-4b2e-959e-40080d9e2b29","date":"2026-08-15T00:00:00Z","playerGameScore":{"id":"So5Score:df8d260b-48b9-4c4a-8033-408a0b0a4303","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:d91428e0-31d4-4b2e-959e-40080d9e2b29","date":"2026-08-15T00:00:00Z","homeTeam":{"slug":"gorica-velika-gorica","name":"HNK Gorica","code":"GOR","domesticLeagueRanking":7},"awayTeam":{"slug":"hajduk-split-split","name":"HNK Hajduk Split","code":"HAJ","domesticLeagueRanking":2},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:6459c8c9-9040-4120-b7ce-f3113dca1ef0","date":"2026-08-22T00:00:00Z","playerGameScore":{"id":"So5Score:f7f7cd7c-10d8-497b-b701-b3eda7b8abf4","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:6459c8c9-9040-4120-b7ce-f3113dca1ef0","date":"2026-08-22T00:00:00Z","homeTeam":{"slug":"hajduk-split-split","name":"HNK Hajduk Split","code":"HAJ","domesticLeagueRanking":2},"awayTeam":{"slug":"osijek-osijek","name":"NK Osijek","code":"OSI","domesticLeagueRanking":9},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}

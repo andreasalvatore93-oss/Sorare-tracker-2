@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:40:08.993338Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) miha-zajc: 62 pt attesi (40-81)
+   SQUADRA: dinamo-zagreb-zagreb | AVVERSARIO: slaven-koprivnica-koprivnica
+======================================================================
+
+######################################################################
+# GIOCATORE: miha-zajc
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: miha-zajc (squadra: dinamo-zagreb-zagreb)
+Generato: 2026-07-28T19:40:08.992711Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: 1-hnl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-01 | GOR vs DIN | 1-hnl | score=64.8 | peso=0.445
+  2025-12-06 | DIN vs HAJ | 1-hnl | score=42.5 | peso=0.472
+  2025-12-14 | SLA vs DIN | 1-hnl | score=95.4 | peso=0.500
+  2025-12-20 | DIN vs LOK | 1-hnl | score=56.3 | peso=0.530
+  2026-01-25 | OSI vs DIN | 1-hnl | score=64.3 | peso=0.561
+  2026-02-02 | DIN vs V91 | 1-hnl | score=85.2 | peso=0.595
+  2026-02-08 | RIJ vs DIN | 1-hnl | score=49.7 | peso=0.630
+  2026-02-14 | DIN vs IST | 1-hnl | score=94.6 | peso=0.667
+  2026-02-22 | VAR vs DIN | 1-hnl | score=81.4 | peso=0.707
+  2026-03-08 | HAJ vs DIN | 1-hnl | score=78.4 | peso=0.749
+  2026-03-14 | DIN vs SLA | 1-hnl | score=80.0 | peso=0.794
+  2026-03-21 | LOK vs DIN | 1-hnl | score=37.6 | peso=0.841
+  2026-04-04 | DIN vs OSI | 1-hnl | score=80.4 | peso=0.891
+  2026-04-13 | V91 vs DIN | 1-hnl | score=49.4 | peso=0.944
+  2026-04-18 | DIN vs RIJ | 1-hnl | score=43.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 65.95
+  di cui Punteggio decisivo (level_score) medio: 50.48 | Punteggio complessivo (granulari) medio: 15.47 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 50.13 (delta -0.34)
+  Efficacia offensiva condizionata: delta venue +0.34, delta avversario +0.44 | Passaggio condizionato: delta venue +1.29, delta avversario +1.39 | Gol subiti condizionato: delta venue -0.32, delta avversario -0.12 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 19.02
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.7 - 85.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.07 (differenza: +1.95)
+Media score in casa: 68.96 | Media score fuori casa: 65.12
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.1
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.064
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.015
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.011
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.011
+Fattore gol subiti (goals_conceded, con cap): 0.989
+Fattore trend (media ultime 5: 58.2 vs media ultime 10: 68.0): 0.899
+P(gioca): 68.18% (fonte: tasso di presenza storico (15/22))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T18:00
+Casa: GNK Dinamo Zagreb | Trasferta: NK Slaven Belupo
+Competizione: 1-hnl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 61.8 (range 39.5 - 81.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 68.34
+Punteggio REALE ottenuto in quella partita: 43.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -24.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.3    49.7    -12.6    24.4        SI
+   7        7      64.1    94.6    +30.5    24.4        NO
+   8        8      61.1    81.4    +20.3    26.8        SI
+   9        9      60.8    78.4    +17.6    25.5        SI
+  10       10      85.4    80.0     -5.4    24.0        SI
+  11       11      72.7    37.6    -35.1    22.8        NO
+  12       12      81.4    80.4     -1.0    26.6        SI
+  13       13      78.2    49.4    -28.8    25.6        NO
+  14       14      62.4    43.7    -18.7    25.9        SI
+
+MAE (errore assoluto medio): 18.88
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
