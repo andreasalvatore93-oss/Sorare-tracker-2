@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "tyler-austin-hall", "first": 30}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 429
+headers: {'server': 'CloudFront', 'content-type': 'application/json', 'date': 'Tue, 28 Jul 2026 16:14:25 GMT', 'retry-after': '35', 'cache-control': 'no-cache', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=pDrbkDpVbv7z8o9UI43i1tAEvSRoATORwpPjnY0%2FkeYx5qQdXJ2I6yW0UMTAc4qauk14mm7YfF35bATkoig8JMQmIsuQm2mCxdy%2FEP%2Bnx7cHB3BAJfNQimZGd4udpPNbHX2MHoqzxXK5vFvTKuB81B4Tfqx1yqtYHltOxBzyuhVXfX2PQYU28VmzfKmDAmL3W4BaiLfP07cVL%2BDt8XtdpbE%2FVn2vwhfROM0GNUaJJH5EanwoMmTK9wMLBDWVC0vqQ5Q5tfr0SRubObzuje2K77dHAJkg6p85ZrsRPz%2FoVs%2BEEa%2Bj3duqbshveYK0Ga7tp19oUNMtSf8bVgpolcWq0ly2fqPqC7Em2lskmlWguHGKUTcYCn0r89BCQIMJf3CcejEM6go%2BZc%2BgNhAqg9S2yP58or%2BUx4IqFexVS8rSHAttMXn9JWSAF%2F4bPhb9yhR0Xh1yxH9X%2B4lcpTmil2FxQ0M7E99HOtc3EwdqHHS6qy%2FpHo8seIQR2GxVUJoHOcxU2hggwzxBaEI8g9zEh%2BJ624u0hStFomAxBicz2HXF3e8bmsUqpE3MYT6rs04d2ICP116z2liTcRPJqMJ8X0hB0Hj2y0R4MHwgIhY6znEdD4F0dGvO--zb1F5nH0BBl5Z%2BIw--JsKWzhrvndCQ%2BgvbUDNiiw%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 16:14:25 GMT; secure; httponly; samesite=none', 'x-request-id': '6a01f1c9-6fb6-4a53-894a-093485c97b37', 'x-runtime': '0.003900', 'vary': 'Accept-Encoding, Origin', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Error from cloudfront', 'via': '1.1 feb9ecc5fd8524e1ca167ec0c51fe7be.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'SFO53-P6', 'x-amz-cf-id': 'S9bOJsLwdutpbEfXmVf8DSMkMJN-DLtWIC10VPStbSrSlRq5r9KIag=='}
+body (integrale):
+{"error":"Too many requests, please retry later."}
