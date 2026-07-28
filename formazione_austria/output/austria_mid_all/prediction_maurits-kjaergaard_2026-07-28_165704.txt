@@ -1,0 +1,89 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T16:57:04.421791Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) maurits-kjaergaard: 16 pt attesi (5-28)
+   SQUADRA: salzburg-wals-siezenheim | AVVERSARIO: hartberg-hartberg
+======================================================================
+
+######################################################################
+# GIOCATORE: maurits-kjaergaard
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: maurits-kjaergaard (squadra: salzburg-wals-siezenheim)
+Generato: 2026-07-28T16:57:04.421101Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-09 | STU vs RBS | austrian-bundesliga | score=55.7 | peso=0.707
+  2025-11-23 | RBS vs WSG | austrian-bundesliga | score=62.9 | peso=0.749
+  2026-04-19 | FAK vs RBS | austrian-bundesliga | score=30.0 | peso=0.794
+  2026-04-22 | RBS vs FAK | austrian-bundesliga | score=64.8 | peso=0.841
+  2026-04-26 | SCR vs RBS | austrian-bundesliga | score=71.5 | peso=0.891
+  2026-05-03 | RBS vs STU | austrian-bundesliga | score=48.2 | peso=0.944
+  2026-05-10 | ASK vs RBS | austrian-bundesliga | score=42.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 53.43
+  di cui Punteggio decisivo (level_score) medio: 38.55 | Punteggio complessivo (granulari) medio: 14.88 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 40.33 (delta +1.78)
+  Efficacia offensiva condizionata: delta venue +0.52, delta avversario -0.12 | Passaggio condizionato: delta venue +0.85, delta avversario -0.51 | Gol subiti condizionato: delta venue -0.13, delta avversario -0.03 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.31
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.6 - 64.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.70 (differenza: +4.60)
+Media score in casa: 58.63 | Media score fuori casa: 49.95
+Fattore casa/trasferta applicato: 1.028 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.6
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.084
+Fattore falli (casa/trasferta, da dati reali): 1.032
+Fattore duelli (casa/trasferta, da dati reali): 0.981
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.026
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.024
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.991
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 0.984
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 29.17% (fonte: tasso di presenza storico (7/24))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T17:30
+Casa: FC Red Bull Salzburg | Trasferta: TSV Egger Glas Hartberg
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 16.1 (range 5.3 - 27.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.63
+Punteggio REALE ottenuto in quella partita: 42.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -13.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.0    42.6     -9.4    19.0        SI
+
+MAE (errore assoluto medio): 9.40
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
