@@ -70,10 +70,6 @@ on:
         description: "'si' = logga il calcolo (prezzi usati, media, deviazione) per OGNI valutazione, non solo quando scarta -- utile per capire quanto spesso il controllo scarterebbe. RICORDARSI DI RIMETTERE 'no' dopo la sessione di verifica, altrimenti resta rumoroso nei log."
         required: false
         default: "si"
-      blacklisted_manager_slugs:
-        description: "Slug MANAGER da aggiungere PERMANENTEMENTE alla blacklist unita (separati da virgola)"
-        required: false
-        default: ""
       blacklisted_league_slugs:
         description: "Slug CAMPIONATI da aggiungere alla blacklist unita (separati da virgola, es. premiership-gb-sct) -- carte di questi campionati vengono ignorate completamente, default 15gg rinnovabile"
         required: false
@@ -94,10 +90,6 @@ on:
         description: "Durata dell'offerta MakeOffer in giorni interi, 1-7"
         required: false
         default: "1"
-      periodic_bid_enabled:
-        description: "'si' = attivo il bid periodico ogni 3 minuti (fascia 2-30EUR fissa, sconto 25% fisso sul candidato piu' vicino alla soglia MakeOffer, SOLO offerte mai acquisto diretto). 'no' = disattivato."
-        required: false
-        default: "no"
       price_based_thresholds_enabled:
         description: "'si' = soglie basate sul prezzo (26/07). 'no' = torna alle 3 soglie statiche fisse (makeoffer_margin_percent/makeoffer_max_margin_percent/autobuy_margin_percent) -- utile per test diagnostici mirati (es. forzare molti AutoBuy per analisi timing)."
         required: false
@@ -154,7 +146,6 @@ jobs:
           MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
           RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT: ${{ github.event.inputs.recent_avg_price_max_deviation_percent || '15' }}
           RECENT_AVG_PRICE_DIAGNOSTIC_LOG: ${{ github.event.inputs.recent_avg_price_diagnostic_log || 'si' }}
-          BLACKLISTED_MANAGER_SLUGS: ${{ github.event.inputs.blacklisted_manager_slugs || '' }}
           BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
           LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'si' }}
@@ -162,7 +153,6 @@ jobs:
           OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '15' }}
           OFFER_DURATION_DAYS: ${{ github.event.inputs.offer_duration_days || '1' }}
           MAX_PENDING_OFFERS: "20"
-          PERIODIC_BID_ENABLED: ${{ github.event.inputs.periodic_bid_enabled || 'no' }}
           PRICE_BASED_THRESHOLDS_ENABLED: ${{ github.event.inputs.price_based_thresholds_enabled || 'si' }}
         run: |
           set -o pipefail
