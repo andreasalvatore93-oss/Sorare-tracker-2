@@ -98,16 +98,45 @@ LEAGUE_DIR = {
     'ekstraklasa': 'polonia', 'primera-division-cl': 'cile',
 }
 
-# Split alfabetico fisso delle cartelle di destinazione (incluso 'senza_lega')
-# in n quote contigue -- usato solo se DISCOVERY_LEAGUE_SHARD e' impostata.
+# Split delle cartelle di destinazione in n quote -- usato solo se
+# DISCOVERY_LEAGUE_SHARD e' impostata. Split PESATO (28/07, bug reale trovato
+# dall'utente su run reali: discovery_def_5/discovery_def_6/discovery_gk_3/
+# discovery_fwd_3 impiegavano 2-5x le altre quote, sempre le STESSE ogni
+# run): il vecchio taglio era alfabetico CIECO su numero di leghe, non su
+# carico di lavoro -- mls e kleague (di gran lunga le leghe con piu' carte
+# possedute, quindi piu' chiamate odds+L10) finivano SEMPRE nello stesso
+# blocchetto alfabetico ('kleague'/'mls' sono alfabeticamente vicine), quindi
+# SEMPRE le stesse quote sovraccariche mentre le altre restavano quasi vuote.
+# Fix: le leghe pesanti hanno una quota TUTTA PER LORO (isolate, non miste
+# con nessun'altra lega), le restanti leghe leggere si dividono alfabeticamente
+# le quote rimanenti -- stesso principio del vecchio taglio ma senza mai
+# mischiare una lega pesante con altre leghe nella stessa quota.
+_HEAVY_LEAGUES = ['mls', 'kleague']
 _ALL_DIRNAMES = sorted(set(LEAGUE_DIR.values()) | {'senza_lega'})
+_LIGHT_DIRNAMES = sorted(set(_ALL_DIRNAMES) - set(_HEAVY_LEAGUES))
 _WANTED_DIRNAMES = None
 if DISCOVERY_LEAGUE_SHARD is not None:
     _idx, _n = DISCOVERY_LEAGUE_SHARD
-    _tot = len(_ALL_DIRNAMES)
-    _start = (_tot * _idx) // _n
-    _end = (_tot * (_idx + 1)) // _n
-    _WANTED_DIRNAMES = set(_ALL_DIRNAMES[_start:_end])
+    _n_heavy = len(_HEAVY_LEAGUES)
+    if _n > _n_heavy:
+        # Ultime _n_heavy quote = una lega pesante ciascuna (isolata). Le
+        # prime (_n - _n_heavy) quote si dividono le leghe leggere.
+        if _idx >= _n - _n_heavy:
+            _WANTED_DIRNAMES = {_HEAVY_LEAGUES[_idx - (_n - _n_heavy)]}
+        else:
+            _n_light = _n - _n_heavy
+            _tot = len(_LIGHT_DIRNAMES)
+            _start = (_tot * _idx) // _n_light
+            _end = (_tot * (_idx + 1)) // _n_light
+            _WANTED_DIRNAMES = set(_LIGHT_DIRNAMES[_start:_end])
+    else:
+        # Troppe poche quote per isolare le leghe pesanti (n <= 2): fallback
+        # al vecchio taglio alfabetico cieco su TUTTE le leghe, comportamento
+        # precedente (nessuna configurazione attuale usa n cosi' basso).
+        _tot = len(_ALL_DIRNAMES)
+        _start = (_tot * _idx) // _n
+        _end = (_tot * (_idx + 1)) // _n
+        _WANTED_DIRNAMES = set(_ALL_DIRNAMES[_start:_end])
 
 FIXTURE_BY_GW = """
 query FixtureList($first: Int!) {
