@@ -194,20 +194,54 @@ STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non e
 # (POSITIVE_SYNERGY_BONUS/ANTI_SYNERGY_PENALTY) erano intuizione mai
 # misurata. Il residuo walk-forward (reale - baseline media/venue/trend) di
 # compagni di squadra nella STESSA partita, sulle cache di calibrazione
-# GK/DEF/MID/FWD, mostra correlazioni positive robuste (permutation test
-# p<0.05, segno stabile split-half): GK-DEF +0.40 (la piu' forte, gia'
-# modellata sopra ma sottostimata), DEF-MID +0.27, GK-MID +0.26, DEF-DEF
-# +0.23. FWD non mostra correlazione same-team significativa con nessun
-# ruolo (ne' come sinergia ne' come anti-sinergia) e resta fuori da questi
-# nudge. Perche' SOLO Arena/All Stars: in In Season il target e' fisso, il
-# valore atteso della somma non dipende dalla correlazione (Finding 3+F,
-# chiuso), quindi spingere la scelta verso compagni correlati costerebbe
-# valore atteso reale senza alcun beneficio -- il beneficio esiste solo dove
-# la varianza conta (taglio premi Arena 30%/All Stars 5%). Valori scalati
-# ~20x la correlazione misurata (stessa logica di "piccolo nudge" di
-# POSITIVE_SYNERGY_BONUS, non un'esclusione).
-GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA = 8  # extra oltre POSITIVE_SYNERGY_BONUS, per un totale di 11 in Arena/All Stars (corr +0.40)
-TEAMMATE_SYNERGY_BONUS_VARIANCE = 5  # GK-MID stessa squadra (corr +0.26) o DEF/MID che raggiunge un compagno gia' scelto (corr +0.23/+0.27)
+# GK/DEF/MID/FWD, mostra correlazioni positive robuste. Perche' SOLO Arena/
+# All Stars: in In Season il target e' fisso, il valore atteso della somma
+# non dipende dalla correlazione (Finding 3+F, chiuso), quindi spingere la
+# scelta verso compagni correlati costerebbe valore atteso reale senza
+# alcun beneficio -- il beneficio esiste solo dove la varianza conta
+# (taglio premi Arena 30%/All Stars 5%).
+#
+# RI-MISURATO 28/07 sera su 25 campionati (146 squadre, 1213 partite con 2+
+# giocatori cachati -- prima erano solo 1-2 campionati): valori CAMBIATI in
+# modo sostanziale rispetto alla prima misurazione (GK-DEF +0.40->+0.355,
+# DEF-MID +0.27->+0.136, GK-MID +0.26->+0.143, DEF-DEF +0.23->+0.221) e
+# soprattutto FWD, che prima "non mostrava correlazione significativa con
+# nessun ruolo", ORA la mostra (def-fwd +0.093 p=0.006, fwd-mid +0.169
+# p=0.001, fwd-fwd +0.154 p=0.045 -- tutti stabili split-half tranne
+# fwd-fwd che ha n piu' piccolo, 173 coppie). mid-mid (+0.130 p=0.011,
+# stabile) non era mai stato isolato prima. Valori scalati ~20x la
+# correlazione misurata (stessa convenzione di prima), sostituendo il
+# vecchio bonus FLAT unico (TEAMMATE_SYNERGY_BONUS_VARIANCE=5 per qualunque
+# coppia DEF/MID/FWD) con un valore per coppia -- usa chosen_roles_by_team,
+# stessa infrastruttura di CROSS_TEAM_PENALTY_BY_PAIR.
+SAME_TEAM_SYNERGY_BONUS_BY_PAIR = {
+    frozenset(('GK', 'DEF')): 7,    # +0.355 * 20 ~= 7.1
+    frozenset(('DEF', 'DEF')): 4,   # +0.221 * 20 ~= 4.4
+    frozenset(('FWD', 'MID')): 3,   # +0.169 * 20 ~= 3.4
+    frozenset(('GK', 'MID')): 3,    # +0.143 * 20 ~= 2.9
+    frozenset(('DEF', 'MID')): 3,   # +0.136 * 20 ~= 2.7
+    frozenset(('MID', 'MID')): 3,   # +0.130 * 20 ~= 2.6
+    frozenset(('FWD', 'FWD')): 3,   # +0.154 * 20 ~= 3.1 (n=173, meno solido)
+    frozenset(('DEF', 'FWD')): 2,   # +0.093 * 20 ~= 1.9
+    # GK-FWD/GK-GK: non significativi nella ri-misurazione, non modellati.
+}
+
+
+def _same_team_synergy_bonus(role, row, chosen_roles_by_team):
+    """Analogo a _cross_team_penalty ma per compagni di squadra (bonus, non
+    penalita'). Somma il bonus per ogni ruolo GIA' scelto nella STESSA
+    squadra di 'row' che forma una coppia con sinergia positiva misurata."""
+    if not chosen_roles_by_team:
+        return 0
+    team_slug = row.get('team_slug')
+    if not team_slug:
+        return 0
+    bonus = 0
+    for prev_role in chosen_roles_by_team.get(team_slug, ()):
+        w = SAME_TEAM_SYNERGY_BONUS_BY_PAIR.get(frozenset((role, prev_role)))
+        if w:
+            bonus += w
+    return bonus
 
 # Decorrelazione tra le N formazioni In Season (28/07, sez. 29.D/tema
 # "portafoglio": il premio scatta se ALMENO UNA delle N formazioni supera il
@@ -223,7 +257,7 @@ TEAMMATE_SYNERGY_BONUS_VARIANCE = 5  # GK-MID stessa squadra (corr +0.26) o DEF/
 # il valore originale 6_000 rischiava di buttar fuori un giocatore nettamente
 # piu' forte solo per decorrelare un beneficio mai misurato su dati reali --
 # vedi memoria di sessione). Stessa scala di TEAMMATE_SYNERGY_BONUS_VARIANCE/
-# GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA: pesa solo quando due candidati sono gia'
+# SAME_TEAM_SYNERGY_BONUS_BY_PAIR: pesa solo quando due candidati sono gia'
 # vicini per punteggio, non ribalta un divario di qualita' reale.
 MATCH_REUSE_PENALTY = 6
 
@@ -248,7 +282,7 @@ def _match_key(row):
 # (-0.006 prima meta' vs -0.210 seconda -- probabile rumore/effetto
 # recente non consolidato) e resta ESCLUSA finche' non si ri-conferma.
 # Scala ~20x la correlazione misurata, stessa convenzione di
-# GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA/TEAMMATE_SYNERGY_BONUS_VARIANCE (nudge
+# SAME_TEAM_SYNERGY_BONUS_BY_PAIR (nudge
 # soft, mai un'esclusione). Chiave = coppia di ruoli non ordinata.
 CROSS_TEAM_PENALTY_BY_PAIR = {
     frozenset(('DEF', 'DEF')): 3,   # -0.137 * 20 ~= 2.7
@@ -283,7 +317,7 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
     output) -- vedi commento sopra ANTI_SYNERGY_PENALTY per la logica.
     'team_counts'/'apply_stack_guard': vedi commento sopra IN_SEASON_STACK_LIMIT.
-    'variance_mode': vedi commento sopra GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA
+    'variance_mode': vedi commento sopra SAME_TEAM_SYNERGY_BONUS_BY_PAIR
     (SOLO Arena/All Stars -- generate_lineups_for_type decide il valore).
     'apply_positive_synergy' (27/07, richiesta esplicita utente per le In
     Season con 2+ formazioni richieste): gate UNICO sia per il bonus DEF-GK
@@ -305,16 +339,7 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
             adjusted += POSITIVE_SYNERGY_BONUS
         adjusted -= _cross_team_penalty(role, row, chosen_roles_by_team)
     if variance_mode and team_slug:
-        if role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
-            adjusted += GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA
-        elif role == 'MID' and gk_team_slug and team_slug == gk_team_slug:
-            adjusted += TEAMMATE_SYNERGY_BONUS_VARIANCE
-        # FWD-MID same-team (27/07 notte, reindagine su 6 campionati invece
-        # di 2: corr +0.161 p=0.005, stabile split-half -- prima era marginale
-        # su MLS+K League soli, +0.106/+0.147 p=0.076-0.17, non modellato):
-        # stesso nudge piccolo gia' usato per DEF/MID, non un fattore nuovo.
-        elif role in ('DEF', 'MID', 'FWD') and team_counts and team_counts.get(team_slug, 0) >= 1:
-            adjusted += TEAMMATE_SYNERGY_BONUS_VARIANCE
+        adjusted += _same_team_synergy_bonus(role, row, chosen_roles_by_team)
     if apply_stack_guard and team_slug and team_counts and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT:
         adjusted -= STACK_GUARD_PENALTY
     if used_matches and _match_key(row) in used_matches:
@@ -717,7 +742,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
     commento sopra IN_SEASON_STACK_LIMIT): scoraggia (non vieta) il 3o
     giocatore della stessa squadra nello slot extra, per non perdere per
     errore il bonus anti-stack Sorare. 'variance_mode' (SOLO Arena/All Stars,
-    vedi commento sopra GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA): rafforza la
+    vedi commento sopra SAME_TEAM_SYNERGY_BONUS_BY_PAIR): rafforza la
     sinergia GK-DEF e aggiunge nudge GK-MID/DEF-MID/DEF-DEF basati sulla
     correlazione misurata. Ritorna (formazione, errore, l10_cap_rispettato,
     stack_bonus_perso); formazione e' una lista di tuple
@@ -1471,7 +1496,7 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
     # In Season E All Stars (soglie/percentuali diverse ma stesso meccanismo),
     # non per Arena (che ha il suo cap L10 obbligatorio separato, nessun bonus).
     stack_guard = tipo in ('IN_SEASON', 'ALLSTARS')
-    # Sinergia da correlazione misurata (vedi GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA):
+    # Sinergia da correlazione misurata (vedi SAME_TEAM_SYNERGY_BONUS_BY_PAIR):
     # SOLO dove la varianza conta, cioe' tutto tranne In Season (target fisso).
     variance_mode = tipo != 'IN_SEASON'
     # 27/07, richiesta esplicita utente: quando si richiedono 2+ In Season,
