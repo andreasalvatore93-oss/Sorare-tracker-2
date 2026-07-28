@@ -394,15 +394,17 @@ _graphql_last_429_ts = [0.0]
 # ESPERIMENTO 29/07 (richiesta esplicita utente, osservazione su un log reale):
 # nella run delle 07:35 il primo 429 e' scattato solo dopo ~1m39s e ~250
 # giocatori analizzati SENZA NESSUN 429 -- poi, una volta scattato, e' stata
-# sostanzialmente una raffica ininterrotta. Ipotesi da testare: Sorare non
-# limita per "ritmo istantaneo" ma per QUANTITA' di richieste in una finestra
-# scorrevole -- una pausa fissa periodica (indipendente dai 429, non solo
-# reattiva a un 429 gia' avvenuto) potrebbe "svuotare" quella finestra prima
-# che scatti, invece di limitarsi a rallentare dopo il fatto. Ciclo: lavora a
-# ritmo FAST per GRAPHQL_BURST_WORK_SECONDS, poi pausa fissa di
-# GRAPHQL_BURST_PAUSE_SECONDS, poi riparte. 0 = disattivato (comportamento
-# precedente invariato).
-GRAPHQL_BURST_WORK_SECONDS = float(os.environ.get('GRAPHQL_BURST_WORK_SECONDS', '60.0'))
+# sostanzialmente una raffica ininterrotta. Ipotesi testata: Sorare non limita
+# per "ritmo istantaneo" ma per QUANTITA' di richieste in una finestra
+# scorrevole -- una pausa fissa periodica (60s lavoro / 20s pausa,
+# indipendente dai 429) avrebbe dovuto "svuotare" quella finestra prima che
+# scattasse. RISULTATO: SMENTITA. Run di verifica (07:52-07:54): primo 429
+# scattato comunque a ~2 minuti dall'inizio, stesso punto della run senza
+# pausa. Il limite sembra legato al TEMPO TRASCORSO, non al conteggio di
+# richieste in coda -- una pausa non "resetta" nulla. Lasciato disattivato di
+# default (0) ma il meccanismo resta disponibile via env var nel caso si
+# voglia testare un work/pause diverso in futuro.
+GRAPHQL_BURST_WORK_SECONDS = float(os.environ.get('GRAPHQL_BURST_WORK_SECONDS', '0'))
 GRAPHQL_BURST_PAUSE_SECONDS = float(os.environ.get('GRAPHQL_BURST_PAUSE_SECONDS', '20.0'))
 _burst_window_start = [None]
 _burst_paused_until = [0.0]
