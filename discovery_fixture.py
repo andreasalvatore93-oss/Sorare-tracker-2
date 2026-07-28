@@ -541,7 +541,7 @@ def main():
     # in un job separato 'consiglio', dopo che TUTTI gli shard di 'predict'
     # sono completati -- vedi formazione_giornata.yml.
     PREDICT_SHARD_LEAGUES = {'mls', 'kleague'}
-    PREDICT_SHARD_N = 8
+    PREDICT_SHARD_N = 4
     matrice = []
     for lg, ruoli in sorted(scritti.items()):
         for r in sorted(ruoli):
