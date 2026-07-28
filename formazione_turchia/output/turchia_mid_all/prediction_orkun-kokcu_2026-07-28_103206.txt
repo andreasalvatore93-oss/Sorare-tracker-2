@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T10:32:06.966434Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) orkun-kokcu: 67 pt attesi (43-89)
+   SQUADRA: besiktas-istanbul | AVVERSARIO: midtjylland-herning
+======================================================================
+
+######################################################################
+# GIOCATORE: orkun-kokcu
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: orkun-kokcu (squadra: besiktas-istanbul)
+Generato: 2026-07-28T10:32:06.965772Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | BJK vs GÖZ | spor-toto-super-lig | score=77.9 | peso=0.445
+  2026-03-07 | BJK vs GS | spor-toto-super-lig | score=68.0 | peso=0.472
+  2026-03-15 | GNÇ vs BJK | spor-toto-super-lig | score=92.2 | peso=0.500
+  2026-03-19 | BJK vs KAS | spor-toto-super-lig | score=81.3 | peso=0.530
+  2026-03-31 | ? vs ? | wc-qualification-europe | score=95.8 | peso=0.561
+  2026-04-05 | FB vs BJK | spor-toto-super-lig | score=48.5 | peso=0.595
+  2026-04-10 | BJK vs ANT | spor-toto-super-lig | score=92.7 | peso=0.630
+  2026-04-19 | SAM vs BJK | spor-toto-super-lig | score=51.0 | peso=0.667
+  2026-04-27 | BJK vs FAT | spor-toto-super-lig | score=60.1 | peso=0.707
+  2026-05-09 | BJK vs TS | spor-toto-super-lig | score=79.9 | peso=0.749
+  2026-05-15 | RIZ vs BJK | spor-toto-super-lig | score=94.9 | peso=0.794
+  2026-06-06 | ? vs ? | friendlies | score=41.3 | peso=0.841
+  2026-06-14 | ? vs ? | global-cup | score=47.5 | peso=0.891
+  2026-06-26 | ? vs ? | global-cup | score=60.0 | peso=0.944
+  2026-07-23 | BJK vs FCM | uefa-europa-league | score=93.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 71.28
+  di cui Punteggio decisivo (level_score) medio: 51.45 | Punteggio complessivo (granulari) medio: 19.83 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 49.76 (delta -1.69)
+  Efficacia offensiva condizionata: delta venue +1.06, delta avversario +1.72 | Passaggio condizionato: delta venue +1.42, delta avversario +2.33 | Gol subiti condizionato: delta venue -0.29, delta avversario -0.12 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 19.62
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 47.5 - 93.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.93 (differenza: +1.70)
+Media score in casa: 79.09 | Media score fuori casa: 71.65
+Fattore casa/trasferta applicato: 0.983 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.787
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.017
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.021
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.021
+Fattore gol subiti (goals_conceded, con cap): 0.985
+Fattore trend (media ultime 5: 67.5 vs media ultime 10: 67.0): 1.005
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T17:00
+Casa: FC Midtjylland | Trasferta: Beşiktaş Jimnastik Kulübü
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 67.0 (range 43.2 - 89.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 68.88
+Punteggio REALE ottenuto in quella partita: 93.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +24.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      93.8    92.7     -1.1    23.1        SI
+   7        7      70.2    51.0    -19.2    22.6        SI
+   8        8      95.9    60.1    -35.8    25.3        NO
+   9        9      54.5    79.9    +25.4    24.6        NO
+  10       10      62.3    94.9    +32.6    23.2        NO
+  11       11      73.0    41.3    -31.7    23.7        NO
+  12       12      65.6    47.5    -18.1    27.2        SI
+  13       13      66.1    60.0     -6.1    27.9        SI
+  14       14      51.8    93.7    +41.9    26.8        NO
+
+MAE (errore assoluto medio): 23.54
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 44.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
