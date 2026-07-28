@@ -215,12 +215,17 @@ TEAMMATE_SYNERGY_BONUS_VARIANCE = 5  # GK-MID stessa squadra (corr +0.26) o DEF/
 # se sono tentativi il piu' possibile INDIPENDENTI. Se piu' formazioni
 # condividono la stessa partita reale (stessa coppia squadra-avversario) e
 # quella partita va male, falliscono insieme: nessun vantaggio dai tentativi
-# multipli). Soft, come ANTI_SYNERGY_PENALTY/STACK_GUARD_PENALTY: deprioritizza
-# (non esclude mai) i candidati la cui partita e' gia' "occupata" da una
-# formazione precedente della stessa serie. Piu' debole dello stack guard
-# (8_000): se non ci sono alternative valide nello slot, meglio riusare la
-# partita che perdere il bonus anti-stack o rompere lo schieramento.
-MATCH_REUSE_PENALTY = 6_000
+# multipli).
+#
+# A DIFFERENZA di ANTI_SYNERGY_PENALTY/STACK_GUARD_PENALTY (valori enormi,
+# quasi un'esclusione "ultima risorsa" per regole di gioco certe), questo e'
+# un TIE-BREAKER leggero (28/07 sera, richiesta esplicita utente dopo revisione:
+# il valore originale 6_000 rischiava di buttar fuori un giocatore nettamente
+# piu' forte solo per decorrelare un beneficio mai misurato su dati reali --
+# vedi memoria di sessione). Stessa scala di TEAMMATE_SYNERGY_BONUS_VARIANCE/
+# GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA: pesa solo quando due candidati sono gia'
+# vicini per punteggio, non ribalta un divario di qualita' reale.
+MATCH_REUSE_PENALTY = 6
 
 
 def _match_key(row):
