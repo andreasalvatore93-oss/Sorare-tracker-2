@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "melayro-bogarde", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 22:44:11 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785278651', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'Ok0xrzDs5H6f4ToD7AcdKhYB_0wiv0jRJBpkxi48gZdJ67KjLJ2KXkbh6pp8eZHndKijf_H1CzWU8f_UHU4nfw', 'etag': 'W/"9eef02234117a88d34735228ecf74476"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=fKqBziLhwztCmApoOquy3llZefsqdqMbx90t7MAjbM%2Bj%2FKgon4n7IN6QB2Rk4Tl4c9E%2FdMcaZEyhJx%2B8633gvpKVb95r%2B%2FyivW3XB2zyP5djmOLwEKdSxkK2q4p599uC9nxIzGiRvKP6aYxsFfeP4PaS5wQw4pxCf7yS5gu3OhYm1r1xgqLDHkR9w0RKpd%2FHpr5v6SPgeT9A4bqmxG5F%2BxgfJLbWLnLzKPsOosYNRjvTx7ofR1ktUdnn9Ze7ITc6A%2F2XQyxDC9I4f897wRB8Wytz48daBggnraX5sp3SUGfOdy91JXP4RUpUKdNKFazJ--g1t32IXbGgXFHUI1--App5620kMabcpG%2FY7HxaLw%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 22:44:11 GMT; secure; httponly; samesite=none', 'x-request-id': 'a9d3aed4-1bda-4279-9ee3-d4ad3a8798b9', 'x-runtime': '0.061233', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 85256fc876c790f5e9158ba2e5c4bf92.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'DFW57-P6', 'x-amz-cf-id': '3hnhPhAeShaCK5rFZ-uLFrDsRnrsi_Y0oS0InFmWqLsUqEiniM1d4w=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:21f5e211-8934-4282-a52d-ece30b2a6b13","score":72.5,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:a0aa31b0-9c84-4101-82f9-ed591c0c7558","date":"2026-05-17T12:30:00Z","statusTyped":"played","homeTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"awayTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":89,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:0e09595c-0058-448f-b441-9d95eceafc7b","score":58.3,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:a58d4bd1-38fd-440c-8855-4473f515bc4b","date":"2026-05-10T15:00:00Z","statusTyped":"played","homeTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"awayTeam":{"slug":"salzburg-wals-siezenheim","name":"FC Red Bull Salzburg","code":"RBS","domesticLeagueRanking":3},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:07941993-d6c1-4769-b4c6-0f968de1fb92","date":"2026-07-31T17:30:00Z","playerGameScore":{"id":"So5Score:86960210-4617-4bd7-9dfb-9391917bf1be","positionTyped":"Midfielder","projectedScore":52.0,"anyGame":{"id":"Game:07941993-d6c1-4769-b4c6-0f968de1fb92","date":"2026-07-31T17:30:00Z","homeTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"awayTeam":{"slug":"grazer-ak-graz","name":"Liebherr Grazer AK","code":"GAK","domesticLeagueRanking":11},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:77aaf6ed-d81d-436c-9e03-b4faa9ace9b1","date":"2026-08-09T17:00:00Z","playerGameScore":{"id":"So5Score:6b6c9ef3-c0c9-4505-bc65-9f1d9fbc1ca5","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:77aaf6ed-d81d-436c-9e03-b4faa9ace9b1","date":"2026-08-09T17:00:00Z","homeTeam":{"slug":"austria-wien-wien","name":"FK Austria Wien","code":"FAK","domesticLeagueRanking":4},"awayTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:bdba2271-8e5c-4c36-bc20-cc4b87b90a1a","date":"2026-08-14T17:30:00Z","playerGameScore":{"id":"So5Score:eae1a123-8e06-44d2-8cdc-2a5c82f38e8d","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:bdba2271-8e5c-4c36-bc20-cc4b87b90a1a","date":"2026-08-14T17:30:00Z","homeTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"awayTeam":{"slug":"ried-ried-im-innkreis","name":"SV Guntamatic Ried","code":"SVR","domesticLeagueRanking":1},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:151fe6d3-ebd5-4c2c-94a0-56530a96df2d","date":"2026-08-22T17:30:00Z","playerGameScore":{"id":"So5Score:4ea38ce5-8f3f-49b5-ae72-9d5183c4879c","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:151fe6d3-ebd5-4c2c-94a0-56530a96df2d","date":"2026-08-22T17:30:00Z","homeTeam":{"slug":"wolfsberger-ac-wolfsberg","name":"RZ Pellets WAC","code":"WAC","domesticLeagueRanking":2},"awayTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:27800567-b26c-4f9d-b8c2-ac32912c1e5f","date":"2026-08-29T17:30:00Z","playerGameScore":{"id":"So5Score:cd453f00-8318-4e06-bc59-d765c1e95c92","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:27800567-b26c-4f9d-b8c2-ac32912c1e5f","date":"2026-08-29T17:30:00Z","homeTeam":{"slug":"lask-linz","name":"LASK","code":"ASK","domesticLeagueRanking":3},"awayTeam":{"slug":"rheindorf-altach-altach","name":"CASHPOINT SCR Altach","code":"ALT","domesticLeagueRanking":8},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
