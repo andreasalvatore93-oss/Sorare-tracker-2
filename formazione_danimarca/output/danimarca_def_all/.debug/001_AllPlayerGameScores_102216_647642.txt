@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "marcos-johan-lopez-lanfranco", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 10:22:16 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785234136', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': '5IIx-IFdBNJOPn4YlASLysXua27nAnLaJ7HEhPZ5c4v79zybAvgS_OcFTKsTaQBFDdzXUC2lPcVjuvIuT9-5rA', 'etag': 'W/"3b40d357e3ef59919ab9d14176c6df39"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=GYsSszF0ZtpXRoiT0CcbYsj6jbQuibIvgqn2oigE7RCpH8kSdJqE9%2BqZpzxYoY7XNi4viDWQN6ppF2p49SjdRlMwu1K6VpnrV3LDu%2FbvXqrjkylyECjsJAWJaI9gzpHpauZ8tSgiJMGxDTOYNvx2E7G1Z1RlIf900LP%2BAXiyF1z%2FQSfB3%2FR8wvMfDYJ4tsaYY%2BHXMpeq9yAOnyk9o0nKpcTbdhVz0YxKQGJ1uiSjpYXjmzEKerX19WpdkG6Z2wKVfEYf3A6q62%2BlJk62q%2Fs%2FXnGy2FZUvQ3ZbVnJzX48BSJgULsWGgCNLCpmiPefcU3N--Xg2pi%2FRIDnbTLg15--E6%2BZcrdUc9wA3jMr4Gwcng%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 10:22:16 GMT; secure; httponly; samesite=none', 'x-request-id': 'e1dc7ea0-eb48-4dcb-8a24-9cee497d0961', 'x-runtime': '0.063615', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 d9fec1199130a00161e2120cb7f67a8e.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': '-EC_xwunyy_aIABIat7-6Sp7IIVzHRhxEkTDPVb0pzPeJbvpyEzh_Q=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:dc3ca706-77b7-4363-b810-300fc8aec20e","score":79.98,"scoreStatus":"REVIEWING","positionTyped":"Defender","anyGame":{"id":"Game:9e3281ea-b2ec-4b89-b279-59a0796b7bfe","date":"2026-07-26T14:00:00Z","statusTyped":"played","homeTeam":{"slug":"kobenhavn-kobenhavn","name":"FC København","code":"FCK","domesticLeagueRanking":1},"awayTeam":{"slug":"lyngby-lyngby-kongens-lyngby","name":"Lyngby Boldklub","code":"LYN","domesticLeagueRanking":10},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":1,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:fea01b2d-b2c0-417f-b50b-97ac6acd8e82","score":42.32,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:e2738f62-3503-48b6-a9d3-42836cf5664f","date":"2026-07-23T18:00:00Z","statusTyped":"played","homeTeam":{"slug":"polessya","name":"Polessya Zhitomir","code":"POL","domesticLeagueRanking":null},"awayTeam":{"slug":"kobenhavn-kobenhavn","name":"FC København","code":"FCK","domesticLeagueRanking":1},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:21f41527-8316-4422-aefb-27fde3380f10","date":"2026-07-29T17:00:00Z","playerGameScore":{"id":"So5Score:e03fccda-e8cb-43d8-b0b8-894faf5cbb0f","positionTyped":"Defender","projectedScore":53.0,"anyGame":{"id":"Game:21f41527-8316-4422-aefb-27fde3380f10","date":"2026-07-29T17:00:00Z","homeTeam":{"slug":"kobenhavn-kobenhavn","name":"FC København","code":"FCK","domesticLeagueRanking":1},"awayTeam":{"slug":"polessya","name":"Polessya Zhitomir","code":"POL","domesticLeagueRanking":null},"competition":{"slug":"uefa-europa-conference-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":9000,"reliability":"HIGH"}}}},{"id":"Game:ddf44579-0237-4b3f-a293-03cad1741ae8","date":"2026-08-02T16:00:00Z","playerGameScore":{"id":"So5Score:4a07ad81-bc34-4b77-a566-a8db18f29be9","positionTyped":"Defender","projectedScore":58.0,"anyGame":{"id":"Game:ddf44579-0237-4b3f-a293-03cad1741ae8","date":"2026-08-02T16:00:00Z","homeTeam":{"slug":"silkeborg-silkeborg","name":"Silkeborg IF","code":"SIF","domesticLeagueRanking":6},"awayTeam":{"slug":"kobenhavn-kobenhavn","name":"FC København","code":"FCK","domesticLeagueRanking":1},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:7dba5b70-6335-4a2a-8ff9-285608461701","date":"2026-08-16T16:00:00Z","playerGameScore":{"id":"So5Score:7aedf564-ed0c-4a73-9cee-34d19b9dc4f0","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:7dba5b70-6335-4a2a-8ff9-285608461701","date":"2026-08-16T16:00:00Z","homeTeam":{"slug":"randers-randers","name":"Randers FC","code":"RFC","domesticLeagueRanking":9},"awayTeam":{"slug":"kobenhavn-kobenhavn","name":"FC København","code":"FCK","domesticLeagueRanking":1},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:fea11d35-62d9-4693-912e-5a7190745544","date":"2026-08-23T16:00:00Z","playerGameScore":{"id":"So5Score:bcb1c551-fc3d-44f6-ab6b-d6a49b174010","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:fea11d35-62d9-4693-912e-5a7190745544","date":"2026-08-23T16:00:00Z","homeTeam":{"slug":"viborg-viborg","name":"Viborg FF","code":"VFF","domesticLeagueRanking":3},"awayTeam":{"slug":"kobenhavn-kobenhavn","name":"FC København","code":"FCK","domesticLeagueRanking":1},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:2f428827-e0bb-4a69-8e29-e6e6a8bb5c12","date":"2026-08-31T17:00:00Z","playerGameScore":{"id":"So5Score:0cc3fab6-cca1-47c8-95b0-31ba63336862","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:2f428827-e0bb-4a69-8e29-e6e6a8bb5c12","date":"2026-08-31T17:00:00Z","homeTeam":{"slug":"kobenhavn-kobenhavn","name":"FC København","code":"FCK","domesticLeagueRanking":1},"awayTeam":{"slug":"sonderjyske-haderslev","name":"Sønderjysk Elitesport Fodbold","code":"SJE","domesticLeagueRanking":11},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
