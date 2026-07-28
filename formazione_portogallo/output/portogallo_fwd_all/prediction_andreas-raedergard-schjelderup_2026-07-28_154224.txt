@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T15:42:24.050690Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) andreas-raedergard-schjelderup: 0 pt attesi (0-13)
+   SQUADRA: benfica-lisboa | AVVERSARIO: st-gallen-st-gallen
+======================================================================
+
+######################################################################
+# GIOCATORE: andreas-raedergard-schjelderup
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andreas-raedergard-schjelderup (squadra: benfica-lisboa)
+Generato: 2026-07-28T15:42:24.050060Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-21 | SLB vs AVS | primeira-liga-pt | score=61.9 | peso=0.445
+  2026-02-25 | RMA vs SLB | uefa-champions-league | score=49.9 | peso=0.472
+  2026-03-02 | GIL vs SLB | primeira-liga-pt | score=60.0 | peso=0.500
+  2026-03-08 | SLB vs POR | primeira-liga-pt | score=74.9 | peso=0.530
+  2026-03-14 | ARO vs SLB | primeira-liga-pt | score=81.6 | peso=0.561
+  2026-03-21 | SLB vs VIG | primeira-liga-pt | score=55.7 | peso=0.595
+  2026-03-27 | ? vs ? | friendlies | score=76.4 | peso=0.630
+  2026-04-06 | CSP vs SLB | primeira-liga-pt | score=73.6 | peso=0.667
+  2026-04-12 | SLB vs NAC | primeira-liga-pt | score=77.5 | peso=0.707
+  2026-04-19 | SCP vs SLB | primeira-liga-pt | score=60.0 | peso=0.749
+  2026-05-02 | FAM vs SLB | primeira-liga-pt | score=82.9 | peso=0.794
+  2026-05-11 | SLB vs BRA | primeira-liga-pt | score=83.6 | peso=0.841
+  2026-05-16 | EST vs SLB | primeira-liga-pt | score=40.2 | peso=0.891
+  2026-06-26 | ? vs ? | global-cup | score=71.7 | peso=0.944
+  2026-07-11 | ? vs ? | global-cup | score=70.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 68.48
+  di cui Punteggio decisivo (level_score) medio: 54.95 | Punteggio complessivo (granulari) medio: 13.53 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 6.96 (delta +1.53) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 12.78
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 55.7 - 81.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.43 (differenza: +3.35)
+Media score in casa: 70.72 | Media score fuori casa: 64.03
+Fattore casa/trasferta applicato: 0.986 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.9
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.865
+Fattore falli (casa/trasferta, da dati reali): 1.045
+Fattore duelli (casa/trasferta, da dati reali): 0.982
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.041
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.040
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.027
+Fattore trend (media ultime 5: 69.8 vs media ultime 10: 69.2): 1.009
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T19:00
+Casa: SL Benfica | Trasferta: FC Sankt Gallen 1879
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 0.0 (range 0.0 - 13.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 68.23
+Punteggio REALE ottenuto in quella partita: 70.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +2.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.9    76.4    +16.5    15.5        NO
+   7        7      80.6    73.6     -7.0    15.5        SI
+   8        8      86.1    77.5     -8.6    14.7        SI
+   9        9      48.6    60.0    +11.4    14.5        SI
+  10       10      56.8    82.9    +26.1    14.2        NO
+  11       11      69.6    83.6    +14.0    15.0        SI
+  12       12      74.3    40.2    -34.1    15.4        NO
+  13       13      61.1    71.7    +10.6    19.8        SI
+  14       14      60.9    70.8     +9.9    18.8        SI
+
+MAE (errore assoluto medio): 15.36
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
