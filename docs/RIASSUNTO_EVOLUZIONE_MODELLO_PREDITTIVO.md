@@ -3185,3 +3185,16 @@ chiamate di predizione, non ancora testato a questo grado di parallelismo).
 (`.github/workflows/formazione_giornata.yml`, `discovery_fixture.py`) e `git revert`/`checkout` dei
 commit col messaggio "TEST v2" / "6 job discovery" per tornare alla versione a 3 job (30.I),
 oppure ulteriormente indietro al singolo job se anche quella andasse ripristinata.
+
+**ESITO (28/07, run 30349453664): FUNZIONA, tenuto attivo — ancora meglio del test precedente.**
+Run totale **5m18s** (da 7m9s del test a 3 job, 15m18s a inizio sessione). Discovery (6 job in
+parallelo): 1m14s. Predict (max-parallel 10): 3m37s (era ~5min). Formazione: 16s. **Zero 429 reali
+su tutti e 6 i job discovery**, nonostante il parallelismo raddoppiato rispetto al test precedente
+— conferma ulteriore che il rate limit di Sorare non è il collo di bottiglia condiviso temuto, o
+comunque non abbastanza da annullare il beneficio a questo livello di parallelismo. Nessun
+rollback necessario: split a 6 job + max-parallel 10 restano il meccanismo di produzione.
+
+**Non spingere oltre senza nuova richiesta esplicita dell'utente** — il rapporto tempo risparmiato
+per ulteriore split cala (discovery già a ~1 minuto, il margine residuo è nel job `predict`/
+`formazione`, non nella discovery), e il rischio di saturare il rate limit condiviso resta non
+zero anche se non ancora osservato.
