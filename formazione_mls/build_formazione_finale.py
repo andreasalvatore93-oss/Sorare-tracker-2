@@ -849,15 +849,29 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                     break
             if measure_gains and slot_label is not None and max_classic is not None:
                 # Guadagno di abilitare il classic PROPRIO in questo slot,
-                # tenendo tutti gli altri slot fissi a in_season-only: se il
-                # miglior candidato assoluto (in_season O classic, quello che
-                # verrebbe scelto con priorita' in_season) e' diverso dal
-                # miglior candidato in_season-only, la differenza di
-                # punteggio e' il valore di riservare qui lo slot classic.
+                # tenendo tutti gli altri slot fissi a in_season-only: e' la
+                # differenza fra il miglior candidato classic disponibile e il
+                # miglior candidato in_season disponibile per QUESTO slot.
+                #
+                # FIX (29/07, bug reale trovato dall'utente: Carles Gil classic
+                # -- 61pt -- restava fuori da una lineup dove NESSUNO slot
+                # aveva usato il budget classic, con Pep Biel -- 55pt -- e
+                # Mathias Laborda -- 53pt -- schierati al suo posto). Prima si
+                # confrontava `best_classic` con `candidates[0]` (il candidato
+                # dal punteggio piu' alto in assoluto, IGNORANDO se ha ancora
+                # copie disponibili): appena il candidato #1 di un ruolo
+                # risultava esaurito da una lineup precedente (frequente dalla
+                # 5a/6a lineup di un portafoglio in poi), `top is best_classic`
+                # falliva quasi sempre anche quando il miglior classic
+                # disponibile (es. Sebastian Berhalter, 2 copie classic mai
+                # esaurite) valeva chiaramente piu' del miglior in_season
+                # disponibile -- azzerando il gain di quello slot per un
+                # confronto con un giocatore ormai fuori pool, non con
+                # l'alternativa in_season reale. Il confronto corretto e'
+                # semplicemente best_classic vs best_in_season, senza scomodare
+                # candidates[0].
                 if best_in_season is not None and best_classic is not None:
-                    # il primo candidato in ordine (piu' alto punteggio) tra i due
-                    top = candidates[0] if candidates else None
-                    if top is best_classic and best_classic is not best_in_season:
+                    if best_classic is not best_in_season:
                         gains[slot_label] = best_classic['atteso'] - best_in_season['atteso']
                     else:
                         gains[slot_label] = 0
