@@ -1036,7 +1036,14 @@ def compute_score_atteso_fwd(scores, is_home_flags,
         + (shrink_k / (n + shrink_k)) * media_ruolo_prior
     )
     fattore_casa_trasferta = compute_split_factor(residual_values, is_home_flags, target_is_home)
-    score_atteso = p_gioca * grezzo_nuovo_corretto * fattore_casa_trasferta
+    # RIMOSSO p_gioca da score_atteso (28/07, richiesta esplicita utente): la
+    # probabilita' di scendere in campo non deve deprimere il punteggio
+    # proiettato di un giocatore -- score_atteso e' "quanto rende SE gioca",
+    # non un valore atteso ponderato per l'incertezza sulla presenza (che va
+    # gestita altrove, es. il filtro secco starterOdds/MIN_STARTER_ODDS a
+    # monte, non come moltiplicatore continuo che penalizza chi ha uno
+    # storico di assenze irrilevanti, es. amichevoli/nazionale).
+    score_atteso = grezzo_nuovo_corretto * fattore_casa_trasferta
 
     # --- Stadio D (FWD): sola correzione "Passaggio" condizionata per venue ---
     if not use_stadio_d:
@@ -1044,7 +1051,7 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     fallback_passaggio = weighted_mean(passing_values, weights)
     media_passaggio_condizionata_venue = media_condizionata(
         passing_values, weights, is_home_flags, target_is_home, fallback_passaggio)
-    score_atteso += p_gioca * (media_passaggio_condizionata_venue - fallback_passaggio)
+    score_atteso += (media_passaggio_condizionata_venue - fallback_passaggio)
     return score_atteso
 
 
@@ -1441,7 +1448,24 @@ def build_prediction(player_slug):
         (n / (n + SHRINK_K_OUTLIER_FWD)) * grezzo_nuovo
         + (SHRINK_K_OUTLIER_FWD / (n + SHRINK_K_OUTLIER_FWD)) * MEDIA_RUOLO_FWD_PRIOR
     )
-    score_atteso = p_gioca * grezzo_nuovo_corretto * fattore_casa_trasferta
+    # RIMOSSO p_gioca da score_atteso (28/07, richiesta esplicita utente):
+    # vedi commento esteso nella gemella compute_score_atteso_fwd sopra.
+    score_atteso = grezzo_nuovo_corretto * fattore_casa_trasferta
+
+    # --- SCORE DI ORDINAMENTO (28/07, sezione 27.C del RIASSUNTO, estesa a FWD
+    # dopo misurazione dedicata): stesso principio gia' in produzione per DEF
+    # -- lo shrinkage minimizza il MAE del singolo punteggio ma comprime le
+    # differenze fra giocatori (il segnale che serve per SCEGLIERE chi
+    # schierare), quindi distorce la classifica del consiglio. Misurato con
+    # formazione_mls/diagnostics/selection_quality.py (variante FWD, 74
+    # giornate reali/15 campionati): shrink_k=5 (produzione) cattura il 19.9%
+    # del lift caso->oracolo, shrink_k=0 il 22.8% (+0.48 pt/giornata) --
+    # stessa direzione e ordine di grandezza del beneficio gia' confermato su
+    # DEF. Stessa funzione condivisa, unico parametro cambiato: shrink_k=0.
+    score_ordinamento = compute_score_atteso_fwd(
+        scores, is_home_flags, residual_values, granulari_values,
+        pos_decisive_values, neg_decisive_values, passing_values,
+        target_is_home=next_is_home, p_gioca=p_gioca, shrink_k=0.0)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
@@ -1459,7 +1483,7 @@ def build_prediction(player_slug):
     media_passaggio_condizionata_venue = media_condizionata(
         passing_values, weights, is_home_flags, next_is_home, weighted_mean(passing_values, weights))
     delta_passaggio_venue = media_passaggio_condizionata_venue - weighted_mean(passing_values, weights)
-    score_atteso += p_gioca * delta_passaggio_venue
+    score_atteso += delta_passaggio_venue
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
@@ -1567,6 +1591,7 @@ def build_prediction(player_slug):
         'p_gioca': p_gioca,
         'p_source': p_source,
         'score_atteso': score_atteso,
+        'score_ordinamento': score_ordinamento,
         'range_low': range_low,
         'range_high': range_high,
         'next_game': next_game,
@@ -1662,6 +1687,9 @@ def format_output(result):
     lines.append(f"Score atteso: {result['score_atteso']:.1f} "
                  f"(range {result['range_low']:.1f} - {result['range_high']:.1f}, "
                  f"Stadio C: percentili pesati ri-centrati sull'avversario/trend)")
+    if result.get('score_ordinamento') is not None:
+        lines.append(f"Score di ordinamento (senza shrinkage, usato SOLO per la "
+                     f"classifica del consiglio): {result['score_ordinamento']:.1f}")
 
     lines.append("")
     lines.append("--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---")
@@ -1825,7 +1853,8 @@ def main():
         all_sections.append(f"\n{'#'*70}\n# GIOCATORE: {slug}\n{'#'*70}\n" + output_text)
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_low'),
                               result.get('range_high'), result.get('target_competition', ''),
-                              result.get('player_team_slug'), result.get('next_opponent_team_slug')))
+                              result.get('player_team_slug'), result.get('next_opponent_team_slug'),
+                              result.get('score_ordinamento')))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} "
             f"(range {result.get('range_low'):.1f} - {result.get('range_high'):.1f})")
 
@@ -1853,11 +1882,17 @@ def main():
     # d'occhio, come richiesto dall'utente.
     ok_rows = [r for r in summary_rows if r[1] == 'OK']
     other_rows = [r for r in summary_rows if r[1] != 'OK']
-    ok_rows.sort(key=lambda r: r[2] if r[2] is not None else -1, reverse=True)
+    # ORDINAMENTO (28/07, sezione 27.C, estesa da DEF a FWD dopo misurazione
+    # dedicata -- vedi commento su score_ordinamento in compute_score_atteso_fwd):
+    # si ordina per score_ordinamento (senza shrinkage), non per score_atteso.
+    # Il numero MOSTRATO resta score_atteso. Fallback su score_atteso se assente
+    # (file generati prima di questo fix).
+    ok_rows.sort(key=lambda r: (r[8] if len(r) > 8 and r[8] is not None
+                                else (r[2] if r[2] is not None else -1)), reverse=True)
 
     summary_lines = []
     summary_lines.append("=" * 70)
-    summary_lines.append("CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE")
+    summary_lines.append("CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)")
     summary_lines.append(f"Generato: {datetime.datetime.utcnow().isoformat()}Z")
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")

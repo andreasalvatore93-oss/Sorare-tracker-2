@@ -1405,7 +1405,7 @@ def build_prediction(player_slug):
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
-    score_atteso = (p_gioca * (level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
+    score_atteso = ((level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
                     * fattore_casa_trasferta)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --

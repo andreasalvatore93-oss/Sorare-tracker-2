@@ -1330,7 +1330,7 @@ def build_prediction(player_slug):
     # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
     # Il fattore resta calcolato sopra e nel result dict solo a scopo
     # diagnostico/di visualizzazione nell'output.
-    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
+    score_atteso = (media_pesata * fattore_casa_trasferta
                     * fattore_trend)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --

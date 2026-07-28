@@ -1314,7 +1314,7 @@ def build_prediction(player_slug):
     # avversario (con QUALSIASI metrica) aggiunge piu' rumore che segnale.
     # Il fattore resta calcolato sopra e nel result dict solo a scopo
     # diagnostico/di visualizzazione nell'output.
-    score_atteso = (p_gioca * media_pesata * fattore_casa_trasferta
+    score_atteso = (media_pesata * fattore_casa_trasferta
                     * fattore_trend)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
@@ -1359,7 +1359,7 @@ def build_prediction(player_slug):
     (media_clean_sheet_condizionata_venue, media_clean_sheet_condizionata_avversario,
      delta_clean_sheet_venue, delta_clean_sheet_avversario) = _condiziona_venue_avversario(clean_sheet_values)
 
-    score_atteso += p_gioca * (delta_gol_subiti_venue + delta_gol_subiti_avversario
+    score_atteso += (delta_gol_subiti_venue + delta_gol_subiti_avversario
                                 + delta_passaggio_venue + delta_passaggio_avversario
                                 + delta_clean_sheet_venue + delta_clean_sheet_avversario)
 

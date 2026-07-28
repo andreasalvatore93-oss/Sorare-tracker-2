@@ -1320,7 +1320,12 @@ def build_prediction(player_slug):
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
-    score_atteso = (p_gioca * (level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
+    # RIMOSSO p_gioca da score_atteso (28/07, richiesta esplicita utente): la
+    # probabilita' di scendere in campo non deve deprimere il punteggio
+    # proiettato -- score_atteso e' "quanto rende SE gioca", il rischio di
+    # assenza va gestito come filtro secco (starterOdds/MIN_STARTER_ODDS),
+    # non come sconto continuo sul punteggio.
+    score_atteso = ((level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
                     * fattore_casa_trasferta)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) ---
@@ -1366,7 +1371,7 @@ def build_prediction(player_slug):
     (media_gol_subiti_condizionata_venue, media_gol_subiti_condizionata_avversario,
      delta_gol_subiti_venue, delta_gol_subiti_avversario) = _condiziona_venue_avversario(goals_conceded_values)
 
-    score_atteso += p_gioca * (delta_offensivo_venue + delta_offensivo_avversario
+    score_atteso += (delta_offensivo_venue + delta_offensivo_avversario
                                 + delta_passaggio_venue + delta_passaggio_avversario
                                 + delta_gol_subiti_venue + delta_gol_subiti_avversario)
 

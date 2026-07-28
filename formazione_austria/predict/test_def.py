@@ -1102,7 +1102,7 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
         + (shrink_k / (n + shrink_k)) * media_ruolo_prior
     )
     fattore_casa_trasferta = compute_split_factor(residual_values, is_home_flags, target_is_home)
-    score_atteso = p_gioca * grezzo_nuovo_corretto * fattore_casa_trasferta
+    score_atteso = grezzo_nuovo_corretto * fattore_casa_trasferta
 
     # --- Stadio D: correzioni granulari condizionate venue + forza avversario ---
     # use_stadio_d=False serve SOLO al grid di calibrazione (misura quanto lo
@@ -1124,7 +1124,7 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
         cond_avv = media_condizionata(values, weights, opponent_forte_flags, next_forte, fallback)
         return (cond_venue - fallback) + (cond_avv - fallback)
 
-    score_atteso += p_gioca * (
+    score_atteso += (
         _delta_venue_avversario(goals_conceded_values)
         + _delta_venue_avversario(passing_values)
         + _delta_venue_avversario(clean_sheet_values)
@@ -1592,7 +1592,7 @@ def build_prediction(player_slug):
         (n / (n + SHRINK_K_OUTLIER_DEF)) * grezzo_nuovo
         + (SHRINK_K_OUTLIER_DEF / (n + SHRINK_K_OUTLIER_DEF)) * MEDIA_RUOLO_DEF_PRIOR
     )
-    score_atteso = p_gioca * grezzo_nuovo_corretto * fattore_casa_trasferta
+    score_atteso = grezzo_nuovo_corretto * fattore_casa_trasferta
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
@@ -1636,7 +1636,7 @@ def build_prediction(player_slug):
     (media_clean_sheet_condizionata_venue, media_clean_sheet_condizionata_avversario,
      delta_clean_sheet_venue, delta_clean_sheet_avversario) = _condiziona_venue_avversario(clean_sheet_values)
 
-    score_atteso += p_gioca * (delta_gol_subiti_venue + delta_gol_subiti_avversario
+    score_atteso += (delta_gol_subiti_venue + delta_gol_subiti_avversario
                                 + delta_passaggio_venue + delta_passaggio_avversario
                                 + delta_clean_sheet_venue + delta_clean_sheet_avversario)
 
