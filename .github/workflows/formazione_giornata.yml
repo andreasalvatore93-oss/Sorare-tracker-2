@@ -87,7 +87,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'gk'
-          DISCOVERY_LEAGUE_SHARD: '0:4'
+          DISCOVERY_LEAGUE_SHARD: '0:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -124,7 +124,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'gk'
-          DISCOVERY_LEAGUE_SHARD: '1:4'
+          DISCOVERY_LEAGUE_SHARD: '1:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -161,7 +161,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'gk'
-          DISCOVERY_LEAGUE_SHARD: '2:4'
+          DISCOVERY_LEAGUE_SHARD: '2:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -198,7 +198,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'gk'
-          DISCOVERY_LEAGUE_SHARD: '3:4'
+          DISCOVERY_LEAGUE_SHARD: '3:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -208,6 +208,43 @@ jobs:
           git add formazione_*/output/*_gk_discovery/ || true
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Formazione giornata: slug eleggibili (GK quota 4/4)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+  discovery_gk_4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_ROLES: 'gk'
+          DISCOVERY_LEAGUE_SHARD: '4:5'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_*/output/*_gk_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: slug eleggibili (GK quota 5/5)"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -235,7 +272,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'def'
-          DISCOVERY_LEAGUE_SHARD: '0:8'
+          DISCOVERY_LEAGUE_SHARD: '0:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -272,7 +309,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'def'
-          DISCOVERY_LEAGUE_SHARD: '1:8'
+          DISCOVERY_LEAGUE_SHARD: '1:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -309,7 +346,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'def'
-          DISCOVERY_LEAGUE_SHARD: '2:8'
+          DISCOVERY_LEAGUE_SHARD: '2:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -346,7 +383,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'def'
-          DISCOVERY_LEAGUE_SHARD: '3:8'
+          DISCOVERY_LEAGUE_SHARD: '3:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -383,7 +420,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'def'
-          DISCOVERY_LEAGUE_SHARD: '4:8'
+          DISCOVERY_LEAGUE_SHARD: '4:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -420,7 +457,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'def'
-          DISCOVERY_LEAGUE_SHARD: '5:8'
+          DISCOVERY_LEAGUE_SHARD: '5:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -457,7 +494,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'def'
-          DISCOVERY_LEAGUE_SHARD: '6:8'
+          DISCOVERY_LEAGUE_SHARD: '6:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -494,7 +531,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'def'
-          DISCOVERY_LEAGUE_SHARD: '7:8'
+          DISCOVERY_LEAGUE_SHARD: '7:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -504,6 +541,43 @@ jobs:
           git add formazione_*/output/*_def_discovery/ || true
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Formazione giornata: slug eleggibili (DEF quota 8/8)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+  discovery_def_8:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_ROLES: 'def'
+          DISCOVERY_LEAGUE_SHARD: '8:9'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_*/output/*_def_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: slug eleggibili (DEF quota 9/9)"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -531,7 +605,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'mid'
-          DISCOVERY_LEAGUE_SHARD: '0:8'
+          DISCOVERY_LEAGUE_SHARD: '0:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -568,7 +642,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'mid'
-          DISCOVERY_LEAGUE_SHARD: '1:8'
+          DISCOVERY_LEAGUE_SHARD: '1:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -605,7 +679,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'mid'
-          DISCOVERY_LEAGUE_SHARD: '2:8'
+          DISCOVERY_LEAGUE_SHARD: '2:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -642,7 +716,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'mid'
-          DISCOVERY_LEAGUE_SHARD: '3:8'
+          DISCOVERY_LEAGUE_SHARD: '3:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -679,7 +753,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'mid'
-          DISCOVERY_LEAGUE_SHARD: '4:8'
+          DISCOVERY_LEAGUE_SHARD: '4:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -716,7 +790,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'mid'
-          DISCOVERY_LEAGUE_SHARD: '5:8'
+          DISCOVERY_LEAGUE_SHARD: '5:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -753,7 +827,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'mid'
-          DISCOVERY_LEAGUE_SHARD: '6:8'
+          DISCOVERY_LEAGUE_SHARD: '6:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -790,7 +864,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'mid'
-          DISCOVERY_LEAGUE_SHARD: '7:8'
+          DISCOVERY_LEAGUE_SHARD: '7:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -800,6 +874,43 @@ jobs:
           git add formazione_*/output/*_mid_discovery/ || true
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Formazione giornata: slug eleggibili (MID quota 8/8)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+  discovery_mid_8:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_ROLES: 'mid'
+          DISCOVERY_LEAGUE_SHARD: '8:9'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_*/output/*_mid_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: slug eleggibili (MID quota 9/9)"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -827,7 +938,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'fwd'
-          DISCOVERY_LEAGUE_SHARD: '0:4'
+          DISCOVERY_LEAGUE_SHARD: '0:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -864,7 +975,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'fwd'
-          DISCOVERY_LEAGUE_SHARD: '1:4'
+          DISCOVERY_LEAGUE_SHARD: '1:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -901,7 +1012,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'fwd'
-          DISCOVERY_LEAGUE_SHARD: '2:4'
+          DISCOVERY_LEAGUE_SHARD: '2:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -938,7 +1049,7 @@ jobs:
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           DISCOVERY_ROLES: 'fwd'
-          DISCOVERY_LEAGUE_SHARD: '3:4'
+          DISCOVERY_LEAGUE_SHARD: '3:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
       - if: always()
@@ -956,8 +1067,45 @@ jobs:
             git fetch origin main
             git merge --no-edit -X ours origin/main
           done
+  discovery_fwd_4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_ROLES: 'fwd'
+          DISCOVERY_LEAGUE_SHARD: '4:5'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_*/output/*_fwd_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata: slug eleggibili (FWD quota 5/5)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
   discovery_merge:
-    needs: [discovery_gk_0, discovery_gk_1, discovery_gk_2, discovery_gk_3, discovery_def_0, discovery_def_1, discovery_def_2, discovery_def_3, discovery_def_4, discovery_def_5, discovery_def_6, discovery_def_7, discovery_mid_0, discovery_mid_1, discovery_mid_2, discovery_mid_3, discovery_mid_4, discovery_mid_5, discovery_mid_6, discovery_mid_7, discovery_fwd_0, discovery_fwd_1, discovery_fwd_2, discovery_fwd_3]
+    needs: [discovery_gk_0, discovery_gk_1, discovery_gk_2, discovery_gk_3, discovery_gk_4, discovery_def_0, discovery_def_1, discovery_def_2, discovery_def_3, discovery_def_4, discovery_def_5, discovery_def_6, discovery_def_7, discovery_def_8, discovery_mid_0, discovery_mid_1, discovery_mid_2, discovery_mid_3, discovery_mid_4, discovery_mid_5, discovery_mid_6, discovery_mid_7, discovery_mid_8, discovery_fwd_0, discovery_fwd_1, discovery_fwd_2, discovery_fwd_3, discovery_fwd_4]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -968,32 +1116,36 @@ jobs:
       MATRICE_1: ${{ needs.discovery_gk_1.outputs.matrice }}
       MATRICE_2: ${{ needs.discovery_gk_2.outputs.matrice }}
       MATRICE_3: ${{ needs.discovery_gk_3.outputs.matrice }}
-      MATRICE_4: ${{ needs.discovery_def_0.outputs.matrice }}
-      MATRICE_5: ${{ needs.discovery_def_1.outputs.matrice }}
-      MATRICE_6: ${{ needs.discovery_def_2.outputs.matrice }}
-      MATRICE_7: ${{ needs.discovery_def_3.outputs.matrice }}
-      MATRICE_8: ${{ needs.discovery_def_4.outputs.matrice }}
-      MATRICE_9: ${{ needs.discovery_def_5.outputs.matrice }}
-      MATRICE_10: ${{ needs.discovery_def_6.outputs.matrice }}
-      MATRICE_11: ${{ needs.discovery_def_7.outputs.matrice }}
-      MATRICE_12: ${{ needs.discovery_mid_0.outputs.matrice }}
-      MATRICE_13: ${{ needs.discovery_mid_1.outputs.matrice }}
-      MATRICE_14: ${{ needs.discovery_mid_2.outputs.matrice }}
-      MATRICE_15: ${{ needs.discovery_mid_3.outputs.matrice }}
-      MATRICE_16: ${{ needs.discovery_mid_4.outputs.matrice }}
-      MATRICE_17: ${{ needs.discovery_mid_5.outputs.matrice }}
-      MATRICE_18: ${{ needs.discovery_mid_6.outputs.matrice }}
-      MATRICE_19: ${{ needs.discovery_mid_7.outputs.matrice }}
-      MATRICE_20: ${{ needs.discovery_fwd_0.outputs.matrice }}
-      MATRICE_21: ${{ needs.discovery_fwd_1.outputs.matrice }}
-      MATRICE_22: ${{ needs.discovery_fwd_2.outputs.matrice }}
-      MATRICE_23: ${{ needs.discovery_fwd_3.outputs.matrice }}
+      MATRICE_4: ${{ needs.discovery_gk_4.outputs.matrice }}
+      MATRICE_5: ${{ needs.discovery_def_0.outputs.matrice }}
+      MATRICE_6: ${{ needs.discovery_def_1.outputs.matrice }}
+      MATRICE_7: ${{ needs.discovery_def_2.outputs.matrice }}
+      MATRICE_8: ${{ needs.discovery_def_3.outputs.matrice }}
+      MATRICE_9: ${{ needs.discovery_def_4.outputs.matrice }}
+      MATRICE_10: ${{ needs.discovery_def_5.outputs.matrice }}
+      MATRICE_11: ${{ needs.discovery_def_6.outputs.matrice }}
+      MATRICE_12: ${{ needs.discovery_def_7.outputs.matrice }}
+      MATRICE_13: ${{ needs.discovery_def_8.outputs.matrice }}
+      MATRICE_14: ${{ needs.discovery_mid_0.outputs.matrice }}
+      MATRICE_15: ${{ needs.discovery_mid_1.outputs.matrice }}
+      MATRICE_16: ${{ needs.discovery_mid_2.outputs.matrice }}
+      MATRICE_17: ${{ needs.discovery_mid_3.outputs.matrice }}
+      MATRICE_18: ${{ needs.discovery_mid_4.outputs.matrice }}
+      MATRICE_19: ${{ needs.discovery_mid_5.outputs.matrice }}
+      MATRICE_20: ${{ needs.discovery_mid_6.outputs.matrice }}
+      MATRICE_21: ${{ needs.discovery_mid_7.outputs.matrice }}
+      MATRICE_22: ${{ needs.discovery_mid_8.outputs.matrice }}
+      MATRICE_23: ${{ needs.discovery_fwd_0.outputs.matrice }}
+      MATRICE_24: ${{ needs.discovery_fwd_1.outputs.matrice }}
+      MATRICE_25: ${{ needs.discovery_fwd_2.outputs.matrice }}
+      MATRICE_26: ${{ needs.discovery_fwd_3.outputs.matrice }}
+      MATRICE_27: ${{ needs.discovery_fwd_4.outputs.matrice }}
     steps:
       - id: merge
         run: |
           python3 -c "
           import json, os
-          names = ['MATRICE_0','MATRICE_1','MATRICE_2','MATRICE_3','MATRICE_4','MATRICE_5','MATRICE_6','MATRICE_7','MATRICE_8','MATRICE_9','MATRICE_10','MATRICE_11','MATRICE_12','MATRICE_13','MATRICE_14','MATRICE_15','MATRICE_16','MATRICE_17','MATRICE_18','MATRICE_19','MATRICE_20','MATRICE_21','MATRICE_22','MATRICE_23']
+          names = ['MATRICE_0', 'MATRICE_1', 'MATRICE_2', 'MATRICE_3', 'MATRICE_4', 'MATRICE_5', 'MATRICE_6', 'MATRICE_7', 'MATRICE_8', 'MATRICE_9', 'MATRICE_10', 'MATRICE_11', 'MATRICE_12', 'MATRICE_13', 'MATRICE_14', 'MATRICE_15', 'MATRICE_16', 'MATRICE_17', 'MATRICE_18', 'MATRICE_19', 'MATRICE_20', 'MATRICE_21', 'MATRICE_22', 'MATRICE_23', 'MATRICE_24', 'MATRICE_25', 'MATRICE_26', 'MATRICE_27']
           parts = [json.loads(os.environ.get(v) or '[]') for v in names]
           combined = [x for p in parts for x in p]
           print('matrice=' + json.dumps(combined, separators=(',', ':')))
@@ -1006,7 +1158,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      max-parallel: 28
+      max-parallel: 32
       matrix:
         combo: ${{ fromJson(needs.discovery_merge.outputs.matrice) }}
     env:
