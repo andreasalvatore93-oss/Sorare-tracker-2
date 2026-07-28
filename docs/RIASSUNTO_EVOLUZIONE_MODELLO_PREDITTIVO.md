@@ -2792,3 +2792,156 @@ Tutto su `main`. Script nuovi principali: `discovery_fixture.py`, `audit_leghe_p
 Workflow principali: **`formazione_giornata.yml`** (quello da usare per schierare),
 `audit_leghe.yml`, `diagnostica_slug.yml`, `discovery_fixture.yml`, più i
 `<lega>_completa.yml` per l'uso singolo per campionato.
+
+---
+
+# 29. Sessione 28/07/2026 — report HTML arricchito (L10/nome/esclusi/alternative/drag&drop) + apertura tema "portafoglio In Season"
+
+**Leggi questa sezione per intero, è l'HANDOFF corrente.** Continua direttamente dalla 28.
+L'utente ha chiesto di scrivere qui il riassunto e proseguire in una NUOVA chat.
+
+## 29.A — Modifiche al report HTML (tutte su main, verificate)
+
+Punto di partenza: l'utente guardava l'ultima formazione generata col modello aggiornato e ha
+chiesto una serie di migliorie al report HTML di `generatore_formazioni/build_formazione_globale.py`
+(che riusa `formazione_mls/build_formazione_finale.py` come libreria, `bff` nel codice).
+
+1. **L10 mostrato su ogni carta** (piccolo, sotto il range pt). **Scoperta importante**: il dato
+   L10/copie possedute (`player_card_counts.json`) non veniva più scritto da nessuno script dopo il
+   passaggio a `discovery_fixture.py` (la vecchia discovery per-campionato che lo scriveva non gira
+   più). **Fix**: `discovery_fixture.py` ora interroga L10 (`lastTenPlayedAvgScore`) con UNA query
+   in più per giocatore, ma SOLO sui sopravvissuti finali (dopo finestra+odds, ~50-60 giocatori),
+   non su tutto il pool posseduto — costo reale misurato: **+40 secondi** su discovery, non i 15
+   minuti temuti (quel rallentamento era dovuto a una run parallela concorrente sullo stesso account
+   Sorare, non alla query). **Verificato con un confronto pulito**: run senza L10 11m37s, run con
+   L10 senza concorrenza 11m36s — praticamente identico. **Tenere la query, non è il collo di
+   bottiglia.**
+2. **Nome reale del giocatore (displayName Sorare)** al posto dello slug title-case (l'utente non
+   riconosceva alcuni giocatori dallo slug). `displayName` era già fetchato da `discovery_fixture.py`
+   ma scartato — ora persistito in un nuovo file `player_names.json` per lega/ruolo, caricato da
+   `CardPool` (metodo `display_name(slug)`, fallback allo slug se manca).
+3. **Conteggio candidati esclusi**: sotto l'intestazione, mostra quanti giocatori idonei per
+   starter-odds/finestra NON sono finiti in nessuna formazione, totale e per ruolo (`CardPool.
+   used_slugs()`).
+4. **Pannello "alternative"** a fianco di ogni formazione: giocatori con punteggio vicino, PESCATI
+   SOLO da altre formazioni già generate in questa run (scelta deliberata: sistema chiuso, coerente
+   col drag&drop — vedi 29.B). Round-robin per slot (bug iniziale corretto: un top-N globale per
+   vicinanza lasciava scoperti gli slot con meno candidati vicini, es. il ruolo FWD restava senza
+   alternativa se MID ne aveva di più vicine).
+5. **Drag&drop**: ogni pcard e ogni chip "alternativa" sono trascinabili; sganciando un'alternativa
+   su una pcard dello STESSO ruolo li scambia (puro swap di HTML/attributi `data-*` già pronti lato
+   Python, zero ricalcolo server). Il totale e il bonus capitano si aggiornano via JS; **limite
+   noto**: le note L10/cap-260/anti-stack sotto ogni formazione restano quelle della generazione,
+   NON si aggiornano con lo scambio. Nessuna persistenza (refresh = torna allo stato generato).
+6. **Layout carte**: dopo due tentativi scartati dall'utente (righe per ruolo raggruppate;
+   disposizione a diagonale GK-DEF-MID-EXTRA/FWD stile "schieramento") si è tornati alla **fila
+   originale** (ordine di formazione, scroll orizzontale se serve). **Le carte sono rimaste più
+   piccole** (104px invece di 152px, richiesta separata e confermata, non ritirata).
+7. **Refuso corretto**: il footer non dice più "Fusione MLS + K League" ma conta dinamicamente
+   `len(LEAGUES)` (25 oggi).
+
+**NON ancora verificato dal vivo**: il drag&drop è stato controllato staticamente (dati/HTML
+corretti via script Python + ispezione DOM) ma MAI trascinato per davvero in un browser. Da provare
+alla prossima occasione.
+
+**Nota su un artefatto di test**: durante la verifica visiva, il browser di anteprima ha mostrato
+per un istante dati incrociati fra due formazioni (stesso portiere/difensore duplicati in due
+lineup diverse) — **era un problema di cache del browser di anteprima, NON un bug nel codice**:
+verificato leggendo l'HTML grezzo con `grep`, i dati erano sempre corretti. Se ricapita un
+disallineamento fra quello che vedi a schermo e quello che pensi di aver generato, controllare
+prima il file sorgente prima di sospettare un bug.
+
+## 29.B — Perché le alternative pescano solo da altre formazioni generate (non dal pool intero)
+
+Discusso esplicitamente con l'utente: pescare dal pool eleggibile completo darebbe alternative più
+pertinenti, ma romperebbe l'assunzione "sistema chiuso" su cui si regge il drag&drop (nessun
+controllo di disponibilità copie in JS). **Deciso di tenerlo chiuso**: un giocatore mai piazzato in
+nessuna lineup generata probabilmente non era comunque tra i migliori disponibili.
+
+## 29.C — Query L10 aggiunta a `discovery_fixture.py`: dettaglio tecnico
+
+Nuova funzione `l10_singola(slug)` (query `lastTenPlayedAvgScore`, stesso pattern di
+`odds_singola`), chiamata SOLO nel loop finale sui sopravvissuti (dopo il filtro finestra+odds).
+Scrive `player_card_counts.json` con `{'in_season': 1, 'classic': 0, 'l10': valore}` per ogni
+sopravvissuto — **attenzione se si tocca questo file in futuro**: il valore `in_season: 1` è
+un'assunzione esplicita (non tracciamo le copie reali in questa pipeline veloce), necessaria perché
+includere lo slug nel file SENZA quel campo farebbe leggere 0 copie possedute a `CardPool` (bug
+potenziale, evitato scrivendolo sempre).
+
+## 29.D — Il tema aperto: "portafoglio" In Season, corretta un'assunzione della sez. 27.J
+
+**Meccanica di gioco chiarita dall'utente (fondamentale, non derivabile dal codice)**: In Season
+non è "il tuo punteggio contro un numero fisso, vinci in proporzione" come si pensava (sez. 27.J/
+28.G) — è **"schieri fino a 6 formazioni (o 5, o quante vuoi), se ANCHE SOLO UNA supera il target
+della giornata (es. 350 pt) vinci il premio"**. È un "massimo di N tentativi indipendenti", non un
+punteggio singolo. Questo capovolge la conclusione precedente ("la varianza non serve in In Season,
+solo il valore atteso conta") — **con premio a soglia raggiunta da ALMENO UNA delle N formazioni,
+la varianza torna rilevante**, esattamente come per Arena/All Stars ma con un meccanismo diverso
+(max di N tentativi, non un taglio su un campo di manager).
+
+**Due leve distinte identificate** (nessuna ancora implementata, solo discusse):
+1. **Varianza DENTRO ogni formazione** (sinergia same-team GK+DEF/DEF+DEF/ecc., già misurata e già
+   implementata per Arena/All Stars via `variance_mode` — vedi `GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA`/
+   `TEAMMATE_SYNERGY_BONUS_VARIANCE` in `formazione_mls/build_formazione_finale.py`): oggi
+   `VARIANCE_MODE_TYPES` in `generatore_formazioni/build_formazione_globale.py` NON include
+   `MLS_IN_SEASON`/`KLEAGUE_IN_SEASON` — quindi questo bonus forte è spento per In Season. **Verificato
+   nel codice** (l'utente ricordava giusto): esiste già un nudge PICCOLO (`POSITIVE_SYNERGY_BONUS=3`,
+   non `GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA=8`) applicato alla PRIMA formazione In Season di ogni
+   lega (quando se ne chiedono 2+, dalla seconda in poi `apply_positive_synergy=False`, "greedy
+   puro" — vedi `in_season_multi` in `generate_lineups_for_type`). Non è quindi la versione forte
+   da Arena, solo quella soft preesistente.
+2. **Decorrelazione TRA le N formazioni** (idea nuova, mai implementata): evitare di riusare la
+   STESSA partita reale (stessa coppia squadra-avversario) in più di una delle N formazioni della
+   giornata, per rendere i "tentativi" il più indipendenti possibile (se 2 formazioni condividono la
+   partita e quella va male, falliscono insieme). Meccanismo proposto: tracciare, mentre si generano
+   le N formazioni in sequenza, quali partite reali sono gia' "occupate" e penalizzare (soft, non
+   escludere) i candidati della stessa partita nelle formazioni successive — stesso pattern di
+   `apply_stack_guard`/`ANTI_SYNERGY_PENALTY` già in uso.
+
+**Anti-sinergia cross-team estesa** (backlog punto 3 della sez. 28.H, rimisurata 28/07 su 25
+campionati): chiarito che "solo GK-vs-attaccante" della descrizione precedente era IMPRECISO — il
+codice oggi penalizza già MID **e** FWD avversari del portiere (`role in ('MID','FWD')` in
+`synergy_sort_key`). Quello che manca davvero: **def-def, mid-mid, def-mid, def-fwd, fwd-mid**
+(tutte ora stabili in split-half sui 25 campionati, vedi sez. 28.H punto 3). Implementarle
+richiederebbe tracciare la squadra di OGNI giocatore già scelto nella formazione (non solo il
+portiere) — un'estensione reale di `build_one_lineup`, non una riga in più.
+
+**L'utente aveva proposto un compromesso più semplice** (forzare tutta questa logica su 1 sola
+delle 6 formazioni In Season, le altre 5 invariate) **ma l'ha ritirato** dopo la spiegazione sopra
+("no no la mia era solo un'idea, esploriamo la tua direzione") a favore della decorrelazione su
+TUTTE le N, non concentrata su una sola.
+
+### Prossimi passi (in ordine, da scegliere insieme, NON implementare senza conferma)
+
+1. **Verificare se il premio In Season è davvero "soglia singola, basta 1 su N"** come descritto
+   dall'utente (sembra già confermato dalla sua descrizione, ma non c'è uno screenshot Sorare
+   diretto in questa sessione — utile controllarlo se emergono dubbi).
+2. **Decidere l'implementazione della decorrelazione tra formazioni** (punto 2 sopra): il pezzo
+   nuovo, probabilmente la leva più forte. Serve progettare come tracciare "partite reali già
+   usate" attraverso le N formazioni In Season generate in sequenza (stesso schema di
+   `captained_slugs` in `generate_lineups_for_type`, ma per coppia squadra-avversario invece che
+   per slug).
+3. **Decidere se accendere la sinergia same-team "forte" (variance-mode) anche per In Season**
+   (punto 1 sopra) — probabilmente insieme al punto 2, non da solo (la sola sinergia dentro una
+   formazione non aiuta se le N formazioni sono comunque tutte correlate tra loro sulle stesse
+   partite).
+4. Poi tornare al backlog rimasto della sez. 28.H: `formazione_resto_mondo` (in attesa che l'utente
+   verifichi se gioca quella competizione), leghe mancanti, scansione secret prima di rendere
+   privato il repo (quest'ultima esplicitamente scartata "per ora" in questa sessione).
+5. **Testare il drag&drop dal vivo** in un browser (mai fatto, solo verificato staticamente — vedi
+   29.A).
+
+## 29.E — Stato repo
+
+Tutto pushato su `main`. Nessun branch di lavoro separato aperto. Modifiche di oggi sparse su:
+`discovery_fixture.py` (routing senza-lega dalla sessione precedente + query L10 + player_names.json
++ player_card_counts.json), `formazione_mls/build_formazione_finale.py` (CardPool esteso con nomi/
+L10/tags factorizzati, drag&drop HTML/CSS/JS nel template condiviso), `generatore_formazioni/
+build_formazione_globale.py` (fase di generazione/rendering separata in due passate per il pannello
+alternative, conteggio esclusi, etichetta campionati dinamica).
+
+**Nota operativa**: durante la sessione sono girate in parallelo, nello stesso checkout locale,
+altre sessioni dell'utente (bot di trading `bot_profit`, lavoro su un altro campionato/predict) che
+hanno causato diversi conflitti di push — sempre risolti con `git stash push -u` (mai perso lavoro
+altrui) prima di `pull --rebase`+`push`. Se ricapita "cannot pull with rebase: unstaged changes" o
+push rifiutati, questo è il pattern giusto, non un errore da correggere diversamente.
