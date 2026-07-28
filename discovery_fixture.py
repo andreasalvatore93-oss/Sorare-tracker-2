@@ -33,15 +33,18 @@ MIN_ODDS = float(os.environ.get('MIN_STARTER_ODDS', '0.80'))
 GAMEWEEK = os.environ.get('GAMEWEEK', '').strip()
 FIXTURE_SLUG = os.environ.get('FIXTURE_SLUG', '').strip()
 
-# Pausa fra una chiamata odds/L10 e la successiva (28/07, richiesta esplicita
-# utente dopo un run reale -- 30336178358 -- che ha preso due 429 consecutivi
-# con Retry-After di 192s e 243s durante la discovery). Controllato sui log
-# di 4 run precedenti andati a buon fine: il 429 scatta comunque quasi ogni
-# volta col ritmo precedente di 0.2s (~5 richieste/s), con attese registrate
-# fino a 255s -- costa molto piu' di quanto si guadagni andando veloci.
-# Alzato a 0.5s (~2 richieste/s) per restare sotto la soglia che lo fa
-# scattare; nessun cambiamento a COSA viene interrogato o al filtro.
-ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.5'))
+# Pausa fra una chiamata odds+L10 (combinata, vedi odds_e_l10_singola) e la
+# successiva. Cronistoria (28/07): a 0.2s (~5 richieste/s) il 429 scattava
+# quasi sempre (run 30336178358 e altri 4 precedenti, attese fino a 255s);
+# alzato a 0.5s ma un run reale successivo (30337447148, prima di unire
+# odds+L10 in una chiamata sola) ha mostrato che il vero limite di Sorare e'
+# CUMULATIVO su tutto il job (~60-70 richieste/minuto), non per singolo
+# blocco -- 0.5s (~2 richieste/s teoriche) restava comunque sopra soglia.
+# Con la fusione odds+L10 il numero di chiamate e' dimezzato, ma la CADENZA
+# (chiamate/minuto) resta quella data da questo valore -- alzato a 0.7s per
+# restare sotto ~60/min con margine, invece di contare solo sulla riduzione
+# del volume totale.
+ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.7'))
 
 ROLE_BY_POSITION = {'Goalkeeper': 'gk', 'Defender': 'def',
                     'Midfielder': 'mid', 'Forward': 'fwd'}
@@ -119,9 +122,19 @@ query FixtureCards($userSlug: String!, $page: Int!, $pageSize: Int!,
 }
 """
 
-ODDS_QUERY = """
-query NextOdds($slug: String!) {
+# Combinata odds+L10 (28/07, richiesta esplicita utente: la discovery
+# impiegava 9+ minuti per via del rate limit di Sorare -- vedi ODDS_L10_SLEEP
+# sopra -- e la causa principale era 2 chiamate HTTP separate per ogni
+# sopravvissuto, odds e L10, sullo STESSO slug. Qui NON e' l'alias-su-piu'-
+# slug gia' verificato rifiutato da Sorare (vedi bot_profit.py/quality_filter
+# .py): e' un solo 'anyPlayer(slug)' con due gruppi di campi diversi per lo
+# STESSO giocatore, sintassi GraphQL normale senza alias duplicati -- dimezza
+# le chiamate totali (e quindi il rischio di 429) senza cambiare ne' i dati
+# richiesti ne' il filtro applicato dopo.
+ODDS_AND_L10_QUERY = """
+query NextOddsAndL10($slug: String!) {
   anyPlayer(slug: $slug) {
+    lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
     anyFutureGames(first: 3) {
       nodes {
         playerGameScore(playerSlug: $slug) {
@@ -139,22 +152,23 @@ query NextOdds($slug: String!) {
 """
 
 
-# L10 (28/07, richiesta esplicita utente): stessa query gia' usata da
-# generatore_formazioni/quality_filter.py per il filtro qualita'. Interrogata
-# SOLO per i sopravvissuti finali (dopo finestra+odds), mai per i ~2000
-# posseduti -- stesso principio del pre-filtro squadre in campo.
-L10_QUERY = """
-query PlayerL10($slug: String!) {
-  anyPlayer(slug: $slug) {
-    lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
-  }
-}
-"""
-
-
-def l10_singola(slug):
-    d = base.graphql_query(L10_QUERY, {"slug": slug}, operation_name="PlayerL10")
-    return (d.get('data') or {}).get('anyPlayer', {}).get('lastTenPlayedAvgScore')
+def odds_e_l10_singola(slug, inizio, fine):
+    """(odds, data, l10) in UNA sola chiamata HTTP invece di due (28/07):
+    stessa logica di filtro finestra di prima, solo unita in una query con
+    due gruppi di campi sullo stesso 'anyPlayer(slug)' -- dimezza le
+    richieste verso Sorare per ogni sopravvissuto."""
+    d = base.graphql_query(ODDS_AND_L10_QUERY, {"slug": slug}, operation_name="NextOddsAndL10")
+    p = (d.get('data') or {}).get('anyPlayer') or {}
+    l10 = p.get('lastTenPlayedAvgScore')
+    for n in ((p.get('anyFutureGames') or {}).get('nodes') or []):
+        pgs = n.get('playerGameScore') or {}
+        dt = (pgs.get('anyGame') or {}).get('date') or ''
+        if inizio and fine and not (inizio <= dt[:19] <= fine):
+            continue
+        o = ((pgs.get('anyPlayerGameStats') or {})
+             .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
+        return (o / 10000.0 if o is not None else None), dt, l10
+    return None, None, l10
 
 
 def log(msg):
@@ -182,25 +196,6 @@ def risolvi_fixture():
         disponibili = sorted({str(n.get('seasonGameWeek')) for n in nodes})
         log(f"ATTENZIONE: gameweek {GAMEWEEK} non fra quelle restituite: {disponibili}")
     return None
-
-
-def odds_singola(slug, inizio, fine):
-    """(odds, data) della prima partita del giocatore dentro la finestra.
-    NB: Sorare non consente il batching -- alias duplicati su anyPlayer sono
-    rifiutati ("Duplicated root field") e players(slugs:) non permette di
-    selezionare anyFutureGames. Per questo il pre-filtro sulle squadre che
-    giocano e' l'unica leva che conta sui tempi."""
-    d = base.graphql_query(ODDS_QUERY, {"slug": slug}, operation_name="NextOdds")
-    p = (d.get('data') or {}).get('anyPlayer') or {}
-    for n in ((p.get('anyFutureGames') or {}).get('nodes') or []):
-        pgs = n.get('playerGameScore') or {}
-        dt = (pgs.get('anyGame') or {}).get('date') or ''
-        if inizio and fine and not (inizio <= dt[:19] <= fine):
-            continue
-        o = ((pgs.get('anyPlayerGameStats') or {})
-             .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
-        return (o / 10000.0 if o is not None else None), dt
-    return None, None
 
 
 def main():
@@ -291,13 +286,16 @@ def main():
         elenco = sorted(lega_di)
         log(f"  {position}: {len(elenco)} giocatori di squadre che giocano "
             f"(su {s.get('nbHits')} carte possedute) -> interrogo le odds")
+        # odds + L10 in UNA chiamata per giocatore (28/07, vedi
+        # odds_e_l10_singola) invece di due passaggi separati -- dimezza il
+        # numero di round-trip verso Sorare rispetto a prima, stesso dato.
         risultati = {}
         for sl in elenco:
-            risultati[sl] = odds_singola(sl, inizio, fine)
+            risultati[sl] = odds_e_l10_singola(sl, inizio, fine)
             time.sleep(ODDS_L10_SLEEP)
         for slug in elenco:
             lega = lega_di[slug]
-            odds, data = risultati.get(slug, (None, None))
+            odds, data, l10 = risultati.get(slug, (None, None, None))
             if data is None:
                 esclusi_finestra += 1
                 continue
@@ -316,15 +314,14 @@ def main():
             per_lega_ruolo[dirname][role].add(slug)
             if nome_di.get(slug):
                 nomi_per_lega_ruolo[dirname][role][slug] = nome_di[slug]
-            # L10 (28/07): solo per i sopravvissuti finali, mai per l'intero
-            # pool. Copie possedute NON tracciate da questa pipeline veloce
-            # (a differenza delle vecchie discovery per-campionato): si tiene
-            # l'assunzione preesistente "1 copia in_season" gia' usata da
-            # CardPool come default per uno slug assente dal file -- qui va
-            # scritta esplicitamente perche' il file adesso include lo slug
-            # (per portarci l10), e altrimenti verrebbe letta come 0 copie.
-            l10 = l10_singola(slug)
-            time.sleep(ODDS_L10_SLEEP)
+            # L10 (28/07): gia' ottenuta assieme alle odds nella stessa
+            # chiamata sopra. Copie possedute NON tracciate da questa
+            # pipeline veloce (a differenza delle vecchie discovery per-
+            # campionato): si tiene l'assunzione preesistente "1 copia
+            # in_season" gia' usata da CardPool come default per uno slug
+            # assente dal file -- qui va scritta esplicitamente perche' il
+            # file adesso include lo slug (per portarci l10), e altrimenti
+            # verrebbe letta come 0 copie.
             entry = {'in_season': 1, 'classic': 0}
             if l10 is not None:
                 entry['l10'] = l10
