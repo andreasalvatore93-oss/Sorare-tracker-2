@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T16:10:11.104341Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) luke-brennan-2005-02-24: 7 pt attesi (0-8)
+   SQUADRA: atlanta-united-atlanta-georgia | AVVERSARIO: philadelphia-union-chester-pennsylvania
+======================================================================
+
+######################################################################
+# GIOCATORE: luke-brennan-2005-02-24
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luke-brennan-2005-02-24 (squadra: atlanta-united-atlanta-georgia)
+Generato: 2026-07-28T16:10:11.103570Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-26 | ATL vs SEA | mlspa | score=34.5 | peso=0.749
+  2025-08-24 | ATL vs TOR | mlspa | score=52.8 | peso=0.794
+  2025-08-31 | NSH vs ATL | mlspa | score=26.6 | peso=0.841
+  2025-10-18 | ATL vs DC | mlspa | score=26.0 | peso=0.891
+  2026-05-24 | CLB vs ATL | mlspa | score=31.6 | peso=0.944
+  2026-07-18 | NSH vs ATL | mlspa | score=34.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 34.07
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: -0.93 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 35.00 (delta -0.00)
+  Efficacia offensiva condizionata: delta venue -0.43, delta avversario +0.38 | Passaggio condizionato: delta venue -0.04, delta avversario -0.16 | Gol subiti condizionato: delta venue -0.13, delta avversario -0.14 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 8.64
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.0 - 34.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 3.22 (differenza: +5.42)
+Media score in casa: 37.77 | Media score fuori casa: 30.97
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.7
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.253
+Fattore falli (casa/trasferta, da dati reali): 0.974
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.963
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.978
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 0.988
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 21.43% (fonte: tasso di presenza storico (6/28))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Philadelphia Union | Trasferta: Atlanta United
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 7.2 (range 0.0 - 7.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 33.92
+Punteggio REALE ottenuto in quella partita: 34.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
