@@ -2945,3 +2945,140 @@ altre sessioni dell'utente (bot di trading `bot_profit`, lavoro su un altro camp
 hanno causato diversi conflitti di push — sempre risolti con `git stash push -u` (mai perso lavoro
 altrui) prima di `pull --rebase`+`push`. Se ricapita "cannot pull with rebase: unstaged changes" o
 push rifiutati, questo è il pattern giusto, non un errore da correggere diversamente.
+
+# 30. Sessione 28/07/2026 (pomeriggio) — velocizzazione run + bug L10 + filtro qualità rimosso + leghe mancanti
+
+## 30.A — Obiettivo di partenza
+
+L'utente ha notato che le run del generatore formazioni impiegavano 10-15 minuti anche con un pool
+di eleggibilità piccolo, e ha chiesto di analizzare l'intero processo (discovery → predict/consiglio
+→ generatore) per tagliare dove non serve, senza cambiare l'output. Durante l'analisi sono emersi
+anche due bug reali (non solo performance), scoperti guardando i log di run reali insieme
+all'utente — **mai per intuizione, sempre verificati su dati reali**, coerente con
+[[feedback_verifica_con_casi_reali_sorare]].
+
+## 30.B — Performance: dove andava il tempo, e cosa NON ha funzionato
+
+Causa dominante NON era il volume di query ma i **429 (rate limit Sorare)**: un singolo 429 con
+`Retry-After` costa 150-255 secondi, molto più di quanto si guadagni andando veloci. Verificato su
+5+ run reali che il rate limit è **cumulativo su tutto il job** (~60-70 richieste/minuto), non per
+singolo blocco.
+
+**Tentativo fallito e scartato**: batching via alias GraphQL multipli su `anyPlayer` per più slug
+diversi nella stessa query — RIFIUTATO dal server Sorare (`"Duplicated root field: anyPlayer"`),
+già documentato altrove nel repo (`scanners/bot_profit.py` riga ~491,
+`docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` riga 2659) ma riscoperto perché non controllato
+PRIMA di implementare — lezione: controllare sempre il repo per errori Sorare già documentati prima
+di provare un giro di ottimizzazione GraphQL.
+
+**Fix applicati, verificati su run reali**:
+- `generatore_formazioni/quality_filter.py`: cache su disco per giornata (L5/L10/L40 già
+  interrogati non vengono richiesti di nuovo tra run) — poi reso in gran parte superfluo dalla
+  rimozione del filtro qualità (30.D).
+- `discovery_fixture.py`: **unite in una query sola** le chiamate odds e L10 per lo stesso
+  giocatore (`odds_e_l10_singola`, sostituisce `odds_singola`+`l10_singola`) — non è l'alias
+  rifiutato sopra: è UN solo `anyPlayer(slug)` con due gruppi di campi per LO STESSO giocatore,
+  sintassi GraphQL normale. Dimezza le chiamate HTTP. Pausa fra chiamate (`ODDS_L10_SLEEP`, env)
+  alzata da 0.2s → 0.5s → 0.7s dopo verifica reale che 0.5s restava sopra soglia.
+- Risultato misurato: discovery da **9m19s a 3m33s** (run 30339461288), run totale da **15m18s a
+  9m16s**.
+
+## 30.C — Bug reale #1: L10 calcolato ma mai committato
+
+Il job `discovery` del workflow (`.github/workflows/formazione_giornata.yml`) faceva
+`git add formazione_*/output/*_discovery/player_slugs.json` — **solo questo file**. L10 e nomi
+(`player_card_counts.json`, `player_names.json`), calcolati correttamente ogni run da
+`discovery_fixture.py`, venivano scartati a fine job (filesystem effimero del runner) e MAI letti
+dai job `predict`/`formazione` a valle (checkout fresco di `main`). Scoperto dall'utente notando che
+alcune carte nell'HTML generato non mostravano L10 pur avendolo assegnato lo stesso giorno — verifica
+puntuale su un caso reale (Carlos Miguel, L10=52 visto live su Sorare, mancante nell'output). **Primo
+tentativo di fix sbagliato**: escludere le carte con L10 ignoto dai calcoli di cap invece di
+correggere la causa — l'utente ha fermato subito ("il problema non è 'lo escludo', la soluzione è
+trova quell'L10"). Fix corretto: aggiunto `player_card_counts.json` e `player_names.json` al
+`git add` del job discovery. Verificato: dopo il fix, `player_card_counts.json` per Brasile GK
+conteneva `"l10": 52.0`, e la carta appariva schierata con l'L10 corretto nell'HTML.
+
+## 30.D — Bug reale #2: filtro qualità L5/L10/L40 ridondante ed escludeva candidati validi
+
+Caso reale trovato dall'utente: Iñaki Peña (`ignacio-pena-sotorres`, L10=46, L40=49 — solidi) escluso
+da TUTTE le formazioni All Stars di una run con solo 8 portieri eleggibili, perché L5=26 (una
+striscia recente) sotto la soglia 35 del filtro qualità (`quality_filter.py`, AND severo su
+L5/L10/L40). Decisione presa con l'utente: il filtro era nato prima che `discovery_fixture.py`
+avesse un filtro starter-odds configurabile, ora è ridondante (lo starter-odds già filtra chi
+probabilmente non gioca) e più punitivo del necessario, soprattutto nei giorni di pool scarso dove
+servirebbe di più. **Rimosso del tutto** (non abbassato): `LazyQualityPool` sostituita da
+`_NoFilterPool` in `generatore_formazioni/build_formazione_globale.py` (tutti i candidati scoperti
+sono già "passing", zero query L5/L10/L40). Rimosso anche l'input workflow `min_quality_score`
+(non più letto). Aggiunto `LIST_UNUSED_CANDIDATES` (env/input workflow, default 0) per stampare nel
+log, a richiesta, i candidati eleggibili mai schierati con nome — usato per il controllo di 30.F.
+Verificato: rilanciando con 8 formazioni per 8 portieri disponibili, tutti gli 8 vengono usati,
+incluso Peña.
+
+## 30.E — Bug reale #3: leghe mancanti (Ekstraklasa, Primera División cilena)
+
+Confrontando a mano la lista MID/FWD eleggibili del bot con lo screenshot reale della collezione
+Sorare dell'utente, sono emersi 2 giocatori visti da Sorare (starter-odds ≥ soglia, squadra in
+campo) ma scartati dal log con `lega senza pipeline`: Kacper Urbanski (Ekstraklasa, Polonia) e
+Francisco Gonzalez (Primera División, Cile). Aggiunte le due leghe: mapping in `LEAGUE_DIR`
+(`discovery_fixture.py`) + pipeline `formazione_polonia/` e `formazione_cile/` (predict/consiglio,
+copiate da `formazione_svizzera/` con solo sostituzione del nome — nessuna logica specifica per
+lega). Si aggiungono da sole al pool "mixed" (`_discover_leagues()` scopre le leghe dal filesystem,
+nessun altro codice da toccare).
+
+## 30.F — Bug reale #4: secondo filtro starter-odds nascosto, fisso al 70%, in TUTTI i predict
+
+Per verificare se restavano altre leghe/giocatori non tracciati, l'utente ha chiesto un run con
+`starter_odds_min=0` (nessun filtro) per vedere l'intero pool eleggibile e confrontarlo a mano con
+la sua collezione reale (es. tutti i portieri di giornata, incluse le carte a odds 0%). Risultato
+sorprendente: col filtro a 0 il pool GK restava comunque a 8, identico al run con soglia 80% — la
+discovery in realtà aveva scoperto correttamente **tutti i 20 portieri reali** (verificato contando
+i `player_names.json` per lega: 2+4+1+1+2+1+3+1+1+4 = 20, combacia esatto con lo screenshot
+dell'utente), ma il consiglio finale per Austria ne teneva solo 1 su 4, segnalando "3
+esclusi/non disponibili questa giornata".
+
+Causa: **ogni script `test_<ruolo>.py`** (uno per lega/ruolo, ~112 file quasi identici) ha una
+riga `MIN_STARTER_ODDS = 0.0 if CALIBRATION_MODE else 0.70` — un SECONDO filtro starter-odds,
+fisso al 70%, indipendente e non collegato in alcun modo alla soglia scelta in
+`discovery_fixture.py`/nell'input del workflow. Impostare `starter_odds_min=0` cambiava solo il
+primo filtro (discovery), non questo secondo (dentro ogni predict), quindi chi era sotto 70% veniva
+comunque scartato in silenzio al passo successivo.
+
+Fix: portata `MIN_STARTER_ODDS` a `0.0` fisso in tutti e 112 i file (`formazione_*/predict/
+test_{gk,def,mid,mls_fwd_all}.py`), sostituzione automatica via script Python (regex sulla riga di
+assegnazione, verificato che tutti i 112 file avessero pattern identico prima di sostituire, poi
+compilati tutti con `py_compile` per sicurezza). Scelta: **disattivare il valore** (soglia a 0)
+invece di rimuovere chirurgicamente il blocco di codice che lo usa in ognuno dei 112 file — stesso
+risultato funzionale (nessuna esclusione), rischio molto più basso.
+
+**Nota per il prossimo controllo**: questo era un lavoro esplicitamente definito dall'utente come
+"va fatto" indipendentemente dal bisogno della giornata corrente — verificare la copertura reale
+del pool eleggibile, non solo tarare i parametri. Probabile che vada ripetuto (con
+`LIST_UNUSED_CANDIDATES=1` + `starter_odds_min=0`) su un'altra giornata per controllare se restano
+altre leghe non mappate oltre a Ekstraklasa/Primera División cilena.
+
+## 30.G — Decisioni prese dall'utente (NON riproporle)
+
+- Filtro qualità L5/L10/L40: **eliminato**, non riabbassato a soglia più permissiva.
+- Push su `main` durante la sessione: ok farlo liberamente senza chiedere conferma quando si sta
+  lavorando/testando direttamente su main (nessun branch separato in uso) — la vecchia regola
+  "chiedere conferma prima di pushare su main" valeva per un contesto con branch di lavoro separati,
+  non applicabile quando main stesso è l'ambiente di test corrente (vedi
+  [[feedback_push_main_solo_a_fine_sessione]], aggiornata).
+- Candidati con L10 ignoto: la soluzione corretta è recuperare il dato, MAI escludere il candidato
+  come scorciatoia.
+
+## 30.H — Stato repo
+
+Tutto pushato su `main`. File toccati: `discovery_fixture.py` (LEAGUE_DIR esteso, query odds+L10
+unita, ODDS_L10_SLEEP), `.github/workflows/formazione_giornata.yml` (git add esteso nel job
+discovery, input `list_unused_candidates` al posto di `min_quality_score`),
+`generatore_formazioni/quality_filter.py` (cache disco, poi in gran parte superfluo),
+`generatore_formazioni/build_formazione_globale.py` (`_NoFilterPool`, elenco candidati non
+schierati), `formazione_mls/build_formazione_finale.py` (nessuna modifica netta: primo tentativo di
+fix sull'esclusione L10 fatto e poi ripristinato con `git checkout --`), `formazione_polonia/` e
+`formazione_cile/` (nuove pipeline), 112 file `formazione_*/predict/test_*.py` (MIN_STARTER_ODDS
+disattivato).
+
+Run di verifica lanciata con `starter_odds_min=0` dopo questo commit, per controllare se con le
+leghe Polonia/Cile aggiunte e il secondo filtro rimosso il pool eleggibile combacia finalmente al
+100% con la collezione reale dell'utente su tutti i ruoli, non solo GK.
