@@ -3116,3 +3116,33 @@ invece di `needs: discovery`); il job `formazione` ora ha `needs: [discovery_mer
 git log --oneline -- .github/workflows/formazione_giornata.yml discovery_fixture.py
 ```
 poi `git revert` (o `git checkout <commit-prima-del-test> -- .github/workflows/formazione_giornata.yml discovery_fixture.py`) del/dei commit con messaggio che menziona "discovery in 3 job paralleli" / "DISCOVERY_ROLES" — riporta al singolo job `discovery` che gira tutti e 4 i ruoli, già verificato funzionante e via via ottimizzato in 30.B. Non serve toccare altro (predict/formazione tornano automaticamente a leggere `needs: discovery` una volta ripristinato il workflow).
+
+**Implementazione conclusa, run di verifica lanciata dopo questo aggiornamento** — se questa riga
+non è seguita da un esito ("funziona"/"ripristinato"), il test è ancora aperto: controllare
+`gh run list --workflow formazione_giornata.yml` per lo stato dell'ultimo run.
+
+## 30.J — Verifica copertura pool eleggibile, ruolo per ruolo (confronto manuale con screenshot Sorare)
+
+Dopo i fix di 30.C-30.F, l'utente ha chiesto un controllo sistematico ("va fatto indipendentemente
+dal bisogno della giornata corrente", vedi 30.F) confrontando a mano, ruolo per ruolo, la lista
+eleggibili del bot (run con `starter_odds_min=0`, `LIST_UNUSED_CANDIDATES=1`) con screenshot reali
+della sua collezione Sorare filtrata sulla stessa giornata.
+
+**Esito, GW95 (28/07)**:
+- **GK**: 20 trovati dal bot = 20 reali. Combacia esatto.
+- **DEF**: 40 trovati dal bot = 40 reali (un solo nome apparentemente mancante, Ahmetcan Kaplan,
+  ma il motivo è che Sorare non gli ha ancora assegnato starter-odds — dato non disponibile, non
+  un bug nostro).
+- **MID**: 38 trovati dal bot. 3 nomi apparentemente mancanti dalla prima occhiata dell'utente
+  (Dejan Zukić, Kendry Páez, Arno Verschueren) — stesso motivo: nessuna starter-odds ancora
+  assegnata su Sorare per questi tre. Non un bug.
+- **FWD**: 37 trovati dal bot, confermato corretto dall'utente (include Francisco Gonzalez dal
+  Cile e i 2 nuovi della Polonia: Allahyar Sayyadmanesh, Patrik Wålemark).
+
+**Conclusione**: con le pipeline Polonia/Cile aggiunte (30.E) e il secondo filtro starter-odds
+nascosto disattivato (30.F), il pool eleggibile scoperto dal bot combacia AL 100% con la collezione
+reale dell'utente su tutti e 4 i ruoli, su questa giornata. Gli unici scarti residui sono giocatori
+a cui Sorare stesso non ha ancora assegnato starter-odds (dato assente alla fonte, non recuperabile
+lato nostro finché Sorare non lo pubblica). Nessuna lega mancante oltre a Ekstraklasa/Primera
+División cilena già trovate. **Non riproporre questo controllo per la stessa giornata** — ripeterlo
+eventualmente su una giornata futura diversa se emergono nuovi sospetti di copertura incompleta.
