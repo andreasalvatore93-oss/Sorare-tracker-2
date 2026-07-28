@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "albert-rusnak", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 18:17:44 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785262664', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': '1GAoIuLx4tUwbAQzuqZU7-iIhuQolmy8yidC7KDF5kgu0Mf2c0JSY_PrSB7FSX4Fu3OxZ9W5k558AvrGuYUkyg', 'etag': 'W/"9797be534688cd4ed222e4a03d6189fd"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=LLgoa4sUZ9OTLwshticn1UBN8o8A3xQ3MrQCV1%2BnLYhvdgA34DpoT35lCjrcT1JQa%2Fi%2BbBLfHTrJsEgJ2Oa2wTOKgmkjP9Nfcy%2Bqs0q4H1f3s9A5%2BfrlXEH2WrScyv%2FnPtgIoVexF2aoNQ25VO3rlqaMFk9P6R8A33acov%2FNpr7kaMjFIErdk%2Fx6GDk5dB0%2B6yUTA6Sm58SVOVzMjZFMMFymIWZFtuRdmK5M41z7lnuIiL%2FJ9PNcx1nFSkBcMyJFrHwg3KzpYhELLj17KjYG8t8RBH1R1ePgSYo7ghOoH76xBQoWpi9EDKc8sPl8NG53--XM9aHL5QP91hI8SQ--TeZWGcWpFkE5uH8UqSwdwQ%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 18:17:44 GMT; secure; httponly; samesite=none', 'x-request-id': '041f2343-0503-412e-b6f0-335e867912d7', 'x-runtime': '0.088049', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 1271197444822e7c59413a59ecbcecd6.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'SEA900-P9', 'x-amz-cf-id': 'qELZiTGMEov3OHV96YAOvkJVWUuzRqZqp0Wmdw4Zthq1H1pqcE7UlQ=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:8edc07e2-1d76-404d-8efb-2d9877b23334","score":36.8,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:f424109f-3250-4b7c-b25e-1e4feef1070b","date":"2026-07-25T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"philadelphia-union-chester-pennsylvania","name":"Philadelphia Union","code":"PHI","domesticLeagueRanking":14},"awayTeam":{"slug":"seattle-sounders-renton-washington","name":"Seattle Sounders FC","code":"SEA","domesticLeagueRanking":8},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:b369db15-6a7a-41c4-b8f7-a501ba9db2bd","score":44.2,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:db2f37d4-6209-4916-9d16-ee2a27962792","date":"2026-07-23T01:30:00Z","statusTyped":"played","homeTeam":{"slug":"austin-austin-texas","name":"Austin FC","code":"ATX","domesticLeagueRanking":14},"awayTeam":{"slug":"seattle-sounders-renton-washington","name":"Seattle Sounders FC","code":"SEA","domesticLeagueRanking":8},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:2dd10a6a-467b-4660-b6e9-0d1427e57dd6","date":"2026-08-02T02:30:00Z","playerGameScore":{"id":"So5Score:67023666-d1d8-4b40-8b16-f321de2330f9","positionTyped":"Midfielder","projectedScore":54.0,"anyGame":{"id":"Game:2dd10a6a-467b-4660-b6e9-0d1427e57dd6","date":"2026-08-02T02:30:00Z","homeTeam":{"slug":"portland-timbers-portland-oregon","name":"Portland Timbers","code":"POR","domesticLeagueRanking":10},"awayTeam":{"slug":"seattle-sounders-renton-washington","name":"Seattle Sounders FC","code":"SEA","domesticLeagueRanking":8},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:5110c21f-ae5f-4e8d-9878-0c9bc872a6a1","date":"2026-08-06T02:00:00Z","playerGameScore":{"id":"So5Score:c8741e95-0047-4df4-8ad3-709fc52be2f5","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:5110c21f-ae5f-4e8d-9878-0c9bc872a6a1","date":"2026-08-06T02:00:00Z","homeTeam":{"slug":"toluca-toluca-de-lerdo","name":"Deportivo Toluca FC","code":"TOL","domesticLeagueRanking":7},"awayTeam":{"slug":"seattle-sounders-renton-washington","name":"Seattle Sounders FC","code":"SEA","domesticLeagueRanking":8},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:35651d08-b658-4006-a535-595517996133","date":"2026-08-09T19:30:00Z","playerGameScore":{"id":"So5Score:87ee3930-cc96-471e-84d0-4080924dcbdd","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:35651d08-b658-4006-a535-595517996133","date":"2026-08-09T19:30:00Z","homeTeam":{"slug":"seattle-sounders-renton-washington","name":"Seattle Sounders FC","code":"SEA","domesticLeagueRanking":8},"awayTeam":{"slug":"queretaro-queretaro","name":"Querétaro FC","code":"QUE","domesticLeagueRanking":10},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:55886f79-7799-4109-b2c4-22fd46ce2a8c","date":"2026-08-13T02:30:00Z","playerGameScore":{"id":"So5Score:97145098-cdce-4f6e-80cf-0b3507efb9b6","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:55886f79-7799-4109-b2c4-22fd46ce2a8c","date":"2026-08-13T02:30:00Z","homeTeam":{"slug":"seattle-sounders-renton-washington","name":"Seattle Sounders FC","code":"SEA","domesticLeagueRanking":8},"awayTeam":{"slug":"guadalajara-zapopan-guadalajara","name":"CD Guadalajara","code":"CHI","domesticLeagueRanking":6},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:972558e2-85c0-4473-9cf4-316aa8c81d3c","date":"2026-08-17T02:30:00Z","playerGameScore":{"id":"So5Score:b304443c-bed2-45d5-b604-a9420ec4be5e","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:972558e2-85c0-4473-9cf4-316aa8c81d3c","date":"2026-08-17T02:30:00Z","homeTeam":{"slug":"seattle-sounders-renton-washington","name":"Seattle Sounders FC","code":"SEA","domesticLeagueRanking":8},"awayTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
