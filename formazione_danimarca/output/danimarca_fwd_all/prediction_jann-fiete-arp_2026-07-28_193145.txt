@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T19:31:45.955185Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jann-fiete-arp: 42 pt attesi (28-66)
+   SQUADRA: ob-odense | AVVERSARIO: sonderjyske-haderslev
+======================================================================
+
+######################################################################
+# GIOCATORE: jann-fiete-arp
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jann-fiete-arp (squadra: ob-odense)
+Generato: 2026-07-28T19:31:45.954711Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 9
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: superliga-dk (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-19 | OB vs RFC | superliga-dk | score=51.2 | peso=0.749
+  2026-04-26 | FRE vs OB | superliga-dk | score=68.8 | peso=0.794
+  2026-05-03 | OB vs SIF | superliga-dk | score=72.8 | peso=0.841
+  2026-05-11 | RFC vs OB | superliga-dk | score=88.0 | peso=0.891
+  2026-05-17 | OB vs VB | superliga-dk | score=50.8 | peso=0.944
+  2026-07-24 | VFF vs OB | superliga-dk | score=56.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 64.62
+  di cui Punteggio decisivo (level_score) medio: 44.78 | Punteggio complessivo (granulari) medio: 19.84 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 7.86 (delta +0.01) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.39
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 50.8 - 88.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.59 (differenza: +4.79)
+Media score in casa: 58.27 | Media score fuori casa: 71.17
+Fattore casa/trasferta applicato: 0.965 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.098
+Fattore falli (casa/trasferta, da dati reali): 1.013
+Fattore duelli (casa/trasferta, da dati reali): 1.036
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 66.67% (fonte: tasso di presenza storico (6/9))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-03T17:00
+Casa: Odense BK | Trasferta: Sønderjysk Elitesport Fodbold
+Competizione: superliga-dk
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.2 (range 28.4 - 65.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 66.50
+Punteggio REALE ottenuto in quella partita: 56.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
