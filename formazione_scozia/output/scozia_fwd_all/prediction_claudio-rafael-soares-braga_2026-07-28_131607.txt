@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T13:16:07.131297Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) claudio-rafael-soares-braga: 43 pt attesi (23-69)
+   SQUADRA: hearts-edinburgh | AVVERSARIO: sturm-graz-graz
+======================================================================
+
+######################################################################
+# GIOCATORE: claudio-rafael-soares-braga
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: claudio-rafael-soares-braga (squadra: hearts-edinburgh)
+Generato: 2026-07-28T13:16:07.130685Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-31 | DUU vs HEA | premiership-gb-sct | score=65.7 | peso=0.445
+  2026-02-03 | STM vs HEA | premiership-gb-sct | score=41.6 | peso=0.472
+  2026-02-10 | HEA vs HIB | premiership-gb-sct | score=36.2 | peso=0.500
+  2026-02-15 | RAN vs HEA | premiership-gb-sct | score=81.0 | peso=0.530
+  2026-02-21 | HEA vs FAL | premiership-gb-sct | score=38.1 | peso=0.561
+  2026-02-28 | HEA vs ABE | premiership-gb-sct | score=74.7 | peso=0.595
+  2026-03-14 | KIL vs HEA | premiership-gb-sct | score=43.0 | peso=0.630
+  2026-03-21 | HEA vs DUN | premiership-gb-sct | score=51.5 | peso=0.667
+  2026-04-05 | LIV vs HEA | premiership-gb-sct | score=67.5 | peso=0.707
+  2026-04-11 | HEA vs MOT | premiership-gb-sct | score=74.8 | peso=0.749
+  2026-04-26 | HIB vs HEA | premiership-gb-sct | score=25.4 | peso=0.794
+  2026-05-04 | HEA vs RAN | premiership-gb-sct | score=34.9 | peso=0.841
+  2026-05-09 | MOT vs HEA | premiership-gb-sct | score=28.7 | peso=0.891
+  2026-05-13 | HEA vs FAL | premiership-gb-sct | score=39.2 | peso=0.944
+  2026-07-21 | STU vs HEA | uefa-champions-league | score=46.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 48.36
+  di cui Punteggio decisivo (level_score) medio: 42.84 | Punteggio complessivo (granulari) medio: 5.53 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 5.14 (delta +0.53) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.25
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.7 - 74.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.23 (differenza: +2.02)
+Media score in casa: 49.91 | Media score fuori casa: 49.91
+Fattore casa/trasferta applicato: 0.992 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.3
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.887
+Fattore falli (casa/trasferta, da dati reali): 1.011
+Fattore duelli (casa/trasferta, da dati reali): 1.013
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.992
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.023
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.015
+Fattore trend (media ultime 5: 34.9 vs media ultime 10: 48.6): 0.800
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-28T18:45
+Casa: Heart of Midlothian FC | Trasferta: SK Puntigamer Sturm Graz
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.7 (range 23.0 - 69.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.58
+Punteggio REALE ottenuto in quella partita: 46.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      55.9    43.0    -12.9    25.8        SI
+   7        7      48.8    51.5     +2.7    24.6        SI
+   8        8      55.7    67.5    +11.8    22.7        SI
+   9        9      56.1    74.8    +18.7    22.1        SI
+  10       10      62.0    25.4    -36.6    22.4        NO
+  11       11      54.1    34.9    -19.2    25.8        SI
+  12       12      47.4    28.7    -18.7    25.8        SI
+  13       13      49.5    39.2    -10.3    26.4        SI
+  14       14      34.5    46.4    +11.9    25.4        SI
+
+MAE (errore assoluto medio): 15.87
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 88.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
