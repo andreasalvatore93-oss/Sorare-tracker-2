@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T18:38:18.833173Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) martin-boyle: 26 pt attesi (13-42)
+   SQUADRA: hibernian-edinburgh | AVVERSARIO: malisheva-malisheva-malisevo
+======================================================================
+
+######################################################################
+# GIOCATORE: martin-boyle
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: martin-boyle (squadra: hibernian-edinburgh)
+Generato: 2026-07-28T18:38:18.832429Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-30 | HIB vs CEL | premiership-gb-sct | score=60.0 | peso=0.445
+  2025-12-06 | HIB vs FAL | premiership-gb-sct | score=73.9 | peso=0.472
+  2025-12-20 | DUU vs HIB | premiership-gb-sct | score=62.1 | peso=0.500
+  2025-12-27 | HIB vs HEA | premiership-gb-sct | score=36.1 | peso=0.530
+  2026-01-24 | FAL vs HIB | premiership-gb-sct | score=39.1 | peso=0.561
+  2026-02-01 | HIB vs RAN | premiership-gb-sct | score=26.0 | peso=0.595
+  2026-02-04 | HIB vs DUU | premiership-gb-sct | score=67.2 | peso=0.630
+  2026-02-10 | HEA vs HIB | premiership-gb-sct | score=40.6 | peso=0.667
+  2026-02-22 | CEL vs HIB | premiership-gb-sct | score=35.8 | peso=0.707
+  2026-03-21 | MOT vs HIB | premiership-gb-sct | score=33.5 | peso=0.749
+  2026-04-26 | HIB vs HEA | premiership-gb-sct | score=63.9 | peso=0.794
+  2026-05-09 | FAL vs HIB | premiership-gb-sct | score=63.6 | peso=0.841
+  2026-05-13 | RAN vs HIB | premiership-gb-sct | score=62.3 | peso=0.891
+  2026-05-16 | HIB vs MOT | premiership-gb-sct | score=37.5 | peso=0.944
+  2026-07-23 | MAL vs HIB | uefa-europa-conference-league | score=35.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 48.34
+  di cui Punteggio decisivo (level_score) medio: 46.07 | Punteggio complessivo (granulari) medio: 2.27 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.17 (delta +0.78) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.85
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 63.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.44 (differenza: +1.41)
+Media score in casa: 52.09 | Media score fuori casa: 46.50
+Fattore casa/trasferta applicato: 1.010 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.9
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.016
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.978
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.022
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 52.5 vs media ultime 10: 46.5): 1.127
+P(gioca): 53.57% (fonte: tasso di presenza storico (15/28))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T19:00
+Casa: Hibernian FC | Trasferta: Ujvara e Malishevës
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 26.1 (range 12.8 - 41.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.77
+Punteggio REALE ottenuto in quella partita: 35.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.6    67.2    +15.6    23.7        SI
+   7        7      48.1    40.6     -7.5    23.8        SI
+   8        8      45.1    35.8     -9.3    22.6        SI
+   9        9      48.2    33.5    -14.7    22.0        SI
+  10       10      37.0    63.9    +26.9    21.6        NO
+  11       11      51.0    63.6    +12.6    21.8        SI
+  12       12      48.2    62.3    +14.1    21.7        SI
+  13       13      57.6    37.5    -20.1    21.2        SI
+  14       14      54.6    35.0    -19.6    20.9        SI
+
+MAE (errore assoluto medio): 15.61
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 88.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
