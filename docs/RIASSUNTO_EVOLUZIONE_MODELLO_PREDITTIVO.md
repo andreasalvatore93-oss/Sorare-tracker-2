@@ -3198,3 +3198,24 @@ rollback necessario: split a 6 job + max-parallel 10 restano il meccanismo di pr
 per ulteriore split cala (discovery già a ~1 minuto, il margine residuo è nel job `predict`/
 `formazione`, non nella discovery), e il rischio di saturare il rate limit condiviso resta non
 zero anche se non ancora osservato.
+
+## 30.L — TEST v3 IN CORSO (28/07, sera): 12 job discovery + max-parallel predict a 14
+
+**ATTENZIONE se questa sezione è ancora qui SENZA un esito ("funziona"/"ripristinato"): il test
+è stato interrotto a metà sessione. Controllare `gh run list --workflow formazione_giornata.yml`
+prima di continuare altro lavoro.**
+
+Dopo il successo del v2 (30.K: 6 job, run 5m18s), richiesto un test "vediamo se esplode tutto" a
+12 job discovery (GK×2, DEF×4, MID×4, FWD×2 — quote proporzionali alle dimensioni relative dei
+pool) + `max-parallel` del job predict alzato da 10 a 14 (richiesta iniziale 15, poi 12
+job/max-parallel 14 dopo un giro di correzioni dell'utente in diretta).
+
+Generalizzata `DISCOVERY_LEAGUE_HALF` (A/B fisso) in `DISCOVERY_LEAGUE_SHARD` ('idx:n', N
+arbitrario) in `discovery_fixture.py` — stesso principio (split alfabetico fisso delle cartelle di
+destinazione, filtro applicato PRIMA delle chiamate odds+L10), solo generalizzato a N quote invece
+di 2. Workflow riscritto per intero (troppi job da editare a mano in sicurezza, rigenerato via
+script Python e verificato con `yaml.safe_load` prima di scrivere).
+
+**Come ripristinare se fallisce**: stesso meccanismo di 30.I/30.K — `git log` sui due file e
+revert/checkout del commit "TEST v3" / "12 job discovery" per tornare alla v2 (6 job, 30.K),
+già confermata stabile.

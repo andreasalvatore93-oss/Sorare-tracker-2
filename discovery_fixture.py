@@ -62,15 +62,21 @@ if _raw_roles:
     _wanted = {r.strip().lower() for r in _raw_roles.split(',') if r.strip()}
     ROLE_BY_POSITION = {pos: role for pos, role in ROLE_BY_POSITION.items() if role in _wanted}
 
-# DISCOVERY_LEAGUE_HALF (28/07, TEST piu' estremo richiesto esplicitamente
-# dall'utente -- vedi 30.I/30.K del riassunto): 'A' o 'B' per processare solo
-# meta' delle leghe di destinazione (split alfabetico fisso, deterministico),
-# usato per spezzare ULTERIORMENTE un ruolo affollato (es. DEF, MID) in due
-# job paralleli. La query CARDS_QUERY (paginazione carte) resta duplicata fra
-# i due job -- costo piccolo -- ma le chiamate odds+L10 (il vero costo) sono
-# filtrate PRIMA di essere fatte, quindi davvero dimezzate a testa. Default:
-# non impostata = nessun filtro (comportamento INVARIATO).
-DISCOVERY_LEAGUE_HALF = os.environ.get('DISCOVERY_LEAGUE_HALF', '').strip().upper()
+# DISCOVERY_LEAGUE_SHARD (28/07, generalizzato da DISCOVERY_LEAGUE_HALF per
+# il TEST v3 -- 12 job discovery -- vedi 30.I/30.K/30.L del riassunto):
+# formato 'idx:n' (es. '0:4' = quota 0 di 4), per processare solo 1/n delle
+# leghe di destinazione (split alfabetico fisso e deterministico), usato per
+# spezzare ULTERIORMENTE un ruolo affollato (DEF, MID) in piu' job paralleli
+# (non solo 2 come nella prima versione a meta'). La query CARDS_QUERY
+# (paginazione carte) resta duplicata fra le quote dello stesso ruolo --
+# costo piccolo -- ma le chiamate odds+L10 (il vero costo) sono filtrate
+# PRIMA di essere fatte, quindi davvero divise per n a testa. Default: non
+# impostata = nessun filtro (comportamento INVARIATO).
+_raw_shard = os.environ.get('DISCOVERY_LEAGUE_SHARD', '').strip()
+DISCOVERY_LEAGUE_SHARD = None
+if _raw_shard:
+    _idx_s, _n_s = _raw_shard.split(':')
+    DISCOVERY_LEAGUE_SHARD = (int(_idx_s), int(_n_s))
 
 # lega Sorare (domesticLeague.slug) -> cartella formazione_<x> nel repo
 LEAGUE_DIR = {
@@ -93,13 +99,15 @@ LEAGUE_DIR = {
 }
 
 # Split alfabetico fisso delle cartelle di destinazione (incluso 'senza_lega')
-# in due meta' -- usato solo se DISCOVERY_LEAGUE_HALF e' impostata.
+# in n quote contigue -- usato solo se DISCOVERY_LEAGUE_SHARD e' impostata.
 _ALL_DIRNAMES = sorted(set(LEAGUE_DIR.values()) | {'senza_lega'})
-_HALF_A = set(_ALL_DIRNAMES[:len(_ALL_DIRNAMES) // 2 + len(_ALL_DIRNAMES) % 2])
-_HALF_B = set(_ALL_DIRNAMES) - _HALF_A
-_WANTED_DIRNAMES = (_HALF_A if DISCOVERY_LEAGUE_HALF == 'A'
-                    else _HALF_B if DISCOVERY_LEAGUE_HALF == 'B'
-                    else None)
+_WANTED_DIRNAMES = None
+if DISCOVERY_LEAGUE_SHARD is not None:
+    _idx, _n = DISCOVERY_LEAGUE_SHARD
+    _tot = len(_ALL_DIRNAMES)
+    _start = (_tot * _idx) // _n
+    _end = (_tot * (_idx + 1)) // _n
+    _WANTED_DIRNAMES = set(_ALL_DIRNAMES[_start:_end])
 
 FIXTURE_BY_GW = """
 query FixtureList($first: Int!) {
