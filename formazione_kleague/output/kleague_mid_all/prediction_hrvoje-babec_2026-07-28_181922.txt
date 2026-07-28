@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-28T18:19:22.780273Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) hrvoje-babec: 52 pt attesi (41-73)
+   SQUADRA: seoul-seoul | AVVERSARIO: jeonbuk-motors-jeonju
+======================================================================
+
+######################################################################
+# GIOCATORE: hrvoje-babec
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: hrvoje-babec (squadra: seoul-seoul)
+Generato: 2026-07-28T18:19:22.779477Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-05 | ANY vs SEO | k-league-1 | score=34.6 | peso=0.445
+  2026-04-11 | SEO vs JMO | k-league-1 | score=42.3 | peso=0.472
+  2026-04-15 | ULS vs SEO | k-league-1 | score=72.4 | peso=0.500
+  2026-04-18 | SEO vs DJO | k-league-1 | score=38.4 | peso=0.530
+  2026-04-21 | SEO vs BUC | k-league-1 | score=38.1 | peso=0.561
+  2026-04-25 | GAN vs SEO | k-league-1 | score=69.2 | peso=0.595
+  2026-05-02 | SEO vs SAN | k-league-1 | score=77.9 | peso=0.630
+  2026-05-05 | SEO vs ANY | k-league-1 | score=55.9 | peso=0.667
+  2026-05-09 | JEJ vs SEO | k-league-1 | score=73.0 | peso=0.707
+  2026-05-16 | DJO vs SEO | k-league-1 | score=41.0 | peso=0.749
+  2026-07-05 | SEO vs INC | k-league-1 | score=51.4 | peso=0.794
+  2026-07-12 | SEO vs GAN | k-league-1 | score=44.7 | peso=0.841
+  2026-07-19 | BUC vs SEO | k-league-1 | score=50.5 | peso=0.891
+  2026-07-22 | SEO vs POH | k-league-1 | score=46.6 | peso=0.944
+  2026-07-26 | SEO vs ULS | k-league-1 | score=48.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 52.17
+  di cui Punteggio decisivo (level_score) medio: 39.18 | Punteggio complessivo (granulari) medio: 13.00 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 40.74 (delta +1.56)
+  Efficacia offensiva condizionata: delta venue -0.13, delta avversario +0.22 | Passaggio condizionato: delta venue +1.42, delta avversario -0.72 | Gol subiti condizionato: delta venue -0.00, delta avversario +0.34 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.0 - 72.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.06 (differenza: +1.75)
+Media score in casa: 49.28 | Media score fuori casa: 56.78
+Fattore casa/trasferta applicato: 1.014 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.5
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.846
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.017
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.980
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore trend (media ultime 5: 48.3 vs media ultime 10: 55.8): 0.905
+P(gioca): 93.75% (fonte: tasso di presenza storico (15/16))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T10:30
+Casa: Jeonbuk Hyundai Motors FC | Trasferta: FC Seoul
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.4 (range 41.2 - 72.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.60
+Punteggio REALE ottenuto in quella partita: 48.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.8    77.9    +25.1    21.8        NO
+   7        7      50.3    55.9     +5.6    24.8        SI
+   8        8      60.0    73.0    +13.0    22.8        SI
+   9        9      65.6    41.0    -24.6    23.0        NO
+  10       10      59.0    51.4     -7.6    22.7        SI
+  11       11      49.8    44.7     -5.1    21.4        SI
+  12       12      60.2    50.5     -9.7    20.7        SI
+  13       13      52.5    46.6     -5.9    19.6        SI
+  14       14      42.9    48.2     +5.3    18.8        SI
+
+MAE (errore assoluto medio): 11.32
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
