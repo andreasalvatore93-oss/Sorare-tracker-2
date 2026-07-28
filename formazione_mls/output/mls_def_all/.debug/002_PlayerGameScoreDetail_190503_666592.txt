@@ -1,0 +1,38 @@
+=== RICHIESTA (PlayerGameScoreDetail) ===
+operationName: PlayerGameScoreDetail
+variables: {"id": "d78513c3-bd9d-4311-bcbe-6d776a81a4d6"}
+query:
+
+query PlayerGameScoreDetail($id: ID!) {
+  so5 {
+    playerGameScore(id: $id) {
+      id
+      score
+      scoreStatus
+      position
+      anyGame {
+        date
+        statusTyped
+        homeTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        awayTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        competition { slug }
+      }
+      detailedScore { category stat statValue totalScore }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Tue, 28 Jul 2026 19:05:03 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '64', 'x-gql-depth': '5', 'x-server-timestamp': '1785265503', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'Jc6WdvyKc8KPI1TCwwjVA7B8SdPwbyVeRMa8W8CpD_vvwRStg50NlaIVP7VQdsu4-8_VMHixQlx41zwGrq54iA', 'etag': 'W/"daf858d117bbb5a19298e1a6ea4a2e87"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=n9HKwDxRfJqkIrHjcfmUwPTlYt4So4eeN1SA0EeozDOeDTd3WAu2TPFpytUh3Rm5Z3x1R4Z6MqAEaGBkTcibap2Va30iIvrA90tyhLKjwQFGO0HViT5rHBwnIWUcJiPKjMIYjESZ4rbnRSzWS6AvB2J3XtzLOmV0R%2FWHFZ%2BliejBWcGhAo%2FfRnt2RgDqnPBMl8PM8s0ZhOPo7JpBpNrBFbWMJ6SRGWXr2vRU31Xbp5fHqAW2DbJY%2BbpBzMmS6tvYHpcBLDYyscjJk%2FwsWMDg6P%2B1fa7liz9%2FN4KMWWFC%2FYmMBG04KWIXqAyeAVxPGeUP--TJEObj9%2Fj8ID8N4o--YRB%2B%2F8GtcgTvimEFKoPBLw%3D%3D; domain=.sorare.com; path=/; expires=Wed, 28 Jul 2027 19:05:03 GMT; secure; httponly; samesite=none', 'x-request-id': '6d31d2db-9a23-403b-80df-dd5d255facf5', 'x-runtime': '0.037499', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 9c3ba7b1ce4e43dbcf29ae887d546a76.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'SFO53-P6', 'x-amz-cf-id': 'YgCRuUz16aqRXDz0MVz7HjCghcTI8XcqpFFC5MxIcHMo4h0Csdtyxg=='}
+body (integrale):
+{"data":{"so5":{"playerGameScore":{"id":"So5Score:d78513c3-bd9d-4311-bcbe-6d776a81a4d6","score":52.34,"scoreStatus":"FINAL","position":"Defender","anyGame":{"date":"2026-04-08T02:00:00Z","statusTyped":"played","homeTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2,"domesticLeagueRankingRatioRange":"TOP"},"awayTeam":{"slug":"cruz-azul-ciudad-de-mexico-d-f","name":"Cruz Azul FC","code":"CAZ","domesticLeagueRanking":5,"domesticLeagueRankingRatioRange":"TOP"},"competition":{"slug":"concacaf-champions-league"}},"detailedScore":[{"category":"UNKNOWN","stat":"level_score","statValue":0.0,"totalScore":35.0},{"category":"GENERAL","stat":"mins_played","statValue":90.0,"totalScore":0.0},{"category":"GENERAL","stat":"yellow_card","statValue":1.0,"totalScore":-3.0},{"category":"GENERAL","stat":"fouls","statValue":2.0,"totalScore":-4.0},{"category":"GENERAL","stat":"error_lead_to_shot","statValue":0.0,"totalScore":0.0},{"category":"DEFENDING","stat":"clean_sheet_60","statValue":1.0,"totalScore":10.0},{"category":"DEFENDING","stat":"effective_clearance","statValue":5.0,"totalScore":2.5},{"category":"DEFENDING","stat":"won_tackle","statValue":1.0,"totalScore":3.0},{"category":"DEFENDING","stat":"blocked_cross","statValue":0.0,"totalScore":0.0},{"category":"DEFENDING","stat":"outfielder_block","statValue":0.0,"totalScore":0.0},{"category":"DEFENDING","stat":"double_double","statValue":0.0,"totalScore":0.0},{"category":"DEFENDING","stat":"triple_double","statValue":0.0,"totalScore":0.0},{"category":"DEFENDING","stat":"triple_triple","statValue":0.0,"totalScore":0.0},{"category":"POSSESSION","stat":"poss_lost_ctrl","statValue":6.0,"totalScore":-3.6},{"category":"POSSESSION","stat":"poss_won","statValue":3.0,"totalScore":1.5},{"category":"POSSESSION","stat":"duel_lost","statValue":4.0,"totalScore":-8.0},{"category":"POSSESSION","stat":"duel_won","statValue":5.0,"totalScore":7.5},{"category":"POSSESSION","stat":"interception_won","statValue":1.0,"totalScore":3.0},{"category":"PASSING","stat":"big_chance_created","statValue":0.0,"totalScore":0.0},{"category":"PASSING","stat":"adjusted_total_att_assist","statValue":1.0,"totalScore":3.0},{"category":"PASSING","stat":"accurate_pass","statValue":23.0,"totalScore":1.84},{"category":"PASSING","stat":"successful_final_third_passes","statValue":4.0,"totalScore":1.6},{"category":"PASSING","stat":"accurate_long_balls","statValue":2.0,"totalScore":1.0},{"category":"PASSING","stat":"long_pass_own_to_opp_success","statValue":3.0,"totalScore":1.5},{"category":"PASSING","stat":"missed_pass","statValue":5.0,"totalScore":-1.0},{"category":"ATTACKING","stat":"ontarget_scoring_att","statValue":0.0,"totalScore":0.0},{"category":"ATTACKING","stat":"won_contest","statValue":0.0,"totalScore":0.0},{"category":"ATTACKING","stat":"pen_area_entries","statValue":1.0,"totalScore":0.5},{"category":"GENERAL","stat":"penalty_kick_missed","statValue":0.0,"totalScore":0.0},{"category":"ATTACKING","stat":"big_chance_missed","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"saves","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"saved_ibox","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"good_high_claim","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"punches","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"dive_save","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"dive_catch","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"cross_not_claimed","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"six_second_violation","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"gk_smother","statValue":0.0,"totalScore":0.0},{"category":"GOALKEEPING","stat":"accurate_keeper_sweeper","statValue":0.0,"totalScore":0.0},{"category":"GENERAL","stat":"goals_conceded","statValue":0.0,"totalScore":0.0},{"category":"GENERAL","stat":"penalty_won","statValue":0.0,"totalScore":0.0},{"category":"POSITIVE_DECISIVE_STAT","stat":"goals","statValue":0.0,"totalScore":0.0},{"category":"POSITIVE_DECISIVE_STAT","stat":"goal_assist","statValue":0.0,"totalScore":0.0},{"category":"POSITIVE_DECISIVE_STAT","stat":"assist_penalty_won","statValue":0.0,"totalScore":0.0},{"category":"POSITIVE_DECISIVE_STAT","stat":"clearance_off_line","statValue":0.0,"totalScore":0.0},{"category":"POSITIVE_DECISIVE_STAT","stat":"last_man_tackle","statValue":0.0,"totalScore":0.0},{"category":"POSITIVE_DECISIVE_STAT","stat":"penalty_save","statValue":0.0,"totalScore":0.0},{"category":"NEGATIVE_DECISIVE_STAT","stat":"red_card","statValue":0.0,"totalScore":0.0},{"category":"NEGATIVE_DECISIVE_STAT","stat":"own_goals","statValue":0.0,"totalScore":0.0},{"category":"NEGATIVE_DECISIVE_STAT","stat":"penalty_conceded","statValue":0.0,"totalScore":0.0},{"category":"NEGATIVE_DECISIVE_STAT","stat":"error_lead_to_goal","statValue":0.0,"totalScore":0.0}]}}}}
