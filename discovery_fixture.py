@@ -153,17 +153,24 @@ query FixtureCards($userSlug: String!, $page: Int!, $pageSize: Int!,
                 refinements: $refinements) {
       hits {
         slug
-        u23Eligible
-        xp
-        powerBreakdown {
-          seasonBasisPoints
-          collectionBasisPoints
-          xpBasisPoints
-          scarcityBasisPoints
-          specialEditionCardsBasisPoints
-          activeClubsBasisPoints
-          nationalityBasisPoints
-          positionsBasisPoints
+        # u23Eligible/xp/powerBreakdown vivono sul tipo CONCRETO Card, non
+        # sull'interfaccia AnyCardInterface restituita da 'hits' -- senza il
+        # fragment esplicito la query fallisce per intero (stesso bug gia'
+        # documentato per coverageStatus in bots/autobuy_sorare.py, 19/07,
+        # riscoperto qui il 28/07: nessuna carta viene piu' trovata, silenzioso).
+        ... on Card {
+          u23Eligible
+          xp
+          powerBreakdown {
+            seasonBasisPoints
+            collectionBasisPoints
+            xpBasisPoints
+            scarcityBasisPoints
+            specialEditionCardsBasisPoints
+            activeClubsBasisPoints
+            nationalityBasisPoints
+            positionsBasisPoints
+          }
         }
         anyPlayer {
           slug
