@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T19:03:58.729475Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) wyatt-meyer: 48 pt attesi (38-59)
+   ORDINAMENTO: 38.99
+   SQUADRA: sporting-kc-kansas-city-kansas | AVVERSARIO: houston-dynamo-houston-texas
+======================================================================
+
+######################################################################
+# GIOCATORE: wyatt-meyer
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: wyatt-meyer (squadra: sporting-kc-kansas-city-kansas)
+Generato: 2026-07-28T19:03:58.728151Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 12
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-05-02 | SKC vs SEA | mlspa | score=28.1 | peso=0.630
+  2026-05-10 | POR vs SKC | mlspa | score=0.0 | peso=0.680
+  2026-05-14 | SKC vs LA | mlspa | score=48.4 | peso=0.735
+  2026-05-17 | ATX vs SKC | mlspa | score=54.6 | peso=0.794
+  2026-05-24 | SKC vs RBNY | mlspa | score=48.8 | peso=0.857
+  2026-07-23 | SKC vs MIN | mlspa | score=45.0 | peso=0.926
+  2026-07-26 | LAFC vs SKC | mlspa | score=33.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 38.05
+  di cui Punteggio decisivo (level_score) medio: 32.58 | Punteggio complessivo (granulari) medio: 5.47 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.58, delta avversario -0.52 | Passaggio condizionato: delta venue -0.48, delta avversario +0.32 | Clean sheet/disimpegni condizionato: delta venue +0.32, delta avversario -0.12 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.36
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.1 - 48.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.96 (differenza: +8.39)
+Media score in casa: 42.59 | Media score fuori casa: 29.46
+Fattore casa/trasferta applicato: 1.020 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.867
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.982
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.985
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.020
+Fattore gol subiti (goals_conceded, con cap): 1.024
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.024
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 58.33% (fonte: tasso di presenza storico (7/12))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Sporting Kansas City  | Trasferta: Houston Dynamo FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.2 (range 38.3 - 58.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 39.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 38.97
+Punteggio REALE ottenuto in quella partita: 33.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -5.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      26.3    33.8     +7.5    21.5        SI
+
+MAE (errore assoluto medio): 7.49
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-28T19:02:25.731653Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) marcel-heister: 46 pt attesi (35-69)
+   ORDINAMENTO: 41.74
+   SQUADRA: istra-1961-pula | AVVERSARIO: lokomotiva-zagreb-zagreb
+======================================================================
+
+######################################################################
+# GIOCATORE: marcel-heister
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marcel-heister (squadra: istra-1961-pula)
+Generato: 2026-07-28T19:02:25.730988Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 9
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: 1-hnl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-07 | IST vs HAJ | 1-hnl | score=51.9 | peso=0.630
+  2026-04-11 | LOK vs IST | 1-hnl | score=33.0 | peso=0.680
+  2026-04-18 | IST vs V91 | 1-hnl | score=20.7 | peso=0.735
+  2026-04-22 | IST vs DIN | 1-hnl | score=48.6 | peso=0.794
+  2026-04-27 | GOR vs IST | 1-hnl | score=43.9 | peso=0.857
+  2026-05-04 | IST vs SLA | 1-hnl | score=67.5 | peso=0.926
+  2026-05-10 | OSI vs IST | 1-hnl | score=41.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 44.53
+  di cui Punteggio decisivo (level_score) medio: 34.08 | Punteggio complessivo (granulari) medio: 10.45 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.74, delta avversario -1.15 | Passaggio condizionato: delta venue -0.27, delta avversario +0.22 | Clean sheet/disimpegni condizionato: delta venue -0.85, delta avversario -0.47 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 13.70
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.0 - 67.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.05 (differenza: +7.65)
+Media score in casa: 47.19 | Media score fuori casa: 39.39
+Fattore casa/trasferta applicato: 1.012 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.0
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.966
+Fattore falli (casa/trasferta, da dati reali): 1.008
+Fattore duelli (casa/trasferta, da dati reali): 1.029
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.986
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.010
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 0.977
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.980
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 77.78% (fonte: tasso di presenza storico (7/9))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T16:30
+Casa: NK Istra 1961 | Trasferta: NK Lokomotiva Zagreb
+Competizione: 1-hnl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.5 (range 35.0 - 69.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 41.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.25
+Punteggio REALE ottenuto in quella partita: 41.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.9    41.2     -7.7    18.0        SI
+
+MAE (errore assoluto medio): 7.73
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
