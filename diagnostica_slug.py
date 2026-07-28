@@ -57,10 +57,6 @@ query XpProbe($userSlug: String!) {
         slug
         inSeasonEligible
         xp
-        xpBonus
-        bonus
-        power
-        cardLevel
         anyPlayer { slug displayName }
       }
     }
@@ -82,7 +78,7 @@ def probe_xp():
 
 
 def main():
-    slugs = [s.strip() for s in os.environ.get('SLUGS', 'inaki-pena').split(',') if s.strip()]
+    slugs = [s.strip() for s in os.environ.get('SLUGS', 'carlos-miguel').split(',') if s.strip()]
     for slug in slugs:
         print("\n" + "=" * 78)
         print("SLUG:", slug)
