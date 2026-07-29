@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T00:43:44.133184Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) aaron-tshibola: 46 pt attesi (25-59)
+   SQUADRA: kilmarnock-kilmarnock | AVVERSARIO: st-johnstone-perth
+======================================================================
+
+######################################################################
+# GIOCATORE: aaron-tshibola
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: aaron-tshibola (squadra: kilmarnock-kilmarnock)
+Generato: 2026-07-29T00:43:44.132533Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: premiership-gb-sct (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-14 | KIL vs HEA | premiership-gb-sct | score=68.1 | peso=0.667
+  2026-04-04 | HIB vs KIL | premiership-gb-sct | score=43.0 | peso=0.707
+  2026-04-11 | KIL vs DUN | premiership-gb-sct | score=31.6 | peso=0.749
+  2026-04-25 | ABE vs KIL | premiership-gb-sct | score=34.0 | peso=0.794
+  2026-05-02 | KIL vs DUU | premiership-gb-sct | score=65.3 | peso=0.841
+  2026-05-09 | STM vs KIL | premiership-gb-sct | score=61.6 | peso=0.891
+  2026-05-12 | KIL vs DUN | premiership-gb-sct | score=87.7 | peso=0.944
+  2026-05-17 | LIV vs KIL | premiership-gb-sct | score=43.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 54.93
+  di cui Punteggio decisivo (level_score) medio: 38.58 | Punteggio complessivo (granulari) medio: 16.36 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 36.99 (delta -1.59)
+  Efficacia offensiva condizionata: delta venue -0.68, delta avversario +0.24 | Passaggio condizionato: delta venue -0.33, delta avversario -0.75 | Gol subiti condizionato: delta venue -0.08, delta avversario +0.14 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 18.50
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.0 - 68.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.76 (differenza: +5.74)
+Media score in casa: 63.17 | Media score fuori casa: 45.42
+Fattore casa/trasferta applicato: 0.991 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.0
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.276
+Fattore falli (casa/trasferta, da dati reali): 1.014
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.987
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.993
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.991
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 36.36% (fonte: tasso di presenza storico (8/22))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T13:00
+Casa: Saint Johnstone FC | Trasferta: Kilmarnock FC
+Competizione: premiership-gb-sct
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.8 (range 24.8 - 58.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.05
+Punteggio REALE ottenuto in quella partita: 43.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.0    87.7    +39.7    20.8        NO
+   7        7      60.0    43.1    -16.9    27.1        SI
+
+MAE (errore assoluto medio): 28.27
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
