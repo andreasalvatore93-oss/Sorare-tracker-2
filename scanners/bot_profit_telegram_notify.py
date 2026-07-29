@@ -21,6 +21,7 @@ autoLoadFromQueryParam in quel file) scarica e carica da solo appena la
 pagina si apre -- un clic e la classifica e' gia' pronta, niente
 download/drag&drop manuale.
 """
+import csv
 import glob
 import os
 
@@ -51,6 +52,17 @@ def _viewer_url(csv_path):
     return f"{viewer_base}?csv={_raw_url(csv_path)}"
 
 
+# FIX 29/07 (richiesta esplicita utente: notifica con indicazione dettagliata,
+# non solo il link al CSV -- deve leggersi subito "compra entro" senza dover
+# aprire il viewer): mostra in chiaro la top carta per potenziale_score di
+# ogni gruppo, con la sua finestra_acquisto_ideale gia' calcolata da
+# bot_profit.py (colonna aggiunta lo stesso giorno, vedi _finestra_acquisto_ideale).
+def _top_row_for_group(path):
+    with open(path, 'r', newline='', encoding='utf-8') as f:
+        rows = list(csv.DictReader(f))
+    return rows[0] if rows else None
+
+
 def main():
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         print("[bot_profit_telegram_notify] TELEGRAM_TOKEN/TELEGRAM_CHAT_ID mancanti, salto la notifica.")
@@ -61,6 +73,11 @@ def main():
         path = _latest_csv_for_group(group_name)
         if path:
             righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{label}: apri viewer</a>")
+            top = _top_row_for_group(path)
+            if top:
+                nome = top.get('player_name') or top.get('player_slug') or '?'
+                finestra = top.get('finestra_acquisto_ideale') or 'n/d'
+                righe.append(f"   \U0001F947 top: {nome} -- compra tra {finestra}")
         else:
             righe.append(f"⚠️ {label}: nessun CSV trovato in questa run.")
 
