@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "tayvon-gray", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 01:07:30 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785287250', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'lzZBJ_annr3PuygEHSHzotg-sQaDgTqq6iQviC_4KPU8PVNynkl5wFrqnB3KoeIFLWtKZKna_ABWsJ9yvvmAeA', 'etag': 'W/"2bf406faa370f417db917077dac1f59f"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=lTXT5YgjLkLDPhatMHBNh8j1gOY45RhAn3CuO0a8J8Zx7XoTC0R6WYtdKgpkR%2BIBDHzXwXYecDdoh73TCjGG9B14m%2BnPVIXgqvkpO52VvD5JBJfGXiDbsC7NWBVfpXpFk98eFevoISsrIDIdl4UM6xjJoHsanneRf2SYBW8MUE3D7Jfby5vcusgXkVCMhNurQuf%2F2Q9YCG2TPtgkCzr%2B6l0ReZbQRgpwm6pZywNDk72vLfnivMKAaHVMCjoEN7RBysH9Hgl5v70i9sKZW6SHCkQ0inaj5IgfLLFxqvMFFzRtAULOmE9XV7BFQPsV%2BqzI--4wI0z7GPWROM255Q--ciyov%2BHPje4fY1pxCBukdA%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 01:07:30 GMT; secure; httponly; samesite=none', 'x-request-id': '563fbf3f-4e52-4d67-8b8f-7e4f774121bc', 'x-runtime': '0.065178', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 2f0d0ded74f2b28e7c1f019cd2b0a934.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'ORD58-P3', 'x-amz-cf-id': 'tuUHbgxMpZCrkXyEXNwFRRriIOcjCWrwU2tZWj5cHWU1OUVt2kYe1w=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:be86f951-4468-44cd-bdfa-4d011081f74c","score":41.62,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:76391eaa-a7d9-4116-9f49-c96092198f48","date":"2026-07-25T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"awayTeam":{"slug":"chicago-fire-bridgeview-illinois","name":"Chicago Fire FC","code":"CHI","domesticLeagueRanking":4},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:c2623436-a33a-428b-9845-b3c073048419","score":36.0,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:49659e28-158b-49e5-854e-ba0f1a2856ce","date":"2026-07-22T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"columbus-crew-columbus-ohio","name":"Columbus Crew","code":"CLB","domesticLeagueRanking":11},"awayTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":1,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:5295ebbe-28e6-4651-a58b-ce636991d923","date":"2026-07-31T23:30:00Z","playerGameScore":{"id":"So5Score:b84a74db-9c19-4527-aa56-2ccb0ab870f8","positionTyped":"Defender","projectedScore":52.0,"anyGame":{"id":"Game:5295ebbe-28e6-4651-a58b-ce636991d923","date":"2026-07-31T23:30:00Z","homeTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"awayTeam":{"slug":"toronto-toronto","name":"Toronto FC","code":"TOR","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:9222c5b9-7f8d-4835-8a48-d8607fd6087f","date":"2026-08-06T23:30:00Z","playerGameScore":{"id":"So5Score:bbf8dd2c-4b73-4a7f-89db-8dc8dcc8b107","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:9222c5b9-7f8d-4835-8a48-d8607fd6087f","date":"2026-08-06T23:30:00Z","homeTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"awayTeam":{"slug":"santos-laguna-torreon","name":"Club Santos Laguna","code":"SAN","domesticLeagueRanking":15},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:615f6f89-b2e0-47f1-a3bd-8c72127f8aa4","date":"2026-08-09T23:30:00Z","playerGameScore":{"id":"So5Score:cd74c4da-f1a9-44a9-971b-e8f81cf83b9f","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:615f6f89-b2e0-47f1-a3bd-8c72127f8aa4","date":"2026-08-09T23:30:00Z","homeTeam":{"slug":"cruz-azul-ciudad-de-mexico-d-f","name":"Cruz Azul FC","code":"CAZ","domesticLeagueRanking":5},"awayTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:0ca4479e-6e02-411c-b72d-a609b57f0c57","date":"2026-08-13T23:30:00Z","playerGameScore":{"id":"So5Score:5eb80c1e-a4a5-4d16-84d0-84615b833dad","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:0ca4479e-6e02-411c-b72d-a609b57f0c57","date":"2026-08-13T23:30:00Z","homeTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"awayTeam":{"slug":"necaxa-aguascalientes","name":"Club Necaxa","code":"NEC","domesticLeagueRanking":10},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:f7e60f08-20c6-4f6b-a68a-74c23f414b65","date":"2026-08-16T22:00:00Z","playerGameScore":{"id":"So5Score:9c6784c4-72cc-4b8c-b419-f1841875f864","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:f7e60f08-20c6-4f6b-a68a-74c23f414b65","date":"2026-08-16T22:00:00Z","homeTeam":{"slug":"new-york-city-new-york-new-york","name":"New York City FC","code":"NYC","domesticLeagueRanking":5},"awayTeam":{"slug":"philadelphia-union-chester-pennsylvania","name":"Philadelphia Union","code":"PHI","domesticLeagueRanking":14},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
