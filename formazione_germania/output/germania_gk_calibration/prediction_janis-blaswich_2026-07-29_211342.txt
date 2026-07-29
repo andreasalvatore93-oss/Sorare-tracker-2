@@ -1,0 +1,94 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T21:13:42.295603Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) janis-blaswich: 46 pt attesi (35-66)
+   SQUADRA: bayer-leverkusen-leverkusen | AVVERSARIO: elversberg-saarbrucken
+======================================================================
+
+######################################################################
+# GIOCATORE: janis-blaswich
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: janis-blaswich (squadra: bayer-leverkusen-leverkusen)
+Generato: 2026-07-29T21:13:42.294669Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 23
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-24 | B04 vs SVW | bundesliga-de | score=74.8 | peso=0.354
+  2026-01-31 | SGE vs B04 | bundesliga-de | score=47.5 | peso=0.397
+  2026-02-07 | BMG vs B04 | bundesliga-de | score=31.9 | peso=0.445
+  2026-02-14 | B04 vs STP | bundesliga-de | score=65.9 | peso=0.500
+  2026-02-21 | FCU vs B04 | bundesliga-de | score=43.8 | peso=0.561
+  2026-02-28 | B04 vs M05 | bundesliga-de | score=43.2 | peso=0.630
+  2026-03-04 | HSV vs B04 | bundesliga-de | score=73.5 | peso=0.707
+  2026-03-07 | SCF vs B04 | bundesliga-de | score=47.4 | peso=0.794
+  2026-03-14 | B04 vs BAY | bundesliga-de | score=49.3 | peso=0.891
+  2026-04-25 | KOE vs B04 | bundesliga-de | score=60.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 53.81
+  di cui Punteggio decisivo (level_score) medio: 39.80 | Punteggio complessivo (granulari) medio: 14.02 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 37.66 (delta -2.13 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.60, delta avversario -1.29 | Possesso condizionato per venue: delta -0.19 | Goalkeeping condizionato per venue: delta +2.03 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 12.30
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.2 - 73.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.28 (differenza: +2.02)
+Media score in casa: 58.30 | Media score fuori casa: 50.70
+Fattore casa/trasferta applicato: 0.962 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.693
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.988
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.998
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.013
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.991
+Tasso storico clean sheet (porta inviolata nei primi 60'): 30.0% (bonus atteso incorporato nella media pesata: ~7.5pt)
+Fattore trend (media ultime 5: 54.7 vs media ultime 10: 53.7): 1.013
+P(gioca): 29.41% (fonte: tasso di presenza storico (10/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: SV 07 Elversberg | Trasferta: Bayer 04 Leverkusen
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 35.4 - 65.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.62
+Punteggio REALE ottenuto in quella partita: 60.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +7.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      41.5    73.5    +32.0    17.0        NO
+   7        7      39.4    47.4     +8.0    18.6        SI
+   8        8      37.4    49.3    +11.9    17.4        SI
+   9        9      53.8    60.1     +6.3    16.2        SI
+
+MAE (errore assoluto medio): 14.55
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
