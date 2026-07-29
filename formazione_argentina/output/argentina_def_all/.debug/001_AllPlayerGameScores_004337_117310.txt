@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "nicolas-hernan-otamendi", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:43:37 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785285817', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'Gsb3ODukfMYbSDAPq7Hjl4oyav4TC6sH2vs4oKdmkSTRJayyUmyjVRgCsapxD4WdkUXOX4J3l_UGnGW6beQUFA', 'etag': 'W/"a780b7491b5169a4e065087248a5db5b"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=vlreF5O9aBDHzaPE5wNFrlSBHGpgsjt9HaGch2gW4d6hbjUUwLMVCK%2BaocZO0V0xTOUvplWrZU8%2F13MrTIAyfCNz4RYnJ17czMgxS2ql4TZ4PSlo8QpNhDmiFzJjEAaT8Aadws7GU8PtZecXmFMtptq%2BudZ6HlhZOibch5%2BeBOed0djZzzGgvJ8eQIu40ytKzj2gjAobvKpMfroxy1Y6m7WhEg14AaeQDqG3cTocv9ek0FmKLsAHun2xPvYnluVTddc6dUj74UZ4L3jo9Px9AXIAJSN028T2qsY4RgKQZKYACL%2Fkk%2FJXPALMyza3wm3J--opxOBBqWPMa7QIlk--OnbYnMDS2veSq%2BfsTlBb7w%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:43:37 GMT; secure; httponly; samesite=none', 'x-request-id': 'bb78da3b-bec2-41d3-9fc1-101ccb1c06dc', 'x-runtime': '0.049325', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 a4e298b681a8e14254ea874d17bfc0e0.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': '-Br-dT_tFdFsLInKtpcT-mK-pHFFz5LYHGnCSrXI-dmmyCNuxxImBw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:5835d20f-2ea9-4407-adc0-01b72d770a54","score":65.94,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:69f77f90-7e24-4172-b851-ed0df32b81d8","date":"2026-07-25T22:15:00Z","statusTyped":"played","homeTeam":{"slug":"river-plate-capital-federal-ciudad-de-buenos-aires","name":"CA River Plate","code":"RIV","domesticLeagueRanking":13},"awayTeam":{"slug":"barracas-central-capital-federal-ciudad-de-buenos-aires","name":"CA Barracas Central","code":"BAC","domesticLeagueRanking":6},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:0c72c461-a21a-4a4b-901f-82ea8d84013f","score":35.24,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:4ab9aaeb-b3db-4bc5-a41e-ceada0395338","date":"2026-07-19T19:00:00Z","statusTyped":"played","homeTeam":{},"awayTeam":{},"competition":{"slug":"global-cup"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":76,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:43f216e1-8f4d-40db-83e1-180e35841088","date":"2026-07-29T22:15:00Z","playerGameScore":{"id":"So5Score:5861f5eb-5e83-4c23-be60-8651fc131c9c","positionTyped":"Defender","projectedScore":55.0,"anyGame":{"id":"Game:43f216e1-8f4d-40db-83e1-180e35841088","date":"2026-07-29T22:15:00Z","homeTeam":{"slug":"gimnasia-la-plata-la-plata-provincia-de-buenos-aires","name":"Gimnasia y Esgrima La Plata","code":"GLP","domesticLeagueRanking":12},"awayTeam":{"slug":"river-plate-capital-federal-ciudad-de-buenos-aires","name":"CA River Plate","code":"RIV","domesticLeagueRanking":13},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":7000,"reliability":"MEDIUM"}}}},{"id":"Game:b85ca502-ca09-4913-9143-8964782036f6","date":"2026-08-02T22:15:00Z","playerGameScore":{"id":"So5Score:d254c76f-ae14-48f7-b3ac-593928b23376","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:b85ca502-ca09-4913-9143-8964782036f6","date":"2026-08-02T22:15:00Z","homeTeam":{"slug":"river-plate-capital-federal-ciudad-de-buenos-aires","name":"CA River Plate","code":"RIV","domesticLeagueRanking":13},"awayTeam":{"slug":"rosario-central-rosario-provincia-de-santa-fe","name":"CA Rosario Central","code":"ROS","domesticLeagueRanking":11},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:b36b724f-5c99-469d-9f28-b7f3c3b0490c","date":"2026-08-09T00:00:00Z","playerGameScore":{"id":"So5Score:01221776-9952-4590-b904-24231b82bf86","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:b36b724f-5c99-469d-9f28-b7f3c3b0490c","date":"2026-08-09T00:00:00Z","homeTeam":{"slug":"tigre-victoria-provincia-de-buenos-aires","name":"CA Tigre","code":"TIG","domesticLeagueRanking":14},"awayTeam":{"slug":"river-plate-capital-federal-ciudad-de-buenos-aires","name":"CA River Plate","code":"RIV","domesticLeagueRanking":13},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:adda426a-cd42-4ae0-9294-7f43a8f8ebad","date":"2026-08-12T00:00:00Z","playerGameScore":{"id":"So5Score:a53a1536-8774-4fd4-bfc3-534b9b0816fc","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:adda426a-cd42-4ae0-9294-7f43a8f8ebad","date":"2026-08-12T00:00:00Z","homeTeam":null,"awayTeam":{"slug":"river-plate-capital-federal-ciudad-de-buenos-aires","name":"CA River Plate","code":"RIV","domesticLeagueRanking":13},"competition":{"slug":"conmebol-sudamericana"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:775f8bd8-e24a-47f7-9918-e16b71b3e076","date":"2026-08-16T00:00:00Z","playerGameScore":{"id":"So5Score:68401eb8-9971-4b6e-bb40-476aa3d5d185","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:775f8bd8-e24a-47f7-9918-e16b71b3e076","date":"2026-08-16T00:00:00Z","homeTeam":{"slug":"river-plate-capital-federal-ciudad-de-buenos-aires","name":"CA River Plate","code":"RIV","domesticLeagueRanking":13},"awayTeam":{"slug":"argentinos-juniors-capital-federal-ciudad-de-buenos-aires","name":"Argentinos Juniors","code":"ARG","domesticLeagueRanking":3},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
