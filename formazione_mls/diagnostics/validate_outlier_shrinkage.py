@@ -87,18 +87,28 @@ K_GRID = [0, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30]
 # 27/07 (sessione estensione campionati): esteso da MLS-only a tutti i
 # campionati con cache disponibile, stesso principio delle altre analisi
 # estese in questa sessione.
-LEAGUE_CACHE_TPL = {
-    'mls': 'formazione_mls/output/mls_{ruolo}_calibration/.cache',
-    'kleague': 'formazione_kleague/output/kleague_{ruolo}_calibration/.cache',
-    'brasile': 'formazione_brasile/output/brasile_{ruolo}_all/.cache',
-    'croazia': 'formazione_croazia/output/croazia_{ruolo}_all/.cache',
-    'portogallo': 'formazione_portogallo/output/portogallo_{ruolo}_all/.cache',
-    'austria': 'formazione_austria/output/austria_{ruolo}_all/.cache',
-    'scozia': 'formazione_scozia/output/scozia_{ruolo}_all/.cache',
-    'belgio': 'formazione_belgio/output/belgio_{ruolo}_all/.cache',
-    'olanda': 'formazione_olanda/output/olanda_{ruolo}_all/.cache',
-    'spagna': 'formazione_spagna/output/spagna_{ruolo}_all/.cache',
-}
+# 29/07 (richiesta esplicita utente: "modello unico globale, non per lega"):
+# sostituita la lista fissa (era ferma a 10 leghe) con auto-discovery dal
+# filesystem, stesso pattern di measure_range_reliability._discover_leagues
+# -- include automaticamente le 25 leghe extra create in questa sessione
+# (turchia, germania, francia, ecc.), esclusa resto_mondo (copia
+# disallineata nota, mai messa al passo col resto del modello).
+def _discover_league_cache_tpl():
+    tpl = {}
+    for gk_dir in sorted(glob.glob(os.path.join('formazione_*', 'output', '*_gk_all'))):
+        champ_dir = os.path.basename(os.path.dirname(os.path.dirname(gk_dir)))
+        league = champ_dir[len('formazione_'):]
+        if league == 'resto_mondo':
+            continue
+        tpl[league] = f'formazione_{league}/output/{league}_{{ruolo}}_all/.cache'
+    if 'mls' in tpl:
+        tpl['mls'] = 'formazione_mls/output/mls_{ruolo}_calibration/.cache'
+    if 'kleague' in tpl:
+        tpl['kleague'] = 'formazione_kleague/output/kleague_{ruolo}_calibration/.cache'
+    return tpl
+
+
+LEAGUE_CACHE_TPL = _discover_league_cache_tpl()
 
 
 def parse_date(g):
