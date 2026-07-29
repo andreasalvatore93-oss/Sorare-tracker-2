@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T08:51:42.859601Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) antoine-griezmann: 57 pt attesi (42-75)
+   ORDINAMENTO: 60.40
+   SQUADRA: orlando-city-lake-mary-florida | AVVERSARIO: new-york-rb-secaucus-new-jersey
+======================================================================
+
+######################################################################
+# GIOCATORE: antoine-griezmann
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: antoine-griezmann (squadra: orlando-city-lake-mary-florida)
+Generato: 2026-07-29T08:51:42.858367Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 50
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 24
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-24 | ATM vs RAY | laliga-es | score=49.9 | peso=0.315
+  2025-09-30 | ATM vs SGE | uefa-champions-league | score=71.0 | peso=0.334
+  2025-11-04 | ATM vs USG | uefa-champions-league | score=41.4 | peso=0.354
+  2025-11-23 | GET vs ATM | laliga-es | score=45.4 | peso=0.375
+  2025-11-29 | ATM vs OVI | laliga-es | score=39.3 | peso=0.397
+  2026-02-18 | CLU vs ATM | uefa-champions-league | score=71.4 | peso=0.420
+  2026-02-21 | ATM vs ESP | laliga-es | score=53.5 | peso=0.445
+  2026-03-10 | ATM vs TOT | uefa-champions-league | score=85.4 | peso=0.472
+  2026-03-18 | TOT vs ATM | uefa-champions-league | score=45.0 | peso=0.500
+  2026-04-04 | ATM vs FCB | laliga-es | score=34.5 | peso=0.530
+  2026-04-08 | FCB vs ATM | uefa-champions-league | score=41.1 | peso=0.561
+  2026-04-14 | ATM vs FCB | uefa-champions-league | score=36.8 | peso=0.595
+  2026-04-25 | ATM vs ATH | laliga-es | score=67.2 | peso=0.630
+  2026-04-29 | ATM vs ARS | uefa-champions-league | score=47.9 | peso=0.667
+  2026-05-05 | ARS vs ATM | uefa-champions-league | score=42.0 | peso=0.707
+  2026-05-09 | ATM vs CEL | laliga-es | score=48.6 | peso=0.749
+  2026-05-12 | OSA vs ATM | laliga-es | score=49.8 | peso=0.794
+  2026-05-17 | ATM vs GIR | laliga-es | score=74.5 | peso=0.841
+  2026-05-24 | VIL vs ATM | laliga-es | score=71.5 | peso=0.891
+  2026-07-23 | SJ vs ORL | mlspa | score=79.6 | peso=0.944
+  2026-07-26 | ORL vs NSH | mlspa | score=58.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 56.42
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.02, n=21): 55.76 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 44.43 | Punteggio complessivo (granulari) medio: 11.99 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 8.18 (delta +1.44) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.06
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.1 - 74.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.78 (differenza: +1.28)
+Media score in casa: 58.40 | Media score fuori casa: 79.60
+Fattore casa/trasferta applicato: 1.011 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 2.0
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.207
+Fattore falli (casa/trasferta, da dati reali): 1.014
+Fattore duelli (casa/trasferta, da dati reali): 0.984
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.023
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 66.8 vs media ultime 10: 57.6): 1.158
+P(gioca): 42.00% (fonte: tasso di presenza storico (21/50))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: New York Red Bulls | Trasferta: Orlando City SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.3 (range 42.0 - 75.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 60.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.24
+Punteggio REALE ottenuto in quella partita: 58.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +2.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.2    53.5     +0.3    18.8        SI
+   7        7      53.2    85.4    +32.2    17.2        NO
+   8        8      58.1    45.0    -13.1    22.6        SI
+   9        9      56.3    34.5    -21.8    21.9        SI
+  10       10      57.8    41.1    -16.7    22.9        SI
+  11       11      51.1    36.8    -14.3    22.2        SI
+  12       12      49.5    67.2    +17.7    22.0        SI
+  13       13      45.1    47.9     +2.8    22.0        SI
+  14       14      45.0    42.0     -3.0    20.9        SI
+  15       15      45.4    48.6     +3.2    20.3        SI
+  16       16      48.8    49.8     +1.0    19.3        SI
+  17       17      51.8    74.5    +22.7    18.5        NO
+  18       18      56.7    71.5    +14.8    20.0        SI
+  19       19      60.4    79.6    +19.2    20.5        SI
+  20       20      60.7    58.4     -2.3    22.0        SI
+
+MAE (errore assoluto medio): 12.35
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 86.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
