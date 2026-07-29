@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T15:39:53.109227Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) joao-klauss-de-mello: 55 pt attesi (33-76)
+   ORDINAMENTO: 58.83
+   SQUADRA: la-galaxy-los-angeles-california | AVVERSARIO: dallas-frisco-texas
+======================================================================
+
+######################################################################
+# GIOCATORE: joao-klauss-de-mello
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: joao-klauss-de-mello (squadra: la-galaxy-los-angeles-california)
+Generato: 2026-07-29T15:39:53.108173Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | STL vs NSH | mlspa | score=65.6 | peso=0.660
+  2025-08-17 | CHI vs STL | mlspa | score=53.9 | peso=0.678
+  2025-08-24 | VAN vs STL | mlspa | score=70.7 | peso=0.697
+  2025-08-31 | STL vs HOU | mlspa | score=35.1 | peso=0.717
+  2025-09-07 | STL vs DAL | mlspa | score=44.8 | peso=0.737
+  2025-09-13 | MTL vs STL | mlspa | score=80.5 | peso=0.758
+  2025-09-21 | SJ vs STL | mlspa | score=80.6 | peso=0.779
+  2025-09-28 | STL vs LAFC | mlspa | score=38.3 | peso=0.801
+  2025-10-05 | ATX vs STL | mlspa | score=43.8 | peso=0.824
+  2025-10-19 | STL vs RSL | mlspa | score=79.8 | peso=0.847
+  2026-02-23 | LA vs NYC | mlspa | score=61.6 | peso=0.871
+  2026-03-01 | LA vs CLT | mlspa | score=85.3 | peso=0.895
+  2026-03-08 | RAP vs LA | mlspa | score=61.5 | peso=0.920
+  2026-03-15 | LA vs SKC | mlspa | score=37.0 | peso=0.946
+  2026-03-22 | POR vs LA | mlspa | score=79.9 | peso=0.973
+  2026-04-05 | LA vs MIN | mlspa | score=45.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 60.31
+  Corretta per shrinkage outlier/hot-streak (k=6.0, prior ruolo 53.02, n=16): 58.32 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 49.80 | Punteggio complessivo (granulari) medio: 10.50 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.78 (delta +0.06) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.45
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.3 - 80.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.09 (differenza: +1.36)
+Media score in casa: 57.33 | Media score fuori casa: 70.70
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.874
+Fattore falli (casa/trasferta, da dati reali): 0.990
+Fattore duelli (casa/trasferta, da dati reali): 0.983
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore trend (media ultime 5: 61.8 vs media ultime 10: 61.3): 1.002
+P(gioca): 57.14% (fonte: tasso di presenza storico (16/28))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T02:30
+Casa: LA Galaxy | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.5 (range 33.5 - 75.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 58.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.54
+Punteggio REALE ottenuto in quella partita: 45.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.5    80.6    +22.1    22.0        NO
+   7        7      61.9    38.3    -23.6    23.1        NO
+   8        8      58.7    43.8    -14.9    24.3        SI
+   9        9      56.8    79.8    +23.0    23.8        SI
+  10       10      61.0    61.6     +0.6    24.6        SI
+  11       11      60.6    85.3    +24.7    23.3        NO
+  12       12      78.1    61.5    -16.6    24.6        SI
+  13       13      78.1    37.0    -41.1    23.4        NO
+  14       14      60.1    79.9    +19.8    24.4        SI
+  15       15      57.8    45.4    -12.4    24.6        SI
+
+MAE (errore assoluto medio): 19.87
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
