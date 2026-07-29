@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "mads-bech-sorensen", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:20:38 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785284438', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'Xv0ab5E6Ub_3LaTck7oI3Qm8OBrakE3WrAwE1BpWCvL6p1Kdx4-477sFVkrvr5DHdkAQEadppIUBWIXiSbI3fg', 'etag': 'W/"f12f9abf5756a2f13e2f0cee85f3c99a"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=q0HVRSIBEb%2Fe3DKn9ayFLkZKgfA6ZinCHyTEgU1OR4JRZum7I5RCY5%2B6MqiT98zhfkjZ%2BR8o7xRh7ZhasJUHskI%2Btwu%2BHfW0j8L%2FfEnC%2F5QATTMBEWXVXTCswiUxzlJySK9RZnXIv6i17BvvdEVEJvol6WaA4AVuhVf9hW7lbhtS44RGQBDy7J3W2R%2FUrTWzn2NdPtWgVYxB1sqyjuBOQVgx1lcgU27zolUX3AM31XU4j6rZO%2FtiAM1t93eAYN0QiLDM%2FhFYrh5behdawY6WEBWS36aXflj0diznDldRSR7O%2Bar871kYzbaxf2HZNecA--BaIHd%2FRboWsxlX5Z--kgv0IdN9RMBj6D1jw2iE7A%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:20:38 GMT; secure; httponly; samesite=none', 'x-request-id': 'b0d9337d-c7cf-452c-97c6-5f0ceee29187', 'x-runtime': '0.058987', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 aa91c3e03d4b599af742a7344b9684e4.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'ORD58-P3', 'x-amz-cf-id': '5QBP_FdRwuugNKwQr69CzLfZAeW5b050KdNSecodhwbsYhiHXH-v1A=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:3b02faab-3605-4181-bfd1-4071f70ec257","score":91.68,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:79b1fad8-efba-480b-b4da-165868cd3094","date":"2026-07-26T12:00:00Z","statusTyped":"played","homeTeam":{"slug":"sonderjyske-haderslev","name":"Sønderjysk Elitesport Fodbold","code":"SJE","domesticLeagueRanking":11},"awayTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:5fb50bbe-c8ad-4aa8-8338-8cd67a734eb2","score":40.92,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:8e5547a5-831c-4189-84d7-83b8e2adbc78","date":"2026-07-23T18:00:00Z","statusTyped":"played","homeTeam":{"slug":"besiktas-istanbul","name":"Beşiktaş Jimnastik Kulübü","code":"BJK","domesticLeagueRanking":4},"awayTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:54477667-5432-4d57-8a29-7a1ab412481d","date":"2026-07-30T17:00:00Z","playerGameScore":{"id":"So5Score:2bb43e92-eab7-4867-b84e-848c26101dde","positionTyped":"Defender","projectedScore":52.0,"anyGame":{"id":"Game:54477667-5432-4d57-8a29-7a1ab412481d","date":"2026-07-30T17:00:00Z","homeTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"awayTeam":{"slug":"besiktas-istanbul","name":"Beşiktaş Jimnastik Kulübü","code":"BJK","domesticLeagueRanking":4},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":9000,"reliability":"HIGH"}}}},{"id":"Game:4ed71aa8-e1f1-403c-97ed-742b5bf711ec","date":"2026-08-02T12:00:00Z","playerGameScore":{"id":"So5Score:e0f8b110-705d-444c-b9c8-55a0ba3ed190","positionTyped":"Defender","projectedScore":54.0,"anyGame":{"id":"Game:4ed71aa8-e1f1-403c-97ed-742b5bf711ec","date":"2026-08-02T12:00:00Z","homeTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"awayTeam":{"slug":"horsens-horsens","name":"AC Horsens","code":"ACH","domesticLeagueRanking":8},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:84223bb2-dd8c-4137-8549-ac39445499b8","date":"2026-08-16T14:00:00Z","playerGameScore":{"id":"So5Score:d7dffd68-66bd-4dd9-9cba-16bb64dc76b3","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:84223bb2-dd8c-4137-8549-ac39445499b8","date":"2026-08-16T14:00:00Z","homeTeam":{"slug":"lyngby-lyngby-kongens-lyngby","name":"Lyngby Boldklub","code":"LYN","domesticLeagueRanking":10},"awayTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:57f10713-2ede-4a4f-b62f-f68da4f880a3","date":"2026-08-23T12:00:00Z","playerGameScore":{"id":"So5Score:362c95bd-de41-4830-84a5-45a1c172e103","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:57f10713-2ede-4a4f-b62f-f68da4f880a3","date":"2026-08-23T12:00:00Z","homeTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"awayTeam":{"slug":"randers-randers","name":"Randers FC","code":"RFC","domesticLeagueRanking":9},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:5b47b5d7-96f4-42f7-a062-cece5a3c16b7","date":"2026-08-30T12:00:00Z","playerGameScore":{"id":"So5Score:77565f08-b886-4f16-ad85-0c30e73aa164","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:5b47b5d7-96f4-42f7-a062-cece5a3c16b7","date":"2026-08-30T12:00:00Z","homeTeam":{"slug":"silkeborg-silkeborg","name":"Silkeborg IF","code":"SIF","domesticLeagueRanking":6},"awayTeam":{"slug":"midtjylland-herning","name":"FC Midtjylland","code":"FCM","domesticLeagueRanking":2},"competition":{"slug":"superliga-dk"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
