@@ -27,6 +27,10 @@ on:
         description: 'Sottoprocessi predict concorrenti'
         required: false
         default: '12'
+      only_dirnames:
+        description: 'Limita la discovery a queste leghe (es. mls,kleague). VUOTO se serve anche solo una All Stars.'
+        required: false
+        default: 'mls,kleague'
 
 permissions:
   contents: write
@@ -52,6 +56,7 @@ jobs:
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           IN_SEASON: ${{ github.event.inputs.in_season }}
           MAX_WORKERS: ${{ github.event.inputs.max_workers }}
+          ONLY_DIRNAMES: ${{ github.event.inputs.only_dirnames }}
           PYTHONUNBUFFERED: "1"
         run: python run_pipeline_single_job.py
       - name: Commit risultati (UN SOLO commit, nessuna contesa possibile)
