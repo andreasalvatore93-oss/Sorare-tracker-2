@@ -2,9 +2,11 @@
 # Sezioni giocatore/manager/campionato: ogni riga 'slug,durata' (es. 'clem777,5
 # giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni
 # scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').
-# Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora
-# ASSOLUTA di scadenza in UTC (fix 22/07: una durata testuale si 'rinnovava' da
-# sola ad ogni lettura se il file restava statico tra le run). Dopo la virgola, un
+# Sezioni thin_market/cooldown_acquisto/forma_bassa_ultime_5/fix_urgente/
+# campionato_inseason_temp: ogni riga 'slug,scadenza_ISO' -- data/ora
+# ASSOLUTA di scadenza in UTC (fix 22/07, esteso 29/07 a campionato_inseason_temp:
+# una durata testuale si 'rinnovava' da sola ad ogni lettura se il file restava
+# statico tra le run). Dopo la virgola, un
 # commento '# scade: ...' mostra lo stesso istante in ora di Roma (Europe/Rome, si
 # adatta automaticamente a legale/solare) solo per comodita' di lettura -- il bot
 # usa SEMPRE e SOLO il valore ISO prima della virgola/cancelletto, il commento e'
@@ -2008,11 +2010,11 @@ seasonal-contenders,15 giorni
 
 ## campionato_inseason_temp
 # BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte in_season di questo campionato vengono ignorate (nessun acquisto, nessuna offerta), le carte classic dello stesso campionato restano valutate normalmente. Pensata per campionati con carte in_season appena uscite e dal prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati il confronto di mercato usa lo stesso modello di MLS/K League (classic confrontata solo con classic, in_season solo con in_season) -- vedi EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
-1-hnl,15 giorni
-austrian-bundesliga,15 giorni
-eredivisie,15 giorni
-premiership-gb-sct,15 giorni
-primeira-liga-pt,15 giorni
+1-hnl,2026-08-13T15:50:51.252895+00:00  # scade: 13/08/2026 17:50 ora di Roma
+austrian-bundesliga,2026-08-13T15:50:51.252895+00:00  # scade: 13/08/2026 17:50 ora di Roma
+eredivisie,2026-08-13T15:50:51.252895+00:00  # scade: 13/08/2026 17:50 ora di Roma
+premiership-gb-sct,2026-08-13T15:50:51.252895+00:00  # scade: 13/08/2026 17:50 ora di Roma
+primeira-liga-pt,2026-08-13T15:50:51.252895+00:00  # scade: 13/08/2026 17:50 ora di Roma
 
 ## forma_bassa_ultime_5
 # FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), SEZIONE SEPARATA e distinta dai blacklist permanenti (coverage/media-zero restano in 'giocatore'), perche' questa e' una condizione transitoria che puo' rientrare -- non merita un blocco di 365gg.

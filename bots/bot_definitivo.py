@@ -221,8 +221,11 @@ _LISTA_NERA_INTESTAZIONI = {
         "prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati "
         "il confronto di mercato usa lo stesso modello di MLS/K League (classic "
         "confrontata solo con classic, in_season solo con in_season) -- vedi "
-        "EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni, rinnovabile o "
-        "modificabile a mano come le altre sezioni."
+        "EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni. Scadenza ASSOLUTA in ISO "
+        "(come thin_market/cooldown_acquisto/fix_urgente, FIX 29/07: prima era durata "
+        "testuale, che si reinterpretava 'da adesso' ad ogni lettura e non scorreva mai "
+        "davvero se la riga non veniva riscritta -- vedi commento in "
+        "_lista_nera_leggi_righe)."
     ),
     'forma_bassa_ultime_5': (
         "FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite "
@@ -386,7 +389,8 @@ def _lista_nera_leggi_righe():
         # mai piu' riscritta non scade mai davvero se il file resta statico tra le
         # letture. giocatore/manager/campionato restano a durata leggibile (l'utente
         # vuole poter scrivere/editare "X giorni" a mano per questi).
-        if tipo_corrente in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5', 'fix_urgente'):
+        if tipo_corrente in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5', 'fix_urgente',
+                             'campionato_inseason_temp'):
             try:
                 scadenza = datetime.datetime.fromisoformat(valore_str.replace('Z', '+00:00'))
                 if scadenza.tzinfo is None:
@@ -458,7 +462,8 @@ def _lista_nera_scrivi_righe(righe):
             if not righe_tipo:
                 f.write("# (vuoto)\n")
             for r in righe_tipo:
-                if tipo in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5', 'fix_urgente'):
+                if tipo in ('thin_market', 'cooldown_acquisto', 'forma_bassa_ultime_5', 'fix_urgente',
+                            'campionato_inseason_temp'):
                     scadenza_roma = r['scadenza'].astimezone(ZoneInfo('Europe/Rome'))
                     f.write(f"{r['slug']},{r['scadenza'].isoformat()}  "
                             f"# scade: {scadenza_roma.strftime('%d/%m/%Y %H:%M')} ora di Roma\n")
