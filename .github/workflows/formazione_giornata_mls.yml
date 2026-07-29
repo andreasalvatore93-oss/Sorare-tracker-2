@@ -15,6 +15,12 @@ name: Formazione giornata (MLS only, test rapido)
 # e idx=1 seleziona esattamente la quota 'mls' (idx=2 sarebbe 'kleague').
 # HEAVY_LEAGUE_SHARD='i:4' spezza ulteriormente gli slug MLS sopravvissuti
 # (tutti e 4 i ruoli) in 4 job paralleli per velocita'.
+#
+# 29/07 (richiesta esplicita utente): aggiunta la notifica Telegram con link
+# all'HTML (stesso step/canale del workflow completo) e LIST_UNUSED_CANDIDATES
+# di default a '1' per questo tool di test (comodo per vedere subito chi resta
+# escluso senza dover rilanciare con l'input cambiato a mano) -- l'HTML ha gia'
+# comunque il blocco "Top 20 esclusi" permanente (build_formazione_finale.py).
 
 on:
   workflow_dispatch:
@@ -38,7 +44,7 @@ on:
       list_unused_candidates:
         description: 'Stampa nel log i candidati eleggibili mai schierati (debug, 0/1)'
         required: false
-        default: '0'
+        default: '1'
       exclude_slugs:
         description: 'Slug giocatori da escludere manualmente, separati da virgola'
         required: false
@@ -398,3 +404,9 @@ jobs:
             git add formazione_mls/output/mls_*_discovery/ || true
             git commit --amend --no-edit || true
           done
+      - name: Notifica Telegram con link al report HTML
+        if: always()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
+        run: python generatore_formazioni/formazione_telegram_notify.py
