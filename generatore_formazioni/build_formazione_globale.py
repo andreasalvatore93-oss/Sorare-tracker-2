@@ -805,45 +805,50 @@ def main():
     # fine preferito affiancato alla formazione #1, riusando le classi
     # .lineup-row/.alt-panel gia' presenti nel CSS del template, dismesse dal
     # pannello alternative del 28/07 ma mai rimosse dallo stylesheet).
-    tutti_esclusi = [(lg, r, row) for r in ROLES for lg in leghe_rilevanti for row in role_data[lg][r]
-                     if row['slug'] not in used_slugs]
-    tutti_esclusi.sort(key=lambda t: t[2].get('atteso', 0), reverse=True)
-    top_esclusi = tutti_esclusi[:40]
-    if top_esclusi and lineup_html_blocks:
-        def _riga_esclusa(i, lg, r, row):
-            # Niente coefficiente forza avversario in colonna (29/07, bug reale:
-            # 'domesticLeagueRanking' e' un attributo CORRENTE della squadra,
-            # non un valore storico legato alla partita -- vedi commento su
-            # _team_vs_opponent_html in build_formazione_finale.py). Solo
-            # squadra vs avversario, dato accurato (viene dalla partita vera).
-            squadra = bff._short_team(row.get('team_slug'))
-            avversario = bff._short_team(row.get('opponent_team_slug'))
-            vs = f'{squadra} vs {avversario}' if row.get('team_slug') else 'N/D'
-            # punteggio spostato SUBITO dopo il numero, a sinistra del nome
-            # (29/07, bug segnalato dall'utente: prima era in fondo a destra
-            # e la colonna nome veniva tagliata con ellissi). Nome ora senza
-            # limite di larghezza (va a capo se serve invece di troncare),
-            # "vs" resta l'unica colonna che tronca (meno critica).
-            return (
-                f'<tr><td style="padding:2px 6px 2px 0;color:var(--muted)">{i+1}.</td>'
-                f'<td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">{row.get("atteso")} pt</td>'
-                f'<td style="padding:2px 6px 2px 0;white-space:normal">{player_names.get(row["slug"], row["slug"])}</td>'
-                f'<td style="padding:2px 6px 2px 0;color:var(--muted)">{r}</td>'
-                f'<td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;'
-                f'max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '
-                f'title="{vs}">{vs}</td></tr>'
-            )
+    # Pannello per-LEGA (29/07, bug segnalato dall'utente: un'unica lista
+    # combinata affiancata solo alla primissima formazione mischiava
+    # gli esclusi di leghe diverse, es. esclusi Korea mostrati accanto a
+    # una formazione MLS). Ora un pannello per ciascuna lega "dedicata"
+    # (mls, kleague, o altra lega Arena dedicata), affiancato alla PRIMA
+    # formazione DI QUELLA LEGA (usando POOL_LEAGUE_BY_TYPE[tipo] per capire
+    # a quale lega appartiene ogni blocco). Le formazioni "mixed"/"mixed_u23"
+    # (All Stars, pool multi-lega) restano escluse dal pannello per-lega:
+    # non hanno una lega singola a cui affiancare un elenco coerente.
+    def _build_top_esclusi(leghe):
+        tutti = [(lg, r, row) for r in ROLES for lg in leghe for row in role_data[lg][r]
+                 if row['slug'] not in used_slugs]
+        tutti.sort(key=lambda t: t[2].get('atteso', 0), reverse=True)
+        return tutti[:40]
+
+    def _riga_esclusa(i, lg, r, row):
+        # Niente coefficiente forza avversario in colonna (29/07, bug reale:
+        # 'domesticLeagueRanking' e' un attributo CORRENTE della squadra,
+        # non un valore storico legato alla partita -- vedi commento su
+        # _team_vs_opponent_html in build_formazione_finale.py). Solo
+        # squadra vs avversario, dato accurato (viene dalla partita vera).
+        squadra = bff._short_team(row.get('team_slug'))
+        avversario = bff._short_team(row.get('opponent_team_slug'))
+        vs = f'{squadra} vs {avversario}' if row.get('team_slug') else 'N/D'
+        # punteggio spostato SUBITO dopo il numero, a sinistra del nome
+        # (29/07, bug segnalato dall'utente: prima era in fondo a destra
+        # e la colonna nome veniva tagliata con ellissi). Nome ora senza
+        # limite di larghezza (va a capo se serve invece di troncare),
+        # "vs" resta l'unica colonna che tronca (meno critica).
+        return (
+            f'<tr><td style="padding:2px 6px 2px 0;color:var(--muted)">{i+1}.</td>'
+            f'<td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">{row.get("atteso")} pt</td>'
+            f'<td style="padding:2px 6px 2px 0;white-space:normal">{player_names.get(row["slug"], row["slug"])}</td>'
+            f'<td style="padding:2px 6px 2px 0;color:var(--muted)">{r}</td>'
+            f'<td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;'
+            f'max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '
+            f'title="{vs}">{vs}</td></tr>'
+        )
+
+    def _panel_html(top_esclusi):
         righe_html = "".join(
             _riga_esclusa(i, lg, r, row) for i, (lg, r, row) in enumerate(top_esclusi)
         )
-        # Pannello NON piu' dentro il flex-row della formazione #1 (29/07, bug
-        # reale segnalato dall'utente: essendo molto piu' alto di una singola
-        # formazione, il vecchio .lineup-row (flex, altezza = child piu' alto)
-        # spingeva la formazione #2 in basso, creando un vuoto enorme). Ora e'
-        # posizionato fuori flusso (position:absolute) rispetto a un wrapper
-        # relative attorno alla formazione #1 -- non influisce piu' sull'altezza
-        # della riga, resta comunque visivamente accanto/sopra alla formazione #1.
-        top_esclusi_html = (
+        return (
             '<div style="position:absolute;top:0;right:0;width:380px;max-height:480px;'
             'overflow-y:auto;background:var(--surface);border:1px solid var(--border);'
             'border-radius:12px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.25)">'
@@ -852,10 +857,45 @@ def main():
             '<div style="font-size:0.78rem"><table style="border-collapse:collapse;width:100%;table-layout:fixed">'
             f'{righe_html}</table></div></div>'
         )
-        lineup_html_blocks[0] = (
+
+    def _attach_panel(idx, top_esclusi):
+        # Pannello NON piu' dentro il flex-row della formazione (29/07, bug
+        # reale segnalato dall'utente: essendo molto piu' alto di una singola
+        # formazione, il vecchio .lineup-row (flex, altezza = child piu' alto)
+        # spingeva la formazione successiva in basso, creando un vuoto enorme).
+        # Ora e' posizionato fuori flusso (position:absolute) rispetto a un
+        # wrapper relative attorno a quella singola formazione.
+        lineup_html_blocks[idx] = (
             '<div style="position:relative;padding-right:400px">'
-            f'{lineup_html_blocks[0]}{top_esclusi_html}</div>'
+            f'{lineup_html_blocks[idx]}{_panel_html(top_esclusi)}</div>'
         )
+
+    # Un pannello per ciascuna lega "dedicata" (mls, kleague, altre Arena
+    # dedicate), affiancato alla PRIMA formazione DI QUELLA LEGA (29/07, bug
+    # segnalato dall'utente: prima un'unica lista combinata finiva solo
+    # accanto alla primissima formazione in assoluto, mischiando leghe
+    # diverse -- es. esclusi Korea mostrati accanto alla prima formazione
+    # MLS). Le formazioni 'mixed'/'mixed_u23' (All Stars, pool multi-lega)
+    # prendono invece un pannello combinato su TUTTE le leghe rilevanti,
+    # affiancato alla prima formazione mixed incontrata.
+    leghe_gia_fatte = set()
+    mixed_fatto = False
+    for idx, r in enumerate(all_results):
+        if 'error' in r:
+            continue
+        pool_league = POOL_LEAGUE_BY_TYPE.get(r['tipo'])
+        if pool_league in ('mixed', 'mixed_u23'):
+            if not mixed_fatto:
+                top_esclusi_mixed = _build_top_esclusi(leghe_rilevanti)
+                if top_esclusi_mixed:
+                    _attach_panel(idx, top_esclusi_mixed)
+                mixed_fatto = True
+        elif pool_league and pool_league not in leghe_gia_fatte:
+            leghe_gia_fatte.add(pool_league)
+            if pool_league in leghe_rilevanti:
+                top_esclusi_lg = _build_top_esclusi({pool_league})
+                if top_esclusi_lg:
+                    _attach_panel(idx, top_esclusi_lg)
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
