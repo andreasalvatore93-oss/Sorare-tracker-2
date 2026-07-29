@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:12:27.888518Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jorge-luiz-barbosa-teixeira: 51 pt attesi (37-67)
+   ORDINAMENTO: 53.89
+   SQUADRA: pohang-steelers-pohang | AVVERSARIO: sangju-sangmu-sangju
+======================================================================
+
+######################################################################
+# GIOCATORE: jorge-luiz-barbosa-teixeira
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jorge-luiz-barbosa-teixeira (squadra: pohang-steelers-pohang)
+Generato: 2026-07-29T23:12:27.887654Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | POH vs GWA | k-league-1 | score=71.3 | peso=0.697
+  2025-08-15 | ANY vs POH | k-league-1 | score=67.8 | peso=0.717
+  2025-08-24 | POH vs JMO | k-league-1 | score=85.3 | peso=0.737
+  2025-08-31 | GAN vs POH | k-league-1 | score=40.0 | peso=0.758
+  2025-09-13 | POH vs ULS | k-league-1 | score=47.4 | peso=0.779
+  2025-09-21 | POH vs JEJ | k-league-1 | score=50.2 | peso=0.801
+  2025-09-27 | SAN vs POH | k-league-1 | score=38.1 | peso=0.824
+  2025-10-05 | POH vs DJO | k-league-1 | score=37.7 | peso=0.847
+  2025-10-18 | SEO vs POH | k-league-1 | score=37.9 | peso=0.871
+  2025-10-26 | DJO vs POH | k-league-1 | score=52.3 | peso=0.895
+  2025-11-09 | POH vs SEO | k-league-1 | score=50.2 | peso=0.920
+  2025-11-22 | POH vs JMO | k-league-1 | score=41.7 | peso=0.946
+  2026-03-28 | POH vs GAN | k-league-1 | score=67.3 | peso=0.973
+  2026-04-04 | POH vs DJO | k-league-1 | score=46.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 51.80
+  di cui Punteggio decisivo (level_score) medio: 40.20 | Punteggio complessivo (granulari) medio: 11.60 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.02 (delta -0.16) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.83
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.1 - 67.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.03 (differenza: +2.80)
+Media score in casa: 55.29 | Media score fuori casa: 47.22
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.6
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.153
+Fattore falli (casa/trasferta, da dati reali): 1.013
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore trend (media ultime 5: 51.6 vs media ultime 10: 46.9): 1.030
+P(gioca): 41.18% (fonte: tasso di presenza storico (14/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T10:30
+Casa: Pohang Steelers FC | Trasferta: Gimcheon Sangmu
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.7 (range 37.0 - 66.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.29
+Punteggio REALE ottenuto in quella partita: 46.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -5.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      66.9    38.1    -28.8    22.0        NO
+   7        7      63.9    37.7    -26.2    23.0        NO
+   8        8      42.2    37.9     -4.3    23.2        SI
+   9        9      55.2    52.3     -2.9    23.0        SI
+  10       10      41.2    50.2     +9.0    21.6        SI
+  11       11      44.3    41.7     -2.6    20.5        SI
+  12       12      46.4    67.3    +20.9    19.9        NO
+  13       13      62.3    46.5    -15.8    20.1        SI
+
+MAE (errore assoluto medio): 13.81
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

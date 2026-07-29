@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:10:33.898948Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) daniel-hanslik: 48 pt attesi (34-65)
+   ORDINAMENTO: 52.25
+   SQUADRA: bochum-bochum | AVVERSARIO: hertha-bsc-berlin
+======================================================================
+
+######################################################################
+# GIOCATORE: daniel-hanslik
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: daniel-hanslik (squadra: bochum-bochum)
+Generato: 2026-07-29T23:10:33.898417Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 16
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | FCK vs S04 | 2-bundesliga | score=71.2 | peso=0.801
+  2025-10-26 | FCK vs FCN | 2-bundesliga | score=67.6 | peso=0.824
+  2025-11-02 | F95 vs FCK | 2-bundesliga | score=39.5 | peso=0.847
+  2025-11-08 | FCK vs BSC | 2-bundesliga | score=42.9 | peso=0.871
+  2025-12-06 | FCK vs SGD | 2-bundesliga | score=60.0 | peso=0.895
+  2025-12-13 | DSC vs FCK | 2-bundesliga | score=35.9 | peso=0.920
+  2025-12-20 | FCK vs FCM | 2-bundesliga | score=66.2 | peso=0.946
+  2026-05-08 | FCK vs DSC | 2-bundesliga | score=39.0 | peso=0.973
+  2026-05-17 | FCM vs FCK | 2-bundesliga | score=32.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 49.89
+  di cui Punteggio decisivo (level_score) medio: 45.73 | Punteggio complessivo (granulari) medio: 4.16 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.63 (delta -0.23) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.56
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.9 - 67.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.82 (differenza: +1.74)
+Media score in casa: 57.82 | Media score fuori casa: 35.83
+Fattore casa/trasferta applicato: 1.012 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.866
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.010
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.010
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 26.47% (fonte: tasso di presenza storico (9/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-07T18:30
+Casa: VfL Bochum 1848 | Trasferta: Hertha Berlin
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.6 (range 33.6 - 65.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.40
+Punteggio REALE ottenuto in quella partita: 32.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -20.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.2    66.2     +4.0    19.4        SI
+   7        7      61.6    39.0    -22.6    19.2        NO
+   8        8      56.6    32.1    -24.5    19.3        NO
+
+MAE (errore assoluto medio): 17.01
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 33.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
