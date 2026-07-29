@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:34:26.248723Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jonathan-sirois: 48 pt attesi (37-63)
+   SQUADRA: dallas-frisco-texas | AVVERSARIO: la-galaxy-los-angeles-california
+======================================================================
+
+######################################################################
+# GIOCATORE: jonathan-sirois
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jonathan-sirois (squadra: dallas-frisco-texas)
+Generato: 2026-07-29T23:34:26.247867Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | MTL vs STL | mlspa | score=42.6 | peso=0.707
+  2026-05-17 | SJ vs DAL | mlspa | score=69.3 | peso=0.794
+  2026-05-24 | RAP vs DAL | mlspa | score=43.0 | peso=0.891
+  2026-07-26 | SD vs DAL | mlspa | score=60.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 54.08
+  di cui Punteggio decisivo (level_score) medio: 40.85 | Punteggio complessivo (granulari) medio: 13.23 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.18 (delta -1.67 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.28, delta avversario +0.63 | Possesso condizionato per venue: delta -0.25 | Goalkeeping condizionato per venue: delta +0.67 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 11.15
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.6 - 69.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 54.08 | Media score fuori casa: 57.43
+Fattore casa/trasferta applicato: 1.023 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.3
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.057
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.992
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.993
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.007
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.006
+Tasso storico clean sheet (porta inviolata nei primi 60'): 0.0% (bonus atteso incorporato nella media pesata: ~0.0pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T02:30
+Casa: LA Galaxy | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.1 (range 36.6 - 63.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.61
+Punteggio REALE ottenuto in quella partita: 60.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

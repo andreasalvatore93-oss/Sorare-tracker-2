@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T23:34:35.036320Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jack-maher: 47 pt attesi (24-71)
+   ORDINAMENTO: 52.68
+   SQUADRA: nashville-sc | AVVERSARIO: dc-united-washington-district-of-columbia
+======================================================================
+
+######################################################################
+# GIOCATORE: jack-maher
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jack-maher (squadra: nashville-sc)
+Generato: 2026-07-29T23:34:35.035195Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | STL vs NSH | mlspa | score=37.8 | peso=0.637
+  2025-08-17 | NYC vs NSH | mlspa | score=38.6 | peso=0.660
+  2025-09-13 | CIN vs NSH | mlspa | score=34.7 | peso=0.683
+  2025-09-20 | ORL vs NSH | mlspa | score=26.6 | peso=0.707
+  2025-09-28 | NSH vs HOU | mlspa | score=50.6 | peso=0.732
+  2025-10-04 | MTL vs NSH | mlspa | score=52.5 | peso=0.758
+  2025-10-18 | NSH vs MIA | mlspa | score=22.7 | peso=0.785
+  2025-11-09 | MIA vs NSH | mlspa | score=16.9 | peso=0.812
+  2026-03-14 | CLB vs NSH | mlspa | score=56.6 | peso=0.841
+  2026-04-11 | CLT vs NSH | mlspa | score=80.6 | peso=0.871
+  2026-05-02 | PHI vs NSH | mlspa | score=60.4 | peso=0.901
+  2026-05-10 | NSH vs DC | mlspa | score=58.3 | peso=0.933
+  2026-07-18 | NSH vs ATL | mlspa | score=60.1 | peso=0.966
+  2026-07-26 | ORL vs NSH | mlspa | score=73.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 49.52
+  di cui Punteggio decisivo (level_score) medio: 39.14 | Punteggio complessivo (granulari) medio: 10.38 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.25, delta avversario -0.93 | Passaggio condizionato: delta venue -0.67, delta avversario +0.41 | Clean sheet/disimpegni condizionato: delta venue -0.06, delta avversario -0.83 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.56
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.6 - 73.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.07 (differenza: +3.49)
+Media score in casa: 47.93 | Media score fuori casa: 47.84
+Fattore casa/trasferta applicato: 1.004 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.025
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 66.6 vs media ultime 10: 53.2): 1.000
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: DC United | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.6 (range 23.6 - 70.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 52.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.15
+Punteggio REALE ottenuto in quella partita: 73.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +26.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      32.3    22.7     -9.7    11.0        SI
+   7        7      31.6    16.9    -14.7    12.8        NO
+   8        8      40.3    56.6    +16.3    14.7        NO
+   9        9      36.5    80.6    +44.1    16.2        NO
+  10       10      53.7    60.4     +6.6    22.5        SI
+  11       11      45.5    58.3    +12.8    22.3        SI
+  12       12      57.2    60.1     +2.9    21.7        SI
+  13       13      49.8    73.9    +24.0    21.3        NO
+
+MAE (errore assoluto medio): 16.39
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
