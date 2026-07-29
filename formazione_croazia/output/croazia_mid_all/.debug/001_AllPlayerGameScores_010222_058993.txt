@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "luka-stojkovic", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 01:02:22 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785286942', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'yRueoRNoxn0R86U4b9mpmOEgJ1cqZ1D1deuk01oeCVI5NyR0uORDiG3Z_LSEKsgIyXrK2mAtjiZ4j08HsB1u5w', 'etag': 'W/"de2508db57100d727db1c1bec1fbaee1"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=Rotyzp1zhDeaIb7i3RlQeqrxIPGzz9T6Ix9rZIg1cqcnG%2B7%2FLGmkLQO1BXcCE6OMAaYx64vYVuq8RjftoaT1NHfyh9xaP9JRK%2BP42hHo1lkDOQHf20NLuVYRZ0DRmyyrtWcJLTZrtncSy3Kb29w24bju6QvxJV010znzk51Jd69TI7BEIx3wEVHaLovrWduNKZbwt48fvh9SBaeuYRILqO3q7EWfUu6kXlaqKrm%2F1VzkgZKC6WeTMIPldp6kj0GPpjgn3n3KE0KtkLHHSdpmIETV0l%2F47s%2F0SXY2ljtTRYGclodwVTOnLmvQaDU40hoK--k%2BcXXPvvZlI9d7bw--JDJigRtpk5Jm4R0EFwxTgw%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 01:02:22 GMT; secure; httponly; samesite=none', 'x-request-id': '38720723-98d0-4f3c-ab4e-4cda3a8b60b7', 'x-runtime': '0.057220', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 be8b43f893825967d3e4c649e583b4a0.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'cz5Bm3-vxD-jsb3i1cRb-9gUz1qfqBpgri8sY0wHh0eYrInTJCZ6Yw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:c0cdf32e-804e-45dd-bdce-aacb647e18fc","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:56d46dc1-81b0-45e3-82ce-0539f4abf632","date":"2026-07-28T18:00:00Z","statusTyped":"played","homeTeam":{"slug":"dinamo-zagreb-zagreb","name":"GNK Dinamo Zagreb","code":"DIN","domesticLeagueRanking":1},"awayTeam":{"slug":"thun-thun","name":"FC Thun","code":"FCT","domesticLeagueRanking":2},"competition":{"slug":"uefa-champions-league"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:6d3ab679-2d16-482b-86ca-1763c573a343","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:3b2aca66-4385-4889-8e49-3abc2c621840","date":"2026-07-21T18:00:00Z","statusTyped":"played","homeTeam":{"slug":"thun-thun","name":"FC Thun","code":"FCT","domesticLeagueRanking":2},"awayTeam":{"slug":"dinamo-zagreb-zagreb","name":"GNK Dinamo Zagreb","code":"DIN","domesticLeagueRanking":1},"competition":{"slug":"uefa-champions-league"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:2b51016e-ae7c-43a6-95c8-06cc4853edfe","date":"2026-07-31T18:00:00Z","playerGameScore":{"id":"So5Score:368a1360-186a-4558-ac67-3ed9f9c5763a","positionTyped":"Midfielder","projectedScore":60.0,"anyGame":{"id":"Game:2b51016e-ae7c-43a6-95c8-06cc4853edfe","date":"2026-07-31T18:00:00Z","homeTeam":{"slug":"dinamo-zagreb-zagreb","name":"GNK Dinamo Zagreb","code":"DIN","domesticLeagueRanking":1},"awayTeam":{"slug":"slaven-koprivnica-koprivnica","name":"NK Slaven Belupo","code":"SLA","domesticLeagueRanking":8},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:ca99fb15-2687-439d-8f47-ed7eec06393f","date":"2026-08-08T00:00:00Z","playerGameScore":{"id":"So5Score:885c5fec-7d0b-4f78-8b04-c67eae50ca4f","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:ca99fb15-2687-439d-8f47-ed7eec06393f","date":"2026-08-08T00:00:00Z","homeTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"awayTeam":{"slug":"dinamo-zagreb-zagreb","name":"GNK Dinamo Zagreb","code":"DIN","domesticLeagueRanking":1},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:20b3f50c-4274-48e3-8eb7-2d879b434146","date":"2026-08-15T00:00:00Z","playerGameScore":{"id":"So5Score:6fb73aab-ad2c-4a64-8e5f-638d18dab7f3","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:20b3f50c-4274-48e3-8eb7-2d879b434146","date":"2026-08-15T00:00:00Z","homeTeam":{"slug":"dinamo-zagreb-zagreb","name":"GNK Dinamo Zagreb","code":"DIN","domesticLeagueRanking":1},"awayTeam":{"slug":"rudes-zagreb","name":"NK Rudeš Zagreb","code":"RUD","domesticLeagueRanking":10},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:4d4faf30-5531-4e35-ae37-8d99dcec975b","date":"2026-08-22T00:00:00Z","playerGameScore":{"id":"So5Score:897068be-af46-4323-bf37-a14cb3909530","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:4d4faf30-5531-4e35-ae37-8d99dcec975b","date":"2026-08-22T00:00:00Z","homeTeam":{"slug":"dinamo-zagreb-zagreb","name":"GNK Dinamo Zagreb","code":"DIN","domesticLeagueRanking":1},"awayTeam":{"slug":"varazdin-varazdin","name":"NK Varaždin","code":"VAR","domesticLeagueRanking":3},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:4fd836ed-15a3-4490-925e-737b2aed1cfa","date":"2026-08-29T00:00:00Z","playerGameScore":{"id":"So5Score:2fc98bc5-dc3d-49f0-8bbc-6cae9d0d410e","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:4fd836ed-15a3-4490-925e-737b2aed1cfa","date":"2026-08-29T00:00:00Z","homeTeam":{"slug":"istra-1961-pula","name":"NK Istra 1961","code":"IST","domesticLeagueRanking":6},"awayTeam":{"slug":"dinamo-zagreb-zagreb","name":"GNK Dinamo Zagreb","code":"DIN","domesticLeagueRanking":1},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
