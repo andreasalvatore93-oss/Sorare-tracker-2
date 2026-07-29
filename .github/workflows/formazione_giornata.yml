@@ -1681,7 +1681,7 @@ jobs:
     needs: [discovery_merge, predict]
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       max-parallel: 77
