@@ -3645,3 +3645,188 @@ prima dello shrinkage/venue.
 
 Tutto committato e pushato su `main` durante la sessione (commit multipli, uno per blocco logico
 di fix). Nessuna modifica pendente non salvata a fine sezione.
+
+## 34 — Sessione 29/07 (seconda parte): 3 bug urgenti, retuning esteso a tutte le leghe,
+## discovery globale Bundesliga, regola "nessun guadagno e' trascurabile"
+
+### 34.A — 3 bug urgenti dalla run gw96 (fixati per primi, priorita' massima)
+
+Dopo la run gw96 mls:6+kleague:6 di fine sessione 33, l'utente ha segnalato 3 bug reali:
+
+1. **All Stars generata senza essere richiesta**: il workflow `formazione_giornata.yml` aveva
+   `allstars` default `'1'` invece di `'0'` — bastava dimenticare `-f allstars=0` per generarne una
+   non voluta. Fix: default cambiato a `'0'`.
+2. **Pannello "Top esclusi" mischiava le leghe**: un'unica lista combinata era affiancata solo alla
+   primissima formazione in assoluto (es. esclusi Korea mostrati accanto alla prima formazione
+   MLS). Fix: pannello PER-LEGA in `generatore_formazioni/build_formazione_globale.py`, affiancato
+   alla prima formazione di CIASCUNA lega (usando `POOL_LEAGUE_BY_TYPE[tipo]` per capire a quale
+   lega appartiene ogni blocco); le formazioni "mixed"/"mixed_u23" (All Stars) prendono un pannello
+   combinato su tutte le leghe rilevanti.
+3. **Leghe irrilevanti negli esclusi**: conseguenza diretta del bug #1 (allstars accidentale
+   faceva scattare `leghe_rilevanti = set(LEAGUES)`, tutte le 28 leghe) — risolto automaticamente
+   fixando #1, verificato che `leghe_rilevanti` sia comunque corretta per costruzione.
+
+Verificato con una run reale (30448257173, gw96, allstars=0 esplicito): nessuna All Stars generata,
+2 pannelli distinti (MLS con squadre MLS, K League con squadre coreane), nessun leak di altre leghe.
+
+### 34.B — Regola esplicita dell'utente: "non esiste un guadagno trascurabile, esiste solo guadagno"
+
+Punto di svolta della sessione: fino a questo momento, guadagni MAE sotto ~0.4% venivano scartati
+come "rumore". L'utente ha imposto una regola diversa: **qualunque guadagno positivo, per quanto
+piccolo, va applicato** (a meno di conflitti con un fix specifico gia' validato su un caso reale).
+Questo ha riaperto e ritarato parametri che erano stati "chiusi" nella sessione precedente.
+
+Regola gemella, imposta a meta' sessione: **"tutti i test fatti vanno fatti su tutte le leghe"**
+(non solo MLS/Korea) — piu' dati = piu' accuratezza statistica, anche se poi l'applicazione in
+produzione resta scoped a MLS/Korea per prudenza.
+
+### 34.C — Sinergie In Season: 2 disattivate per guadagno reale
+
+Test A/B locali (genera le stesse 6 formazioni con/senza ciascuna sinergia, confronta i totali):
+
+- **`POSITIVE_SYNERGY_BONUS_BY_PAIR`**: disattivato per In Season MLS/K League. MLS 2033->2035pt
+  (+2/6 formazioni), K League invariato (nessun costo a disattivarlo).
+- **`MATCH_REUSE_PENALTY`** (decorrelazione formazioni che condividono la stessa partita reale):
+  disattivato per In Season MLS/K League. MLS +21pt/6 formazioni, K League +2pt/6. Nota: il
+  beneficio di decorrelazione (rischio diversificato tra formazioni) non e' catturato dal
+  punteggio atteso totale — scelta esplicita dell'utente di privilegiare comunque il guadagno
+  misurato.
+- **`SAME_TEAM_SYNERGY_BONUS_BY_PAIR`**: disattivato SOLO per `ARENA_ALLSTARS_UNCAPPED` (1880pt
+  attivo vs 1920pt disattivato su 6 formazioni) — 260/220 IDENTICI on/off (il cap L10 obbligatorio
+  rende la sinergia ininfluente li', nessuna modifica).
+- `ANTI_SYNERGY_PENALTY`, `STACK_GUARD_PENALTY`, `CROSS_TEAM_PENALTY_BY_PAIR`: confermati inerti
+  ovunque testato (MLS, K League, Eredivisie, Turchia, Portogallo, Croazia, Scozia — 7 leghe,
+  nessun delta in nessuna). Belgio/Spagna/Germania/Francia saltate per assenza di candidati
+  (leghe in pausa estiva, vedi 34.F). Le restanti 16 leghe non hanno un tipo Arena dedicato
+  isolabile con l'infrastruttura attuale.
+
+### 34.D — Retuning half_life/trend_intensity/sensitivity/shrink_K post-fix, su tutte le leghe
+
+Tutti i parametri sotto erano stati calibrati PRIMA dei fix di opponent_lambda_mult/Stadio D/cap
+goals_conceded della sessione precedente — potenzialmente non piu' ottimali. Ritestati con backtest
+walk-forward rigoroso estendendo il dataset a TUTTE le 28 leghe (prima alcuni script erano
+MLS-only, es. `validate_halflife_venue.py`).
+
+**HALF_LIFE_GAMES** (applicato a TUTTE le 28 leghe, parametro globale gia' storicamente
+sincronizzato tra leghe): DEF 9.0->20.0 (-0.55% MAE), MID 12.0->25.0 (-0.31%), FWD 12.0->25.0
+(-0.32%). Grid esteso fino a 150 senza trovare un vero minimo interno per nessuno dei 4 ruoli
+(convergenza asintotica) — scelto il ginocchio di rendimento decrescente, non il bordo assoluto,
+per non perdere sensibilita' a partite anomale. **GK lasciato a 6.0** (fix Daniel De Sousa Brito
+gia' validato su un caso reale ha priorita' su un guadagno medio aggregato che avrebbe richiesto
+half_life=20+, contrario allo spirito del fix).
+
+**TREND_INTENSITY** (applicato SOLO MLS/Korea, scelta esplicita dell'utente — le altre 26 leghe
+restano ai vecchi valori): DEF 0.7->0.0, MID 0.7->0.2, FWD 1.0->0.3 (-1.25%/-0.39%/-0.73% MAE).
+
+**SENSITIVITY_BY_ROLE** (`opponent_strength.py`, MLS/Korea): GK 1.0->0.7 (-0.04%), DEF 1.0->0.8
+(-0.01%). MID lasciato a 0.7 (guadagno 0.0001 di MAE, indistinguibile dal rumore). FWD gia'
+ottimale a 1.0.
+
+**SHRINK_K_OUTLIER_<ruolo>** (MLS/Korea): DEF 15->18 (-0.002%), MID 10->7 (-0.045%), FWD 5->6
+(-0.005%), tutti minimi interni puliti. **GK caso a parte**: nessun minimo interno trovato fino a
+k=50 (converge verso "ignora lo storico individuale"), ma verificato DUE VOLTE (formula
+semplificata e poi formula VERA di produzione) che questo NON peggiora il sottogruppo portieri ad
+alta varianza (tipo Daniel) — anzi migliora anche li'. Applicato comunque un valore prudente
+(5.0->20.0, non il migliore assoluto 50) per restare piu' lontano da un bordo mai esteso oltre.
+
+Grid 2D (half_life x trend_intensity insieme, per verificare interazioni non colte testando un
+parametro alla volta): interazione reale ma minuscola (-0.002% DEF, -0.027% MID, -0.014% FWD) — non
+applicata, i minimi trovati erano anch'essi al bordo della grid (convergenza asintotica, non un
+vero minimo).
+
+### 34.E — Nuova feature: GK vs pen_area_entries dei DIFENSORI avversari
+
+Granulare mai isolato prima: `opponent_strength.gk_def_pen_area_multiplier()`, bonus GK basato
+SOLO sulle `pen_area_entries` dei difensori avversari (separato dal bonus FWD+MID gia' esistente,
+si affianca senza sostituirlo). Validato -0.13% MAE (`validate_cross_role_combos.py`, gruppo
+`gk_vs_def_only`), costanti reali (non fabbricate) ricalcolate da `build_opponent_series` —
+GLOBAL_MEAN_DEF_PEN_AREA=1.9428, GLOBAL_STD_DEF_PEN_AREA=2.2335. Applicato MLS/Korea.
+
+Altre combinazioni testate in questo giro, tutte scartate (nessun guadagno reale): DEF vs GK
+avversario (aerial/duel vs alte uscite, ~0%), GK vs solo-DEF duel_lost (~0%), H2H DEF (+0.19%,
+peggiora), trend proprio DEF/MID/FWD gia' catturato dal retuning trend_intensity sopra.
+
+### 34.F — Discovery globale Bundesliga (Germania), prima delle 5 leghe backlog rimanenti
+
+Scoperta: Spagna/Germania/Francia/Inghilterra/Italia/Belgio hanno storico cache molto scarso
+(12-32 partite a lega) — causa reale: la discovery esistente per queste leghe e' SOLO
+fixture-based (candidati solo tra le carte POSSEDUTE con una partita nella finestra corrente), e
+questi 6 campionati sono gli UNICI davvero in pausa estiva lunga (fine campionato a maggio, ripresa
+ad agosto) — a differenza di Croazia/Turchia/Austria/Argentina/Olanda che hanno gia' ripreso o non
+si sono mai fermate del tutto. MLS/K League hanno in piu' uno script di discovery "_global" (pesca
+TUTTI i giocatori di qualita' della lega, indipendentemente da possesso/fixture) — mai replicato
+per le altre 26 leghe.
+
+Costruito per la Germania (Bundesliga), prima delle 6 leghe mancanti:
+1. Verificati dal vivo (via GitHub Actions, query `football { competition(slug: "bundesliga-de")
+   { clubs(first: 50) { nodes { slug name } } } }`) i 18 slug club ufficiali — MAI indovinati,
+   rischio di risultati silenziosamente vuoti gia' documentato altrove nel codice.
+2. Creati `formazione_germania/discovery/germania_<ruolo>_discovery_global.py` (4 file, clone
+   esatto dello schema MLS/K League).
+3. Lanciati via workflow dedicato (`run_germania_discovery_global.yml`) — primo tentativo fallito
+   con 403 su push (mancava `permissions: contents: write` nel workflow), fixato e rilanciato con
+   successo.
+
+Risultato: **279 giocatori Bundesliga scoperti** (GK 11, DEF 78, MID 84, FWD 96),
+`player_slugs.json` committati su main. **Nota importante**: questi NON sono carte possedute
+dall'utente — servono solo ad allargare il campione statistico per calibrazione/backtest, zero
+impatto sulle formazioni reali generate (quelle restano sempre sulle carte davvero possedute).
+**Prossimo passo, non ancora fatto**: lanciare predict in `CALIBRATION_MODE=1` sui 279 slug per
+scaricare davvero lo storico partite e popolare le cache (`formazione_germania/output/
+germania_<ruolo>_calibration/.cache`) — la sola discovery non aggiunge nessuna partita allo
+storico, serve questo passo successivo. Tempo stimato NON verificato (30-60+ minuti). Restano
+Spagna/Francia/Inghilterra/Italia/Belgio con lo stesso identico procedimento.
+
+### 34.G — K League: falso allarme sul meccanismo gain-per-slot, poi allineato per coerenza
+
+Il backlog "K League senza ottimizzazione classic" (da ieri) presupponeva che
+`formazione_kleague/build_formazione_finale.py` fosse usato in produzione — verificato che e' in
+realta' uno script STANDALONE LEGACY mai chiamato da nessun workflow: la pipeline reale
+(`generatore_formazioni/build_formazione_globale.py`, usata da `formazione_giornata.yml`) importa
+UN SOLO modulo condiviso (`formazione_mls/build_formazione_finale.py`) per TUTTE le leghe, K League
+incluso — il meccanismo gain-per-slot era quindi GIA' corretto in produzione, nessun bug reale
+sulle formazioni generate. Il file legacy e' comunque stato allineato per coerenza (stesso
+meccanismo `_run(allow_classic_slot=..., measure_gains=...)` portato li', adattato alla firma piu'
+vecchia del file). Nessun impatto sulle formazioni reali in nessuno dei due casi.
+
+### 34.H — Decisioni prese dall'utente in questa sessione (NON riproporle)
+
+- "Non esiste un guadagno trascurabile, esiste solo guadagno" — regola permanente per i backtest
+  d'ora in poi, applicare anche i guadagni minimi (con l'eccezione di conflitti con fix specifici
+  gia' validati su casi reali, es. half_life GK).
+- "Tutti i test fatti vanno fatti su tutte le leghe" — regola permanente per la fase di TEST, non
+  automaticamente per l'APPLICAZIONE in produzione (che resta scoped a MLS/Korea salvo diversa
+  indicazione).
+- GK half_life resta 6.0 nonostante il guadaglio aggregato favorisca valori piu' alti — il fix
+  Daniel (caso reale) ha priorita'.
+- MATCH_REUSE_PENALTY disattivato accettando la perdita del beneficio di decorrelazione, a favore
+  del guadagno di punteggio atteso misurato.
+- Estensione delle 26 leghe rimanenti (sia per le feature opponent-strength sia per discovery
+  globale) resta backlog esplicito, un tema/una lega alla volta, non tutto insieme.
+
+### 34.I — Backlog aperto (dettaglio completo nella memoria auto-persistente Claude, non solo qui)
+
+- **Produzione solo MLS/Korea**: 10 miglioramenti validati (opponent_lambda_mult, fix Stadio D, cap
+  goals_conceded, fwd_offense_granular_delta, gk_def_pen_area_multiplier, trend_intensity,
+  sensitivity, shrink_K, 2 sinergie disattivate) da estendere alle altre 26 leghe.
+- **Discovery globale big5**: Germania fatta (discovery, calibration ancora da lanciare), restano
+  Spagna/Francia/Inghilterra/Italia/Belgio con lo stesso procedimento.
+- **Retest venue nuove leghe**: rifare `validate_venue_per_league.py` quando i big5 europei
+  avranno piu' storico (oggi campioni troppo piccoli per conclusioni robuste per lega).
+- **Naming fuorviante**: label "solo diagnostico" per il granulare in `test_mid.py` (in realta'
+  usato), e testo "scalati per P(gioca)" per i delta Stadio D (rimosso davvero il 28/07, testo
+  rimasto stale) — nessun impatto funzionale, solo chiarezza per letture future.
+- **Tema "meglio il piu' affidabile o il piu' forte"**: annunciato dall'utente, contenuto ancora
+  da spiegare in una prossima sessione — non ipotizzare/implementare nulla senza la spiegazione
+  completa.
+
+### 34.J — Stato repo
+
+Tutto committato e pushato su `main` durante la sessione. Diagnostics creati oggi (mantenuti nel
+repo come riferimento riproducibile, stessa convenzione delle sessioni precedenti):
+`validate_halflife_venue.py` (esteso a tutte le leghe), `validate_venue_per_league.py`,
+`validate_trend_intensity_generic.py`, `validate_opponent_trend_h2h_generic.py`,
+`validate_shrink_k*.py`, `validate_halflife_trend_grid2d.py`, `compare_synergy_toggles*.py`,
+`compare_crossteam_matchreuse_toggles.py`, `verify_bundesliga_clubs.py`, workflow
+`verify_bundesliga_clubs.yml` e `run_germania_discovery_global.yml`.
+di fix). Nessuna modifica pendente non salvata a fine sezione.
