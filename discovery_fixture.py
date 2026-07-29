@@ -605,7 +605,15 @@ def main():
     # consiglio finale (aggregazione di TUTTI gli slug del ruolo) si genera
     # in un job separato 'consiglio', dopo che TUTTI gli shard di 'predict'
     # sono completati -- vedi formazione_giornata.yml.
-    PREDICT_SHARD_LEAGUES = {'mls', 'kleague'}
+    # 29/07 (sera): generalizzato da {'mls','kleague'} a TUTTE le leghe --
+    # con le stagioni ormai avviate, altre leghe (Belgio/Olanda/Germania2/
+    # Giappone, ecc.) hanno accumulato altrettanti candidati per ruolo e
+    # pagavano lo stesso collo di bottiglia (un job DEF da 40+ giocatori in
+    # sequenza, 10-15 minuti, mai sminuzzato). La soglia PREDICT_SHARD_
+    # TARGET_SIZE=25 sotto fa gia' da filtro naturale: le leghe piccole
+    # restano 1 solo job (shard_n=1, comportamento INVARIATO), solo quelle
+    # davvero affollate ne prendono 2+.
+    PREDICT_SHARD_LEAGUES = None  # None = si applica a tutte le leghe
     # 29/07: PREDICT_SHARD_N fisso (prima 2, poi 4) si e' rivelato sbagliato
     # in entrambe le direzioni. A 2 shard il ruolo piu' affollato (DEF, ~95
     # giocatori/lega) restava a ~48 giocatori/shard, ~6m30s sul percorso
@@ -624,7 +632,7 @@ def main():
     matrice = []
     for lg, ruoli in sorted(scritti.items()):
         for r in sorted(ruoli):
-            if lg in PREDICT_SHARD_LEAGUES:
+            if PREDICT_SHARD_LEAGUES is None or lg in PREDICT_SHARD_LEAGUES:
                 n_players = len(ruoli[r])
                 shard_n = max(1, -(-n_players // PREDICT_SHARD_TARGET_SIZE))
                 if shard_n <= 1:
