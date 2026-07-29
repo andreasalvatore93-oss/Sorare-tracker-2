@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:15:01.421709Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) promise-oluwatobi-emmanuel-akinpelu: 45 pt attesi (33-66)
+   ORDINAMENTO: 46.17
+   SQUADRA: union-saint-gilloise-bruxelles-brussels | AVVERSARIO: bodo-glimt-bodo
+======================================================================
+
+######################################################################
+# GIOCATORE: promise-oluwatobi-emmanuel-akinpelu
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: promise-oluwatobi-emmanuel-akinpelu (squadra: union-saint-gilloise-bruxelles-brussels)
+Generato: 2026-07-29T23:15:01.420896Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 50
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-27 | USG vs WES | jupiler-pro-league | score=60.0 | peso=0.660
+  2025-10-18 | USG vs CHA | jupiler-pro-league | score=37.6 | peso=0.678
+  2025-10-21 | USG vs INT | uefa-champions-league | score=44.7 | peso=0.697
+  2025-10-26 | USG vs STV | jupiler-pro-league | score=38.3 | peso=0.717
+  2025-11-22 | USG vs CER | jupiler-pro-league | score=70.4 | peso=0.737
+  2025-11-30 | AND vs USG | jupiler-pro-league | score=34.8 | peso=0.758
+  2025-12-14 | CHA vs USG | jupiler-pro-league | score=60.0 | peso=0.779
+  2025-12-20 | USG vs ZWA | jupiler-pro-league | score=67.9 | peso=0.801
+  2025-12-26 | CER vs USG | jupiler-pro-league | score=34.7 | peso=0.824
+  2026-01-17 | USG vs KVM | jupiler-pro-league | score=63.6 | peso=0.847
+  2026-01-21 | BAY vs USG | uefa-champions-league | score=35.5 | peso=0.871
+  2026-01-24 | OHL vs USG | jupiler-pro-league | score=36.7 | peso=0.895
+  2026-02-01 | USG vs CLU | jupiler-pro-league | score=68.5 | peso=0.920
+  2026-02-08 | USG vs LAL | jupiler-pro-league | score=44.5 | peso=0.946
+  2026-02-14 | STA vs USG | jupiler-pro-league | score=26.6 | peso=0.973
+  2026-02-21 | USG vs ANT | jupiler-pro-league | score=32.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.76
+  di cui Punteggio decisivo (level_score) medio: 44.05 | Punteggio complessivo (granulari) medio: 2.71 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.74 (delta -0.03) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.73
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.7 - 67.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.37 (differenza: +1.36)
+Media score in casa: 52.79 | Media score fuori casa: 38.05
+Fattore casa/trasferta applicato: 1.009 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.4
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.849
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.012
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 41.7 vs media ultime 10: 47.0): 0.966
+P(gioca): 32.00% (fonte: tasso di presenza storico (16/50))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-04T00:00
+Casa: Royal Union Saint-Gilloise | Trasferta: FK Bodø / Glimt
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.9 (range 32.8 - 66.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.95
+Punteggio REALE ottenuto in quella partita: 32.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -15.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.7    60.0     +2.3    18.5        SI
+   7        7      42.9    67.9    +25.0    18.2        NO
+   8        8      46.3    34.7    -11.6    19.1        SI
+   9        9      54.0    63.6     +9.6    19.6        SI
+  10       10      43.9    35.5     -8.4    19.4        SI
+  11       11      62.4    36.7    -25.7    19.6        NO
+  12       12      43.0    68.5    +25.5    19.4        NO
+  13       13      69.4    44.5    -24.9    20.1        NO
+  14       14      41.7    26.6    -15.1    19.4        SI
+  15       15      56.7    32.4    -24.3    20.6        NO
+
+MAE (errore assoluto medio): 17.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
