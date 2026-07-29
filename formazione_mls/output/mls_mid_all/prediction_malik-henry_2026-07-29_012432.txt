@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T01:24:32.471394Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) malik-henry: 36 pt attesi (29-43)
+   SQUADRA: toronto-toronto | AVVERSARIO: new-york-city-new-york-new-york
+======================================================================
+
+######################################################################
+# GIOCATORE: malik-henry
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: malik-henry (squadra: toronto-toronto)
+Generato: 2026-07-29T01:24:32.470200Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-05-02 | TOR vs SJ | mlspa | score=34.8 | peso=0.841
+  2026-05-09 | TOR vs MIA | mlspa | score=42.4 | peso=0.891
+  2026-05-16 | CLT vs TOR | mlspa | score=27.8 | peso=0.944
+  2026-05-24 | CHI vs TOR | mlspa | score=34.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 34.68
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: -0.32 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 35.00 (delta -0.00)
+  Efficacia offensiva condizionata: delta venue -0.29, delta avversario -0.90 | Passaggio condizionato: delta venue +0.04, delta avversario +0.13 | Gol subiti condizionato: delta venue +0.15, delta avversario +0.09 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 5.16
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.8 - 42.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 38.60 | Media score fuori casa: 31.00
+Fattore casa/trasferta applicato: 0.986 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.5
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 1.052
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 14.81% (fonte: tasso di presenza storico (4/27))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T23:30
+Casa: New York City FC | Trasferta: Toronto FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 35.6 (range 28.7 - 43.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 34.86
+Punteggio REALE ottenuto in quella partita: 34.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
