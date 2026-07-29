@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T01:24:38.947143Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) sergio-oregel-jr: 40 pt attesi (32-46)
+   SQUADRA: chicago-fire-bridgeview-illinois | AVVERSARIO: charlotte-fc-charlotte-north-carolina
+======================================================================
+
+######################################################################
+# GIOCATORE: sergio-oregel-jr
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sergio-oregel-jr (squadra: chicago-fire-bridgeview-illinois)
+Generato: 2026-07-29T01:24:38.945974Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | CHI vs LAFC | mlspa | score=39.6 | peso=0.841
+  2025-08-17 | CHI vs STL | mlspa | score=40.5 | peso=0.891
+  2025-08-23 | PHI vs CHI | mlspa | score=31.9 | peso=0.944
+  2025-10-23 | CHI vs ORL | mlspa | score=45.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 39.39
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 4.39 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 35.00 (delta -0.00)
+  Efficacia offensiva condizionata: delta venue +0.03, delta avversario -0.00 | Passaggio condizionato: delta venue +0.60, delta avversario +0.75 | Gol subiti condizionato: delta venue +0.33, delta avversario -0.16 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 4.92
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.9 - 45.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 41.80 | Media score fuori casa: 31.90
+Fattore casa/trasferta applicato: 1.011 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.922
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.011
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.989
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 13.33% (fonte: tasso di presenza storico (4/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Chicago Fire FC | Trasferta: Charlotte FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 40.0 (range 32.5 - 45.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 37.18
+Punteggio REALE ottenuto in quella partita: 45.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
