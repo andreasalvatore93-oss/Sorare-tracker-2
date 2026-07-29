@@ -25,6 +25,10 @@ ESCLUSO_RE = re.compile(r'^([\w-]+):\s+(ESCLUSO|DATI INSUFFICIENTI)\s+—\s+(.*)
 # build_formazione_finale.py per evitare di schierare insieme portiere e
 # giocatore di movimento le cui squadre si affrontano.
 TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
+# NUOVO (29/07, richiesta esplicita utente): fattore forza avversario (SOLO
+# diagnostico, non entra in score_atteso -- vedi test_<ruolo>.py) portato fino
+# a build_formazione_finale.py per mostrarlo accanto a squadra/avversario.
+OPP_FACTOR_RE = re.compile(r'^Fattore forza avversario applicato:\s+([\d.]+)\s*$')
 # NUOVO (27/07): data/ora di calcio d'inizio della partita TARGET, estratta dalla
 # riga "Data:" gia' presente nel file di predizione. Serve a schierare solo chi
 # gioca DAVVERO nella giornata per cui si costruisce la formazione: senza questa
@@ -47,6 +51,7 @@ def parse_player_file(path):
 
     consiglio = None
     team_slug = opp_slug = None
+    opp_factor = None
     kickoff = None
     for line in content.splitlines():
         stripped = line.strip()
@@ -64,6 +69,10 @@ def parse_player_file(path):
         if m:
             team_slug, opp_slug = m.groups()
             continue
+        m = OPP_FACTOR_RE.match(stripped)
+        if m:
+            opp_factor = float(m.group(1))
+            continue
         m = ESCLUSO_RE.match(stripped)
         if m:
             slug, status, note = m.groups()
@@ -73,6 +82,7 @@ def parse_player_file(path):
         consiglio['team_slug'] = None if team_slug == 'N/D' else team_slug
         consiglio['opponent_team_slug'] = None if opp_slug == 'N/D' else opp_slug
         consiglio['kickoff'] = kickoff
+        consiglio['opp_factor'] = opp_factor
         return consiglio
     return None
 
@@ -106,6 +116,8 @@ def main():
         # NUOVO (26/07, tema correlazione GK-DEF): squadra/avversario, per
         # build_formazione_finale.py.
         lines.append(f"   SQUADRA: {r.get('team_slug') or 'N/D'} | AVVERSARIO: {r.get('opponent_team_slug') or 'N/D'}")
+        if r.get('opp_factor') is not None:
+            lines.append(f"   AVV_FACTOR: {r['opp_factor']:.3f}")
         if r.get('kickoff'):
             lines.append(f"   KICKOFF: {r['kickoff']}")
     lines.append("")

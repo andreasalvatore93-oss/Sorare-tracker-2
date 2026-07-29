@@ -101,6 +101,11 @@ CONSIGLIO_LINE_RE = re.compile(r'^\d+\)\s+([\w-]+):\s+(-?\d+)\s+pt\s+\((-?\d+)-(
 # NUOVO (26/07, tema correlazione GK-DEF): riga "SQUADRA: x | AVVERSARIO: y"
 # scritta subito dopo la riga consiglio da build_consiglio_<ruolo>.py.
 TEAM_RE = re.compile(r'^SQUADRA:\s+(\S+)\s+\|\s+AVVERSARIO:\s+(\S+)\s*$')
+# NUOVO (29/07, richiesta esplicita utente): fattore forza avversario (SOLO
+# diagnostico, non entra in score_atteso -- vedi test_<ruolo>.py) mostrato
+# nel report accanto a squadra/avversario, per ogni giocatore schierato ED
+# escluso.
+OPP_FACTOR_RE = re.compile(r'^AVV_FACTOR:\s+([\d.]+)\s*$')
 # NUOVO (27/07): calcio d'inizio della partita target, scritto da
 # build_consiglio_<ruolo>.py. Serve a scartare chi NON gioca nella giornata per
 # cui si schiera (partita gia' giocata o fra giorni).
@@ -465,7 +470,7 @@ def parse_consiglio(path):
                 slug, atteso, low, high = m.groups()
                 pending = {'slug': slug, 'atteso': int(atteso), 'low': int(low), 'high': int(high),
                            'team_slug': None, 'opponent_team_slug': None, 'ordinamento': None,
-                           'kickoff': None}
+                           'kickoff': None, 'opp_factor': None}
                 continue
             m = ORDINAMENTO_RE.match(stripped)
             if m and pending:
@@ -480,6 +485,10 @@ def parse_consiglio(path):
                 team_slug, opp_slug = m.groups()
                 pending['team_slug'] = None if team_slug == 'N/D' else team_slug
                 pending['opponent_team_slug'] = None if opp_slug == 'N/D' else opp_slug
+                continue
+            m = OPP_FACTOR_RE.match(stripped)
+            if m and pending:
+                pending['opp_factor'] = float(m.group(1))
         if pending:
             rows.append(pending)
     return rows
@@ -1224,7 +1233,42 @@ def _pcard_tags_html(ctype, copie, xp_bonus_frac=0.0):
     return ''.join(tags)
 
 
-def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool):
+def _short_team(slug):
+    """Nome squadra abbreviato da uno slug Sorare (es.
+    'inter-miami-cf-fort-lauderdale-florida' -> 'Inter Miami Cf') -- euristica
+    (primi 3 token, title-case), non un lookup esatto: gli slug Sorare non
+    hanno una lista di nomi brevi gia' pronta da nessuna parte nel repo, e
+    costruire un dizionario per ~30+ squadre x 28 leghe non vale lo sforzo per
+    un'etichetta diagnostica. None/'N/D' -> 'N/D'."""
+    if not slug or slug == 'N/D':
+        return 'N/D'
+    parole = slug.split('-')[:3]
+    return ' '.join(w.capitalize() for w in parole)
+
+
+def _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor):
+    """Riga 'Squadra vs Avversario' + coefficiente di forza avversario (29/07,
+    richiesta esplicita utente: sapere subito contro chi gioca ogni giocatore
+    schierato/escluso e quanto l'avversario e' forte/debole rispetto al suo
+    storico -- SOLO diagnostico, il coefficiente non entra in score_atteso,
+    vedi commento su OPP_FACTOR_RE)."""
+    if not team_slug and not opponent_team_slug:
+        return ''
+    squadra = _short_team(team_slug)
+    avversario = _short_team(opponent_team_slug)
+    fattore_html = ''
+    if opp_factor is not None:
+        colore = 'var(--muted)'
+        if opp_factor > 1.02:
+            colore = '#4caf50'  # avversario storicamente debole -> fattore favorevole
+        elif opp_factor < 0.98:
+            colore = '#d9534f'  # avversario storicamente forte -> fattore sfavorevole
+        fattore_html = f' <span style="color:{colore}">({opp_factor:.2f}x)</span>'
+    return f'<div class="pcard-match">{squadra} vs {avversario}{fattore_html}</div>'
+
+
+def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
+                      team_slug=None, opponent_team_slug=None, opp_factor=None):
     """Contenuto dinamico di una pcard (tutto tranne striscia colore/ruolo/
     badge capitano, che restano legati allo SLOT, non al giocatore) --
     fattorizzato (28/07) per essere riusato SIA per la carta reale SIA per
@@ -1232,12 +1276,14 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool):
     se trascinata al posto del titolare (drag&drop lato client, nessun
     ricalcolo server: lo scambio e' un puro swap di HTML gia' pronto)."""
     l10_html = f'<div class="pcard-l10">L10: {l10:.0f}</div>' if l10 is not None else ''
+    match_html = _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor)
     return (
         f'<div class="pcard-avatar">{_slug_initials(slug)}</div>'
         f'<div class="pcard-name">{card_pool.display_name(slug)}</div>'
         f'<div class="pcard-score">{atteso}</div>'
         f'<div class="pcard-range">{low}–{high} pt</div>'
         f'{l10_html}'
+        f'{match_html}'
         f'<div class="pcard-tags">{tags_html}</div>'
     )
 
@@ -1251,7 +1297,9 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain, apply_xp_bon
     tags_html = _pcard_tags_html(ctype, copie, xp_bonus_frac)
     captain_badge = '<span class="pcard-captain">C</span>' if is_captain else ''
     l10 = card_pool.l10(row['slug'])
-    body_html = _pcard_body_html(row['slug'], row['atteso'], row['low'], row['high'], l10, tags_html, card_pool)
+    body_html = _pcard_body_html(row['slug'], row['atteso'], row['low'], row['high'], l10, tags_html, card_pool,
+                                  team_slug=row.get('team_slug'), opponent_team_slug=row.get('opponent_team_slug'),
+                                  opp_factor=row.get('opp_factor'))
     # data-body (28/07): l'HTML esatto della pcard-body per QUESTO giocatore,
     # gia' pronto -- il drag&drop lato client lo scambia con quello di
     # un'alternativa senza ricalcolare nulla in JS (vedi script nel template).
@@ -1425,6 +1473,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .pcard-score {{ font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }}
   .pcard-range {{ font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }}
   .pcard-l10 {{ font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
+  .pcard-match {{ font-size: 0.48rem; color: var(--muted-2); line-height: 1.3; text-align: center; }}
   .pcard-tags {{ display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }}
   .tag {{ font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }}
   .tag-classic {{ background: rgba(240,168,59,0.16); color: #f0a83b; }}
