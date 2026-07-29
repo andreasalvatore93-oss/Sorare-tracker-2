@@ -21,6 +21,7 @@ Variabili d'ambiente:
 import json
 import os
 import sys
+import random
 import time
 from collections import defaultdict
 
@@ -293,15 +294,26 @@ def _resolve_query_with_retry(query, variables, operation_name, extract):
     predict, vedi circuit breaker li') e nessun retry la copriva, a
     differenza delle query per-giocatore che ne hanno gia' uno. Qui il costo
     di un retry e' trascurabile (1 sola chiamata per job), quindi nessun
-    motivo per non averlo."""
-    for attempt in range(3):
+    motivo per non averlo.
+
+    29/07 sera: 3 tentativi da 3s (~20s totali, dentro i 5 retry HTTP interni
+    di base.graphql_query) non sono bastati -- un job su 34 e' comunque
+    fallito per intero (e con lui l'intera run, perche' predict richiede il
+    successo di TUTTI i job discovery) per un blocco CloudFront durato piu'
+    a lungo dei ~20s coperti. Portato a 6 tentativi con backoff crescente e
+    jitter (5,10,15,20,25s + jitter), ~90s di margine totale -- costo ancora
+    trascurabile (1 chiamata per job) rispetto al rischio di uccidere
+    l'intera run per un blocco transitorio piu' lungo."""
+    delays = (5.0, 10.0, 15.0, 20.0, 25.0)
+    for attempt in range(6):
         d = base.graphql_query(query, variables, operation_name=operation_name)
         result = extract(d)
         if result is not None:
             return result, d
-        if attempt < 2:
-            log(f"ATTENZIONE: {operation_name} senza risultato utilizzabile (tentativo {attempt + 1}/3), riprovo tra 3s...")
-            time.sleep(3.0)
+        if attempt < 5:
+            wait = delays[attempt] + random.uniform(0, 3.0)
+            log(f"ATTENZIONE: {operation_name} senza risultato utilizzabile (tentativo {attempt + 1}/6), riprovo tra {wait:.1f}s...")
+            time.sleep(wait)
     return None, d
 
 
