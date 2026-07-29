@@ -324,29 +324,35 @@ salvo diversa indicazione esplicita nella riga.
     dove c'è un segnale (DEF/MID +0.17/+0.19) va nella direzione OPPOSTA all'intuizione (chi gioca
     di più ha dev.std. più alta, non più bassa). Oggi.
 
-### F. Nuovi test proposti (29/07, mai ancora eseguiti — da fare, non solo da ricordare)
+### F. Nuovi test proposti (29/07) — 3 ESEGUITI oggi stesso, 1 rimandato
 
-33b. **Ricalibrare i coefficienti presence_rate→prior dinamico** (oggi fissi per ruolo: FWD
-    34.42+18.71×presence_rate, e gli equivalenti GK/DEF/MID di sez. 31.D) — stimati su un dataset
-    più piccolo di quello attuale (pool ora esteso a 27 leghe). Da rifare con lo stesso metodo di
-    sez. 31.D (regressione lineare presence_rate vs punteggio medio da `.game_log_cache`) quando
-    conviene, per vedere se i coefficienti si spostano con più dati.
-34. **Interazione `opponent_lambda_mult` × troncatura Poisson (`LEVEL_SCORE_POISSON_K_MAX=6`)** —
-    mai verificato se, quando l'avversario amplifica molto `lambda_pos_dec` (partita facile,
-    moltiplicatore alto), la massa di probabilità troncata all'ultimo bin diventi non
-    trascurabile (bias sistematico verso il basso in quei casi specifici). Richiederebbe uno
-    script nuovo che confronta `expected_level_from_rates` con/senza troncatura estesa (k_max più
-    alto) nei casi con `opponent_lambda_mult` più estremo.
-35. **Correlazione compagni di squadra a livello di sotto-categoria granulare** (non solo
-    punteggio totale) — es. il "Passaggio" di un MID correla con le "Azioni difensive" del suo
-    DEF nella stessa partita? Oggi `measure_teammate_correlation.py` misura solo il residuo del
-    punteggio TOTALE. Potrebbe rivelare sinergie più specifiche/forti di quelle già trovate a
-    livello aggregato, o spiegare meglio IL PERCHÉ delle correlazioni già note.
+33b. **Ricalibrare i coefficienti presence_rate→prior dinamico** —
+    `formazione_mls/diagnostics/recalibrate_presence_rate_prior.py` (NUOVO, eseguito 29/07). Pool
+    esteso a 27 leghe (94-376 giocatori per ruolo) vs il pool più piccolo di sez. 31.D. **Risultato
+    importante**: GK stabile (45.48/4.30 vs 45.41/4.36), ma DEF/MID/FWD hanno una pendenza
+    (quanto il presence_rate basso penalizza il prior) MOLTO più debole di quella in produzione —
+    DEF -26% (14.95→11.00), MID -37% (19.42→12.33), **FWD -63% (18.71→6.92, più che dimezzata)**.
+    Correlazione ancora reale (0.13-0.27) ma il prior dinamico oggi rischia di penalizzare
+    TROPPO i panchinari, specialmente FWD/MID. **NON ANCORA APPLICATO** (proposto all'utente,
+    in attesa di conferma prima di cambiare le costanti in produzione).
+34. **Interazione `opponent_lambda_mult` × troncatura Poisson** — verificato numericamente:
+    **NESSUNA interazione**. Anche a λ=3.6 (ben oltre il massimo λ_pos osservato nei dati reali,
+    1.2 per FWD) la differenza fra troncare a k_max=6 o k_max=15 è 0.0035 punti — irrilevante,
+    perché `netto_to_level` satura comunque a ±5 di netto, la troncatura non perde informazione
+    utile per costruzione. **Chiuso, non serve azione.**
+35. **Correlazione compagni di squadra a livello di sotto-categoria granulare** — testato
+    (script ad-hoc, non salvato nel repo): Duelli DEF vs Duelli MID (+0.010), Passaggio MID vs
+    Azioni_difensive DEF (-0.033), Offensivo FWD vs Passaggio MID (+0.050), Gol_subiti DEF vs
+    Offensivo MID (+0.058) — **tutte vicine a zero**, molto più deboli delle correlazioni sul
+    punteggio TOTALE già in produzione (0.13-0.35). Il segnale di sinergia vive nell'aggregato/
+    level_score, non nelle sotto-categorie specifiche testate. **Chiuso, nessun segnale
+    sfruttabile trovato.**
 36. **Estendere il test A/B sinergie (oggi solo In Season MLS/K League, sez. 34.C) alle Arene
-    dedicate delle altre 9 leghe** che oggi hanno un'Arena dedicata (Belgio, Turchia, Portogallo,
-    Spagna, Germania, Francia/Ligue1, Croazia, Scozia, Olanda/Eredivisie) — mai verificato se
-    disattivare `POSITIVE_SYNERGY_BONUS_BY_PAIR`/`MATCH_REUSE_PENALTY` cambia qualcosa lì (oggi
-    quelle leghe restano con la sinergia attiva di default, mai testata esplicitamente).
+    dedicate delle altre 9 leghe** (Belgio, Turchia, Portogallo, Spagna, Germania, Francia/Ligue1,
+    Croazia, Scozia, Olanda/Eredivisie) — **NON FATTIBILE in locale** (richiede rose realmente
+    possedute + query dal vivo per generare formazioni Arena vere, non simulabile dalle sole
+    cache di calibrazione già su disco). **Da fare alla prossima run reale del generatore
+    formazioni** su quelle leghe, non un test offline.
 
 ### G. Come procedere in pratica quando arriva una nuova lega
 
