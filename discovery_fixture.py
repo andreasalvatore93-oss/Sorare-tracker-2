@@ -606,20 +606,32 @@ def main():
     # in un job separato 'consiglio', dopo che TUTTI gli shard di 'predict'
     # sono completati -- vedi formazione_giornata.yml.
     PREDICT_SHARD_LEAGUES = {'mls', 'kleague'}
-    # 29/07: alzato da 2 a 4 -- con 2 shard il piu' affollato (DEF, ~95
+    # 29/07: PREDICT_SHARD_N fisso (prima 2, poi 4) si e' rivelato sbagliato
+    # in entrambe le direzioni. A 2 shard il ruolo piu' affollato (DEF, ~95
     # giocatori/lega) restava a ~48 giocatori/shard, ~6m30s sul percorso
-    # critico nonostante la pausa fissa gia' ridotta (10s->2s). A 4 shard
-    # ~24 giocatori/shard, tempo atteso dimezzato. max-parallel del job
-    # predict e' 77 nel workflow: con 2 leghe pesanti x 4 ruoli x 4 shard =
-    # 32 job (contro i 16 di prima), ampio margine residuo sotto il limite
-    # insieme ai job delle altre leghe non shardate.
-    PREDICT_SHARD_N = 4
+    # critico. Alzato a 4 SEMBRAVA la mossa giusta (~24 giocatori/shard) ma
+    # ha PEGGIORATO i tempi: il vero limite (vedi RIASSUNTO sez. 30, gia'
+    # scoperto una volta) e' il tetto di ~20 job CONCORRENTI dell'account,
+    # non max-parallel del workflow (77) -- con 56 job predict totali invece
+    # di 40, i job in piu' si mettevano semplicemente in coda (spread fra
+    # primo e ultimo avvio passato da 161s a oltre 4 minuti), nessun
+    # guadagno reale. Sharding ora ADATTIVO: una quota ogni ~20 giocatori
+    # (non un N fisso per ogni ruolo) -- i ruoli piccoli (GK/FWD, 30-55
+    # giocatori) restano 1-3 shard invece di sempre 4, i ruoli grandi
+    # (DEF/MID, 70-95) ne prendono comunque abbastanza da stare sotto il
+    # tempo per shard, minimizzando il conteggio TOTALE di job predict.
+    PREDICT_SHARD_TARGET_SIZE = 25
     matrice = []
     for lg, ruoli in sorted(scritti.items()):
         for r in sorted(ruoli):
             if lg in PREDICT_SHARD_LEAGUES:
-                for i in range(PREDICT_SHARD_N):
-                    matrice.append({"league": lg, "role": r, "shard": f"{i}:{PREDICT_SHARD_N}"})
+                n_players = len(ruoli[r])
+                shard_n = max(1, -(-n_players // PREDICT_SHARD_TARGET_SIZE))
+                if shard_n <= 1:
+                    matrice.append({"league": lg, "role": r})
+                else:
+                    for i in range(shard_n):
+                        matrice.append({"league": lg, "role": r, "shard": f"{i}:{shard_n}"})
             else:
                 matrice.append({"league": lg, "role": r})
     print("\nMATRICE_JSON=" + json.dumps(matrice, separators=(',', ':')))
