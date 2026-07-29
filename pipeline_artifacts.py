@@ -121,6 +121,33 @@ MERGEABLE = (
 # scozia/fwd (primo 31s, resto 31s) e' gratis.
 COSTI_PATH = 'pipeline_costi.json'
 
+# ATTENZIONE (misurato, run 30497294536 contro 30496069817): il costo per
+# giocatore di una coppia NON e' una proprieta' stabile della coppia. A 15
+# minuti di distanza, con gli stessi giocatori, olanda/fwd e' passato da 1.0s
+# a 14.6s per giocatore. La causa e' a monte (limite di complessita' GraphQL
+# di Sorare: con cache fredda la query allPlayerGameScores chiede troppe
+# partite, sfonda il tetto di complessita' 500 e fa scattare il retry esterno
+# da 10+20+40s), e quali giocatori la sfondano cambia da run a run.
+#
+# Conseguenza: la tabella dei costi NON puo' essere l'unico presidio. Fidarsi
+# solo di lei ha PEGGIORATO i tempi (13m56s contro 10m53s): olanda/fwd era
+# stimata 30s, non veniva spezzata, e ha poi impiegato 437s in un solo job.
+# Il presidio vero e' MAX_GIOCATORI_PER_SHARD: nessuno shard puo' contenere
+# tanti giocatori da diventare lungo NEMMENO nel caso peggiore, qualunque
+# cosa dica la stima. I costi misurati servono solo a ordinare il
+# riempimento dei bin, con pavimento e tetto per non credere a stime assurde.
+
+# Nessuno shard oltre questo numero di giocatori. Caso peggiore misurato:
+# ~31s per giocatore -> uno shard non puo' superare ~250s anche se la stima
+# lo dava per gratuito.
+MAX_GIOCATORI_PER_SHARD = 8
+
+# Pavimento e tetto applicati al costo marginale misurato quando si pesa uno
+# shard: proteggono dalle stime a 0s (che facevano finire 46 giocatori in un
+# bin dato per vuoto) e da quelle patologiche.
+MARGINALE_MIN_S = 4.0
+MARGINALE_MAX_S = 31.0
+
 # Fallback per una coppia mai misurata: prudente (meglio sovrastimare, cosi'
 # viene spezzata e distribuita) ma non assurdo.
 COSTO_IGNOTO = (15.0, 5.0)
@@ -131,12 +158,16 @@ COSTO_IGNOTO = (15.0, 5.0)
 SLOT_CONCORRENTI = 20
 TARGET_MIN_S = 45.0
 
-# Numero di bin emessi. Volutamente MAGGIORE di SLOT_CONCORRENTI e ordinati
-# dal piu' pesante al piu' leggero: Actions ne avvia 20 e mette gli altri in
-# coda, avviandoli man mano che uno slot si libera. E' bilanciamento dinamico
-# gratuito (LPT + dispatch dinamico), che assorbe gli errori del modello di
-# costo meglio di qualsiasi stima statica.
-N_BIN = 26
+# Numero di bin emessi. Volutamente MOLTO maggiore di SLOT_CONCORRENTI e
+# ordinati dal piu' pesante al piu' leggero: Actions ne avvia 20 e mette gli
+# altri in coda, avviandoli man mano che uno slot si libera. E' bilanciamento
+# dinamico gratuito, e con costi per giocatore instabili (vedi sopra) e' il
+# solo presidio che funziona davvero: piu' bin ci sono, meno pesa sbagliare
+# una stima, perche' il lavoro si redistribuisce a runtime invece di essere
+# congelato in un'assegnazione statica. Il prezzo sono ~22s fissi di
+# checkout+setup per bin in piu' (45 bin = ~990 job-secondi = ~50s di wall a
+# 20 slot), che si ripagano al primo shard mal stimato evitato.
+N_BIN = 45
 
 
 # ---------------------------------------------------------------- stage ----
@@ -372,7 +403,11 @@ def _combos_da_coppie(unique, counts, costi):
 
     combos = []
     for pair, k, primo, resto in base:
-        n = _shard_n(k, primo, resto, target)
+        # Il massimo tra quello che dice la stima e il tetto DURO sul numero
+        # di giocatori: e' quest'ultimo il presidio contro le stime sbagliate.
+        n = max(_shard_n(k, primo, resto, target),
+                -(-k // MAX_GIOCATORI_PER_SHARD) if k else 1)
+        n = max(1, min(n, max(k, 1)))
         if n <= 1:
             combos.append(dict(pair))
         else:
@@ -393,7 +428,9 @@ def _peso(combo, counts, costi):
         except ValueError:
             pass
     primo, resto = _costo_coppia(costi, combo['league'], combo['role'])
-    return _costo(k, primo, resto)
+    # Marginale con pavimento/tetto: vedi il commento su MARGINALE_MIN_S.
+    resto = min(max(resto, MARGINALE_MIN_S), MARGINALE_MAX_S)
+    return _costo(k, min(max(primo, resto), MARGINALE_MAX_S * 2), resto)
 
 
 def _bin_packing(combos, counts, costi, n_bins):
