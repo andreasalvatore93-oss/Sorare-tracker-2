@@ -599,7 +599,12 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
             # reale. 260/220 invariati: stesso test li' da' risultato
             # IDENTICO on/off, il cap L10 obbligatorio rende la sinergia
             # ininfluente, nessun motivo di toccarli).
-            apply_positive_synergy = (tipo != 'ARENA_ALLSTARS_UNCAPPED'
+            # In Season MLS/K League esclusi anch'essi (29/07, A/B test locale
+            # su 6 formazioni post-fix: MLS baseline 2033 -> senza bonus 2035
+            # (+2pt), K League 1927 -> 1927 (invariato, nessun costo). Qualunque
+            # guadagno positivo giustifica la disattivazione, richiesta esplicita
+            # utente ("non esiste un guadagno trascurabile").
+            apply_positive_synergy = (tipo not in ('ARENA_ALLSTARS_UNCAPPED', 'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON')
                                        and (not in_season_multi or idx == 1))
             idx_cap = 370.0 if (force_first and idx == 1) else cap
             formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
