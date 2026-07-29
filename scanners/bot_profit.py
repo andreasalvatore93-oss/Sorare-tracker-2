@@ -1420,8 +1420,44 @@ CSV_FIELDNAMES = [
     'ultima_partita_score', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
     'sconto_percent', 'trend_recente', 'media_transazioni_recente_eur', 'media_transazioni_storica_eur',
-    'prossima_partita_data', 'ore_alla_partita', 'ultimo_tipo_evento',
+    'prossima_partita_data', 'ore_alla_partita', 'finestra_acquisto_ideale', 'ultimo_tipo_evento',
 ]
+
+# FIX 29/07 (richiesta esplicita utente, analisi pattern_raw_transactions_
+# 20260729_1845.csv, script bot_profit_pattern_export.py): PRIMA versione
+# (finestra -3gg/-1gg a bucket interi) era SBAGLIATA -- verificato dopo la
+# richiesta esplicita dell'utente di ricontrollare i calcoli, rifacendo
+# l'analisi a grana piu' fine (bin da 0.5gg invece di 1gg intero): -2gg e -1gg
+# NON sono affatto uno sconto, sono anzi un SOVRAPPREZZO (+3/+8% su tutte e 3
+# le leghe, il prezzo sale avvicinandosi al kickoff) -- lo sconto reale e'
+# concentrato strettamente in un picco stretto a -3.5/-3.0gg PRIMA del kickoff
+# della partita di quel giocatore (non della gameweek collettiva -- ogni
+# squadra ha il proprio orario reale), confermato sui bin piu' fini su tutte e
+# 3 le leghe individualmente (MLS -13.9%/-17.7%, Korea -15.3%/-16.0%,
+# Eredivisie/Belgio -6.6%/-3.7%) e sul dataset combinato (-12.5%/-10.0%,
+# n=71/103). Finestra corretta: da 3.5 a 2.5 giorni PRIMA del kickoff (mezza
+# giornata di tolleranza attorno al picco -3gg, richiesta esplicita utente),
+# non piu' un range largo fino a -1gg. Colonna derivata a costo zero da
+# prossima_partita_data gia' presente, nessuna query aggiuntiva -- calcolata
+# al momento della scrittura del CSV (vedi _finestra_acquisto_ideale), non
+# serve toccare gli altri punti dove le righe vengono costruite/aggiornate.
+BUY_WINDOW_DAYS_BEFORE_MAX = 3.5
+BUY_WINDOW_DAYS_BEFORE_MIN = 2.5
+
+
+def _finestra_acquisto_ideale(prossima_partita_data_iso):
+    if not prossima_partita_data_iso:
+        return ''
+    try:
+        match_dt = datetime.datetime.fromisoformat(prossima_partita_data_iso.replace('Z', '+00:00'))
+    except (ValueError, AttributeError):
+        return ''
+    start = match_dt - datetime.timedelta(days=BUY_WINDOW_DAYS_BEFORE_MAX)
+    end = match_dt - datetime.timedelta(days=BUY_WINDOW_DAYS_BEFORE_MIN)
+    if end < datetime.datetime.now(datetime.timezone.utc):
+        return 'finestra gia\' passata'
+    fmt = '%d/%m %H:%M'
+    return f"{start.strftime(fmt)}-{end.strftime(fmt)} UTC"
 
 # FIX 27/07 quinquies (richiesta esplicita utente): lo sconto_percent confronta
 # il minimo attuale con la media dell'INTERA finestra a 7gg -- se il prezzo sta
@@ -1564,6 +1600,7 @@ def _write_ranked_csv(rows_liquidi, path, label):
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
         writer.writeheader()
         for r in rows_sorted:
+            r['finestra_acquisto_ideale'] = _finestra_acquisto_ideale(r.get('prossima_partita_data'))
             writer.writerow(r)
     log(f"[csv] {label}: scritte {len(rows_sorted)}/{len(rows_liquidi)} carte "
         f"(top {TOP_N_OUTPUT} per potenziale_score) in {path}")
