@@ -301,6 +301,7 @@ def graphql_query(query, variables=None, operation_name=None):
 ALL_GAME_SCORES_QUERY = """
 query AllPlayerGameScores($slug: String!, $first: Int!) {
   anyPlayer(slug: $slug) {
+    activeClub { slug }
     allPlayerGameScores(first: $first) {
       nodes {
         id
@@ -554,14 +555,21 @@ def fetch_game_log_incremental(slug, target_window_size):
             "come fallback (se presente).")
         past_from_cache = sorted(cache.values(), key=lambda n: (n.get('anyGame') or {}).get('date', ''),
                                   reverse=True)
-        return past_from_cache, []
+        return past_from_cache, [], None
 
     player = data.get('data', {}).get('anyPlayer')
     if player is None:
         log(f"[FASE 1/4] FALLITA: 'anyPlayer' e' null per slug '{slug}'.")
         past_from_cache = sorted(cache.values(), key=lambda n: (n.get('anyGame') or {}).get('date', ''),
                                   reverse=True)
-        return past_from_cache, []
+        return past_from_cache, [], None
+
+    # NUOVO (29/07, bug reale: giocatore trasferito con storico ancora dominato
+    # dalla squadra vecchia -- vedi RIASSUNTO): activeClub e' SEMPRE live (stesso
+    # campo gia' verificato in uso in discovery_fixture.py), zero query aggiuntive.
+    # Usato sotto SOLO per la squadra nella PROSSIMA partita (dove serve il dato
+    # attuale, non storico) -- il fattore casa/trasferta storico resta invariato.
+    active_club_slug = ((player.get('activeClub') or {}).get('slug'))
 
     fetched_past = (player.get('allPlayerGameScores', {}) or {}).get('nodes', []) or []
     future = (player.get('anyFutureGames', {}) or {}).get('nodes', []) or []
@@ -592,7 +600,7 @@ def fetch_game_log_incremental(slug, target_window_size):
 
     log(f"[FASE 1/4] OK: {len(past_from_cache)} partite passate (da cache+fetch), "
         f"{len(future)} future.")
-    return past_from_cache, future
+    return past_from_cache, future, active_club_slug
 
 
 # ---------------------------------------------------------------------------
@@ -1242,7 +1250,7 @@ def build_prediction(player_slug):
     global _STRUCTURAL_INSUFFICIENCY
     _STRUCTURAL_INSUFFICIENCY = False
     log("[FASE 1/4] Avvio recupero game log...")
-    past_games, future_games = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
+    past_games, future_games, live_team_slug = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
     # Finestra temporale massima per lo storico (28/07, richiesta esplicita
     # utente dopo un caso reale: Alejandro Alvarado Jr aveva 1 sola partita
     # "piena" utilizzabile su 27 esaminate, alcune vecchie di oltre un anno --
@@ -1524,18 +1532,28 @@ def build_prediction(player_slug):
     log(f"[FASE 4/4] Partita target: {(next_game.get('date') or '')[:16]} - "
         f"{(next_game.get('homeTeam') or {}).get('name', '?')} vs "
         f"{(next_game.get('awayTeam') or {}).get('name', '?')}")
-    next_own_rank, next_opp_rank, next_is_home = team_ranking_from_game(next_game, player_team_slug)
+    # NUOVO (29/07, fix bug reale trasferimento/team stantio): per la partita
+    # TARGET usiamo activeClub (live) come squadra "attuale" se disponibile,
+    # invece della maggioranza storica (player_team_slug) -- quest'ultima puo'
+    # essere sbagliata dopo un trasferimento recente. Se activeClub manca o non
+    # corrisponde a nessuna delle due squadre della partita target, ripiega sulla
+    # vecchia logica (nessuna regressione).
+    _next_home_team = next_game.get('homeTeam') or {}
+    _next_away_team = next_game.get('awayTeam') or {}
+    current_team_slug = player_team_slug
+    if live_team_slug and live_team_slug in (_next_home_team.get('slug'), _next_away_team.get('slug')):
+        current_team_slug = live_team_slug
+
+    next_own_rank, next_opp_rank, next_is_home = team_ranking_from_game(next_game, current_team_slug)
 
     # NUOVO (26/07, tema correlazione GK-DEF/anti-sinergia): slug (non nome)
     # della squadra avversaria della prossima partita -- dato di calendario,
     # gia' noto con largo anticipo (a differenza delle starter odds). Serve a
     # build_formazione_finale.py per evitare di schierare insieme un portiere
     # e un giocatore di movimento le cui squadre si affrontano.
-    _next_home_team = next_game.get('homeTeam') or {}
-    _next_away_team = next_game.get('awayTeam') or {}
-    if _next_home_team.get('slug') == player_team_slug:
+    if _next_home_team.get('slug') == current_team_slug:
         next_opponent_team_slug = _next_away_team.get('slug')
-    elif _next_away_team.get('slug') == player_team_slug:
+    elif _next_away_team.get('slug') == current_team_slug:
         next_opponent_team_slug = _next_home_team.get('slug')
     else:
         next_opponent_team_slug = None
@@ -1792,7 +1810,7 @@ def build_prediction(player_slug):
 
     result = {
         'player_slug': player_slug,
-        'player_team_slug': player_team_slug,
+        'player_team_slug': current_team_slug,
         'window_size_used': n,
         'total_considered': total_considered,
         'dnp_excluded': dnp_count,
