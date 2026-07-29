@@ -274,7 +274,7 @@ MIN_TRANSACTIONS_FOR_RANKING = int(os.environ.get('MIN_TRANSACTIONS_FOR_RANKING'
 # viene scartata SUBITO, come prima query in assoluto -- niente tracciamento,
 # niente blacklist (il prezzo puo' risalire, non e' un'esclusione permanente
 # come coverage/L5/nessuna partita). Alleggerisce le chiamate successive.
-MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '2.0'))
+MIN_PRICE_EUR_THRESHOLD = float(os.environ.get('MIN_PRICE_EUR_THRESHOLD', '2.5'))
 
 OUTPUT_DIR = 'bot_profit_output'
 # FIX 27/07 (richiesta esplicita utente: troppi file separati, "non so quale

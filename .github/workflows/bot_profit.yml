@@ -33,7 +33,7 @@ on:
       min_price_eur_threshold:
         description: "Sotto questo prezzo minimo, la carta e' scartata subito (nessun tracciamento, nessuna blacklist)"
         required: false
-        default: "2.0"
+        default: "2.5"
       prezzo_basso_skip_days:
         description: "TTL (giorni) di blacklist per i giocatori scartati per prezzo basso/nessun annuncio -- riduce le richieste verso Sorare saltandoli a costo zero per N giorni invece di ricontrollarli ogni run"
         required: false
@@ -98,7 +98,7 @@ jobs:
           MAX_TRACKED_CARDS: ${{ github.event.inputs.max_tracked_cards || '500' }}
           TOP_N_OUTPUT: ${{ github.event.inputs.top_n_output || '50' }}
           MIN_TRANSACTIONS_FOR_RANKING: ${{ github.event.inputs.min_transactions_for_ranking || '15' }}
-          MIN_PRICE_EUR_THRESHOLD: ${{ github.event.inputs.min_price_eur_threshold || '2.0' }}
+          MIN_PRICE_EUR_THRESHOLD: ${{ github.event.inputs.min_price_eur_threshold || '2.5' }}
           PREZZO_BASSO_SKIP_DAYS: ${{ github.event.inputs.prezzo_basso_skip_days || '2' }}
           SNAPSHOT_MODE: ${{ github.event.inputs.snapshot_mode || 'si' }}
           TEAM_WHITELIST: ${{ github.event.inputs.team_whitelist || 'nashville-sc,inter-miami,chicago-fire-bridgeview-illinois,new-england-foxborough-massachusetts,cincinnati-cincinnati-ohio,new-york-city-new-york-new-york,charlotte-fc-charlotte-north-carolina,new-york-rb-secaucus-new-jersey,dc-united-washington-district-of-columbia,orlando-city-lake-mary-florida,columbus-crew-columbus-ohio,toronto-toronto,montreal-impact-montreal-quebec,atlanta-united-atlanta-georgia,philadelphia-union-chester-pennsylvania,vancouver-whitecaps-vancouver-british-columbia,sj-earthquakes-santa-clara-california,los-angeles-fc-los-angeles-california,real-salt-lake-salt-lake-city-utah,dallas-frisco-texas,seattle-sounders-renton-washington,houston-dynamo-houston-texas,st-louis-city-st-louis-missouri,minnesota-united-minneapolis-saint-paul-minnesota,la-galaxy-los-angeles-california,colorado-rapids-denver-colorado,portland-timbers-portland-oregon,san-diego-san-diego,austin-austin-texas,sporting-kc-kansas-city-kansas' }}
