@@ -100,9 +100,41 @@ salvo diversa indicazione esplicita nella riga.
     trend cambiano di nuovo, non solo per nuove leghe.
 10c. **`validate_range_multiplier_coverage.py`** — verifica se `RANGE_MULTIPLIER` centra la
     copertura ideale (~68%, p16-p84) via % di copertura reale invece che MAE (che non discrimina
-    fra range diversi). Esito: 1.1 centra 68.2% per DEF (vedi sez. 27.B), non ancora esteso a
-    tutte le leghe/ruoli in modo sistematico.
-10d. **`validate_opponent_trend_h2h_gk.py`** (GK) e **`validate_opponent_trend_h2h_generic.py`**
+    fra range diversi). **Copre già TUTTE le leghe/ruoli** (glob `formazione_*/output/*_<ruolo>_
+    all|_calibration/.cache`, correzione alla nota precedente che diceva il contrario).
+    **RITEST 29/07 dopo il retuning globale di oggi**: la copertura attuale è OGGI PIÙ ALTA del
+    target ~68% per tutti e 4 i ruoli — GK 77.7% (range_mult=1.4), DEF 72.9% (1.2), MID 77.6%
+    (1.4), FWD 78.5% (1.4). Per centrare 68% servirebbe abbassare a ~1.0-1.05 (DEF) o ~1.15-1.2
+    (GK/MID/FWD) — **NON applicato oggi** (il range mostrato è solo cosmetico/informativo, non
+    tocca score_atteso/selezione, e il test 33 di oggi ha già mostrato che il range non è
+    comunque un segnale utile per scegliere) — proporre all'utente se vale la pena centrare la
+    copertura per onestà del numero mostrato.
+10e. **Normalizzazione per-lega di `opponent_strength` (NUOVO 29/07, mai testato prima)** —
+    `GLOBAL_MEAN_CONCEDED=1.29`/`GLOBAL_STD_CONCEDED=1.17` sono UNA costante fissa per tutte le
+    leghe. Verificato empiricamente (media/std reali di gol subiti per lega, 24 leghe con dati):
+    range da 0.874±0.921 (Argentina, n=103 partite) a 1.577±1.306 (Grecia, n=26 partite, campione
+    minuscolo) — MLS stesso è alto (1.530), non centrale. Il grosso delle leghe con campione
+    decente (14-33 squadre: Italia, Spagna, Germania, Inghilterra, Francia, Olanda, K League)
+    cluster ragionevolmente vicino alla costante globale (1.09-1.47). **Nessuna azione presa**:
+    la divergenza è concentrata nelle leghe con pochissime partite (Argentina/Grecia/Brasile),
+    probabilmente rumore campionario più che un vero effetto di lega — **da rimonitorare quando
+    queste leghe piccole accumulano più storico**, non serve normalizzazione per-lega ora.
+10f. **Calibrazione quantitativa dell'ampiezza dei bonus sinergia (NUOVO 29/07, mai testato
+    prima)** — oggi i bonus (`POSITIVE_SYNERGY_BONUS=3`, `TEAMMATE_SYNERGY_BONUS_VARIANCE=5`,
+    `GK_DEF_SYNERGY_BONUS_VARIANCE_EXTRA=8`, quindi GK-DEF totale 11) sono scelti A MANO, mai
+    derivati dalla correlazione misurata. Calcolato un "effect size" grezzo (r × dev.std. del
+    compagno, un proxy della vera regressione lineare) dagli stessi dati di
+    `measure_teammate_correlation.py`: def-gk 6.69 (bonus attuale 11, **~1.6× più alto**),
+    def-def 4.79 (bonus 8, ~1.7×), fwd-fwd 3.72/fwd-mid 3.60 (bonus 8, ~2.2×), gk-mid 2.78/
+    def-mid 2.50 (bonus 8, ~3.2×), **mid-mid 2.34 (bonus 8, ~3.4× — lo scarto più grande)**.
+    **NON un risultato definitivo**: l'effect size grezzo (r×std) non è la stessa cosa
+    dell'ampiezza "giusta" di un bonus pensato per ridurre la VARIANZA della somma (obiettivo
+    Arena/All Stars a soglia), che richiederebbe un modello decisionale dedicato, non solo una
+    pendenza di regressione — **da approfondire con un design apposito prima di cambiare
+    qualunque costante**, non applicare per analogia. Segnala comunque che oggi il bonus
+    `TEAMMATE_SYNERGY_BONUS_VARIANCE=5` è probabilmente TROPPO UNIFORME tra coppie con
+    correlazione molto diversa (2.3 vs 4.8 di effect size raw).
+10g. **`validate_opponent_trend_h2h_gk.py`** (GK) e **`validate_opponent_trend_h2h_generic.py`**
     (MID/FWD, tutte le leghe — DEF scartato su richiesta esplicita precedente) — due segnali
     aggiuntivi mai provati: TREND (media corta 3 vs lunga 10 partite di gol fatti/subiti
     dall'avversario) e H2H (storico scontri diretti squadra-avversario, se ≥2 precedenti).
@@ -223,25 +255,42 @@ salvo diversa indicazione esplicita nella riga.
 ### D. Qualità di selezione (la metrica che conta davvero) e non-regressione
 
 29. **Selection quality (lift catturato vs caso/oracolo)** — `formazione_mls/diagnostics/
-    selection_quality.py` — la SCOPERTA chiave (sez. 27.C): il MAE non è la metrica giusta, conta
-    quanto bene il modello ORDINA i candidati. Oggi supportato solo per **DEF e FWD** (`def`/`fwd`
-    come argomento CLI) — **GK e MID non hanno mai avuto questo test**, da fare prima di
-    replicare per analogia qualunque tuning su quei due ruoli. Esito DEF: shrinkage classico
-    (con SHRINK_K vecchio) peggiorava il lift rispetto a una media pesata banale — da questo è
-    nata la separazione `score_atteso`/`score_ordinamento` (punto 30). Sez. 27.C.
+    selection_quality.py` (solo DEF/FWD, argomento CLI) + **`selection_quality_shrinkage_allroles.py`
+    (NUOVO 29/07, tutti e 4 i ruoli)** — la SCOPERTA chiave (sez. 27.C): il MAE non è la metrica
+    giusta, conta quanto bene il modello ORDINA i candidati. **RITEST 29/07 dopo il retuning
+    globale dello shrinkage della sezione corrente**: confronto lift MODELLO (shrink produzione)
+    vs NO-SHRINK vs media pesata — **GK: shrink k=30 aiuta molto (-3.0% lift vs -37.6% senza
+    shrink, ma solo 11 giornate/1 lega, campione minuscolo)**; **DEF: shrink k=15 aiuta lievemente
+    (17.2% vs 16.0% lift, 140 giornate/16 leghe)** — il retuning di oggi ha risolto il vecchio
+    problema (prima lo shrink DEF peggiorava il lift, sez. 27.C); **MID: shrink k=5 aiuta
+    (45.1% vs 43.6%, ma solo 33 giornate/1 lega)**; **FWD: shrink k=5 PEGGIORA il lift (8.8% vs
+    12.3-13.2% senza shrink, 21 giornate/1 lega)** — stesso problema storico di DEF, risolto con
+    lo `score_ordinamento` (punto 30).
 30. **Ordinamento senza shrinkage (`score_ordinamento`)** — separazione fra il numero MOSTRATO
     (con shrinkage, minimizza MAE) e l'ordine usato per selezionare (`shrink_k=0`, minimizza il
-    lift). Oggi **IMPLEMENTATO SOLO PER DEF**, su tutte le leghe (29/07, sez. 28.E). **MID/FWD/GK
-    non ancora testati con `selection_quality.py`** — non replicare per analogia, misurare prima.
-    Sez. 27.F.
+    lift). **IMPLEMENTATO PER DEF (tutte le leghe, sez. 28.E) e ORA ANCHE PER FWD (29/07, tutte
+    le 27 leghe)** — MLS ce l'aveva già solo per FWD (mai propagato alle altre 26, bug trovato e
+    corretto in corsa: quelle 26 leghe non hanno una funzione condivisa
+    `compute_score_atteso_fwd` come MLS, quindi si riusa `grezzo_nuovo` già in scope invece di
+    chiamare una funzione inesistente — verificato con py_compile/import prima di committare).
+    **GK/MID non hanno `score_ordinamento`** — dal ritest sopra lo shrink li AIUTA (non li
+    danneggia come FWD), quindi per ora non serve — ma il campione è piccolo (11-33 giornate),
+    **da riverificare quando crescono più leghe con abbastanza candidati/giornata per GK/MID**
+    (oggi quasi tutte le giornate valide vengono da una sola lega, non abbastanza titolari/
+    giornata nelle leghe piccole per un vero test). Sez. 27.F, oggi.
 31. **Non-regressione formula produzione vs backtest** — `nonregression_score_atteso_def.py`,
     `nonregression_score_atteso_fwd.py` — confrontano la funzione condivisa `compute_score_atteso_
     <ruolo>` contro il blocco inline REALE di produzione (estratto ed eseguito con `exec`, non
     riscritto a mano). Diff massima registrata: 7e-15 (DEF), 0.0 (FWD). **GK e MID non hanno un
-    equivalente** — `compute_score_atteso_gk`/`compute_score_atteso_mid` esistono solo su MLS,
-    mai estratti/allineati sulle altre leghe (debito tecnico noto, sez. 31.D, memoria
-    `project_backlog_fwd_shared_function_solo_mls`). Rifare quando si tocca la formula di
-    produzione di un ruolo, non specificamente per nuove leghe.
+    equivalente, MA IL RISCHIO È STRUTTURALMENTE DIVERSO (verificato 29/07)**: DEF/FWD storicamente
+    avevano DUE copie della formula (una nella funzione condivisa per il backtest, una inline in
+    `build_prediction`) che POTEVANO divergere — da qui il bisogno del test. **GK e MID invece
+    chiamano `compute_score_atteso_gk`/`_mid` DIRETTAMENTE dentro `build_prediction`** (un solo
+    punto di verità, nessuna copia parallela) — non serve un non-regression test perché non esiste
+    un percorso di codice che possa divergere. Resta comunque vero che `compute_score_atteso_gk`/
+    `_mid` esistono solo su MLS, non estratte sulle altre leghe (debito tecnico, sez. 31.D, memoria
+    `project_backlog_fwd_shared_function_solo_mls`) — lì la formula è tutta inline, verificare a
+    vista se si tocca quella formula.
 32. **Tetto teorico (ICC, varianza entro/fra giocatori)** — analisi one-off (non uno script
     riutilizzabile), sez. 27.G: 94.5% della varianza DEF è rumore partita-per-partita, il modello
     è già al 17.8% del lift disponibile contro un tetto teorico ~15.5-22.5%. **Da ripetere se si
