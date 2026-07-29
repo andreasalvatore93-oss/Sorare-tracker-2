@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T00:44:15.270485Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) andrin-hunziker: 51 pt attesi (33-69)
+   SQUADRA: winterthur-winterthur | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: andrin-hunziker
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andrin-hunziker (squadra: winterthur-winterthur)
+Generato: 2026-07-29T00:44:15.269861Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 21
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-24 | LUG vs WIN | super-league-ch | score=61.7 | peso=0.445
+  2026-02-07 | WIN vs LUG | super-league-ch | score=71.7 | peso=0.472
+  2026-02-11 | FCZ vs WIN | super-league-ch | score=25.0 | peso=0.500
+  2026-02-14 | YBB vs WIN | super-league-ch | score=61.9 | peso=0.530
+  2026-02-18 | WIN vs STG | super-league-ch | score=40.3 | peso=0.561
+  2026-02-25 | WIN vs FCT | super-league-ch | score=34.6 | peso=0.595
+  2026-03-03 | WIN vs SER | super-league-ch | score=93.8 | peso=0.630
+  2026-03-07 | SIO vs WIN | super-league-ch | score=65.1 | peso=0.667
+  2026-03-15 | LUZ vs WIN | super-league-ch | score=71.4 | peso=0.707
+  2026-03-22 | WIN vs BAS | super-league-ch | score=35.5 | peso=0.749
+  2026-04-04 | LAU vs WIN | super-league-ch | score=38.3 | peso=0.794
+  2026-04-11 | WIN vs GCZ | super-league-ch | score=45.7 | peso=0.841
+  2026-05-02 | WIN vs FCZ | super-league-ch | score=60.0 | peso=0.891
+  2026-05-09 | WIN vs LAU | super-league-ch | score=62.6 | peso=0.944
+  2026-05-12 | GCZ vs WIN | super-league-ch | score=45.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 53.91
+  di cui Punteggio decisivo (level_score) medio: 47.80 | Punteggio complessivo (granulari) medio: 6.11 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.95 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.84
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.5 - 71.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.75 (differenza: +4.09)
+Media score in casa: 55.52 | Media score fuori casa: 52.76
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.3
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore trend (media ultime 5: 50.5 vs media ultime 10: 55.3): 0.913
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T19:00
+Casa: SL Benfica | Trasferta: FC Sankt Gallen 1879
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.0 (range 32.6 - 68.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.77
+Punteggio REALE ottenuto in quella partita: 45.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.4    93.8    +34.4    23.2        NO
+   7        7      66.1    65.1     -1.0    31.9        SI
+   8        8      68.2    71.4     +3.2    29.8        SI
+   9        9      58.7    35.5    -23.2    28.4        SI
+  10       10      61.0    38.3    -22.7    28.8        SI
+  11       11      62.9    45.7    -17.2    28.2        SI
+  12       12      60.1    60.0     -0.1    26.9        SI
+  13       13      51.7    62.6    +10.9    25.6        SI
+  14       14      46.7    45.9     -0.8    24.5        SI
+
+MAE (errore assoluto medio): 12.60
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 88.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
