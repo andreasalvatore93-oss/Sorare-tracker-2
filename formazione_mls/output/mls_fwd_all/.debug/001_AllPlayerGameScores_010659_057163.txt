@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "tyler-boyd", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 01:06:59 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785287219', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'fyGtnb7JyJpWBEUODYpWaZjWhirx24qSbTo6HkTUB39AcCeXGfNKz_ZAR-Ps9yL8Pi7jmN9m4YqdbQ_NIOGdsw', 'etag': 'W/"5f57d7dd03584603adc05f429c6df3d9"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=73vAPEhE1SZQphKwC81sxziF767FIYb453aLsS0j1scLk8%2FoVocpB1pvzwhj%2BWkVPjyzh7p2%2Fx3U2DMZ%2Fen2w5nR8pBrIW1mMsMD%2FBoH%2FI6XDiaSBkv3UUptSaQbn8lKl3TGONIiv1SJuMnywhNoK%2FidlmFAYIN%2BSAqoPH6%2BRj1aCemTawSiVfdviWyGmunHSBE%2Bh2y5k4kGcwWa2gUxqQmYfcii5qezL1Dw5wWnfp16WK2flrpuCJUmEr2GRTzsXcbug1XCo9PJCbJf8xDCD96uvwMCDj8Dff0nxgFRzs8vQLxMcAxgBwM57FThPCak--stO3gNxoFhvWGxwP--5mXhB7DQYkHAwnj2MJdE2Q%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 01:06:59 GMT; secure; httponly; samesite=none', 'x-request-id': '528fbd10-ed79-4a5e-b755-345b6696d95d', 'x-runtime': '0.048142', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 04d8137eba39d404a430316a46dde298.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'CMsuO1abhKZ7AAIa1Nw6rU7pL3idLJOdDH7iK6MCNURWfzRPK-fHag=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:a055190d-5f32-4614-8511-82fe50c048f1","score":61.1,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:66da7f43-b299-46b9-9145-899d2da28ec1","date":"2026-07-26T02:30:00Z","statusTyped":"played","homeTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"awayTeam":{"slug":"sporting-kc-kansas-city-kansas","name":"Sporting Kansas City ","code":"SKC","domesticLeagueRanking":15},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":12,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:2fce021e-39c4-450a-a31b-369c2acbf3c0","score":41.7,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:da2ea38d-74ae-4123-9a83-41550dab4a74","date":"2026-07-23T02:30:00Z","statusTyped":"played","homeTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"awayTeam":{"slug":"real-salt-lake-salt-lake-city-utah","name":"Real Salt Lake","code":"RSL","domesticLeagueRanking":4},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":6,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:0279b61c-9f35-4e8e-b99c-55769551ce43","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:ce1c46e7-02b9-44e1-86c1-2cd3e35a2e64","positionTyped":"Forward","projectedScore":41.0,"anyGame":{"id":"Game:0279b61c-9f35-4e8e-b99c-55769551ce43","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"awayTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:afd0a3cb-0d1b-43d4-832a-c6f5819d3860","date":"2026-08-06T02:30:00Z","playerGameScore":{"id":"So5Score:d17c7469-8520-43bb-9962-30db2f1836c5","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:afd0a3cb-0d1b-43d4-832a-c6f5819d3860","date":"2026-08-06T02:30:00Z","homeTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"awayTeam":{"slug":"guadalajara-zapopan-guadalajara","name":"CD Guadalajara","code":"CHI","domesticLeagueRanking":6},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:27672bfd-2bcf-4085-ae0e-86a6c38cadcd","date":"2026-08-09T03:10:00Z","playerGameScore":{"id":"So5Score:3ec4d009-db42-4ba8-a862-3d890416de0f","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:27672bfd-2bcf-4085-ae0e-86a6c38cadcd","date":"2026-08-09T03:10:00Z","homeTeam":{"slug":"toluca-toluca-de-lerdo","name":"Deportivo Toluca FC","code":"TOL","domesticLeagueRanking":7},"awayTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:153e91cc-fd2a-41f1-b320-4b74479ba9a1","date":"2026-08-13T02:30:00Z","playerGameScore":{"id":"So5Score:2a2a09cc-9ccb-4929-a74b-2bf22520bdc1","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:153e91cc-fd2a-41f1-b320-4b74479ba9a1","date":"2026-08-13T02:30:00Z","homeTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"awayTeam":{"slug":"queretaro-queretaro","name":"Querétaro FC","code":"QUE","domesticLeagueRanking":10},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:98ff9409-3409-4af0-8ace-b29c0ca28688","date":"2026-08-16T02:30:00Z","playerGameScore":{"id":"So5Score:ce40f211-ec01-4edf-bff8-45f013b575ae","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:98ff9409-3409-4af0-8ace-b29c0ca28688","date":"2026-08-16T02:30:00Z","homeTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"awayTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
