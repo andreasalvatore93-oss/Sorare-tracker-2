@@ -592,7 +592,15 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
         risultati = []
         for idx in range(1, count + 1):
             strict_gk_anti_synergy = in_season_multi
-            apply_positive_synergy = not in_season_multi or idx == 1
+            # ARENA_ALLSTARS_UNCAPPED esclusa (29/07, bug reale misurato: A/B
+            # test locale su 6 formazioni, SAME_TEAM_SYNERGY_BONUS_BY_PAIR
+            # ATTIVO = 1880 pt totali, DISATTIVATO = 1920 pt -- il bonus fa
+            # scegliere combo stacked che valgono MENO in punteggio atteso
+            # reale. 260/220 invariati: stesso test li' da' risultato
+            # IDENTICO on/off, il cap L10 obbligatorio rende la sinergia
+            # ininfluente, nessun motivo di toccarli).
+            apply_positive_synergy = (tipo != 'ARENA_ALLSTARS_UNCAPPED'
+                                       and (not in_season_multi or idx == 1))
             idx_cap = 370.0 if (force_first and idx == 1) else cap
             formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
                 shape, pool_league, role_data, pools, card_pool, idx_cap, stack_guard, variance_mode,
