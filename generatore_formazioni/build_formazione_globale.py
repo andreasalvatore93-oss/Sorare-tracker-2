@@ -916,6 +916,70 @@ def main():
                 if top_esclusi_lg:
                     _attach_panel(idx, top_esclusi_lg)
 
+    # Capienza residua (29/07, richiesta esplicita utente): con i giocatori
+    # rimasti FUORI dalle formazioni generate, quante ALTRE formazioni si
+    # sarebbero potute generare. Per OGNI tipologia di competizione richiesta,
+    # non solo per le Arene dedicate: vale anche per In Season MLS, In Season
+    # K League, All Stars, All Stars U23 e Arena All Stars. Il conteggio
+    # "Candidati non schierati" sopra dice quanti giocatori restano sul banco,
+    # ma non se bastano a comporre una formazione valida (servono i ruoli
+    # giusti, e per le Arene anche il cap L10) -- questo lo dice.
+    #
+    # Calcolata rigenerando su una COPIA del card_pool, quindi non tocca in
+    # alcun modo le formazioni prodotte; e viene calcolata DOPO il rendering
+    # (FASE 2, gia' fatto sopra), cosi' per costruzione non puo' influenzare
+    # l'output nemmeno per errore.
+    # Budget di tempo oltre al tetto sul conteggio: ogni sondaggio e' una
+    # generazione greedy completa (~1-2s con il pool pieno), e con molte
+    # tipologie richieste dal pool misto il conteggio da solo potrebbe
+    # allungare sensibilmente questo job. Esaurito il budget, il numero
+    # riportato diventa un "almeno N" invece di un valore esatto.
+    MAX_SONDAGGIO_CAPIENZA = 20
+    BUDGET_SONDAGGIO_S = 45.0
+    _t0_sondaggio = datetime.datetime.utcnow()
+    capienza_extra = {}
+    capienza_parziale = set()
+    for tipo in PRIORITY_ORDER:
+        if counts[tipo] <= 0:
+            continue
+        sonda = copy.deepcopy(card_pool)
+        extra = 0
+        while extra < MAX_SONDAGGIO_CAPIENZA:
+            trascorso = (datetime.datetime.utcnow() - _t0_sondaggio).total_seconds()
+            if trascorso > BUDGET_SONDAGGIO_S:
+                capienza_parziale.add(tipo)
+                break
+            res = generate_lineups_for_type(tipo, 1, role_data, pools, sonda)
+            if not res or any('error' in r for r in res):
+                break
+            extra += 1
+        if extra >= MAX_SONDAGGIO_CAPIENZA:
+            capienza_parziale.add(tipo)
+        capienza_extra[tipo] = extra
+
+    if capienza_extra:
+        print("\nFormazioni AGGIUNTIVE possibili con i giocatori rimasti fuori:")
+        for tipo, extra in capienza_extra.items():
+            fatte = generated_by_type.get(tipo, 0)
+            if extra:
+                print(f"  {LABELS[tipo]}: {fatte} generate ma potevi generarne "
+                      f"altre {extra}"
+                      + (" o piu'" if tipo in capienza_parziale else ""))
+            else:
+                print(f"  {LABELS[tipo]}: {fatte} generate, il pool residuo non "
+                      f"basta per un'altra")
+
+    capienza_html = ""
+    if capienza_extra:
+        voci = []
+        for tipo, extra in capienza_extra.items():
+            fatte = generated_by_type.get(tipo, 0)
+            piu = "+" if tipo in capienza_parziale else ""
+            voci.append(f"{LABELS[tipo]}: {fatte} generate, altre "
+                        f"{extra}{piu} possibili")
+        capienza_html = ("<br>Con i giocatori rimasti fuori: " +
+                         "; ".join(voci))
+
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
@@ -926,7 +990,8 @@ def main():
                      f"totale={num_totale} (" +
                      ", ".join(f"{LABELS[t]}={counts[t]}" for t in PRIORITY_ORDER) + ")<br>"
                      f"Candidati non schierati in nessuna formazione: {tot_esclusi} (" +
-                     ", ".join(f"{r}: {esclusi_per_ruolo[r]}" for r in ROLES) + ")")
+                     ", ".join(f"{r}: {esclusi_per_ruolo[r]}" for r in ROLES) + ")" +
+                     capienza_html)
     footer_html = (f"Fusione {len(LEAGUES)} campionati. Max 1 carta CLASSIC solo per In Season. "
                     f"Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.")
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)
