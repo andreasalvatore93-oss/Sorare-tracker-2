@@ -324,7 +324,31 @@ salvo diversa indicazione esplicita nella riga.
     dove c'è un segnale (DEF/MID +0.17/+0.19) va nella direzione OPPOSTA all'intuizione (chi gioca
     di più ha dev.std. più alta, non più bassa). Oggi.
 
-### F. Come procedere in pratica quando arriva una nuova lega
+### F. Nuovi test proposti (29/07, mai ancora eseguiti — da fare, non solo da ricordare)
+
+33b. **Ricalibrare i coefficienti presence_rate→prior dinamico** (oggi fissi per ruolo: FWD
+    34.42+18.71×presence_rate, e gli equivalenti GK/DEF/MID di sez. 31.D) — stimati su un dataset
+    più piccolo di quello attuale (pool ora esteso a 27 leghe). Da rifare con lo stesso metodo di
+    sez. 31.D (regressione lineare presence_rate vs punteggio medio da `.game_log_cache`) quando
+    conviene, per vedere se i coefficienti si spostano con più dati.
+34. **Interazione `opponent_lambda_mult` × troncatura Poisson (`LEVEL_SCORE_POISSON_K_MAX=6`)** —
+    mai verificato se, quando l'avversario amplifica molto `lambda_pos_dec` (partita facile,
+    moltiplicatore alto), la massa di probabilità troncata all'ultimo bin diventi non
+    trascurabile (bias sistematico verso il basso in quei casi specifici). Richiederebbe uno
+    script nuovo che confronta `expected_level_from_rates` con/senza troncatura estesa (k_max più
+    alto) nei casi con `opponent_lambda_mult` più estremo.
+35. **Correlazione compagni di squadra a livello di sotto-categoria granulare** (non solo
+    punteggio totale) — es. il "Passaggio" di un MID correla con le "Azioni difensive" del suo
+    DEF nella stessa partita? Oggi `measure_teammate_correlation.py` misura solo il residuo del
+    punteggio TOTALE. Potrebbe rivelare sinergie più specifiche/forti di quelle già trovate a
+    livello aggregato, o spiegare meglio IL PERCHÉ delle correlazioni già note.
+36. **Estendere il test A/B sinergie (oggi solo In Season MLS/K League, sez. 34.C) alle Arene
+    dedicate delle altre 9 leghe** che oggi hanno un'Arena dedicata (Belgio, Turchia, Portogallo,
+    Spagna, Germania, Francia/Ligue1, Croazia, Scozia, Olanda/Eredivisie) — mai verificato se
+    disattivare `POSITIVE_SYNERGY_BONUS_BY_PAIR`/`MATCH_REUSE_PENALTY` cambia qualcosa lì (oggi
+    quelle leghe restano con la sinergia attiva di default, mai testata esplicitamente).
+
+### G. Come procedere in pratica quando arriva una nuova lega
 
 1. Completare per la nuova lega: discovery globale (se prevista) + `CALIBRATION_MODE=1` (predict)
    per popolare `.cache`/`.game_log_cache` — SENZA questo passo i test sopra non vedono nessun dato
