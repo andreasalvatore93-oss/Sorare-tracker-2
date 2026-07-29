@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "jacob-peter-hodl", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:43:38 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785285818', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': '1v8Kc5cA6oK7Tnz6AhoKO98sc3hvUvu1y0T4o2g76dwPufgrxaakUs5kHWcCMlus6TwejyaN9BVsM-J_FmfuCg', 'etag': 'W/"8ec90ef253a56b8e740797eb82bc3573"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=L4lR1EWme7rcntq77bOMWVLCem7ApTWl39c9laU4uGJH%2FTJUG7ofYakn5EA%2B3CrCre27EbYAjJdFWH5Sy17SMs1%2BdJ2yQARJplxN%2F%2Fyi6sc2on9nsbxli0jN%2Fq4kXy%2FW2zFGJv2X2Cq5yPYfq%2BtKLhscKAcH0gbwHBWpKsriU0So0PXn1pESgBhj9o1TbDk6YHEAEhWC5d%2F1gVqqtO6mymiruN%2BOOhvET5EMXCl9sIAL2JFF4NNHS7E8epevaE%2FNI3LaKzFgBZU%2BjEVGWWJJT5Mr1TW1sCmnLtcwV%2F8wd9ZpAm0zLh2o3Jt97GCbMR4f--iHoTHAv8OVFNbexW--bdEIFkrKbjXmOizHKNd3kw%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:43:38 GMT; secure; httponly; samesite=none', 'x-request-id': 'e745ed24-d40c-43f9-ac30-20db18579c9a', 'x-runtime': '0.064511', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6b195068aea9dae53cab6ca0716fb2f6.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'SFO53-P6', 'x-amz-cf-id': 'B0i_-5dnpHts074pvIN9wdWDs_iQWTrLEouABrL-oJmOHkvluGf6TQ=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:308aca38-2374-4302-9e8f-2aa5964ab1f2","score":38.6,"scoreStatus":"REVIEWING","positionTyped":"Midfielder","anyGame":{"id":"Game:c89ba9c5-5c7e-4535-b4c1-8c57808ac334","date":"2026-07-28T18:45:00Z","statusTyped":"played","homeTeam":{"slug":"hearts-edinburgh","name":"Heart of Midlothian FC","code":"HEA","domesticLeagueRanking":2},"awayTeam":{"slug":"sturm-graz-graz","name":"SK Puntigamer Sturm Graz","code":"STU","domesticLeagueRanking":1},"competition":{"slug":"uefa-champions-league"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":77,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:9763c147-6f3c-498f-81d6-6517b32407bc","score":88.3,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:402c0dbc-d321-479c-b0a7-9a186246ef0e","date":"2026-07-21T18:30:00Z","statusTyped":"played","homeTeam":{"slug":"sturm-graz-graz","name":"SK Puntigamer Sturm Graz","code":"STU","domesticLeagueRanking":1},"awayTeam":{"slug":"hearts-edinburgh","name":"Heart of Midlothian FC","code":"HEA","domesticLeagueRanking":2},"competition":{"slug":"uefa-champions-league"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":71,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:1feffd55-0c5d-4588-993d-eb6c3de6cec2","date":"2026-08-01T15:00:00Z","playerGameScore":{"id":"So5Score:53aa0eb8-d1c5-4fc6-8582-fede27ea522b","positionTyped":"Midfielder","projectedScore":42.0,"anyGame":{"id":"Game:1feffd55-0c5d-4588-993d-eb6c3de6cec2","date":"2026-08-01T15:00:00Z","homeTeam":{"slug":"wattens-wattens","name":"WSG Tirol","code":"WSG","domesticLeagueRanking":7},"awayTeam":{"slug":"sturm-graz-graz","name":"SK Puntigamer Sturm Graz","code":"STU","domesticLeagueRanking":1},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:a2edbb5c-5af0-4b81-882f-09072cab022e","date":"2026-08-08T17:30:00Z","playerGameScore":{"id":"So5Score:b501f3f8-89b7-4f62-a0f9-361436ed0a8a","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:a2edbb5c-5af0-4b81-882f-09072cab022e","date":"2026-08-08T17:30:00Z","homeTeam":{"slug":"hartberg-hartberg","name":"TSV Egger Glas Hartberg","code":"HTB","domesticLeagueRanking":6},"awayTeam":{"slug":"sturm-graz-graz","name":"SK Puntigamer Sturm Graz","code":"STU","domesticLeagueRanking":1},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:92274318-911f-47dc-9d7d-1e8b8b9e94ee","date":"2026-08-15T17:30:00Z","playerGameScore":{"id":"So5Score:f9579426-a027-4d02-a8c1-e9fadc2fa1f7","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:92274318-911f-47dc-9d7d-1e8b8b9e94ee","date":"2026-08-15T17:30:00Z","homeTeam":{"slug":"sturm-graz-graz","name":"SK Puntigamer Sturm Graz","code":"STU","domesticLeagueRanking":1},"awayTeam":{"slug":"rheindorf-altach-altach","name":"CASHPOINT SCR Altach","code":"ALT","domesticLeagueRanking":8},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:cc6d0692-3c8f-44b0-9360-77adcc6592fa","date":"2026-08-22T15:00:00Z","playerGameScore":{"id":"So5Score:8942e01f-0810-4a2c-a716-892a6633256a","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:cc6d0692-3c8f-44b0-9360-77adcc6592fa","date":"2026-08-22T15:00:00Z","homeTeam":{"slug":"sturm-graz-graz","name":"SK Puntigamer Sturm Graz","code":"STU","domesticLeagueRanking":1},"awayTeam":{"slug":"austria-lustenau-lustenau","name":"SC Austria Lustenau","code":"ALU","domesticLeagueRanking":6},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:9cb45777-bc27-492a-b684-e00f8edf4ca1","date":"2026-08-30T15:00:00Z","playerGameScore":{"id":"So5Score:3e6d153e-d7d6-4fe1-a051-5eb75d95d6c7","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:9cb45777-bc27-492a-b684-e00f8edf4ca1","date":"2026-08-30T15:00:00Z","homeTeam":{"slug":"rapid-wien-wien","name":"SK Rapid Wien","code":"SCR","domesticLeagueRanking":5},"awayTeam":{"slug":"sturm-graz-graz","name":"SK Puntigamer Sturm Graz","code":"STU","domesticLeagueRanking":1},"competition":{"slug":"austrian-bundesliga"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
