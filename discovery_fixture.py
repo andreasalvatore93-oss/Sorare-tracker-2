@@ -628,7 +628,13 @@ def main():
     # giocatori) restano 1-3 shard invece di sempre 4, i ruoli grandi
     # (DEF/MID, 70-95) ne prendono comunque abbastanza da stare sotto il
     # tempo per shard, minimizzando il conteggio TOTALE di job predict.
-    PREDICT_SHARD_TARGET_SIZE = 25
+    # ABBASSATO (29/07 sera) da 25 a 15: verificato su run reale che FWD in
+    # particolare e' diventato piu' lento per giocatore (opponent_strength.py
+    # scansiona due cartelle cache per giocatore FWD invece di una, e le
+    # cartelle cache sono cresciute a 200+ file per le leghe piu' vecchie) --
+    # una soglia piu' bassa sminuzza meglio i job pesanti, indipendentemente
+    # dalla causa esatta del rallentamento per giocatore.
+    PREDICT_SHARD_TARGET_SIZE = 15
     matrice = []
     for lg, ruoli in sorted(scritti.items()):
         for r in sorted(ruoli):
