@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T01:01:40.349868Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jakob-maximilian-scholler: 50 pt attesi (38-96)
+   ORDINAMENTO: 59.24
+   SQUADRA: rapid-wien-wien | AVVERSARIO: fc-santa-coloma-andorra-la-vella
+======================================================================
+
+######################################################################
+# GIOCATORE: jakob-maximilian-scholler
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jakob-maximilian-scholler (squadra: rapid-wien-wien)
+Generato: 2026-07-29T01:01:40.349372Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-18 | ZRI vs SCR | uefa-europa-conference-league | score=30.5 | peso=0.630
+  2026-04-26 | SCR vs RBS | austrian-bundesliga | score=55.4 | peso=0.680
+  2026-05-04 | ASK vs SCR | austrian-bundesliga | score=45.2 | peso=0.735
+  2026-05-10 | SCR vs FAK | austrian-bundesliga | score=41.6 | peso=0.794
+  2026-05-17 | STU vs SCR | austrian-bundesliga | score=41.6 | peso=0.857
+  2026-05-22 | SVR vs SCR | austrian-bundesliga | score=46.2 | peso=0.926
+  2026-05-25 | SCR vs SVR | austrian-bundesliga | score=100.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 53.65
+  di cui Punteggio decisivo (level_score) medio: 41.23 | Punteggio complessivo (granulari) medio: 12.42 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +1.07, delta avversario +0.00 | Passaggio condizionato: delta venue +1.01, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +1.13, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 22.44
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.6 - 100.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.80 (differenza: +17.64)
+Media score in casa: 65.66 | Media score fuori casa: 40.89
+Fattore casa/trasferta applicato: 1.010 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 2.2
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.013
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 1.014
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.012
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-29T18:30
+Casa: SK Rapid Wien | Trasferta: Don Denis FC Santa Coloma
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 37.6 - 96.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 59.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.62
+Punteggio REALE ottenuto in quella partita: 100.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +56.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.1   100.0    +57.9     8.2        NO
+
+MAE (errore assoluto medio): 57.87
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
