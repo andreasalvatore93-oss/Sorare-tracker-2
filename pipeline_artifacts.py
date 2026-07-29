@@ -289,9 +289,31 @@ def cmd_apply(argv):
 
 # -------------------------------------------------------------- matrice ----
 
+MATRICI_DIR = '_matrici'
+
+
 def _matrice_dai_job():
-    """Concatena e deduplica le matrici emesse dai job discovery."""
+    """Concatena e deduplica le matrici prodotte dai job discovery.
+
+    Le legge dai file `_matrici/*.json` portati dagli artifact. Prima stavano
+    negli output di job (env MATRICE_0..35), ma con i 36 shard raggruppati in
+    un solo job a matrice quella strada non funziona piu': un job che esegue
+    piu' shard in sequenza scriverebbe piu' volte lo stesso output e vincerebbe
+    solo l'ultimo. L'env resta letto come ripiego, per non rompere nulla se
+    qualche chiamante vecchio lo usa ancora."""
     parts = []
+    for path in sorted(glob.glob(os.path.join(MATRICI_DIR, '*.json'))):
+        try:
+            with open(path, encoding='utf-8') as f:
+                testo = f.read().strip()
+            if testo:
+                parts.append(json.loads(testo))
+        except (OSError, json.JSONDecodeError):
+            print(f'[matrice] {path} non leggibile/non JSON, ignorato',
+                  file=sys.stderr)
+    if parts:
+        print(f'[matrice] {len(parts)} matrici lette da {MATRICI_DIR}/',
+              file=sys.stderr)
     for i in range(200):
         raw = os.environ.get(f'MATRICE_{i}')
         if raw is None:

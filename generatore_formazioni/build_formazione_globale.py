@@ -935,7 +935,7 @@ def main():
     # allungare sensibilmente questo job. Esaurito il budget, il numero
     # riportato diventa un "almeno N" invece di un valore esatto.
     MAX_SONDAGGIO_CAPIENZA = 20
-    BUDGET_SONDAGGIO_S = 45.0
+    BUDGET_SONDAGGIO_S = 20.0
     _t0_sondaggio = datetime.datetime.utcnow()
     capienza_extra = {}
     capienza_parziale = set()
@@ -969,16 +969,36 @@ def main():
                 print(f"  {LABELS[tipo]}: {fatte} generate, il pool residuo non "
                       f"basta per un'altra")
 
+    # Blocco dedicato nel report, UNA RIGA PER COMPETIZIONE (29/07, richiesta
+    # esplicita utente: nel sottotitolo, tutto su una riga, non si leggeva per
+    # singola competizione). Messo in testa al corpo del report, prima delle
+    # formazioni, cosi' e' la prima cosa che si vede.
     capienza_html = ""
     if capienza_extra:
-        voci = []
+        righe = []
         for tipo, extra in capienza_extra.items():
             fatte = generated_by_type.get(tipo, 0)
             piu = "+" if tipo in capienza_parziale else ""
-            voci.append(f"{LABELS[tipo]}: {fatte} generate, altre "
-                        f"{extra}{piu} possibili")
-        capienza_html = ("<br>Con i giocatori rimasti fuori: " +
-                         "; ".join(voci))
+            if extra:
+                testo = (f'<span style="font-weight:700">altre {extra}{piu} '
+                         f'possibili</span>')
+            else:
+                testo = ('<span style="opacity:0.7">pool residuo insufficiente '
+                         'per un\'altra</span>')
+            righe.append(
+                f'<tr><td style="padding:3px 14px 3px 0">{LABELS[tipo]}</td>'
+                f'<td style="padding:3px 14px 3px 0;white-space:nowrap">'
+                f'{fatte} generate</td>'
+                f'<td style="padding:3px 0;white-space:nowrap">{testo}</td></tr>'
+            )
+        capienza_html = (
+            '<div class="alt-panel" style="margin:0 0 18px 0">'
+            '<div style="font-weight:700;margin-bottom:6px">'
+            'Formazioni aggiuntive possibili con i giocatori rimasti fuori</div>'
+            '<table style="border-collapse:collapse;font-size:0.86rem">'
+            + "".join(righe) +
+            '</table></div>'
+        )
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
@@ -990,10 +1010,11 @@ def main():
                      f"totale={num_totale} (" +
                      ", ".join(f"{LABELS[t]}={counts[t]}" for t in PRIORITY_ORDER) + ")<br>"
                      f"Candidati non schierati in nessuna formazione: {tot_esclusi} (" +
-                     ", ".join(f"{r}: {esclusi_per_ruolo[r]}" for r in ROLES) + ")" +
-                     capienza_html)
+                     ", ".join(f"{r}: {esclusi_per_ruolo[r]}" for r in ROLES) + ")")
     footer_html = (f"Fusione {len(LEAGUES)} campionati. Max 1 carta CLASSIC solo per In Season. "
                     f"Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.")
+    if capienza_html:
+        lineup_html_blocks.insert(0, capienza_html)
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)
     html_path = os.path.join(OUTPUT_DIR, f'generatore_formazioni{run_suffix}_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
