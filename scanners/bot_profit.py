@@ -1424,20 +1424,25 @@ CSV_FIELDNAMES = [
 ]
 
 # FIX 29/07 (richiesta esplicita utente, analisi pattern_raw_transactions_
-# 20260729_1845.csv, script bot_profit_pattern_export.py): finestra da 3 a 1
-# giorno PRIMA del kickoff della partita di quel giocatore (non della gameweek
-# collettiva -- ogni squadra ha il proprio orario reale) e' risultata il
-# momento con lo sconto medio piu' marcato e piu' RICORRENTE, confermata da
-# due metodi indipendenti (bucket giorno-offset con prezzo normalizzato E
-# minimi locali seguiti da una risalita reale >=5%) su tutte e 3 le leghe
-# individualmente (MLS -14.9%, Korea -15.3%, Eredivisie/Belgio -4.6% a -3gg)
-# e ancora piu' netta sul dataset combinato (-10.9%, n=193). Colonna derivata
-# a costo zero da prossima_partita_data gia' presente, nessuna query
-# aggiuntiva -- calcolata al momento della scrittura del CSV (vedi
-# _finestra_acquisto_ideale), non serve toccare gli altri punti dove le righe
-# vengono costruite/aggiornate.
-BUY_WINDOW_DAYS_BEFORE_MAX = 3
-BUY_WINDOW_DAYS_BEFORE_MIN = 1
+# 20260729_1845.csv, script bot_profit_pattern_export.py): PRIMA versione
+# (finestra -3gg/-1gg a bucket interi) era SBAGLIATA -- verificato dopo la
+# richiesta esplicita dell'utente di ricontrollare i calcoli, rifacendo
+# l'analisi a grana piu' fine (bin da 0.5gg invece di 1gg intero): -2gg e -1gg
+# NON sono affatto uno sconto, sono anzi un SOVRAPPREZZO (+3/+8% su tutte e 3
+# le leghe, il prezzo sale avvicinandosi al kickoff) -- lo sconto reale e'
+# concentrato strettamente in un picco stretto a -3.5/-3.0gg PRIMA del kickoff
+# della partita di quel giocatore (non della gameweek collettiva -- ogni
+# squadra ha il proprio orario reale), confermato sui bin piu' fini su tutte e
+# 3 le leghe individualmente (MLS -13.9%/-17.7%, Korea -15.3%/-16.0%,
+# Eredivisie/Belgio -6.6%/-3.7%) e sul dataset combinato (-12.5%/-10.0%,
+# n=71/103). Finestra corretta: da 3.5 a 2.5 giorni PRIMA del kickoff (mezza
+# giornata di tolleranza attorno al picco -3gg, richiesta esplicita utente),
+# non piu' un range largo fino a -1gg. Colonna derivata a costo zero da
+# prossima_partita_data gia' presente, nessuna query aggiuntiva -- calcolata
+# al momento della scrittura del CSV (vedi _finestra_acquisto_ideale), non
+# serve toccare gli altri punti dove le righe vengono costruite/aggiornate.
+BUY_WINDOW_DAYS_BEFORE_MAX = 3.5
+BUY_WINDOW_DAYS_BEFORE_MIN = 2.5
 
 
 def _finestra_acquisto_ideale(prossima_partita_data_iso):
