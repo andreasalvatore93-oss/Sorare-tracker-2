@@ -1044,7 +1044,9 @@ def compute_score_atteso_mid(scores, is_home_flags, opponent_rankings,
                              half_life=None, trend_intensity=None,
                              shrink_k=SHRINK_K_OUTLIER_MID,
                              media_ruolo_prior=MEDIA_RUOLO_MID_PRIOR,
-                             use_stadio_d=True, presence_rate=None, opponent_lambda_mult=1.0):
+                             use_stadio_d=True, presence_rate=None, opponent_lambda_mult=1.0,
+                             opponent_team_slugs=None, game_dates=None,
+                             target_opponent_team_slug=None, target_cutoff_dt=None, league='mls'):
     """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` MID di PRODUZIONE,
     da usare SIA in build_prediction SIA nel backtest walk-forward di
     calibrazione (rigorous_backtest_prod_mid) -- cosi' le due non possono
@@ -1093,14 +1095,28 @@ def compute_score_atteso_mid(scores, is_home_flags, opponent_rankings,
 
     if not use_stadio_d:
         return score_atteso
-    valid_opp_ranks = [r for r in opponent_rankings if r is not None]
-    avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
-    opponent_forte_flags = [
-        (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
-        for r in opponent_rankings
-    ]
-    next_forte = (target_opp_rank < avg_opp_rank_hist) if (
-        target_opp_rank is not None and avg_opp_rank_hist is not None) else None
+    # SOSTITUITO (29/07, richiesta esplicita utente, bug reale: domesticLeagueRanking
+    # e' un attributo CORRENTE della squadra, non ancorato alla data della partita,
+    # vedi opponent_strength.py): se disponibili gli slug/date storici (passati
+    # da build_prediction), 'forte' si basa sui gol REALI fatti dall'avversario.
+    # Fallback al vecchio ranking SOLO se i nuovi parametri non sono passati
+    # (backtest/calibrazione esistenti, comportamento INVARIATO li').
+    if opponent_team_slugs is not None and game_dates is not None:
+        opponent_forte_flags = [
+            opponent_strength.opponent_is_strong(league, opp_slug, dt)
+            for opp_slug, dt in zip(opponent_team_slugs, game_dates)
+        ]
+        next_forte = opponent_strength.opponent_is_strong(
+            league, target_opponent_team_slug, target_cutoff_dt)
+    else:
+        valid_opp_ranks = [r for r in opponent_rankings if r is not None]
+        avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
+        opponent_forte_flags = [
+            (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
+            for r in opponent_rankings
+        ]
+        next_forte = (target_opp_rank < avg_opp_rank_hist) if (
+            target_opp_rank is not None and avg_opp_rank_hist is not None) else None
 
     def _delta_venue_avversario(values):
         fallback = weighted_mean(values, weights)
@@ -1373,6 +1389,8 @@ def build_prediction(player_slug):
     granulari_values = []  # NUOVO (26/07, Stadio A): resto del punteggio (= score - level_score)
     pos_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi POSITIVE_DECISIVE_STAT per partita
     neg_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi NEGATIVE_DECISIVE_STAT per partita
+    opponent_team_slugs_hist = []  # NUOVO (29/07, vedi opponent_strength.py): per Stadio D con dato pulito
+    game_dates_hist = []
 
     for node, detail in zip(usable, details):
         game_score = node.get('score', 0.0)
@@ -1385,6 +1403,14 @@ def build_prediction(player_slug):
         is_home_flags.append(is_home)
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
+        _g_home, _g_away = game.get('homeTeam') or {}, game.get('awayTeam') or {}
+        if _g_home.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_away.get('slug'))
+        elif _g_away.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_home.get('slug'))
+        else:
+            opponent_team_slugs_hist.append(None)
+        game_dates_hist.append(_game_dt(node))
 
         fouls_v = extract_group_score(detail, FOULS_STATS)
         duels_v = extract_group_score(detail, DUELS_STATS)
@@ -1400,7 +1426,11 @@ def build_prediction(player_slug):
         passing_values.append(passing_v)
         defense_rare_values.append(max(-DEFENSE_RARE_CAP, min(DEFENSE_RARE_CAP, defense_raw)))
         defensive_actions_values.append(defensive_actions_v)
-        goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
+        # RIMOSSO CAP (29/07, bug reale confermato dall'utente su piu' partite MLS+K League,
+        # GK/DEF/MID: -5/-4/-2 a gol rispettivamente, LINEARE fino a 6-7 gol subiti in un
+        # solo game -- nessun tetto osservato nei dati reali Sorare, il vecchio cap a +-10
+        # troncava artificialmente le partite con tante reti subite).
+        goals_conceded_values.append(goals_conceded_raw)
         level_score_v = extract_level_score(detail)
         level_score_values.append(level_score_v)
         granulari_values.append(game_score - level_score_v)
@@ -1577,7 +1607,10 @@ def build_prediction(player_slug):
         scores, is_home_flags, opponent_rankings, residual_values, granulari_values,
         pos_decisive_values, neg_decisive_values, offensive_values, passing_values,
         goals_conceded_values, target_is_home=next_is_home, target_opp_rank=next_opp_rank,
-        presence_rate=presence_rate, opponent_lambda_mult=_opp_lambda_mult)
+        presence_rate=presence_rate, opponent_lambda_mult=_opp_lambda_mult,
+        opponent_team_slugs=opponent_team_slugs_hist, game_dates=game_dates_hist,
+        target_opponent_team_slug=next_opponent_team_slug,
+        target_cutoff_dt=datetime.datetime.utcnow(), league='mls')
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) ---
     opponent_forte_flags = [

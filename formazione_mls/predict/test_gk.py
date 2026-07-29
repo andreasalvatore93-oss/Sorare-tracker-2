@@ -1468,7 +1468,11 @@ def build_prediction(player_slug):
         passing_values.append(extract_group_score(detail, PASSING_STATS))
         goalkeeping_values.append(extract_group_score(detail, GOALKEEPING_STATS))  # nessun cap: e' il cuore del punteggio portiere
         goals_conceded_raw = extract_group_score(detail, GOALS_CONCEDED_STATS)
-        goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
+        # RIMOSSO CAP (29/07, bug reale confermato dall'utente su piu' partite MLS+K League,
+        # GK/DEF/MID: -5/-4/-2 a gol rispettivamente, LINEARE fino a 6-7 gol subiti in un
+        # solo game -- nessun tetto osservato nei dati reali Sorare, il vecchio cap a +-10
+        # troncava artificialmente le partite con tante reti subite).
+        goals_conceded_values.append(goals_conceded_raw)
         clean_sheet_flag_values.append(extract_clean_sheet_flag(detail))
         level_score_v = extract_level_score(detail)
         level_score_values.append(level_score_v)

@@ -1521,6 +1521,8 @@ def build_prediction(player_slug):
     is_home_flags = []
     opponent_rankings = []
     own_rankings = []
+    opponent_team_slugs_hist = []  # NUOVO (29/07, vedi opponent_strength.py): per Stadio D con dato pulito
+    game_dates_hist = []
     fouls_values = []
     duels_values = []
     offensive_values = []
@@ -1546,6 +1548,14 @@ def build_prediction(player_slug):
         is_home_flags.append(is_home)
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
+        _g_home, _g_away = game.get('homeTeam') or {}, game.get('awayTeam') or {}
+        if _g_home.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_away.get('slug'))
+        elif _g_away.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_home.get('slug'))
+        else:
+            opponent_team_slugs_hist.append(None)
+        game_dates_hist.append(_game_dt(node))
 
         fouls_v = extract_group_score(detail, FOULS_STATS)
         duels_v = extract_group_score(detail, DUELS_STATS)
@@ -1562,7 +1572,11 @@ def build_prediction(player_slug):
         passing_values.append(passing_v)
         defense_rare_values.append(max(-DEFENSE_RARE_CAP, min(DEFENSE_RARE_CAP, defense_raw)))
         defensive_actions_values.append(defensive_actions_v)
-        goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
+        # RIMOSSO CAP (29/07, bug reale confermato dall'utente su piu' partite MLS+K League,
+        # GK/DEF/MID: -5/-4/-2 a gol rispettivamente, LINEARE fino a 6-7 gol subiti in un
+        # solo game -- nessun tetto osservato nei dati reali Sorare, il vecchio cap a +-10
+        # troncava artificialmente le partite con tante reti subite).
+        goals_conceded_values.append(goals_conceded_raw)
         clean_sheet_values.append(clean_sheet_v)
         level_score_v = extract_level_score(detail)
         level_score_values.append(level_score_v)
@@ -1765,12 +1779,19 @@ def build_prediction(player_slug):
     # sezione 11/12. SOSTITUISCE (non si somma a) la vecchia conditioning
     # sull'aggregato, per non contare due volte lo stesso segnale. Stessa
     # correzione additiva/shrinkage delle altre correzioni Stadio D.
+    # SOSTITUITO (29/07, richiesta esplicita utente, bug reale trovato
+    # controllando i granulari): 'opponent_forte_flags'/'next_forte' usavano
+    # domesticLeagueRanking, scoperto contaminato (attributo CORRENTE della
+    # squadra, non ancorato alla data della partita -- vedi opponent_strength.py
+    # e RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md). Ora 'forte' = l'avversario
+    # segna piu' della media di lega nelle sue ultime 10 partite prima di
+    # QUELLA specifica data storica (dato reale, immutabile).
     opponent_forte_flags = [
-        (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
-        for r in opponent_rankings
+        opponent_strength.opponent_is_strong('mls', opp_slug, dt)
+        for opp_slug, dt in zip(opponent_team_slugs_hist, game_dates_hist)
     ]
-    next_forte = (next_opp_rank < avg_opp_rank_hist) if (
-        next_opp_rank is not None and avg_opp_rank_hist is not None) else None
+    next_forte = opponent_strength.opponent_is_strong(
+        'mls', next_opponent_team_slug, datetime.datetime.utcnow())
 
     def _condiziona_venue_avversario(values):
         fallback = weighted_mean(values, weights)

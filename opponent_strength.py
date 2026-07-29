@@ -170,3 +170,28 @@ def opponent_lambda_multiplier(league, role, opponent_team_slug, cutoff_dt, n_ga
     z = (avg_val - GLOBAL_MEAN_CONCEDED) / GLOBAL_STD_CONCEDED
     z_signed = sign * z
     return max(0.0, 1 + sens * z_signed)
+
+
+def opponent_is_strong(league, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DEFAULT):
+    """Booleano 'avversario forte' basato sui gol REALI FATTI dall'avversario
+    (ultime n_games partite prima di cutoff_dt) -- sostituisce (29/07,
+    richiesta esplicita utente) il vecchio 'opponent_forte_flags' di Stadio D
+    in DEF/MID, che confrontava domesticLeagueRanking (contaminato) con la
+    media storica dei ranking affrontati. Qui: avversario 'forte' = il suo
+    attacco segna piu' della media di lega (GLOBAL_MEAN_CONCEDED, la stessa
+    costante usata per l'aggiustamento su lambda_pos_dec) -- coerente col
+    fatto che il pezzo di formula condizionato (gol_subiti/clean_sheet/
+    passaggio del NOSTRO giocatore) e' una questione difensiva, quindi conta
+    la forza offensiva di chi abbiamo davanti, non un ranking generico.
+    None se il dato non e' disponibile (stesso fallback permissivo di prima:
+    media_condizionata tratta i punti None come non classificabili)."""
+    if not opponent_team_slug or cutoff_dt is None:
+        return None
+    _, scored = _build_series_for_league(league)
+    series_opp = scored.get(opponent_team_slug, [])
+    past = [gc for dt, gc in series_opp if dt < cutoff_dt]
+    if len(past) < 3:
+        return None
+    past = past[-n_games:]
+    avg_val = sum(past) / len(past)
+    return avg_val > GLOBAL_MEAN_CONCEDED
