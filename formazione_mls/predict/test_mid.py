@@ -1044,7 +1044,7 @@ def compute_score_atteso_mid(scores, is_home_flags, opponent_rankings,
                              half_life=None, trend_intensity=None,
                              shrink_k=SHRINK_K_OUTLIER_MID,
                              media_ruolo_prior=MEDIA_RUOLO_MID_PRIOR,
-                             use_stadio_d=True, presence_rate=None):
+                             use_stadio_d=True, presence_rate=None, opponent_lambda_mult=1.0):
     """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` MID di PRODUZIONE,
     da usare SIA in build_prediction SIA nel backtest walk-forward di
     calibrazione (rigorous_backtest_prod_mid) -- cosi' le due non possono
@@ -1063,7 +1063,13 @@ def compute_score_atteso_mid(scores, is_home_flags, opponent_rankings,
     weights = exponential_weights(n, half_life)
 
     media_granulari_pesata = weighted_mean(granulari_values, weights)
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    # opponent_lambda_mult (29/07, vedi opponent_strength.py): gol subiti dal
+    # prossimo avversario nelle ultime 10 partite. FIX 29/07: questa e' la
+    # VERA funzione chiamata da build_prediction per lo score_atteso reale
+    # (score_atteso = compute_score_atteso_mid(...)) -- un primo tentativo
+    # aveva modificato per errore una copia inline piu' sotto usata SOLO per
+    # il result dict diagnostico, senza alcun effetto sulla produzione reale.
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
@@ -1571,7 +1577,7 @@ def build_prediction(player_slug):
         scores, is_home_flags, opponent_rankings, residual_values, granulari_values,
         pos_decisive_values, neg_decisive_values, offensive_values, passing_values,
         goals_conceded_values, target_is_home=next_is_home, target_opp_rank=next_opp_rank,
-        presence_rate=presence_rate)
+        presence_rate=presence_rate, opponent_lambda_mult=_opp_lambda_mult)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) ---
     opponent_forte_flags = [
