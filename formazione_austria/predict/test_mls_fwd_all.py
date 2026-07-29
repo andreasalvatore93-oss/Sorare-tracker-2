@@ -108,6 +108,8 @@ RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.3  # AGGIORNATO (29/07, esteso a tutte le leghe): backtest walk-forward post-retuning half_life, MAE -0.73% (validato MLS/Korea), stesso valore ora applicato a tutte le leghe -- vedi backlog 'produzione solo MLS/Korea'
+SHRINK_K_OUTLIER_FWD = 5.0  # NUOVO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~1700 punti di test, MAE -0.49% (era MLS-only con k=6.0, escluso altrove -- la vecchia nota 'peggiora fuori MLS' non e' risultata riproducibile col volume di dati attuale, vedi RIASSUNTO sez.29). Segnale comunque il piu' debole dei 4 ruoli.
+MEDIA_RUOLO_FWD_PRIOR = 53.74  # media grezza pool 25 leghe (solo diagnostico, la produzione usa il prior dinamico da presence_rate sotto)
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1363,9 +1365,17 @@ def build_prediction(player_slug):
     _offensive_hist = weighted_mean(offensive_values, weights)
     _fwd_offense_delta = opponent_strength.fwd_offense_granular_delta(
         'austria', next_opponent_team_slug, datetime.datetime.utcnow(), _offensive_hist)
-    score_atteso = ((level_score_atteso + media_granulari_pesata * fattore_trend_granulare
-                     + _fwd_offense_delta)
-                    * fattore_casa_trasferta)
+    grezzo_nuovo = (level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+                    + _fwd_offense_delta)
+    # Shrinkage outlier/hot-streak (29/07, esteso a tutte le leghe, vedi SHRINK_K_OUTLIER_FWD
+    # sopra): prior dinamico da presence_rate storico (stessa regressione usata in MLS, sez.31.D
+    # del RIASSUNTO -- principio 'modello unico globale', stessi coefficienti ovunque).
+    _media_ruolo_prior_dinamico = max(0.0, 34.42 + 18.71 * presence_rate)
+    grezzo_nuovo_corretto = (
+        (n / (n + SHRINK_K_OUTLIER_FWD)) * grezzo_nuovo
+        + (SHRINK_K_OUTLIER_FWD / (n + SHRINK_K_OUTLIER_FWD)) * _media_ruolo_prior_dinamico
+    )
+    score_atteso = grezzo_nuovo_corretto * fattore_casa_trasferta
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i

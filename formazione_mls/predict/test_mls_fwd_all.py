@@ -137,8 +137,8 @@ TREND_INTENSITY = 0.3  # AGGIORNATO (29/07): backtest walk-forward su tutte le l
 # media_ruolo) -- costante strutturale, non ricalcolata a runtime (stessa
 # semplificazione accettata per gli altri "FISSATO" sopra). SHRINK_K_OUTLIER_FWD
 # resta 5.0 (differenza vs k=4 vista trascurabile, nessun cambio li').
-SHRINK_K_OUTLIER_FWD = 6.0  # AGGIORNATO (29/07): retest post-retuning half_life/trend, minimo interno, MAE -0.005% (MLS/Korea)
-MEDIA_RUOLO_FWD_PRIOR = 53.02
+SHRINK_K_OUTLIER_FWD = 5.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~1700 punti di test, MAE -0.49% -- la vecchia esclusione "peggiora fuori MLS" non e' risultata riproducibile col volume di dati attuale (vedi RIASSUNTO sez.29), stesso valore ora su TUTTE le leghe
+MEDIA_RUOLO_FWD_PRIOR = 53.74  # AGGIORNATO (29/07): media grezza pool 25 leghe (solo diagnostico, la produzione usa il prior dinamico da presence_rate)
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
