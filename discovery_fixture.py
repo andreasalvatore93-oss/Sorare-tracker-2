@@ -585,7 +585,14 @@ def main():
     # in un job separato 'consiglio', dopo che TUTTI gli shard di 'predict'
     # sono completati -- vedi formazione_giornata.yml.
     PREDICT_SHARD_LEAGUES = {'mls', 'kleague'}
-    PREDICT_SHARD_N = 2
+    # 29/07: alzato da 2 a 4 -- con 2 shard il piu' affollato (DEF, ~95
+    # giocatori/lega) restava a ~48 giocatori/shard, ~6m30s sul percorso
+    # critico nonostante la pausa fissa gia' ridotta (10s->2s). A 4 shard
+    # ~24 giocatori/shard, tempo atteso dimezzato. max-parallel del job
+    # predict e' 77 nel workflow: con 2 leghe pesanti x 4 ruoli x 4 shard =
+    # 32 job (contro i 16 di prima), ampio margine residuo sotto il limite
+    # insieme ai job delle altre leghe non shardate.
+    PREDICT_SHARD_N = 4
     matrice = []
     for lg, ruoli in sorted(scritti.items()):
         for r in sorted(ruoli):
