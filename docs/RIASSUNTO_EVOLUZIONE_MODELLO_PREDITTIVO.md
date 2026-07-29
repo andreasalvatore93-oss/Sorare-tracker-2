@@ -3493,3 +3493,155 @@ se e quando ogni lineup consuma lo slot classic e su quale giocatore.
 Tutto committato e pushato su `main`. Nessuna modifica pendente non salvata. Le run di oggi hanno
 anche generato output/commit automatici extra (prediction_*.txt, consiglio_*.txt, debug) da parte
 del bot — normali, non richiedono azione.
+
+## 33 — Sessione 29/07/2026 (continua) — riabilitato il fattore forza avversario con dato pulito,
+## bug reali trovati sui granulari, battuta esaustiva di combinazioni cross-ruolo
+
+Sessione lunga, partita dal ripasso del RIASSUNTO e proseguita con un'indagine sul modello
+predittivo guidata dall'utente ("Messi contro la difesa peggiore vs la migliore del campionato
+dovrebbero dare lo stesso punteggio?" — risposta: NO, ma il modello all'epoca non li distingueva
+affatto, perche' `fattore_forza_avversario` era gia' stato rimosso da score_atteso il 26/07).
+
+### 33.A — Scoperta: `domesticLeagueRanking` e' un dato CONTAMINATO, non storico
+
+Verificando perche' un coefficiente basato su questo campo continuasse a risultare inutile nei
+backtest, scoperto che `domesticLeagueRanking` (posizione in classifica) e' un attributo
+**CORRENTE** della squadra lato Sorare, non un valore storico ancorato alla data della partita.
+Prova diretta: stessa partita storica (es. LA Galaxy, 24/08/2025), letta da cache di giocatori
+diversi (aggiornate in momenti diversi), restituisce ranking DIVERSI (10 vs 11) — quantificato su
+tutte le leghe: 282/13671 coppie (squadra, data-partita) incoerenti, 22 squadre coinvolte. Questo
+significa che ogni media storica calcolata su questo campo (`avg_opp_rank_hist`, sia nel vecchio
+`fattore_forza_avversario` sia nello Stadio D di DEF/MID) e' inquinata da uno snapshot non
+ancorato al tempo — non un vero storico. Conseguenza pratica: **tutti i backtest passati che
+avevano concluso "il fattore forza avversario non aiuta" erano viziati nel metodo** (anche se la
+direzione della conclusione probabilmente restava giusta, visto che un dato rumoroso tende a
+sembrare inutile comunque).
+
+### 33.B — Nuovo modulo `opponent_strength.py`: dato pulito (gol reali), non ranking
+
+Creato `opponent_strength.py` (root del repo, modulo condiviso): ricostruisce lo storico
+gol subiti/fatti per squadra dalle cache GK+DEF+MID gia' su disco (**nessuna query nuova**) — dato
+genuinamente storico e immutabile, preso da `goals_conceded` nel `detailedScore` di partite gia'
+giocate (a differenza del ranking, questo NON cambia se riletto in momenti diversi). Validato con
+backtest walk-forward rigoroso (`formazione_mls/diagnostics/validate_opponent_conceded_level*.py`,
+media ultime 10 partite dell'avversario, grid search sensibilita'):
+
+| Ruolo | Segnale | Sensibilita' | Miglioramento MAE |
+|---|---|---|---|
+| FWD | gol SUBITI dall'avversario | 1.0 | **-0.58%** |
+| GK | gol FATTI dall'avversario (segno invertito) | 1.0 | **-0.59%** |
+| MID | gol SUBITI dall'avversario | 0.7 | **-0.29%** |
+| DEF | gol SUBITI dall'avversario | 1.0 | **-0.27%** |
+
+Applicato su lambda_pos_dec (quindi su `level_score_atteso`) in **MLS + K League, tutti e 4 i
+ruoli** (8 file). Le altre 26 leghe restano INVARIATE per ora (formula duplicata inline per
+lega, non una funzione condivisa come MLS — troppo rischioso toccare tutto in un colpo solo) —
+**backlog flaggato** (chip creato, task "Estendi fattore forza avversario alle altre 26 leghe").
+
+### 33.C — Bug reale: il fix su MID non arrivava in produzione
+
+Controllando i granulari su richiesta dell'utente, scoperto che il primo giro di implementazione
+per MID aveva modificato la copia SBAGLIATA di `lambda_pos_dec`: MID (come GK) chiama
+`compute_score_atteso_mid()` per il vero `score_atteso` in produzione, mentre DEF/FWD ricalcolano
+inline — il fix era finito in una copia diagnostica inerte (result dict, mai usata per il
+punteggio reale). Fixato spostando l'aggiustamento dentro la funzione condivisa realmente
+chiamata.
+
+### 33.D — Bug reale: Stadio D di DEF/MID ancora contaminato dal ranking
+
+Controllo piu' approfondito ha rivelato che il vecchio `fattore_forza_avversario` moltiplicativo
+era stato rimosso (26/07) ma **una PARTE separata della formula — lo "Stadio D" che condiziona
+gol_subiti/passaggio/offensivo/clean_sheet su "avversario forte/debole" — usava ANCORA lo stesso
+`domesticLeagueRanking` contaminato**, sommando il suo contributo a `score_atteso` in produzione
+per DEF e MID (MLS + K League, 4 file: GK/FWD non hanno questo pezzo). Fix: nuova funzione
+`opponent_strength.opponent_is_strong()` (booleano "avversario forte" basato sui gol REALI fatti
+nelle ultime 10 partite, non sul ranking), con fallback al vecchio comportamento se i nuovi
+parametri non sono passati (backtest/calibrazione esistenti invariati).
+
+### 33.E — Bug reale: cap sbagliato su "gol subiti" granulare (GK/DEF/MID)
+
+L'utente ha segnalato a memoria le vere regole di scoring Sorare per il granulare `goals_conceded`
+(diverso da `level_score`/clean sheet, gia' documentato in sez. 11): **-5/gol per GK, -4/gol per
+DEF, -2/gol per MID, LINEARE, SENZA TETTO**. Verificato con piu' esempi REALI estratti dalle cache
+(non solo la sua indicazione a memoria) su MLS e K League, fino a 6-7 gol subiti in una sola
+partita — mai un cap, sempre esattamente lineare (es. GK 7 gol = -35, DEF 6 gol = -24, MID 7 gol =
+-14). Il codice invece cappava a +-10 (`GOALS_CONCEDED_CAP`) per tutti e tre i ruoli — bug reale,
+confermato e rimosso in tutti e 6 i file (GK/DEF/MID x MLS/K League): il granulare ora usa il
+valore reale non cappato per calcolare le medie storiche.
+
+### 33.F — Battuta esaustiva di combinazioni granulari cross-ruolo (24 test totali)
+
+Su richiesta esplicita dell'utente ("prova tutte le combinazioni sensate... non mi importa quanto
+ci vuole"), backtestate sistematicamente tutte le combinazioni sensate granulare-proprio vs
+granulare-avversario non ancora testate, stessa metodologia walk-forward di sempre (media ultime
+10 partite avversario, grid search sensibilita', MAE su un pezzo additivo del punteggio):
+
+**DEF vs FWD/MID avversari (10 combinazioni, tutte scartate)**:
+duello vinto vs duel_lost (-0.07%), tackle vinto vs poss_lost_ctrl (0.00%), intercettazione vs
+missed_pass (-0.06%), efficacia difensiva aggregata vs big_chance_created (0.00%), duel_won vs
+won_contest (0.00%), interception_won vs accurate_pass (~0.00%), won_tackle vs pen_area_entries
+(0.00%), falli vs won_contest (0.00%), goals_conceded granulare vs ontarget_scoring_att (0.00%),
+passaggio vs duel_won pressing (-0.01%).
+
+**MID vs DEF/FWD/MID avversari (9 combinazioni, tutte scartate)**:
+offensivo vs duel_lost DEF (-0.06%), offensivo vs poss_lost_ctrl DEF (0.00%), passaggio vs
+duel_lost DEF (-0.06%), duel_won vs duel_lost FWD (-0.16%, il migliore del gruppo ma comunque
+trascurabile), interception_won vs missed_pass FWD (0.00%), won_tackle vs won_contest FWD
+(-0.00%), duel_won vs duel_lost MID (-0.00%), passaggio vs duel_won MID pressing (0.00%),
+offensivo vs poss_lost_ctrl MID (0.00%).
+
+**FWD vs DEF/MID avversari (5 combinazioni, 1 VALIDATA)**:
+- offensivo vs duel_lost DEF (-0.01%, scartato)
+- **offensivo vs poss_lost_ctrl DEF: -0.38% MAE, minimo pulito a sensibilita'=3.0** (curva a
+  campana vera su griglia estesa 0-10, non rumore) — **VALIDATO E IMPLEMENTATO** (vedi sotto)
+- won_contest vs duel_lost DEF (-0.01%, scartato)
+- offensivo vs duel_lost MID (-0.07%, scartato)
+- passaggio vs duel_won MID pressing (0.00%, scartato)
+
+**GK, combinazioni rimanenti (3, tutte scartate)**:
+granulare Goalkeeping vs pen_area_entries avversario (-0.01%), poss_lost_ctrl proprio vs duel_won
+avversario/pressing (-0.01%), passaggio vs duel_won avversario/pressing (-0.01%).
+
+**Totale sessione: 5 (GK iniziali) + 4 (allroles gol) + 10 (DEF) + 14 (cross-ruolo) = 33
+combinazioni testate, 1 sola validata e implementata** (FWD offensivo vs poss_lost_ctrl DEF
+avversario) oltre al segnale principale gol subiti/fatti (33.B). Conferma quanto gia' sospettato
+dal bootstrap di sez. 8: con 10-20 partite di storico per giocatore, la stragrande maggioranza dei
+segnali granulari-condizionati-su-avversario e' rumore statistico, non segnale reale — il gol
+resta l'unico evento abbastanza raro/discreto e abbastanza ben tracciato da generare un
+aggiustamento pulito e ripetibile.
+
+### 33.G — Implementato: FWD offensivo vs poss_lost_ctrl DEF avversario
+
+Aggiunta `opponent_strength.fwd_offense_granular_delta()`: delta ADDITIVO (non moltiplicativo) sul
+granulare "offensivo" di un FWD, basato sul `poss_lost_ctrl` medio dei difensori avversari nelle
+ultime 10 partite (media/std globali fisse dal backtest: 9.97/4.48, sensibilita' 3.0). Applicato in
+MLS + K League `test_mls_fwd_all.py`, sommato a `grezzo_nuovo` (MLS) / `score_atteso` (K League)
+prima dello shrinkage/venue.
+
+### 33.H — Decisioni prese dall'utente (NON riproporle)
+
+- Fattore forza avversario (gol reali) IN PRODUZIONE per tutti e 4 i ruoli, MLS+K League — non e'
+  piu' "solo diagnostico" come il vecchio, entra davvero nello score_atteso.
+- Le altre 26 leghe restano un backlog esplicito, non toccarle senza chiederlo (troppo rischioso
+  farlo tutto insieme, formula duplicata non condivisa).
+- H2H specifico (scontri diretti storici) scartato senza nemmeno testarlo: "preferisco la media
+  generica".
+- Tema "granulari DEF vs avversario" chiuso dopo 24 combinazioni: nessun altro segnale sfruttabile
+  oltre al gol.
+
+### 33.I — Backlog aperto
+
+- Estendere il fattore forza avversario (gol reali) + fix Stadio D + fix cap gol-subiti alle altre
+  26 leghe (chip gia' creato, task_504a5391).
+- Non ancora testate in modo sistematico le stesse combinazioni per GK vs DEF specificamente (solo
+  FWD+MID pooled finora per gk_remaining) — se servisse in futuro, isolare l'avversario per ruolo
+  specifico invece che FWD+MID insieme potrebbe cambiare il risultato.
+- I diagnostics creati oggi (`formazione_mls/diagnostics/validate_opponent_*.py`,
+  `validate_def_*.py`, `validate_cross_role_combos.py`, `validate_gk_offense_penalty_possession.py`)
+  restano nel repo come riferimento riproducibile — non cancellarli, documentano il "perche'" di
+  ogni scarto per non riproporre lo stesso test in futuro.
+
+### 33.J — Stato repo
+
+Tutto committato e pushato su `main` durante la sessione (commit multipli, uno per blocco logico
+di fix). Nessuna modifica pendente non salvata a fine sezione.

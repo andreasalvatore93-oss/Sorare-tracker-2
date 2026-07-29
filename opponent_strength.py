@@ -172,6 +172,81 @@ def opponent_lambda_multiplier(league, role, opponent_team_slug, cutoff_dt, n_ga
     return max(0.0, 1 + sens * z_signed)
 
 
+FWD_OFFENSIVE_STATS = ('ontarget_scoring_att', 'big_chance_created', 'big_chance_missed',
+                       'pen_area_entries', 'won_contest')
+# Validato (29/07, formazione_mls/diagnostics/validate_cross_role_combos.py,
+# gruppo fwd_vs_def): granulare "offensivo" di un FWD condizionato sul
+# poss_lost_ctrl medio (ultime 10 partite) dei DIFENSORI avversari -- un
+# avversario che perde palla spesso in fase difensiva espone di piu' l'FWD.
+# Minimo pulito a curva a campana, sensibilita'=3.0, -0.38% MAE (1928 punti
+# di test). Media/std FISSE dal backtest (stesso principio di
+# GLOBAL_MEAN_CONCEDED sopra).
+GLOBAL_MEAN_DEF_POSS_LOST = 9.97
+GLOBAL_STD_DEF_POSS_LOST = 4.48
+FWD_OFFENSE_SENSITIVITY = 3.0
+
+_DEF_POSS_CACHE = {}
+
+
+def _build_def_poss_lost_series(league):
+    if league in _DEF_POSS_CACHE:
+        return _DEF_POSS_CACHE[league]
+    per_team_date = defaultdict(list)
+    cache_dir = f'formazione_{league}/output/{league}_def_all/.cache'
+    for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
+        try:
+            with open(fpath, encoding='utf-8') as f:
+                cache = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not cache:
+            continue
+        entries = [e for e in cache.values() if e.get('anyGame') and e.get('detailedScore')]
+        if not entries:
+            continue
+        team_slug = _player_team_slug([e['anyGame'] for e in entries])
+        if not team_slug:
+            continue
+        for e in entries:
+            g = e['anyGame']
+            home, away = g.get('homeTeam') or {}, g.get('awayTeam') or {}
+            if not (home.get('slug') == team_slug or away.get('slug') == team_slug):
+                continue
+            dt = _parse_date(g)
+            if dt is None:
+                continue
+            val = 0.0
+            for row in e['detailedScore']:
+                if row.get('stat') == 'poss_lost_ctrl':
+                    val += row.get('statValue', 0.0) or 0.0
+            per_team_date[(team_slug, dt)].append(val)
+
+    series = defaultdict(list)
+    for (team, dt), vals in per_team_date.items():
+        series[team].append((dt, sum(vals) / len(vals)))
+    for t in series:
+        series[t].sort(key=lambda x: x[0])
+    _DEF_POSS_CACHE[league] = series
+    return series
+
+
+def fwd_offense_granular_delta(league, opponent_team_slug, cutoff_dt, own_offensive_hist, n_games=N_GAMES_DEFAULT):
+    """Delta ADDITIVO (non moltiplicativo) da sommare al grezzo dello
+    score_atteso FWD -- vedi commento sopra FWD_OFFENSIVE_STATS. Ritorna 0.0
+    se il dato non e' disponibile (fallback sicuro)."""
+    if not opponent_team_slug or cutoff_dt is None or not own_offensive_hist:
+        return 0.0
+    series = _build_def_poss_lost_series(league)
+    series_opp = series.get(opponent_team_slug, [])
+    past = [v for dt, v in series_opp if dt < cutoff_dt]
+    if len(past) < 3:
+        return 0.0
+    past = past[-n_games:]
+    avg_val = sum(past) / len(past)
+    z = (avg_val - GLOBAL_MEAN_DEF_POSS_LOST) / GLOBAL_STD_DEF_POSS_LOST
+    return FWD_OFFENSE_SENSITIVITY * z * abs(own_offensive_hist) * 0.3
+
+
 def opponent_is_strong(league, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DEFAULT):
     """Booleano 'avversario forte' basato sui gol REALI FATTI dall'avversario
     (ultime n_games partite prima di cutoff_dt) -- sostituisce (29/07,

@@ -1564,7 +1564,16 @@ def build_prediction(player_slug):
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
     _media_ruolo_prior_dinamico = max(0.0, 34.42 + 18.71 * presence_rate)
-    grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    # NUOVO (29/07, vedi opponent_strength.py, gruppo fwd_vs_def validato):
+    # delta ADDITIVO sul granulare "offensivo" in base al poss_lost_ctrl medio
+    # dei difensori avversari (ultime 10 partite) -- avversario che perde
+    # palla spesso in fase difensiva espone di piu' l'attaccante. Validato
+    # con backtest walk-forward: -0.38% MAE, minimo pulito a sensibilita'=3.0.
+    _offensive_hist = weighted_mean(offensive_values, weights)
+    _fwd_offense_delta = opponent_strength.fwd_offense_granular_delta(
+        'mls', next_opponent_team_slug, datetime.datetime.utcnow(), _offensive_hist)
+    grezzo_nuovo = (level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+                    + _fwd_offense_delta)
     grezzo_nuovo_corretto = (
         (n / (n + SHRINK_K_OUTLIER_FWD)) * grezzo_nuovo
         + (SHRINK_K_OUTLIER_FWD / (n + SHRINK_K_OUTLIER_FWD)) * _media_ruolo_prior_dinamico
