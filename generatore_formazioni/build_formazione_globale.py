@@ -819,20 +819,19 @@ def main():
             squadra = bff._short_team(row.get('team_slug'))
             avversario = bff._short_team(row.get('opponent_team_slug'))
             vs = f'{squadra} vs {avversario}' if row.get('team_slug') else 'N/D'
-            # punteggio in colonna FISSA a destra, mai spinto fuori vista dal
-            # nome squadra/avversario lungo (29/07, bug segnalato dall'utente:
-            # "non si vede bene il projected score" -- 'vs' ora tronca con
-            # ellissi invece di spingere le colonne successive fuori dal
-            # pannello largo 300px).
+            # punteggio spostato SUBITO dopo il numero, a sinistra del nome
+            # (29/07, bug segnalato dall'utente: prima era in fondo a destra
+            # e la colonna nome veniva tagliata con ellissi). Nome ora senza
+            # limite di larghezza (va a capo se serve invece di troncare),
+            # "vs" resta l'unica colonna che tronca (meno critica).
             return (
                 f'<tr><td style="padding:2px 6px 2px 0;color:var(--muted)">{i+1}.</td>'
-                f'<td style="padding:2px 6px 2px 0;max-width:90px;overflow:hidden;'
-                f'text-overflow:ellipsis;white-space:nowrap">{player_names.get(row["slug"], row["slug"])}</td>'
+                f'<td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">{row.get("atteso")} pt</td>'
+                f'<td style="padding:2px 6px 2px 0;white-space:normal">{player_names.get(row["slug"], row["slug"])}</td>'
                 f'<td style="padding:2px 6px 2px 0;color:var(--muted)">{r}</td>'
-                f'<td style="padding:2px 6px 2px 0;color:var(--muted-2);font-size:0.66rem;'
-                f'max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '
-                f'title="{vs}">{vs}</td>'
-                f'<td style="padding:2px 0;font-weight:700;text-align:right;white-space:nowrap">{row.get("atteso")} pt</td></tr>'
+                f'<td style="padding:2px 0;color:var(--muted-2);font-size:0.66rem;'
+                f'max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '
+                f'title="{vs}">{vs}</td></tr>'
             )
         righe_html = "".join(
             _riga_esclusa(i, lg, r, row) for i, (lg, r, row) in enumerate(top_esclusi)
