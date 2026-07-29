@@ -829,8 +829,8 @@ def main():
                 f'<td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">{row.get("atteso")} pt</td>'
                 f'<td style="padding:2px 6px 2px 0;white-space:normal">{player_names.get(row["slug"], row["slug"])}</td>'
                 f'<td style="padding:2px 6px 2px 0;color:var(--muted)">{r}</td>'
-                f'<td style="padding:2px 0;color:var(--muted-2);font-size:0.66rem;'
-                f'max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '
+                f'<td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;'
+                f'max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '
                 f'title="{vs}">{vs}</td></tr>'
             )
         righe_html = "".join(
@@ -844,16 +844,16 @@ def main():
         # relative attorno alla formazione #1 -- non influisce piu' sull'altezza
         # della riga, resta comunque visivamente accanto/sopra alla formazione #1.
         top_esclusi_html = (
-            '<div style="position:absolute;top:0;right:0;width:300px;max-height:480px;'
+            '<div style="position:absolute;top:0;right:0;width:380px;max-height:480px;'
             'overflow-y:auto;background:var(--surface);border:1px solid var(--border);'
             'border-radius:12px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.25)">'
             '<div class="alt-panel-title">'
             f'Top {len(top_esclusi)} esclusi<br>per punteggio atteso</div>'
-            '<div style="font-size:0.72rem"><table style="border-collapse:collapse;width:100%;table-layout:fixed">'
+            '<div style="font-size:0.78rem"><table style="border-collapse:collapse;width:100%;table-layout:fixed">'
             f'{righe_html}</table></div></div>'
         )
         lineup_html_blocks[0] = (
-            '<div style="position:relative;padding-right:320px">'
+            '<div style="position:relative;padding-right:400px">'
             f'{lineup_html_blocks[0]}{top_esclusi_html}</div>'
         )
 
