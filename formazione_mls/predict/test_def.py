@@ -115,7 +115,7 @@ HALF_LIFE_GAMES = 20.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_
 RANGE_MULTIPLIER = 1.2  # invariato
 OPPONENT_SENSITIVITY = 29.0  # invariato
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto) -- non piu' applicato in produzione per DEF (granulari rimossi da score_atteso, vedi sotto), resta per il grid search/diagnostica
-TREND_INTENSITY = 0.7  # FISSATO (26/07): idem, vedi HALF_LIFE_GAMES sopra
+TREND_INTENSITY = 0.0  # AGGIORNATO (29/07): backtest walk-forward su tutte le leghe post-retuning half_life, MAE -1.25% -- applicato SOLO MLS/Korea per richiesta esplicita utente, altre 26 leghe restano a 0.7 (backlog)
 # FISSATO (27/07, tema backlog "outlier/hot-streak" per DEF, dopo il FWD gia'
 # in produzione): backtest walk-forward rigoroso esteso a 10 campionati
 # (formazione_mls/diagnostics/validate_outlier_shrinkage.py) mostra che tirare

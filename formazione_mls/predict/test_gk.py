@@ -1674,6 +1674,14 @@ def build_prediction(player_slug):
     # condivisa per lo score_atteso vero e proprio.
     _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
         'mls', 'gk', next_opponent_team_slug, datetime.datetime.utcnow())
+    # Bonus AGGIUNTIVO (29/07, si affianca al bonus goalkeeping esistente,
+    # non lo sostituisce -- vedi opponent_strength.gk_def_pen_area_multiplier):
+    # isola le pen_area_entries dei SOLI difensori avversari (da corner/palle
+    # inattive), separato dal segnale FWD+MID gia' in produzione. Validato
+    # -0.13% MAE (formazione_mls/diagnostics/validate_cross_role_combos.py,
+    # gruppo gk_vs_def_only).
+    _opp_lambda_mult *= opponent_strength.gk_def_pen_area_multiplier(
+        'mls', next_opponent_team_slug, datetime.datetime.utcnow())
     score_atteso = compute_score_atteso_gk(
         scores, is_home_flags, granulari_values, pos_decisive_values, neg_decisive_values,
         target_is_home=next_is_home, presence_rate=presence_rate, opponent_lambda_mult=_opp_lambda_mult)

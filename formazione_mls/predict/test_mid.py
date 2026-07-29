@@ -103,7 +103,7 @@ HALF_LIFE_GAMES = 25.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_
 RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 1.4, non 1.6 come nel tentativo precedente; la copertura ideale viene dalla combinazione GIUSTA di tutti i parametri insieme, non dal range preso da solo
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
-TREND_INTENSITY = 0.7  # FISSATO (26/07): calibrazione allargata pesata per n_test (65 centrocampisti, min 3 partite di backtest) -- combinazione vincente hl=12.0/range=1.4/opp_sens=29.0/trend_int=0.7 SENZA granulari, MAE medio 15.55, copertura 70.9%. Sostituisce il valore precedente (trend=1.0, 19 posseduti). Confermato dall'utente dopo confronto A/B su formazioni reali (caso Antino Lopez, vedi git log).
+TREND_INTENSITY = 0.2  # AGGIORNATO (29/07): backtest walk-forward su tutte le leghe post-retuning half_life, MAE -0.39% -- applicato SOLO MLS/Korea per richiesta esplicita utente, altre 26 leghe restano a 0.7 (backlog)
 # Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes di
 # DEF/FWD, mai avuto da MID). k=10 scelto con backtest walk-forward reale
 # (selection_quality, 113 giornate: lift 18.5-19.6% su k testati).

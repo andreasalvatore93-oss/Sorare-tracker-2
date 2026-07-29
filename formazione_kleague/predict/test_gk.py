@@ -1521,6 +1521,14 @@ def build_prediction(player_slug):
     # opponent_lambda_mult (29/07, vedi opponent_strength.py): gol fatti dal prossimo avversario nelle ultime 10 partite (dato storico reale, non il domesticLeagueRanking contaminato). Validato: -0.59% MAE.
     _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
         'kleague', 'gk', next_opponent_team_slug, datetime.datetime.utcnow())
+    # Bonus AGGIUNTIVO (29/07, si affianca al bonus goalkeeping esistente,
+    # non lo sostituisce -- vedi opponent_strength.gk_def_pen_area_multiplier):
+    # isola le pen_area_entries dei SOLI difensori avversari (da corner/palle
+    # inattive), separato dal segnale FWD+MID gia' in produzione. Validato
+    # -0.13% MAE (formazione_mls/diagnostics/validate_cross_role_combos.py,
+    # gruppo gk_vs_def_only).
+    _opp_lambda_mult *= opponent_strength.gk_def_pen_area_multiplier(
+        'kleague', next_opponent_team_slug, datetime.datetime.utcnow())
     lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * _opp_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)

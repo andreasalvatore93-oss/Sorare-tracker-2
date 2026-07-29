@@ -1,23 +1,15 @@
 """
-Validate Opponent Conceded/Scored -> level_score_atteso, MID/DEF/GK (29/07)
+Validate Opponent Trend + H2H -> level_score_atteso, MID/FWD, TUTTE LE LEGHE
+(29/07, richiesta esplicita utente: stesso test gia' fatto per GK, esteso a
+MID/FWD -- DEF scartato su richiesta esplicita precedente. Il glob
+'formazione_*/output/...' copre gia' tutte le 28 leghe, non solo MLS/Korea).
 
-Estensione di validate_opponent_conceded_level.py (gia' fatto per FWD, -0.58%
-MAE con gol subiti dall'avversario ultime 10 partite, sensibilita' 1.0) agli
-altri tre ruoli. Segnale diverso per ruolo:
+Stessa logica di validate_opponent_trend_h2h_gk.py:
+1. TREND: media corta (3) vs lunga (10) gol fatti dall'avversario.
+2. H2H: se la coppia squadra-avversario si e' gia' affrontata >=2 volte,
+   sostituisce la media generica con la media SOLO negli scontri diretti.
 
-- MID, DEF: stessa logica di FWD -- avversario che CONCEDE tanto aumenta la
-  probabilita' di un evento decisivo positivo (gol/assist). Per DEF questo e'
-  coerente con la sez. 11 del RIASSUNTO: il salto di level_score a 60 per un
-  difensore correla molto di piu' con l'aver SEGNATO che col clean sheet.
-- GK: logica INVERSA -- non conta quanto concede il PROPRIO avversario (un
-  portiere non segna), conta quanto SEGNA l'avversario (piu' forte in attacco
-  = meno probabile il clean sheet, l'evento decisivo positivo principale per
-  un GK). Serie "gol fatti dall'avversario" ricavata dagli STESSI dati gia'
-  raccolti (i gol subiti di una squadra IN UNA PARTITA sono, per definizione,
-  i gol fatti dall'avversario in quella stessa partita -- nessuna nuova
-  scansione, solo la stessa tupla letta al contrario).
-
-Uso: python formazione_mls/diagnostics/validate_opponent_conceded_level_allroles.py
+Uso: python formazione_mls/diagnostics/validate_opponent_trend_h2h_generic.py [mid|fwd]
 """
 import os
 import sys
@@ -31,20 +23,16 @@ from collections import defaultdict
 sys.path.insert(0, os.getcwd())
 
 MIN_HISTORY = 6
-N_OPTIONS = (3, 5, 7, 10, 15)
-SENSITIVITY_GRID = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1.0, 1.5, 2.0]
-SHRINK_K = 5.0
 LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 POISSON_K_MAX = 6
+SENSITIVITY_GRID = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1.0, 1.5, 2.0]
+MIN_H2H_GAMES = 2
 
-# Prior di ruolo per lo shrinkage (stesse costanti gia' in produzione nei
-# rispettivi test_<ruolo>.py -- MEDIA_RUOLO_X_PRIOR).
-ROLE_PRIOR = {'mid': 53.4, 'def': 51.2, 'gk': 47.1}
-# Segno del segnale per ruolo: +1 = usa gol SUBITI dall'avversario (MID/DEF,
-# piu' concede -> piu' probabile un evento decisivo per il nostro giocatore),
-# -1 = usa gol FATTI dall'avversario con segno invertito (GK, piu' forte
-# l'attacco avversario -> MENO probabile il clean sheet).
-ROLE_SIGN = {'mid': 1, 'def': 1, 'gk': -1}
+ROLE_PARAMS = {
+    'def': {'half_life': 20.0, 'shrink_k': 8.0, 'prior': 51.2},
+    'mid': {'half_life': 25.0, 'shrink_k': 10.0, 'prior': 53.94},
+    'fwd': {'half_life': 25.0, 'shrink_k': 5.0, 'prior': 53.02},
+}
 
 
 def parse_date(g):
@@ -110,16 +98,15 @@ def player_team_slug(games):
     return max(counts, key=counts.get) if counts else None
 
 
-def build_team_conceded_and_scored_series():
-    """Ritorna (conceded_series, scored_series): team_slug -> [(dt, valore), ...].
-    Un solo scan: ogni tupla (team, opponent, data, gc) alimenta SIA i gol
-    subiti da 'team' SIA i gol fatti da 'opponent' in quella stessa partita."""
+def build_scored_series():
+    """scored[team] = [(dt, gol_fatti, opponent_slug), ...] -- TUTTE le leghe
+    (glob formazione_*), serve sia per trend che per H2H."""
     seen = set()
-    conceded = defaultdict(list)
     scored = defaultdict(list)
     patterns = ['formazione_*/output/*_gk_all/.cache', 'formazione_*/output/*_def_all/.cache',
-                'formazione_*/output/*_mid_all/.cache', 'formazione_*/output/*_gk_calibration/.cache',
-                'formazione_*/output/*_def_calibration/.cache', 'formazione_*/output/*_mid_calibration/.cache']
+                'formazione_*/output/*_mid_all/.cache', 'formazione_*/output/*_fwd_all/.cache',
+                'formazione_*/output/*_gk_calibration/.cache', 'formazione_*/output/*_def_calibration/.cache',
+                'formazione_*/output/*_mid_calibration/.cache', 'formazione_*/output/*_fwd_calibration/.cache']
     for pattern in patterns:
         for cache_dir in glob.glob(pattern):
             for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
@@ -160,25 +147,13 @@ def build_team_conceded_and_scored_series():
                             break
                     if gc is None:
                         continue
-                    conceded[team_slug].append((dt, gc))
-                    scored[opp_slug].append((dt, gc))
-    for d in (conceded, scored):
-        for t in d:
-            d[t].sort(key=lambda x: x[0])
-    return conceded, scored
+                    scored[opp_slug].append((dt, gc, team_slug))
+    for t in scored:
+        scored[t].sort(key=lambda x: x[0])
+    return scored
 
 
-def avg_before(series_for_team, cutoff_dt, n_games):
-    if not series_for_team:
-        return None
-    past = [gc for dt, gc in series_for_team if dt < cutoff_dt]
-    if len(past) < 3:
-        return None
-    past = past[-n_games:]
-    return sum(past) / len(past)
-
-
-def load_role_players(role):
+def load_players(role):
     players = []
     patterns = [f'formazione_*/output/*_{role}_all/.cache', f'formazione_*/output/*_{role}_calibration/.cache']
     seen_files = set()
@@ -227,7 +202,7 @@ def load_role_players(role):
                             level_v = row.get('totalScore', 0.0) or 0.0
                             break
                     score = e.get('score') or 0.0
-                    rows.append({'date': dt, 'is_home': is_home, 'opp_slug': opp_slug,
+                    rows.append({'date': dt, 'is_home': is_home, 'opp_slug': opp_slug, 'team_slug': team_slug,
                                  'pos_dec': pos_sum, 'neg_dec': neg_sum,
                                  'granulare': score - level_v, 'score': score})
                 rows.sort(key=lambda r: r['date'])
@@ -237,39 +212,41 @@ def load_role_players(role):
     return players
 
 
-def run_role(role, conceded_series, scored_series):
-    prior = ROLE_PRIOR[role]
-    sign = ROLE_SIGN[role]
-    signal_series = scored_series if sign < 0 else conceded_series
-    label = "gol FATTI dall'avversario (segno invertito)" if sign < 0 else "gol SUBITI dall'avversario"
+def series_before(series_for_opp, cutoff_dt, n_games, only_team=None):
+    past = [(dt, gc) for dt, gc, t in series_for_opp if dt < cutoff_dt and (only_team is None or t == only_team)]
+    if len(past) < (MIN_H2H_GAMES if only_team else 3):
+        return None
+    past = past[-n_games:] if n_games else past
+    return [gc for _, gc in past]
 
-    print(f"\n{'='*78}\n{role.upper()} -- segnale: {label}\n{'='*78}")
-    players = load_role_players(role)
-    print(f"Giocatori {role.upper()} utilizzabili: {len(players)}")
-    if not players:
-        return
 
-    all_signal = [v for series in signal_series.values() for _, v in series]
-    global_mean = statistics.mean(all_signal) if all_signal else 1.0
-    global_std = statistics.pstdev(all_signal) if len(all_signal) > 1 else 1.0
+def main():
+    role = sys.argv[1] if len(sys.argv) > 1 else 'mid'
+    params = ROLE_PARAMS[role]
+    half_life, shrink_k, prior = params['half_life'], params['shrink_k'], params['prior']
 
-    results_base_subset = defaultdict(list)
-    results_adj = defaultdict(list)
-    n_test_points = 0
-    n_signal_available = 0
+    print(f"=== {role.upper()} -- tutte le leghe (glob formazione_*) ===")
+    print("Ricostruzione serie gol fatti per squadra...")
+    scored = build_scored_series()
+
+    print(f"Caricamento cache {role.upper()}...")
+    players = load_players(role)
+    print(f"Giocatori utilizzabili: {len(players)}\n")
+
+    results_base = []
+    results_trend = defaultdict(list)
+    results_h2h = []
+    n_h2h_points = 0
 
     for rows in players:
         n = len(rows)
         scores = [r['score'] for r in rows]
         for i in range(MIN_HISTORY, n):
             hist = rows[:i]
-            weights = exp_weights(i, 12.0)
+            weights = exp_weights(i, half_life)
             lambda_pos = wmean([r['pos_dec'] for r in hist], weights)
             lambda_neg = wmean([r['neg_dec'] for r in hist], weights)
             granulare_hist = wmean([r['granulare'] for r in hist], weights)
-            level_base = expected_level_from_rates(lambda_pos, lambda_neg)
-            grezzo_base = level_base + granulare_hist
-            corretto_base = (i / (i + SHRINK_K)) * grezzo_base + (SHRINK_K / (i + SHRINK_K)) * prior
             home_vals = [r['score'] for r in hist if r['is_home'] is True]
             away_vals = [r['score'] for r in hist if r['is_home'] is False]
             overall = sum(r['score'] for r in hist) / len(hist)
@@ -278,67 +255,79 @@ def run_role(role, conceded_series, scored_series):
             venue_factor = 1.0
             if ctx_vals and overall:
                 venue_factor = max(0.85, min(1.15, (sum(ctx_vals) / len(ctx_vals)) / overall))
-            pred_base = corretto_base * venue_factor
-            reale = scores[i]
-            n_test_points += 1
 
+            def score_from_lambda(lp):
+                level = expected_level_from_rates(lp, lambda_neg)
+                grezzo = level + granulare_hist
+                corretto = (i / (i + shrink_k)) * grezzo + (shrink_k / (i + shrink_k)) * prior
+                return corretto * venue_factor
+
+            reale = scores[i]
             opp_slug = rows[i]['opp_slug']
+            team_slug = rows[i]['team_slug']
             cutoff = rows[i]['date']
-            series_opp = signal_series.get(opp_slug, [])
-            found_any = False
-            base_pair = (reale, pred_base)
-            for n_games in N_OPTIONS:
-                avg_val = avg_before(series_opp, cutoff, n_games)
-                if avg_val is None:
-                    continue
-                found_any = True
-                z = (avg_val - global_mean) / global_std if global_std > 0 else 0.0
-                z_signed = sign * z
+
+            pred_base = score_from_lambda(lambda_pos)
+            results_base.append((reale, pred_base))
+
+            series_opp = scored.get(opp_slug, [])
+
+            short = series_before(series_opp, cutoff, 3)
+            long_ = series_before(series_opp, cutoff, 10)
+            global_std_vals = [gc for _, gc, _ in series_opp]
+            if short and long_ and len(global_std_vals) >= 5:
+                gstd = statistics.pstdev(global_std_vals) or 1.0
+                trend_delta = (sum(short) / len(short)) - (sum(long_) / len(long_))
+                z_trend = trend_delta / gstd
                 for sens in SENSITIVITY_GRID:
-                    lambda_pos_adj = max(0.0, lambda_pos * (1 + sens * z_signed))
-                    level_adj = expected_level_from_rates(lambda_pos_adj, lambda_neg)
-                    grezzo_adj = level_adj + granulare_hist
-                    corretto_adj = (i / (i + SHRINK_K)) * grezzo_adj + (SHRINK_K / (i + SHRINK_K)) * prior
-                    pred_adj = corretto_adj * venue_factor
-                    results_adj[(n_games, sens)].append((reale, pred_adj))
-                results_base_subset[n_games].append(base_pair)
-            if found_any:
-                n_signal_available += 1
+                    lp_adj = max(0.0, lambda_pos * (1 - sens * z_trend))
+                    results_trend[sens].append((reale, score_from_lambda(lp_adj)))
+
+            h2h_vals = series_before(series_opp, cutoff, None, only_team=team_slug)
+            if h2h_vals and len(h2h_vals) >= MIN_H2H_GAMES:
+                long_generic = series_before(series_opp, cutoff, 10)
+                if long_generic:
+                    generic_mean = sum(long_generic) / len(long_generic)
+                    h2h_mean = sum(h2h_vals) / len(h2h_vals)
+                    if generic_mean > 0:
+                        ratio = h2h_mean / generic_mean
+                        lp_adj = max(0.0, lambda_pos * ratio)
+                        results_h2h.append((reale, score_from_lambda(lp_adj), pred_base))
+                        n_h2h_points += 1
 
     def mae(pairs):
         return statistics.mean(abs(r - p) for r, p in pairs)
 
-    print(f"Punti di test totali: {n_test_points} | con dato disponibile: "
-          f"{n_signal_available} ({n_signal_available/n_test_points*100:.0f}%)")
+    mae_base = mae(results_base)
+    print(f"Punti di test: {len(results_base)}")
+    print(f"MAE baseline (nessun aggiustamento): {mae_base:.3f}\n")
 
-    for n_games in N_OPTIONS:
-        subset = results_base_subset[n_games]
-        if not subset:
+    print("--- TREND (corta 3 vs lunga 10 partite avversario) ---")
+    best_sens, best_mae = None, None
+    for sens in SENSITIVITY_GRID:
+        pairs = results_trend[sens]
+        if not pairs:
             continue
-        mae_base = mae(subset)
-        print(f"\n--- ultime {n_games} partite (n={len(subset)}) -- MAE baseline: {mae_base:.3f} ---")
-        best_sens, best_mae = None, None
-        for sens in SENSITIVITY_GRID:
-            pairs = results_adj[(n_games, sens)]
-            if not pairs:
-                continue
-            m = mae(pairs)
-            pct = (m - mae_base) / mae_base * 100
-            flag = ''
-            if best_mae is None or m < best_mae:
-                best_sens, best_mae = sens, m
-                flag = ' <== MIGLIORE FINORA'
-            print(f"  sensibilita'={sens:.1f}  MAE={m:.3f} ({pct:+.2f}%){flag}")
+        m = mae(pairs)
+        pct = (m - mae_base) / mae_base * 100
+        flag = ''
+        if best_mae is None or m < best_mae:
+            best_sens, best_mae = sens, m
+            flag = ' <== MIGLIORE FINORA'
+        print(f"  sensibilita'={sens:.1f}  MAE={m:.3f} ({pct:+.2f}%, n={len(pairs)}){flag}")
+    if best_mae is not None:
         pct_best = (best_mae - mae_base) / mae_base * 100
         print(f"  MIGLIORE: sensibilita'={best_sens} (MAE={best_mae:.3f}, {pct_best:+.2f}%)")
 
-
-def main():
-    print("Ricostruzione serie storiche gol subiti/fatti per squadra...")
-    conceded, scored = build_team_conceded_and_scored_series()
-    print(f"Squadre ricostruite: {len(conceded)}")
-    for role in ('mid', 'def', 'gk'):
-        run_role(role, conceded, scored)
+    print(f"\n--- H2H (sostituzione media generica con media scontri diretti, >={MIN_H2H_GAMES} precedenti) ---")
+    if n_h2h_points >= 20:
+        mae_h2h_subset_base = statistics.mean(abs(r - b) for r, _, b in results_h2h)
+        mae_h2h = statistics.mean(abs(r - p) for r, p, _ in results_h2h)
+        pct = (mae_h2h - mae_h2h_subset_base) / mae_h2h_subset_base * 100
+        print(f"  n={n_h2h_points}  MAE baseline (stesso subset)={mae_h2h_subset_base:.3f}  "
+              f"MAE con H2H={mae_h2h:.3f} ({pct:+.2f}%)")
+    else:
+        print(f"  Troppo pochi punti H2H disponibili (n={n_h2h_points}, serve >=20) -- non conclusivo.")
 
 
 if __name__ == '__main__':

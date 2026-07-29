@@ -247,6 +247,79 @@ def fwd_offense_granular_delta(league, opponent_team_slug, cutoff_dt, own_offens
     return FWD_OFFENSE_SENSITIVITY * z * abs(own_offensive_hist) * 0.3
 
 
+GLOBAL_MEAN_DEF_PEN_AREA = 1.9428
+GLOBAL_STD_DEF_PEN_AREA = 2.2335
+GK_PEN_AREA_SENSITIVITY = 0.5
+
+_DEF_PEN_AREA_CACHE = {}
+
+
+def _build_def_pen_area_series(league):
+    """Ricostruisce, per squadra, le pen_area_entries medie a partita dei
+    SOLI DIFENSORI (isolato da FWD+MID gia' usati dal bonus goalkeeping
+    esistente -- validato con formazione_mls/diagnostics/
+    validate_cross_role_combos.py, gruppo gk_vs_def_only, -0.13% MAE:
+    difensori avversari che salgono spesso in area su corner/palle inattive
+    espongono di piu' il portiere)."""
+    if league in _DEF_PEN_AREA_CACHE:
+        return _DEF_PEN_AREA_CACHE[league]
+    per_team_date = defaultdict(list)
+    cache_dir = f'formazione_{league}/output/{league}_def_all/.cache'
+    for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
+        try:
+            with open(fpath, encoding='utf-8') as f:
+                cache = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not cache:
+            continue
+        entries = [e for e in cache.values() if e.get('anyGame') and e.get('detailedScore')]
+        if not entries:
+            continue
+        team_slug = _player_team_slug([e['anyGame'] for e in entries])
+        if not team_slug:
+            continue
+        for e in entries:
+            g = e['anyGame']
+            home, away = g.get('homeTeam') or {}, g.get('awayTeam') or {}
+            if not (home.get('slug') == team_slug or away.get('slug') == team_slug):
+                continue
+            dt = _parse_date(g)
+            if dt is None:
+                continue
+            val = 0.0
+            for row in e['detailedScore']:
+                if row.get('stat') == 'pen_area_entries':
+                    val += row.get('statValue', 0.0) or 0.0
+            per_team_date[(team_slug, dt)].append(val)
+
+    series = defaultdict(list)
+    for (team, dt), vals in per_team_date.items():
+        series[team].append((dt, sum(vals) / len(vals)))
+    for t in series:
+        series[t].sort(key=lambda x: x[0])
+    _DEF_PEN_AREA_CACHE[league] = series
+    return series
+
+
+def gk_def_pen_area_multiplier(league, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DEFAULT):
+    """Moltiplicatore aggiuntivo (si affianca a opponent_lambda_multiplier
+    GK esistente, non lo sostituisce) da applicare a lambda_pos del
+    portiere, basato solo sulle pen_area_entries dei DIFENSORI avversari.
+    1.0 (nessun effetto) se il dato non e' disponibile."""
+    if not opponent_team_slug or cutoff_dt is None:
+        return 1.0
+    series = _build_def_pen_area_series(league)
+    series_opp = series.get(opponent_team_slug, [])
+    past = [v for dt, v in series_opp if dt < cutoff_dt]
+    if len(past) < 3:
+        return 1.0
+    past = past[-n_games:]
+    avg_val = sum(past) / len(past)
+    z = (avg_val - GLOBAL_MEAN_DEF_PEN_AREA) / GLOBAL_STD_DEF_PEN_AREA
+    return max(0.0, 1 + GK_PEN_AREA_SENSITIVITY * z)
+
+
 def opponent_is_strong(league, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DEFAULT):
     """Booleano 'avversario forte' basato sui gol REALI FATTI dall'avversario
     (ultime n_games partite prima di cutoff_dt) -- sostituisce (29/07,

@@ -340,10 +340,22 @@ if __name__ == '__main__':
         ("GK.poss_lost_ctrl vs OPP.duel_won (pressing, FWD+MID, invertito)", 'gk', ('poss_lost_ctrl',), ['fwd', 'mid'], ('duel_won',), True, True),
         ("GK.passaggio vs OPP.duel_won (pressing, FWD+MID, invertito)", 'gk', ('accurate_pass', 'successful_final_third_passes'), ['fwd', 'mid'], ('duel_won',), False, True),
     ]
+    # 29/07, richiesta esplicita utente: due combinazioni mai provate --
+    # DEF vs GK avversario (mai condizionato sul portiere, solo su FWD/MID/DEF)
+    # e GK vs SOLO-DEF avversario isolato (prima solo FWD+MID pooled).
+    DEF_VS_GK = [
+        ("DEF.aerial/duel vs GK.alte uscite avversario", 'def', ('duel_won', 'aerial_won', 'clean_sheet'), ['gk'], ('good_high_claim', 'punches')),
+        ("DEF.difensivo vs GK.goalkeeping avversario (scarso portiere -> piu' occasioni)", 'def', ('interception_won', 'won_tackle', 'clearance_off_line', 'blocked_shot'), ['gk'], ('saves', 'saved_ibox'), False, True),
+    ]
+    GK_VS_DEF_ONLY = [
+        ("GK.goalkeeping vs DEF.duel_lost avversario (solo DEF, isolato)", 'gk', ('saves', 'saved_ibox', 'good_high_claim', 'punches', 'dive_save', 'dive_catch'), ['def'], ('duel_lost',)),
+        ("GK.goalkeeping vs DEF.pen_area_entries avversario (solo DEF, isolato)", 'gk', ('saves', 'saved_ibox', 'good_high_claim', 'punches', 'dive_save', 'dive_catch'), ['def'], ('pen_area_entries',)),
+    ]
 
     groups = {
         'mid_vs_def': MID_VS_DEF, 'mid_vs_fwd': MID_VS_FWD, 'mid_vs_mid': MID_VS_MID,
         'fwd_vs_def': FWD_VS_DEF, 'fwd_vs_mid': FWD_VS_MID, 'gk_remaining': GK_REMAINING,
+        'def_vs_gk': DEF_VS_GK, 'gk_vs_def_only': GK_VS_DEF_ONLY,
     }
 
     to_run = groups.keys() if combo == 'all' else [combo]
