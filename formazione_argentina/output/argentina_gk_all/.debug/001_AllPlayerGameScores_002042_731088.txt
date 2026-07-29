@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "agustin-federico-marchesin", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:20:42 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785284442', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'S6i5jyHPHhszSrxnyylfV13y_HxQhXElP3z2eKeWEmjT0LdZ7r4zJMQO-UDcOTxkPlghDyeiHuRGhwg7RmgLMw', 'etag': 'W/"1a032f3085b9fbf12046e30947a6e560"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=EMlEeCw6%2F8bNFF%2BHTfP1AR8W6rQ6LPpFtdQCeIXC2yqH5X%2FFH4H%2BfWsiQxf80Gx63hnt5NtBMCOTN40Od%2BkVbpfcJHoTAc93%2BLKirZb03CHRxVrqGKgKhmDJ0NIS3%2Fl2ugkpJMiLsPrxnHTEtkCN8e8dV58JyRSNBnD%2FA%2BWWEGZH8X%2Bs%2FBdNlz85HVdsxaD6BkFdeXs%2BrJJpB%2FsCfz%2FMnk8z6q%2BHDYiGBGoRA%2BpRVp5ahZr46l2XkB%2BRDJs42PNb13kw5bJtbnm%2BCiY9Q25yfB4AuXe%2BI5WfBvKKwKHHI5yNkYd423cW4F4x%2FiJOSM36--DVhz8bi%2FOFlXmgbi--%2FD5u0z1Wsxf7XyHJw8Y3Rg%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:20:42 GMT; secure; httponly; samesite=none', 'x-request-id': '9e722ad4-834d-43c3-92fa-560475874682', 'x-runtime': '0.056477', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 eeea929831a24a4960e38874e63fe5c6.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'rxXA1xuwKOrPmc0_htmuSiXuDnJ7oHKEYVXTeqjXcrI8ecW8N4sy4A=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:c0f831a0-0f48-4951-b82e-6eb88bf50e1a","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Goalkeeper","anyGame":{"id":"Game:ce10bfbd-a3ee-4b16-8c95-742d1eabe1f7","date":"2026-07-26T22:30:00Z","statusTyped":"played","homeTeam":{"slug":"deportivo-riestra-capital-federal-ciudad-de-buenos-aires","name":"CD Riestra","code":"RIE","domesticLeagueRanking":15},"awayTeam":{"slug":"boca-juniors-capital-federal-ciudad-de-buenos-aires","name":"CA Boca Juniors","code":"BOC","domesticLeagueRanking":15},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:24759327-091d-4410-b971-f0550a6027ce","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Goalkeeper","anyGame":{"id":"Game:a27a2d22-8973-48d2-9ebc-4407662c9e5f","date":"2026-07-24T00:30:00Z","statusTyped":"played","homeTeam":{"slug":"boca-juniors-capital-federal-ciudad-de-buenos-aires","name":"CA Boca Juniors","code":"BOC","domesticLeagueRanking":15},"awayTeam":{"slug":"o-higgins-rancagua","name":"CD O'Higgins","code":"OHI","domesticLeagueRanking":10},"competition":{"slug":"conmebol-sudamericana"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:ba9e00f6-639d-47c0-a000-d9b5020aa30b","date":"2026-07-31T00:30:00Z","playerGameScore":{"id":"So5Score:6dc75491-b69d-43f5-a1dc-0ce27cf44c9c","positionTyped":"Goalkeeper","projectedScore":59.0,"anyGame":{"id":"Game:ba9e00f6-639d-47c0-a000-d9b5020aa30b","date":"2026-07-31T00:30:00Z","homeTeam":{"slug":"o-higgins-rancagua","name":"CD O'Higgins","code":"OHI","domesticLeagueRanking":10},"awayTeam":{"slug":"boca-juniors-capital-federal-ciudad-de-buenos-aires","name":"CA Boca Juniors","code":"BOC","domesticLeagueRanking":15},"competition":{"slug":"conmebol-sudamericana"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}},{"id":"Game:77e12087-0364-4156-85dc-f6cdf2ca4a45","date":"2026-08-02T20:00:00Z","playerGameScore":{"id":"So5Score:e3d2a266-bc19-4eaf-bb9e-d48f28213a19","positionTyped":"Goalkeeper","projectedScore":56.0,"anyGame":{"id":"Game:77e12087-0364-4156-85dc-f6cdf2ca4a45","date":"2026-08-02T20:00:00Z","homeTeam":{"slug":"newell-s-old-boys-rosario-santa-fe","name":"Newell's Old Boys","code":"NOB","domesticLeagueRanking":14},"awayTeam":{"slug":"boca-juniors-capital-federal-ciudad-de-buenos-aires","name":"CA Boca Juniors","code":"BOC","domesticLeagueRanking":15},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:da8b40c5-41de-4f88-ab6c-319f261d2c20","date":"2026-08-05T22:00:00Z","playerGameScore":{"id":"So5Score:3d442668-394a-46eb-bf87-937908f0bc59","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:da8b40c5-41de-4f88-ab6c-319f261d2c20","date":"2026-08-05T22:00:00Z","homeTeam":{"slug":"boca-juniors-capital-federal-ciudad-de-buenos-aires","name":"CA Boca Juniors","code":"BOC","domesticLeagueRanking":15},"awayTeam":{"slug":"estudiantes-la-plata-provincia-de-buenos-aires","name":"Club Estudiantes de La Plata","code":"EST","domesticLeagueRanking":1},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:901c83e4-a6d3-46ef-b22d-99e1de25c9c5","date":"2026-08-09T00:00:00Z","playerGameScore":{"id":"So5Score:653bbdf2-e8ab-48d8-95f5-e46362eb2d3d","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:901c83e4-a6d3-46ef-b22d-99e1de25c9c5","date":"2026-08-09T00:00:00Z","homeTeam":{"slug":"boca-juniors-capital-federal-ciudad-de-buenos-aires","name":"CA Boca Juniors","code":"BOC","domesticLeagueRanking":15},"awayTeam":{"slug":"velez-sarsfield-capital-federal-ciudad-de-buenos-aires","name":"Club Atlético Vélez Sarsfield","code":"VEL","domesticLeagueRanking":4},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:72306881-e29b-43fd-b354-b5a96c0bdec1","date":"2026-08-16T00:00:00Z","playerGameScore":{"id":"So5Score:209e64df-ba3c-4e76-93af-02cf00e00dc3","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:72306881-e29b-43fd-b354-b5a96c0bdec1","date":"2026-08-16T00:00:00Z","homeTeam":{"slug":"platense-vicente-lopez-provincia-de-buenos-aires","name":"CA Platense","code":"PLA","domesticLeagueRanking":9},"awayTeam":{"slug":"boca-juniors-capital-federal-ciudad-de-buenos-aires","name":"CA Boca Juniors","code":"BOC","domesticLeagueRanking":15},"competition":{"slug":"superliga-argentina-de-futbol"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
