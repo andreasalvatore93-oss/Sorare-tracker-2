@@ -1377,6 +1377,17 @@ def build_prediction(player_slug):
     )
     score_atteso = grezzo_nuovo_corretto * fattore_casa_trasferta
 
+    # --- SCORE DI ORDINAMENTO (29/07, esteso a tutte le leghe -- gia' in produzione
+    # su MLS, sez. 27.C/28.E del RIASSUNTO): lo shrinkage minimizza il MAE del singolo
+    # punteggio ma comprime le differenze fra giocatori, il segnale che serve per
+    # SCEGLIERE chi schierare. MLS usa una funzione condivisa compute_score_atteso_fwd
+    # (non esistente qui, sez. 31.D/backlog project_backlog_fwd_shared_function_solo_mls
+    # -- FWD non ha mai avuto la funzione condivisa fuori da MLS): con shrink_k=0 la
+    # formula shrinkage si riduce algebricamente a grezzo_nuovo puro (n/(n+0)=1,
+    # 0/(n+0)=0), quindi si riusa direttamente la variabile gia' calcolata sopra,
+    # nessuna nuova funzione necessaria.
+    score_ordinamento = grezzo_nuovo * fattore_casa_trasferta
+
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
     # ruoli"): la versione precedente condizionava il granulare AGGREGATO
@@ -1499,6 +1510,7 @@ def build_prediction(player_slug):
         'p_gioca': p_gioca,
         'p_source': p_source,
         'score_atteso': score_atteso,
+        'score_ordinamento': score_ordinamento,
         'range_low': range_low,
         'range_high': range_high,
         'next_game': next_game,
@@ -1754,7 +1766,8 @@ def main():
         all_sections.append(f"\n{'#'*70}\n# GIOCATORE: {slug}\n{'#'*70}\n" + output_text)
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_low'),
                               result.get('range_high'), result.get('target_competition', ''),
-                              result.get('player_team_slug'), result.get('next_opponent_team_slug')))
+                              result.get('player_team_slug'), result.get('next_opponent_team_slug'),
+                              result.get('score_ordinamento')))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} "
             f"(range {result.get('range_low'):.1f} - {result.get('range_high'):.1f})")
 
@@ -1791,10 +1804,13 @@ def main():
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
     summary_lines.append("=" * 70)
-    for idx, (slug, status, atteso, range_low, range_high, note, team_slug, opp_slug) in enumerate(ok_rows, 1):
+    for idx, (slug, status, atteso, range_low, range_high, note, team_slug, opp_slug,
+              ordinamento) in enumerate(ok_rows, 1):
         low = round(range_low)
         high = round(range_high)
         summary_lines.append(f"{idx}) {slug}: {round(atteso)} pt attesi ({low}-{high})")
+        if ordinamento is not None:
+            summary_lines.append(f"   ORDINAMENTO: {ordinamento:.2f}")
         # NUOVO (26/07, tema correlazione GK-DEF): riga parseable con squadra/
         # avversario, letta da build_consiglio.py per portarla fino a
         # build_formazione_finale.py (evitare di schierare insieme portiere
