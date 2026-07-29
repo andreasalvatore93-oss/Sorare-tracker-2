@@ -819,25 +819,43 @@ def main():
             squadra = bff._short_team(row.get('team_slug'))
             avversario = bff._short_team(row.get('opponent_team_slug'))
             vs = f'{squadra} vs {avversario}' if row.get('team_slug') else 'N/D'
+            # punteggio in colonna FISSA a destra, mai spinto fuori vista dal
+            # nome squadra/avversario lungo (29/07, bug segnalato dall'utente:
+            # "non si vede bene il projected score" -- 'vs' ora tronca con
+            # ellissi invece di spingere le colonne successive fuori dal
+            # pannello largo 300px).
             return (
-                f'<tr><td style="padding:2px 8px 2px 0;color:var(--muted)">{i+1}.</td>'
-                f'<td style="padding:2px 8px 2px 0">{player_names.get(row["slug"], row["slug"])}</td>'
-                f'<td style="padding:2px 8px 2px 0;color:var(--muted)">{r}</td>'
-                f'<td style="padding:2px 8px 2px 0;color:var(--muted)">{lg}</td>'
-                f'<td style="padding:2px 8px 2px 0;color:var(--muted-2);font-size:0.68rem">{vs}</td>'
-                f'<td style="padding:2px 0;font-weight:700">{row.get("atteso")} pt</td></tr>'
+                f'<tr><td style="padding:2px 6px 2px 0;color:var(--muted)">{i+1}.</td>'
+                f'<td style="padding:2px 6px 2px 0;max-width:90px;overflow:hidden;'
+                f'text-overflow:ellipsis;white-space:nowrap">{player_names.get(row["slug"], row["slug"])}</td>'
+                f'<td style="padding:2px 6px 2px 0;color:var(--muted)">{r}</td>'
+                f'<td style="padding:2px 6px 2px 0;color:var(--muted-2);font-size:0.66rem;'
+                f'max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '
+                f'title="{vs}">{vs}</td>'
+                f'<td style="padding:2px 0;font-weight:700;text-align:right;white-space:nowrap">{row.get("atteso")} pt</td></tr>'
             )
         righe_html = "".join(
             _riga_esclusa(i, lg, r, row) for i, (lg, r, row) in enumerate(top_esclusi)
         )
+        # Pannello NON piu' dentro il flex-row della formazione #1 (29/07, bug
+        # reale segnalato dall'utente: essendo molto piu' alto di una singola
+        # formazione, il vecchio .lineup-row (flex, altezza = child piu' alto)
+        # spingeva la formazione #2 in basso, creando un vuoto enorme). Ora e'
+        # posizionato fuori flusso (position:absolute) rispetto a un wrapper
+        # relative attorno alla formazione #1 -- non influisce piu' sull'altezza
+        # della riga, resta comunque visivamente accanto/sopra alla formazione #1.
         top_esclusi_html = (
-            '<div class="alt-panel" style="flex:0 0 300px;max-height:640px;overflow-y:auto">'
-            f'<div class="alt-panel-title">Top {len(top_esclusi)} esclusi<br>per punteggio atteso</div>'
-            '<div style="font-size:0.74rem"><table style="border-collapse:collapse">'
+            '<div style="position:absolute;top:0;right:0;width:300px;max-height:480px;'
+            'overflow-y:auto;background:var(--surface);border:1px solid var(--border);'
+            'border-radius:12px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.25)">'
+            '<div class="alt-panel-title">'
+            f'Top {len(top_esclusi)} esclusi<br>per punteggio atteso</div>'
+            '<div style="font-size:0.72rem"><table style="border-collapse:collapse;width:100%;table-layout:fixed">'
             f'{righe_html}</table></div></div>'
         )
         lineup_html_blocks[0] = (
-            f'<div class="lineup-row">{lineup_html_blocks[0]}{top_esclusi_html}</div>'
+            '<div style="position:relative;padding-right:320px">'
+            f'{lineup_html_blocks[0]}{top_esclusi_html}</div>'
         )
 
     if not os.path.exists(OUTPUT_DIR):
