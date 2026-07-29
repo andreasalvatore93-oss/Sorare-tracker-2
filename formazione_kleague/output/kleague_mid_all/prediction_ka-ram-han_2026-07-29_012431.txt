@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T01:24:31.614623Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) ka-ram-han: 41 pt attesi (32-47)
+   SQUADRA: anyang-anyang | AVVERSARIO: ulsan-ulsan
+======================================================================
+
+######################################################################
+# GIOCATORE: ka-ram-han
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ka-ram-han (squadra: anyang-anyang)
+Generato: 2026-07-29T01:24:31.614016Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | ANY vs JEJ | k-league-1 | score=38.9 | peso=0.561
+  2025-10-05 | GAN vs ANY | k-league-1 | score=39.8 | peso=0.595
+  2025-10-18 | ANY vs SAN | k-league-1 | score=66.6 | peso=0.630
+  2025-11-01 | ANY vs ULS | k-league-1 | score=49.2 | peso=0.667
+  2025-11-08 | JEJ vs ANY | k-league-1 | score=38.0 | peso=0.707
+  2025-11-22 | ANY vs SCI | k-league-1 | score=39.9 | peso=0.749
+  2026-03-15 | GAN vs ANY | k-league-1 | score=39.1 | peso=0.794
+  2026-03-18 | JMO vs ANY | k-league-1 | score=38.3 | peso=0.841
+  2026-03-22 | ANY vs INC | k-league-1 | score=33.1 | peso=0.891
+  2026-05-05 | SEO vs ANY | k-league-1 | score=32.4 | peso=0.944
+  2026-05-13 | ANY vs SAN | k-league-1 | score=47.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 41.52
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 6.52 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 35.00 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue -0.21, delta avversario -0.16 | Passaggio condizionato: delta venue -0.18, delta avversario +0.27 | Gol subiti condizionato: delta venue +0.13, delta avversario +0.13 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 8.76
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.1 - 47.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.85 (differenza: +3.90)
+Media score in casa: 45.87 | Media score fuori casa: 37.52
+Fattore casa/trasferta applicato: 0.991 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.9
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.934
+Fattore falli (casa/trasferta, da dati reali): 0.989
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.989
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 1.009
+Fattore trend (media ultime 5: 38.1 vs media ultime 10: 42.4): 0.929
+P(gioca): 36.67% (fonte: tasso di presenza storico (11/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Ulsan Hyundai Horang-i | Trasferta: FC Anyang
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 40.9 (range 32.5 - 46.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.71
+Punteggio REALE ottenuto in quella partita: 47.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +6.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.1    39.1     +2.0    14.1        SI
+   7        7      35.4    38.3     +2.9    13.3        SI
+   8        8      45.8    33.1    -12.7    12.6        NO
+   9        9      33.2    32.4     -0.8    12.7        SI
+  10       10      45.1    47.5     +2.4    12.6        SI
+
+MAE (errore assoluto medio): 4.17
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
