@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T01:03:15.563825Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jann-fiete-arp: 63 pt attesi (51-73)
+   SQUADRA: ob-odense | AVVERSARIO: sonderjyske-haderslev
+======================================================================
+
+######################################################################
+# GIOCATORE: jann-fiete-arp
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jann-fiete-arp (squadra: ob-odense)
+Generato: 2026-07-29T01:03:15.563248Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: superliga-dk (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-19 | VFF vs OB | superliga-dk | score=53.6 | peso=0.445
+  2025-10-27 | OB vs BIF | superliga-dk | score=48.0 | peso=0.472
+  2025-11-02 | FCN vs OB | superliga-dk | score=38.2 | peso=0.500
+  2025-11-07 | OB vs SIF | superliga-dk | score=83.5 | peso=0.530
+  2025-11-24 | RFC vs OB | superliga-dk | score=45.2 | peso=0.561
+  2025-11-30 | OB vs VB | superliga-dk | score=68.4 | peso=0.595
+  2025-12-05 | FRE vs OB | superliga-dk | score=70.3 | peso=0.630
+  2026-02-21 | OB vs FCK | superliga-dk | score=60.1 | peso=0.667
+  2026-03-01 | SJE vs OB | superliga-dk | score=71.6 | peso=0.707
+  2026-04-19 | OB vs RFC | superliga-dk | score=51.2 | peso=0.749
+  2026-04-26 | FRE vs OB | superliga-dk | score=68.8 | peso=0.794
+  2026-05-03 | OB vs SIF | superliga-dk | score=72.8 | peso=0.841
+  2026-05-11 | RFC vs OB | superliga-dk | score=88.0 | peso=0.891
+  2026-05-17 | OB vs VB | superliga-dk | score=50.8 | peso=0.944
+  2026-07-24 | VFF vs OB | superliga-dk | score=56.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 62.77
+  di cui Punteggio decisivo (level_score) medio: 44.19 | Punteggio complessivo (granulari) medio: 18.58 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 7.97 (delta +0.18) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.60
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 50.8 - 72.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.74 (differenza: +2.87)
+Media score in casa: 62.11 | Media score fuori casa: 61.55
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.3
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.126
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore trend (media ultime 5: 67.4 vs media ultime 10: 65.9): 1.024
+P(gioca): 68.18% (fonte: tasso di presenza storico (15/22))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-03T17:00
+Casa: Odense BK | Trasferta: Sønderjysk Elitesport Fodbold
+Competizione: superliga-dk
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 63.4 (range 51.4 - 73.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 63.42
+Punteggio REALE ottenuto in quella partita: 56.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.5    70.3     +7.8    21.7        SI
+   7        7      47.3    60.1    +12.8    21.1        SI
+   8        8      67.1    71.6     +4.5    19.4        SI
+   9        9      66.1    51.2    -14.9    19.0        SI
+  10       10      71.4    68.8     -2.6    18.3        SI
+  11       11      62.0    72.8    +10.8    17.7        SI
+  12       12      67.1    88.0    +20.9    17.5        NO
+  13       13      79.0    50.8    -28.2    20.0        NO
+  14       14      54.2    56.7     +2.5    19.8        SI
+
+MAE (errore assoluto medio): 11.67
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
