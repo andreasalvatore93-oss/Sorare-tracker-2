@@ -6,10 +6,13 @@ name: Run discovery globale Bundesliga (una tantum)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   discovery:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with: { ref: main }
