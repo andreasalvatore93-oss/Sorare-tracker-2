@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T00:25:20.855472Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) griffin-yow: 39 pt attesi (32-44)
+   ORDINAMENTO: 38.22
+   SQUADRA: new-england-foxborough-massachusetts | AVVERSARIO: montreal-impact-montreal-quebec
+======================================================================
+
+######################################################################
+# GIOCATORE: griffin-yow
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: griffin-yow (squadra: new-england-foxborough-massachusetts)
+Generato: 2026-07-29T00:25:20.854216Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-22 | WES vs GNT | jupiler-pro-league | score=41.8 | peso=0.530
+  2025-11-29 | DEN vs WES | jupiler-pro-league | score=35.5 | peso=0.561
+  2025-12-14 | GNK vs WES | jupiler-pro-league | score=62.0 | peso=0.595
+  2026-02-22 | NSH vs NE | mlspa | score=41.8 | peso=0.630
+  2026-02-28 | RBNY vs NE | mlspa | score=25.1 | peso=0.667
+  2026-04-04 | NE vs MTL | mlspa | score=30.8 | peso=0.707
+  2026-04-22 | ATL vs NE | mlspa | score=51.1 | peso=0.749
+  2026-04-25 | MIA vs NE | mlspa | score=41.5 | peso=0.794
+  2026-05-02 | NE vs CLT | mlspa | score=35.4 | peso=0.841
+  2026-05-09 | NE vs PHI | mlspa | score=32.5 | peso=0.891
+  2026-05-13 | NE vs NSH | mlspa | score=43.8 | peso=0.944
+  2026-07-22 | NE vs TOR | mlspa | score=32.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 38.97
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.02, n=12): 43.10 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 36.67 | Punteggio complessivo (granulari) medio: 2.30 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.72 (delta -0.29) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 9.11
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.1 - 43.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.19 (differenza: +2.92)
+Media score in casa: 34.92 | Media score fuori casa: 39.88
+Fattore casa/trasferta applicato: 0.990 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.169
+Fattore falli (casa/trasferta, da dati reali): 1.015
+Fattore duelli (casa/trasferta, da dati reali): 1.010
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.013
+Fattore trend (media ultime 5: 37.1 vs media ultime 10: 39.6): 0.936
+P(gioca): 38.71% (fonte: tasso di presenza storico (12/31))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: CF Montreal | Trasferta: New England Revolution
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 39.0 (range 32.2 - 43.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 38.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.84
+Punteggio REALE ottenuto in quella partita: 32.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.8    51.1     +3.3    16.4        SI
+   7        7      31.7    41.5     +9.8    16.3        SI
+   8        8      38.4    35.4     -3.0    15.0        SI
+   9        9      48.4    32.5    -15.9    14.2        NO
+  10       10      26.3    43.8    +17.5    13.7        NO
+  11       11      44.8    32.1    -12.7    13.0        SI
+
+MAE (errore assoluto medio): 10.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
