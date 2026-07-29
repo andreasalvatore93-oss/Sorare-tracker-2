@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "marcel-heister", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:43:40 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785285820', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'FLGh_cUEim8KKM_eePxVu-XW1UkwuOhNKQ83S3Wmw1XIJUibC5MARQn4QinTPU6QHbF1UbutChSljzL3KvC5lQ', 'etag': 'W/"ac22dda4e51deaad167a83e5f52a8594"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=yetXylIlBMNfScm0Zehauyh%2FZ6oHkI%2F0DuMpQ4BeG8LHLolqnrtEcWIeCDkxicrctCePvhhogLREGFeLExpW%2FpBA3MczjcD9SKtu3gulYV3ARvAleAdI1q1KEEurWgPdjvjxvAssAaEAPWEegk9l3ez5Z9IMhCDtill4y4KRADF20sd3pV1CariVUMBkf7kKMQh11lbVHvDBt%2BxGsNKHeai6soh5UB9GYfz7uy0%2B81yqJVUw88bhhwYoy7UFFBB5xPfoe8AQxgeFrDE1PVonIzZTXZODYoIdY0oPIeT47LirCwhjQ%2FL3bzqGzZjPuoin--FIxnwZFg26SO5sKx--e5VPxZuggNA2vd0GC0yvMA%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:43:40 GMT; secure; httponly; samesite=none', 'x-request-id': '6f2f97e0-a218-90ea-8827-808d5f2b3e57', 'x-runtime': '0.052200', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 4e4c69f2c2716c8427600817e7346142.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'K3iwnNSb_SAySgtFilrevSeX7lc4_rL7mnLo5IAA6z0ovvN3IGsY6Q=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:d2f04b10-bb91-416b-ae93-cc877cc6910f","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Defender","anyGame":{"id":"Game:6e980a06-f2ea-4b47-af9a-a0080c6fc7c2","date":"2026-05-23T14:00:00Z","statusTyped":"played","homeTeam":{"slug":"varazdin-varazdin","name":"NK Varaždin","code":"VAR","domesticLeagueRanking":3},"awayTeam":{"slug":"istra-1961-pula","name":"NK Istra 1961","code":"IST","domesticLeagueRanking":6},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:024d82ca-16be-4529-bffc-ee9ebafa907e","score":28.9,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:696f49b3-826f-40c4-8bdc-36cae8ebb11e","date":"2026-05-17T16:45:00Z","statusTyped":"played","homeTeam":{"slug":"istra-1961-pula","name":"NK Istra 1961","code":"IST","domesticLeagueRanking":6},"awayTeam":{"slug":"rijeka-rijeka","name":"HNK Rijeka","code":"RIJ","domesticLeagueRanking":4},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":18,"yellowCard":1,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:62e2f914-291b-4b58-8d79-92589b7ad692","date":"2026-08-01T16:30:00Z","playerGameScore":{"id":"So5Score:54b7c28d-b6e4-4479-862d-e23b299cf3cd","positionTyped":"Defender","projectedScore":45.0,"anyGame":{"id":"Game:62e2f914-291b-4b58-8d79-92589b7ad692","date":"2026-08-01T16:30:00Z","homeTeam":{"slug":"istra-1961-pula","name":"NK Istra 1961","code":"IST","domesticLeagueRanking":6},"awayTeam":{"slug":"lokomotiva-zagreb-zagreb","name":"NK Lokomotiva Zagreb","code":"LOK","domesticLeagueRanking":5},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:3a167f8f-6e22-417e-9848-f896ddd278da","date":"2026-08-01T19:00:00Z","playerGameScore":{"id":"So5Score:7d16076b-5e07-4ad8-8c19-40f1656b38be","positionTyped":"Defender","projectedScore":45.0,"anyGame":{"id":"Game:3a167f8f-6e22-417e-9848-f896ddd278da","date":"2026-08-01T19:00:00Z","homeTeam":{"slug":"gorica-velika-gorica","name":"HNK Gorica","code":"GOR","domesticLeagueRanking":7},"awayTeam":{"slug":"osijek-osijek","name":"NK Osijek","code":"OSI","domesticLeagueRanking":9},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:d094dc25-4c17-40d8-8515-45b20367f63b","date":"2026-08-08T00:00:00Z","playerGameScore":{"id":"So5Score:ed62e0dc-67b9-40df-b783-cbcb6a5d16a2","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:d094dc25-4c17-40d8-8515-45b20367f63b","date":"2026-08-08T00:00:00Z","homeTeam":{"slug":"rudes-zagreb","name":"NK Rudeš Zagreb","code":"RUD","domesticLeagueRanking":10},"awayTeam":{"slug":"osijek-osijek","name":"NK Osijek","code":"OSI","domesticLeagueRanking":9},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:a1ad1489-7339-4370-87e3-0f85814cdc57","date":"2026-08-08T00:00:00Z","playerGameScore":{"id":"So5Score:b017fc1d-a1e1-4076-aee6-4c7902b10397","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:a1ad1489-7339-4370-87e3-0f85814cdc57","date":"2026-08-08T00:00:00Z","homeTeam":{"slug":"hajduk-split-split","name":"HNK Hajduk Split","code":"HAJ","domesticLeagueRanking":2},"awayTeam":{"slug":"istra-1961-pula","name":"NK Istra 1961","code":"IST","domesticLeagueRanking":6},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:e051299b-4195-4d62-a8a3-e2c6638d2ad2","date":"2026-08-15T00:00:00Z","playerGameScore":{"id":"So5Score:268cb09b-8b44-4347-a701-0524d1620210","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:e051299b-4195-4d62-a8a3-e2c6638d2ad2","date":"2026-08-15T00:00:00Z","homeTeam":{"slug":"osijek-osijek","name":"NK Osijek","code":"OSI","domesticLeagueRanking":9},"awayTeam":{"slug":"lokomotiva-zagreb-zagreb","name":"NK Lokomotiva Zagreb","code":"LOK","domesticLeagueRanking":5},"competition":{"slug":"1-hnl"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
