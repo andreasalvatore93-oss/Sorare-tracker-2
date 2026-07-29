@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "pedro-miguel-santos-amador", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:46:33 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785285993', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'Mp4ojB55iO0oKB7MKRGfdb_j9M7B_PKjqIQIfmHtuZD23f2vvwxs0TtD4NbS-QWaCrytAUYDPTazYseHhWtlew', 'etag': 'W/"0e319d38e4920e7a95d3d23b47c79bf0"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=YBT%2BgwtB%2F4FDXGwGCsu4BO4ct9jVnJ8hcoNw6lMkNhQKUxBSWz0ZVfFY6L7VxJqprrWGPUwQHxN2PVgbs5ixMuyaJw%2F1%2FSRdLgZk4fYR37FNK8ozOIic1nA%2FXTPdyPbFLWL8DJ6Bz3J%2FMOhrYxilN2JQaEaxJuGi%2FTx6OmoqZ5maM1UQZTVztXWHUu9Og64kZT6dTfvwOsdJW%2BqNNllK5AX0DAXs3verfC2m93629tRfyXSOFAmMf95c%2BSF8Zm93grV1ueBe9n1fxrhZJKNStIGkk0fRBzrlCaUJ1g%2BWksw7XLffTs32rvCU%2B8SNeQ6k--2241JBwPvv7o%2FFey--oNG%2BFjXmGtaxKhsDVjRuFA%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:46:33 GMT; secure; httponly; samesite=none', 'x-request-id': '3a320a12-242d-4f17-96b5-6b5ceb5063c2', 'x-runtime': '0.047772', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 6da57b2392fb5f51041090332bfffd24.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'PHX50-P2', 'x-amz-cf-id': 'bXRpB3y-cq10zMEBjEM3Xe6cdBt7DCsVhQEziaUl4Y0Ypixg0H3zLQ=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:cf88d2b2-0c6a-4252-a97c-8ebc3f1e9bfe","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Defender","anyGame":{"id":"Game:bedd2679-7251-48a3-b7a9-7bc34182a15d","date":"2026-07-25T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"awayTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:b11d06c5-b94d-43bd-9c2e-8eeabe3cbab0","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Defender","anyGame":{"id":"Game:75be16bc-3ab6-4354-b11d-e81970520d40","date":"2026-07-23T00:15:00Z","statusTyped":"played","homeTeam":{"slug":"charlotte-fc-charlotte-north-carolina","name":"Charlotte FC","code":"CLT","domesticLeagueRanking":6},"awayTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:f64ccfba-c013-4da8-9c05-f3f021ff5f5f","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:f3f5f13f-bee2-44d7-a36b-6d84a9f40d19","positionTyped":"Defender","projectedScore":44.0,"anyGame":{"id":"Game:f64ccfba-c013-4da8-9c05-f3f021ff5f5f","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"philadelphia-union-chester-pennsylvania","name":"Philadelphia Union","code":"PHI","domesticLeagueRanking":14},"awayTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:72bb9218-e763-47e9-8bf0-5a58904c6f75","date":"2026-08-15T23:30:00Z","playerGameScore":{"id":"So5Score:a2f44c22-cae3-4e58-9daf-f60042c04644","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:72bb9218-e763-47e9-8bf0-5a58904c6f75","date":"2026-08-15T23:30:00Z","homeTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"awayTeam":{"slug":"new-york-rb-secaucus-new-jersey","name":"New York Red Bulls","code":"RBNY","domesticLeagueRanking":8},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:f7cd0f81-21e9-4082-9c8a-d473c9343944","date":"2026-08-20T00:30:00Z","playerGameScore":{"id":"So5Score:f2cb4a90-3b8d-421b-9ea6-e86993766634","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:f7cd0f81-21e9-4082-9c8a-d473c9343944","date":"2026-08-20T00:30:00Z","homeTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"awayTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:54c16458-6555-4709-998d-920be6342120","date":"2026-08-23T23:00:00Z","playerGameScore":{"id":"So5Score:e880ce06-e3e6-48b4-8c6b-7ae2f4189b00","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:54c16458-6555-4709-998d-920be6342120","date":"2026-08-23T23:00:00Z","homeTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"awayTeam":{"slug":"sporting-kc-kansas-city-kansas","name":"Sporting Kansas City ","code":"SKC","domesticLeagueRanking":15},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:4a1392b6-d461-4591-8681-4c3c98fffbfc","date":"2026-08-29T23:30:00Z","playerGameScore":{"id":"So5Score:dd7f2559-e9a5-442a-805f-179a6017bd09","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:4a1392b6-d461-4591-8681-4c3c98fffbfc","date":"2026-08-29T23:30:00Z","homeTeam":{"slug":"atlanta-united-atlanta-georgia","name":"Atlanta United","code":"ATL","domesticLeagueRanking":15},"awayTeam":{"slug":"charlotte-fc-charlotte-north-carolina","name":"Charlotte FC","code":"CLT","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
