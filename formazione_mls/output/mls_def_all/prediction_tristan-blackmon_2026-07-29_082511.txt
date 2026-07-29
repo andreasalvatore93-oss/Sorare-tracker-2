@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T08:25:11.781930Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) tristan-blackmon: 49 pt attesi (33-66)
+   ORDINAMENTO: 50.57
+   SQUADRA: vancouver-whitecaps-vancouver-british-columbia | AVVERSARIO: los-angeles-fc-los-angeles-california
+======================================================================
+
+######################################################################
+# GIOCATORE: tristan-blackmon
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tristan-blackmon (squadra: vancouver-whitecaps-vancouver-british-columbia)
+Generato: 2026-07-29T08:25:11.780504Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | SJ vs VAN | mlspa | score=69.2 | peso=0.231
+  2025-08-24 | VAN vs STL | mlspa | score=81.6 | peso=0.250
+  2025-09-14 | VAN vs PHI | mlspa | score=45.4 | peso=0.270
+  2025-11-23 | VAN vs LAFC | mlspa | score=15.2 | peso=0.292
+  2025-12-06 | MIA vs VAN | mlspa | score=23.4 | peso=0.315
+  2026-02-22 | VAN vs RSL | mlspa | score=87.8 | peso=0.340
+  2026-03-01 | VAN vs TOR | mlspa | score=55.3 | peso=0.367
+  2026-03-08 | POR vs VAN | mlspa | score=67.2 | peso=0.397
+  2026-03-22 | VAN vs SJ | mlspa | score=45.7 | peso=0.429
+  2026-04-05 | VAN vs POR | mlspa | score=46.5 | peso=0.463
+  2026-04-11 | VAN vs NYC | mlspa | score=60.9 | peso=0.500
+  2026-04-18 | VAN vs SKC | mlspa | score=75.5 | peso=0.540
+  2026-04-26 | VAN vs RAP | mlspa | score=34.1 | peso=0.583
+  2026-05-03 | LA vs VAN | mlspa | score=32.0 | peso=0.630
+  2026-05-10 | SJ vs VAN | mlspa | score=57.5 | peso=0.680
+  2026-05-14 | DAL vs VAN | mlspa | score=39.1 | peso=0.735
+  2026-05-17 | HOU vs VAN | mlspa | score=41.1 | peso=0.794
+  2026-05-24 | SD vs VAN | mlspa | score=50.2 | peso=0.857
+  2026-07-22 | CIN vs VAN | mlspa | score=45.6 | peso=0.926
+  2026-07-26 | MIN vs VAN | mlspa | score=58.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 50.41
+  di cui Punteggio decisivo (level_score) medio: 35.39 | Punteggio complessivo (granulari) medio: 15.02 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +1.21, delta avversario -0.76 | Passaggio condizionato: delta venue -0.97, delta avversario +0.32 | Clean sheet/disimpegni condizionato: delta venue +1.25, delta avversario -0.84 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.1 - 67.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.26 (differenza: +2.37)
+Media score in casa: 54.81 | Media score fuori casa: 48.42
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.805
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.987
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.989
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 1.015
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.012
+Fattore trend (media ultime 5: 47.0 vs media ultime 10: 49.5): 0.964
+P(gioca): 62.50% (fonte: tasso di presenza storico (20/32))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Vancouver Whitecaps FC | Trasferta: Los Angeles FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.4 (range 33.1 - 66.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 50.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.54
+Punteggio REALE ottenuto in quella partita: 58.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      65.0    55.3     -9.7    34.3        SI
+   7        7      60.6    67.2     +6.5    31.1        SI
+   8        8      48.6    45.7     -2.9    29.1        SI
+   9        9      61.0    46.5    -14.5    27.2        SI
+  10       10      54.3    60.9     +6.6    25.5        SI
+  11       11      71.9    75.5     +3.6    24.0        SI
+  12       12      74.5    34.1    -40.4    24.0        NO
+  13       13      61.8    32.0    -29.8    24.1        NO
+  14       14      40.6    57.5    +17.0    24.3        SI
+  15       15      46.4    39.1     -7.3    23.0        SI
+  16       16      44.0    41.1     -2.9    22.3        SI
+  17       17      50.0    50.2     +0.2    21.4        SI
+  18       18      45.6    45.6     +0.1    20.4        SI
+  19       19      50.5    58.8     +8.3    19.4        SI
+
+MAE (errore assoluto medio): 10.69
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 85.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
