@@ -17,3 +17,10 @@ __pycache__/
 /misure_costi.tsv
 /combos.tsv
 /coppie.tsv
+
+# Dump diagnostici GraphQL (richiesta+risposta integrale di OGNI chiamata):
+# vengono riscritti a ogni run e nessuno script li rilegge -- servono solo a
+# ispezionare la run in corso. Erano committati e pesavano 654 MB in 61.746
+# file, cioe' il 54% dell'intero albero di lavoro da 1,2 GB: e' quello che i
+# ~86 job di ogni run copiavano nei loro 13,3s di checkout a testa.
+**/output/**/.debug/
