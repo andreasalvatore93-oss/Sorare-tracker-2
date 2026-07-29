@@ -49,17 +49,13 @@ on:
         required: false
         default: 'mls:6,kleague:6'
       arena_dedicata:
-        description: 'Arene dedicate per lega (es. mls:1,belgio:1)'
+        description: 'Arene dedicate per lega (es. mls:1,belgio:1). Slug validi: mls, kleague, belgio, olanda (=Eredivisie), turchia, portogallo, spagna, germania, francia (=Ligue 1), croazia, scozia'
         required: false
         default: ''
       list_unused_candidates:
         description: 'Stampa nel log i candidati eleggibili mai schierati (debug, 0/1)'
         required: false
         default: '0'
-      exclude_slugs:
-        description: 'Slug giocatori da escludere manualmente, separati da virgola (es. gia bloccati in un Arena)'
-        required: false
-        default: ''
 
 permissions:
   contents: write
