@@ -1,0 +1,400 @@
+name: Formazione giornata (MLS only, test rapido)
+
+# Clone di formazione_giornata.yml (29/07, richiesta esplicita utente) per
+# iterare velocemente sui test SOLO su MLS, senza aspettare le altre 27
+# leghe. Stessa pipeline "fusa" (discovery_fixture.py + build_formazione_
+# globale.py), stessa logica di score/formazione -- unica differenza: la
+# discovery isola MLS con DISCOVERY_LEAGUE_SHARD='1:3' (fisso, vedi commento
+# sotto) invece di scandagliare tutte le leghe, e il job 'formazione' passa
+# ONLY_LEAGUES=mls per ignorare eventuali dati residui di altre leghe gia'
+# su disco da run precedenti del workflow completo. Nessuna notifica
+# Telegram (per non confondere l'output reale con le run di test).
+#
+# DISCOVERY_LEAGUE_SHARD='1:3': con _HEAVY_LEAGUES=['mls','kleague'] (vedi
+# discovery_fixture.py), n=3 (1 quota leghe leggere + 2 quote pesanti isolate)
+# e idx=1 seleziona esattamente la quota 'mls' (idx=2 sarebbe 'kleague').
+# HEAVY_LEAGUE_SHARD='i:4' spezza ulteriormente gli slug MLS sopravvissuti
+# (tutti e 4 i ruoli) in 4 job paralleli per velocita'.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gameweek:
+        description: 'Numero giornata Sorare (es. 95)'
+        required: false
+        default: ''
+      fixture_slug:
+        description: 'Slug fixture (es. football-28-31-jul-2026). Ha la precedenza.'
+        required: false
+        default: ''
+      starter_odds_min:
+        description: 'Soglia starter-odds (0-1). Odds assenti = escluso.'
+        required: false
+        default: '0.80'
+      in_season:
+        description: 'In Season MLS (numero di formazioni)'
+        required: false
+        default: '6'
+      list_unused_candidates:
+        description: 'Stampa nel log i candidati eleggibili mai schierati (debug, 0/1)'
+        required: false
+        default: '0'
+      exclude_slugs:
+        description: 'Slug giocatori da escludere manualmente, separati da virgola'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  discovery_mls_0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_LEAGUE_SHARD: '1:3'
+          HEAVY_LEAGUE_SHARD: '0:4'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_*_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata MLS (test): slug eleggibili (quota 0/4)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+            python merge_discovery_json.py
+            git add formazione_mls/output/mls_*_discovery/ || true
+            git commit --amend --no-edit || true
+          done
+
+  discovery_mls_1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_LEAGUE_SHARD: '1:3'
+          HEAVY_LEAGUE_SHARD: '1:4'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_*_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata MLS (test): slug eleggibili (quota 1/4)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+            python merge_discovery_json.py
+            git add formazione_mls/output/mls_*_discovery/ || true
+            git commit --amend --no-edit || true
+          done
+
+  discovery_mls_2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_LEAGUE_SHARD: '1:3'
+          HEAVY_LEAGUE_SHARD: '2:4'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_*_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata MLS (test): slug eleggibili (quota 2/4)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+            python merge_discovery_json.py
+            git add formazione_mls/output/mls_*_discovery/ || true
+            git commit --amend --no-edit || true
+          done
+
+  discovery_mls_3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      matrice: ${{ steps.run.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - id: run
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
+          DISCOVERY_LEAGUE_SHARD: '1:3'
+          HEAVY_LEAGUE_SHARD: '3:4'
+          PYTHONUNBUFFERED: "1"
+        run: python discovery_fixture.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add formazione_mls/output/mls_*_discovery/ || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata MLS (test): slug eleggibili (quota 3/4)"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+            python merge_discovery_json.py
+            git add formazione_mls/output/mls_*_discovery/ || true
+            git commit --amend --no-edit || true
+          done
+
+  discovery_merge:
+    needs: [discovery_mls_0, discovery_mls_1, discovery_mls_2, discovery_mls_3]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrice: ${{ steps.merge.outputs.matrice }}
+      matrice_unique: ${{ steps.merge.outputs.matrice_unique }}
+    env:
+      MATRICE_0: ${{ needs.discovery_mls_0.outputs.matrice }}
+      MATRICE_1: ${{ needs.discovery_mls_1.outputs.matrice }}
+      MATRICE_2: ${{ needs.discovery_mls_2.outputs.matrice }}
+      MATRICE_3: ${{ needs.discovery_mls_3.outputs.matrice }}
+    steps:
+      - id: merge
+        run: |
+          python3 -c "
+          import json, os
+          names = ['MATRICE_0', 'MATRICE_1', 'MATRICE_2', 'MATRICE_3']
+          parts = [json.loads(os.environ.get(v) or '[]') for v in names]
+          raw = [x for p in parts for x in p]
+          combined, seen_combo = [], set()
+          for x in raw:
+              key = json.dumps(x, sort_keys=True)
+              if key not in seen_combo:
+                  seen_combo.add(key)
+                  combined.append(x)
+          print('matrice=' + json.dumps(combined, separators=(',', ':')))
+          seen = []
+          for x in combined:
+              pair = {'league': x['league'], 'role': x['role']}
+              if pair not in seen:
+                  seen.append(pair)
+          print('matrice_unique=' + json.dumps(seen, separators=(',', ':')))
+          " >> "$GITHUB_OUTPUT"
+
+  predict:
+    needs: discovery_merge
+    if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        combo: ${{ fromJson(needs.discovery_merge.outputs.matrice) }}
+    env:
+      LEGA: ${{ matrix.combo.league }}
+      RUOLO: ${{ matrix.combo.role }}
+      SHARD: ${{ matrix.combo.shard }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - name: Predict
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -u
+          case "$RUOLO" in
+            gk)  PY=test_gk.py ;;
+            def) PY=test_def.py ;;
+            mid) PY=test_mid.py ;;
+            fwd) PY=test_mls_fwd_all.py ;;
+          esac
+          FILE="formazione_$LEGA/output/${LEGA}_${RUOLO}_discovery/player_slugs.json"
+          SLUGS=$(python -c "
+          import json, os
+          slugs = json.load(open('$FILE'))
+          shard = os.environ.get('SHARD', '').strip()
+          if shard:
+              idx, n = (int(x) for x in shard.split(':'))
+              slugs = [s for i, s in enumerate(slugs) if i % n == idx]
+          print(' '.join(slugs))
+          ")
+          echo "Giocatori da elaborare (shard '${SHARD:-nessuno}'): $SLUGS"
+          for SLUG in $SLUGS; do
+            echo "--- $LEGA/$RUOLO: $SLUG ---"
+            TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY" || echo "predict fallito per $SLUG"
+          done
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add "formazione_$LEGA/output/" || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata MLS (test): $LEGA $RUOLO predict${SHARD:+ (quota $SHARD)}"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+            python merge_discovery_json.py
+            git add formazione_mls/output/mls_*_discovery/ || true
+            git commit --amend --no-edit || true
+          done
+
+  consiglio:
+    needs: [discovery_merge, predict]
+    if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        combo: ${{ fromJson(needs.discovery_merge.outputs.matrice_unique) }}
+    env:
+      LEGA: ${{ matrix.combo.league }}
+      RUOLO: ${{ matrix.combo.role }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Costruisci consiglio
+        run: |
+          set -u
+          case "$RUOLO" in
+            gk)  CO=build_consiglio_gk.py ;;
+            def) CO=build_consiglio_def.py ;;
+            mid) CO=build_consiglio_mid.py ;;
+            fwd) CO=build_consiglio.py ;;
+          esac
+          python "formazione_$LEGA/consiglio/$CO" || echo "consiglio non generato"
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add "formazione_$LEGA/output/" || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata MLS (test): $LEGA $RUOLO consiglio"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+            python merge_discovery_json.py
+            git add formazione_mls/output/mls_*_discovery/ || true
+            git commit --amend --no-edit || true
+          done
+
+  formazione:
+    needs: [discovery_merge, predict, consiglio]
+    if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          IN_SEASON: mls:${{ github.event.inputs.in_season }},kleague:0
+          ONLY_LEAGUES: 'mls'
+          LIST_UNUSED_CANDIDATES: ${{ github.event.inputs.list_unused_candidates }}
+          MATCH_WINDOW_DAYS: '7'
+          PYTHONUNBUFFERED: "1"
+        run: python generatore_formazioni/build_formazione_globale.py
+      - if: always()
+        run: |
+          git config user.name "generatore-formazioni-bot"
+          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
+          git add generatore_formazioni/output/*.html || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Formazione giornata MLS (test): formazioni generate"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 15 ]; then exit 1; fi
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+            python merge_discovery_json.py
+            git add formazione_mls/output/mls_*_discovery/ || true
+            git commit --amend --no-edit || true
+          done
