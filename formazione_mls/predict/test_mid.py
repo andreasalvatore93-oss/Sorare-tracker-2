@@ -96,7 +96,7 @@ def load_player_slugs():
 
 PLAYER_SLUGS = load_player_slugs()
 
-WINDOW_SIZE = 15  # ridotta per il test multi-giocatore (meno chiamate per giocatore, budget complessita' API limitato)
+WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
 HALF_LIFE_GAMES = 12.0  # FISSATO (25/07): combinazione vincente aggregata cross-player (14 giocatori, MAE medio 18.13, copertura media 68.93%)
 RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 1.4, non 1.6 come nel tentativo precedente; la copertura ideale viene dalla combinazione GIUSTA di tutti i parametri insieme, non dal range preso da solo
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem

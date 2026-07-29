@@ -761,6 +761,32 @@ def main():
                 nome = player_names.get(row['slug'], row['slug'])
                 print(f"  [{r}] {nome} ({lg}) -- atteso {row.get('atteso')}")
 
+    # Top 20 esclusi per punteggio atteso (29/07, richiesta esplicita utente:
+    # sempre presente nel report HTML, non solo su richiesta via env var come
+    # il blocco sopra) -- controllo rapido "chi resta fuori nonostante un
+    # punteggio alto", utile per verificare se il pool di candidati e' capiente
+    # o se manca qualcosa (es. lega esclusa, filtro troppo aggressivo).
+    tutti_esclusi = [(lg, r, row) for r in ROLES for lg in LEAGUES for row in role_data[lg][r]
+                     if row['slug'] not in used_slugs]
+    tutti_esclusi.sort(key=lambda t: t[2].get('atteso', 0), reverse=True)
+    top20_esclusi = tutti_esclusi[:20]
+    if top20_esclusi:
+        righe_html = "".join(
+            f'<tr><td style="padding:2px 10px 2px 0;color:var(--muted)">{i+1}.</td>'
+            f'<td style="padding:2px 10px 2px 0">{player_names.get(row["slug"], row["slug"])}</td>'
+            f'<td style="padding:2px 10px 2px 0;color:var(--muted)">{r}</td>'
+            f'<td style="padding:2px 10px 2px 0;color:var(--muted)">{lg}</td>'
+            f'<td style="padding:2px 0;font-weight:700">{row.get("atteso")} pt</td></tr>'
+            for i, (lg, r, row) in enumerate(top20_esclusi)
+        )
+        top20_html = (
+            '<div class="lineup-block"><div class="lineup-meta">'
+            '<div class="lineup-title">Top 20 esclusi <span>per punteggio atteso</span></div></div>'
+            '<div style="font-size:0.78rem;opacity:0.85"><table style="border-collapse:collapse">'
+            f'{righe_html}</table></div></div>'
+        )
+        lineup_html_blocks.append(top20_html)
+
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
