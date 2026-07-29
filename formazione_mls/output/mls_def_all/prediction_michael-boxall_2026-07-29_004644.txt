@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T00:46:44.561176Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) michael-boxall: 45 pt attesi (34-58)
+   ORDINAMENTO: 43.73
+   SQUADRA: minnesota-united-minneapolis-saint-paul-minnesota | AVVERSARIO: san-diego-san-diego
+======================================================================
+
+######################################################################
+# GIOCATORE: michael-boxall
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: michael-boxall (squadra: minnesota-united-minneapolis-saint-paul-minnesota)
+Generato: 2026-07-29T00:46:44.559825Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-28 | MIN vs SEA | mlspa | score=61.9 | peso=0.500
+  2025-11-04 | SEA vs MIN | mlspa | score=27.4 | peso=0.540
+  2025-11-08 | MIN vs SEA | mlspa | score=38.4 | peso=0.583
+  2025-11-25 | SD vs MIN | mlspa | score=31.3 | peso=0.630
+  2026-02-22 | ATX vs MIN | mlspa | score=30.7 | peso=0.680
+  2026-02-28 | MIN vs CIN | mlspa | score=52.4 | peso=0.735
+  2026-05-16 | NE vs MIN | mlspa | score=34.5 | peso=0.794
+  2026-05-23 | MIN vs RSL | mlspa | score=38.6 | peso=0.857
+  2026-07-23 | SKC vs MIN | mlspa | score=42.6 | peso=0.926
+  2026-07-26 | MIN vs VAN | mlspa | score=55.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 41.71
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 6.71 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +1.25, delta avversario -0.69 | Passaggio condizionato: delta venue -0.85, delta avversario +0.68 | Clean sheet/disimpegni condizionato: delta venue +1.64, delta avversario -1.25 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 10.40
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.7 - 55.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.69 (differenza: +1.71)
+Media score in casa: 49.26 | Media score fuori casa: 33.31
+Fattore casa/trasferta applicato: 0.987 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.4
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.159
+Fattore falli (casa/trasferta, da dati reali): 1.008
+Fattore duelli (casa/trasferta, da dati reali): 1.013
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.990
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.014
+Fattore gol subiti (goals_conceded, con cap): 1.015
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.016
+Fattore trend (media ultime 5: 44.6 vs media ultime 10: 41.3): 1.057
+P(gioca): 45.45% (fonte: tasso di presenza storico (10/22))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Minnesota United | Trasferta: San Diego FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.5 (range 33.6 - 57.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 43.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.57
+Punteggio REALE ottenuto in quella partita: 55.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      32.5    34.5     +2.0    14.6        SI
+   7        7      36.1    38.6     +2.5    13.5        SI
+   8        8      46.7    42.6     -4.1    12.4        SI
+   9        9      31.6    55.1    +23.5    11.5        NO
+
+MAE (errore assoluto medio): 8.05
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

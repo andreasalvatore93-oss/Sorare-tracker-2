@@ -1,0 +1,74 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T00:46:07.480867Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) marcos-vinicius-amaral-alves: 63 pt attesi (33-101)
+   SQUADRA: ulsan-ulsan | AVVERSARIO: anyang-anyang
+======================================================================
+
+######################################################################
+# GIOCATORE: marcos-vinicius-amaral-alves
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marcos-vinicius-amaral-alves (squadra: ulsan-ulsan)
+Generato: 2026-07-29T00:46:07.479944Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-19 | ULS vs GWA | k-league-1 | score=100.0 | peso=0.794
+  2026-04-22 | ANY vs ULS | k-league-1 | score=45.4 | peso=0.841
+  2026-05-05 | SAN vs ULS | k-league-1 | score=72.4 | peso=0.891
+  2026-05-10 | ULS vs BUC | k-league-1 | score=66.4 | peso=0.944
+  2026-05-13 | ULS vs JEJ | k-league-1 | score=32.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 62.07
+  di cui Punteggio decisivo (level_score) medio: 53.25 | Punteggio complessivo (granulari) medio: 8.82 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.25 (delta +0.11) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 22.93
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.7 - 100.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.38 (differenza: +11.56)
+Media score in casa: 66.37 | Media score fuori casa: 58.90
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.2
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.855
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 20.00% (fonte: tasso di presenza storico (5/25))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Ulsan Hyundai Horang-i | Trasferta: FC Anyang
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 62.8 (range 33.4 - 100.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 70.54
+Punteggio REALE ottenuto in quella partita: 32.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -37.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
