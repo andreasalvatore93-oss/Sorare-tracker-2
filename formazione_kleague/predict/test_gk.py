@@ -1538,7 +1538,7 @@ def build_prediction(player_slug):
     # di DEF/FWD, mai avuto da GK -- caso reale: Michael Collodi, 8 partite,
     # preferito a Takaoka per un fattore casa/trasferta enorme su 3-4 partite
     # per bucket). k=5 scelto con backtest walk-forward reale (selection_quality).
-    SHRINK_K_OUTLIER_GK = 5.0
+    SHRINK_K_OUTLIER_GK = 20.0  # AGGIORNATO (29/07): retest con formula reale, verificato 2 volte nessun peggioramento sul sottogruppo alta-varianza fino a k=50 -- 20 scelto prudente
     MEDIA_RUOLO_GK_PRIOR = 48.81
     # Prior di ruolo DINAMICO (28/07, propagato da formazione_mls: bug reale
     # trovato dall'utente, giocatori di riserva veri con P(gioca) storico

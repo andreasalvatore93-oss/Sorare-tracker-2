@@ -124,7 +124,7 @@ TREND_INTENSITY = 0.7  # FISSATO (25/07): idem
 # partite per bucket). k=5 scelto con backtest walk-forward (selection_quality,
 # 45 giornate reali). MEDIA_RUOLO_GK_PRIOR = media reale su 2664 partite GK
 # cache multi-campionato.
-SHRINK_K_OUTLIER_GK = 5.0
+SHRINK_K_OUTLIER_GK = 20.0  # AGGIORNATO (29/07): retest con formula reale (level_score+granulare, half_life=6.0 fisso), verificato 2 volte che NON peggiora il sottogruppo alta-varianza (tipo Daniel) fino a k=50 -- scelto 20 (prudente) invece del migliore assoluto (50, mai esteso oltre in test), MAE aggregato comunque -1%+ vs 5.0
 MEDIA_RUOLO_GK_PRIOR = 48.81
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
