@@ -101,13 +101,42 @@ MERGEABLE = (
     'prediction_log.json',      # dict slug->predizione live -> update
 )
 
-# Costo relativo per giocatore di ogni ruolo, usato SOLO per bilanciare i
-# gruppi di job predict (non tocca in alcun modo lo scoring). FWD e' il piu'
-# caro: opponent_strength.py gli scansiona DUE cartelle cache invece di una
-# (goals_conceded + poss_lost_ctrl). Misurato sulla run 30484170456: i job
-# piu' lenti erano tutti FWD (scozia/fwd 398s, olanda/fwd 357s) contro
-# 40-190s degli altri ruoli.
-ROLE_COST = {'fwd': 2.0, 'mid': 1.3, 'def': 1.0, 'gk': 1.0}
+# ------------------------------------------------- modello di costo -------
+# Bilanciare i gruppi predict "per numero di giocatori" non funziona: misurato
+# sulla run 30496069817, il costo per giocatore varia di 80 volte tra coppie
+# lega/ruolo (mls/def 0.0s, scozia/fwd 31s, cile/fwd 35s) e NON e' una
+# proprieta' del ruolo (mls/fwd 0.0s contro scozia/fwd 31s). Con un modello
+# per ruolo, scozia/fwd (13 giocatori x 31s = ~400s) finiva tutto in un solo
+# job indivisibile e teneva in piedi l'intera fase predict per 6m35s mentre il
+# pavimento teorico era ~80s.
+#
+# pipeline_costi.json (committato, aggiornato da ogni run tramite i
+# sottocomandi 'costi'/'aggrega_costi') tiene per ogni coppia lega/ruolo:
+#   [primo_giocatore_s, giocatore_successivo_s]
+# cioe' costo(k giocatori nello stesso job) = primo + (k-1) * resto.
+# Il 'primo' include quello che si paga una volta per processo/lega
+# (costruzione serie opponent_strength, warm-up delle cache su disco), il
+# 'resto' il costo marginale. La distinzione conta: per giappone/gk
+# (primo 43s, resto 0s) spezzare la coppia in piu' shard COSTA, per
+# scozia/fwd (primo 31s, resto 31s) e' gratis.
+COSTI_PATH = 'pipeline_costi.json'
+
+# Fallback per una coppia mai misurata: prudente (meglio sovrastimare, cosi'
+# viene spezzata e distribuita) ma non assurdo.
+COSTO_IGNOTO = (15.0, 5.0)
+
+# Peso massimo (secondi stimati) di un singolo shard: si ricava dal carico
+# totale diviso gli slot di concorrenza, con un minimo per non sminuzzare
+# all'infinito pagando N volte il costo di setup.
+SLOT_CONCORRENTI = 20
+TARGET_MIN_S = 45.0
+
+# Numero di bin emessi. Volutamente MAGGIORE di SLOT_CONCORRENTI e ordinati
+# dal piu' pesante al piu' leggero: Actions ne avvia 20 e mette gli altri in
+# coda, avviandoli man mano che uno slot si libera. E' bilanciamento dinamico
+# gratuito (LPT + dispatch dinamico), che assorbe gli errori del modello di
+# costo meglio di qualsiasi stima statica.
+N_BIN = 26
 
 
 # ---------------------------------------------------------------- stage ----
@@ -271,28 +300,108 @@ def _conta_slug():
     return counts
 
 
-def _peso(combo, counts):
-    """Carico stimato di una combinazione (numero di slug del suo shard,
-    pesato per il costo del ruolo)."""
+def _carica_costi():
+    try:
+        with open(COSTI_PATH, encoding='utf-8') as f:
+            return json.load(f).get('costi') or {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _costo_coppia(costi, lega, ruolo):
+    """(primo, resto) per una coppia. Per una coppia mai misurata ripiega
+    sulla mediana del ruolo (le coppie dello stesso ruolo si somigliano piu'
+    di quelle di leghe diverse) e poi su COSTO_IGNOTO."""
+    v = costi.get(f'{lega}/{ruolo}')
+    if v and len(v) == 2:
+        return float(v[0]), float(v[1])
+    stessi = [v for k, v in costi.items()
+              if k.endswith('/' + ruolo) and v and len(v) == 2]
+    if stessi:
+        primi = sorted(float(v[0]) for v in stessi)
+        resti = sorted(float(v[1]) for v in stessi)
+        mid = len(stessi) // 2
+        return max(primi[mid], COSTO_IGNOTO[0]), max(resti[mid], COSTO_IGNOTO[1])
+    return COSTO_IGNOTO
+
+
+def _costo(k, primo, resto):
+    """Secondi stimati per un job che elabora k giocatori di una coppia."""
+    if k <= 0:
+        return 0.0
+    return primo + (k - 1) * resto
+
+
+def _shard_n(k, primo, resto, target):
+    """In quanti shard spezzare una coppia da k giocatori perche' nessuno
+    superi `target` secondi. Tiene conto del fatto che ogni shard ripaga il
+    costo di setup (`primo`): se `primo` da solo sfonda il target, spezzare
+    oltre non serve e si ferma."""
+    if k <= 1:
+        return 1
+    for n in range(1, k + 1):
+        per_shard = -(-k // n)          # ceil
+        if _costo(per_shard, primo, resto) <= target:
+            return n
+        if per_shard <= 1:
+            break
+    return k
+
+
+def _combos_da_coppie(unique, counts, costi):
+    """Costruisce la lista di shard da elaborare partendo dalle coppie
+    lega/ruolo trovate dalla discovery e dal conteggio VERO degli slug dopo
+    il merge.
+
+    Sostituisce gli shard calcolati da discovery_fixture.py, che li derivava
+    dal conteggio PARZIALE visto dal singolo job: per le leghe pesanti
+    (HEAVY_LEAGUE_SHARD) i due sotto-shard vedono meta' roster ciascuno e
+    potevano emettere famiglie di shard incoerenti. Bug reale osservato sulla
+    run 30494326179: la matrice conteneva insieme {mls,gk} (tutti gli slug),
+    {mls,gk,0:2} e {mls,gk,1:2}, quindi OGNI giocatore mls/gk veniva
+    elaborato DUE volte."""
+    # Prima passata con shard_n=1 per stimare il carico totale, seconda per
+    # fissare il target (spezzare aumenta il totale, ripagando il setup).
+    base = []
+    for pair in unique:
+        k = counts.get((pair['league'], pair['role']), 0)
+        primo, resto = _costo_coppia(costi, pair['league'], pair['role'])
+        base.append((pair, k, primo, resto))
+    tot = sum(_costo(k, p, r) for _pair, k, p, r in base)
+    target = max(TARGET_MIN_S, tot / SLOT_CONCORRENTI)
+
+    combos = []
+    for pair, k, primo, resto in base:
+        n = _shard_n(k, primo, resto, target)
+        if n <= 1:
+            combos.append(dict(pair))
+        else:
+            for i in range(n):
+                combos.append({**pair, 'shard': f'{i}:{n}'})
+    return combos, target
+
+
+def _peso(combo, counts, costi):
+    """Carico stimato in secondi di un singolo shard."""
     tot = counts.get((combo['league'], combo['role']), 0)
     shard = (combo.get('shard') or '').strip()
-    n_slug = tot
+    k = tot
     if shard:
         try:
             idx, n = (int(x) for x in shard.split(':'))
-            n_slug = len([i for i in range(tot) if i % n == idx])
+            k = len([i for i in range(tot) if i % n == idx])
         except ValueError:
             pass
-    costo = ROLE_COST.get(combo['role'], 1.0)
-    return max(n_slug, 1) * costo
+    primo, resto = _costo_coppia(costi, combo['league'], combo['role'])
+    return _costo(k, primo, resto)
 
 
-def _bin_packing(combos, counts, n_bins):
+def _bin_packing(combos, counts, costi, n_bins):
     """LPT (longest processing time first): ordina per carico decrescente e
-    mette ogni combinazione nel bin piu' scarico. Serve a evitare il caso
-    reale della run 30484170456, dove un solo job (scozia/fwd, 398s) teneva
-    in piedi l'intera fase predict mentre gli altri finivano in 40s."""
-    pesate = sorted(((_peso(c, counts), c) for c in combos),
+    mette ogni shard nel bin piu' scarico. I bin escono ordinati dal piu'
+    pesante al piu' leggero, cosi' Actions avvia per primi quelli lunghi e
+    usa quelli corti per riempire la coda."""
+    pesate = sorted(((_peso(c, counts, costi), c) for c in combos),
                     key=lambda x: -x[0])
     n_bins = max(1, min(n_bins, len(pesate)))
     bins = [{'peso': 0.0, 'combos': []} for _ in range(n_bins)]
@@ -300,7 +409,8 @@ def _bin_packing(combos, counts, n_bins):
         b = min(bins, key=lambda b: b['peso'])
         b['peso'] += peso
         b['combos'].append(combo)
-    return [b for b in bins if b['combos']]
+    return sorted((b for b in bins if b['combos']),
+                  key=lambda b: -b['peso'])
 
 
 def _etichetta(combos):
@@ -318,18 +428,25 @@ def _etichetta(combos):
 
 
 def cmd_matrice(argv):
-    n_gruppi = int(argv[0]) if argv else 20
-    combos = _matrice_dai_job()
+    n_gruppi = int(argv[0]) if argv else N_BIN
+    dai_job = _matrice_dai_job()
     counts = _conta_slug()
+    costi = _carica_costi()
 
+    # Coppie lega/ruolo da elaborare: vengono dai job discovery (solo le leghe
+    # con giocatori eleggibili in questa giornata). Gli shard invece si
+    # ricalcolano qui sul conteggio vero -- vedi _combos_da_coppie.
     unique = []
-    for c in combos:
+    for c in dai_job:
         pair = {'league': c['league'], 'role': c['role']}
         if pair not in unique:
             unique.append(pair)
 
+    combos, target = _combos_da_coppie(unique, counts, costi)
+    bins = _bin_packing(combos, counts, costi, n_gruppi)
+
     gruppi = []
-    for i, b in enumerate(_bin_packing(combos, counts, n_gruppi)):
+    for i, b in enumerate(bins):
         payload = base64.b64encode(
             json.dumps(b['combos'], separators=(',', ':')).encode()
         ).decode()
@@ -345,13 +462,17 @@ def cmd_matrice(argv):
     print('matrice_unique=' + _dump(unique))
     print('gruppi_predict=' + _dump(gruppi))
 
-    tot = sum(_peso(c, counts) for c in combos)
-    print(f'[matrice] {len(combos)} combinazioni ({len(unique)} coppie '
-          f'lega/ruolo, carico stimato {tot:.0f}) -> {len(gruppi)} gruppi '
-          f'predict', file=sys.stderr)
-    for i, b in enumerate(_bin_packing(combos, counts, n_gruppi)):
-        print(f'  gruppo {i + 1:02d}: carico {b["peso"]:6.1f}  '
-              f'{len(b["combos"])} combo  {_etichetta(b["combos"])}',
+    tot = sum(_peso(c, counts, costi) for c in combos)
+    n_giocatori = sum(counts.get((p['league'], p['role']), 0) for p in unique)
+    print(f'[matrice] {len(unique)} coppie lega/ruolo, {n_giocatori} giocatori,'
+          f' {len(costi)} coppie con costo misurato', file=sys.stderr)
+    print(f'[matrice] carico stimato {tot:.0f}s -> target per shard '
+          f'{target:.0f}s -> {len(combos)} shard in {len(bins)} gruppi '
+          f'(pavimento teorico {tot / SLOT_CONCORRENTI:.0f}s a '
+          f'{SLOT_CONCORRENTI} slot)', file=sys.stderr)
+    for i, b in enumerate(bins):
+        print(f'  gruppo {i + 1:02d}: {b["peso"]:6.1f}s  '
+              f'{len(b["combos"])} shard  {_etichetta(b["combos"])}',
               file=sys.stderr)
     return 0
 
@@ -392,6 +513,107 @@ def cmd_slugs(argv):
     return 0
 
 
+# ---------------------------------------------------------------- costi ----
+# Cartella dei parziali di misura (una per gruppo predict), non committata:
+# 'aggrega_costi' li fonde in pipeline_costi.json a fine run.
+COSTI_PARZIALI_DIR = '_costi_parziali'
+
+# Peso della misura nuova nella media esponenziale. Basso di proposito: i
+# tempi di una singola run sono rumorosi (rate-limit, cache fredda del
+# runner), il modello deve muoversi piano.
+COSTI_ALPHA = 0.3
+
+
+def cmd_costi(argv):
+    """Aggrega le misure per giocatore di UN gruppo predict (TSV
+    `lega<TAB>ruolo<TAB>secondi`, nell'ordine di elaborazione) in un parziale
+    dentro la stage dir. Il PRIMO giocatore di ogni coppia nel job da la
+    stima di `primo` (setup incluso), gli altri quella di `resto`."""
+    tsv, stage_dir = argv[0], argv[1]
+    idx = argv[2] if len(argv) > 2 else '0'
+    primi, resti = {}, {}
+    try:
+        with open(tsv, encoding='utf-8') as f:
+            righe = [l.rstrip('\n').split('\t') for l in f if l.strip()]
+    except OSError:
+        righe = []
+    for r in righe:
+        if len(r) < 3:
+            continue
+        pair = f'{r[0]}/{r[1]}'
+        try:
+            sec = float(r[2])
+        except ValueError:
+            continue
+        if pair not in primi:
+            primi[pair] = sec
+        else:
+            resti.setdefault(pair, []).append(sec)
+    dati = {}
+    for pair, primo in primi.items():
+        v = resti.get(pair) or []
+        dati[pair] = {'primo': primo, 'resti': v}
+    dst_dir = os.path.join(stage_dir, COSTI_PARZIALI_DIR)
+    os.makedirs(dst_dir, exist_ok=True)
+    with open(os.path.join(dst_dir, f'{idx}.json'), 'w', encoding='utf-8') as f:
+        json.dump(dati, f, ensure_ascii=False)
+    print(f'[costi] {len(dati)} coppie misurate in questo gruppo')
+    return 0
+
+
+def cmd_aggrega_costi(_argv):
+    """Fonde i parziali in pipeline_costi.json con media esponenziale."""
+    try:
+        with open(COSTI_PATH, encoding='utf-8') as f:
+            doc = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        doc = {}
+    costi = doc.get('costi') or {}
+    primi, resti = {}, {}
+    for path in sorted(glob.glob(os.path.join(COSTI_PARZIALI_DIR, '*.json'))):
+        try:
+            with open(path, encoding='utf-8') as f:
+                dati = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
+        for pair, v in dati.items():
+            primi.setdefault(pair, []).append(v.get('primo', 0.0))
+            resti.setdefault(pair, []).extend(v.get('resti') or [])
+    if not primi:
+        print('[aggrega_costi] nessun parziale, pipeline_costi.json invariato')
+        return 0
+
+    def _mediana(v):
+        v = sorted(v)
+        n = len(v)
+        return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2
+
+    n_nuove = n_agg = 0
+    for pair in sorted(primi):
+        p_new = _mediana(primi[pair])
+        r_new = _mediana(resti[pair]) if resti.get(pair) else p_new
+        p_new = max(p_new, r_new)
+        vecchio = costi.get(pair)
+        if vecchio and len(vecchio) == 2:
+            p = (1 - COSTI_ALPHA) * float(vecchio[0]) + COSTI_ALPHA * p_new
+            r = (1 - COSTI_ALPHA) * float(vecchio[1]) + COSTI_ALPHA * r_new
+            n_agg += 1
+        else:
+            p, r = p_new, r_new
+            n_nuove += 1
+        costi[pair] = [round(p, 1), round(r, 1)]
+
+    doc['_modello'] = ('lega/ruolo -> [primo_giocatore_s, '
+                       'giocatore_successivo_s]; usato SOLO per bilanciare i '
+                       'gruppi di job predict, nessun effetto sullo scoring')
+    doc['costi'] = costi
+    with open(COSTI_PATH, 'w', encoding='utf-8') as f:
+        json.dump(doc, f, indent=1, ensure_ascii=False, sort_keys=True)
+    print(f'[aggrega_costi] {n_agg} coppie aggiornate, {n_nuove} nuove, '
+          f'{len(costi)} totali in {COSTI_PATH}')
+    return 0
+
+
 COMANDI = {
     'stage': cmd_stage,
     'apply': cmd_apply,
@@ -399,6 +621,8 @@ COMANDI = {
     'combos': cmd_combos,
     'coppie': cmd_coppie,
     'slugs': cmd_slugs,
+    'costi': cmd_costi,
+    'aggrega_costi': cmd_aggrega_costi,
 }
 
 

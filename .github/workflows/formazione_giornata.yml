@@ -1511,7 +1511,7 @@ jobs:
         run: |
           python3 pipeline_artifacts.py apply _artifacts
           python3 pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
-          python3 pipeline_artifacts.py matrice 20 >> "$GITHUB_OUTPUT"
+          python3 pipeline_artifacts.py matrice >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: discovery-merged
@@ -1580,14 +1580,22 @@ jobs:
             echo "=== $LEGA/$RUOLO (shard '${SHARD:-nessuno}'): $SLUGS"
             for SLUG in $SLUGS; do
               echo "--- $LEGA/$RUOLO: $SLUG ---"
+              T0=$(date +%s)
               TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY" || echo "predict fallito per $SLUG"
+              printf '%s\t%s\t%s\n' "$LEGA" "$RUOLO" "$(( $(date +%s) - T0 ))" >> misure_costi.tsv
             done
           done 3< combos.tsv
       # Esclude le cartelle _discovery: sono gia' nell'artifact
       # discovery-merged e verrebbero rimesse in ogni artifact di
       # questa fase (identiche, quindi innocue, ma inutili).
       - if: always()
-        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/(?![^/]+_discovery/)'
+        run: |
+          python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/(?![^/]+_discovery/)'
+          # Misure di questo gruppo: alimentano pipeline_costi.json, da cui la
+          # run successiva ricava lo sharding. Vanno scritte DOPO 'stage'
+          # (che copia solo i file visti da git) e viaggiano nello stesso
+          # artifact.
+          python pipeline_artifacts.py costi misure_costi.tsv _artifact_stage "${{ strategy.job-index }}" || true
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -1694,10 +1702,13 @@ jobs:
           path: _artifacts
           pattern: cons-*
       - run: python pipeline_artifacts.py apply _artifacts
+      # Modello di costo per il bilanciamento dei gruppi predict della run
+      # successiva (nessun effetto sullo scoring, vedi pipeline_artifacts.py).
+      - run: python pipeline_artifacts.py aggrega_costi || true
       - run: |
           git config user.name "generatore-formazioni-bot"
           git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/ || true
+          git add formazione_*/output/ pipeline_costi.json || true
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Formazione giornata: output run (discovery + predict + consiglio)"
           attempt=0
@@ -1769,6 +1780,11 @@ jobs:
           git config user.name "generatore-formazioni-bot"
           git config user.email "generatore-formazioni-bot@users.noreply.github.com"
           git add generatore_formazioni/output/*.html || true
+          # I file applicati dagli artifact li committa salva_output: qui
+          # restano come modifiche non committate e bloccherebbero il
+          # 'git merge' del retry-loop sotto (bug reale run 30496069817:
+          # HTML mai arrivato su main, link Telegram rotto).
+          git stash push --include-untracked --keep-index --quiet || true
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Formazione giornata: formazioni generate"
           attempt=0
