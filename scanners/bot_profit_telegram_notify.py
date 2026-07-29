@@ -24,8 +24,12 @@ download/drag&drop manuale.
 import csv
 import glob
 import os
+import sys
 
 import requests
+
+sys.path.insert(0, os.path.dirname(__file__))
+import bot_profit as bp  # noqa: E402
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
@@ -52,15 +56,43 @@ def _viewer_url(csv_path):
     return f"{viewer_base}?csv={_raw_url(csv_path)}"
 
 
-# FIX 29/07 (richiesta esplicita utente: notifica con indicazione dettagliata,
-# non solo il link al CSV -- deve leggersi subito "compra entro" senza dover
-# aprire il viewer): mostra in chiaro la top carta per potenziale_score di
-# ogni gruppo, con la sua finestra_acquisto_ideale gia' calcolata da
-# bot_profit.py (colonna aggiunta lo stesso giorno, vedi _finestra_acquisto_ideale).
-def _top_row_for_group(path):
+# FIX 29/07 ter (richiesta esplicita utente: il top pick per potenziale_score
+# NON e' detto sia una buona carta DA COMPRARE ADESSO -- serve incrociare chi
+# e' realmente dentro la finestra di acquisto ORA (ore_alla_partita nel range
+# BUY_WINDOW_HOURS_MIN/MAX), ha uno sconto_percent REALE (positivo -- uno
+# sconto negativo e' in realta' un sovrapprezzo, l'utente l'ha segnalato come
+# "non ha senso" da proporre) e un trend non in caduta ('down' escluso).
+# Rank tra i candidati superstiti: sconto_percent pesato con lo stesso
+# TREND_SCORE_MULTIPLIER gia' usato in compute_potenziale_score (coerenza con
+# la formula ufficiale, non un criterio nuovo inventato qui).
+def _best_pick_now_for_group(path):
     with open(path, 'r', newline='', encoding='utf-8') as f:
         rows = list(csv.DictReader(f))
-    return rows[0] if rows else None
+
+    candidati = []
+    for r in rows:
+        try:
+            ore = float(r.get('ore_alla_partita') or '')
+        except ValueError:
+            continue
+        if not (bp.BUY_WINDOW_HOURS_MIN <= ore <= bp.BUY_WINDOW_HOURS_MAX):
+            continue
+        try:
+            sconto = float(r.get('sconto_percent') or '')
+        except ValueError:
+            continue
+        if sconto <= 0:
+            continue
+        trend = r.get('trend_recente') or None
+        if trend == 'down':
+            continue
+        mult = bp.TREND_SCORE_MULTIPLIER.get(trend, bp.TREND_SCORE_MULTIPLIER[None])
+        candidati.append((sconto * mult, r))
+
+    if not candidati:
+        return None
+    candidati.sort(key=lambda x: -x[0])
+    return candidati[0][1]
 
 
 def main():
@@ -73,16 +105,20 @@ def main():
         path = _latest_csv_for_group(group_name)
         if path:
             righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{label}: apri viewer</a>")
-            top = _top_row_for_group(path)
+            top = _best_pick_now_for_group(path)
             if top:
                 nome = top.get('player_name') or top.get('player_slug') or '?'
                 finestra = top.get('finestra_acquisto_ideale') or 'n/d'
+                sconto = top.get('sconto_percent') or '?'
+                trend = top.get('trend_recente') or 'n/d'
                 # FIX 29/07 bis (richiesta esplicita utente: notifica illeggibile,
                 # tutto attaccato su una riga) -- nome su riga propria, finestra
                 # su riga propria sotto, cosi' Telegram la spezza in modo leggibile
                 # invece di un unico blocco di testo compresso.
-                righe.append(f"   \U0001F947 <b>{nome}</b>")
+                righe.append(f"   \U0001F947 <b>{nome}</b> (sconto {sconto}%, trend {trend})")
                 righe.append(f"      compra: {finestra}")
+            else:
+                righe.append("   nessuna carta e' dentro la finestra ideale in questo momento.")
         else:
             righe.append(f"⚠️ {label}: nessun CSV trovato in questa run.")
 

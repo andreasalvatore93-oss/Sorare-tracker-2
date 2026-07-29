@@ -1445,25 +1445,46 @@ BUY_WINDOW_DAYS_BEFORE_MAX = 3.5
 BUY_WINDOW_DAYS_BEFORE_MIN = 2.5
 
 
-def _finestra_acquisto_ideale(prossima_partita_data_iso):
+# Stessi limiti espressi in ORE (invece di giorni) -- FIX 29/07 ter (richiesta
+# esplicita utente: top pick ricalibrati su chi e' DAVVERO nella finestra
+# ORA, non solo il potenziale_score piu' alto in assoluto): riusa ore_alla_partita,
+# gia' presente in ogni riga del CSV, per un check "sono dentro la finestra
+# adesso?" senza dover riparsare prossima_partita_data -- stesso identico
+# calcolo, solo espresso nell'unita' gia' disponibile a valle (viewer/notifica
+# Telegram, che non hanno accesso alle funzioni Python di bot_profit.py).
+BUY_WINDOW_HOURS_MAX = BUY_WINDOW_DAYS_BEFORE_MAX * 24
+BUY_WINDOW_HOURS_MIN = BUY_WINDOW_DAYS_BEFORE_MIN * 24
+
+
+def _buy_window_bounds(prossima_partita_data_iso):
+    """(start, end) della finestra ideale in UTC, o None se la data manca/non
+    e' parsabile. Fattorizzato (FIX 29/07 ter) per essere riusato sia da
+    _finestra_acquisto_ideale (colonna CSV) sia da chi voglia controllare se
+    ADESSO si e' dentro la finestra (vedi bot_profit_telegram_notify.py)."""
     if not prossima_partita_data_iso:
-        return ''
+        return None
     try:
         match_dt = datetime.datetime.fromisoformat(prossima_partita_data_iso.replace('Z', '+00:00'))
     except (ValueError, AttributeError):
-        return ''
+        return None
     start = match_dt - datetime.timedelta(days=BUY_WINDOW_DAYS_BEFORE_MAX)
     end = match_dt - datetime.timedelta(days=BUY_WINDOW_DAYS_BEFORE_MIN)
+    return start, end
+
+
+def _finestra_acquisto_ideale(prossima_partita_data_iso):
+    bounds = _buy_window_bounds(prossima_partita_data_iso)
+    if bounds is None:
+        return ''
+    start, end = bounds
     if end < datetime.datetime.now(datetime.timezone.utc):
         return 'finestra gia\' passata'
-    # FIX 29/07 bis (richiesta esplicita utente, notifica illeggibile senza
-    # spazi/contesto: "29/07 12:30-30/07 12:30" letto tutto attaccato):
-    # freccia tra le due date, UTC tra parentesi, e la data della partita di
-    # riferimento aggiunta in fondo cosi' non serve consultare un'altra
-    # colonna per capire A QUALE partita si riferisce la finestra.
-    fmt = '%d/%m h.%H:%M'
-    return (f"{start.strftime(fmt)} -> {end.strftime(fmt)} (UTC), "
-            f"prima della partita del {match_dt.strftime(fmt)}")
+    # FIX 29/07 ter (richiesta esplicita utente: colonna troppo larga nel
+    # viewer, costringeva a scorrere a destra -- rimossa la ripetizione della
+    # data partita, gia' visibile nella colonna prossima_partita_data a
+    # fianco) -- formato compatto, solo le due date/ore della finestra.
+    fmt = '%d/%m %H:%M'
+    return f"{start.strftime(fmt)}-{end.strftime(fmt)} UTC"
 
 # FIX 27/07 quinquies (richiesta esplicita utente): lo sconto_percent confronta
 # il minimo attuale con la media dell'INTERA finestra a 7gg -- se il prezzo sta
