@@ -1247,24 +1247,26 @@ def _short_team(slug):
 
 
 def _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor):
-    """Riga 'Squadra vs Avversario' + coefficiente di forza avversario (29/07,
-    richiesta esplicita utente: sapere subito contro chi gioca ogni giocatore
-    schierato/escluso e quanto l'avversario e' forte/debole rispetto al suo
-    storico -- SOLO diagnostico, il coefficiente non entra in score_atteso,
-    vedi commento su OPP_FACTOR_RE)."""
+    """Riga 'Squadra vs Avversario' (29/07, richiesta esplicita utente: sapere
+    subito contro chi gioca ogni giocatore schierato/escluso).
+    Il coefficiente di forza avversario NON viene piu' mostrato (29/07,
+    bug reale trovato dall'utente): 'domesticLeagueRanking' e' un attributo
+    CORRENTE della squadra lato Sorare, non un valore storico legato alla
+    singola partita -- interrogando lo stesso giorno di partita da cache di
+    giocatori diversi (aggiornate in momenti diversi) si ottengono ranking
+    DIVERSI per la stessa partita (verificato: 282/13671 coppie
+    squadra+data, 22 squadre, valori incoerenti tra loro). La media
+    'avg_opp_rank_hist' usata per calcolare il fattore e' quindi contaminata
+    da uno snapshot non ancorato al tempo, non un vero storico -- mostrare
+    un numero calcolato su questo dato sarebbe fuorviante anche se il
+    fattore stesso resta gia' escluso da score_atteso. opp_factor resta nel
+    dato (AVV_FACTOR nel consiglio) per un eventuale fix futuro, ma non
+    renderizzato."""
     if not team_slug and not opponent_team_slug:
         return ''
     squadra = _short_team(team_slug)
     avversario = _short_team(opponent_team_slug)
-    fattore_html = ''
-    if opp_factor is not None:
-        colore = 'var(--muted)'
-        if opp_factor > 1.02:
-            colore = '#4caf50'  # avversario storicamente debole -> fattore favorevole
-        elif opp_factor < 0.98:
-            colore = '#d9534f'  # avversario storicamente forte -> fattore sfavorevole
-        fattore_html = f' <span style="color:{colore}">({opp_factor:.2f}x)</span>'
-    return f'<div class="pcard-match">{squadra} vs {avversario}{fattore_html}</div>'
+    return f'<div class="pcard-match">{squadra} vs {avversario}</div>'
 
 
 def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,

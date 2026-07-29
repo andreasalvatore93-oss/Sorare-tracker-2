@@ -811,18 +811,20 @@ def main():
     top_esclusi = tutti_esclusi[:40]
     if top_esclusi and lineup_html_blocks:
         def _riga_esclusa(i, lg, r, row):
+            # Niente coefficiente forza avversario in colonna (29/07, bug reale:
+            # 'domesticLeagueRanking' e' un attributo CORRENTE della squadra,
+            # non un valore storico legato alla partita -- vedi commento su
+            # _team_vs_opponent_html in build_formazione_finale.py). Solo
+            # squadra vs avversario, dato accurato (viene dalla partita vera).
             squadra = bff._short_team(row.get('team_slug'))
             avversario = bff._short_team(row.get('opponent_team_slug'))
             vs = f'{squadra} vs {avversario}' if row.get('team_slug') else 'N/D'
-            opp_factor = row.get('opp_factor')
-            fattore = f'{opp_factor:.2f}x' if opp_factor is not None else '—'
             return (
                 f'<tr><td style="padding:2px 8px 2px 0;color:var(--muted)">{i+1}.</td>'
                 f'<td style="padding:2px 8px 2px 0">{player_names.get(row["slug"], row["slug"])}</td>'
                 f'<td style="padding:2px 8px 2px 0;color:var(--muted)">{r}</td>'
                 f'<td style="padding:2px 8px 2px 0;color:var(--muted)">{lg}</td>'
                 f'<td style="padding:2px 8px 2px 0;color:var(--muted-2);font-size:0.68rem">{vs}</td>'
-                f'<td style="padding:2px 8px 2px 0;color:var(--muted-2);font-size:0.68rem">{fattore}</td>'
                 f'<td style="padding:2px 0;font-weight:700">{row.get("atteso")} pt</td></tr>'
             )
         righe_html = "".join(
