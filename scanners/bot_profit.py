@@ -1456,8 +1456,14 @@ def _finestra_acquisto_ideale(prossima_partita_data_iso):
     end = match_dt - datetime.timedelta(days=BUY_WINDOW_DAYS_BEFORE_MIN)
     if end < datetime.datetime.now(datetime.timezone.utc):
         return 'finestra gia\' passata'
-    fmt = '%d/%m %H:%M'
-    return f"{start.strftime(fmt)}-{end.strftime(fmt)} UTC"
+    # FIX 29/07 bis (richiesta esplicita utente, notifica illeggibile senza
+    # spazi/contesto: "29/07 12:30-30/07 12:30" letto tutto attaccato):
+    # freccia tra le due date, UTC tra parentesi, e la data della partita di
+    # riferimento aggiunta in fondo cosi' non serve consultare un'altra
+    # colonna per capire A QUALE partita si riferisce la finestra.
+    fmt = '%d/%m h.%H:%M'
+    return (f"{start.strftime(fmt)} -> {end.strftime(fmt)} (UTC), "
+            f"prima della partita del {match_dt.strftime(fmt)}")
 
 # FIX 27/07 quinquies (richiesta esplicita utente): lo sconto_percent confronta
 # il minimo attuale con la media dell'INTERA finestra a 7gg -- se il prezzo sta

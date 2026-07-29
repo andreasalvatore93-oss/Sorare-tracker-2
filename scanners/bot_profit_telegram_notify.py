@@ -77,7 +77,12 @@ def main():
             if top:
                 nome = top.get('player_name') or top.get('player_slug') or '?'
                 finestra = top.get('finestra_acquisto_ideale') or 'n/d'
-                righe.append(f"   \U0001F947 top: {nome} -- compra tra {finestra}")
+                # FIX 29/07 bis (richiesta esplicita utente: notifica illeggibile,
+                # tutto attaccato su una riga) -- nome su riga propria, finestra
+                # su riga propria sotto, cosi' Telegram la spezza in modo leggibile
+                # invece di un unico blocco di testo compresso.
+                righe.append(f"   \U0001F947 <b>{nome}</b>")
+                righe.append(f"      compra: {finestra}")
         else:
             righe.append(f"⚠️ {label}: nessun CSV trovato in questa run.")
 
