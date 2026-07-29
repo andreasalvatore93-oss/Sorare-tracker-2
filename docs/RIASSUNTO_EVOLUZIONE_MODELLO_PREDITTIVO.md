@@ -3394,3 +3394,102 @@ Tutto committato e pushato su `main` (commit `9fced5cab`, 84 file: prior dinamic
 con `origin/main`, nessun conflitto. Non incluse nel commit: le cartelle `.debug` sotto
 `formazione_mls/output/*/.debug/` (dump di debug non tracciati, accumulati da run reali con errori
 di complexity-limit — lasciate intatte, decisione di pulizia non presa).
+
+## 32 — Sessione 29/07/2026 — bug reali trovati su run vere (sharding, squadra/avversario,
+## retry sprecati) + tempi di run portati da 22 a 9m33s, tutto committato e pushato
+
+Sessione guidata da run reali ripetute su GitHub Actions (non simulazioni locali): l'utente
+segnalava formazioni "sballate" e tempi di run troppo lunghi, ogni bug e' stato confermato con
+dati reali prima del fix, poi verificato rilanciando la run vera.
+
+**Bug reali trovati e fixati (tutti committati+pushati su main):**
+
+1. **Sotto-shard MLS/K League si cancellavano a vicenda i giocatori scoperti**: `git merge -X ours`
+   su file JSON single-line, quando 2 sotto-shard scrivevano lo stesso file scartava per intero
+   meta' del roster gia' pushata (Woledzi/Palacios, DEF Nashville, verificato posseduti via query
+   diretta API ma assenti dal pool). Fix: `merge_discovery_json.py` fa l'unione invece di
+   scartare, richiamato in tutti i 39 retry-loop di discovery nel workflow.
+2. **Crash silenzioso nel riepilogo FWD MLS**: unpack di tupla a 8 campi quando l'append ne
+   aveva 9 (`score_ordinamento` aggiunto ieri) — `ValueError` per ogni giocatore, score gia'
+   calcolato perso in silenzio. Ha rotto ~95% delle predizioni FWD di uno shard.
+3. **Guadagno budget classic azzerato quando il candidato #1 del ruolo era esaurito**: il calcolo
+   del "gain" per slot confrontava col candidato dal punteggio piu' alto in ASSOLUTO
+   (`candidates[0]`), ignorando se avesse ancora copie disponibili, invece che con la vera
+   alternativa in_season disponibile. Bug scoperto dall'utente: Gil/Berhalter classic (61-63pt)
+   restavano fuori mentre giocatori piu' scarsi (53-55pt) venivano schierati. Verificato con
+   simulazione reale: Berhalter passa da 0/6 a 2/6 lineup, punteggio totale portafoglio
+   1707->1731.
+4. **Lega esclusa per intero se mancava anche solo 1 ruolo su 4**: `_discover_leagues()` in
+   `generatore_formazioni/build_formazione_globale.py` richiedeva TUTTE e 4 le cartelle ruolo
+   (ancorato su `*_gk_all`). Cile (solo FWD) e Polonia (solo FWD+MID) sparivano da ogni
+   formazione nonostante consigli validi generati ogni giorno.
+5. **SQUADRA/AVVERSARIO corrotti da partite fuori competizione**: la finestra delle ultime 5
+   partite per determinare la squadra attuale del giocatore poteva essere dominata da
+   competizioni non-mlspa (global-cup, amichevoli, nazionale) con `homeTeam`/`awayTeam` vuoti o
+   riferiti a un contesto diverso — Messi mostrava "N/D", Griezmann risultava "Atletico Madrid"
+   invece che la sua squadra MLS. Fix: si preferiscono le partite della STESSA competizione della
+   partita target, fallback permissivo se il giocatore non ne ha nello storico. Applicato a
+   tutti e 4 i ruoli MLS.
+6. **Nessun retry sulla risoluzione fixture/gameweek**: un blocco CloudFront transitorio (vedi
+   punto 8) su questa UNICA chiamata di bootstrap ha fatto fallire un'intera run (discovery_fwd_0,
+   1 job su 34, ma sufficiente a bloccare tutto). Aggiunto retry minimo (3 tentativi, 3s).
+7. **Retry da 60s sprecati su giocatori con storico strutturalmente insufficiente**: un panchinaro
+   con storico quasi tutto DID_NOT_PLAY non ha speranza di successo ritentando la stessa query
+   pochi secondi dopo, ma il loop non distingueva questo caso da un fallimento transitorio.
+   Aggiunto flag `_STRUCTURAL_INSUFFICIENCY` per uscire subito, senza attesa, SOLO nei 2 casi
+   davvero strutturali (nessuna partita nella finestra, meno di MIN_USABLE_GAMES) — il caso
+   "nessuna partita futura trovata" resta con retry normale (li' un retry puo' aiutare davvero).
+8. **Circuit breaker per blocco CloudFront**: quando Sorare blocca con HTTP 403 "Request blocked"
+   (blocco IP/sessione, non per-giocatore), ogni giocatore restante bruciava comunque ~60s di
+   retry prima di arrendersi, perche' ogni giocatore e' un processo separato senza stato
+   condiviso. Aggiunto un marker file in `/tmp` (non nel repo): appena rilevato, i tentativi
+   successivi diventano un singolo tentativo secco. Propagato anche a K League (mancava, era solo
+   su MLS).
+
+**Tempi di run — percorso non lineare, con 2 tentativi falliti prima di trovare la causa vera:**
+
+- Pausa fissa fra giocatori nei job predict ridotta da 10s a 2s (validato: zero 429 osservati
+  anche a parallelismo molto piu' alto in discovery).
+- `PREDICT_SHARD_N` fisso alzato da 2 a 4: **ha PEGGIORATO i tempi** (14m51s -> 15m23s) invece di
+  migliorarli — con 56 job predict totali invece di 40, il vero limite (il tetto di ~20 job
+  CONCORRENTI dell'account, gia' scoperto una volta, non il max-parallel=77 del workflow) causava
+  piu' coda, non piu' parallelismo reale.
+- Sostituito con sharding ADATTIVO (~25 giocatori/shard invece di un N fisso identico per ogni
+  ruolo) — minimizza il conteggio totale di job mantenendo ogni shard piccolo.
+- Il fix piu' determinante e' stato il punto 7 sopra (retry sprecati su dati strutturalmente
+  insufficienti): la run piu' lenta aveva un singolo job da 509s dominato quasi per intero da
+  questo pattern, non da CloudFront.
+- **Risultato finale**: da 22 minuti (con blocco CloudFront) a **9m33s** (run reale
+  `30413832505`), formazioni verificate sensate (Bouanga presente, Griezmann/Messi con
+  squadra corretta, nessun job fallito, All Stars non richiesta rimossa dal lancio).
+
+**Bonus trovato durante l'audit di log completi (discovery/predict/consiglio, 3 agenti in
+parallelo su ~110 job di una run reale)**: nessun altro bug oltre a quelli sopra — discovery e
+consiglio/formazione risultati puliti.
+
+## 32.A — TEMA APERTO per la prossima sessione: punteggi/schieramento ancora sotto dubbio
+
+L'utente ha aperto un'indagine sui **punteggi attesi (project score)** assegnati a diversi
+giocatori e sulla **logica di schieramento**, con dubbi specifici su:
+- alcuni giocatori con punteggio percepito come sovra/sotto-stimato (es. segnalati oggi: Thomas
+  Muller, Paxten Aaronson, Adrian Cubas, Andy Najar — controllati uno per uno con la formula
+  completa e il backtest reale, MAE nella norma per tutti (13-24pt), NESSUN bug di calcolo
+  trovato finora, ma l'utente non si ritiene soddisfatto e vuole approfondire oltre);
+- i **portieri** in particolare (es. Schwake/Thomas non sempre schierati nonostante ranking alto —
+  verificato che dipende dalla competizione per il budget classic condiviso fra ruoli, meccanismo
+  confermato funzionante con un test dal vivo, ma da approfondire ulteriormente su casi specifici);
+- lo **schieramento** (quali giocatori finiscono in quale formazione/slot) in generale, non solo i
+  singoli punteggi.
+
+**Run di riferimento per l'analisi**: la numero **42** (`generatore_formazioni_run42_2026-07-29_013054.html`,
+run GitHub Actions `30413832505`, 9m33s, l'ultima buona) — usare quella come base per il prossimo
+giro di indagine, non le run precedenti ne' eventuali run successive lanciate senza coordinarsi
+con la sessione. Riprendere da qui: analizzare formazione per formazione (l'utente aveva appena
+iniziato con "In Season MLS #5" quando la sessione si e' interrotta), verificando in particolare
+se e quando ogni lineup consuma lo slot classic e su quale giocatore.
+
+## 32.B — Stato repo a fine sessione (29/07)
+
+Tutto committato e pushato su `main`. Nessuna modifica pendente non salvata. Le run di oggi hanno
+anche generato output/commit automatici extra (prediction_*.txt, consiglio_*.txt, debug) da parte
+del bot — normali, non richiedono azione.
