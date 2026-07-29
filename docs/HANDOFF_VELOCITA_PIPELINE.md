@@ -1,3 +1,29 @@
+# Handoff velocita' pipeline — CHIUSO il 29/07 notte, vedi RIASSUNTO sez. 36
+
+> **Questo documento e' storico.** Il lavoro descritto sotto e' stato ripreso e portato avanti
+> nella notte del 29/07: tempo di run a scope identico passato da **21m06s a ~10m**, con la causa
+> radice trovata (limite di complessita' GraphQL, vedi sotto) e due bug reali corretti.
+>
+> **Per lo stato attuale, i numeri misurati fase per fase, il vicolo cieco da non ritentare e
+> cosa resta aperto, leggere `docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` sezione 36.**
+>
+> Sintesi di cosa e' cambiato rispetto a quanto scritto qui sotto:
+> - il `git push` in ogni job (46% di tutta la compute) e' stato sostituito dal passaggio dati via
+>   artifact di Actions, con un solo commit finale (`salva_output`) — vedi `pipeline_artifacts.py`;
+> - `consiglio` da 58 job a uno (faceva 268s di wall per 0s di lavoro reale);
+> - `predict` raggruppato in bin con tetto duro di 8 giocatori per shard;
+> - **causa radice**: la query `allPlayerGameScores` chiedeva 60 partite (complessita' 1812 contro
+>   un tetto di 500) e quindi **non e' mai riuscita**, bruciando 10+20+40s di retry per giocatore.
+>   Ora paginata a 10 partite per chiamata;
+> - bug `presence_rate` nei 26 predict FWD: assegnato solo in un ramo, usato sempre — era la causa
+>   dei file `ERRORE_<slug>.txt` e dell'assenza silenziosa di quei giocatori dai consigli.
+>
+> Il punto 4 delle istruzioni originali ("l'APIKEY alzerebbe il tetto a 30000") **non e'
+> percorribile**: l'utente l'ha gia' richiesta a Sorare e al momento non e' disponibile.
+> Non riproporla.
+
+---
+
 # Handoff: non sono riuscito a risolvere il problema di velocità della pipeline
 
 Sono il modello che ha lavorato su questo task stanotte (Sonnet 5) e non ci sono riuscito

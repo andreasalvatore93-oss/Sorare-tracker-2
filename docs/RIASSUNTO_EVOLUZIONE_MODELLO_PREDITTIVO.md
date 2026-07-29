@@ -4265,3 +4265,183 @@ In ordine di priorità dichiarato dall'utente:
    fatti e SCARTATI stanotte (checklist, sezione E, punti 33-35) — ma quella è solo una parte
    laterale del tema più ampio annunciato, non sostituisce la spiegazione dell'utente.
 di fix). Nessuna modifica pendente non salvata a fine sezione.
+
+## 36. Sessione 29/07 notte (ripresa dall'handoff) — Velocità pipeline: da 21m06s a ~10m, causa radice trovata nei log
+
+**Punto di partenza**: `docs/HANDOFF_VELOCITA_PIPELINE.md`, scritto dalla sessione precedente
+(Sonnet 5) che non aveva raggiunto il target. Run di riferimento verificata a scope identico
+(gw98, `arena_dedicata=portogallo:2,scozia:2,croazia:2`): **21m06s** (`30494326179`, chiusa con
+successo — la sessione precedente non aveva potuto verificarne l'esito).
+
+### 36.A — I due vincoli veri, misurati (non ipotizzati)
+
+Tutto quello che segue viene dall'API di GitHub Actions, job per job e step per step, e dai dump
+`.debug/` committati nel repo. Nessun fix è stato applicato su ipotesi.
+
+**Vincolo 1 — il `git push` di ogni job era il 46% di tutta la compute.** Run `30484170456`
+(20m15s, 156 job):
+
+| fase | job | wall | job-sec | di cui push git | lavoro utile |
+|---|---|---|---|---|---|
+| discovery | 36 | 247s | 3079 | 1123 (36%) | 1159 |
+| predict | 60 | 663s | 7106 | 2429 (34%) | 3327 |
+| consiglio | 58 | 268s | 4020 | **2934 (73%)** | **0** |
+| formazione | 1 | 26s | 26 | 2 | 0 |
+| **totale** | **156** | **1215s** | **14234** | **6488 (46%)** | **4486 (31%)** |
+
+Causa: ogni job pushava su `main` con il retry-loop `until git push; do sleep 5-17; fetch;
+merge -X ours; merge_discovery_json; commit --amend; done`. Ogni giro fa passare **un solo**
+job, quindi con 20 job che pushano insieme l'ultimo pagava fino a 20 giri. Il job `consiglio`
+era il caso limite: 2934s di push per **0 secondi** di lavoro reale (lo step "Costruisci
+consiglio" segnava 0s su tutti e 58 i job).
+
+**Vincolo 2 — il tetto di 20 job concorrenti.** Verificato: la concorrenza massima osservata è
+20 esatti su *ogni* run, quindi `max-parallel: 77` nel workflow era inerte. Il wall time è
+governato da `somma_job_secondi / 20`, e ogni job in più aggiunge i suoi ~19s fissi
+(checkout 13,3s + setup-python 2,4s + pip 3,2s + set up job 1,1s) al totale da dividere:
+156 job = ~2900 job-secondi di **solo overhead**. Questo era già stato scoperto una volta (vedi
+commento in `discovery_fixture.py` e sez. 30) ma poi contraddetto: il fix #4 della sessione
+precedente aveva **abbassato** `PREDICT_SHARD_TARGET_SIZE` da 25 a 15, cioè aumentato il numero
+di job, che con un tetto fisso a 20 non aiuta e paga solo più overhead.
+
+### 36.B — Cosa è stato cambiato (solo infrastruttura, nessuna formula toccata)
+
+Nuovo modulo `pipeline_artifacts.py` (documentato per esteso al suo interno):
+
+1. **Passaggio dati via artifact invece di push.** I 36 job discovery, i job predict e il
+   consiglio non pushano più: caricano un artifact. `discovery_merge` li unisce con la stessa
+   semantica di `merge_discovery_json.py` (lista → unione, dict → update, che esiste per i
+   sotto-shard delle leghe pesanti che scrivono sullo *stesso* `player_slugs.json`). Un nuovo job
+   `salva_output` fa **un solo commit** con tutto a fine run, con `always()` per conservare la
+   proprietà di prima (se predict/consiglio falliscono a metà, i parziali vengono comunque
+   committati). Lo stato finale di `main` è lo stesso di prima.
+2. **`consiglio` da 58 job a UNO.** Gli script di consiglio non fanno chiamate di rete e costano
+   0s: in sequenza in un job unico costano meno di un secondo a coppia. Da 268s di wall a **34s**.
+3. **`predict` da 60-81 job per combinazione a bin raggruppati** con bin-packing LPT, emessi in
+   numero maggiore dei 20 slot e ordinati dal più pesante: Actions ne avvia 20 e dispatcha gli
+   altri man mano che uno slot si libera. Gli slug processati da ogni shard sono **invariati**
+   (stesso split `i % n == idx`, spostato in `pipeline_artifacts.py slugs`).
+4. **Sharding ricalcolato sul conteggio vero** dopo il merge, non su quello parziale visto dal
+   singolo job discovery. Ha corretto per questa via un bug reale pre-esistente: sulla
+   `30494326179` la matrice conteneva **insieme** `{mls,gk}` (tutti gli slug), `{mls,gk,0:2}` e
+   `{mls,gk,1:2}`, perché i due sotto-shard di una lega pesante calcolano `shard_n` su metà
+   roster ciascuno — ogni giocatore mls/gk veniva elaborato **due volte**.
+5. **Tetto duro `MAX_GIOCATORI_PER_SHARD = 8`** (vedi 36.C: perché il modello di costo da solo
+   non basta).
+
+### 36.C — Vicolo cieco documentato: il costo per giocatore NON è una proprietà stabile
+
+Tentativo intermedio: misurare dai log il costo reale per coppia lega/ruolo
+(`pipeline_costi.json`, modello `[primo_giocatore_s, giocatore_successivo_s]`, aggiornato a ogni
+run con media esponenziale) e decidere lo sharding da lì. **Ha PEGGIORATO i tempi: 13m56s contro
+i 10m53s del round precedente.** A 15 minuti di distanza, con gli stessi 30 giocatori,
+`olanda/fwd` è passato da **1,0s a 14,6s per giocatore**: la stima la dava a 30s totali, non
+veniva spezzata, e ha poi impiegato 437s in un solo job.
+
+Conseguenza tenuta nel codice: la tabella dei costi serve solo a **ordinare** il riempimento dei
+bin, con pavimento (4s) e tetto (31s) sul marginale per non credere a stime assurde. Il presidio
+vero è il tetto duro sul numero di giocatori per shard, che regge qualunque cosa dica la stima.
+
+### 36.D — La causa radice, trovata nei dump `.debug/` committati
+
+L'instabilità di 36.C aveva una causa precisa. La query `allPlayerGameScores` ha complessità
+≈ `130 + 28 × partite_richieste`, contro un tetto di **500** per le chiamate senza APIKEY.
+Misurato sui dump committati:
+
+```
+first=30 -> "Query has complexity of 970, which exceeds max complexity of 500.
+             Using an APIKEY the limit would be 30000."
+first=60 -> complexity of 1812
+```
+
+In `fetch_game_log_incremental`, quando la cache è insufficiente il "fetch ampio" chiede
+`max(target_window_size * 2, 30)` partite. Con `WINDOW_SIZE = 30` (alzato da 15 il 29/07) fa
+**60**: quella chiamata **non è mai riuscita**, per nessun giocatore, in nessuna run. Anche con
+`WINDOW_SIZE = 15` chiedeva 30, cioè 970 — sfondava comunque. Due conseguenze, entrambe misurate:
+
+- **velocità**: ogni tentativo bruciava il retry esterno da 10+20+40s. Sono i ~30s per giocatore
+  che dominavano la fase predict e che cambiavano da run a run, rendendo impossibile qualunque
+  bilanciamento statico;
+- **qualità**: quei giocatori restavano senza storico.
+
+**Fix**: `fetch_game_scores()` chiede la stessa finestra in pagine da 10 partite (complessità
+~410), accumulando i nodi e restituendo la *stessa* struttura della chiamata singola — il codice
+a valle non cambia di una riga. Se la prima pagina fallisse (API che non accetta
+`after`/`pageInfo`) si ripiega sulla chiamata singola di prima: il caso peggiore possibile è
+esattamente il comportamento di oggi, non uno peggiore. Applicato ai 112 script predict.
+Verificato dal vivo: `12x "Game log paginato: 60 partite in 6 pagine da max 10"`, **0 errori di
+complessità**, 0 ripieghi, e **2 secondi** per 60 partite contro ~70s di retry a vuoto.
+
+Nota: l'APIKEY (che alzerebbe il tetto a 30000) **non è una strada percorribile** — l'utente
+l'ha già richiesta a Sorare e al momento non è disponibile. Non riproporla come soluzione.
+
+### 36.E — Secondo bug reale trovato per la stessa via: `presence_rate`
+
+I file `ERRORE_<slug>.txt` (192 su `main` quando è stato trovato, 38-62 nuovi per ogni run) hanno
+una causa indipendente. Nei predict FWD:
+
+```python
+if starter_odds is not None:
+    p_gioca = starter_odds / 10000.0
+else:
+    presence_rate = len(usable) / total_considered if total_considered else 1.0
+    p_gioca = presence_rate
+```
+
+`presence_rate` è assegnato **solo** nel ramo `else`, ma ~50 righe più sotto il prior dinamico
+dello shrinkage lo usa **sempre**: `max(0.0, 34.42 + 18.71 * presence_rate)`. Quindi ogni
+giocatore per cui Sorare **aveva** pubblicato le starter odds — il caso normale a 24-48h dal
+match, ed esattamente il caso delle run con `starter_odds_min=0` — moriva in `UnboundLocalError`
+e restava silenziosamente fuori dai consigli.
+
+Fix: l'assegnazione si sposta sopra l'`if`. È il tasso di presenza **storico**, non ha nulla a
+che vedere con la presenza delle odds (lo dice il commento stesso nel codice). Il valore usato
+nel ramo `else` è identico a prima, stessa espressione. Riguardava 26 file su 112: tutti e soli i
+`test_mls_fwd_all.py` — GK/DEF/MID assegnavano già `presence_rate` incondizionatamente (82 file
+verificati), il che conferma quanto già noto, cioè che la versione FWD della funzione non era
+stata propagata come quella DEF.
+
+### 36.F — Verifica di non-regressione
+
+Confronto dei report HTML della run di riferimento (`run61`, 21m06s) e della prima run
+rifattorizzata (`run63`, 13m56s), a scope identico: **238 righe totali, 2 righe diverse**, ed
+entrambe sono solo il timestamp di generazione (`Generato 22:18Z` contro `22:59Z`). Stesse 6
+formazioni, stessi 25 giocatori, stesso ordine. I due file hanno anche la stessa dimensione
+esatta in byte.
+
+Verificato inoltre che **lo scope richiesto non influenza il costo della pipeline**: solo il job
+`formazione` riceve gli input `arena_dedicata`/`allstars`/`in_season` (40 job su 41 non li vedono
+nemmeno). Discovery, predict e consiglio elaborano sempre tutte le leghe e tutti i giocatori
+posseduti — 895 giocatori su 68 coppie lega/ruolo — che si chiedano 6 formazioni o 20. I fix sono
+quindi strutturali, non tarati sullo scope di test.
+
+### 36.G — Progressione misurata
+
+| run | configurazione | tempo | esito |
+|---|---|---|---|
+| `30494326179` | prima di questa sessione (riferimento) | **21m06s** | success |
+| `30496069817` | artifact invece di push, consiglio in 1 job, 20 bin | **10m53s** | fallita nel push HTML |
+| `30497294536` | + sharding dal modello di costo (peggiorativo, vedi 36.C) | **13m56s** | success |
+| `30498399199` | + tetto duro 8 giocatori/shard, 45 bin | **11m30s** | success |
+| `30499100175` | + paginazione del game log (36.D) | **10m21s** | success |
+
+Fix collaterale reale sulla `30496069817`: il job `formazione` generava l'HTML ma il push
+falliva sempre, quindi l'HTML non arrivava su `main` e **il link notificato su Telegram era
+rotto** (segnalato dall'utente). Causa: il job applica gli artifact nel working tree ma committa
+solo l'HTML, quindi al primo conflitto di push il `git merge` del retry-loop si rifiutava di
+partire (`Your local changes to the following files would be overwritten by merge`). Risolto
+mettendo da parte quei file con `git stash --keep-index` prima del commit; verificato che
+`run63` è poi arrivato su `main`.
+
+### 36.H — Cosa resta aperto su questo filone
+
+1. La fase `predict` resta la voce dominante (~5m40s su 10m21s). Le due leve non ancora sfruttate:
+   il `checkout` da 13,3s per job su un repo da 150MB (uno `sparse-checkout` della sola lega dello
+   shard lo porterebbe a ~4s, cioè ~60s di wall su ~45 job), e il fatto che la cache game-log
+   ora si popola davvero per i giocatori che prima non la riempivano mai — le run successive
+   dovrebbero scendere da sole man mano che quei giocatori passano al refresh leggero (`first=2`).
+2. `pipeline_costi.json` si ritara a ogni run: da tenere d'occhio, ma **non** trattarlo come un
+   dato affidabile per decisioni strutturali (vedi 36.C).
+3. I file `ERRORE_`/`.debug/` committati non vengono mai cancellati e sono una delle ragioni per
+   cui il repo è a 150MB, che a sua volta è il costo del checkout. Pulirli è indipendente dai fix
+   di cui sopra ma si ripagherebbe su ogni job di ogni run.
