@@ -115,8 +115,22 @@ def _discover_leagues():
 
 _DISCOVERED = _discover_leagues()
 LEAGUES = tuple(sorted(_DISCOVERED))
-CONSIGLIO_DIRS = {lg: v[0] for lg, v in _DISCOVERED.items()}
-DISCOVERY_DIRS = {lg: v[1] for lg, v in _DISCOVERED.items()}
+
+# ONLY_LEAGUES (29/07, richiesta esplicita utente: clone MLS-only del tool per
+# test rapidi, senza aspettare le altre 27 leghe): comma-separated di cartelle
+# lega (es. 'mls' o 'mls,kleague'). Se impostata, ignora completamente le
+# leghe non elencate anche se hanno dati residui su disco da run precedenti --
+# altrimenti build_formazione_globale.py leggerebbe comunque i consigli
+# stantii delle altre leghe (persistono sul disco a prescindere da quali
+# discovery sono girate in QUESTA run). Default vuoto = comportamento
+# INVARIATO (tutte le leghe scoperte).
+_ONLY_LEAGUES = {s.strip() for s in os.environ.get('ONLY_LEAGUES', '').split(',') if s.strip()}
+if _ONLY_LEAGUES:
+    LEAGUES = tuple(lg for lg in LEAGUES if lg in _ONLY_LEAGUES)
+    print(f"ONLY_LEAGUES attivo: solo {LEAGUES}")
+
+CONSIGLIO_DIRS = {lg: v[0] for lg, v in _DISCOVERED.items() if lg in LEAGUES}
+DISCOVERY_DIRS = {lg: v[1] for lg, v in _DISCOVERED.items() if lg in LEAGUES}
 
 OUTPUT_DIR = os.path.join(_HERE, 'output')
 
