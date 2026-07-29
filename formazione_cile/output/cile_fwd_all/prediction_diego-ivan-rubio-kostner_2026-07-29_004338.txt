@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T00:43:38.323036Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) diego-ivan-rubio-kostner: 55 pt attesi (34-69)
+   SQUADRA: la-serena-la-serena | AVVERSARIO: o-higgins-rancagua
+======================================================================
+
+######################################################################
+# GIOCATORE: diego-ivan-rubio-kostner
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: diego-ivan-rubio-kostner (squadra: la-serena-la-serena)
+Generato: 2026-07-29T00:43:38.322516Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: primera-division-cl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-07 | SKC vs ATX | mlspa | score=47.0 | peso=0.445
+  2025-09-14 | DAL vs ATX | mlspa | score=42.9 | peso=0.472
+  2025-09-21 | ATX vs SEA | mlspa | score=82.5 | peso=0.500
+  2025-09-28 | RSL vs ATX | mlspa | score=33.3 | peso=0.530
+  2026-02-07 | OHI vs LAS | primera-division-cl | score=43.8 | peso=0.561
+  2026-02-14 | LAS vs COQ | primera-division-cl | score=35.2 | peso=0.595
+  2026-02-22 | LAS vs UCO | primera-division-cl | score=50.9 | peso=0.630
+  2026-02-27 | CBR vs LAS | primera-division-cl | score=70.1 | peso=0.667
+  2026-03-06 | LAS vs LAC | primera-division-cl | score=63.8 | peso=0.707
+  2026-03-15 | NUB vs LAS | primera-division-cl | score=86.6 | peso=0.749
+  2026-04-05 | UCH vs LAS | primera-division-cl | score=46.5 | peso=0.794
+  2026-04-11 | LAS vs EVE | primera-division-cl | score=32.6 | peso=0.841
+  2026-04-26 | LAS vs HUA | primera-division-cl | score=51.5 | peso=0.891
+  2026-05-24 | LAS vs LIM | primera-division-cl | score=68.9 | peso=0.944
+  2026-05-30 | LAS vs COL | primera-division-cl | score=66.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 55.78
+  di cui Punteggio decisivo (level_score) medio: 46.78 | Punteggio complessivo (granulari) medio: 8.99 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.17 (delta +0.18) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.43
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.2 - 70.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.63 (differenza: +2.80)
+Media score in casa: 52.74 | Media score fuori casa: 61.75
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.066
+Fattore falli (casa/trasferta, da dati reali): 0.989
+Fattore duelli (casa/trasferta, da dati reali): 0.988
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore trend (media ultime 5: 53.2 vs media ultime 10: 57.2): 0.929
+P(gioca): 60.00% (fonte: tasso di presenza storico (15/25))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T19:00
+Casa: CD La Serena | Trasferta: CD O'Higgins
+Competizione: primera-division-cl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.8 (range 34.2 - 69.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.65
+Punteggio REALE ottenuto in quella partita: 66.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0 (FISSATA)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.8    50.9     -1.9    22.8        SI
+   7        7      57.3    70.1    +12.8    20.9        SI
+   8        8      59.7    63.8     +4.1    22.3        SI
+   9        9      39.6    86.6    +47.0    21.6        NO
+  10       10      49.1    46.5     -2.6    25.7        SI
+  11       11      59.5    32.6    -26.9    24.6        NO
+  12       12      50.2    51.5     +1.3    25.3        SI
+  13       13      56.7    68.9    +12.2    23.9        SI
+  14       14      40.7    66.3    +25.6    23.7        NO
+
+MAE (errore assoluto medio): 14.93
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
