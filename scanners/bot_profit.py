@@ -568,7 +568,21 @@ def graphql_query(query, variables=None, max_retries=3):
             log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), attendo {wait_seconds:.1f}s...")
             time.sleep(wait_seconds)
             continue
-        return r.json()
+        # FIX 29/07 (bug reale, run crashata: Sorare ha risposto con un body
+        # vuoto/non-JSON, probabile errore 5xx transitorio -- r.json() faceva
+        # esplodere l'intera run con un JSONDecodeError non gestito, perso
+        # tutto il lavoro fatto finora. Trattato come il 429: retry con lo
+        # stesso backoff, poi errore esplicito (gia' gestito da tutti i
+        # chiamanti via data.get('errors')) se i tentativi si esauriscono,
+        # invece di un crash fatale.
+        try:
+            return r.json()
+        except ValueError:
+            wait_seconds = min((2 ** attempt) * 2, 16.0)
+            log(f"[errore HTTP] risposta non-JSON (status {r.status_code}, tentativo "
+                f"{attempt + 1}/{max_retries}), attendo {wait_seconds:.1f}s...")
+            time.sleep(wait_seconds)
+            continue
     return {"errors": [{"message": "rate_limited_max_retries_exceeded"}]}
 
 
