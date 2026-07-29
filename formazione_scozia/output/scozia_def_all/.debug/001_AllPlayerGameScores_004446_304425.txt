@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "dujon-sterling", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:44:46 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785285886', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'hW5vR3ZldafOh9I6_UyNf5-9xy5eIeOaejYj-WJMM9j1MeSYrpxoDdsmn126rItvc_xTH9UAQav_1aYQnk5gKA', 'etag': 'W/"65c4dc18c9798ae165f9464c08075b5b"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=eF0Pg8uHa5m83l9efVOsg3uR9Z2DTVGMKflwZpqfoRlG3CUpmHLAkF5mE%2FpRPPVEtjETwxJYxWrN4tA6jDjtsTfzr7R9ZXm1niboa8Q9C1apFAgIhq1%2BrFdeNl4KZ5k%2FK6rfnItkov%2BAOPIYAdmadBvpPt%2FY96x83azJ68%2BQmdShjafbzDfMdoJptPJAuEw4I71AldwERGZbdJz7Galv6MRmxukkAs8qC6zqugmg%2BDf3GIceaiwvfrjqa3nOBNe0A2WQU%2F8E9wGHq7BEESi8%2Bvz5KeeUlBt3RoZ5GIDz6u%2BHjDk8%2B1HV0MkIoQXyke8h--Sl2o1lrBRS3K%2FeDp--Nhbr%2FvjXW9gpnUBJZS4q8Q%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:44:46 GMT; secure; httponly; samesite=none', 'x-request-id': '53abbdc9-606c-4637-823b-8d32c6f8ce7e', 'x-runtime': '0.044533', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 d7756c0a60531bbefc36600bd71fbcb0.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'R60VtnSEcjSl8E6TbW5cy_Jt2gxixzpaBiP8RmbxfuDSZH7jW9w2Xg=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:b1d57d2a-75a9-47ac-ab4f-306018d4c689","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Defender","anyGame":{"id":"Game:66b7442a-5fe8-42ff-979d-b3ccc2da8168","date":"2026-05-16T11:30:00Z","statusTyped":"played","homeTeam":{"slug":"falkirk-falkirk","name":"Falkirk FC","code":"FAL","domesticLeagueRanking":6},"awayTeam":{"slug":"rangers-glasgow","name":"Rangers FC","code":"RAN","domesticLeagueRanking":3},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:7f36a34d-a07f-4647-8004-c45dd91218a0","score":49.92,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:7605184a-7117-4ae1-98df-5854ec1fe9cc","date":"2026-05-13T19:00:00Z","statusTyped":"played","homeTeam":{"slug":"rangers-glasgow","name":"Rangers FC","code":"RAN","domesticLeagueRanking":3},"awayTeam":{"slug":"hibernian-edinburgh","name":"Hibernian FC","code":"HIB","domesticLeagueRanking":5},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"fieldStatus":"SUBSTITUTED","gameStarted":1,"minsPlayed":80,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:c8f02b5d-1932-4ed6-a02c-9033cb6922bc","date":"2026-07-31T19:00:00Z","playerGameScore":{"id":"So5Score:90345991-8714-4db9-a2d1-51f550d72c90","positionTyped":"Defender","projectedScore":47.0,"anyGame":{"id":"Game:c8f02b5d-1932-4ed6-a02c-9033cb6922bc","date":"2026-07-31T19:00:00Z","homeTeam":{"slug":"dundee-united-dundee","name":"Dundee United FC","code":"DUU","domesticLeagueRanking":7},"awayTeam":{"slug":"rangers-glasgow","name":"Rangers FC","code":"RAN","domesticLeagueRanking":3},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:56d1714f-62f1-442c-9d5d-6c160560e61b","date":"2026-08-06T19:00:00Z","playerGameScore":{"id":"So5Score:19fe41b4-1a46-4053-ae2f-faed0ce55146","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:56d1714f-62f1-442c-9d5d-6c160560e61b","date":"2026-08-06T19:00:00Z","homeTeam":{"slug":"jagiellonia-bialystok-bialystok","name":"SSA Jagiellonia Białystok","code":"JAG","domesticLeagueRanking":null},"awayTeam":{"slug":"rangers-glasgow","name":"Rangers FC","code":"RAN","domesticLeagueRanking":3},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:4d0ad890-915a-413a-973e-54ea3e9f9254","date":"2026-08-09T15:00:00Z","playerGameScore":{"id":"So5Score:8865697e-a40d-4695-9c63-b5b22436c6e1","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:4d0ad890-915a-413a-973e-54ea3e9f9254","date":"2026-08-09T15:00:00Z","homeTeam":{"slug":"rangers-glasgow","name":"Rangers FC","code":"RAN","domesticLeagueRanking":3},"awayTeam":{"slug":"hibernian-edinburgh","name":"Hibernian FC","code":"HIB","domesticLeagueRanking":5},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:1f0aabcb-913d-4505-8c6f-ddbcabe0468e","date":"2026-08-13T19:00:00Z","playerGameScore":{"id":"So5Score:8f916c08-11d3-4ce4-a0c6-c04972779ca2","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:1f0aabcb-913d-4505-8c6f-ddbcabe0468e","date":"2026-08-13T19:00:00Z","homeTeam":{"slug":"rangers-glasgow","name":"Rangers FC","code":"RAN","domesticLeagueRanking":3},"awayTeam":{"slug":"jagiellonia-bialystok-bialystok","name":"SSA Jagiellonia Białystok","code":"JAG","domesticLeagueRanking":null},"competition":{"slug":"uefa-europa-league"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:11702b51-7c4f-4747-bcc6-ca56a1a4e2bb","date":"2026-08-22T14:00:00Z","playerGameScore":{"id":"So5Score:d89712ec-ed1e-4b69-8550-eb0aaa502b2e","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:11702b51-7c4f-4747-bcc6-ca56a1a4e2bb","date":"2026-08-22T14:00:00Z","homeTeam":{"slug":"rangers-glasgow","name":"Rangers FC","code":"RAN","domesticLeagueRanking":3},"awayTeam":{"slug":"st-mirren-paisley","name":"Saint Mirren FC","code":"STM","domesticLeagueRanking":5},"competition":{"slug":"premiership-gb-sct"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
