@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "thomas-muller", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:50:45 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785286245', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'MU9kkiBGUTwg6DRENn3e88Op1Jv29z411gxIIqDZZfTAxCAJsVVbOXTs9W12Lx8l9FhYshDAlCQw6DVlWNbw_w', 'etag': 'W/"56120e4271070869f9660c905b6c4222"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=ns%2BnDbgxSWA1O5VgyzmTjEI8LmzDdW%2Bblbbnikg%2FFjXZYHdHTdKgctuEbZCfkBfGy2VsSjQgVrbB2OrwGefjU%2FGU0Wp8tOqMrtTGuXvjUV%2BrSGjG%2BuX8h9qChr1hNuj%2F8yLqLceb%2FmmLmiDBn%2Fv3%2BiUmvSBRzuMgrSkU8UGS6et2iQwbMoZG2ORXkGQFaEpJ2KViKMmuDOSV5B0Apvon63TEiAqZnbfaq%2BIRSjckuW8gWbPWZJGChaGeqtx0V0DwYNMaR8zufAxw6IOtWuwikHUlvF%2Bu%2BOJrhsJ2XqIlS4MMNgxLnnyT%2BhZ%2FMcXWX908--iQI8un6%2FxFtPYWhR--X8nMZUdWhJGNVELgYwgylQ%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:50:45 GMT; secure; httponly; samesite=none', 'x-request-id': '932eb858-82f3-4341-8196-eb5da3474f67', 'x-runtime': '0.043802', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 a0e8b81926c3808f1bb0c65fe46f508c.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'SFO53-P6', 'x-amz-cf-id': '_Z5B_aN0QxjBih1MRxtZPGH_2HZD5i3HRpLefN7U_qLuNRryTBAVFg=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:de9bc452-581f-46d2-84b1-70b604f4977f","score":48.6,"scoreStatus":"FINAL","positionTyped":"Forward","anyGame":{"id":"Game:333d6b60-9928-4bca-aafa-0f4e439dc435","date":"2026-07-26T00:30:00Z","statusTyped":"played","homeTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"awayTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}},{"id":"So5Score:ab7e004c-6d44-4264-9847-01eaa882a814","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Forward","anyGame":{"id":"Game:b1c6e092-db82-4123-a2e8-22cf37d64ae8","date":"2026-07-22T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"cincinnati-cincinnati-ohio","name":"FC Cincinnati","code":"CIN","domesticLeagueRanking":7},"awayTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_BENCH","gameStarted":null,"minsPlayed":0,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:0279b61c-9f35-4e8e-b99c-55769551ce43","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:580a3572-edaa-4102-ab32-e54a60b7c18c","positionTyped":"Forward","projectedScore":59.0,"anyGame":{"id":"Game:0279b61c-9f35-4e8e-b99c-55769551ce43","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"awayTeam":{"slug":"los-angeles-fc-los-angeles-california","name":"Los Angeles FC","code":"LAFC","domesticLeagueRanking":2},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:50080174-2507-4e76-ab13-7da85417eda5","date":"2026-08-05T02:30:00Z","playerGameScore":{"id":"So5Score:393c6d21-c2ee-4c5c-86be-35dcd92d7326","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:50080174-2507-4e76-ab13-7da85417eda5","date":"2026-08-05T02:30:00Z","homeTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"awayTeam":{"slug":"atlante-benito-juarez","name":"Club Atlante","code":"ATL","domesticLeagueRanking":1},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:89fec425-525b-4ce8-a0b2-f4abdb0b270e","date":"2026-08-08T02:30:00Z","playerGameScore":{"id":"So5Score:2f09d70e-707c-48a6-ba93-427ca4de0c5f","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:89fec425-525b-4ce8-a0b2-f4abdb0b270e","date":"2026-08-08T02:30:00Z","homeTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"awayTeam":{"slug":"juarez-ciudad-juarez-chihuahua","name":"FC Juárez","code":"JUA","domesticLeagueRanking":7},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:711d7a98-95f6-4bf2-b7b7-e940bf0b4590","date":"2026-08-12T02:00:00Z","playerGameScore":{"id":"So5Score:823de733-7ce1-4609-871a-a2b3994c7e11","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:711d7a98-95f6-4bf2-b7b7-e940bf0b4590","date":"2026-08-12T02:00:00Z","homeTeam":{"slug":"tigres-uanl-san-nicolas-de-los-garza","name":"CF Tigres de la Universidad Autónoma de Nuevo León","code":"TIG","domesticLeagueRanking":16},"awayTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:972558e2-85c0-4473-9cf4-316aa8c81d3c","date":"2026-08-17T02:30:00Z","playerGameScore":{"id":"So5Score:da0d2e58-4f4f-49f1-8154-473cd5494e2f","positionTyped":"Forward","projectedScore":0.0,"anyGame":{"id":"Game:972558e2-85c0-4473-9cf4-316aa8c81d3c","date":"2026-08-17T02:30:00Z","homeTeam":{"slug":"seattle-sounders-renton-washington","name":"Seattle Sounders FC","code":"SEA","domesticLeagueRanking":8},"awayTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
