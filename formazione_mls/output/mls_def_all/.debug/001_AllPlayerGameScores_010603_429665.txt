@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "jakob-glesnes", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 01:06:03 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785287163', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': '5f2v4u68HlW5601IDwxWvYGfqgF7JY8S9GCHJUHSjPbPIy_xqtaKXhP_qQ-rneVjl1vsXDVb9GURnEVvSIu_NQ', 'etag': 'W/"9c76bf5fa91b64b89552c45d264ac95a"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=f%2FczuQ2Qrm60R%2FGot1CNM7III4lZQCDqL2D5tAJgPxThsUuEG9kzRz4pfhLuzpgeWpuFTemD1PigQhLPQLOA2m4vmCXloFoOh9YNQ%2B1RBNJs5pjc2g%2B212080j3vwzPvf9bfyrPLzel4iFSlKYTwoDR85Yq5zsdehwdbrbUSvXhQTV%2BBwA%2F5lK5wYEgxnafDYTrB4ZH15nyso3Gauj8gHmGBEpHMcd12nGBJ8SxIruQ28JWtgo4Re8rWQfE7R104h%2BBSDWIPkC2JksBpUiGzSVcRvsRqY523KXaWRkUqzVEVeUN0fCHiN82szAxyIpwK--2ph8n6hSMa7%2BUMZF--sx3F5RkwMG8vMnYMbAbxRw%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 01:06:03 GMT; secure; httponly; samesite=none', 'x-request-id': '1b6f9efd-498d-9f50-bfa1-83120a96e04a', 'x-runtime': '0.059069', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 be8550c96b672892ca55377971b43846.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'SFO53-P6', 'x-amz-cf-id': 'R-SbYJ3eesw0o_gXaAJh8JLRajN7bZO-UwOTiOizTx9foFQC6QjfKw=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:0b00778b-3439-4e30-a2e3-5f7ef4c0cb7b","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Defender","anyGame":{"id":"Game:841ed66a-d3bc-455d-8212-e454585d0d80","date":"2026-07-26T02:30:00Z","statusTyped":"played","homeTeam":{"slug":"sj-earthquakes-santa-clara-california","name":"San Jose Earthquakes","code":"SJ","domesticLeagueRanking":3},"awayTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:7813b568-fa2d-476a-bdbd-9392d6ae4415","score":60.0,"scoreStatus":"FINAL","positionTyped":"Defender","anyGame":{"id":"Game:ec7ec49b-6f3a-4e3b-b4f4-aa449b9844bf","date":"2026-07-23T02:30:00Z","statusTyped":"played","homeTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"awayTeam":{"slug":"st-louis-city-st-louis-missouri","name":"St. Louis City SC","code":"STL","domesticLeagueRanking":7},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":1,"minsPlayed":90,"yellowCard":1,"footballPlayingStatusOdds":{"starterOddsBasisPoints":10000,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:e4d09ee4-372a-46c8-8480-c1bad72077c9","date":"2026-08-02T02:30:00Z","playerGameScore":{"id":"So5Score:948d0249-7dde-4895-aac7-3a6c6c14bd3d","positionTyped":"Defender","projectedScore":55.0,"anyGame":{"id":"Game:e4d09ee4-372a-46c8-8480-c1bad72077c9","date":"2026-08-02T02:30:00Z","homeTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"awayTeam":{"slug":"dallas-frisco-texas","name":"FC Dallas","code":"DAL","domesticLeagueRanking":6},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:596d4fba-4b95-4e45-a61f-2d56d8bb1501","date":"2026-08-16T00:30:00Z","playerGameScore":{"id":"So5Score:40bf1f8a-a4ca-4a5b-bbc8-e3a2e4fb4e8a","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:596d4fba-4b95-4e45-a61f-2d56d8bb1501","date":"2026-08-16T00:30:00Z","homeTeam":{"slug":"houston-dynamo-houston-texas","name":"Houston Dynamo FC","code":"HOU","domesticLeagueRanking":5},"awayTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:afa9ef49-43ca-4cc3-a4a7-0a2bef6b2d5c","date":"2026-08-20T02:30:00Z","playerGameScore":{"id":"So5Score:996021ed-df27-4772-8018-cd2183a86145","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:afa9ef49-43ca-4cc3-a4a7-0a2bef6b2d5c","date":"2026-08-20T02:30:00Z","homeTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"awayTeam":{"slug":"sj-earthquakes-santa-clara-california","name":"San Jose Earthquakes","code":"SJ","domesticLeagueRanking":3},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:1bb9d576-847a-4ee0-bc3a-7a7f6ae44872","date":"2026-08-22T23:30:00Z","playerGameScore":{"id":"So5Score:f634dfbe-0d53-4f62-ab82-5e135a8aacd6","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:1bb9d576-847a-4ee0-bc3a-7a7f6ae44872","date":"2026-08-22T23:30:00Z","homeTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"awayTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:2f1afca2-69b5-4390-a41e-64ea801da165","date":"2026-08-30T02:30:00Z","playerGameScore":{"id":"So5Score:6513b11d-0317-4170-8024-3ffc0f94e6cb","positionTyped":"Defender","projectedScore":0.0,"anyGame":{"id":"Game:2f1afca2-69b5-4390-a41e-64ea801da165","date":"2026-08-30T02:30:00Z","homeTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"awayTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
