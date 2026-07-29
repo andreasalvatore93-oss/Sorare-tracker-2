@@ -31,7 +31,61 @@ import os
 import glob
 import json
 import datetime
+import tempfile
 from collections import defaultdict
+
+# Cache su DISCO temporaneo (29/07 sera, fix reale di performance): ogni
+# predict e' un PROCESSO SEPARATO per giocatore (TARGET_SLUG), quindi la
+# cache in memoria sotto (_CACHE/_DEF_POSS_CACHE/_DEF_PEN_AREA_CACHE, "una
+# volta per processo") si azzera per ogni giocatore -- un job predict con
+# 15 giocatori dello stesso ruolo/lega rifà la scansione COMPLETA della
+# cartella cache (200+ file per le leghe piu' vecchie) 15 volte, invece di
+# 1. FWD è il piu' colpito (scansiona DUE cartelle invece di una: goals_
+# conceded via _build_series_for_league + poss_lost_ctrl via _build_def_
+# poss_lost_series), diventato il collo di bottiglia della run (verificato
+# su run reali: FWD resta l'unico ruolo non finito anche con lo sharding).
+# Il file vive in /tmp (ephemero per il runner GitHub Actions, MAI
+# committato) -- valido solo per la durata di QUESTO job/run, si azzera da
+# solo al prossimo run (nuovo runner = nuovo /tmp). Nessun rischio di dato
+# stantio tra run diverse, nessuna modifica ai VALORI calcolati.
+_DISK_CACHE_DIR = os.path.join(tempfile.gettempdir(), 'opponent_strength_cache')
+
+
+def _disk_cache_path(kind, league):
+    os.makedirs(_DISK_CACHE_DIR, exist_ok=True)
+    return os.path.join(_DISK_CACHE_DIR, f'{kind}_{league}.json')
+
+
+def _series_to_json(series):
+    """dict[team] -> [(datetime, float), ...]  =>  JSON-serializzabile."""
+    return {t: [[dt.isoformat(), v] for dt, v in vals] for t, vals in series.items()}
+
+
+def _series_from_json(data):
+    out = defaultdict(list)
+    for t, vals in data.items():
+        out[t] = [(datetime.datetime.fromisoformat(dt), v) for dt, v in vals]
+    return out
+
+
+def _load_disk_cache(kind, league):
+    path = _disk_cache_path(kind, league)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _save_disk_cache(kind, league, data):
+    path = _disk_cache_path(kind, league)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f)
+    except OSError:
+        pass
 
 N_GAMES_DEFAULT = 10
 # GK/DEF AGGIORNATI (29/07): retest post-retuning half_life/trend_intensity
@@ -91,6 +145,12 @@ def _build_series_for_league(league):
     if league in _CACHE:
         return _CACHE[league]
 
+    _disk = _load_disk_cache('series', league)
+    if _disk is not None:
+        result = (_series_from_json(_disk['conceded']), _series_from_json(_disk['scored']))
+        _CACHE[league] = result
+        return result
+
     seen = set()
     conceded = defaultdict(list)
     scored = defaultdict(list)
@@ -145,6 +205,8 @@ def _build_series_for_league(league):
 
     result = (conceded, scored)
     _CACHE[league] = result
+    _save_disk_cache('series', league, {'conceded': _series_to_json(conceded),
+                                         'scored': _series_to_json(scored)})
     return result
 
 
@@ -195,6 +257,11 @@ _DEF_POSS_CACHE = {}
 def _build_def_poss_lost_series(league):
     if league in _DEF_POSS_CACHE:
         return _DEF_POSS_CACHE[league]
+    _disk = _load_disk_cache('poss_lost', league)
+    if _disk is not None:
+        series = _series_from_json(_disk)
+        _DEF_POSS_CACHE[league] = series
+        return series
     per_team_date = defaultdict(list)
     cache_dir = f'formazione_{league}/output/{league}_def_all/.cache'
     for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
@@ -231,6 +298,7 @@ def _build_def_poss_lost_series(league):
     for t in series:
         series[t].sort(key=lambda x: x[0])
     _DEF_POSS_CACHE[league] = series
+    _save_disk_cache('poss_lost', league, _series_to_json(series))
     return series
 
 
@@ -267,6 +335,11 @@ def _build_def_pen_area_series(league):
     espongono di piu' il portiere)."""
     if league in _DEF_PEN_AREA_CACHE:
         return _DEF_PEN_AREA_CACHE[league]
+    _disk = _load_disk_cache('pen_area', league)
+    if _disk is not None:
+        series = _series_from_json(_disk)
+        _DEF_PEN_AREA_CACHE[league] = series
+        return series
     per_team_date = defaultdict(list)
     cache_dir = f'formazione_{league}/output/{league}_def_all/.cache'
     for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
@@ -303,6 +376,7 @@ def _build_def_pen_area_series(league):
     for t in series:
         series[t].sort(key=lambda x: x[0])
     _DEF_PEN_AREA_CACHE[league] = series
+    _save_disk_cache('pen_area', league, _series_to_json(series))
     return series
 
 
