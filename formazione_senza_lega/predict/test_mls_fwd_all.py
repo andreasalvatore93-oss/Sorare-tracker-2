@@ -1401,11 +1401,20 @@ def build_prediction(player_slug):
     p_source = None
     next_odds = ((next_node.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {})
     starter_odds = next_odds.get('starterOddsBasisPoints')
+    # Tasso di presenza STORICO: si calcola SEMPRE, non solo quando mancano le
+    # odds. Bug reale (29/07 notte): stava dentro il ramo else, ma piu' sotto
+    # il prior dinamico dello shrinkage (_media_ruolo_prior_dinamico) lo usa
+    # SEMPRE -- quindi ogni giocatore per cui Sorare AVEVA pubblicato le
+    # starter odds moriva in UnboundLocalError e produceva ERRORE_<slug>.txt
+    # invece della predizione, restando silenziosamente fuori dai consigli
+    # (192 file ERRORE_ su main quando e' stato trovato, ~38-62 per run).
+    # Il valore usato nel ramo else e' IDENTICO a prima: stessa espressione,
+    # solo spostata sopra l'if. Nessuna formula toccata.
+    presence_rate = len(usable) / total_considered if total_considered else 1.0
     if starter_odds is not None:
         p_gioca = starter_odds / 10000.0
         p_source = f"starterOddsBasisPoints ({starter_odds})"
     else:
-        presence_rate = len(usable) / total_considered if total_considered else 1.0
         p_gioca = presence_rate
         p_source = f"tasso di presenza storico ({len(usable)}/{total_considered})"
 
