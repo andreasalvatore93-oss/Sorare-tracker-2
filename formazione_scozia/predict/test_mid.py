@@ -1399,7 +1399,7 @@ def build_prediction(player_slug):
     # Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes
     # di DEF/FWD, mai avuto da MID). k=10 scelto con backtest walk-forward
     # reale (selection_quality, 113 giornate: lift 18.5-19.6% su k testati).
-    SHRINK_K_OUTLIER_MID = 7.0  # AGGIORNATO (29/07, esteso a tutte le leghe): retest post-retuning half_life/trend, minimo interno, MAE -0.045% (validato MLS/Korea)
+    SHRINK_K_OUTLIER_MID = 5.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~2500 punti di test conferma guadagno pulito su entrambi i segmenti (-1.38% tot, -1.74%/-1.29%) -- il vecchio motivo dello scarto ("guadagno solo su n>=8") non regge piu' con questo volume di dati, stesso valore ora su TUTTE le leghe incluso MLS/Korea
     MEDIA_RUOLO_MID_PRIOR = 53.94
     # Prior di ruolo DINAMICO (28/07, bug reale: riserve vere con P(gioca)
     # storico basso tirate dallo shrinkage verso la media di TUTTI i

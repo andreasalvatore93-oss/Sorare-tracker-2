@@ -125,7 +125,7 @@ TREND_INTENSITY = 0.0  # AGGIORNATO (29/07, esteso a tutte le leghe): backtest w
 # DEF nel pool esteso a 10 campionati (MLS, K League, Brasile, Croazia,
 # Portogallo, Austria, Scozia, Turchia, Olanda, Spagna), ricalibrata sessione
 # 27/07 con validate_outlier_shrinkage.py (variabile media_ruolo).
-SHRINK_K_OUTLIER_DEF = 18.0  # AGGIORNATO (29/07, esteso a tutte le leghe): retest post-retuning half_life/trend, minimo interno pulito, MAE -0.002% (validato MLS/Korea)
+SHRINK_K_OUTLIER_DEF = 15.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~2600 punti di test, minimo interno pulito su entrambi i segmenti (-2.23% tot, -2.49%/-2.16%), stesso valore ora su TUTTE le leghe incluso MLS/Korea
 MEDIA_RUOLO_DEF_PRIOR = 51.34
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.

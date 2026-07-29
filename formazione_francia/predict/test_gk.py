@@ -1478,7 +1478,7 @@ def build_prediction(player_slug):
     # di DEF/FWD, mai avuto da GK -- caso reale: Michael Collodi, 8 partite,
     # preferito a Takaoka per un fattore casa/trasferta enorme su 3-4 partite
     # per bucket). k=5 scelto con backtest walk-forward reale (selection_quality).
-    SHRINK_K_OUTLIER_GK = 5.0
+    SHRINK_K_OUTLIER_GK = 30.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~7500 punti di test conferma k=30 pulito su entrambi i segmenti n<8/n>=8 (-5.36%/-9.28%/-4.31%), il vecchio timore "overfitting al bordo griglia" non regge piu' con questo volume di dati -- stesso valore ora su TUTTE le leghe incluso MLS/Korea
     MEDIA_RUOLO_GK_PRIOR = 48.81
     # Prior di ruolo DINAMICO (28/07, propagato da formazione_mls: bug reale
     # trovato dall'utente, giocatori di riserva veri con P(gioca) storico
