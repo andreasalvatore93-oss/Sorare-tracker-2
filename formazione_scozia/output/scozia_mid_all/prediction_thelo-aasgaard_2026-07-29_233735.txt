@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:37:35.729051Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) thelo-aasgaard: 55 pt attesi (37-67)
+   SQUADRA: rangers-glasgow | AVVERSARIO: dundee-united-dundee
+======================================================================
+
+######################################################################
+# GIOCATORE: thelo-aasgaard
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: thelo-aasgaard (squadra: rangers-glasgow)
+Generato: 2026-07-29T23:37:35.728557Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: premiership-gb-sct (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-18 | RAN vs DUU | premiership-gb-sct | score=84.9 | peso=0.678
+  2025-10-26 | RAN vs KIL | premiership-gb-sct | score=40.6 | peso=0.697
+  2025-11-30 | RAN vs FAL | premiership-gb-sct | score=43.5 | peso=0.717
+  2025-12-27 | RAN vs MOT | premiership-gb-sct | score=73.2 | peso=0.737
+  2025-12-30 | RAN vs STM | premiership-gb-sct | score=75.8 | peso=0.758
+  2026-01-11 | ABE vs RAN | premiership-gb-sct | score=71.2 | peso=0.779
+  2026-01-25 | RAN vs DUN | premiership-gb-sct | score=45.8 | peso=0.801
+  2026-02-01 | HIB vs RAN | premiership-gb-sct | score=58.2 | peso=0.824
+  2026-02-04 | RAN vs KIL | premiership-gb-sct | score=40.2 | peso=0.847
+  2026-03-21 | RAN vs ABE | premiership-gb-sct | score=71.3 | peso=0.871
+  2026-04-04 | RAN vs DUU | premiership-gb-sct | score=67.5 | peso=0.895
+  2026-04-12 | FAL vs RAN | premiership-gb-sct | score=64.7 | peso=0.920
+  2026-04-26 | RAN vs MOT | premiership-gb-sct | score=55.9 | peso=0.946
+  2026-05-13 | RAN vs HIB | premiership-gb-sct | score=69.0 | peso=0.973
+  2026-05-16 | FAL vs RAN | premiership-gb-sct | score=61.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 61.57
+  di cui Punteggio decisivo (level_score) medio: 50.29 | Punteggio complessivo (granulari) medio: 11.27 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 52.01 (delta +1.72)
+  Efficacia offensiva condizionata: delta venue -0.74, delta avversario +1.04 | Passaggio condizionato: delta venue -0.61, delta avversario +0.49 | Gol subiti condizionato: delta venue -0.32, delta avversario +0.02 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.80
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.5 - 73.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.83 (differenza: +1.96)
+Media score in casa: 60.70 | Media score fuori casa: 63.88
+Fattore casa/trasferta applicato: 1.007 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.7
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.078
+Fattore falli (casa/trasferta, da dati reali): 1.021
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.990
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.016
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 0.993
+Fattore trend (media ultime 5: 63.7 vs media ultime 10: 60.5): 1.011
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T19:00
+Casa: Dundee United FC | Trasferta: Rangers FC
+Competizione: premiership-gb-sct
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.4 (range 37.4 - 67.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.58
+Punteggio REALE ottenuto in quella partita: 61.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.2 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.1    45.8    -12.3    23.0        SI
+   7        7      64.3    58.2     -6.1    23.3        SI
+   8        8      58.9    40.2    -18.7    21.7        SI
+   9        9      54.3    71.3    +17.0    22.6        SI
+  10       10      63.5    67.5     +4.0    22.0        SI
+  11       11      67.1    64.7     -2.4    21.0        SI
+  12       12      58.6    55.9     -2.7    20.0        SI
+  13       13      60.0    69.0     +9.0    19.2        SI
+  14       14      67.8    61.4     -6.4    18.7        SI
+
+MAE (errore assoluto medio): 8.74
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
