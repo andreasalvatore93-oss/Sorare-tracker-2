@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T23:26:15.407107Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) wessam-abou-ali: 56 pt attesi (35-77)
+   ORDINAMENTO: 60.38
+   SQUADRA: columbus-crew-columbus-ohio | AVVERSARIO: inter-miami
+======================================================================
+
+######################################################################
+# GIOCATORE: wessam-abou-ali
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: wessam-abou-ali (squadra: columbus-crew-columbus-ohio)
+Generato: 2026-07-29T23:26:15.406173Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | RBNY vs CLB | mlspa | score=38.5 | peso=0.801
+  2025-09-13 | ATL vs CLB | mlspa | score=67.7 | peso=0.824
+  2025-09-17 | NYC vs CLB | mlspa | score=82.6 | peso=0.847
+  2026-02-22 | POR vs CLB | mlspa | score=70.0 | peso=0.871
+  2026-03-01 | SKC vs CLB | mlspa | score=60.0 | peso=0.895
+  2026-03-08 | CLB vs CHI | mlspa | score=39.3 | peso=0.920
+  2026-03-14 | CLB vs NSH | mlspa | score=40.0 | peso=0.946
+  2026-03-21 | TOR vs CLB | mlspa | score=62.8 | peso=0.973
+  2026-04-04 | ATL vs CLB | mlspa | score=81.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 60.44
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=9): 58.04 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 55.11 | Punteggio complessivo (granulari) medio: 5.33 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.30 (delta -0.19) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.48
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.3 - 81.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.71 (differenza: +1.77)
+Media score in casa: 39.65 | Media score fuori casa: 66.20
+Fattore casa/trasferta applicato: 1.011 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.743
+Fattore falli (casa/trasferta, da dati reali): 0.991
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Inter Miami CF | Trasferta: Columbus Crew
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.1 (range 34.9 - 77.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 60.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.42
+Punteggio REALE ottenuto in quella partita: 81.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +24.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.6    40.0     -2.6    22.5        SI
+   7        7      63.3    62.8     -0.5    22.9        SI
+   8        8      69.2    81.8    +12.6    21.5        SI
+
+MAE (errore assoluto medio): 5.23
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:25:36.857833Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jarne-steuckers: 49 pt attesi (34-67)
+   ORDINAMENTO: 53.72
+   SQUADRA: genk-genk | AVVERSARIO: zulte-waregem-waregem
+======================================================================
+
+######################################################################
+# GIOCATORE: jarne-steuckers
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jarne-steuckers (squadra: genk-genk)
+Generato: 2026-07-29T23:25:36.857094Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-31 | GNK vs ZWA | jupiler-pro-league | score=77.5 | peso=0.758
+  2025-09-14 | AND vs GNK | jupiler-pro-league | score=59.2 | peso=0.779
+  2025-09-17 | GNK vs CHA | jupiler-pro-league | score=60.2 | peso=0.801
+  2025-09-21 | GNK vs USG | jupiler-pro-league | score=77.2 | peso=0.824
+  2025-10-05 | GNK vs DEN | jupiler-pro-league | score=87.2 | peso=0.847
+  2025-10-19 | CER vs GNK | jupiler-pro-league | score=50.3 | peso=0.871
+  2025-11-23 | GNK vs KVM | jupiler-pro-league | score=66.6 | peso=0.895
+  2025-12-07 | ANT vs GNK | jupiler-pro-league | score=48.6 | peso=0.920
+  2025-12-14 | GNK vs WES | jupiler-pro-league | score=42.1 | peso=0.946
+  2026-03-01 | GNK vs GNT | jupiler-pro-league | score=44.5 | peso=0.973
+  2026-05-31 | GNT vs GNK | jupiler-pro-league | score=52.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 59.73
+  di cui Punteggio decisivo (level_score) medio: 41.31 | Punteggio complessivo (granulari) medio: 18.41 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 10.43 (delta +0.22) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.20
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.5 - 77.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.30 (differenza: +2.90)
+Media score in casa: 65.04 | Media score fuori casa: 52.62
+Fattore casa/trasferta applicato: 0.986 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.7
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.837
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.992
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore trend (media ultime 5: 50.8 vs media ultime 10: 58.8): 0.959
+P(gioca): 29.73% (fonte: tasso di presenza storico (11/37))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T14:00
+Casa: SV Zulte-Waregem | Trasferta: KRC Genk
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.5 (range 34.2 - 67.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.58
+Punteggio REALE ottenuto in quella partita: 52.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      70.1    66.6     -3.5    18.3        SI
+   7        7      76.1    48.6    -27.5    16.8        NO
+   8        8      62.1    42.1    -20.0    18.3        NO
+   9        9      59.1    44.5    -14.6    20.2        SI
+  10       10      52.7    52.4     -0.3    20.7        SI
+
+MAE (errore assoluto medio): 13.17
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

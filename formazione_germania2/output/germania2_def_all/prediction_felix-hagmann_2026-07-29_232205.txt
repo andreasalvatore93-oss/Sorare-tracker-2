@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T23:22:05.123360Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) felix-hagmann: 40 pt attesi (34-55)
+   ORDINAMENTO: 42.98
+   SQUADRA: arminia-bielefeld-bielefeld | AVVERSARIO: karlsruher-sc-karlsruhe
+======================================================================
+
+######################################################################
+# GIOCATORE: felix-hagmann
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: felix-hagmann (squadra: arminia-bielefeld-bielefeld)
+Generato: 2026-07-29T23:22:05.122718Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | EBS vs DSC | 2-bundesliga | score=56.8 | peso=0.758
+  2025-09-12 | DSC vs FCM | 2-bundesliga | score=63.1 | peso=0.785
+  2025-09-19 | DSC vs SGF | 2-bundesliga | score=43.1 | peso=0.812
+  2025-09-28 | H96 vs DSC | 2-bundesliga | score=36.8 | peso=0.841
+  2025-10-05 | DSC vs S04 | 2-bundesliga | score=37.0 | peso=0.871
+  2025-12-19 | BSC vs DSC | 2-bundesliga | score=20.5 | peso=0.901
+  2026-04-25 | PRM vs DSC | 2-bundesliga | score=37.3 | peso=0.933
+  2026-05-02 | DSC vs BOC | 2-bundesliga | score=52.2 | peso=0.966
+  2026-05-08 | FCK vs DSC | 2-bundesliga | score=36.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 42.05
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 7.05 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.48, delta avversario -0.28 | Passaggio condizionato: delta venue +0.00, delta avversario -0.66 | Clean sheet/disimpegni condizionato: delta venue -0.65, delta avversario -0.18 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.01
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.2 - 56.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.68 (differenza: +4.33)
+Media score in casa: 48.86 | Media score fuori casa: 37.54
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.0
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.989
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.991
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.992
+Fattore gol subiti (goals_conceded, con cap): 0.993
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.991
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 26.47% (fonte: tasso di presenza storico (9/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T11:00
+Casa: Karlsruher SC | Trasferta: DSC Arminia Bielefeld
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 39.8 (range 34.0 - 54.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 43.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.89
+Punteggio REALE ottenuto in quella partita: 36.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.4    37.3    -16.1    16.9        SI
+   7        7      39.9    52.2    +12.3    15.6        SI
+   8        8      35.1    36.2     +1.2    15.2        SI
+
+MAE (errore assoluto medio): 9.85
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

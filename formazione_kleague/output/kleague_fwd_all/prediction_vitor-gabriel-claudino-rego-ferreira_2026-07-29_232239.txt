@@ -1,0 +1,87 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:22:39.883561Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) vitor-gabriel-claudino-rego-ferreira: 39 pt attesi (24-52)
+   ORDINAMENTO: 39.99
+   SQUADRA: bucheon-1995-bucheon | AVVERSARIO: gangwon-gangneung
+======================================================================
+
+######################################################################
+# GIOCATORE: vitor-gabriel-claudino-rego-ferreira
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: vitor-gabriel-claudino-rego-ferreira (squadra: bucheon-1995-bucheon)
+Generato: 2026-07-29T23:22:39.882791Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 16
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | GAN vs SAN | k-league-1 | score=32.7 | peso=0.847
+  2025-08-15 | JEJ vs GAN | k-league-1 | score=30.9 | peso=0.871
+  2026-04-25 | BUC vs SAN | k-league-1 | score=40.4 | peso=0.895
+  2026-05-02 | ANY vs BUC | k-league-1 | score=60.1 | peso=0.920
+  2026-07-04 | DJO vs BUC | k-league-1 | score=60.0 | peso=0.946
+  2026-07-11 | SAN vs BUC | k-league-1 | score=42.1 | peso=0.973
+  2026-07-22 | BUC vs ANY | k-league-1 | score=63.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 47.58
+  di cui Punteggio decisivo (level_score) medio: 46.11 | Punteggio complessivo (granulari) medio: 1.47 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 1.02 (delta -0.08) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 12.69
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.7 - 60.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.98 (differenza: +1.71)
+Media score in casa: 51.80 | Media score fuori casa: 54.07
+Fattore casa/trasferta applicato: 1.009 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.8
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.834
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.012
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 20.59% (fonte: tasso di presenza storico (7/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T10:30
+Casa: Gangwon FC | Trasferta: Bucheon FC 1995
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 39.3 (range 24.4 - 51.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.72
+Punteggio REALE ottenuto in quella partita: 63.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +18.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.5    63.2    +23.7    16.4        NO
+
+MAE (errore assoluto medio): 23.67
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
