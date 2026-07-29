@@ -63,6 +63,11 @@ import requests
 # prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
+# NUOVO (29/07, aggiustamento forza avversario -- vedi opponent_strength.py
+# alla root del repo): sys.path fino alla root per importare il modulo
+# condiviso (nessuna duplicazione della logica).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+import opponent_strength
 
 try:
     from curl_cffi import requests as curl_requests
@@ -1124,7 +1129,7 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
                              half_life=None, trend_intensity=None,
                              shrink_k=SHRINK_K_OUTLIER_DEF,
                              media_ruolo_prior=MEDIA_RUOLO_DEF_PRIOR,
-                             use_stadio_d=True, presence_rate=None):
+                             use_stadio_d=True, presence_rate=None, opponent_lambda_mult=1.0):
     """FUNZIONE CONDIVISA (27/07): calcola lo `score_atteso` DEF di PRODUZIONE, da
     usare SIA in build_prediction (predizione reale) SIA nel backtest walk-forward
     di calibrazione -- cosi' le due non possono piu' divergere (prima il backtest
@@ -1147,7 +1152,11 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     weights = exponential_weights(n, half_life)
 
     media_granulari_pesata = weighted_mean(granulari_values, weights)
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    # opponent_lambda_mult (29/07, vedi opponent_strength.py): gol subiti
+    # dal prossimo avversario nelle ultime 10 partite (dato storico reale),
+    # sostituisce il vecchio fattore_forza_avversario contaminato. Default
+    # 1.0 = nessun effetto (i chiamanti di backtest non lo passano).
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
@@ -1706,7 +1715,15 @@ def build_prediction(player_slug):
     # netto->livello VALIDATA. Il trend si applica SOLO al pezzo granulare
     # (il livello non ha un trend proprio, e' basato su un tasso di eventi
     # gia' pesato esponenzialmente). Rivalidato su 6 campionati: -1.38% MAE.
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    # opponent_lambda_mult (29/07, vedi opponent_strength.py): gol subiti dal
+    # prossimo avversario nelle ultime 10 partite (dato storico reale),
+    # sostituisce il vecchio fattore_forza_avversario (domesticLeagueRanking,
+    # scoperto contaminato -- non ancorato al tempo). Nessuna nuova query,
+    # ricostruito dalle cache GK+DEF+MID gia' su disco. Validato con backtest
+    # walk-forward: -0.27% MAE.
+    _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+        'mls', 'def', next_opponent_team_slug, datetime.datetime.utcnow())
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * _opp_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(

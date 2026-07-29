@@ -64,6 +64,11 @@ import requests
 # formazione_mls/predict/test_gk.py`, quindi l'import diretto funziona a
 # prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# NUOVO (29/07, aggiustamento forza avversario validato con backtest --
+# vedi opponent_strength.py alla root del repo): sys.path fino alla root
+# per importare il modulo condiviso (nessuna duplicazione della logica).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+import opponent_strength
 from live_prediction_log import log_live_prediction
 
 try:
@@ -1117,7 +1122,7 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
                             half_life=None, trend_intensity=None,
                             shrink_k=SHRINK_K_OUTLIER_GK,
                             media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR,
-                            presence_rate=None):
+                            presence_rate=None, opponent_lambda_mult=1.0):
     """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` GK di PRODUZIONE,
     da usare SIA in build_prediction (predizione reale) SIA nel backtest
     walk-forward di calibrazione (rigorous_backtest_prod_gk) -- cosi' le due
@@ -1129,7 +1134,14 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     p_gioca accettato per simmetria di firma con gli altri ruoli ma non
     usato (rimosso da score_atteso il 28/07, vedi commento in build_prediction).
     Nessun opponent_rankings/Stadio D: entrambi rimossi da score_atteso GK
-    (vedi commenti storici in build_prediction), quindi non servono qui."""
+    (vedi commenti storici in build_prediction), quindi non servono qui.
+
+    opponent_lambda_mult (29/07, vedi opponent_strength.py): moltiplicatore
+    su lambda_pos_dec basato sui gol FATTI dal prossimo avversario nelle sue
+    ultime 10 partite (dato storico reale, non il domesticLeagueRanking
+    contaminato del vecchio fattore_forza_avversario). Default 1.0 (nessun
+    effetto) -- i chiamanti di backtest/calibrazione non lo passano, quindi
+    restano invariati."""
     if half_life is None:
         half_life = HALF_LIFE_GAMES
     if trend_intensity is None:
@@ -1139,7 +1151,7 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     weights = exponential_weights(n, half_life)
 
     media_granulari_pesata = weighted_mean(granulari_values, weights)
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
@@ -1656,9 +1668,11 @@ def build_prediction(player_slug):
     # restano calcolate qui solo per il result dict diagnostico/di
     # visualizzazione -- lo stesso identico calcolo avviene dentro la funzione
     # condivisa per lo score_atteso vero e proprio.
+    _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+        'mls', 'gk', next_opponent_team_slug, datetime.datetime.utcnow())
     score_atteso = compute_score_atteso_gk(
         scores, is_home_flags, granulari_values, pos_decisive_values, neg_decisive_values,
-        target_is_home=next_is_home, presence_rate=presence_rate)
+        target_is_home=next_is_home, presence_rate=presence_rate, opponent_lambda_mult=_opp_lambda_mult)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo

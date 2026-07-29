@@ -59,6 +59,8 @@ import requests
 # funziona a prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+import opponent_strength
 
 try:
     from curl_cffi import requests as curl_requests
@@ -1551,7 +1553,12 @@ def build_prediction(player_slug):
     # per FWD) si applica ora al grezzo (level_score_atteso + granulare_atteso)
     # invece che a media_pesata direttamente -- stesso principio (tirare verso
     # il prior di ruolo su storico corto), applicato al nuovo pezzo pre-venue.
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    # opponent_lambda_mult (29/07, vedi opponent_strength.py): gol subiti dal
+    # prossimo avversario nelle ultime 10 partite (dato storico reale, non
+    # il domesticLeagueRanking contaminato). Validato: -0.58% MAE.
+    _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+        'mls', 'fwd', next_opponent_team_slug, datetime.datetime.utcnow())
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * _opp_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(

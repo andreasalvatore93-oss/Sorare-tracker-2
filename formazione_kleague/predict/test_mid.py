@@ -54,6 +54,8 @@ import requests
 # prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+import opponent_strength
 
 try:
     from curl_cffi import requests as curl_requests
@@ -1420,7 +1422,10 @@ def build_prediction(player_slug):
     # per venue sarebbe un doppio conteggio dello stesso segnale. Il
     # condizionamento venue/avversario sulle sotto-categorie granulari sotto
     # (offensivo/passaggio/gol_subiti) resta invariato.
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    # opponent_lambda_mult (29/07, vedi opponent_strength.py): gol subiti dal prossimo avversario nelle ultime 10 partite (dato storico reale, non il domesticLeagueRanking contaminato). Validato: -0.29% MAE.
+    _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+        'kleague', 'mid', next_opponent_team_slug, datetime.datetime.utcnow())
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * _opp_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
