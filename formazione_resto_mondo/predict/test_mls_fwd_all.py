@@ -430,6 +430,80 @@ def save_game_log_cache(cache, cache_file):
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
 
+# Paginazione del game log (29/07 notte, bug REALE trovato sui dump .debug/
+# committati). La query allPlayerGameScores ha una complessita' di ~28 per
+# partita richiesta piu' ~130 di base, contro un tetto di complessita' 500 per
+# le chiamate senza APIKEY: misurato, first=30 -> "complexity of 970, which
+# exceeds max complexity of 500", first=60 -> 1812. Con WINDOW_SIZE=30 il
+# "fetch ampio" sotto chiede 60 partite, quindi NON E' MAI RIUSCITO -- per
+# nessun giocatore, in nessuna run. Due conseguenze reali, entrambe osservate:
+#   - i giocatori con cache insufficiente restavano senza storico, e da qui i
+#     file ERRORE_<slug>.txt (UnboundLocalError su presence_rate) e la loro
+#     assenza dai consigli;
+#   - ogni tentativo bruciava il retry esterno da 10+20+40s, ~70s a giocatore
+#     di tempo puro buttato: era la voce di costo dominante della fase predict.
+# Qui la stessa finestra viene chiesta in pagine abbastanza piccole da stare
+# sotto il tetto. I dati raccolti sono gli stessi (stesse partite, stesso
+# ordine dall'API), solo divisi in piu' round-trip.
+PAGINA_GAME_LOG = 10  # 130 + 28*10 = ~410, con margine sotto il tetto
+                      # di 500 (il pageInfo aggiunto costa qualcosa a
+                      # sua volta: una pagina rifiutata costa molto piu'
+                      # di una pagina in piu')
+
+ALL_GAME_SCORES_QUERY_PAGINATO = ALL_GAME_SCORES_QUERY.replace(
+    'query AllPlayerGameScores($slug: String!, $first: Int!) {',
+    'query AllPlayerGameScores($slug: String!, $first: Int!, $after: String) {',
+).replace(
+    'allPlayerGameScores(first: $first) {',
+    'allPlayerGameScores(first: $first, after: $after) {\n      pageInfo { hasNextPage endCursor }',
+)
+
+
+def fetch_game_scores(slug, fetch_count):
+    """Come graphql_query(ALL_GAME_SCORES_QUERY, ...) ma chiede le partite in
+    pagine sotto il tetto di complessita'. Ritorna la STESSA struttura della
+    chiamata singola, cosi' il codice a valle non cambia di una riga.
+
+    Se la prima pagina fallisce (es. l'API non accettasse after/pageInfo) si
+    ripiega sulla chiamata singola di prima: il caso peggiore possibile e'
+    esattamente il comportamento di oggi, non uno peggiore."""
+    if fetch_count <= PAGINA_GAME_LOG:
+        return graphql_query(ALL_GAME_SCORES_QUERY,
+                             {"slug": slug, "first": fetch_count},
+                             operation_name="AllPlayerGameScores")
+    base, nodi, after, pagine = None, [], None, 0
+    while len(nodi) < fetch_count and pagine < 12:
+        quante = min(PAGINA_GAME_LOG, fetch_count - len(nodi))
+        data = graphql_query(ALL_GAME_SCORES_QUERY_PAGINATO,
+                             {"slug": slug, "first": quante, "after": after},
+                             operation_name="AllPlayerGameScores")
+        pagine += 1
+        player = ((data or {}).get('data') or {}).get('anyPlayer')
+        if not data or data.get('errors') or player is None:
+            if base is None:
+                log("[FASE 1/4] Paginazione non utilizzabile, ripiego sulla "
+                    f"chiamata singola da {fetch_count} partite.")
+                return graphql_query(ALL_GAME_SCORES_QUERY,
+                                     {"slug": slug, "first": fetch_count},
+                                     operation_name="AllPlayerGameScores")
+            break
+        if base is None:
+            base = data
+        conn = player.get('allPlayerGameScores') or {}
+        nuovi = conn.get('nodes') or []
+        nodi += nuovi
+        info = conn.get('pageInfo') or {}
+        after = info.get('endCursor')
+        if not nuovi or not info.get('hasNextPage') or not after:
+            break
+    if base is None:
+        return None
+    log(f"[FASE 1/4] Game log paginato: {len(nodi)} partite in {pagine} "
+        f"pagine da max {PAGINA_GAME_LOG} (richieste {fetch_count}).")
+    base['data']['anyPlayer']['allPlayerGameScores']['nodes'] = nodi
+    return base
+
+
 def fetch_game_log_incremental(slug, target_window_size):
     """Versione incrementale di fetch_game_log: usa una cache su disco per
     evitare di riscaricare partite storiche gia' note e concluse (FINAL).
@@ -449,8 +523,7 @@ def fetch_game_log_incremental(slug, target_window_size):
         log(f"[FASE 1/4] Cache insufficiente ({n_cached_final} < {target_window_size}), "
             f"fetch ampio: richiesta ultime {fetch_count} partite (fallback non-incrementale).")
 
-    data = graphql_query(ALL_GAME_SCORES_QUERY, {"slug": slug, "first": fetch_count},
-                          operation_name="AllPlayerGameScores")
+    data = fetch_game_scores(slug, fetch_count)
 
     if not data or data.get('errors') or 'data' not in data:
         log("[FASE 1/4] ATTENZIONE: query fallita o con errori — uso SOLO la cache esistente "
