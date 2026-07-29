@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "thomas-guilier", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:23:44 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785284624', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': '7sKalyy4ontwi9vLSmEGwt6iHrdUcbcZSrh0uz8J7WpYtenz78rw8WVtHn5IggJrdrLAQfEcJIMaopyv5Qw1sw', 'etag': 'W/"c6aff3c39d1e176f5571f54525eb69b4"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=c1DGFCOlPbfuVu2I6wK%2BVeBfFhZFCNAh%2FurL5cgfjieKVADa7u4e1p1HV6k6lqN%2BYqLLarLw2D51EDqNaHIIv6YcjljhcnnsQT6OR45g%2FnMRFJIu3KTuKhSYIRsSL0KOoC9XndgXtFiYIbsRRxeORswAnY%2BVmyjBMM0YtU6OG0b8ovKjU32i8q5YUYgKoQZV171fnDoopXOvD6%2BNZqzEF1mh7O3%2BHJq34MTubOKxbEqkKKIXTCNTJw3ciBmbUVSzWnfUz25TYbbZpsNjiQASj1%2FHpYroEcqX5QexQSKJkE0SsJsBXN9UzkouP%2Fc9GRwr--UIVW0yyuJXflSDWe--kjN30qnlTKgX2tmKS2u6Aw%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:23:44 GMT; secure; httponly; samesite=none', 'x-request-id': 'e73fc033-4d69-4e4b-b768-a9642d8cc6c5', 'x-runtime': '0.046663', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 d7756c0a60531bbefc36600bd71fbcb0.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'IAD61-P13', 'x-amz-cf-id': 'B6iJeo4J6UfPhhLoiWR9jENGMe9D0u4NQsrtz2GEkTASMKOGALPBOg=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:f6dd66fd-d3a7-4c41-95a9-7be6f2068c03","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Goalkeeper","anyGame":{"id":"Game:a9938b4b-7a2e-47dc-947f-3e2e4b65492a","date":"2026-07-25T23:30:00Z","statusTyped":"played","homeTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"awayTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:8ea7d312-f8ae-4e33-9495-d5bcadb25f77","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Goalkeeper","anyGame":{"id":"Game:26491ab9-7ca4-49aa-80d6-86396d263280","date":"2026-07-23T00:30:00Z","statusTyped":"played","homeTeam":{"slug":"nashville-sc","name":"Nashville SC","code":"NSH","domesticLeagueRanking":1},"awayTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:6c12d295-4a07-442b-9ce7-890c780e24d8","date":"2026-08-01T23:30:00Z","playerGameScore":{"id":"So5Score:5f9c1f30-e054-4e6e-8148-8045c90ec7d1","positionTyped":"Goalkeeper","projectedScore":45.0,"anyGame":{"id":"Game:6c12d295-4a07-442b-9ce7-890c780e24d8","date":"2026-08-01T23:30:00Z","homeTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"awayTeam":{"slug":"new-england-foxborough-massachusetts","name":"New England Revolution","code":"NE","domesticLeagueRanking":3},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:8aff1b5d-c05f-4998-bbd8-14560b33ad2e","date":"2026-08-15T23:30:00Z","playerGameScore":{"id":"So5Score:c476057a-3a2f-4586-8140-1ad42e29ee23","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:8aff1b5d-c05f-4998-bbd8-14560b33ad2e","date":"2026-08-15T23:30:00Z","homeTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"awayTeam":{"slug":"dc-united-washington-district-of-columbia","name":"DC United","code":"DC","domesticLeagueRanking":9},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:4097060a-c054-4098-ae9e-3a01fee52790","date":"2026-08-19T23:30:00Z","playerGameScore":{"id":"So5Score:4825c1d4-4e17-4efb-8ac6-4f0ae693afff","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:4097060a-c054-4098-ae9e-3a01fee52790","date":"2026-08-19T23:30:00Z","homeTeam":{"slug":"columbus-crew-columbus-ohio","name":"Columbus Crew","code":"CLB","domesticLeagueRanking":11},"awayTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:1bb9d576-847a-4ee0-bc3a-7a7f6ae44872","date":"2026-08-22T23:30:00Z","playerGameScore":{"id":"So5Score:9777008d-a5af-42bd-9d01-6cf763665bf1","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:1bb9d576-847a-4ee0-bc3a-7a7f6ae44872","date":"2026-08-22T23:30:00Z","homeTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"awayTeam":{"slug":"la-galaxy-los-angeles-california","name":"LA Galaxy","code":"LA","domesticLeagueRanking":11},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:9cd0650f-be14-45f5-bcfc-b97cb93eb75e","date":"2026-08-29T23:30:00Z","playerGameScore":{"id":"So5Score:431d6982-fc63-4b7b-8c3a-66bb3534977d","positionTyped":"Goalkeeper","projectedScore":0.0,"anyGame":{"id":"Game:9cd0650f-be14-45f5-bcfc-b97cb93eb75e","date":"2026-08-29T23:30:00Z","homeTeam":{"slug":"inter-miami","name":"Inter Miami CF","code":"MIA","domesticLeagueRanking":2},"awayTeam":{"slug":"montreal-impact-montreal-quebec","name":"CF Montreal","code":"MTL","domesticLeagueRanking":13},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
