@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T22:55:12.571158Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) ryan-raposo: 37 pt attesi (26-45)
+   SQUADRA: los-angeles-fc-los-angeles-california | AVVERSARIO: vancouver-whitecaps-vancouver-british-columbia
+======================================================================
+
+######################################################################
+# GIOCATORE: ryan-raposo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ryan-raposo (squadra: los-angeles-fc-los-angeles-california)
+Generato: 2026-07-29T22:55:12.569981Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-15 | LAFC vs STL | mlspa | score=45.9 | peso=0.946
+  2026-05-03 | SD vs LAFC | mlspa | score=48.4 | peso=0.973
+  2026-05-14 | STL vs LAFC | mlspa | score=29.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 41.15
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 6.15 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 35.00 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue -0.56, delta avversario +0.06 | Passaggio condizionato: delta venue -0.28, delta avversario +0.62 | Gol subiti condizionato: delta venue -0.28, delta avversario -0.01 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 8.40
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.6 - 48.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 45.90 | Media score fuori casa: 39.00
+Fattore casa/trasferta applicato: 0.994 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.736
+Fattore falli (casa/trasferta, da dati reali): 1.009
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 0.991
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 9.09% (fonte: tasso di presenza storico (3/33))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Vancouver Whitecaps FC | Trasferta: Los Angeles FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 37.4 (range 25.9 - 44.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.17
+Punteggio REALE ottenuto in quella partita: 29.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -17.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

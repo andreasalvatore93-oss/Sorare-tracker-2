@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T22:50:54.187995Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) marco-tulio-oliveira-lemos: 53 pt attesi (39-69)
+   ORDINAMENTO: 55.63
+   SQUADRA: kyoto-sanga-kyoto-kyoto | AVVERSARIO: v-varen-nagasaki-isahaya
+======================================================================
+
+######################################################################
+# GIOCATORE: marco-tulio-oliveira-lemos
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marco-tulio-oliveira-lemos (squadra: kyoto-sanga-kyoto-kyoto)
+Generato: 2026-07-29T22:50:54.187414Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | GRA vs SAN | j1-league | score=44.9 | peso=0.624
+  2025-10-19 | BEL vs SAN | j1-league | score=40.4 | peso=0.642
+  2025-10-25 | SAN vs ANT | j1-league | score=70.6 | peso=0.660
+  2025-11-09 | SAN vs FMA | j1-league | score=45.4 | peso=0.678
+  2025-11-30 | YFC vs SAN | j1-league | score=63.2 | peso=0.697
+  2025-12-06 | SAN vs VIS | j1-league | score=81.3 | peso=0.717
+  2026-02-06 | SAN vs VIS | j1-100-year-vision-league | score=68.7 | peso=0.737
+  2026-02-14 | SSP vs SAN | j1-100-year-vision-league | score=39.0 | peso=0.758
+  2026-02-22 | SAN vs AVI | j1-100-year-vision-league | score=68.9 | peso=0.779
+  2026-02-27 | SFR vs SAN | j1-100-year-vision-league | score=64.6 | peso=0.801
+  2026-03-08 | FAG vs SAN | j1-100-year-vision-league | score=42.4 | peso=0.824
+  2026-03-14 | SAN vs CER | j1-100-year-vision-league | score=60.3 | peso=0.847
+  2026-03-18 | VVN vs SAN | j1-100-year-vision-league | score=41.0 | peso=0.871
+  2026-03-22 | SAN vs GRA | j1-100-year-vision-league | score=69.2 | peso=0.895
+  2026-04-04 | GAM vs SAN | j1-100-year-vision-league | score=35.9 | peso=0.920
+  2026-04-11 | SAN vs FAG | j1-100-year-vision-league | score=40.1 | peso=0.946
+  2026-04-18 | CER vs SAN | j1-100-year-vision-league | score=42.2 | peso=0.973
+  2026-04-29 | SAN vs GAM | j1-100-year-vision-league | score=35.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 52.22
+  di cui Punteggio decisivo (level_score) medio: 46.17 | Punteggio complessivo (granulari) medio: 6.05 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.75 (delta -0.37) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.47
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.0 - 68.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.93 (differenza: +1.53)
+Media score in casa: 59.99 | Media score fuori casa: 45.96
+Fattore casa/trasferta applicato: 0.985 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.1
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.102
+Fattore falli (casa/trasferta, da dati reali): 1.008
+Fattore duelli (casa/trasferta, da dati reali): 1.019
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.986
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.989
+Fattore trend (media ultime 5: 44.6 vs media ultime 10: 50.0): 0.967
+P(gioca): 52.94% (fonte: tasso di presenza storico (18/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T10:00
+Casa: V-Varen Nagasaki | Trasferta: Kyoto Sanga FC
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.7 (range 39.4 - 69.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.48
+Punteggio REALE ottenuto in quella partita: 35.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.2    68.7    +24.5    21.3        NO
+   7        7      58.9    39.0    -19.9    20.3        SI
+   8        8      63.8    68.9     +5.1    21.3        SI
+   9        9      50.2    64.6    +14.4    20.7        SI
+  10       10      57.4    42.4    -15.0    19.7        SI
+  11       11      48.2    60.3    +12.1    20.0        SI
+  12       12      59.5    41.0    -18.5    19.0        SI
+  13       13      49.5    69.2    +19.7    19.3        NO
+  14       14      51.6    35.9    -15.7    19.2        SI
+  15       15      54.4    40.1    -14.3    20.1        SI
+  16       16      44.0    42.2     -1.8    20.2        SI
+  17       17      51.3    35.4    -15.9    19.9        SI
+
+MAE (errore assoluto medio): 14.73
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 83.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T22:58:25.812010Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jin-ho-kim: 39 pt attesi (21-56)
+   ORDINAMENTO: 39.43
+   SQUADRA: gwangju-gwangju | AVVERSARIO: daejeon-citizen-daejeon
+======================================================================
+
+######################################################################
+# GIOCATORE: jin-ho-kim
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jin-ho-kim (squadra: gwangju-gwangju)
+Generato: 2026-07-29T22:58:25.811221Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-07 | GWA vs INC | k-league-1 | score=42.3 | peso=0.785
+  2026-03-14 | GWA vs JMO | k-league-1 | score=35.6 | peso=0.812
+  2026-03-17 | SAN vs GWA | k-league-1 | score=77.4 | peso=0.841
+  2026-03-22 | SEO vs GWA | k-league-1 | score=33.8 | peso=0.871
+  2026-04-04 | GAN vs GWA | k-league-1 | score=52.3 | peso=0.901
+  2026-04-11 | GWA vs BUC | k-league-1 | score=56.1 | peso=0.933
+  2026-04-19 | ULS vs GWA | k-league-1 | score=21.4 | peso=0.966
+  2026-05-05 | JMO vs GWA | k-league-1 | score=0.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 38.93
+  di cui Punteggio decisivo (level_score) medio: 35.14 | Punteggio complessivo (granulari) medio: 3.79 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -1.46, delta avversario +0.15 | Passaggio condizionato: delta venue -0.26, delta avversario +0.06 | Clean sheet/disimpegni condizionato: delta venue -0.49, delta avversario +0.23 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 22.30
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 21.4 - 56.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.05 (differenza: +10.25)
+Media score in casa: 44.65 | Media score fuori casa: 36.98
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.9
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.142
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 0.987
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.992
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 23.53% (fonte: tasso di presenza storico (8/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Daejeon Citizen FC | Trasferta: Gwangju FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 39.0 (range 21.5 - 56.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 39.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.30
+Punteggio REALE ottenuto in quella partita: 0.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -45.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.9    21.4    -26.6    17.7        NO
+   7        7      40.4     0.0    -40.4    20.4        NO
+
+MAE (errore assoluto medio): 33.48
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,114 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T22:51:05.626586Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) martin-delavalee: 46 pt attesi (24-73)
+   SQUADRA: sporting-charleroi-charleroi | AVVERSARIO: oh-leuven-heverlee
+======================================================================
+
+######################################################################
+# GIOCATORE: martin-delavalee
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: martin-delavalee (squadra: sporting-charleroi-charleroi)
+Generato: 2026-07-29T22:51:05.626137Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-03 | CHA vs STV | jupiler-pro-league | score=43.6 | peso=0.111
+  2025-08-10 | LAL vs CHA | jupiler-pro-league | score=52.7 | peso=0.125
+  2025-08-17 | CHA vs ANT | jupiler-pro-league | score=25.9 | peso=0.140
+  2025-08-30 | CHA vs DEN | jupiler-pro-league | score=38.2 | peso=0.157
+  2025-09-14 | CER vs CHA | jupiler-pro-league | score=20.6 | peso=0.177
+  2025-09-17 | GNK vs CHA | jupiler-pro-league | score=69.7 | peso=0.198
+  2025-09-20 | CHA vs ZWA | jupiler-pro-league | score=41.7 | peso=0.223
+  2025-09-28 | CHA vs KVM | jupiler-pro-league | score=32.6 | peso=0.250
+  2025-10-03 | GNT vs CHA | jupiler-pro-league | score=28.0 | peso=0.281
+  2025-10-18 | USG vs CHA | jupiler-pro-league | score=20.7 | peso=0.315
+  2025-10-24 | CHA vs AND | jupiler-pro-league | score=65.7 | peso=0.354
+  2025-10-31 | STA vs CHA | jupiler-pro-league | score=8.4 | peso=0.397
+  2025-12-19 | CHA vs GNK | jupiler-pro-league | score=20.4 | peso=0.445
+  2025-12-26 | AND vs CHA | jupiler-pro-league | score=39.7 | peso=0.500
+  2026-01-18 | CHA vs STA | jupiler-pro-league | score=71.7 | peso=0.561
+  2026-01-25 | ANT vs CHA | jupiler-pro-league | score=73.0 | peso=0.630
+  2026-01-31 | STV vs CHA | jupiler-pro-league | score=67.0 | peso=0.707
+  2026-02-07 | CHA vs CER | jupiler-pro-league | score=32.7 | peso=0.794
+  2026-02-14 | CHA vs GNT | jupiler-pro-league | score=39.3 | peso=0.891
+  2026-02-22 | WES vs CHA | jupiler-pro-league | score=31.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 42.68
+  di cui Punteggio decisivo (level_score) medio: 40.04 | Punteggio complessivo (granulari) medio: 2.64 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.79 (delta -0.24 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -1.31, delta avversario +2.15 | Possesso condizionato per venue: delta +0.77 | Goalkeeping condizionato per venue: delta +1.02 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 19.31
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 20.7 - 69.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.76 (differenza: +2.56)
+Media score in casa: 41.18 | Media score fuori casa: 41.17
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.3
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.229
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.013
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.016
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.009
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.997
+Tasso storico clean sheet (porta inviolata nei primi 60'): 25.0% (bonus atteso incorporato nella media pesata: ~6.2pt)
+Fattore trend (media ultime 5: 48.8 vs media ultime 10: 45.0): 1.059
+P(gioca): 51.28% (fonte: tasso di presenza storico (20/39))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T14:00
+Casa: Royal Charleroi S.C. | Trasferta: Oud-Heverlee Leuven
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.1 (range 24.1 - 73.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.16
+Punteggio REALE ottenuto in quella partita: 31.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      26.6    41.7    +15.1    24.8        SI
+   7        7      34.9    32.6     -2.3    22.3        SI
+   8        8      40.4    28.0    -12.4    20.8        SI
+   9        9      32.7    20.7    -12.0    20.1        SI
+  10       10      32.4    65.7    +33.3    20.5        NO
+  11       11      31.9     8.4    -23.5    24.2        SI
+  12       12      37.5    20.4    -17.1    27.3        SI
+  13       13      25.5    39.7    +14.2    26.4        SI
+  14       14      29.0    71.7    +42.7    24.7        NO
+  15       15      41.3    73.0    +31.7    29.1        NO
+  16       16      39.3    67.0    +27.7    31.4        SI
+  17       17      48.5    32.7    -15.8    31.3        SI
+  18       18      50.5    39.3    -11.2    30.0        SI
+  19       19      51.0    31.9    -19.1    28.2        SI
+
+MAE (errore assoluto medio): 19.88
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 78.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T22:50:55.270639Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) thiago-santos-santana: 46 pt attesi (22-66)
+   ORDINAMENTO: 47.86
+   SQUADRA: v-varen-nagasaki-isahaya | AVVERSARIO: kyoto-sanga-kyoto-kyoto
+======================================================================
+
+######################################################################
+# GIOCATORE: thiago-santos-santana
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: thiago-santos-santana (squadra: v-varen-nagasaki-isahaya)
+Generato: 2026-07-29T22:50:55.270033Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-06 | RED vs FRO | j1-league | score=64.5 | peso=0.717
+  2026-02-06 | VVN vs SFR | j1-100-year-vision-league | score=34.2 | peso=0.737
+  2026-02-21 | GRA vs VVN | j1-100-year-vision-league | score=65.9 | peso=0.758
+  2026-02-28 | VVN vs CER | j1-100-year-vision-league | score=33.2 | peso=0.779
+  2026-03-08 | GAM vs VVN | j1-100-year-vision-league | score=33.6 | peso=0.801
+  2026-03-15 | VVN vs AVI | j1-100-year-vision-league | score=67.9 | peso=0.824
+  2026-04-18 | SFR vs VVN | j1-100-year-vision-league | score=25.1 | peso=0.847
+  2026-04-25 | VVN vs GAM | j1-100-year-vision-league | score=39.2 | peso=0.871
+  2026-04-29 | SSP vs VVN | j1-100-year-vision-league | score=69.1 | peso=0.895
+  2026-05-03 | VVN vs GRA | j1-100-year-vision-league | score=66.3 | peso=0.920
+  2026-05-06 | VVN vs FAG | j1-100-year-vision-league | score=66.2 | peso=0.946
+  2026-05-17 | VVN vs VIS | j1-100-year-vision-league | score=22.4 | peso=0.973
+  2026-05-23 | SAN vs VVN | j1-100-year-vision-league | score=20.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.33
+  di cui Punteggio decisivo (level_score) medio: 46.43 | Punteggio complessivo (granulari) medio: -0.10 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.50 (delta -0.29) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.40
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 22.4 - 66.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.09 (differenza: +1.30)
+Media score in casa: 47.06 | Media score fuori casa: 42.74
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.8
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.109
+Fattore falli (casa/trasferta, da dati reali): 1.015
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.990
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 48.8 vs media ultime 10: 44.3): 1.030
+P(gioca): 38.24% (fonte: tasso di presenza storico (13/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T10:00
+Casa: V-Varen Nagasaki | Trasferta: Kyoto Sanga FC
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.8 (range 21.9 - 65.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.95
+Punteggio REALE ottenuto in quella partita: 20.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -28.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.5    25.1    -23.4    22.8        NO
+   7        7      46.7    39.2     -7.5    24.4        SI
+   8        8      47.6    69.1    +21.5    22.9        SI
+   9        9      44.6    66.3    +21.7    24.2        SI
+  10       10      53.6    66.2    +12.6    24.1        SI
+  11       11      46.0    22.4    -23.6    23.9        SI
+  12       12      55.8    20.0    -35.8    25.7        NO
+
+MAE (errore assoluto medio): 20.86
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

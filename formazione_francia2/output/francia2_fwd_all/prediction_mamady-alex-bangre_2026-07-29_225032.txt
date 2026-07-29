@@ -1,0 +1,89 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T22:50:32.343530Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) mamady-alex-bangre: 42 pt attesi (39-46)
+   ORDINAMENTO: 42.96
+   SQUADRA: grenoble-foot-38-grenoble | AVVERSARIO: dunkerque-dunkerque
+======================================================================
+
+######################################################################
+# GIOCATORE: mamady-alex-bangre
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mamady-alex-bangre (squadra: grenoble-foot-38-grenoble)
+Generato: 2026-07-29T22:50:32.342912Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-22 | CLE vs GRE | ligue-2-fr | score=47.6 | peso=0.824
+  2025-09-26 | GRE vs SCB | ligue-2-fr | score=39.1 | peso=0.847
+  2025-10-17 | GRE vs PAU | ligue-2-fr | score=41.8 | peso=0.871
+  2025-10-28 | GRE vs EAG | ligue-2-fr | score=42.2 | peso=0.895
+  2025-12-13 | GRE vs MON | ligue-2-fr | score=39.9 | peso=0.920
+  2026-01-17 | GRE vs RED | ligue-2-fr | score=43.6 | peso=0.946
+  2026-02-20 | NAN vs GRE | ligue-2-fr | score=47.5 | peso=0.973
+  2026-02-27 | GRE vs BOU | ligue-2-fr | score=41.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 42.96
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 7.96 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.85 (delta +0.46) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 2.92
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.9 - 47.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 2.38 (differenza: +0.54)
+Media score in casa: 41.42 | Media score fuori casa: 47.55
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.4
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 0.953
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.009
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.016
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 23.53% (fonte: tasso di presenza storico (8/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:45
+Casa: US du Littoral de Dunkerque | Trasferta: Grenoble Foot 38
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.8 (range 38.8 - 46.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.13
+Punteggio REALE ottenuto in quella partita: 41.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.5    47.5     -1.0     3.8        SI
+   7        7      48.2    41.9     -6.3     4.4        NO
+
+MAE (errore assoluto medio): 3.67
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

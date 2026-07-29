@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T22:55:03.825737Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) leo-sauer: 53 pt attesi (37-73)
+   ORDINAMENTO: 56.44
+   SQUADRA: feyenoord-rotterdam | AVVERSARIO: sparta-rotterdam-rotterdam
+======================================================================
+
+######################################################################
+# GIOCATORE: leo-sauer
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: leo-sauer (squadra: feyenoord-rotterdam)
+Generato: 2026-07-29T22:55:03.825083Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | EXC vs FEY | eredivisie | score=63.0 | peso=0.678
+  2025-09-13 | FEY vs HEE | eredivisie | score=37.2 | peso=0.697
+  2025-09-17 | FEY vs FOR | eredivisie | score=54.7 | peso=0.717
+  2025-09-28 | GRO vs FEY | eredivisie | score=36.4 | peso=0.737
+  2025-10-05 | FEY vs UTR | eredivisie | score=55.0 | peso=0.758
+  2025-10-19 | HER vs FEY | eredivisie | score=83.2 | peso=0.779
+  2025-10-26 | FEY vs PSV | eredivisie | score=39.9 | peso=0.801
+  2025-11-01 | FEY vs VOL | eredivisie | score=50.3 | peso=0.824
+  2025-11-23 | FEY vs NEC | eredivisie | score=74.3 | peso=0.847
+  2025-12-14 | AJA vs FEY | eredivisie | score=30.4 | peso=0.871
+  2025-12-21 | FEY vs TWE | eredivisie | score=39.9 | peso=0.895
+  2026-01-11 | HEE vs FEY | eredivisie | score=67.6 | peso=0.920
+  2026-01-18 | FEY vs SPA | eredivisie | score=41.4 | peso=0.946
+  2026-01-25 | FEY vs HER | eredivisie | score=73.1 | peso=0.973
+  2026-02-01 | PSV vs FEY | eredivisie | score=38.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 52.32
+  di cui Punteggio decisivo (level_score) medio: 43.43 | Punteggio complessivo (granulari) medio: 8.89 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.99 (delta -0.59) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.2 - 73.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.73 (differenza: +2.30)
+Media score in casa: 51.76 | Media score fuori casa: 53.23
+Fattore casa/trasferta applicato: 1.010 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.044
+Fattore falli (casa/trasferta, da dati reali): 1.011
+Fattore duelli (casa/trasferta, da dati reali): 0.981
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.992
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore trend (media ultime 5: 52.2 vs media ultime 10: 53.9): 0.990
+P(gioca): 44.12% (fonte: tasso di presenza storico (15/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T10:15
+Casa: Sparta Rotterdam | Trasferta: Feyenoord Rotterdam
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.5 (range 37.4 - 73.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.50
+Punteggio REALE ottenuto in quella partita: 38.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      36.1    39.9     +3.8    22.6        SI
+   7        7      63.8    50.3    -13.5    22.2        SI
+   8        8      38.9    74.3    +35.4    20.6        NO
+   9        9      47.2    30.4    -16.8    21.8        SI
+  10       10      44.7    39.9     -4.8    23.3        SI
+  11       11      48.7    67.6    +18.9    22.7        SI
+  12       12      55.4    41.4    -14.0    22.6        SI
+  13       13      67.8    73.1     +5.3    22.0        SI
+  14       14      37.0    38.8     +1.8    22.7        SI
+
+MAE (errore assoluto medio): 12.69
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 88.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

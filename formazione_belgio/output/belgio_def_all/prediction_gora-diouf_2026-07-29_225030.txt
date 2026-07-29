@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T22:50:30.715469Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) gora-diouf: 43 pt attesi (33-63)
+   ORDINAMENTO: 51.75
+   SQUADRA: mechelen-mechelen-malines | AVVERSARIO: gent-gent
+======================================================================
+
+######################################################################
+# GIOCATORE: gora-diouf
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gora-diouf (squadra: mechelen-mechelen-malines)
+Generato: 2026-07-29T22:50:30.714584Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | ANT vs KVM | jupiler-pro-league | score=69.3 | peso=0.785
+  2025-09-12 | STA vs KVM | jupiler-pro-league | score=48.4 | peso=0.812
+  2025-09-21 | KVM vs CER | jupiler-pro-league | score=74.7 | peso=0.841
+  2025-09-28 | CHA vs KVM | jupiler-pro-league | score=90.3 | peso=0.871
+  2025-10-04 | KVM vs STV | jupiler-pro-league | score=0.0 | peso=0.901
+  2025-11-01 | AND vs KVM | jupiler-pro-league | score=56.3 | peso=0.933
+  2025-12-21 | STV vs KVM | jupiler-pro-league | score=55.8 | peso=0.966
+  2025-12-27 | KVM vs DEN | jupiler-pro-league | score=45.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 54.40
+  di cui Punteggio decisivo (level_score) medio: 37.02 | Punteggio complessivo (granulari) medio: 17.38 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.04, delta avversario -1.10 | Passaggio condizionato: delta venue -0.43, delta avversario -0.13 | Clean sheet/disimpegni condizionato: delta venue -0.47, delta avversario -1.03 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 24.96
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 45.1 - 74.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.45 (differenza: +14.52)
+Media score in casa: 39.96 | Media score fuori casa: 64.01
+Fattore casa/trasferta applicato: 1.012 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.4
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.918
+Fattore falli (casa/trasferta, da dati reali): 1.019
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.995
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 20.51% (fonte: tasso di presenza storico (8/39))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T11:30
+Casa: KAA Gent | Trasferta: YR KV Mechelen
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.7 (range 33.5 - 63.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 51.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.91
+Punteggio REALE ottenuto in quella partita: 45.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.5    55.8     +3.4    34.8        SI
+   7        7      74.8    45.1    -29.7    31.9        SI
+
+MAE (errore assoluto medio): 16.51
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
