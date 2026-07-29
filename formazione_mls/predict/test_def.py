@@ -111,7 +111,7 @@ def load_player_slugs():
 PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
-HALF_LIFE_GAMES = 9.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionati, granulari ritestati con i veri array -- vincitore hl=9.0/range=1.2/opp_sens=29.0/trend_int=0.7 SENZA granulari, composite score 15.78 vs 15.80 del valore precedente (hl=12.0) -- scarto piccolo ma applicato su richiesta esplicita dellutente.
+HALF_LIFE_GAMES = 20.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_mult/Stadio D/goals_conceded cap, backtest walk-forward su TUTTE le 28 leghe (551 giocatori) -- ginocchio rendimento decrescente a 20 (MAE -0.55% circa vs 9.0), grid esteso fino a 150 senza vero minimo interno (monotono, convergenza asintotica verso nessun decadimento).
 RANGE_MULTIPLIER = 1.2  # invariato
 OPPONENT_SENSITIVITY = 29.0  # invariato
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto) -- non piu' applicato in produzione per DEF (granulari rimossi da score_atteso, vedi sotto), resta per il grid search/diagnostica

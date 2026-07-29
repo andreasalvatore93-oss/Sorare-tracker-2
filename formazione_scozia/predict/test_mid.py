@@ -95,7 +95,7 @@ def load_player_slugs():
 PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
-HALF_LIFE_GAMES = 12.0  # FISSATO (25/07): combinazione vincente aggregata cross-player (14 giocatori, MAE medio 18.13, copertura media 68.93%)
+HALF_LIFE_GAMES = 25.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_mult/Stadio D/goals_conceded cap, backtest walk-forward su TUTTE le 28 leghe (499 giocatori) -- ginocchio rendimento decrescente a 25 (MAE -0.31% circa vs 12.0), grid esteso fino a 150 senza vero minimo interno.
 RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 1.4, non 1.6 come nel tentativo precedente; la copertura ideale viene dalla combinazione GIUSTA di tutti i parametri insieme, non dal range preso da solo
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)

@@ -32,7 +32,7 @@ from collections import defaultdict
 sys.path.insert(0, os.getcwd())
 
 MIN_HISTORY = 6
-HALF_LIFE_GRID = [4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0]
+HALF_LIFE_GRID = [4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0, 150.0]
 
 MODULE_BY_ROLE = {
     'gk': 'formazione_mls.predict.test_gk',
@@ -56,8 +56,19 @@ def load_players(ruolo):
     """Ritorna lista di dict {scores, is_home_flags} per giocatore, gia'
     filtrati per storico minimo -- riusato per tutti i test di questo script
     (niente da ri-scannerizzare per ogni combinazione di parametri)."""
-    cache_dir = f'formazione_mls/output/mls_{ruolo}_calibration/.cache'
-    files = glob.glob(os.path.join(cache_dir, '*_detail_cache.json'))
+    # TUTTE le leghe (29/07, regola esplicita utente: piu' dati = piu'
+    # accuratezza, ogni test va fatto su tutte le 28 leghe, non solo MLS/
+    # Korea -- prima limitato a formazione_mls/output/mls_{ruolo}_calibration).
+    patterns = [f'formazione_*/output/*_{ruolo}_calibration/.cache',
+                f'formazione_*/output/*_{ruolo}_all/.cache']
+    files = []
+    seen = set()
+    for pattern in patterns:
+        for cache_dir in glob.glob(pattern):
+            for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
+                if fpath not in seen:
+                    seen.add(fpath)
+                    files.append(fpath)
     players = []
     for fpath in files:
         with open(fpath, encoding='utf-8') as f:
