@@ -284,7 +284,11 @@ def parse_league_qty(raw, field_name, valid_leagues=DEDICATED_LEAGUES):
     ARENA_DEDICATA accetta tutte le leghe di ARENA_LEAGUES."""
     result = {lg: 0 for lg in valid_leagues}
     raw = (raw or '').strip()
-    if not raw:
+    if not raw or raw == '0':
+        # '0' da solo (senza 'lega:') e' un errore utente comune quando si
+        # vuole dire "nessuna formazione di questo tipo" -- trattarlo come il
+        # campo vuoto invece di un SystemExit e' piu' sicuro che indovinare
+        # un'altra interpretazione, ed e' esattamente cio' che l'utente intende.
         return result
     for part in raw.split(','):
         part = part.strip()
