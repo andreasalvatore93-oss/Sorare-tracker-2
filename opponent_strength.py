@@ -34,7 +34,11 @@ import datetime
 from collections import defaultdict
 
 N_GAMES_DEFAULT = 10
-SENSITIVITY_BY_ROLE = {'gk': 1.0, 'def': 1.0, 'mid': 0.7, 'fwd': 1.0}
+# GK/DEF AGGIORNATI (29/07): retest post-retuning half_life/trend_intensity
+# di oggi, walk-forward su tutte le leghe -- GK 1.0->0.7 (-0.04% MAE), DEF
+# 1.0->0.8 (-0.01% MAE), minimi interni puliti. MID lasciato a 0.7 (guadagno
+# indistinguibile dal rumore, 0.0001 di MAE). FWD gia' ottimale a 1.0.
+SENSITIVITY_BY_ROLE = {'gk': 0.7, 'def': 0.8, 'mid': 0.7, 'fwd': 1.0}
 # Media/std GLOBALI FISSE (29/07), prese dal backtest di validazione pooled
 # su 16 campionati (formazione_mls/diagnostics/validate_opponent_conceded_
 # level_allroles.py): la sensibilita' sopra e' stata calibrata usando

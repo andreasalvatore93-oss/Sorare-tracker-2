@@ -107,7 +107,7 @@ TREND_INTENSITY = 0.2  # AGGIORNATO (29/07): backtest walk-forward su tutte le l
 # Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes di
 # DEF/FWD, mai avuto da MID). k=10 scelto con backtest walk-forward reale
 # (selection_quality, 113 giornate: lift 18.5-19.6% su k testati).
-SHRINK_K_OUTLIER_MID = 10.0
+SHRINK_K_OUTLIER_MID = 7.0  # AGGIORNATO (29/07): retest post-retuning half_life/trend, minimo interno, MAE -0.045% (MLS/Korea)
 MEDIA_RUOLO_MID_PRIOR = 53.94
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.

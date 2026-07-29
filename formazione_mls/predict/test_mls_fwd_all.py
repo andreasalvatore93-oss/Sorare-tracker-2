@@ -137,7 +137,7 @@ TREND_INTENSITY = 0.3  # AGGIORNATO (29/07): backtest walk-forward su tutte le l
 # media_ruolo) -- costante strutturale, non ricalcolata a runtime (stessa
 # semplificazione accettata per gli altri "FISSATO" sopra). SHRINK_K_OUTLIER_FWD
 # resta 5.0 (differenza vs k=4 vista trascurabile, nessun cambio li').
-SHRINK_K_OUTLIER_FWD = 5.0
+SHRINK_K_OUTLIER_FWD = 6.0  # AGGIORNATO (29/07): retest post-retuning half_life/trend, minimo interno, MAE -0.005% (MLS/Korea)
 MEDIA_RUOLO_FWD_PRIOR = 53.02
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
