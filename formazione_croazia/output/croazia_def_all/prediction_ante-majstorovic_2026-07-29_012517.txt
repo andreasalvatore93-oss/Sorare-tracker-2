@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T01:25:17.215604Z
+Parametri fissi per tutti: half_life=9.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) ante-majstorovic: 51 pt attesi (34-63)
+   ORDINAMENTO: 52.01
+   SQUADRA: rijeka-rijeka | AVVERSARIO: derry-city-derry
+======================================================================
+
+######################################################################
+# GIOCATORE: ante-majstorovic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ante-majstorovic (squadra: rijeka-rijeka)
+Generato: 2026-07-29T01:25:17.214879Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 17
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-26 | RIJ vs OMO | uefa-europa-conference-league | score=48.5 | peso=0.340
+  2026-03-08 | V91 vs RIJ | 1-hnl | score=60.4 | peso=0.367
+  2026-03-12 | RIJ vs STR | uefa-europa-conference-league | score=60.8 | peso=0.397
+  2026-03-15 | RIJ vs IST | 1-hnl | score=68.2 | peso=0.429
+  2026-03-22 | GOR vs RIJ | 1-hnl | score=39.1 | peso=0.463
+  2026-04-04 | SLA vs RIJ | 1-hnl | score=52.5 | peso=0.500
+  2026-04-12 | RIJ vs OSI | 1-hnl | score=48.9 | peso=0.540
+  2026-04-18 | DIN vs RIJ | 1-hnl | score=38.7 | peso=0.583
+  2026-04-22 | VAR vs RIJ | 1-hnl | score=57.8 | peso=0.630
+  2026-04-26 | RIJ vs HAJ | 1-hnl | score=63.4 | peso=0.680
+  2026-05-03 | LOK vs RIJ | 1-hnl | score=56.7 | peso=0.735
+  2026-05-08 | RIJ vs V91 | 1-hnl | score=72.2 | peso=0.794
+  2026-05-17 | IST vs RIJ | 1-hnl | score=33.1 | peso=0.857
+  2026-05-23 | RIJ vs GOR | 1-hnl | score=64.7 | peso=0.926
+  2026-07-23 | RIJ vs DER | uefa-europa-conference-league | score=35.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 9.0 partite): 52.73
+  di cui Punteggio decisivo (level_score) medio: 36.07 | Punteggio complessivo (granulari) medio: 16.65 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.15, delta avversario +0.00 | Passaggio condizionato: delta venue -0.92, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.84, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.94
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 64.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.99 (differenza: +1.95)
+Media score in casa: 57.72 | Media score fuori casa: 48.34
+Fattore casa/trasferta applicato: 0.990 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.3
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 0.987
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.009
+Fattore trend (media ultime 5: 52.4 vs media ultime 10: 52.3): 1.001
+P(gioca): 88.24% (fonte: tasso di presenza storico (15/17))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T17:30
+Casa: Derry City FC | Trasferta: HNK Rijeka
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 33.6 - 63.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 52.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.88
+Punteggio REALE ottenuto in quella partita: 35.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7 (FISSATA 45 posseduti)' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.3    48.9     -8.4    11.6        SI
+   7        7      40.6    38.7     -1.9    10.8        SI
+   8        8      43.8    57.8    +14.0    11.9        NO
+   9        9      44.0    63.4    +19.4    11.3        NO
+  10       10      50.6    56.7     +6.1    11.5        SI
+  11       11      60.8    72.2    +11.4    10.8        NO
+  12       12      56.2    33.1    -23.1    12.4        NO
+  13       13      59.7    64.7     +5.0    14.7        SI
+  14       14      60.7    35.0    -25.7    14.4        NO
+
+MAE (errore assoluto medio): 12.78
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 44.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
