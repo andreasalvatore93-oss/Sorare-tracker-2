@@ -1,0 +1,74 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:24:20.127767Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) joshua-duffus: 46 pt attesi (29-93)
+   ORDINAMENTO: 57.19
+   SQUADRA: saint-etienne-saint-etienne | AVVERSARIO: sochaux-montbeliard
+======================================================================
+
+######################################################################
+# GIOCATORE: joshua-duffus
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: joshua-duffus (squadra: saint-etienne-saint-etienne)
+Generato: 2026-07-29T23:24:20.127214Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 23
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | STE vs GRE | ligue-2-fr | score=39.2 | peso=0.920
+  2025-10-28 | STE vs PAU | ligue-2-fr | score=100.0 | peso=0.946
+  2026-04-25 | STE vs TRO | ligue-2-fr | score=39.1 | peso=0.973
+  2026-05-02 | ROD vs STE | ligue-2-fr | score=36.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 53.32
+  di cui Punteggio decisivo (level_score) medio: 46.09 | Punteggio complessivo (granulari) medio: 7.23 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.72 (delta +0.28) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 26.72
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.0 - 100.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 59.43 | Media score fuori casa: 36.00
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.8
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.987
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.009
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 12.12% (fonte: tasso di presenza storico (4/33))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:45
+Casa: FC Sochaux-Montbéliard | Trasferta: AS Saint-Étienne
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 28.7 - 92.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 59.43
+Punteggio REALE ottenuto in quella partita: 36.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -23.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
