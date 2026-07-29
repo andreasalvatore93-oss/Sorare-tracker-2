@@ -656,6 +656,22 @@ def main():
     counts.update({arena_type(lg): arena_dedicata_req.get(lg, 0) for lg in ARENA_LEAGUES})
     num_totale = sum(counts.values())
     richiesti = [t for t in PRIORITY_ORDER if counts.get(t)]
+
+    # Leghe RILEVANTI per questa run (29/07, richiesta esplicita utente: il
+    # blocco "esclusi" pescava candidati da leghe mai coinvolte nelle
+    # formazioni richieste -- es. una run mls:6 mostrava esclusi di Spagna/
+    # Francia solo perche' quei giocatori avevano un punteggio alto in
+    # assoluto, dato inutile per capire chi resta fuori dal pool MLS). Se
+    # All Stars/Arena All Stars sono richieste (pescano dal pool misto di
+    # TUTTE le leghe), restano rilevanti tutte le LEAGUES; altrimenti solo le
+    # leghe con almeno una formazione In Season o Arena dedicata richiesta.
+    if allstars_qty or allstars_u23_qty or arena_allstars_260 or arena_allstars_220 or arena_allstars_uncapped:
+        leghe_rilevanti = set(LEAGUES)
+    else:
+        leghe_rilevanti = ({lg for lg, n in in_season_req.items() if n} |
+                           {lg for lg, n in arena_dedicata_req.items() if n})
+        leghe_rilevanti &= set(LEAGUES)
+
     print(f"Formazioni richieste: totale={num_totale} -> " +
           (", ".join(f"{LABELS[t]}={counts[t]}" for t in richiesti) if richiesti else "nessuna"))
 
@@ -775,31 +791,42 @@ def main():
                 nome = player_names.get(row['slug'], row['slug'])
                 print(f"  [{r}] {nome} ({lg}) -- atteso {row.get('atteso')}")
 
-    # Top 20 esclusi per punteggio atteso (29/07, richiesta esplicita utente:
+    # Top 40 esclusi per punteggio atteso (29/07, richiesta esplicita utente:
     # sempre presente nel report HTML, non solo su richiesta via env var come
     # il blocco sopra) -- controllo rapido "chi resta fuori nonostante un
     # punteggio alto", utile per verificare se il pool di candidati e' capiente
     # o se manca qualcosa (es. lega esclusa, filtro troppo aggressivo).
-    tutti_esclusi = [(lg, r, row) for r in ROLES for lg in LEAGUES for row in role_data[lg][r]
+    # Filtrato a leghe_rilevanti (29/07, bug segnalato dall'utente: con
+    # ONLY_LEAGUES/in_season limitato a una sola lega, l'elenco pescava
+    # comunque candidati di leghe MAI coinvolte in nessuna formazione
+    # richiesta -- dato inutile per capire chi resta fuori dal pool giusto).
+    # Posizionato accanto alla PRIMA formazione (29/07, richiesta esplicita
+    # utente: prima in fondo pagina, poi provato fisso in overlay -- alla
+    # fine preferito affiancato alla formazione #1, riusando le classi
+    # .lineup-row/.alt-panel gia' presenti nel CSS del template, dismesse dal
+    # pannello alternative del 28/07 ma mai rimosse dallo stylesheet).
+    tutti_esclusi = [(lg, r, row) for r in ROLES for lg in leghe_rilevanti for row in role_data[lg][r]
                      if row['slug'] not in used_slugs]
     tutti_esclusi.sort(key=lambda t: t[2].get('atteso', 0), reverse=True)
-    top20_esclusi = tutti_esclusi[:20]
-    if top20_esclusi:
+    top_esclusi = tutti_esclusi[:40]
+    if top_esclusi and lineup_html_blocks:
         righe_html = "".join(
-            f'<tr><td style="padding:2px 10px 2px 0;color:var(--muted)">{i+1}.</td>'
-            f'<td style="padding:2px 10px 2px 0">{player_names.get(row["slug"], row["slug"])}</td>'
-            f'<td style="padding:2px 10px 2px 0;color:var(--muted)">{r}</td>'
-            f'<td style="padding:2px 10px 2px 0;color:var(--muted)">{lg}</td>'
+            f'<tr><td style="padding:2px 8px 2px 0;color:var(--muted)">{i+1}.</td>'
+            f'<td style="padding:2px 8px 2px 0">{player_names.get(row["slug"], row["slug"])}</td>'
+            f'<td style="padding:2px 8px 2px 0;color:var(--muted)">{r}</td>'
+            f'<td style="padding:2px 8px 2px 0;color:var(--muted)">{lg}</td>'
             f'<td style="padding:2px 0;font-weight:700">{row.get("atteso")} pt</td></tr>'
-            for i, (lg, r, row) in enumerate(top20_esclusi)
+            for i, (lg, r, row) in enumerate(top_esclusi)
         )
-        top20_html = (
-            '<div class="lineup-block"><div class="lineup-meta">'
-            '<div class="lineup-title">Top 20 esclusi <span>per punteggio atteso</span></div></div>'
-            '<div style="font-size:0.78rem;opacity:0.85"><table style="border-collapse:collapse">'
+        top_esclusi_html = (
+            '<div class="alt-panel" style="flex:0 0 300px;max-height:640px;overflow-y:auto">'
+            f'<div class="alt-panel-title">Top {len(top_esclusi)} esclusi<br>per punteggio atteso</div>'
+            '<div style="font-size:0.74rem"><table style="border-collapse:collapse">'
             f'{righe_html}</table></div></div>'
         )
-        lineup_html_blocks.append(top20_html)
+        lineup_html_blocks[0] = (
+            f'<div class="lineup-row">{lineup_html_blocks[0]}{top_esclusi_html}</div>'
+        )
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)

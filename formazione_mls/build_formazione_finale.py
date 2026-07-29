@@ -1431,14 +1431,15 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .tag-copies {{ background: var(--stripe); color: var(--muted); }}
   .tag-xpbonus {{ background: rgba(76,175,80,0.16); color: #4caf50; }}
   .lineup-total {{
-    margin-top: 12px; display: flex; align-items: center; gap: 18px; background: var(--surface);
-    border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; flex-wrap: wrap;
+    margin-top: 12px; display: inline-flex; align-items: center; gap: 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap;
+    max-width: 100%;
   }}
   .lineup-total .figure {{ font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }}
   .lineup-total .figure.with-captain {{ color: var(--gold); }}
   .lineup-total .label {{ font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }}
   .lineup-total .divider {{ width: 1px; height: 30px; background: var(--border); }}
-  .lineup-total .captain-note {{ font-size: 0.74rem; color: var(--muted); margin-left: auto; }}
+  .lineup-total .captain-note {{ font-size: 0.74rem; color: var(--muted); }}
   .lineup-total .captain-note b {{ color: var(--gold); font-weight: 700; }}
   .error-block {{ font-size: 0.82rem; color: var(--muted); padding: 12px 0; }}
   footer {{ margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }}
