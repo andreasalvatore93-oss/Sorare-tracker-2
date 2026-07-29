@@ -40,9 +40,19 @@ significa che ogni volta che una NUOVA lega completa la pipeline discovery-globa
 `CALIBRATION_MODE=1` (predict) e accumula dati sufficienti in cache, **il modello globale deve
 essere confrontato di nuovo con questi dati freschi** — se la nuova lega sposta una conclusione
 già presa, il modello va aggiornato; se la conferma, non si tocca nulla ma si annota qui la
-riconferma. Questa sezione esiste per non perdere la lista dei ~30 test che compongono il modello
+riconferma. Questa sezione esiste per non perdere la lista dei ~40 test che compongono il modello
 (altrimenti, sessione dopo sessione, si rischia di dimenticarne qualcuno — stesso principio della
 sezione 14D sui falsi allarmi da memoria non aggiornata).
+
+**Verifica di completezza (29/07, stessa sera)**: prima versione di questa sezione compilata a
+memoria conteneva ~28 voci. L'utente ha chiesto conferma "al 100%" — verificato con un controllo
+incrociato reale (`find . -name "validate_*.py" -o -name "analyze_*.py" -o ...` su tutto il repo,
+non solo `formazione_mls/diagnostics/`) contro l'elenco: **trovati 9 script mancanti**, aggiunti
+qui sotto (punti 10b/10c/10d, 17 esteso, 19 esteso, 20 esteso, 20b, 22b, E'). Il conteggio esatto
+degli script diagnostici nel repo al momento di questa verifica: 47 (`find` sopra) + 2 script
+monitoraggio/copertura non catturati dal pattern (`live_prediction_log.py`,
+`audit_leghe_possedute.py`). Se in futuro si dubita ancora della completezza, ripetere lo stesso
+comando `find` e diffare contro questa sezione — non fidarsi della sola memoria.
 
 **Convenzione**: ogni riga = (nome test, script per rilanciarlo, cosa verifica, ESITO ATTUALE/
 parametro in produzione, sezione del RIASSUNTO dove è documentato per esteso). "Rifare quando"
@@ -79,9 +89,25 @@ salvo diversa indicazione esplicita nella riga.
 9. **`validate_halflife_trend_grid2d.py`** — interazione half_life×trend (non colta testando un
    parametro alla volta). Esito: interazione reale ma minuscola, non applicata. Sez. 34.D.
 10. **`opponent_strength.SENSITIVITY_BY_ROLE`** (sensibilità di `opponent_lambda_mult` al gol
-    reale) — validato con `validate_opponent_conceded_level*.py`. Produzione: GK 0.7, DEF 0.8,
-    MID 0.7, FWD 1.0 — MLS/Korea, non ancora ritestato sulle altre 26 leghe estese oggi. Sez. 33.B,
-    34.D.
+    reale) — validato con `validate_opponent_conceded_level.py`,
+    `validate_opponent_conceded_level_allroles.py`,
+    `validate_opponent_conceded_level_isolated_otherleagues.py` (quest'ultimo isola le 26 leghe
+    extra da MLS/Korea, stesso guadagno confermato). Produzione: GK 0.7, DEF 0.8, MID 0.7, FWD 1.0
+    — MLS/Korea, non ancora ritestato sulle altre 26 leghe estese oggi. Sez. 33.B, 34.D.
+10b. **`validate_opponent_sensitivity_posttuning.py`** — ricontrolla SENSITIVITY_BY_ROLE DOPO il
+    retuning 29/07 di half_life/trend (i due parametri interagiscono: half_life diverso cambia
+    lambda_pos/lambda_neg su cui la sensitivity agisce). Da rilanciare ogni volta che half_life/
+    trend cambiano di nuovo, non solo per nuove leghe.
+10c. **`validate_range_multiplier_coverage.py`** — verifica se `RANGE_MULTIPLIER` centra la
+    copertura ideale (~68%, p16-p84) via % di copertura reale invece che MAE (che non discrimina
+    fra range diversi). Esito: 1.1 centra 68.2% per DEF (vedi sez. 27.B), non ancora esteso a
+    tutte le leghe/ruoli in modo sistematico.
+10d. **`validate_opponent_trend_h2h_gk.py`** (GK) e **`validate_opponent_trend_h2h_generic.py`**
+    (MID/FWD, tutte le leghe — DEF scartato su richiesta esplicita precedente) — due segnali
+    aggiuntivi mai provati: TREND (media corta 3 vs lunga 10 partite di gol fatti/subiti
+    dall'avversario) e H2H (storico scontri diretti squadra-avversario, se ≥2 precedenti).
+    **SCARTATO**: l'utente ha preferito "la media generica" senza nemmeno guardare i numeri
+    (sez. 33.H) — non riproporre senza una richiesta nuova esplicita.
 
 ### B. Formula di produzione (level_score, Stadio D, cap, shrinkage)
 
@@ -107,24 +133,43 @@ salvo diversa indicazione esplicita nella riga.
     12, 33.A.
 17. **Stadio D con dato pulito (`opponent_strength.opponent_is_strong`)** — condizionamento
     venue+avversario sui granulari specifici (gol subiti/passaggio/clean sheet per DEF/MID).
-    IMPLEMENTATO su tutte le leghe (29/07). Sez. 33.D, oggi.
+    Fondato su `inspect_decisive_event_conditioning.py` (26/07, la probabilità di un evento
+    decisivo cambia per venue/avversario?) e validato con `validate_stadio_d_mae.py` (le
+    correzioni Stadio D riducono davvero il MAE per singolo giocatore, non solo in aggregato).
+    IMPLEMENTATO su tutte le leghe (29/07). Sez. 11, 33.D, oggi.
 18. **Cap goals_conceded** — bug reale (era cappato a ±10, ma il gioco è lineare senza tetto fino
     a 6-7 gol). RIMOSSO su tutte le leghe (GK/DEF/MID). Verificare se emergono partite con >7 gol
     subiti mai viste finora (non un retest statistico, solo un controllo di plausibilità). Sez.
     33.E.
 19. **Combinazioni granulari cross-ruolo (33 testate, 2 validate)** —
-    `validate_cross_role_combos.py`, `validate_def_*.py`,
+    `validate_cross_role_combos.py` + `validate_cross_role_combos_isolated_otherleagues.py`
+    (isola le 26 leghe extra da MLS/Korea), `validate_def_all_combos.py`,
+    `validate_def_duels_opponent.py`, `validate_def_tackle_intercept_opponent.py` (precursori
+    DEF-specifici, poi generalizzati nello script cross-ruolo),
     `validate_gk_offense_penalty_possession.py` — le 2 validate: `fwd_offense_granular_delta`
     (FWD vs poss_lost_ctrl DEF avversario) e `gk_def_pen_area_multiplier` (GK vs pen_area_entries
     DEF avversario). Le altre 31 combinazioni, scartate — non riprovarle senza nuovo motivo. Sez.
     33.F/G, 34.E.
-20. **Shrinkage outlier/hot-streak (SHRINK_K per ruolo)** — `formazione_mls/diagnostics/
+20. **Shrinkage outlier/hot-streak (SHRINK_K per ruolo)** — diagnostico originale
+    `inspect_outlier_reliability.py` (26/07, ha misurato il fenomeno "poche presenze + media
+    trainata dai picchi": 19.7% DEF, 24.1% GK, 16.9% FWD, 7.1% MID) → `formazione_mls/diagnostics/
     validate_outlier_shrinkage.py` (oggi riscritto con auto-discovery, copre tutte le leghe) +
-    `validate_outlier_shrinkage_tiered.py` (variante per titolarità, superata dal prior dinamico).
+    `validate_outlier_shrinkage_tiered.py` (variante per titolarità via `mins_played`, superata dal
+    prior dinamico) + `validate_shrink_k.py`/`validate_shrink_k_gk_true_formula.py` (ritest post-
+    retuning half_life/trend — **lezione da non ripetere**: un giro precedente aveva usato per GK
+    una formula SEMPLIFICATA invece di quella vera di produzione, dando risultati sbagliati, sez.
+    24.C — verificare sempre con `compute_score_atteso_<ruolo>` reale, non una versione ad-hoc).
     Prima **modello unico GLOBALE su tutte le 27 leghe** (deciso oggi 29/07): **GK k=30, DEF k=15,
     MID k=5, FWD k=5**. Rifare ad ogni nuova lega — questo test è quello con l'esito più mutevole
     finora (GK e MID hanno cambiato conclusione completamente da una sessione all'altra man mano
     che i dati crescevano). Sez. 14.B, 24.C, oggi (sezione corrente).
+20b. **Recalibrazione parametri In Season allineata alla formula reale** —
+    `recalibrate_6leagues_inseason.py` (21/07, prima ricalibrazione con granulari VERI
+    ricostruiti, non un flag inerte) → `recalibrate_def_aligned.py` (27/07, dopo la scoperta che
+    il backtest era divergente dalla produzione, sez. 26.B/27 — DEF/FWD ricalibrati con la formula
+    ALLINEATA). Stessa famiglia del punto 1, ma con la lezione esplicita "verificare sempre che il
+    backtest usi la formula VERA di produzione, non una copia divergente" — da ricontrollare se si
+    tocca di nuovo la formula di uno dei 4 ruoli.
 21. **Breakdown per singola lega dello shrinkage FWD (MLS vs resto)** — script ad-hoc scritto
     oggi (non salvato nel repo, solo scratchpad) — ha smentito la vecchia esclusione "shrinkage
     FWD peggiora fuori MLS". **Da riscrivere/salvare come script vero se si vuole ripetere** questo
@@ -137,6 +182,11 @@ salvo diversa indicazione esplicita nella riga.
 
 ### C. Correlazioni tra compagni di squadra / sinergie
 
+22b. **FWD+MID stessa squadra vs squadre diverse** — `formazione_mls/diagnostics/
+    analyze_fwd_mid_team_pairing.py` (19/07 notte) — precursore/caso specifico poi assorbito nel
+    test generico sotto (punto 23): same-team FWD-MID passato da marginale (+0.147, 2 leghe) a
+    significativo (+0.191, 7 leghe) via `measure_teammate_correlation.py`. Non serve rilanciare
+    questo script a parte, il punto 23 lo copre già in generale.
 23. **Correlazione same-team** — `formazione_mls/diagnostics/measure_teammate_correlation.py`
     (auto-discovery filesystem, gira su TUTTE le leghe disponibili automaticamente). Ultimo esito
     (20 leghe, sez. 27.H): def-gk +0.349, def-def +0.201, fwd-fwd +0.177, fwd-mid +0.173, mid-mid
@@ -148,7 +198,8 @@ salvo diversa indicazione esplicita nella riga.
     fwd-mid) sono risultate stabili su 25 leghe (28.H) ma **RIMANDATE su richiesta esplicita
     dell'utente** ("rifammela dopo") — riproporre la stessa domanda, non decidere da soli, quando
     si riprende questo filone.
-25. **Sinergie In Season on/off (A/B su formazioni reali)** — `compare_synergy_toggles*.py`,
+25. **Sinergie In Season on/off (A/B su formazioni reali)** — `compare_synergy_toggles.py`,
+    `compare_synergy_toggles_allleagues.py`,
     `compare_crossteam_matchreuse_toggles.py` — `POSITIVE_SYNERGY_BONUS_BY_PAIR` e
     `MATCH_REUSE_PENALTY` disattivati per In Season MLS/K League (guadagno di punteggio reale
     misurato su 6 formazioni); `SAME_TEAM_SYNERGY_BONUS_BY_PAIR` disattivato solo per Arena
@@ -196,6 +247,19 @@ salvo diversa indicazione esplicita nella riga.
     è già al 17.8% del lift disponibile contro un tetto teorico ~15.5-22.5%. **Da ripetere se si
     vuole verificare che il tetto non sia salito con più dati/più partite per giocatore** (non
     urgente, il principio resta valido finché lo storico per giocatore non cresce molto).
+
+### E'. Monitoraggio continuo e tool di copertura (non backtest, ma da tenere a mente)
+
+32b. **MAE live** — `formazione_mls/predict/live_prediction_log.py` (scrive un pending-log per
+    giocatore/partita target) + `formazione_kleague/diagnostics/resolve_live_predictions.py`
+    (risolve confrontando con lo score reale non appena disponibile). Solo MLS/K League per ora
+    (sez. 12), MAI esteso alle altre 25 leghe — utile da monitorare quando si toccano i parametri,
+    non un test da "rilanciare" ma un log continuo da controllare periodicamente.
+32c. **Copertura pool eleggibile / leghe mancanti** — `audit_leghe_possedute.py` (elenca tutte le
+    leghe possedute con slug esatto, marca quelle non tracciate) e `diagnostics/
+    discover_missing_leagues.py` (scansione carte per trovare leghe senza pipeline dedicata,
+    output in `docs/CAMPIONATI_MANCANTI.md`). Non sono test statistici sul modello, ma vanno
+    rilanciati quando si sospetta che manchino leghe/giocatori dal pool (sez. 23.F, 24.B).
 
 ### E. Test scartati/superati su "affidabilità" del singolo giocatore (29/07, oggi)
 
