@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T22:29:20.751015Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) bruny-nsimba: 63 pt attesi (40-81)
+   ORDINAMENTO: 66.53
+   SQUADRA: standard-liege-liege-luik | AVVERSARIO: cercle-brugge-brugge
+======================================================================
+
+######################################################################
+# GIOCATORE: bruny-nsimba
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: bruny-nsimba (squadra: standard-liege-liege-luik)
+Generato: 2026-07-29T22:29:20.750439Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | DEN vs USG | jupiler-pro-league | score=41.3 | peso=0.624
+  2025-09-19 | GNT vs DEN | jupiler-pro-league | score=30.3 | peso=0.642
+  2025-09-28 | DEN vs LAL | jupiler-pro-league | score=46.6 | peso=0.660
+  2025-10-05 | GNK vs DEN | jupiler-pro-league | score=62.0 | peso=0.678
+  2025-10-19 | DEN vs KVM | jupiler-pro-league | score=73.3 | peso=0.697
+  2025-10-25 | WES vs DEN | jupiler-pro-league | score=46.6 | peso=0.717
+  2025-11-01 | CLU vs DEN | jupiler-pro-league | score=63.9 | peso=0.737
+  2025-11-23 | ANT vs DEN | jupiler-pro-league | score=29.9 | peso=0.758
+  2025-11-29 | DEN vs WES | jupiler-pro-league | score=74.3 | peso=0.779
+  2025-12-05 | LAL vs DEN | jupiler-pro-league | score=90.7 | peso=0.801
+  2025-12-14 | DEN vs CLU | jupiler-pro-league | score=70.6 | peso=0.824
+  2025-12-20 | DEN vs STA | jupiler-pro-league | score=38.1 | peso=0.847
+  2025-12-27 | KVM vs DEN | jupiler-pro-league | score=41.5 | peso=0.871
+  2026-01-18 | DEN vs ANT | jupiler-pro-league | score=73.5 | peso=0.895
+  2026-01-25 | AND vs DEN | jupiler-pro-league | score=33.8 | peso=0.920
+  2026-02-01 | DEN vs GNK | jupiler-pro-league | score=68.0 | peso=0.946
+  2026-02-07 | ZWA vs DEN | jupiler-pro-league | score=39.2 | peso=0.973
+  2026-02-14 | OHL vs DEN | jupiler-pro-league | score=75.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 56.00
+  di cui Punteggio decisivo (level_score) medio: 49.06 | Punteggio complessivo (granulari) medio: 6.95 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.83 (delta +0.98) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.40
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.8 - 74.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.24 (differenza: +2.16)
+Media score in casa: 60.71 | Media score fuori casa: 51.38
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.1
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.858
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.011
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.015
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 58.1 vs media ultime 10: 60.6): 0.988
+P(gioca): 51.43% (fonte: tasso di presenza storico (18/35))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T16:15
+Casa: Standard de Liège | Trasferta: Cercle Brugge KSV
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 62.7 (range 40.5 - 81.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.51
+Punteggio REALE ottenuto in quella partita: 75.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +21.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.8    63.9    +23.1    19.6        NO
+   7        7      60.2    29.9    -30.3    19.3        NO
+   8        8      46.8    74.3    +27.5    21.0        NO
+   9        9      67.3    90.7    +23.4    22.7        NO
+  10       10      47.6    70.6    +23.0    27.3        SI
+  11       11      52.6    38.1    -14.5    26.5        SI
+  12       12      56.0    41.5    -14.5    26.5        SI
+  13       13      65.4    73.5     +8.1    26.0        SI
+  14       14      51.6    33.8    -17.8    25.9        SI
+  15       15      57.0    68.0    +11.0    26.3        SI
+  16       16      42.9    39.2     -3.7    25.8        SI
+  17       17      62.4    75.9    +13.5    25.5        SI
+
+MAE (errore assoluto medio): 17.53
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T22:30:01.016353Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) laurent-lemoine: 48 pt attesi (30-67)
+   ORDINAMENTO: 51.38
+   SQUADRA: zulte-waregem-waregem | AVVERSARIO: genk-genk
+======================================================================
+
+######################################################################
+# GIOCATORE: laurent-lemoine
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: laurent-lemoine (squadra: zulte-waregem-waregem)
+Generato: 2026-07-29T22:30:01.015459Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-02 | WES vs ZWA | jupiler-pro-league | score=39.7 | peso=0.595
+  2025-08-10 | AND vs ZWA | jupiler-pro-league | score=46.9 | peso=0.616
+  2025-08-16 | ZWA vs CLU | jupiler-pro-league | score=37.0 | peso=0.637
+  2025-08-23 | ZWA vs STV | jupiler-pro-league | score=51.2 | peso=0.660
+  2025-11-07 | DEN vs ZWA | jupiler-pro-league | score=64.7 | peso=0.683
+  2025-11-21 | STA vs ZWA | jupiler-pro-league | score=61.7 | peso=0.707
+  2025-11-29 | ZWA vs CER | jupiler-pro-league | score=79.5 | peso=0.732
+  2025-12-07 | OHL vs ZWA | jupiler-pro-league | score=31.1 | peso=0.758
+  2025-12-13 | ZWA vs LAL | jupiler-pro-league | score=43.5 | peso=0.785
+  2025-12-20 | USG vs ZWA | jupiler-pro-league | score=26.5 | peso=0.812
+  2026-03-22 | ZWA vs CHA | jupiler-pro-league | score=51.4 | peso=0.841
+  2026-04-04 | ZWA vs CER | jupiler-pro-league | score=81.3 | peso=0.871
+  2026-04-12 | DEN vs ZWA | jupiler-pro-league | score=62.4 | peso=0.901
+  2026-04-19 | LAL vs ZWA | jupiler-pro-league | score=73.4 | peso=0.933
+  2026-04-26 | ZWA vs LAL | jupiler-pro-league | score=47.3 | peso=0.966
+  2026-05-01 | CER vs ZWA | jupiler-pro-league | score=55.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 54.05
+  di cui Punteggio decisivo (level_score) medio: 38.21 | Punteggio complessivo (granulari) medio: 15.84 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.38, delta avversario -0.36 | Passaggio condizionato: delta venue -1.19, delta avversario -0.60 | Clean sheet/disimpegni condizionato: delta venue +0.47, delta avversario -0.52 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.87
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.0 - 73.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.21 (differenza: +2.66)
+Media score in casa: 55.89 | Media score fuori casa: 51.37
+Fattore casa/trasferta applicato: 1.015 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.6
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.981
+Fattore falli (casa/trasferta, da dati reali): 1.014
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.988
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.991
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.992
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Fattore trend (media ultime 5: 64.0 vs media ultime 10: 55.2): 1.000
+P(gioca): 45.71% (fonte: tasso di presenza storico (16/35))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T14:00
+Casa: SV Zulte-Waregem | Trasferta: KRC Genk
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.5 (range 30.5 - 66.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 51.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.90
+Punteggio REALE ottenuto in quella partita: 55.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +1.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.4    79.5    +35.1    12.5        NO
+   7        7      69.5    31.1    -38.4    17.0        NO
+   8        8      69.4    43.5    -25.9    18.7        NO
+   9        9      41.1    26.5    -14.6    17.8        SI
+  10       10      56.7    51.4     -5.3    19.2        SI
+  11       11      41.3    81.3    +40.0    18.2        NO
+  12       12      67.4    62.4     -5.0    20.9        SI
+  13       13      66.2    73.4     +7.2    20.3        SI
+  14       14      69.3    47.3    -21.9    20.6        NO
+  15       15      42.6    55.8    +13.1    19.9        SI
+
+MAE (errore assoluto medio): 20.66
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

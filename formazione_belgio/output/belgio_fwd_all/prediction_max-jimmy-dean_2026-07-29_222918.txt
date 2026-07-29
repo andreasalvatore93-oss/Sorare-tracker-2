@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T22:29:18.917445Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) max-jimmy-dean: 50 pt attesi (30-69)
+   ORDINAMENTO: 54.86
+   SQUADRA: gent-gent | AVVERSARIO: lnz-cherkasy-cherkasy
+======================================================================
+
+######################################################################
+# GIOCATORE: max-jimmy-dean
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: max-jimmy-dean (squadra: gent-gent)
+Generato: 2026-07-29T22:29:18.916688Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-21 | CLU vs GNT | jupiler-pro-league | score=45.7 | peso=0.779
+  2026-02-14 | CHA vs GNT | jupiler-pro-league | score=75.1 | peso=0.801
+  2026-02-20 | GNT vs CER | jupiler-pro-league | score=36.5 | peso=0.824
+  2026-03-08 | GNT vs KVM | jupiler-pro-league | score=69.2 | peso=0.847
+  2026-03-13 | GNT vs ZWA | jupiler-pro-league | score=76.1 | peso=0.871
+  2026-03-22 | DEN vs GNT | jupiler-pro-league | score=75.2 | peso=0.895
+  2026-04-06 | GNT vs KVM | jupiler-pro-league | score=74.2 | peso=0.920
+  2026-04-12 | AND vs GNT | jupiler-pro-league | score=37.1 | peso=0.946
+  2026-04-19 | GNT vs STV | jupiler-pro-league | score=37.9 | peso=0.973
+  2026-04-26 | GNT vs CLU | jupiler-pro-league | score=36.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 55.89
+  di cui Punteggio decisivo (level_score) medio: 48.14 | Punteggio complessivo (granulari) medio: 7.75 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.34 (delta +0.12) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.94
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.7 - 75.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.47 (differenza: +0.47)
+Media score in casa: 55.10 | Media score fuori casa: 58.27
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.1
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 52.2 vs media ultime 10: 56.4): 0.978
+P(gioca): 24.39% (fonte: tasso di presenza storico (10/41))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T18:30
+Casa: KAA Gent | Trasferta: LNZ Cherkasy FC
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 30.5 - 69.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.33
+Punteggio REALE ottenuto in quella partita: 36.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -21.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.5    74.2    +11.7    22.0        SI
+   7        7      60.5    37.1    -23.4    21.0        NO
+   8        8      55.9    37.9    -18.0    23.7        SI
+   9        9      49.2    36.7    -12.5    24.7        SI
+
+MAE (errore assoluto medio): 16.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
