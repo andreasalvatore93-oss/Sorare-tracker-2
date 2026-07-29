@@ -158,6 +158,14 @@ CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 # questa job diventano un singolo tentativo secco, senza attesa.
 _CIRCUIT_BREAKER_PATH = '/tmp/sorare_cloudfront_block_mls_fwd.marker'
 
+# Flag "non ritentare" (29/07, fix reale: molti retry da 60s sprecati su
+# giocatori con storico REALMENTE insufficiente -- es. panchinari con quasi
+# solo DID_NOT_PLAY -- che non cambia riprovando la stessa query pochi
+# secondi dopo. Il loop di retry in main() lo controlla per uscire subito
+# invece di aspettare fino a 60s per un fallimento STRUTTURALE (non
+# transitorio come un 403/timeout, dove riprovare puo' davvero aiutare).
+_STRUCTURAL_INSUFFICIENCY = False
+
 
 def _circuit_breaker_tripped():
     return os.path.exists(_CIRCUIT_BREAKER_PATH)
@@ -1144,6 +1152,8 @@ def rigorous_backtest_prod_fwd(scores, is_home_flags,
 
 
 def build_prediction(player_slug):
+    global _STRUCTURAL_INSUFFICIENCY
+    _STRUCTURAL_INSUFFICIENCY = False
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
     # Finestra temporale massima per lo storico (28/07, richiesta esplicita
@@ -1170,6 +1180,7 @@ def build_prediction(player_slug):
     past_games = [n for n in past_games if (_game_dt(n) or _cutoff_storico) >= _cutoff_storico]
     if not past_games:
         log("[FASE 1/4] INTERROTTO: nessuna partita passata trovata, impossibile procedere oltre.")
+        _STRUCTURAL_INSUFFICIENCY = True
         return None
     if not future_games:
         log("[FASE 1/4] ATTENZIONE: nessuna partita futura trovata (anyFutureGames vuoto). "
@@ -1266,6 +1277,7 @@ def build_prediction(player_slug):
             f"(< soglia minima {MIN_USABLE_GAMES}), su {total_considered} esaminate "
             f"({dnp_count} DID_NOT_PLAY, {low_minutes_count} sotto soglia minutaggio, "
             f"altri status: {other_status_count}).")
+        _STRUCTURAL_INSUFFICIENCY = True
         return None
 
     # Ordine cronologico: allPlayerGameScores arriva dal piu' recente al piu' vecchio,
@@ -1914,6 +1926,10 @@ def main():
             # Successo (anche se escluso per starterOdds, quello NON e' un fallimento
             # tecnico e non va ritentato) o eccezione irrecuperabile: esci dal ciclo.
             if result is not None or attempt > len(retry_delays):
+                break
+            if _STRUCTURAL_INSUFFICIENCY:
+                log(f"[{slug}] Fallimento STRUTTURALE (storico realmente insufficiente, "
+                    f"non transitorio) -- nessun retry, non cambierebbe nulla.")
                 break
 
             delay = retry_delays[attempt - 1]
