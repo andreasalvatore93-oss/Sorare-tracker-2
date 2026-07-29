@@ -2,11 +2,9 @@
 # Sezioni giocatore/manager/campionato: ogni riga 'slug,durata' (es. 'clem777,5
 # giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni
 # scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').
-# Sezioni thin_market/cooldown_acquisto/forma_bassa_ultime_5/fix_urgente/
-# campionato_inseason_temp: ogni riga 'slug,scadenza_ISO' -- data/ora
-# ASSOLUTA di scadenza in UTC (fix 22/07, esteso 29/07 a campionato_inseason_temp:
-# una durata testuale si 'rinnovava' da sola ad ogni lettura se il file restava
-# statico tra le run). Dopo la virgola, un
+# Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora
+# ASSOLUTA di scadenza in UTC (fix 22/07: una durata testuale si 'rinnovava' da
+# sola ad ogni lettura se il file restava statico tra le run). Dopo la virgola, un
 # commento '# scade: ...' mostra lo stesso istante in ora di Roma (Europe/Rome, si
 # adatta automaticamente a legale/solare) solo per comodita' di lettura -- il bot
 # usa SEMPRE e SOLO il valore ISO prima della virgola/cancelletto, il commento e'
@@ -1519,6 +1517,7 @@ raphael-varane,365 giorni
 rares-catalin-burnete,365 giorni
 rasmus-alm,365 giorni
 rasmus-thelander,365 giorni
+raul-carlos-vasko-caldaroska-paula,365 giorni
 raul-de-tomas-gomez,3 giorni
 rayan-djedje,365 giorni
 rayane-aabid,365 giorni
@@ -1767,6 +1766,7 @@ tomoki-tagawa,365 giorni
 toni-kroos,365 giorni
 toni-leistner,365 giorni
 toni-lun-boncina,365 giorni
+toshikazu-teruuchi,365 giorni
 trevan-sanusi,3 giorni
 trey-muse,3 giorni
 tristan-osmani,365 giorni
@@ -1892,113 +1892,35 @@ zvonimir-subaric,3 giorni
 
 ## cooldown_acquisto
 # COOLDOWN ACQUISTI/OFFERTE -- giocatori appena comprati o a cui abbiamo appena fatto un'offerta: ignorati per il tempo indicato, per non ricomprare/riproporre subito lo stesso giocatore.
-abdessamad-ezzalzouli-inseason,2026-07-28T16:54:42.831568+00:00  # scade: 28/07/2026 18:54 ora di Roma
-ademola-lookman-inseason,2026-07-29T14:21:53.178827+00:00  # scade: 29/07/2026 16:21 ora di Roma
-alejandro-jesus-gomes-rodriguez-inseason,2026-07-28T17:08:25.660156+00:00  # scade: 28/07/2026 19:08 ora di Roma
-antoine-griezmann-inseason,2026-07-28T16:39:43.047977+00:00  # scade: 28/07/2026 18:39 ora di Roma
-antony-alves-santos-inseason,2026-07-28T17:45:57.671523+00:00  # scade: 28/07/2026 19:45 ora di Roma
-bernd-leno-inseason,2026-07-28T17:06:05.023022+00:00  # scade: 28/07/2026 19:06 ora di Roma
-bryan-mbeumo-classic,2026-07-28T16:59:34.573244+00:00  # scade: 28/07/2026 18:59 ora di Roma
-caio-henrique-oliveira-silva-classic,2026-07-28T15:59:29.951096+00:00  # scade: 28/07/2026 17:59 ora di Roma
-carles-gil-de-pareja-vicent-classic,2026-07-28T17:10:52.154594+00:00  # scade: 28/07/2026 19:10 ora di Roma
-cavan-sullivan-inseason,2026-07-28T17:01:08.194433+00:00  # scade: 28/07/2026 19:01 ora di Roma
-dejan-joveljic-inseason,2026-07-28T17:23:54.250709+00:00  # scade: 28/07/2026 19:23 ora di Roma
-drena-beljo-dijon-classic,2026-07-28T16:50:23.888266+00:00  # scade: 28/07/2026 18:50 ora di Roma
-emir-karic-inseason,2026-07-28T16:41:38.211959+00:00  # scade: 28/07/2026 18:41 ora di Roma
-federico-santiago-valverde-dipetta-classic,2026-07-28T16:42:53.902461+00:00  # scade: 28/07/2026 18:42 ora di Roma
-federico-santiago-valverde-dipetta-inseason,2026-07-28T15:50:44.909275+00:00  # scade: 28/07/2026 17:50 ora di Roma
-fermin-lopez-martin-inseason,2026-07-28T16:52:33.848873+00:00  # scade: 28/07/2026 18:52 ora di Roma
-filip-jorgensen-inseason,2026-07-29T14:20:09.739158+00:00  # scade: 29/07/2026 16:20 ora di Roma
-hrvoje-babec-inseason,2026-07-29T14:32:09.155433+00:00  # scade: 29/07/2026 16:32 ora di Roma
-jack-mcglynn-classic,2026-07-28T15:58:09.306995+00:00  # scade: 28/07/2026 17:58 ora di Roma
-joao-pedro-junqueira-de-jesus-inseason,2026-07-28T17:37:36.627817+00:00  # scade: 28/07/2026 19:37 ora di Roma
-kim-gun-hee-classic,2026-07-28T15:57:44.632126+00:00  # scade: 28/07/2026 17:57 ora di Roma
-lucas-oliveira-rosa-classic,2026-07-29T14:27:35.647677+00:00  # scade: 29/07/2026 16:27 ora di Roma
-luka-vuskovic-inseason,2026-07-28T17:33:26.276315+00:00  # scade: 28/07/2026 19:33 ora di Roma
-maksymilian-stryjek-classic,2026-07-28T15:56:59.267963+00:00  # scade: 28/07/2026 17:56 ora di Roma
-marc-cucurella-saseta-classic,2026-07-28T17:27:00.558321+00:00  # scade: 28/07/2026 19:27 ora di Roma
-matheus-santos-carneiro-da-cunha-inseason,2026-07-28T16:52:30.413256+00:00  # scade: 28/07/2026 18:52 ora di Roma
-milan-skriniar-inseason,2026-07-28T15:50:42.940276+00:00  # scade: 28/07/2026 17:50 ora di Roma
-neymar-da-silva-santos-junior-classic,2026-07-28T17:06:20.955710+00:00  # scade: 28/07/2026 19:06 ora di Roma
-nicolas-jackson-inseason,2026-07-29T14:26:29.969554+00:00  # scade: 29/07/2026 16:26 ora di Roma
-ousseni-bouda-inseason,2026-07-28T17:46:19.841158+00:00  # scade: 28/07/2026 19:46 ora di Roma
-reid-roberts-inseason,2026-07-29T14:34:04.948683+00:00  # scade: 29/07/2026 16:34 ora di Roma
-ryan-porteous-classic,2026-07-29T14:18:38.441651+00:00  # scade: 29/07/2026 16:18 ora di Roma
-vinicius-jose-paixao-de-oliveira-junior-classic,2026-07-28T17:01:19.842022+00:00  # scade: 28/07/2026 19:01 ora di Roma
-vinicius-jose-paixao-de-oliveira-junior-inseason,2026-07-28T16:55:44.851299+00:00  # scade: 28/07/2026 18:55 ora di Roma
+jakub-piotr-kiwior-classic,2026-07-30T16:11:31.466316+00:00  # scade: 30/07/2026 18:11 ora di Roma
+thomas-didillon-classic,2026-07-30T16:10:44.259708+00:00  # scade: 30/07/2026 18:10 ora di Roma
 
 ## thin_market
 # THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare di comprare/offrire su un mercato poco liquido.
 abdoul-karim-coulibaly-inseason,2026-07-29T17:39:43.481341+00:00  # scade: 29/07/2026 19:39 ora di Roma
-adri-mehmeti-classic,2026-07-28T19:31:47.425412+00:00  # scade: 28/07/2026 21:31 ora di Roma
-aitor-fraga-torres-classic,2026-07-28T17:41:42.476297+00:00  # scade: 28/07/2026 19:41 ora di Roma
-alfonso-herrero-peinador-classic,2026-07-29T11:10:05.887425+00:00  # scade: 29/07/2026 13:10 ora di Roma
-angelo-gattermayer-classic,2026-07-28T21:59:00.517208+00:00  # scade: 28/07/2026 23:59 ora di Roma
-anthony-markanich-classic,2026-07-28T15:30:29.643063+00:00  # scade: 28/07/2026 17:30 ora di Roma
-antonin-kinsky-classic,2026-07-28T17:31:06.015362+00:00  # scade: 28/07/2026 19:31 ora di Roma
-arda-guler-classic,2026-07-28T18:11:21.383656+00:00  # scade: 28/07/2026 20:11 ora di Roma
-ayden-heaven-inseason,2026-07-28T22:44:17.214140+00:00  # scade: 29/07/2026 00:44 ora di Roma
 ayrton-enrique-costa-classic,2026-07-29T23:22:00.836857+00:00  # scade: 30/07/2026 01:22 ora di Roma
-bryan-cristante-classic,2026-07-28T15:16:22.394921+00:00  # scade: 28/07/2026 17:16 ora di Roma
-cagtay-kurukalip-classic,2026-07-28T15:44:24.844912+00:00  # scade: 28/07/2026 17:44 ora di Roma
 callum-mccowatt-classic,2026-07-29T23:03:44.862289+00:00  # scade: 30/07/2026 01:03 ora di Roma
-callum-styles-classic,2026-07-29T11:35:49.920814+00:00  # scade: 29/07/2026 13:35 ora di Roma
-cher-ndour-classic,2026-07-29T08:45:12.234899+00:00  # scade: 29/07/2026 10:45 ora di Roma
-christ-ravynel-inao-oulai-inseason,2026-07-29T15:57:18.533055+00:00  # scade: 29/07/2026 17:57 ora di Roma
 christian-pulisic-classic,2026-07-30T00:09:46.517259+00:00  # scade: 30/07/2026 02:09 ora di Roma
 christian-walton-classic,2026-07-29T17:25:16.552853+00:00  # scade: 29/07/2026 19:25 ora di Roma
-diego-alonso-romero-cachay-classic,2026-07-28T19:50:37.822570+00:00  # scade: 28/07/2026 21:50 ora di Roma
 donyell-malen-classic,2026-07-29T17:00:21.180319+00:00  # scade: 29/07/2026 19:00 ora di Roma
-ebbe-de-vlaeminck-classic,2026-07-28T22:49:39.489903+00:00  # scade: 29/07/2026 00:49 ora di Roma
-eduard-spertsyan-classic,2026-07-29T11:13:43.491565+00:00  # scade: 29/07/2026 13:13 ora di Roma
 ennio-van-der-gouw-classic,2026-07-30T00:01:58.608988+00:00  # scade: 30/07/2026 02:01 ora di Roma
 erik-antonio-lira-mendez-classic,2026-07-29T16:41:54.235939+00:00  # scade: 29/07/2026 18:41 ora di Roma
-ezri-konsa-ngoyo-inseason,2026-07-29T15:55:54.328966+00:00  # scade: 29/07/2026 17:55 ora di Roma
-fabio-daniel-soares-silva-classic,2026-07-28T23:54:04.591932+00:00  # scade: 29/07/2026 01:54 ora di Roma
 felix-kalu-nmecha-inseason,2026-07-29T17:31:16.194927+00:00  # scade: 29/07/2026 19:31 ora di Roma
 filippo-ranocchia-classic,2026-07-29T17:15:38.101272+00:00  # scade: 29/07/2026 19:15 ora di Roma
-frederik-ronnow-inseason,2026-07-28T17:40:40.252328+00:00  # scade: 28/07/2026 19:40 ora di Roma
-hakon-evjen-classic,2026-07-28T19:30:11.949657+00:00  # scade: 28/07/2026 21:30 ora di Roma
-igor-guilherme-barbosa-da-paixao-classic,2026-07-29T01:26:57.985679+00:00  # scade: 29/07/2026 03:26 ora di Roma
-ismaila-sarr-inseason,2026-07-28T19:38:10.516565+00:00  # scade: 28/07/2026 21:38 ora di Roma
-jean-matteo-bahoya-classic,2026-07-28T21:37:10.168164+00:00  # scade: 28/07/2026 23:37 ora di Roma
-jean-matteo-bahoya-inseason,2026-07-28T18:07:00.005303+00:00  # scade: 28/07/2026 20:07 ora di Roma
-joao-felix-sequeira-classic,2026-07-28T19:52:06.435917+00:00  # scade: 28/07/2026 21:52 ora di Roma
-joe-gelhardt-inseason,2026-07-29T11:27:08.232973+00:00  # scade: 29/07/2026 13:27 ora di Roma
+jari-litmanen-classic,2026-07-31T16:14:11.376465+00:00  # scade: 31/07/2026 18:14 ora di Roma
 keny-alexander-arroyo-alvarado-classic,2026-07-29T16:48:32.046213+00:00  # scade: 29/07/2026 18:48 ora di Roma
 kolbeinn-birgir-finnsson-classic,2026-07-30T00:00:00.432023+00:00  # scade: 30/07/2026 02:00 ora di Roma
-kolbeinn-birgir-finnsson-inseason,2026-07-28T23:49:45.588154+00:00  # scade: 29/07/2026 01:49 ora di Roma
 konstantin-tyukavin-classic,2026-07-30T00:24:33.096413+00:00  # scade: 30/07/2026 02:24 ora di Roma
 lucas-hogsberg-inseason,2026-07-29T23:14:06.528722+00:00  # scade: 30/07/2026 01:14 ora di Roma
-lucca-kiaba-mounganga-inseason,2026-07-28T16:49:10.896103+00:00  # scade: 28/07/2026 18:49 ora di Roma
 luis-antonio-da-rocha-junior-classic,2026-07-29T23:10:31.700097+00:00  # scade: 30/07/2026 01:10 ora di Roma
-luiz-antonio-ferreira-rodrigues-classic,2026-07-29T01:36:09.789830+00:00  # scade: 29/07/2026 03:36 ora di Roma
-marc-bernal-casas-inseason,2026-07-29T00:38:22.661650+00:00  # scade: 29/07/2026 02:38 ora di Roma
-marcus-younis-classic,2026-07-28T17:48:40.716786+00:00  # scade: 28/07/2026 19:48 ora di Roma
-mateus-goncalo-espanha-fernandes-classic,2026-07-28T21:35:29.801512+00:00  # scade: 28/07/2026 23:35 ora di Roma
 matheus-isaias-dos-santos-classic,2026-07-30T00:23:33.293516+00:00  # scade: 30/07/2026 02:23 ora di Roma
-mickey-van-de-ven-inseason,2026-07-29T15:54:19.397989+00:00  # scade: 29/07/2026 17:54 ora di Roma
-milton-delgado-classic,2026-07-28T21:36:32.690514+00:00  # scade: 28/07/2026 23:36 ora di Roma
-muhammed-sengezer-classic,2026-07-28T15:12:13.579389+00:00  # scade: 28/07/2026 17:12 ora di Roma
 nico-o-reilly-classic,2026-07-29T17:29:09.042099+00:00  # scade: 29/07/2026 19:29 ora di Roma
-noah-atubolu-classic,2026-07-29T13:49:10.798658+00:00  # scade: 29/07/2026 15:49 ora di Roma
-odisseas-vlachodimos-inseason,2026-07-29T00:29:16.604740+00:00  # scade: 29/07/2026 02:29 ora di Roma
-ola-brynhildsen-classic,2026-07-29T11:30:29.958830+00:00  # scade: 29/07/2026 13:30 ora di Roma
 ollie-watkins-classic,2026-07-29T17:29:43.862472+00:00  # scade: 29/07/2026 19:29 ora di Roma
-pedro-rocha-neves-classic,2026-07-29T00:06:31.825075+00:00  # scade: 29/07/2026 02:06 ora di Roma
 rayan-vitor-simplicio-rocha-inseason,2026-07-29T17:43:01.522257+00:00  # scade: 29/07/2026 19:43 ora di Roma
-riccardo-calafiori-classic,2026-07-28T18:11:20.648824+00:00  # scade: 28/07/2026 20:11 ora di Roma
 roger-ibanez-da-silva-classic,2026-07-29T23:07:26.910064+00:00  # scade: 30/07/2026 01:07 ora di Roma
-sandro-tonali-inseason,2026-07-28T15:26:39.162081+00:00  # scade: 28/07/2026 17:26 ora di Roma
-serhou-guirassy-inseason,2026-07-29T13:43:40.397979+00:00  # scade: 29/07/2026 15:43 ora di Roma
 tairyk-arconte-classic,2026-07-29T17:22:55.703650+00:00  # scade: 29/07/2026 19:22 ora di Roma
-takato-yamamoto-inseason,2026-07-28T16:48:57.148032+00:00  # scade: 28/07/2026 18:48 ora di Roma
-taylor-harwood-bellis-classic,2026-07-29T15:45:31.521700+00:00  # scade: 29/07/2026 17:45 ora di Roma
-valentin-rongier-classic,2026-07-28T19:50:59.433585+00:00  # scade: 28/07/2026 21:50 ora di Roma
-vladislav-torop-classic,2026-07-28T15:06:25.826572+00:00  # scade: 28/07/2026 17:06 ora di Roma
 waldemar-anton-classic,2026-07-30T00:55:25.611779+00:00  # scade: 30/07/2026 02:55 ora di Roma
 wesley-moraes-ferreira-da-silva-classic,2026-07-29T17:18:37.730897+00:00  # scade: 29/07/2026 19:18 ora di Roma
-weston-mckennie-classic,2026-07-28T21:52:21.290857+00:00  # scade: 28/07/2026 23:52 ora di Roma
 
 ## campionato
 # CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla con le altre. Ogni carta di un giocatore attivo in uno di questi campionati viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
@@ -2008,50 +1930,38 @@ seasonal-contender,15 giorni
 seasonal-contenders,15 giorni
 
 ## campionato_inseason_temp
-# BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte in_season di questo campionato vengono ignorate (nessun acquisto, nessuna offerta), le carte classic dello stesso campionato restano valutate normalmente. Pensata per campionati con carte in_season appena uscite e dal prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati il confronto di mercato usa lo stesso modello di MLS/K League (classic confrontata solo con classic, in_season solo con in_season) -- vedi EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni. Scadenza ASSOLUTA in ISO (come thin_market/cooldown_acquisto/fix_urgente).
+# BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte in_season di questo campionato vengono ignorate (nessun acquisto, nessuna offerta), le carte classic dello stesso campionato restano valutate normalmente. Pensata per campionati con carte in_season appena uscite e dal prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati il confronto di mercato usa lo stesso modello di MLS/K League (classic confrontata solo con classic, in_season solo con in_season) -- vedi EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni. Scadenza ASSOLUTA in ISO (come thin_market/cooldown_acquisto/fix_urgente, FIX 29/07: prima era durata testuale, che si reinterpretava 'da adesso' ad ogni lettura e non scorreva mai davvero se la riga non veniva riscritta -- vedi commento in _lista_nera_leggi_righe).
 1-hnl,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
+2-bundesliga,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
 austrian-bundesliga,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
 eredivisie,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
+football-league-championship,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
+jupiler-pro-league,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
+ligue-2-fr,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
 premiership-gb-sct,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
 primeira-liga-pt,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
-jupiler-pro-league,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
-football-league-championship,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
-2-bundesliga,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
-ligue-2-fr,2026-08-13T15:53:07.329852+00:00  # scade: 13/08/2026 17:53 ora di Roma
 
 ## forma_bassa_ultime_5
 # FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), SEZIONE SEPARATA e distinta dai blacklist permanenti (coverage/media-zero restano in 'giocatore'), perche' questa e' una condizione transitoria che puo' rientrare -- non merita un blocco di 365gg.
 aaron-anselmino,2026-07-29T18:01:30.323339+00:00  # scade: 29/07/2026 20:01 ora di Roma
-aaron-ramsdale,2026-07-28T23:28:04.598109+00:00  # scade: 29/07/2026 01:28 ora di Roma
 aaron-zehnter,2026-07-30T11:26:07.581001+00:00  # scade: 30/07/2026 13:26 ora di Roma
 abdoul-kader-ouattara,2026-07-30T17:52:21.698915+00:00  # scade: 30/07/2026 19:52 ora di Roma
-adrian-alonso-martinez-batista,2026-07-29T07:31:15.189159+00:00  # scade: 29/07/2026 09:31 ora di Roma
-ahmetcan-kaplan,2026-07-28T23:32:50.406912+00:00  # scade: 29/07/2026 01:32 ora di Roma
 airton-moises-santos-sousa,2026-07-30T11:35:19.552224+00:00  # scade: 30/07/2026 13:35 ora di Roma
-alban-lafont,2026-07-28T22:26:20.965892+00:00  # scade: 29/07/2026 00:26 ora di Roma
-alejandro-dario-gomez,2026-07-29T07:36:32.861184+00:00  # scade: 29/07/2026 09:36 ora di Roma
-alejandro-grimaldo-garcia,2026-07-29T07:37:52.993727+00:00  # scade: 29/07/2026 09:37 ora di Roma
 alex-palmer,2026-07-30T00:01:21.280997+00:00  # scade: 30/07/2026 02:01 ora di Roma
-alexis-flips,2026-07-29T15:05:22.111232+00:00  # scade: 29/07/2026 17:05 ora di Roma
 alfredo-ademar-chavez-lopez,2026-07-29T17:46:00.220513+00:00  # scade: 29/07/2026 19:46 ora di Roma
-alphonse-areola,2026-07-28T20:58:07.960854+00:00  # scade: 28/07/2026 22:58 ora di Roma
-altay-bayindir,2026-07-29T15:28:23.257754+00:00  # scade: 29/07/2026 17:28 ora di Roma
-alvaro-ribeiro-de-brito-augusto,2026-07-28T18:10:24.924180+00:00  # scade: 28/07/2026 20:10 ora di Roma
 andre-nogueira-gomes,2026-07-31T00:09:09.779880+00:00  # scade: 31/07/2026 02:09 ora di Roma
+andreas-hanche-olsen,2026-08-01T16:13:09.522414+00:00  # scade: 01/08/2026 18:13 ora di Roma
 andrew-vincent-rick,2026-07-31T14:27:53.455247+00:00  # scade: 31/07/2026 16:27 ora di Roma
+andri-lucas-gudjohnsen,2026-08-01T16:12:13.335169+00:00  # scade: 01/08/2026 18:12 ora di Roma
 andrija-radulovic,2026-07-29T16:50:24.823685+00:00  # scade: 29/07/2026 18:50 ora di Roma
 anel-ahmedhodzic,2026-07-30T13:06:08.124198+00:00  # scade: 30/07/2026 15:06 ora di Roma
 antoni-djibu-milambo,2026-07-30T17:00:20.469167+00:00  # scade: 30/07/2026 19:00 ora di Roma
-arnaud-bodart,2026-07-29T08:50:12.340755+00:00  # scade: 29/07/2026 10:50 ora di Roma
 arsen-adamov,2026-07-30T01:11:34.461781+00:00  # scade: 30/07/2026 03:11 ora di Roma
 arseniy-batagov,2026-07-29T22:53:24.757397+00:00  # scade: 30/07/2026 00:53 ora di Roma
-arthur-desmas,2026-07-29T15:25:24.013265+00:00  # scade: 29/07/2026 17:25 ora di Roma
 arthur-okonkwo,2026-07-30T15:52:16.655856+00:00  # scade: 30/07/2026 17:52 ora di Roma
 axel-tape-kobrissa,2026-07-30T11:17:40.057336+00:00  # scade: 30/07/2026 13:17 ora di Roma
 bart-nieuwkoop,2026-07-29T16:49:54.870036+00:00  # scade: 29/07/2026 18:49 ora di Roma
-baye-coulibaly,2026-07-28T21:16:38.567332+00:00  # scade: 28/07/2026 23:16 ora di Roma
 benoit-badiashile-mukinayi,2026-07-29T16:58:39.861811+00:00  # scade: 29/07/2026 18:58 ora di Roma
-bobby-allain,2026-07-28T15:43:01.634666+00:00  # scade: 28/07/2026 17:43 ora di Roma
 bode-davis,2026-07-29T22:51:09.774774+00:00  # scade: 30/07/2026 00:51 ora di Roma
 boris-chi-manuzah-lum,2026-07-29T21:50:51.728724+00:00  # scade: 29/07/2026 23:50 ora di Roma
 brian-djomeni-madjo,2026-07-29T18:33:24.435652+00:00  # scade: 29/07/2026 20:33 ora di Roma
@@ -2059,60 +1969,35 @@ brice-samba,2026-07-29T18:00:10.448629+00:00  # scade: 29/07/2026 20:00 ora di R
 bryan-zaragoza-martinez,2026-07-29T21:41:11.012753+00:00  # scade: 29/07/2026 23:41 ora di Roma
 cameron-carter-vickers,2026-07-29T16:45:20.570748+00:00  # scade: 29/07/2026 18:45 ora di Roma
 carlos-miguel-coronel,2026-07-29T21:52:22.983674+00:00  # scade: 29/07/2026 23:52 ora di Roma
-christian-kjetil-haug,2026-07-29T13:14:40.673817+00:00  # scade: 29/07/2026 15:14 ora di Roma
 christian-zawieschitzky,2026-07-29T17:43:49.730643+00:00  # scade: 29/07/2026 19:43 ora di Roma
 claudio-pires-morais-ramos,2026-07-31T00:10:20.139963+00:00  # scade: 31/07/2026 02:10 ora di Roma
 daiki-suga,2026-07-31T00:29:00.508087+00:00  # scade: 31/07/2026 02:29 ora di Roma
-daniel-cerantola-fuzato,2026-07-29T15:16:15.369749+00:00  # scade: 29/07/2026 17:16 ora di Roma
 danilo-cataldi,2026-07-29T21:35:59.183744+00:00  # scade: 29/07/2026 23:35 ora di Roma
-david-datro-fofana,2026-07-29T07:26:13.540089+00:00  # scade: 29/07/2026 09:26 ora di Roma
-david-neres-campos,2026-07-29T08:52:39.003527+00:00  # scade: 29/07/2026 10:52 ora di Roma
 david-raya-martin,2026-07-30T17:15:38.661325+00:00  # scade: 30/07/2026 19:15 ora di Roma
-dayne-st-clair,2026-07-28T22:24:41.593177+00:00  # scade: 29/07/2026 00:24 ora di Roma
-dominik-kotarski,2026-07-29T13:10:29.074889+00:00  # scade: 29/07/2026 15:10 ora di Roma
-donny-van-de-beek,2026-07-28T22:08:15.271792+00:00  # scade: 29/07/2026 00:08 ora di Roma
 duje-caleta-car,2026-07-30T17:51:38.965759+00:00  # scade: 30/07/2026 19:51 ora di Roma
 dylan-tavares-dos-santos,2026-07-29T18:27:50.137635+00:00  # scade: 29/07/2026 20:27 ora di Roma
-eder-gabriel-militao,2026-07-28T20:43:48.818487+00:00  # scade: 28/07/2026 22:43 ora di Roma
-ederson-santana-de-moraes,2026-07-29T09:11:12.622678+00:00  # scade: 29/07/2026 11:11 ora di Roma
 eduard-sobol,2026-07-30T16:41:09.035202+00:00  # scade: 30/07/2026 18:41 ora di Roma
 edward-james-beach,2026-07-29T18:13:17.907486+00:00  # scade: 29/07/2026 20:13 ora di Roma
-elias-jelert-kristensen,2026-07-29T15:31:04.979680+00:00  # scade: 29/07/2026 17:31 ora di Roma
-emeka-eneli,2026-07-29T07:18:35.792257+00:00  # scade: 29/07/2026 09:18 ora di Roma
-emirhan-cuneyt-demircan,2026-07-29T15:55:58.934995+00:00  # scade: 29/07/2026 17:55 ora di Roma
 emmanuel-ochoa,2026-07-30T17:38:30.654719+00:00  # scade: 30/07/2026 19:38 ora di Roma
-erdem-canpolat,2026-07-29T08:48:19.928267+00:00  # scade: 29/07/2026 10:48 ora di Roma
-eric-emanuel-da-silva-moreira,2026-07-29T08:14:34.057969+00:00  # scade: 29/07/2026 10:14 ora di Roma
-erick-nunes-barbosa-dos-santos,2026-07-29T08:17:32.026889+00:00  # scade: 29/07/2026 10:17 ora di Roma
 estevao-willian-almeida-de-oliveira-goncalves,2026-07-29T18:06:09.652894+00:00  # scade: 29/07/2026 20:06 ora di Roma
 ethan-chidiebere-nwaneri,2026-07-30T00:26:31.090034+00:00  # scade: 30/07/2026 02:26 ora di Roma
 evan-ferguson,2026-07-29T18:09:50.722804+00:00  # scade: 29/07/2026 20:09 ora di Roma
-exequiel-alejandro-palacios,2026-07-29T15:04:52.208402+00:00  # scade: 29/07/2026 17:04 ora di Roma
-fabian-bredlow,2026-07-29T08:15:06.152079+00:00  # scade: 29/07/2026 10:15 ora di Roma
 faris-pemi-moumbagna,2026-07-31T14:33:35.189107+00:00  # scade: 31/07/2026 16:33 ora di Roma
 florent-muslija,2026-07-30T13:09:36.781939+00:00  # scade: 30/07/2026 15:09 ora di Roma
-florian-bianchini,2026-07-29T08:50:40.087188+00:00  # scade: 29/07/2026 10:50 ora di Roma
 florian-wiegele,2026-07-29T17:45:50.494480+00:00  # scade: 29/07/2026 19:45 ora di Roma
-formose-mendy-2001-01-02,2026-07-29T08:49:47.237721+00:00  # scade: 29/07/2026 10:49 ora di Roma
 franco-israel-wibmer,2026-07-29T18:03:44.304185+00:00  # scade: 29/07/2026 20:03 ora di Roma
-franco-petroli,2026-07-29T08:51:27.843269+00:00  # scade: 29/07/2026 10:51 ora di Roma
+frederik-alves-ibsen,2026-08-01T16:12:23.375561+00:00  # scade: 01/08/2026 18:12 ora di Roma
 gaetan-coucke,2026-07-29T18:26:03.847015+00:00  # scade: 29/07/2026 20:26 ora di Roma
-geronimo-rulli,2026-07-28T19:47:41.506099+00:00  # scade: 28/07/2026 21:47 ora di Roma
-gift-emmanuel-orban,2026-07-28T22:26:23.715310+00:00  # scade: 29/07/2026 00:26 ora di Roma
 goncalo-bernardo-inacio,2026-07-29T19:34:11.262118+00:00  # scade: 29/07/2026 21:34 ora di Roma
-guglielmo-vicario,2026-07-28T22:43:04.408525+00:00  # scade: 29/07/2026 00:43 ora di Roma
 hamza-igmane,2026-07-30T01:23:18.439121+00:00  # scade: 30/07/2026 03:23 ora di Roma
 harry-amass,2026-07-31T14:18:12.198930+00:00  # scade: 31/07/2026 16:18 ora di Roma
 hee-dong-roh,2026-07-31T00:50:37.953929+00:00  # scade: 31/07/2026 02:50 ora di Roma
 hendrik-van-crombrugge,2026-07-31T14:19:29.406534+00:00  # scade: 31/07/2026 16:19 ora di Roma
 hirving-rodrigo-lozano-bahena,2026-07-29T19:53:43.710836+00:00  # scade: 29/07/2026 21:53 ora di Roma
-hobie-verhulst,2026-07-29T15:16:20.348151+00:00  # scade: 29/07/2026 17:16 ora di Roma
 hugo-ekitike,2026-07-29T21:56:21.096857+00:00  # scade: 29/07/2026 23:56 ora di Roma
 hyeon-mu-kang,2026-07-29T17:48:32.736159+00:00  # scade: 29/07/2026 19:48 ora di Roma
 igor-akinfeev,2026-07-30T01:00:20.316662+00:00  # scade: 30/07/2026 03:00 ora di Roma
 igor-jesus-lima,2026-07-30T23:52:32.181174+00:00  # scade: 31/07/2026 01:52 ora di Roma
-ilay-feingold,2026-07-29T07:26:26.515864+00:00  # scade: 29/07/2026 09:26 ora di Roma
-isaiah-ahmed,2026-07-29T08:07:11.164560+00:00  # scade: 29/07/2026 10:07 ora di Roma
 ivan-mamut,2026-07-30T01:30:45.645364+00:00  # scade: 30/07/2026 03:30 ora di Roma
 ivan-nevistic,2026-07-29T22:34:14.416788+00:00  # scade: 30/07/2026 00:34 ora di Roma
 ivan-provedel,2026-07-31T14:22:15.832297+00:00  # scade: 31/07/2026 16:22 ora di Roma
@@ -2120,183 +2005,104 @@ ivor-pandur,2026-07-29T17:03:57.308287+00:00  # scade: 29/07/2026 19:03 ora di R
 jack-grealish,2026-07-29T21:36:11.279703+00:00  # scade: 29/07/2026 23:36 ora di Roma
 jack-stephens,2026-07-30T01:09:04.928552+00:00  # scade: 30/07/2026 03:09 ora di Roma
 jack-walton,2026-07-29T17:33:37.839880+00:00  # scade: 29/07/2026 19:33 ora di Roma
-james-trafford,2026-07-29T08:57:59.868512+00:00  # scade: 29/07/2026 10:57 ora di Roma
-jamie-jermaine-bynoe-gittens,2026-07-28T23:44:23.444476+00:00  # scade: 29/07/2026 01:44 ora di Roma
 jarrad-branthwaite,2026-07-29T19:35:03.264305+00:00  # scade: 29/07/2026 21:35 ora di Roma
-jayden-osei-addai,2026-07-29T08:07:55.241415+00:00  # scade: 29/07/2026 10:07 ora di Roma
 jerdy-schouten,2026-07-30T13:05:23.977859+00:00  # scade: 30/07/2026 15:05 ora di Roma
-jeremy-jacquet,2026-07-29T15:59:59.361633+00:00  # scade: 29/07/2026 17:59 ora di Roma
 ji-won-kim,2026-07-31T14:21:27.473377+00:00  # scade: 31/07/2026 16:21 ora di Roma
 jimmy-maurer,2026-07-30T11:26:08.581432+00:00  # scade: 30/07/2026 13:26 ora di Roma
-joan-garcia-pons,2026-07-29T08:54:16.312300+00:00  # scade: 29/07/2026 10:54 ora di Roma
-joan-jordan-moreno,2026-07-29T15:25:24.655458+00:00  # scade: 29/07/2026 17:25 ora di Roma
-joane-kouakou-gadou,2026-07-29T08:53:27.710834+00:00  # scade: 29/07/2026 10:53 ora di Roma
-joao-klauss-de-mello,2026-07-29T13:10:10.172859+00:00  # scade: 29/07/2026 15:10 ora di Roma
 joao-manuel-neves-virginia,2026-07-30T11:26:35.650143+00:00  # scade: 30/07/2026 13:26 ora di Roma
-joaquin-panichelli,2026-07-29T07:42:09.450262+00:00  # scade: 29/07/2026 09:42 ora di Roma
-joe-lumley,2026-07-29T15:26:42.019218+00:00  # scade: 29/07/2026 17:26 ora di Roma
 john-pulskamp,2026-07-30T00:41:21.971910+00:00  # scade: 30/07/2026 02:41 ora di Roma
 john-tolkin,2026-07-30T11:26:35.744274+00:00  # scade: 30/07/2026 13:26 ora di Roma
 john-victor-maciel-furtado,2026-07-30T16:53:50.698421+00:00  # scade: 30/07/2026 18:53 ora di Roma
 jon-pacheco-dozagarat,2026-07-29T16:50:53.029255+00:00  # scade: 29/07/2026 18:50 ora di Roma
 jorge-andres-carrascal-guardo,2026-07-30T17:02:26.958644+00:00  # scade: 30/07/2026 19:02 ora di Roma
-jorge-emanuel-broun,2026-07-29T08:49:47.124233+00:00  # scade: 29/07/2026 10:49 ora di Roma
 jorge-luiz-barbosa-teixeira,2026-07-30T16:50:15.883677+00:00  # scade: 30/07/2026 18:50 ora di Roma
-jose-angel-esmoris-tasende,2026-07-29T15:11:55.006486+00:00  # scade: 29/07/2026 17:11 ora di Roma
-jose-antonio-caro-diaz,2026-07-29T15:13:34.386236+00:00  # scade: 29/07/2026 17:13 ora di Roma
 jose-manuel-arias-copete,2026-07-30T23:42:00.867303+00:00  # scade: 31/07/2026 01:42 ora di Roma
 jose-maria-gimenez-de-vargas,2026-07-29T16:59:06.072107+00:00  # scade: 29/07/2026 18:59 ora di Roma
-jose-pedro-malheiro-de-sa,2026-07-29T08:57:50.134999+00:00  # scade: 29/07/2026 10:57 ora di Roma
 jovan-ivanisevic,2026-07-30T11:35:48.854896+00:00  # scade: 30/07/2026 13:35 ora di Roma
-ju-hyeok-kang,2026-07-29T07:40:50.748032+00:00  # scade: 29/07/2026 09:40 ora di Roma
-juan-agustin-musso,2026-07-28T22:43:18.010879+00:00  # scade: 29/07/2026 00:43 ora di Roma
-juan-marcos-foyth,2026-07-29T15:13:02.214373+00:00  # scade: 29/07/2026 17:13 ora di Roma
 julen-agirrezabala-astulez,2026-07-29T18:27:51.990631+00:00  # scade: 29/07/2026 20:27 ora di Roma
 jung-in-moon,2026-07-30T16:49:43.635557+00:00  # scade: 30/07/2026 18:49 ora di Roma
 jung-woo-jang,2026-07-30T00:00:37.860112+00:00  # scade: 30/07/2026 02:00 ora di Roma
-justin-hoogma,2026-07-29T15:44:19.767985+00:00  # scade: 29/07/2026 17:44 ora di Roma
-karl-jakob-hein,2026-07-29T15:06:23.373789+00:00  # scade: 29/07/2026 17:06 ora di Roma
 kaua-morais-vieira-dos-santos,2026-07-30T11:22:17.744004+00:00  # scade: 30/07/2026 13:22 ora di Roma
-kenny-quetant,2026-07-29T08:06:45.189253+00:00  # scade: 29/07/2026 10:06 ora di Roma
-kevin-o-toole,2026-07-29T09:11:02.031393+00:00  # scade: 29/07/2026 11:11 ora di Roma
 kim-tae-hoon,2026-07-29T17:48:32.169192+00:00  # scade: 29/07/2026 19:48 ora di Roma
 kobbie-mainoo,2026-07-30T00:23:15.345538+00:00  # scade: 30/07/2026 02:23 ora di Roma
 kyung-sub-park,2026-07-30T23:40:09.118714+00:00  # scade: 31/07/2026 01:40 ora di Roma
-lee-ji-ho,2026-07-29T15:08:24.818423+00:00  # scade: 29/07/2026 17:08 ora di Roma
-leo-sauer,2026-07-29T09:11:09.673385+00:00  # scade: 29/07/2026 11:11 ora di Roma
 leon-grgic,2026-07-30T15:51:55.539171+00:00  # scade: 30/07/2026 17:51 ora di Roma
 leonardo-campana-romero,2026-07-30T00:03:57.484077+00:00  # scade: 30/07/2026 02:03 ora di Roma
-lois-openda,2026-07-28T22:09:34.849506+00:00  # scade: 29/07/2026 00:09 ora di Roma
 lorenzo-pellegrini,2026-07-29T17:57:30.102910+00:00  # scade: 29/07/2026 19:57 ora di Roma
 lucas-beltran,2026-07-30T15:59:48.719169+00:00  # scade: 30/07/2026 17:59 ora di Roma
 lucas-bergstrom,2026-07-31T00:32:06.430855+00:00  # scade: 31/07/2026 02:32 ora di Roma
-lucas-chevalier,2026-07-29T08:50:53.514523+00:00  # scade: 29/07/2026 10:50 ora di Roma
-lucas-estella-perri,2026-07-29T08:17:29.133922+00:00  # scade: 29/07/2026 10:17 ora di Roma
+lucas-fernandes,2026-08-01T16:11:10.605503+00:00  # scade: 01/08/2026 18:11 ora di Roma
 lucas-pirard,2026-07-29T17:20:23.666868+00:00  # scade: 29/07/2026 19:20 ora di Roma
 ludovit-reis,2026-07-31T14:21:28.221764+00:00  # scade: 31/07/2026 16:21 ora di Roma
-luis-barraza,2026-07-28T23:38:40.158749+00:00  # scade: 29/07/2026 01:38 ora di Roma
-luiz-lucio-reis-junior,2026-07-28T23:49:05.137789+00:00  # scade: 29/07/2026 01:49 ora di Roma
 luka-maric,2026-07-29T17:48:52.239482+00:00  # scade: 29/07/2026 19:48 ora di Roma
 maghnes-akliouche,2026-07-29T16:58:41.208715+00:00  # scade: 29/07/2026 18:58 ora di Roma
 maksym-talovierov,2026-07-30T08:46:28.346436+00:00  # scade: 30/07/2026 10:46 ora di Roma
-malcolm-john-matarr-jeng,2026-07-29T07:43:36.577382+00:00  # scade: 29/07/2026 09:43 ora di Roma
-marc-andre-ter-stegen,2026-07-29T07:31:10.958116+00:00  # scade: 29/07/2026 09:31 ora di Roma
 marcus-thuram,2026-07-29T17:01:44.495531+00:00  # scade: 29/07/2026 19:01 ora di Roma
 marius-gersbeck,2026-07-30T11:18:43.723628+00:00  # scade: 30/07/2026 13:18 ora di Roma
 martin-zlomislic,2026-07-29T18:08:06.329931+00:00  # scade: 29/07/2026 20:08 ora di Roma
 marvin-keller,2026-07-30T23:28:04.409267+00:00  # scade: 31/07/2026 01:28 ora di Roma
-masaki-watai,2026-07-28T18:45:23.757620+00:00  # scade: 28/07/2026 20:45 ora di Roma
 mateu-jaume-morey-bauza,2026-07-31T14:28:34.540658+00:00  # scade: 31/07/2026 16:28 ora di Roma
 matheo-raab,2026-07-29T17:22:36.965399+00:00  # scade: 29/07/2026 19:22 ora di Roma
-matthieu-luka-epolo,2026-07-29T07:39:49.803669+00:00  # scade: 29/07/2026 09:39 ora di Roma
 matthijs-de-ligt,2026-07-30T22:59:11.167443+00:00  # scade: 31/07/2026 00:59 ora di Roma
 max-alleyne,2026-07-30T16:46:20.489613+00:00  # scade: 30/07/2026 18:46 ora di Roma
-max-kilman,2026-07-28T22:08:52.421567+00:00  # scade: 29/07/2026 00:08 ora di Roma
-maxence-andre-prevot,2026-07-28T22:05:23.158127+00:00  # scade: 29/07/2026 00:05 ora di Roma
 maxime-delanghe,2026-07-29T17:17:57.314850+00:00  # scade: 29/07/2026 19:17 ora di Roma
-maxime-dupe,2026-07-28T22:25:12.967898+00:00  # scade: 29/07/2026 00:25 ora di Roma
-medon-berisha,2026-07-29T15:57:31.715538+00:00  # scade: 29/07/2026 17:57 ora di Roma
-michael-brouwer,2026-07-29T15:15:30.666125+00:00  # scade: 29/07/2026 17:15 ora di Roma
+memeh-caleb-okoli,2026-08-01T16:12:17.310527+00:00  # scade: 01/08/2026 18:12 ora di Roma
 michy-batshuayi-tunga,2026-07-29T21:52:06.955485+00:00  # scade: 29/07/2026 23:52 ora di Roma
 miguel-raimundo-nobrega,2026-07-30T17:22:44.974770+00:00  # scade: 30/07/2026 19:22 ora di Roma
-mike-penders,2026-07-29T09:14:04.256812+00:00  # scade: 29/07/2026 11:14 ora di Roma
-mohamed-el-hankouri,2026-07-29T09:10:44.728630+00:00  # scade: 29/07/2026 11:10 ora di Roma
-mohamed-kone-2002-03-07,2026-07-29T15:29:19.511635+00:00  # scade: 29/07/2026 17:29 ora di Roma
 mohamed-yaya-guindo,2026-07-29T21:52:51.492588+00:00  # scade: 29/07/2026 23:52 ora di Roma
-mohammed-kudus,2026-07-29T15:28:02.282503+00:00  # scade: 29/07/2026 17:28 ora di Roma
 moise-bioty-kean,2026-07-30T13:05:04.402750+00:00  # scade: 30/07/2026 15:05 ora di Roma
 moncef-zekri,2026-07-29T17:26:44.885990+00:00  # scade: 29/07/2026 19:26 ora di Roma
-n-golo-kante,2026-07-29T13:06:27.483766+00:00  # scade: 29/07/2026 15:06 ora di Roma
 naif-aguerd,2026-07-30T17:13:45.483433+00:00  # scade: 30/07/2026 19:13 ora di Roma
 nicholas-george-hagen-godoy,2026-07-31T14:16:07.524870+00:00  # scade: 31/07/2026 16:16 ora di Roma
+nik-prelec,2026-08-01T16:14:17.612124+00:00  # scade: 01/08/2026 18:14 ora di Roma
 noa-mikic,2026-07-30T23:33:36.781844+00:00  # scade: 31/07/2026 01:33 ora di Roma
 noah-edjouma,2026-07-31T14:21:48.704281+00:00  # scade: 31/07/2026 16:21 ora di Roma
-noah-weisshaupt,2026-07-28T22:05:21.322178+00:00  # scade: 29/07/2026 00:05 ora di Roma
-noe-dussenne,2026-07-29T07:39:18.386082+00:00  # scade: 29/07/2026 09:39 ora di Roma
 obite-evan-n-dicka,2026-07-30T11:09:27.270221+00:00  # scade: 30/07/2026 13:09 ora di Roma
 omir-fernandez,2026-07-29T17:40:49.019050+00:00  # scade: 29/07/2026 19:40 ora di Roma
-oumar-kalifa-pona,2026-07-28T21:24:51.316459+00:00  # scade: 28/07/2026 23:24 ora di Roma
-pablo-barrios-rivas,2026-07-29T07:37:15.815906+00:00  # scade: 29/07/2026 09:37 ora di Roma
 pablo-cunat-campos,2026-07-30T11:08:08.614723+00:00  # scade: 30/07/2026 13:08 ora di Roma
 parfait-guiagon,2026-07-29T19:33:33.983160+00:00  # scade: 29/07/2026 21:33 ora di Roma
-pau-lopez-sabata,2026-07-28T22:37:55.120439+00:00  # scade: 29/07/2026 00:37 ora di Roma
-pedro-de-la-vega,2026-07-29T15:58:43.753705+00:00  # scade: 29/07/2026 17:58 ora di Roma
 peru-nolaskoain-esnal,2026-07-30T11:22:17.485763+00:00  # scade: 30/07/2026 13:22 ora di Roma
 philipp-kohn,2026-07-29T16:46:32.792058+00:00  # scade: 29/07/2026 18:46 ora di Roma
-pierluigi-gollini,2026-07-29T15:20:32.636978+00:00  # scade: 29/07/2026 17:20 ora di Roma
-pietro-terracciano,2026-07-29T07:36:46.683632+00:00  # scade: 29/07/2026 09:36 ora di Roma
-quentin-ndjantou-mbitcha,2026-07-29T07:21:36.953236+00:00  # scade: 29/07/2026 09:21 ora di Roma
 radoslaw-majecki,2026-07-30T11:33:19.708886+00:00  # scade: 30/07/2026 13:33 ora di Roma
 rafael-mir-vicente,2026-07-29T16:49:51.724172+00:00  # scade: 29/07/2026 18:49 ora di Roma
 razvan-sava,2026-07-30T13:11:36.478509+00:00  # scade: 30/07/2026 15:11 ora di Roma
-remi-stephane-himbert,2026-07-28T21:17:23.084010+00:00  # scade: 28/07/2026 23:17 ora di Roma
 robin-risser,2026-07-29T18:05:21.947923+00:00  # scade: 29/07/2026 20:05 ora di Roma
-robin-roefs,2026-07-29T07:24:58.178217+00:00  # scade: 29/07/2026 09:24 ora di Roma
-rodrygo-silva-de-goes,2026-07-28T21:20:34.402405+00:00  # scade: 28/07/2026 23:20 ora di Roma
+rodrygo-silva-de-goes,2026-08-01T16:13:27.149987+00:00  # scade: 01/08/2026 18:13 ora di Roma
 romaine-mundle-2003-04-24,2026-07-29T19:34:26.636073+00:00  # scade: 29/07/2026 21:34 ora di Roma
 romelle-donovan,2026-07-29T19:33:38.999630+00:00  # scade: 29/07/2026 21:33 ora di Roma
 ruben-van-bommel,2026-07-30T11:03:19.831022+00:00  # scade: 30/07/2026 13:03 ora di Roma
 rui-tiago-dantas-da-silva,2026-07-29T16:46:55.832598+00:00  # scade: 29/07/2026 18:46 ora di Roma
-ryo-tabei,2026-07-28T22:10:04.723918+00:00  # scade: 29/07/2026 00:10 ora di Roma
-ryoya-ogawa,2026-07-28T22:08:14.501384+00:00  # scade: 29/07/2026 00:08 ora di Roma
-sadik-fofana,2026-07-29T13:16:08.196503+00:00  # scade: 29/07/2026 15:16 ora di Roma
-sam-johnstone,2026-07-29T15:22:19.372722+00:00  # scade: 29/07/2026 17:22 ora di Roma
 samuel-iling-junior,2026-07-29T21:34:39.600776+00:00  # scade: 29/07/2026 23:34 ora di Roma
 samuel-omorodion-aghehowa,2026-07-29T21:43:39.302282+00:00  # scade: 29/07/2026 23:43 ora di Roma
 sander-tangvik,2026-07-29T17:02:41.694452+00:00  # scade: 29/07/2026 19:02 ora di Roma
 sanoussy-ba,2026-07-29T17:14:05.222366+00:00  # scade: 29/07/2026 19:14 ora di Roma
 scott-bain,2026-07-29T17:23:01.383731+00:00  # scade: 29/07/2026 19:23 ora di Roma
-serge-gnabry,2026-07-29T08:26:52.081771+00:00  # scade: 29/07/2026 10:26 ora di Roma
 sergio-barcia-laranxeira,2026-07-29T22:46:12.589612+00:00  # scade: 30/07/2026 00:46 ora di Roma
 shuhei-mizoguchi,2026-07-29T17:06:41.831036+00:00  # scade: 29/07/2026 19:06 ora di Roma
 silla-wamangituka,2026-07-30T13:44:24.286096+00:00  # scade: 30/07/2026 15:44 ora di Roma
 simon-simoni,2026-07-30T01:09:48.909149+00:00  # scade: 30/07/2026 03:09 ora di Roma
 simon-spari,2026-07-30T16:42:03.778675+00:00  # scade: 30/07/2026 18:42 ora di Roma
-simone-perilli,2026-07-28T22:04:49.432870+00:00  # scade: 29/07/2026 00:04 ora di Roma
-sota-koshimichi,2026-07-29T09:19:49.194755+00:00  # scade: 29/07/2026 11:19 ora di Roma
 stefanos-tzimas,2026-07-29T19:33:59.427067+00:00  # scade: 29/07/2026 21:33 ora di Roma
-stije-resink,2026-07-29T15:43:16.878905+00:00  # scade: 29/07/2026 17:43 ora di Roma
-sven-ulreich,2026-07-29T09:19:47.912638+00:00  # scade: 29/07/2026 11:19 ora di Roma
 tadeo-allende,2026-07-30T16:46:47.115565+00:00  # scade: 30/07/2026 18:46 ora di Roma
 tarik-cetin,2026-07-29T17:07:28.222725+00:00  # scade: 29/07/2026 19:07 ora di Roma
-taylor-booth,2026-07-28T22:05:23.620689+00:00  # scade: 29/07/2026 00:05 ora di Roma
 thibault-vlietinck,2026-07-31T00:33:46.739868+00:00  # scade: 31/07/2026 02:33 ora di Roma
-thomas-fontaine,2026-07-29T15:15:15.609541+00:00  # scade: 29/07/2026 17:15 ora di Roma
 thomas-henry,2026-07-29T17:04:52.643434+00:00  # scade: 29/07/2026 19:04 ora di Roma
 tiago-magalhaes-sa,2026-07-30T11:07:28.110497+00:00  # scade: 30/07/2026 13:07 ora di Roma
 tiago-pereira-cardoso,2026-07-30T11:18:13.506935+00:00  # scade: 30/07/2026 13:18 ora di Roma
 tijmen-holla,2026-07-30T13:44:53.595474+00:00  # scade: 30/07/2026 15:44 ora di Roma
 tobias-christopher-collyer,2026-07-29T22:14:22.476701+00:00  # scade: 30/07/2026 00:14 ora di Roma
-tobias-okiki-lawal,2026-07-29T15:09:13.833152+00:00  # scade: 29/07/2026 17:09 ora di Roma
 tomas-ignacio-marchiori-carreno,2026-07-31T14:32:09.187351+00:00  # scade: 31/07/2026 16:32 ora di Roma
-tomas-lian-romero-keubler,2026-07-29T08:16:06.432668+00:00  # scade: 29/07/2026 10:16 ora di Roma
+tomoki-hayakawa,2026-08-01T16:13:26.548832+00:00  # scade: 01/08/2026 18:13 ora di Roma
 toni-fruk,2026-07-30T17:00:13.217669+00:00  # scade: 30/07/2026 19:00 ora di Roma
 tyler-dibling,2026-07-29T23:53:04.746539+00:00  # scade: 30/07/2026 01:53 ora di Roma
-valentin-barco,2026-07-29T08:05:56.110938+00:00  # scade: 29/07/2026 10:05 ora di Roma
-vanderson-de-oliveira-campos,2026-07-29T15:47:14.861830+00:00  # scade: 29/07/2026 17:47 ora di Roma
-vic-chambaere,2026-07-29T08:26:59.396611+00:00  # scade: 29/07/2026 10:26 ora di Roma
-victor-jensen,2026-07-29T15:33:08.111487+00:00  # scade: 29/07/2026 17:33 ora di Roma
+valentin-barco,2026-08-01T16:10:17.898242+00:00  # scade: 01/08/2026 18:10 ora di Roma
 victor-munoz-villanueva,2026-07-29T17:34:40.401508+00:00  # scade: 29/07/2026 19:34 ora di Roma
-victor-okoh-boniface,2026-07-29T08:54:08.194562+00:00  # scade: 29/07/2026 10:54 ora di Roma
-vitezslav-jaros,2026-07-28T23:30:58.546810+00:00  # scade: 29/07/2026 01:30 ora di Roma
 vivaldo-leandro-semedo-moura-sousa,2026-07-30T01:19:57.125116+00:00  # scade: 30/07/2026 03:19 ora di Roma
-vladyslav-krapyvtsov,2026-07-29T15:34:39.211501+00:00  # scade: 29/07/2026 17:34 ora di Roma
 vladyslav-vanat,2026-07-29T22:16:15.941386+00:00  # scade: 30/07/2026 00:16 ora di Roma
-walter-daniel-benitez,2026-07-29T15:14:30.700144+00:00  # scade: 29/07/2026 17:14 ora di Roma
 wataru-endo,2026-07-30T11:26:11.555343+00:00  # scade: 30/07/2026 13:26 ora di Roma
-wessam-abou-ali,2026-07-28T23:43:06.779007+00:00  # scade: 29/07/2026 01:43 ora di Roma
-william-lykke,2026-07-28T23:34:26.519786+00:00  # scade: 29/07/2026 01:34 ora di Roma
-willum-thor-willumsson,2026-07-29T08:20:06.757842+00:00  # scade: 29/07/2026 10:20 ora di Roma
 winners-mark-osawe,2026-07-30T00:04:28.100420+00:00  # scade: 30/07/2026 02:04 ora di Roma
 yacine-titraoui,2026-07-30T11:17:43.125978+00:00  # scade: 30/07/2026 13:17 ora di Roma
-yaser-esneider-asprilla-martinez,2026-07-29T13:13:31.408874+00:00  # scade: 29/07/2026 15:13 ora di Roma
-yehvann-diouf,2026-07-28T22:04:29.675273+00:00  # scade: 29/07/2026 00:04 ora di Roma
 yeimar-pastor-gomez-andrade,2026-07-30T00:45:12.807612+00:00  # scade: 30/07/2026 02:45 ora di Roma
-yeremi-jesus-pino-santos,2026-07-28T22:30:05.040228+00:00  # scade: 29/07/2026 00:30 ora di Roma
-yusuf-karhan-kabadayi,2026-07-28T21:10:01.782794+00:00  # scade: 28/07/2026 23:10 ora di Roma
-yuto-ozeki,2026-07-28T22:04:24.369375+00:00  # scade: 29/07/2026 00:04 ora di Roma
-yvon-landry-mvogo,2026-07-29T15:50:10.620327+00:00  # scade: 29/07/2026 17:50 ora di Roma
-zack-steffen,2026-07-29T15:23:17.746307+00:00  # scade: 29/07/2026 17:23 ora di Roma
 zeteny-jano,2026-08-21T18:36:07.491841+00:00  # scade: 21/08/2026 20:36 ora di Roma
 
 ## fix_urgente
