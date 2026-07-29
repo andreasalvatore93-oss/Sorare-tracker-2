@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T23:50:46.653667Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) luis-barraza: 49 pt attesi (21-77)
+   SQUADRA: inter-miami | AVVERSARIO: columbus-crew-columbus-ohio
+======================================================================
+
+######################################################################
+# GIOCATORE: luis-barraza
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luis-barraza (squadra: inter-miami)
+Generato: 2026-07-29T23:50:46.652925Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | MTL vs DC | mlspa | score=39.3 | peso=0.630
+  2025-08-23 | DC vs MIA | mlspa | score=39.9 | peso=0.707
+  2025-08-30 | NYC vs DC | mlspa | score=42.3 | peso=0.794
+  2025-09-13 | DC vs ORL | mlspa | score=67.2 | peso=0.891
+  2025-09-20 | MIA vs DC | mlspa | score=11.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 39.37
+  di cui Punteggio decisivo (level_score) medio: 30.03 | Punteggio complessivo (granulari) medio: 9.34 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 31.45 (delta +1.42 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.71, delta avversario +0.71 | Possesso condizionato per venue: delta -0.08 | Goalkeeping condizionato per venue: delta +2.29 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 19.00
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 11.9 - 67.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 1.32 (differenza: +17.68)
+Media score in casa: 53.55 | Media score fuori casa: 31.17
+Fattore casa/trasferta applicato: 1.075 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.4
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.159
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.002
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.011
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.007
+Tasso storico clean sheet (porta inviolata nei primi 60'): 0.0% (bonus atteso incorporato nella media pesata: ~0.0pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Inter Miami CF | Trasferta: Columbus Crew
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.7 (range 21.3 - 76.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.45
+Punteggio REALE ottenuto in quella partita: 11.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -36.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

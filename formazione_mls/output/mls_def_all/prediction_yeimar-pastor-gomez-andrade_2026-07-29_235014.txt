@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T23:50:14.126416Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) yeimar-pastor-gomez-andrade: 46 pt attesi (33-67)
+   ORDINAMENTO: 57.15
+   SQUADRA: seattle-sounders-renton-washington | AVVERSARIO: portland-timbers-portland-oregon
+======================================================================
+
+######################################################################
+# GIOCATORE: yeimar-pastor-gomez-andrade
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yeimar-pastor-gomez-andrade (squadra: seattle-sounders-renton-washington)
+Generato: 2026-07-29T23:50:14.124990Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-11 | LA vs SEA | mlspa | score=78.7 | peso=0.785
+  2025-08-17 | MIN vs SEA | mlspa | score=73.9 | peso=0.812
+  2025-09-14 | SEA vs LA | mlspa | score=44.2 | peso=0.841
+  2025-09-21 | ATX vs SEA | mlspa | score=52.2 | peso=0.871
+  2025-10-28 | MIN vs SEA | mlspa | score=50.4 | peso=0.901
+  2025-11-04 | SEA vs MIN | mlspa | score=56.9 | peso=0.933
+  2025-11-08 | MIN vs SEA | mlspa | score=22.9 | peso=0.966
+  2026-02-23 | SEA vs RAP | mlspa | score=84.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 57.53
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 22.53 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.02, delta avversario -0.23 | Passaggio condizionato: delta venue +0.65, delta avversario -1.56 | Clean sheet/disimpegni condizionato: delta venue -0.36, delta avversario +0.27 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.30
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.2 - 78.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.32 (differenza: +6.98)
+Media score in casa: 61.68 | Media score fuori casa: 55.62
+Fattore casa/trasferta applicato: 0.992 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.6
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 0.978
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.993
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.991
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T02:45
+Casa: Portland Timbers | Trasferta: Seattle Sounders FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 32.6 - 67.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 57.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.20
+Punteggio REALE ottenuto in quella partita: 84.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +30.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.0    22.9    -34.1    14.8        NO
+   7        7      58.1    84.0    +25.9    20.8        NO
+
+MAE (errore assoluto medio): 29.98
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

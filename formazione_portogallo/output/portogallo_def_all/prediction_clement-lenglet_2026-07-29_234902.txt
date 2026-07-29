@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-29T23:49:02.555185Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) clement-lenglet: 48 pt attesi (34-66)
+   ORDINAMENTO: 47.96
+   SQUADRA: benfica-lisboa | AVVERSARIO: st-gallen-st-gallen
+======================================================================
+
+######################################################################
+# GIOCATORE: clement-lenglet
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: clement-lenglet (squadra: benfica-lisboa)
+Generato: 2026-07-29T23:49:02.554566Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 55
+Escluse (DID_NOT_PLAY): 32
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | ALA vs ATM | laliga-es | score=56.9 | peso=0.536
+  2025-09-13 | ATM vs VIL | laliga-es | score=40.6 | peso=0.555
+  2025-09-17 | LIV vs ATM | uefa-champions-league | score=66.0 | peso=0.574
+  2025-09-21 | MLL vs ATM | laliga-es | score=66.0 | peso=0.595
+  2025-09-27 | ATM vs RMA | laliga-es | score=40.3 | peso=0.616
+  2025-09-30 | ATM vs SGE | uefa-champions-league | score=42.6 | peso=0.637
+  2025-11-23 | GET vs ATM | laliga-es | score=45.0 | peso=0.660
+  2025-11-29 | ATM vs OVI | laliga-es | score=54.2 | peso=0.683
+  2025-12-02 | FCB vs ATM | laliga-es | score=59.8 | peso=0.707
+  2025-12-06 | ATH vs ATM | laliga-es | score=50.5 | peso=0.732
+  2026-02-15 | RAY vs ATM | laliga-es | score=18.6 | peso=0.758
+  2026-03-14 | ATM vs GET | laliga-es | score=72.1 | peso=0.785
+  2026-04-04 | ATM vs FCB | laliga-es | score=62.5 | peso=0.812
+  2026-04-14 | ATM vs FCB | uefa-champions-league | score=5.2 | peso=0.841
+  2026-04-22 | ELC vs ATM | laliga-es | score=40.4 | peso=0.871
+  2026-04-25 | ATM vs ATH | laliga-es | score=52.0 | peso=0.901
+  2026-05-02 | VCF vs ATM | laliga-es | score=72.7 | peso=0.933
+  2026-05-24 | VIL vs ATM | laliga-es | score=34.0 | peso=0.966
+  2026-07-23 | STG vs SLB | uefa-europa-league | score=46.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 48.25
+  di cui Punteggio decisivo (level_score) medio: 35.19 | Punteggio complessivo (granulari) medio: 13.06 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +1.24, delta avversario +0.00 | Passaggio condizionato: delta venue +0.36, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.25, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.39
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.0 - 66.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.20 (differenza: +4.20)
+Media score in casa: 46.19 | Media score fuori casa: 51.00
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.858
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 0.983
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.017
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.985
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.985
+Fattore gol subiti (goals_conceded, con cap): 1.011
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 49.2 vs media ultime 10: 45.5): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T19:00
+Casa: SL Benfica | Trasferta: FC Sankt Gallen 1879
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.8 (range 33.6 - 65.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 48.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.38
+Punteggio REALE ottenuto in quella partita: 46.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.4    45.0     -6.4    13.7        SI
+   7        7      68.9    54.2    -14.8    12.9        NO
+   8        8      37.2    59.8    +22.6    12.0        NO
+   9        9      60.2    50.5     -9.7    11.8        SI
+  10       10      51.7    18.6    -33.1    11.1        NO
+  11       11      44.4    72.1    +27.7    16.3        NO
+  12       12      37.3    62.5    +25.2    17.6        NO
+  13       13      39.2     5.2    -34.0    17.3        NO
+  14       14      60.9    40.4    -20.5    22.9        SI
+  15       15      52.8    52.0     -0.8    22.1        SI
+  16       16      49.2    72.7    +23.5    21.2        NO
+  17       17      41.1    34.0     -7.0    21.9        SI
+  18       18      49.1    46.6     -2.5    21.6        SI
+
+MAE (errore assoluto medio): 17.52
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 46.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
