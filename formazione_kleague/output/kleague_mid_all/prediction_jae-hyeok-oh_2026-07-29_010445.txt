@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-29T01:04:45.897025Z
+Parametri fissi per tutti: half_life=12.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jae-hyeok-oh: 49 pt attesi (35-66)
+   SQUADRA: jeju-united-seogwipo-jeju-do | AVVERSARIO: incheon-united-incheon
+======================================================================
+
+######################################################################
+# GIOCATORE: jae-hyeok-oh
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jae-hyeok-oh (squadra: jeju-united-seogwipo-jeju-do)
+Generato: 2026-07-29T01:04:45.896185Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-25 | SCI vs JEJ | k-league-1 | score=71.7 | peso=0.445
+  2025-11-02 | GWA vs JEJ | k-league-1 | score=51.3 | peso=0.472
+  2025-11-08 | JEJ vs ANY | k-league-1 | score=43.1 | peso=0.500
+  2026-03-15 | JEJ vs SEO | k-league-1 | score=42.0 | peso=0.530
+  2026-03-18 | JEJ vs ULS | k-league-1 | score=37.1 | peso=0.561
+  2026-04-22 | DJO vs JEJ | k-league-1 | score=44.5 | peso=0.595
+  2026-04-25 | INC vs JEJ | k-league-1 | score=59.6 | peso=0.630
+  2026-05-02 | JEJ vs JMO | k-league-1 | score=47.5 | peso=0.667
+  2026-05-05 | BUC vs JEJ | k-league-1 | score=40.5 | peso=0.707
+  2026-05-09 | JEJ vs SEO | k-league-1 | score=35.8 | peso=0.749
+  2026-05-13 | ULS vs JEJ | k-league-1 | score=57.7 | peso=0.794
+  2026-05-17 | JEJ vs ANY | k-league-1 | score=56.1 | peso=0.841
+  2026-07-05 | SAN vs JEJ | k-league-1 | score=72.3 | peso=0.891
+  2026-07-12 | JEJ vs DJO | k-league-1 | score=56.0 | peso=0.944
+  2026-07-26 | GWA vs JEJ | k-league-1 | score=86.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 12.0 partite): 55.10
+  di cui Punteggio decisivo (level_score) medio: 40.66 | Punteggio complessivo (granulari) medio: 14.44 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 37.36 (delta -3.30)
+  Efficacia offensiva condizionata: delta venue -0.61, delta avversario -0.74 | Passaggio condizionato: delta venue -0.54, delta avversario -0.35 | Gol subiti condizionato: delta venue -0.24, delta avversario -0.63 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.92
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.5 - 72.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.68 (differenza: +4.23)
+Media score in casa: 45.37 | Media score fuori casa: 60.55
+Fattore casa/trasferta applicato: 0.985 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.7
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.975
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.986
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 0.989
+Fattore trend (media ultime 5: 65.8 vs media ultime 10: 55.7): 1.127
+P(gioca): 60.00% (fonte: tasso di presenza storico (15/25))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Jeju SK FC | Trasferta: Incheon United FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.3 (range 34.7 - 66.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.70
+Punteggio REALE ottenuto in quella partita: 86.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +35.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7 (FISSATA 19 posseduti)' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.4    59.6    +11.2    15.1        SI
+   7        7      38.9    47.5     +8.6    15.1        SI
+   8        8      60.8    40.5    -20.3    14.0        NO
+   9        9      36.8    35.8     -1.0    13.6        SI
+  10       10      44.4    57.7    +13.3    14.0        SI
+  11       11      45.0    56.1    +11.1    14.1        SI
+  12       12      59.8    72.3    +12.5    13.8        SI
+  13       13      55.4    56.0     +0.6    16.5        SI
+  14       14      68.9    86.8    +17.9    15.8        NO
+
+MAE (errore assoluto medio): 10.72
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
