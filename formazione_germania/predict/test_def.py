@@ -64,6 +64,9 @@ import requests
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+import opponent_strength
+
 try:
     from curl_cffi import requests as curl_requests
     _HAS_CURL_CFFI = True
@@ -108,7 +111,7 @@ HALF_LIFE_GAMES = 20.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_
 RANGE_MULTIPLIER = 1.2  # invariato
 OPPONENT_SENSITIVITY = 29.0  # invariato
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto) -- non piu' applicato in produzione per DEF (granulari rimossi da score_atteso, vedi sotto), resta per il grid search/diagnostica
-TREND_INTENSITY = 0.7  # FISSATO (26/07): idem, vedi HALF_LIFE_GAMES sopra
+TREND_INTENSITY = 0.0  # AGGIORNATO (29/07, esteso a tutte le leghe): backtest walk-forward post-retuning half_life, MAE -1.25% (validato su MLS/Korea), stesso valore ora applicato a tutte le leghe -- vedi backlog 'produzione solo MLS/Korea'
 # FISSATO (27/07, tema backlog "outlier/hot-streak" per DEF, dopo il FWD gia'
 # in produzione): backtest walk-forward rigoroso esteso a 10 campionati
 # (formazione_mls/diagnostics/validate_outlier_shrinkage.py) mostra che tirare
@@ -122,7 +125,7 @@ TREND_INTENSITY = 0.7  # FISSATO (26/07): idem, vedi HALF_LIFE_GAMES sopra
 # DEF nel pool esteso a 10 campionati (MLS, K League, Brasile, Croazia,
 # Portogallo, Austria, Scozia, Germania, Olanda, Spagna), ricalibrata sessione
 # 27/07 con validate_outlier_shrinkage.py (variabile media_ruolo).
-SHRINK_K_OUTLIER_DEF = 15.0
+SHRINK_K_OUTLIER_DEF = 18.0  # AGGIORNATO (29/07, esteso a tutte le leghe): retest post-retuning half_life/trend, minimo interno pulito, MAE -0.002% (validato MLS/Korea)
 MEDIA_RUOLO_DEF_PRIOR = 51.34
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
@@ -1434,6 +1437,8 @@ def build_prediction(player_slug):
     is_home_flags = []
     opponent_rankings = []
     own_rankings = []
+    opponent_team_slugs_hist = []  # NUOVO (29/07, vedi opponent_strength.py): per Stadio D con dato pulito
+    game_dates_hist = []
     fouls_values = []
     duels_values = []
     offensive_values = []
@@ -1459,6 +1464,14 @@ def build_prediction(player_slug):
         is_home_flags.append(is_home)
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
+        _g_home, _g_away = game.get('homeTeam') or {}, game.get('awayTeam') or {}
+        if _g_home.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_away.get('slug'))
+        elif _g_away.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_home.get('slug'))
+        else:
+            opponent_team_slugs_hist.append(None)
+        game_dates_hist.append(_game_dt(node))
 
         fouls_v = extract_group_score(detail, FOULS_STATS)
         duels_v = extract_group_score(detail, DUELS_STATS)
@@ -1475,7 +1488,10 @@ def build_prediction(player_slug):
         passing_values.append(passing_v)
         defense_rare_values.append(max(-DEFENSE_RARE_CAP, min(DEFENSE_RARE_CAP, defense_raw)))
         defensive_actions_values.append(defensive_actions_v)
-        goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
+        # RIMOSSO CAP (29/07, esteso a tutte le leghe): bug reale confermato su piu' partite
+        # MLS+K League (GK/DEF/MID: -5/-4/-2 a gol, LINEARE, nessun tetto osservato nei dati
+        # reali Sorare -- il vecchio cap troncava artificialmente le goleade subite).
+        goals_conceded_values.append(goals_conceded_raw)
         clean_sheet_values.append(clean_sheet_v)
         level_score_v = extract_level_score(detail)
         level_score_values.append(level_score_v)
@@ -1621,7 +1637,9 @@ def build_prediction(player_slug):
     # diagnostico/di visualizzazione nell'output.
     # --- level_score ATTESO da tasso di eventi (27/07 notte, sezione 22):
     # vedi test_def.py di formazione_mls per la spiegazione estesa.
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+        'germania', 'def', next_opponent_team_slug, datetime.datetime.utcnow())
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * _opp_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
@@ -1660,11 +1678,11 @@ def build_prediction(player_slug):
     # sull'aggregato, per non contare due volte lo stesso segnale. Stessa
     # correzione additiva/shrinkage delle altre correzioni Stadio D.
     opponent_forte_flags = [
-        (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
-        for r in opponent_rankings
+        opponent_strength.opponent_is_strong('germania', opp_slug, dt)
+        for opp_slug, dt in zip(opponent_team_slugs_hist, game_dates_hist)
     ]
-    next_forte = (next_opp_rank < avg_opp_rank_hist) if (
-        next_opp_rank is not None and avg_opp_rank_hist is not None) else None
+    next_forte = opponent_strength.opponent_is_strong(
+        'germania', next_opponent_team_slug, datetime.datetime.utcnow())
 
     def _condiziona_venue_avversario(values):
         fallback = weighted_mean(values, weights)

@@ -60,6 +60,9 @@ import requests
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+import opponent_strength
+
 try:
     from curl_cffi import requests as curl_requests
     _HAS_CURL_CFFI = True
@@ -104,7 +107,7 @@ HALF_LIFE_GAMES = 25.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_
 RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 1.4, non 1.6 come nel tentativo precedente; la copertura ideale viene dalla combinazione GIUSTA di tutti i parametri insieme, non dal range preso da solo
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
-TREND_INTENSITY = 1.0  # AGGIORNATO (27/07 notte): ricalibrazione su 6 campionati, granulari ritestati con i veri array -- vincitore hl=12.0/range=1.4/opp_sens=29.0/trend_int=1.0 SENZA granulari, composite score 16.14 vs 16.19 del valore precedente (trend=0.7) -- scarto piccolo ma applicato su richiesta esplicita dellutente.
+TREND_INTENSITY = 0.3  # AGGIORNATO (29/07, esteso a tutte le leghe): backtest walk-forward post-retuning half_life, MAE -0.73% (validato MLS/Korea), stesso valore ora applicato a tutte le leghe -- vedi backlog 'produzione solo MLS/Korea'
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1348,12 +1351,20 @@ def build_prediction(player_slug):
     # formazione_mls/predict/test_def.py per la spiegazione estesa. Il trend
     # si applica SOLO al pezzo granulare (il livello non ha un trend proprio,
     # e' basato su un tasso di eventi gia' pesato esponenzialmente).
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+        'scozia', 'fwd', next_opponent_team_slug, datetime.datetime.utcnow())
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * _opp_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
-    score_atteso = ((level_score_atteso + media_granulari_pesata * fattore_trend_granulare)
+    # NUOVO (29/07, esteso a tutte le leghe, vedi opponent_strength.py, gruppo fwd_vs_def validato): delta ADDITIVO sul granulare "offensivo" in base al poss_lost_ctrl medio dei
+    # difensori avversari (ultime 10 partite). Validato: -0.38% MAE (MLS/Korea).
+    _offensive_hist = weighted_mean(offensive_values, weights)
+    _fwd_offense_delta = opponent_strength.fwd_offense_granular_delta(
+        'scozia', next_opponent_team_slug, datetime.datetime.utcnow(), _offensive_hist)
+    score_atteso = ((level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+                     + _fwd_offense_delta)
                     * fattore_casa_trasferta)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre

@@ -66,6 +66,9 @@ import requests
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_prediction_log import log_live_prediction
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+import opponent_strength
+
 try:
     from curl_cffi import requests as curl_requests
     _HAS_CURL_CFFI = True
@@ -1274,7 +1277,10 @@ def build_prediction(player_slug):
         passing_values.append(extract_group_score(detail, PASSING_STATS))
         goalkeeping_values.append(extract_group_score(detail, GOALKEEPING_STATS))  # nessun cap: e' il cuore del punteggio portiere
         goals_conceded_raw = extract_group_score(detail, GOALS_CONCEDED_STATS)
-        goals_conceded_values.append(max(-GOALS_CONCEDED_CAP, min(GOALS_CONCEDED_CAP, goals_conceded_raw)))
+        # RIMOSSO CAP (29/07, esteso a tutte le leghe): bug reale confermato su piu' partite
+        # MLS+K League (GK/DEF/MID: -5/-4/-2 a gol, LINEARE, nessun tetto osservato nei dati
+        # reali Sorare -- il vecchio cap troncava artificialmente le goleade subite).
+        goals_conceded_values.append(goals_conceded_raw)
         clean_sheet_flag_values.append(extract_clean_sheet_flag(detail))
         level_score_v = extract_level_score(detail)
         level_score_values.append(level_score_v)
@@ -1455,7 +1461,15 @@ def build_prediction(player_slug):
     # diagnostico/di visualizzazione nell'output.
     # --- level_score ATTESO da tasso di eventi (27/07 notte, sezione 22):
     # vedi test_def.py per la spiegazione estesa.
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+        'cile', 'gk', next_opponent_team_slug, datetime.datetime.utcnow())
+    # Bonus AGGIUNTIVO (29/07, esteso a tutte le leghe, si affianca al bonus goalkeeping esistente,
+    # non lo sostituisce -- vedi opponent_strength.gk_def_pen_area_multiplier): isola le
+    # pen_area_entries dei SOLI difensori avversari (da corner/palle inattive), separato dal
+    # segnale FWD+MID gia' in produzione. Validato -0.13% MAE (MLS/Korea).
+    _opp_lambda_mult *= opponent_strength.gk_def_pen_area_multiplier(
+        'cile', next_opponent_team_slug, datetime.datetime.utcnow())
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * _opp_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
