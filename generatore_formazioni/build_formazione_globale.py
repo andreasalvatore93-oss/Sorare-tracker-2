@@ -582,12 +582,14 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
         # Varianza capitano (27/07, richiesta esplicita utente, stesso fix
         # identico nei due tool singoli): scope per tipo (uno degli 8 qui).
         captained_slugs = set()
-        # Decorrelazione tra le N formazioni In Season -- RIATTIVATA per test
-        # (28/07 sera, richiesta esplicita utente) dopo aver ridotto
-        # MATCH_REUSE_PENALTY a un tie-breaker leggero (vedi commento in
-        # build_formazione_finale.py). Ancora da validare con un backtest
-        # reale, ma non piu' a rischio di buttare fuori giocatori piu' forti.
-        used_matches = set() if in_season_multi else None
+        # Decorrelazione tra le N formazioni In Season -- DISATTIVATA di nuovo
+        # (29/07, A/B test locale post-fix: disattivandola MLS +21pt/6
+        # formazioni, K League +2pt/6, nessun'altra lega ha abbastanza
+        # formazioni multiple per attivare il meccanismo). Il beneficio di
+        # decorrelazione (rischio diversificato tra formazioni) non e'
+        # catturato dal punteggio atteso totale, ma l'utente ha scelto
+        # esplicitamente di privilegiare il guadagno misurato.
+        used_matches = None
 
         risultati = []
         for idx in range(1, count + 1):
