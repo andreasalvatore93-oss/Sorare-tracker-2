@@ -1737,24 +1737,43 @@ def _commit_output_se_serve():
             ['git', 'status', '--porcelain', '--'] + paths_da_committare,
             capture_output=True, text=True, timeout=30
         )
-        if not status.stdout.strip():
-            return
-        subprocess.run(['git', 'config', 'user.name', 'bot-profit'], timeout=30)
-        subprocess.run(['git', 'config', 'user.email',
-                         'bot-profit@users.noreply.github.com'], timeout=30)
-        subprocess.run(['git', 'add'] + paths_da_committare, timeout=30)
-        commit = subprocess.run(
-            ['git', 'commit', '-m', 'Bot Profit: commit periodico dati tracciati (run in corso)'],
-            capture_output=True, text=True, timeout=30
-        )
-        if commit.returncode != 0:
-            log(f"[commit periodico] nulla da committare o commit fallito: "
-                f"{commit.stdout.strip()} {commit.stderr.strip()}")
-            return
         branch = subprocess.run(
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
             capture_output=True, text=True, timeout=10
         ).stdout.strip() or 'main'
+        # BUG REALE 29/07 (trovato dall'utente: link Telegram a un CSV mai
+        # arrivato su GitHub, 404): se il push di un giro precedente falliva
+        # (es. conflitto con un'altra run in parallelo), il commit restava
+        # SOLO in locale nel runner -- il giro successivo vedeva
+        # `git status --porcelain` vuoto (nessuna modifica non committata) e
+        # usciva subito senza mai ritentare il push di quel commit gia' fatto.
+        # Lo stesso identico difetto era nello step finale del workflow YAML
+        # (stesso controllo). Fix: controllare SEMPRE se HEAD e' avanti
+        # rispetto a origin/<branch> (commit locali non ancora pushati), non
+        # solo se ci sono modifiche non committate nel working tree -- se lo
+        # e', si ritenta pull+push anche senza nuove modifiche da scrivere.
+        if not status.stdout.strip():
+            ahead = subprocess.run(
+                ['git', 'rev-list', '--count', f'origin/{branch}..HEAD'],
+                capture_output=True, text=True, timeout=15
+            )
+            if not (ahead.returncode == 0 and ahead.stdout.strip() not in ('', '0')):
+                return
+            log(f"[commit periodico] {ahead.stdout.strip()} commit locali non ancora pushati "
+                f"(push precedente fallito), ritento senza nuove modifiche...")
+        else:
+            subprocess.run(['git', 'config', 'user.name', 'bot-profit'], timeout=30)
+            subprocess.run(['git', 'config', 'user.email',
+                             'bot-profit@users.noreply.github.com'], timeout=30)
+            subprocess.run(['git', 'add'] + paths_da_committare, timeout=30)
+            commit = subprocess.run(
+                ['git', 'commit', '-m', 'Bot Profit: commit periodico dati tracciati (run in corso)'],
+                capture_output=True, text=True, timeout=30
+            )
+            if commit.returncode != 0:
+                log(f"[commit periodico] nulla da committare o commit fallito: "
+                    f"{commit.stdout.strip()} {commit.stderr.strip()}")
+                return
         pull = subprocess.run(
             ['git', 'pull', '--rebase', '--autostash', 'origin', branch],
             capture_output=True, text=True, timeout=60
@@ -1764,7 +1783,8 @@ def _commit_output_se_serve():
             # annulliamo, TUTTI i prossimi giri di commit periodico falliscono allo
             # stesso modo per il resto della run. Annullato cosi' il prossimo giro
             # riparte pulito (i dati di QUESTO giro restano committati solo in
-            # locale, verranno ripushati al prossimo giro se il conflitto rientra).
+            # locale, verranno ripushati al prossimo giro se il conflitto rientra,
+            # vedi il controllo "ahead" sopra).
             subprocess.run(['git', 'rebase', '--abort'], capture_output=True, text=True, timeout=30)
             log(f"[commit periodico] git pull --rebase fallito su branch={branch}, annullato il rebase, "
                 f"salto il push di questo giro: {pull.stderr.strip()}")
@@ -1773,7 +1793,7 @@ def _commit_output_se_serve():
         if push.returncode == 0:
             log("[commit periodico] dati tracciati committati e pushati con successo (run ancora in corso)")
         else:
-            log(f"[commit periodico] push fallito: {push.stderr.strip()}")
+            log(f"[commit periodico] push fallito, ritento al prossimo giro: {push.stderr.strip()}")
     except Exception as e:
         log(f"[commit periodico] eccezione non bloccante, ritento al prossimo giro: {e}")
 
