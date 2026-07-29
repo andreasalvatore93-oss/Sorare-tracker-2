@@ -44,6 +44,13 @@ riconferma. Questa sezione esiste per non perdere la lista dei ~40 test che comp
 (altrimenti, sessione dopo sessione, si rischia di dimenticarne qualcuno — stesso principio della
 sezione 14D sui falsi allarmi da memoria non aggiornata).
 
+**Verifica 30/07 notte**: la sessione di stanotte (29/07 sera–30/07, sez. 35) ha lavorato SOLO su
+infrastruttura/velocità della pipeline GitHub Actions (retry, cache disco, sharding, timeout) — **
+nessuna formula di scoring/shrinkage/calibrazione toccata**, quindi questa checklist NON ha bisogno
+di aggiornamenti dai fix di stanotte. Nessun nuovo script diagnostico creato (i 6 fix di sez. 35
+sono su `discovery_fixture.py`, `opponent_strength.py` e il workflow, non su `formazione_*/
+diagnostics/`). Verificato a vista che nessuna voce sotto è invalidata dai fix di velocità.
+
 **Verifica di completezza (29/07, stessa sera)**: prima versione di questa sezione compilata a
 memoria conteneva ~28 voci. L'utente ha chiesto conferma "al 100%" — verificato con un controllo
 incrociato reale (`find . -name "validate_*.py" -o -name "analyze_*.py" -o ...` su tutto il repo,
@@ -4166,4 +4173,95 @@ repo come riferimento riproducibile, stessa convenzione delle sessioni precedent
 `validate_shrink_k*.py`, `validate_halflife_trend_grid2d.py`, `compare_synergy_toggles*.py`,
 `compare_crossteam_matchreuse_toggles.py`, `verify_bundesliga_clubs.py`, workflow
 `verify_bundesliga_clubs.yml` e `run_germania_discovery_global.yml`.
+
+## 35. Sessione 29/07 sera–30/07 notte — Caccia alla velocità della pipeline (in corso, non risolta)
+
+**Obiettivo esplicito dell'utente**: la run `formazione_giornata.yml` con scope fisso (gw98,
+`arena_dedicata=portogallo:2,scozia:2,croazia:2`, `starter_odds_min=0`, nessun'altra formazione)
+impiegava ~20 minuti. Target: **massimo 10 minuti**, stesso output, stessa qualità di scoring,
+senza saltare leghe/ruoli. Istruzione esplicita: bundlare più fix insieme prima di ogni retest,
+leggere sempre i log prima di rilanciare, non fermarsi finché non si scende sotto i 10 minuti (o
+finché non si è genuinamente bloccati).
+
+**Tentativo di redesign strutturale (single-process invece di matrice GitHub Actions)**: fatto su
+branch separato `redesign-async-pipeline` (in un clone a parte), testato dal vivo 4 volte, poi
+**ELIMINATO COMPLETAMENTE** su richiesta esplicita dell'utente dopo che i test hanno confermato un
+limite strutturale: il rate-limit Sorare reagisce fortemente a **connessioni concorrenti dalla
+stessa fonte/IP**, non solo al volume medio di richieste — un solo processo (sequenziale o con
+pool di thread) non riesce a eguagliare il throughput della pipeline a matrice multi-runner (IP
+diversi per runner). **Non riproporre questo redesign.**
+
+**Fix reali applicati e pushati su `main` (verificati, NON solo ipotesi)**:
+1. `fetch-depth: 1` su tutti i 39 `actions/checkout@v4` del workflow.
+2. `cache: "pip"` + `cache-dependency-path: requirements-formazione.txt` (nuovo file root) su
+   tutti i 39 `actions/setup-python@v5`.
+3. Job `consiglio`: `max-parallel: 77` (mancava) + `timeout-minutes` 15→30 (veniva ucciso a metà
+   del retry-loop di push).
+4. `discovery_fixture.py`: `PREDICT_SHARD_LEAGUES` generalizzato da `{'mls','kleague'}` a `None`
+   (tutte le leghe), `PREDICT_SHARD_TARGET_SIZE` 25→15 (più shard, job predict più piccoli).
+5. `opponent_strength.py`: cache su **disco** (`/tmp/opponent_strength_cache/`, ephemera per
+   runner, mai committata) per `_build_series_for_league`, `_build_def_poss_lost_series`,
+   `_build_def_pen_area_series`. Causa: ogni predict è un processo separato per giocatore, quindi
+   la cache in-memoria del modulo si azzerava ad ogni giocatore — un job con 15 giocatori
+   rifaceva la scansione completa della cartella cache (200+ file) 15 volte. FWD il più colpito
+   (scansiona due cartelle). Verificato: valori identici prima/dopo, confronto diretto.
+6. `discovery_fixture.py`, `_resolve_query_with_retry`: da 3 tentativi/3s fissi (~20s totali) a 6
+   tentativi con backoff crescente + jitter (5,10,15,20,25s+jitter, ~90s totali). Causa: un job
+   discovery su 34 fallito per intero per un blocco CloudFront (403) su `FixtureList` più lungo
+   dei 20s coperti — e siccome `predict` richiede (`needs:`) il successo di TUTTI i job
+   discovery, quel singolo fallimento ha ucciso l'INTERA run (tutto skippato a cascata).
+
+**Nota per letture future**: nei log di questi job compare il tag `[turchia_gk_discovery]` — è
+solo il nome del modulo Python condiviso (`turchia_gk_discovery.py`, importato come `base` da
+quasi tutti gli script) usato per il logging, **non significa che c'entri la lega Turchia**.
+Perso tempo stanotte a incolparla per errore.
+
+**Stato a fine sessione (non risolto)**: target dei 10 minuti **non ancora raggiunto e non
+ancora confermato in una run completata dopo tutti i 6 fix**. Ultima run lanciata:
+`30494326179` (gw98, stesso scope, lanciata 2026-07-29 21:57:24 UTC, dopo il fix #6) — **stato
+non verificato**, l'utente ha fermato il lavoro prima di poter controllare l'esito. La run
+precedente (`30493943673`, dopo il fix #5 ma prima del #6) è fallita esattamente per la causa
+del fix #6 (blocco CloudFront + retry insufficiente), quindi il fix #5 (cache disco
+opponent_strength) **non è ancora stato verificato dal vivo** per il suo effetto reale sulla
+velocità di FWD, perché quella run non è mai arrivata al job predict.
+
+Scritto un documento di handoff dedicato per continuare questo lavoro senza dover rileggere tutta
+la sessione: **`docs/HANDOFF_VELOCITA_PIPELINE.md`** — contiene lo scope esatto del test, tutti i
+6 fix con motivazione, cosa NON toccare (redesign single-process, formule di scoring, copertura
+discovery), stato esatto delle run pendenti, e i prossimi passi in ordine. Chiunque riprenda
+questo filone (anche altra sessione/modello) deve partire da lì.
+
+**Task secondario, priorità più bassa, non urgente**: workflow `calibrazione_lega.yml` (generico,
+riusabile per qualunque lega) lanciato per `lega=germania, ruolo=gk, batch_index=0, batch_size=200`
+(run `30491495720`) — **stato non riverificato dopo il lancio**. Da continuare con def/mid/fwd
+Bundesliga solo dopo che la velocità è risolta e stabile.
+
+### 35.K — Tutto quello che resta da fare (checklist operativa fine sessione 29/07–30/07)
+
+In ordine di priorità dichiarato dall'utente:
+
+1. **[PRIORITÀ 1, aperto] Velocità pipeline sotto i 10 minuti** — non ancora confermata. Prossimo
+   passo: verificare l'esito della run `30494326179` e continuare il loop fix→test come descritto
+   in `docs/HANDOFF_VELOCITA_PIPELINE.md`. Nessun fix di formula, solo infrastruttura.
+2. **[PRIORITÀ 2, aperto] Calibrazione Bundesliga** — solo `gk` lanciato (run `30491495720`, mai
+   riverificato), mancano `def`/`mid`/`fwd`. Da riprendere solo dopo il punto 1.
+3. **[Backlog, non urgente] `formazione_resto_mondo` arretrata** — riaperta il 29/07 su richiesta
+   esplicita, pipeline/formula vecchia rispetto alle altre 27 leghe. Non toccare finché non viene
+   ridiscussa esplicitamente (memoria `project_backlog_resto_mondo_modello_arretrato`).
+4. **[Backlog, non urgente] Verifica ripopolamento punteggi "0" stantii** — il fix `activeClub`
+   del 29/07 sembra aver risolto il pattern (Rios 0→58 su gw98), ma va riverificato su altre run/
+   giocatori quando se ne presenta l'occasione (memoria
+   `project_backlog_verifica_zero_score_ripopolati`).
+5. **[Backlog, non urgente, invariato da prima di stanotte, vedi sez. 34.I]**:
+   - 10 miglioramenti di produzione validati solo su MLS/Korea, da estendere alle altre 26 leghe.
+   - Discovery globale big5 (Spagna/Francia/Inghilterra/Italia/Belgio) — solo Germania fatta finora.
+   - Retest venue per lega quando i big5 europei avranno più storico.
+   - Naming fuorviante ("solo diagnostico" in `test_mid.py`, testo Stadio D stale) — solo chiarezza,
+     nessun impatto funzionale.
+6. **[Tema annunciato, mai iniziato]** "Meglio il giocatore più affidabile o il più forte" — la
+   spiegazione completa del tema non è mai arrivata in questa sessione (dirottata dalla priorità
+   sulla velocità). Non ipotizzare/implementare nulla finché l'utente non lo spiega per esteso.
+   Alcuni test correlati (range/trend/presence_rate come segnale di affidabilità) sono già stati
+   fatti e SCARTATI stanotte (checklist, sezione E, punti 33-35) — ma quella è solo una parte
+   laterale del tema più ampio annunciato, non sostituisce la spiegazione dell'utente.
 di fix). Nessuna modifica pendente non salvata a fine sezione.

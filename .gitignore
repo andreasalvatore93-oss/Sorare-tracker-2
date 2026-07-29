@@ -8,3 +8,10 @@ __pycache__/
 
 # Cache giornaliera L5/L10/L40 del generatore formazioni (rigenerabile via API Sorare)
 /generatore_formazioni/.quality_cache/
+
+# Cartelle di lavoro del passaggio dati tra job via artifact
+# (pipeline_artifacts.py): esistono solo dentro i runner di Actions
+/_artifact_stage/
+/_artifacts/
+/combos.tsv
+/coppie.tsv

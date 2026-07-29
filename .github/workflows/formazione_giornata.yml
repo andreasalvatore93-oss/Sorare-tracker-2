@@ -89,24 +89,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '0:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_gk_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (GK quota 1/4)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-gk-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_gk_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -132,24 +127,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '1:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_gk_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (GK quota 2/4)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-gk-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_gk_2:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -175,24 +165,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '2:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_gk_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (GK quota 3/4)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-gk-2
+          path: _artifact_stage
+          retention-days: 1
   discovery_gk_3_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -219,24 +204,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '0:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_gk_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MLS sotto-quota 1/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-gk-3-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_gk_3_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -263,24 +243,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '1:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_gk_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MLS sotto-quota 2/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-gk-3-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_gk_4_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -307,24 +282,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '0:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_gk_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (K League sotto-quota 1/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-gk-4-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_gk_4_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -351,24 +321,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '1:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_gk_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (K League sotto-quota 2/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-gk-4-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -394,24 +359,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '0:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (DEF quota 1/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -437,24 +397,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '1:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (DEF quota 2/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_2:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -480,24 +435,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '2:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (DEF quota 3/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-2
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_3:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -523,24 +473,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '3:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (DEF quota 4/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-3
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_4:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -566,24 +511,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '4:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (DEF quota 5/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-4
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_5:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -609,24 +549,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '5:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (DEF quota 6/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-5
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_6:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -652,24 +587,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '6:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (DEF quota 7/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-6
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_7_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -696,24 +626,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '0:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MLS sotto-quota 1/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-7-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_7_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -740,24 +665,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '1:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MLS sotto-quota 2/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-7-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_8_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -784,24 +704,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '0:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (K League sotto-quota 1/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-8-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_def_8_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -828,24 +743,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '1:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_def_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (K League sotto-quota 2/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-def-8-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -871,24 +781,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '0:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MID quota 1/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -914,24 +819,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '1:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MID quota 2/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_2:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -957,24 +857,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '2:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MID quota 3/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-2
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_3:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1000,24 +895,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '3:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MID quota 4/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-3
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_4:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1043,24 +933,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '4:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MID quota 5/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-4
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_5:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1086,24 +971,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '5:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MID quota 6/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-5
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_6:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1129,24 +1009,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '6:9'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MID quota 7/8)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-6
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_7_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1173,24 +1048,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '0:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MLS sotto-quota 1/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-7-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_7_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1217,24 +1087,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '1:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MLS sotto-quota 2/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-7-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_8_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1261,24 +1126,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '0:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (K League sotto-quota 1/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-8-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_mid_8_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1305,24 +1165,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '1:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_mid_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (K League sotto-quota 2/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-mid-8-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_fwd_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1348,24 +1203,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '0:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_fwd_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (FWD quota 1/4)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-fwd-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_fwd_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1391,24 +1241,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '1:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_fwd_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (FWD quota 2/4)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-fwd-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_fwd_2:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1434,24 +1279,19 @@ jobs:
           DISCOVERY_LEAGUE_SHARD: '2:5'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_fwd_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (FWD quota 3/4)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-fwd-2
+          path: _artifact_stage
+          retention-days: 1
   discovery_fwd_3_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1478,24 +1318,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '0:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_fwd_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MLS sotto-quota 1/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-fwd-3-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_fwd_3_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1522,24 +1357,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '1:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_fwd_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (MLS sotto-quota 2/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-fwd-3-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_fwd_4_0:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1566,24 +1396,19 @@ jobs:
           HEAVY_LEAGUE_SHARD: '0:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_fwd_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (K League sotto-quota 1/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-fwd-4-0
+          path: _artifact_stage
+          retention-days: 1
   discovery_fwd_4_1:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1610,32 +1435,28 @@ jobs:
           HEAVY_LEAGUE_SHARD: '1:2'
           PYTHONUNBUFFERED: "1"
         run: python discovery_fixture.py
+      # Output passati al job discovery_merge via ARTIFACT invece
+      # che con commit+push su main (vedi pipeline_artifacts.py):
+      # il push da 36 job concorrenti costava 1123 job-secondi di
+      # sola contesa sul retry-loop. Il commit unico lo fa
+      # salva_output a fine run.
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add formazione_*/output/*_fwd_discovery/ || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: slug eleggibili (K League sotto-quota 2/2)"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disc-fwd-4-1
+          path: _artifact_stage
+          retention-days: 1
   discovery_merge:
     needs: [discovery_gk_0, discovery_gk_1, discovery_gk_2, discovery_gk_3_0, discovery_gk_3_1, discovery_gk_4_0, discovery_gk_4_1, discovery_def_0, discovery_def_1, discovery_def_2, discovery_def_3, discovery_def_4, discovery_def_5, discovery_def_6, discovery_def_7_0, discovery_def_7_1, discovery_def_8_0, discovery_def_8_1, discovery_mid_0, discovery_mid_1, discovery_mid_2, discovery_mid_3, discovery_mid_4, discovery_mid_5, discovery_mid_6, discovery_mid_7_0, discovery_mid_7_1, discovery_mid_8_0, discovery_mid_8_1, discovery_fwd_0, discovery_fwd_1, discovery_fwd_2, discovery_fwd_3_0, discovery_fwd_3_1, discovery_fwd_4_0, discovery_fwd_4_1]
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     outputs:
       matrice: ${{ steps.merge.outputs.matrice }}
       matrice_unique: ${{ steps.merge.outputs.matrice_unique }}
+      gruppi_predict: ${{ steps.merge.outputs.gruppi_predict }}
     env:
       MATRICE_0: ${{ needs.discovery_gk_0.outputs.matrice }}
       MATRICE_1: ${{ needs.discovery_gk_1.outputs.matrice }}
@@ -1674,51 +1495,51 @@ jobs:
       MATRICE_34: ${{ needs.discovery_fwd_4_0.outputs.matrice }}
       MATRICE_35: ${{ needs.discovery_fwd_4_1.outputs.matrice }}
     steps:
+      # Raccoglie gli artifact dei 36 job discovery e li unisce in un solo
+      # artifact 'discovery-merged' che i job a valle scaricano (prima ogni
+      # job discovery pushava su main: 1123 job-secondi di sola contesa sul
+      # retry-loop, vedi pipeline_artifacts.py). L'unione dei sotto-shard
+      # della stessa lega pesante usa la stessa semantica di
+      # merge_discovery_json.py (lista -> unione, dict -> update).
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          pattern: disc-*
       - id: merge
         run: |
-          python3 -c "
-          import json, os
-          names = ['MATRICE_0', 'MATRICE_1', 'MATRICE_2', 'MATRICE_3', 'MATRICE_4', 'MATRICE_5', 'MATRICE_6', 'MATRICE_7', 'MATRICE_8', 'MATRICE_9', 'MATRICE_10', 'MATRICE_11', 'MATRICE_12', 'MATRICE_13', 'MATRICE_14', 'MATRICE_15', 'MATRICE_16', 'MATRICE_17', 'MATRICE_18', 'MATRICE_19', 'MATRICE_20', 'MATRICE_21', 'MATRICE_22', 'MATRICE_23', 'MATRICE_24', 'MATRICE_25', 'MATRICE_26', 'MATRICE_27', 'MATRICE_28', 'MATRICE_29', 'MATRICE_30', 'MATRICE_31', 'MATRICE_32', 'MATRICE_33', 'MATRICE_34', 'MATRICE_35']
-          parts = [json.loads(os.environ.get(v) or '[]') for v in names]
-          raw = [x for p in parts for x in p]
-          # Dedup (28/07, bug reale: con piu' sotto-quote discovery per la
-          # STESSA lega pesante -- HEAVY_LEAGUE_SHARD, mls/kleague -- ognuna
-          # genera indipendentemente l'intera lista di shard predict per
-          # quella lega/ruolo, quindi la stessa combinazione finiva
-          # duplicata N volte -- N sotto-quote invece di 1).
-          combined, seen_combo = [], set()
-          for x in raw:
-              key = json.dumps(x, sort_keys=True)
-              if key not in seen_combo:
-                  seen_combo.add(key)
-                  combined.append(x)
-          print('matrice=' + json.dumps(combined, separators=(',', ':')))
-          # matrice_unique (28/07, sharding predict): un'unica coppia
-          # lega/ruolo per il job 'consiglio' a valle, senza il campo
-          # 'shard' -- che nella matrice sharded (mls/kleague) compare
-          # ripetuto N volte per la stessa coppia lega/ruolo.
-          seen = []
-          for x in combined:
-              pair = {'league': x['league'], 'role': x['role']}
-              if pair not in seen:
-                  seen.append(pair)
-          print('matrice_unique=' + json.dumps(seen, separators=(',', ':')))
-          " >> "$GITHUB_OUTPUT"
+          python3 pipeline_artifacts.py apply _artifacts
+          python3 pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+          python3 pipeline_artifacts.py matrice 20 >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: discovery-merged
+          path: _artifact_stage
+          retention-days: 1
 
   predict:
     needs: discovery_merge
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
+    name: predict ${{ matrix.gruppo.nome }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      max-parallel: 77
+      # 20 = tetto REALE di job concorrenti dell'account (verificato: la
+      # concorrenza massima osservata e' 20 esatti su ogni run, il vecchio
+      # max-parallel: 77 era inerte). Le combinazioni lega/ruolo/shard sono
+      # raggruppate da pipeline_artifacts.py in <= 20 bin bilanciati per
+      # carico stimato, quindi ogni slot di concorrenza paga UNA volta i ~19s
+      # di checkout+setup+pip invece di una volta per combinazione (prima: 60
+      # job predict = 1085 job-secondi di solo overhead) e la fase non resta
+      # appesa al job piu' sfortunato (run 30484170456: scozia/fwd da 398s
+      # mentre gli altri finivano in 40s). Gli slug processati da ogni shard
+      # sono INVARIATI: stesso split i % n == idx, vedi 'slugs' in
+      # pipeline_artifacts.py.
+      max-parallel: 20
       matrix:
-        combo: ${{ fromJson(needs.discovery_merge.outputs.matrice) }}
-    env:
-      LEGA: ${{ matrix.combo.league }}
-      RUOLO: ${{ matrix.combo.role }}
-      SHARD: ${{ matrix.combo.shard }}
+        gruppo: ${{ fromJson(needs.discovery_merge.outputs.gruppi_predict) }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -1728,79 +1549,68 @@ jobs:
           cache: "pip"
           cache-dependency-path: requirements-formazione.txt
       - run: pip install requests curl_cffi
+      # name: (non pattern:) di proposito -- se l'artifact della discovery
+      # manca, il job DEVE fallire invece di proseguire sui player_slugs.json
+      # vecchi rimasti nel checkout, generando predizioni per i giocatori
+      # della giornata precedente senza nessun errore visibile.
+      - uses: actions/download-artifact@v4
+        with:
+          name: discovery-merged
+          path: _artifacts/discovery-merged
+      - run: python pipeline_artifacts.py apply _artifacts
       - name: Predict
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          GRUPPO: ${{ matrix.gruppo.g }}
           PYTHONUNBUFFERED: "1"
         run: |
           set -u
-          case "$RUOLO" in
-            gk)  PY=test_gk.py ;;
-            def) PY=test_def.py ;;
-            mid) PY=test_mid.py ;;
-            fwd) PY=test_mls_fwd_all.py ;;
-          esac
-          FILE="formazione_$LEGA/output/${LEGA}_${RUOLO}_discovery/player_slugs.json"
-          # Sharding predict (28/07, leghe numerose mls/kleague, vedi
-          # discovery_fixture.py): SHARD e' 'idx:n' (es. '1:4') se questa
-          # combinazione lega/ruolo e' stata spezzata in piu' job paralleli,
-          # vuoto altrimenti (comportamento INVARIATO, un solo job con TUTTI
-          # gli slug). Split deterministico per indice (idx % n), stesso
-          # criterio di DISCOVERY_LEAGUE_SHARD.
-          SLUGS=$(python -c "
-          import json, os
-          slugs = json.load(open('$FILE'))
-          shard = os.environ.get('SHARD', '').strip()
-          if shard:
-              idx, n = (int(x) for x in shard.split(':'))
-              slugs = [s for i, s in enumerate(slugs) if i % n == idx]
-          print(' '.join(slugs))
-          ")
-          echo "Giocatori da elaborare (shard '${SHARD:-nessuno}'): $SLUGS"
-          for SLUG in $SLUGS; do
-            echo "--- $LEGA/$RUOLO: $SLUG ---"
-            TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY" || echo "predict fallito per $SLUG"
-          done
+          python pipeline_artifacts.py combos "$GRUPPO" > combos.tsv
+          echo "Combinazioni di questo gruppo:"; cat combos.tsv
+          while IFS=$'\t' read -r LEGA RUOLO SHARD <&3; do
+            [ -n "$LEGA" ] || continue
+            case "$RUOLO" in
+              gk)  PY=test_gk.py ;;
+              def) PY=test_def.py ;;
+              mid) PY=test_mid.py ;;
+              fwd) PY=test_mls_fwd_all.py ;;
+            esac
+            SLUGS=$(python pipeline_artifacts.py slugs "$LEGA" "$RUOLO" "$SHARD")
+            echo "=== $LEGA/$RUOLO (shard '${SHARD:-nessuno}'): $SLUGS"
+            for SLUG in $SLUGS; do
+              echo "--- $LEGA/$RUOLO: $SLUG ---"
+              TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY" || echo "predict fallito per $SLUG"
+            done
+          done 3< combos.tsv
+      # Esclude le cartelle _discovery: sono gia' nell'artifact
+      # discovery-merged e verrebbero rimesse in ogni artifact di
+      # questa fase (identiche, quindi innocue, ma inutili).
       - if: always()
-        run: |
-          git config user.name "generatore-formazioni-bot"
-          git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add "formazione_$LEGA/output/" || true
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: $LEGA $RUOLO predict${SHARD:+ (quota $SHARD)}"
-          attempt=0
-          until git push; do
-            attempt=$((attempt + 1))
-            if [ $attempt -ge 15 ]; then exit 1; fi
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
-            git commit --amend --no-edit || true
-          done
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/(?![^/]+_discovery/)'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pred-${{ strategy.job-index }}
+          path: _artifact_stage
+          retention-days: 1
 
-  # Aggregazione consiglio (28/07, sharding predict): il job 'predict' sopra
-  # ora puo' spezzare una combinazione lega/ruolo in piu' shard paralleli
-  # (mls/kleague), quindi il consiglio (che legge TUTTI i file
-  # prediction_<slug>_*.txt di quel ruolo) va costruito UNA volta sola, dopo
-  # che TUTTI gli shard sono completati -- da qui 'needs: predict' a livello
-  # di job intero (aspetta l'intera matrice, non solo la propria combo).
-  # Usa matrice_unique (una sola voce per coppia lega/ruolo, senza 'shard').
+  # Aggregazione consiglio: legge TUTTI i file prediction_<slug>_*.txt di una
+  # coppia lega/ruolo, quindi va costruita UNA volta sola dopo che tutti i
+  # gruppi predict sono completati -- da qui 'needs: predict' a livello di job
+  # intero. Usa matrice_unique (una voce per coppia lega/ruolo, senza shard).
+  #
+  # 29/07: da 58 job a matrice a UN job unico. Misurato sulla run
+  # 30484170456: i 58 job costavano 4020 job-secondi (268s di wall) di cui
+  # 2934 di git push e 906 di checkout, per un lavoro reale di 0 secondi
+  # ("Costruisci consiglio" = 0s su tutti e 58). Lo script di consiglio non
+  # fa nessuna chiamata di rete: eseguirli in sequenza in un solo job costa
+  # meno di un secondo a coppia.
   consiglio:
     needs: [discovery_merge, predict]
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 77
-      matrix:
-        combo: ${{ fromJson(needs.discovery_merge.outputs.matrice_unique) }}
-    env:
-      LEGA: ${{ matrix.combo.league }}
-      RUOLO: ${{ matrix.combo.role }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -1809,23 +1619,87 @@ jobs:
           python-version: "3.11"
           cache: "pip"
           cache-dependency-path: requirements-formazione.txt
-      - name: Costruisci consiglio
+      - uses: actions/download-artifact@v4
+        with:
+          name: discovery-merged
+          path: _artifacts/discovery-merged
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          pattern: pred-*
+      - run: python pipeline_artifacts.py apply _artifacts
+      - name: Costruisci consigli
+        env:
+          MATRICE_UNIQUE: ${{ needs.discovery_merge.outputs.matrice_unique }}
         run: |
           set -u
-          case "$RUOLO" in
-            gk)  CO=build_consiglio_gk.py ;;
-            def) CO=build_consiglio_def.py ;;
-            mid) CO=build_consiglio_mid.py ;;
-            fwd) CO=build_consiglio.py ;;
-          esac
-          python "formazione_$LEGA/consiglio/$CO" || echo "consiglio non generato"
+          python pipeline_artifacts.py coppie > coppie.tsv
+          echo "Coppie lega/ruolo:"; cat coppie.tsv
+          while IFS=$'\t' read -r LEGA RUOLO <&3; do
+            [ -n "$LEGA" ] || continue
+            case "$RUOLO" in
+              gk)  CO=build_consiglio_gk.py ;;
+              def) CO=build_consiglio_def.py ;;
+              mid) CO=build_consiglio_mid.py ;;
+              fwd) CO=build_consiglio.py ;;
+            esac
+            echo "=== consiglio $LEGA/$RUOLO"
+            python "formazione_$LEGA/consiglio/$CO" || echo "consiglio non generato per $LEGA/$RUOLO"
+          done 3< coppie.tsv
+      # Esclude le cartelle _discovery: sono gia' nell'artifact
+      # discovery-merged e verrebbero rimesse in ogni artifact di
+      # questa fase (identiche, quindi innocue, ma inutili).
       - if: always()
-        run: |
+        run: python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/(?![^/]+_discovery/)'
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cons-0
+          path: _artifact_stage
+          retention-days: 1
+
+  # Commit unico di tutti gli output della run (discovery + predict +
+  # consiglio). Prima ogni singolo job pushava per conto suo con un
+  # retry-loop: 6488 job-secondi su 14234 totali (46% della compute) spesi in
+  # contesa su main, perche' con 20 job che pushano insieme ogni giro di
+  # retry ne fa passare UNO solo. Lo stato finale di main e' lo stesso.
+  # 'always()' di proposito: se predict o consiglio falliscono a meta', gli
+  # output parziali devono comunque essere committati -- era la proprieta'
+  # della versione a push-per-job e va conservata.
+  salva_output:
+    needs: [discovery_merge, predict, consiglio]
+    if: always() && needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements-formazione.txt
+      # pattern: (non name:) perche' questo job gira anche quando una fase a
+      # monte e' fallita e il suo artifact puo' mancare del tutto.
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          pattern: discovery-merged
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          pattern: pred-*
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          pattern: cons-*
+      - run: python pipeline_artifacts.py apply _artifacts
+      - run: |
           git config user.name "generatore-formazioni-bot"
           git config user.email "generatore-formazioni-bot@users.noreply.github.com"
-          git add "formazione_$LEGA/output/" || true
+          git add formazione_*/output/ || true
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Formazione giornata: $LEGA $RUOLO consiglio"
+          git commit -m "Formazione giornata: output run (discovery + predict + consiglio)"
           attempt=0
           until git push; do
             attempt=$((attempt + 1))
@@ -1834,7 +1708,7 @@ jobs:
             git fetch origin main
             git merge --no-edit -X ours origin/main
             python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
+            git add formazione_*/output/ || true
             git commit --amend --no-edit || true
           done
 
@@ -1861,6 +1735,22 @@ jobs:
           cache: "pip"
           cache-dependency-path: requirements-formazione.txt
       - run: pip install requests curl_cffi
+      # Stessa ragione di 'predict': se gli artifact mancano il job deve
+      # fallire, non generare una formazione sui consigli della giornata
+      # precedente rimasti nel checkout.
+      - uses: actions/download-artifact@v4
+        with:
+          name: discovery-merged
+          path: _artifacts/discovery-merged
+      - uses: actions/download-artifact@v4
+        with:
+          name: cons-0
+          path: _artifacts/cons-0
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          pattern: pred-*
+      - run: python pipeline_artifacts.py apply _artifacts
       - env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           IN_SEASON: ${{ github.event.inputs.in_season }}
@@ -1888,8 +1778,7 @@ jobs:
             sleep $((RANDOM % 12 + 5))
             git fetch origin main
             git merge --no-edit -X ours origin/main
-            python merge_discovery_json.py
-            git add formazione_*/output/*_discovery/ || true
+            git add generatore_formazioni/output/*.html || true
             git commit --amend --no-edit || true
           done
       - name: Notifica Telegram con link al report HTML
