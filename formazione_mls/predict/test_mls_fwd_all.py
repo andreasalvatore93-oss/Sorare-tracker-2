@@ -1315,7 +1315,22 @@ def build_prediction(player_slug):
     # piccolo gruppo per disambiguare casa/trasferta dello stesso avversario,
     # ma la squadra vecchia (games piu' vecchi di 5 partite) non puo' piu'
     # vincere sulla nuova.
-    _recent_window = usable[-5:] if len(usable) >= 5 else usable
+    # FIX (29/07, bug reale trovato dall'utente: Messi mostrava SQUADRA/
+    # AVVERSARIO "N/D" e Griezmann risultava di colpo "Atletico Madrid"):
+    # la finestra delle ultime 5 partite poteva essere dominata da
+    # competizioni non-mlspa (global-cup, amichevoli, nazionale) che hanno
+    # homeTeam/awayTeam VUOTI o riferiti a un contesto diverso (club in
+    # prestito, nazionale) -- la maggioranza finiva su nessuna squadra o
+    # sulla squadra SBAGLIATA. Ora si preferiscono le partite della STESSA
+    # competizione della partita target (le uniche rappresentative della
+    # squadra MLS attuale); si ripiega sulla finestra multi-competizione
+    # SOLO se il giocatore non ha alcuna partita nella competizione target
+    # nello storico (permissivo, mai un'esclusione).
+    _same_comp_usable = ([n for n in usable
+                           if (n['anyGame'].get('competition') or {}).get('slug') == target_competition]
+                          if target_competition else [])
+    _team_source = _same_comp_usable if _same_comp_usable else usable
+    _recent_window = _team_source[-5:] if len(_team_source) >= 5 else _team_source
     team_counts = {}
     for node in _recent_window:
         g = node['anyGame']
@@ -1864,7 +1879,7 @@ def main():
     for idx, slug in enumerate(slugs_to_process, 1):
         breaker_active = _circuit_breaker_tripped()
         if idx > 1 and not breaker_active:
-            pause_s = 10.0  # pausa base tra giocatori
+            pause_s = 2.0  # pausa base tra giocatori (29/07, ridotta da 10s: zero 429 osservati anche a parallelismo molto piu' alto in discovery, vedi RIASSUNTO sez. 30)
             log(f"Pausa di {pause_s}s prima del prossimo giocatore...")
             time.sleep(pause_s)
 
