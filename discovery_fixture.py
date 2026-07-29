@@ -285,20 +285,41 @@ def log(msg):
     print(f"[discovery_fixture] {msg}", flush=True)
 
 
+def _resolve_query_with_retry(query, variables, operation_name, extract):
+    """Esegue una query CRITICA di bootstrap (gira UNA volta per job, non per
+    giocatore) con un piccolo retry -- 29/07, bug reale: un job discovery su
+    34 e' fallito per intero perche' l'UNICA chiamata di risoluzione
+    giornata ha incrociato un blocco CloudFront transitorio (visto anche sui
+    predict, vedi circuit breaker li') e nessun retry la copriva, a
+    differenza delle query per-giocatore che ne hanno gia' uno. Qui il costo
+    di un retry e' trascurabile (1 sola chiamata per job), quindi nessun
+    motivo per non averlo."""
+    for attempt in range(3):
+        d = base.graphql_query(query, variables, operation_name=operation_name)
+        result = extract(d)
+        if result is not None:
+            return result, d
+        if attempt < 2:
+            log(f"ATTENZIONE: {operation_name} senza risultato utilizzabile (tentativo {attempt + 1}/3), riprovo tra 3s...")
+            time.sleep(3.0)
+    return None, d
+
+
 def risolvi_fixture():
     if FIXTURE_SLUG:
-        d = base.graphql_query(FIXTURE_BY_SLUG, {"slug": FIXTURE_SLUG},
-                               operation_name="FixtureBySlug")
-        f = ((d.get('data') or {}).get('so5') or {}).get('so5Fixture')
+        f, _d = _resolve_query_with_retry(
+            FIXTURE_BY_SLUG, {"slug": FIXTURE_SLUG}, "FixtureBySlug",
+            lambda d: ((d.get('data') or {}).get('so5') or {}).get('so5Fixture'))
         if f:
             return f
         log(f"ATTENZIONE: fixture '{FIXTURE_SLUG}' non trovata.")
     if GAMEWEEK:
         # so5Fixtures non accetta un filtro per gameweek: si prendono le ultime
         # e si sceglie quella giusta lato client.
-        d = base.graphql_query(FIXTURE_BY_GW, {"first": 30}, operation_name="FixtureList")
-        nodes = (((d.get('data') or {}).get('so5') or {})
-                 .get('so5Fixtures') or {}).get('nodes') or []
+        nodes, _d = _resolve_query_with_retry(
+            FIXTURE_BY_GW, {"first": 30}, "FixtureList",
+            lambda d: (((d.get('data') or {}).get('so5') or {}).get('so5Fixtures') or {}).get('nodes') or None)
+        nodes = nodes or []
         match = [n for n in nodes if str(n.get('seasonGameWeek')) == str(GAMEWEEK)]
         if match:
             aperte = [n for n in match if n.get('aasmState') == 'opened']
