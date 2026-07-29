@@ -7,9 +7,9 @@ on:
         required: false
         default: "6000"
       commit_chunk_seconds:
-        description: "Ogni quanti secondi riscrive e committa il CSV con tutte le carte tracciate finora"
+        description: "Ogni quanti secondi riscrive e committa il CSV con tutte le carte tracciate finora (FIX 29/07, era 300: richiesta esplicita utente, perdita di lavoro osservata su cancellazioni manuali senza nessun commit di salvataggio)"
         required: false
-        default: "300"
+        default: "30"
       check_classic:
         description: "Traccia anche gli annunci CLASSIC oltre a in season (un solo file di output, in_season e classic mescolati, distinti dalla colonna tipo_carta)"
         required: false
@@ -92,7 +92,7 @@ jobs:
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
           LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '6000' }}
-          COMMIT_CHUNK_SECONDS: ${{ github.event.inputs.commit_chunk_seconds || '300' }}
+          COMMIT_CHUNK_SECONDS: ${{ github.event.inputs.commit_chunk_seconds || '30' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
           TRANSACTIONS_WINDOW_DAYS: ${{ github.event.inputs.transactions_window_days || '7' }}
           MAX_TRACKED_CARDS: ${{ github.event.inputs.max_tracked_cards || '500' }}

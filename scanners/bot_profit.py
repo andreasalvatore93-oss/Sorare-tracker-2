@@ -208,9 +208,14 @@ TEAM_WHITELIST = list(TEAM_LEAGUE_MAP.keys())
 # sovrascrivibile dal workflow_dispatch.
 LISTEN_SECONDS = int(os.environ.get('LISTEN_SECONDS', '6000'))
 
-# Commit periodico dei dati tracciati -- default 5 minuti (era 2, richiesta
-# esplicita utente 24/07).
-COMMIT_CHUNK_SECONDS = int(os.environ.get('COMMIT_CHUNK_SECONDS', '300'))
+# Commit periodico dei dati tracciati -- default 30 secondi (FIX 29/07, era
+# 300/5 minuti: richiesta esplicita utente, dopo aver verificato che una
+# cancellazione manuale della run non salva NULLA di quanto tracciato/
+# blacklistato dall'ultimo commit periodico in poi -- il commit di fallback
+# "if: always()" nel workflow non ha mai prodotto un commit reale nei 3 casi
+# osservati. Un intervallo cosi' breve limita la perdita a pochi secondi di
+# lavoro in caso di stop manuale).
+COMMIT_CHUNK_SECONDS = int(os.environ.get('COMMIT_CHUNK_SECONDS', '30'))
 
 # FIX 24/07 (richiesta esplicita utente): non piu' un campione fisso di N
 # transazioni, ma una FINESTRA TEMPORALE -- tutte le transazioni reali degli
