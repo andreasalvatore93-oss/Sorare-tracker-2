@@ -1,0 +1,44 @@
+name: Bot Profit Pattern Export (dati grezzi, solo lettura)
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: "Branch/ref da eseguire e su cui committare (default main)"
+        required: false
+        default: "main"
+permissions:
+  contents: write
+jobs:
+  bot-profit-pattern-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_ref || 'main' }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests websocket-client curl_cffi
+      - name: Export transazioni grezze (top 50 x gruppo, gia' in classifica)
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          PYTHONUNBUFFERED: "1"
+        run: python scanners/bot_profit_pattern_export.py
+      - name: Commit CSV grezzo
+        if: always()
+        run: |
+          if [ -z "$(git status --porcelain -- bot_profit_output)" ]; then
+            echo "Nessuna modifica, niente da committare."
+          else
+            git config user.name "bot-profit"
+            git config user.email "bot-profit@users.noreply.github.com"
+            git add bot_profit_output
+            git commit -m "Bot Profit Pattern Export: dati grezzi transazioni per analisi pattern"
+            git pull --rebase --autostash origin "${{ github.event.inputs.git_ref || 'main' }}"
+            git push
+          fi
