@@ -1,0 +1,64 @@
+=== RICHIESTA (AllPlayerGameScores) ===
+operationName: AllPlayerGameScores
+variables: {"slug": "carlos-miguel-harvey-cesneros", "first": 2}
+query:
+
+query AllPlayerGameScores($slug: String!, $first: Int!) {
+  anyPlayer(slug: $slug) {
+    allPlayerGameScores(first: $first) {
+      nodes {
+        id
+        score
+        scoreStatus
+        positionTyped
+        anyGame {
+          id
+          date
+          statusTyped
+          homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+          awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+          competition { slug }
+        }
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            gameStarted
+            minsPlayed
+            yellowCard
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+      }
+    }
+    anyFutureGames(first: 5) {
+      nodes {
+        id
+        date
+        playerGameScore(playerSlug: $slug) {
+          id
+          positionTyped
+          projectedScore
+          anyGame {
+            id
+            date
+            homeTeam { ... on Club { slug name code domesticLeagueRanking } }
+            awayTeam { ... on Club { slug name code domesticLeagueRanking } }
+            competition { slug }
+          }
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+=== RISPOSTA ===
+status_code: 200
+headers: {'server': 'CloudFront', 'content-type': 'application/json; charset=utf-8', 'date': 'Wed, 29 Jul 2026 00:47:20 GMT', 'x-frame-options': 'SAMEORIGIN', 'x-xss-protection': '0', 'x-content-type-options': 'nosniff', 'x-permitted-cross-domain-policies': 'none', 'referrer-policy': 'strict-origin-when-cross-origin', 'x-gql-complexity': '186', 'x-gql-depth': '7', 'x-server-timestamp': '1785286040', 'vary': 'Accept, Accept-Encoding, Origin', 'csrf-token': 'Q42ur5C9xEXDtxIGIlEnDkZZQ66v7UzPzUDajNnThIDPxpdJh09f11esq8OYpYXPQLRGr8dXFdPGjwry---5mw', 'etag': 'W/"9b4151100144316a8a19772699076491"', 'cache-control': 'max-age=0, private, must-revalidate', 'content-security-policy': "connect-src 'self' https: wss://mainnet.infura.io wss://rinkeby.infura.io wss://sepolia.infura.io; frame-ancestors 'self' https://sorare.zendesk.com", 'set-cookie': '_sorare_session_id=Gk9YlkAC3rXKqoSp3z4AYxFWc%2B7p7nnY0Uv8SIbOS0njw2MJ%2BLLBl6UnzPUI28DGiMx7kTPiMHHcz0tqX%2FNP2oSxcdeFzXALwPafFi7yq%2FfFW5GhqupYi9hhc60j%2B2MmnSgm%2B9po9t2mdy0AP8EUVj1yLu48aSMH3uhzVxoJjmaLjTfTLki501jqQ%2BT2xFC%2BHvOqVuDa9IK70No8qqKcgH6DO3lpfq7N5iDxcqxraCuUbhL2AUgwM6SzrHI7kbBTXHs3%2FcesIFJcSzpsnoN2HVFSPv6ahcYCuAsD1uKe5Waj2sQ49anDKG1mL%2BDdjVM0--fQbFbsox5xxewACl--1DMoGdJPGrLD4iQtmUYEaQ%3D%3D; domain=.sorare.com; path=/; expires=Thu, 29 Jul 2027 00:47:20 GMT; secure; httponly; samesite=none', 'x-request-id': 'ea916374-3d6b-4432-9c25-d0223efeed52', 'x-runtime': '0.053361', 'content-encoding': 'gzip', 'strict-transport-security': 'max-age=63072000; includeSubDomains', 'x-cache': 'Miss from cloudfront', 'via': '1.1 c792ae1ce34a9f3533ab0d18e5712c4a.cloudfront.net (CloudFront)', 'x-amz-cf-pop': 'ORD58-P3', 'x-amz-cf-id': 'UD8NcVLrOnBgq7p-ewrvoyUt2ELctGGQHjAidy8I_PYamF3V4dZOJg=='}
+body (integrale):
+{"data":{"anyPlayer":{"allPlayerGameScores":{"nodes":[{"id":"So5Score:74a5e4b7-942e-4138-9623-b0e5f5b57323","score":38.2,"scoreStatus":"FINAL","positionTyped":"Midfielder","anyGame":{"id":"Game:333d6b60-9928-4bca-aafa-0f4e439dc435","date":"2026-07-26T00:30:00Z","statusTyped":"played","homeTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"awayTeam":{"slug":"vancouver-whitecaps-vancouver-british-columbia","name":"Vancouver Whitecaps FC","code":"VAN","domesticLeagueRanking":1},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"ON_FIELD","gameStarted":null,"minsPlayed":33,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}},{"id":"So5Score:8f6bea45-801f-4ef1-a672-33e08d217ed6","score":0.0,"scoreStatus":"DID_NOT_PLAY","positionTyped":"Midfielder","anyGame":{"id":"Game:e5e617fb-a60b-4cc2-a86d-e9a850284fb6","date":"2026-07-23T00:30:00Z","statusTyped":"played","homeTeam":{"slug":"sporting-kc-kansas-city-kansas","name":"Sporting Kansas City ","code":"SKC","domesticLeagueRanking":15},"awayTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"fieldStatus":"NOT_ON_GAME_SHEET","gameStarted":null,"minsPlayed":null,"yellowCard":null,"footballPlayingStatusOdds":{"starterOddsBasisPoints":0,"reliability":"HIGH"}}}]},"anyFutureGames":{"nodes":[{"id":"Game:6554dccc-251e-4df2-9df0-ce8c676883b0","date":"2026-08-02T00:30:00Z","playerGameScore":{"id":"So5Score:8220fd18-d5a8-418d-8e61-db4a5ca69c8c","positionTyped":"Midfielder","projectedScore":45.0,"anyGame":{"id":"Game:6554dccc-251e-4df2-9df0-ce8c676883b0","date":"2026-08-02T00:30:00Z","homeTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"awayTeam":{"slug":"san-diego-san-diego","name":"San Diego FC","code":"SD","domesticLeagueRanking":12},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:72e6d3b5-1227-46dc-b1bb-6da7ae68de90","date":"2026-08-05T00:30:00Z","playerGameScore":{"id":"So5Score:3b4c4254-995e-482c-b0bb-dc7fe652636c","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:72e6d3b5-1227-46dc-b1bb-6da7ae68de90","date":"2026-08-05T00:30:00Z","homeTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"awayTeam":{"slug":"juarez-ciudad-juarez-chihuahua","name":"FC Juárez","code":"JUA","domesticLeagueRanking":7},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:642a4843-1254-4a53-a067-a3f4635f6c63","date":"2026-08-08T01:00:00Z","playerGameScore":{"id":"So5Score:0f69efa0-8030-4077-a4aa-fa4ecc051a1a","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:642a4843-1254-4a53-a067-a3f4635f6c63","date":"2026-08-08T01:00:00Z","homeTeam":{"slug":"tigres-uanl-san-nicolas-de-los-garza","name":"CF Tigres de la Universidad Autónoma de Nuevo León","code":"TIG","domesticLeagueRanking":16},"awayTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:713feaec-20cf-4679-87aa-fef18437ad18","date":"2026-08-12T00:30:00Z","playerGameScore":{"id":"So5Score:01182ab8-f426-422f-b279-3a2bed45bee1","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:713feaec-20cf-4679-87aa-fef18437ad18","date":"2026-08-12T00:30:00Z","homeTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"awayTeam":{"slug":"atlante-benito-juarez","name":"Club Atlante","code":"ATL","domesticLeagueRanking":1},"competition":{"slug":"leagues-cup-mls"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}},{"id":"Game:14e88581-75af-4ffb-8234-e6a3b8937167","date":"2026-08-16T01:30:00Z","playerGameScore":{"id":"So5Score:52aec079-6b42-40b2-bc80-e6a394ac0e65","positionTyped":"Midfielder","projectedScore":0.0,"anyGame":{"id":"Game:14e88581-75af-4ffb-8234-e6a3b8937167","date":"2026-08-16T01:30:00Z","homeTeam":{"slug":"real-salt-lake-salt-lake-city-utah","name":"Real Salt Lake","code":"RSL","domesticLeagueRanking":4},"awayTeam":{"slug":"minnesota-united-minneapolis-saint-paul-minnesota","name":"Minnesota United","code":"MIN","domesticLeagueRanking":9},"competition":{"slug":"mlspa"}},"anyPlayerGameStats":{"footballPlayingStatusOdds":null}}}]}}}}
