@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T07:12:37.759997Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) herbert-bockhorn: 47 pt attesi (26-63)
+   ORDINAMENTO: 51.89
+   SQUADRA: magdeburg-magdeburg | AVVERSARIO: eintracht-braunschweig-braunschweig
+======================================================================
+
+######################################################################
+# GIOCATORE: herbert-bockhorn
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: herbert-bockhorn (squadra: magdeburg-magdeburg)
+Generato: 2026-07-30T07:12:37.759250Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-03 | FCM vs EBS | 2-bundesliga | score=58.8 | peso=0.758
+  2025-08-09 | SGD vs FCM | 2-bundesliga | score=36.2 | peso=0.785
+  2026-04-04 | FCM vs BOC | 2-bundesliga | score=63.6 | peso=0.812
+  2026-04-12 | SCP vs FCM | 2-bundesliga | score=49.7 | peso=0.841
+  2026-04-18 | FCM vs F95 | 2-bundesliga | score=64.8 | peso=0.871
+  2026-04-26 | FCN vs FCM | 2-bundesliga | score=26.3 | peso=0.901
+  2026-05-03 | FCM vs BSC | 2-bundesliga | score=56.9 | peso=0.933
+  2026-05-09 | KIE vs FCM | 2-bundesliga | score=49.0 | peso=0.966
+  2026-05-17 | FCM vs FCK | 2-bundesliga | score=23.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 47.16
+  di cui Punteggio decisivo (level_score) medio: 35.04 | Punteggio complessivo (granulari) medio: 12.12 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.92, delta avversario +0.33 | Passaggio condizionato: delta venue +1.15, delta avversario +0.14 | Clean sheet/disimpegni condizionato: delta venue +0.54, delta avversario -0.54 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.77
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.3 - 63.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.22 (differenza: +2.55)
+Media score in casa: 53.61 | Media score fuori casa: 40.31
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.180
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.014
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.991
+Fattore gol subiti (goals_conceded, con cap): 1.010
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.006
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 26.47% (fonte: tasso di presenza storico (9/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T11:00
+Casa: 1. FC Magdeburg | Trasferta: Braunschweiger TSV Eintracht 1895
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.6 (range 25.8 - 63.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 51.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.54
+Punteggio REALE ottenuto in quella partita: 23.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -26.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.1    56.9    +11.8    17.7        SI
+   7        7      51.8    49.0     -2.8    16.4        SI
+   8        8      45.3    23.9    -21.3    15.2        NO
+
+MAE (errore assoluto medio): 11.99
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
