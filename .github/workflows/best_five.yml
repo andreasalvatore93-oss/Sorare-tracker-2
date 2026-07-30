@@ -46,6 +46,10 @@ on:
         description: 'Soglia starterOdds prefiltro (0-1), stesso significato di starter_odds_min in formazione_giornata.yml'
         required: false
         default: '0.70'
+      top_k_qualita:
+        description: 'Cap per qualita PRIMA delle starterOdds (top-K per ruolo secondo media L5/L10/L40). 0 = disattivato (pool intero)'
+        required: false
+        default: '40'
 
 permissions:
   contents: write
@@ -63,6 +67,8 @@ jobs:
         with: { python-version: "3.11" }
       - id: matrice
         name: Shard del pool (gia' filtrato per qualita' in discovery)
+        env:
+          BEST_FIVE_TOP_K_QUALITA: ${{ github.event.inputs.top_k_qualita || '40' }}
         run: |
           set -u
           ARGS="${{ github.event.inputs.lega || 'kleague' }} --matrice-pool"

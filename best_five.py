@@ -48,6 +48,7 @@ import time
 import base64
 import subprocess
 import datetime
+import importlib.util
 
 try:
     from curl_cffi import requests as curl_requests
@@ -68,6 +69,18 @@ _http_session = curl_requests.Session(impersonate="chrome") if _HAS_CURL_CFFI el
 # avrebbe scelto comunque. Il pool su cui si applica e' gia' filtrato per
 # qualita' (media L5/L10/L40 >= 30) a monte, in discovery_global.
 MIN_STARTER_ODDS_PREFILTER = float(os.environ.get('BEST_FIVE_MIN_STARTER_ODDS', '0.70'))
+
+# Cap per qualita' PRIMA delle starterOdds (30/07, richiesta esplicita
+# utente: "implementa cap qualita'" -- riduzione ulteriore, sopra alla
+# parallelizzazione gia' fatta, del numero di query starterOdds necessarie).
+# Tiene solo i top-K per ruolo secondo la media L5/L10/L40 gia' persistita in
+# player_quality.json (nessuna chiamata API aggiuntiva, il valore era gia'
+# calcolato per il filtro qualita' di discovery_global). 0 o negativo =
+# disattivato (comportamento precedente, pool intero). Se player_quality.json
+# non esiste ancora (discovery non ancora rilanciata dopo l'aggiunta di
+# questo file), il cap non si applica -- MAI un'esclusione silenziosa per
+# dato mancante.
+BEST_FIVE_TOP_K_QUALITA = int(os.environ.get('BEST_FIVE_TOP_K_QUALITA', '40'))
 
 NEXT_MATCH_STARTER_ODDS_QUERY = """
 query NextMatchStarterOdds($slug: String!) {
@@ -159,13 +172,36 @@ def discovery_global_dir(lega, ruolo):
 
 def carica_pool_qualita_filtrato(lega, ruolo):
     """Legge player_slugs.json della discovery globale -- gia' filtrato per
-    qualita' (media L5/L10/L40 >= 30) a monte da filter_by_quality(), nessun
-    filtro aggiuntivo da fare qui."""
+    qualita' (media L5/L10/L40 >= soglia) a monte da filter_by_quality().
+    In piu' (30/07): applica il CAP per qualita' (BEST_FIVE_TOP_K_QUALITA),
+    tenendo solo i top-K per media L5/L10/L40 (player_quality.json, stesso
+    valore gia' calcolato in discovery_global) -- riduce ulteriormente il
+    numero di candidati che arrivano al controllo starterOdds."""
     path = os.path.join(discovery_global_dir(lega, ruolo), 'player_slugs.json')
     if not os.path.exists(path):
         raise FileNotFoundError(f"Discovery globale non trovata per {ruolo}: {path}")
     with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        slugs = json.load(f)
+
+    if BEST_FIVE_TOP_K_QUALITA <= 0:
+        return slugs
+
+    quality_path = os.path.join(discovery_global_dir(lega, ruolo), 'player_quality.json')
+    if not os.path.exists(quality_path):
+        log(f"[{ruolo}] player_quality.json non trovato -- cap qualita' NON applicato "
+            f"(serve rilanciare la discovery_global per generarlo), pool completo usato.")
+        return slugs
+
+    if len(slugs) <= BEST_FIVE_TOP_K_QUALITA:
+        return slugs
+
+    with open(quality_path, encoding='utf-8') as f:
+        quality_map = json.load(f)
+    slugs_ordinati = sorted(slugs, key=lambda s: quality_map.get(s, 0.0), reverse=True)
+    scartati = len(slugs) - BEST_FIVE_TOP_K_QUALITA
+    log(f"[{ruolo}] Cap qualita': tenuti i top {BEST_FIVE_TOP_K_QUALITA}/{len(slugs)} per media "
+        f"L5/L10/L40 ({scartati} scartati prima del controllo starterOdds).")
+    return slugs_ordinati[:BEST_FIVE_TOP_K_QUALITA]
 
 
 def prefiltra_starter_odds(ruolo, slugs, soglia=MIN_STARTER_ODDS_PREFILTER):
@@ -636,6 +672,93 @@ def formatta_report_html(lega, risultati, n_backup):
                                  colonne_ruolo="\n".join(colonne), footer=footer)
 
 
+# --- Formazione VERA (30/07, richiesta esplicita utente: "voglio la miglior
+# formazione con sinergie/combinazioni come fa il tool unificato, non un
+# elenco top-5 per ruolo") ---------------------------------------------
+#
+# Non duplica NULLA della logica di scoring/sinergia/anti-stack/captain: usa
+# DAVVERO CardPool/FORMATION_SHAPES/generate_lineups_for_type/render_report_
+# html di formazione_mls/build_formazione_finale.py (importato dinamicamente,
+# stesso schema di generatore_formazioni/build_formazione_globale.py) --
+# quelle funzioni sono lega-agnostiche (operano su role_data/card_pool
+# passati come argomenti), solo ROLES/DISCOVERY_DIRS/main() in fondo al file
+# sono specifici MLS e qui non li usiamo.
+#
+# La differenza con la produzione e' TUTTA nella CardPool: invece delle
+# copie REALMENTE possedute (da player_card_counts.json), si passa una
+# CardPool VUOTA (CardPool({}, names=...)) -- CardPool._total_for() ripiega
+# gia' da solo su 1 copia IN_SEASON virtuale per qualunque slug non
+# presente nei counts, quindi ogni giocatore del pool globale risulta
+# "posseduto" con 1 copia, senza scrivere nessun dato finto. Stesso
+# meccanismo per il bonus XP: power_bonus_fraction() ritorna 0.0 senza un
+# breakdown noto -- coerente con la richiesta precedente dell'utente di
+# vedere lo score GREZZO, senza bonus (vedi messaggio 30/07 alla sessione
+# "Riassunto evoluzione modello predittivo").
+
+def _import_bff():
+    path = os.path.join(REPO_ROOT, 'formazione_mls', 'build_formazione_finale.py')
+    spec = importlib.util.spec_from_file_location('bff_best_five', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def costruisci_formazione_vera(lega, count):
+    """Genera fino a 'count' formazioni IN_SEASON (GK/DEF/MID/FWD/EXTRA, con
+    sinergie/anti-stack/captain -- IDENTICO al tool unificato) sul pool
+    GLOBALE della lega. Il conteggio 'count' fa le veci del vecchio
+    'n_backup': con la CardPool sintetica (1 copia virtuale a testa) la
+    2a/3a formazione non puo' riusare un giocatore gia' schierato nella
+    1a, quindi sono automaticamente alternative complete con giocatori
+    diversi -- lo stesso ruolo di "backup" di prima, ma a livello di
+    formazione intera invece che di singolo slot.
+
+    Richiede che i consiglio_*.txt esistano gia' per tutti e 4 i ruoli
+    (li scrive esegui_consiglio, chiamato qui per ciascun ruolo)."""
+    bff = _import_bff()
+
+    role_data = {}
+    for ruolo, ROLE in (('gk', 'GK'), ('def', 'DEF'), ('mid', 'MID'), ('fwd', 'FWD')):
+        consiglio_path = esegui_consiglio(lega, ruolo)
+        if consiglio_path and os.path.exists(consiglio_path):
+            role_data[ROLE] = bff.parse_consiglio(consiglio_path)
+        else:
+            log(f"[{ruolo}] Nessun consiglio disponibile, ruolo vuoto per la formazione vera.")
+            role_data[ROLE] = []
+
+    mancanti = [r for r in bff.ROLES if not role_data.get(r)]
+    if mancanti:
+        log(f"ATTENZIONE: ruoli senza candidati: {mancanti} — la formazione potrebbe non essere generabile.")
+
+    # displayName reale Sorare (30/07, richiesta esplicita utente: "il nome
+    # sulle carte deve essere il display name non lo slug"). LIMITE NOTO:
+    # player_names.json esiste solo nella discovery POSSEDUTI (scritto da
+    # discovery_fixture.py, che quando scansiona i roster raccoglie i nomi),
+    # NON nella discovery_global usata dal pool Best Five -- quella script
+    # oggi scarta il campo 'name' gia' presente nella query TeamRoster,
+    # persiste solo gli slug (vedi kleague_gk_discovery_global.py). Quindi
+    # oggi i nomi coprono solo i giocatori gia' visti dalla discovery
+    # posseduti (in pratica: le tue carte + le squadre delle tue fixture),
+    # non l'intero pool globale -- per chi manca, CardPool.display_name()
+    # ripiega da solo sullo slug title-case (stesso fallback della
+    # produzione). Coprire l'intero pool richiede di far persistere 'name'
+    # anche a discovery_global (follow-up separato, non fatto qui).
+    names = {}
+    for ruolo in ('gk', 'def', 'mid', 'fwd'):
+        path = os.path.join(REPO_ROOT, f'formazione_{lega}', 'output',
+                             f'{lega}_{ruolo}_discovery', 'player_names.json')
+        if os.path.exists(path):
+            with open(path, encoding='utf-8') as f:
+                names.update(json.load(f))
+
+    card_pool = bff.CardPool({}, names=names)
+    lineup_blocks, lineup_html_blocks = [], []
+    generated, totale = bff.generate_lineups_for_type(
+        'IN_SEASON', count, role_data, card_pool, lineup_blocks, lineup_html_blocks, print_output=False)
+    log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica).")
+    return bff, generated, totale, lineup_blocks, lineup_html_blocks
+
+
 # Tetto REALE di job concorrenti dell'account GitHub Actions (stesso valore
 # di SLOT_CONCORRENTI in pipeline_artifacts.py, verificato sulla pipeline di
 # produzione — vedi commento li' per i dettagli della misura).
@@ -892,18 +1015,41 @@ def main():
         for ruolo in ruoli_da_eseguire:
             run_prediction_pool_prefiltrato(lega, ruolo)
 
-    risultati = costruisci_best_five(lega, ruoli, n_backup)
-    report = formatta_report(lega, risultati, n_backup)
+    # Formazione VERA (30/07, richiesta esplicita utente: sinergie/anti-stack/
+    # captain come il tool unificato, non un elenco top-N per ruolo) --
+    # sostituisce costruisci_best_five/formatta_report* come output
+    # principale. count = 1 (titolare) + n_backup (formazioni alternative
+    # complete, vedi costruisci_formazione_vera).
+    bff, generated, totale, lineup_blocks, lineup_html_blocks = costruisci_formazione_vera(
+        lega, 1 + n_backup)
 
     out_dir = os.path.join(REPO_ROOT, f'formazione_{lega}', 'output', 'best_five')
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     ts = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H%M%S')
+
+    report = (
+        "=" * 70 + "\n"
+        f"BEST FIVE — {lega.upper()} (formazione IN SEASON, pool globale)\n"
+        f"Generato: {datetime.datetime.utcnow().isoformat()}Z\n"
+        f"{generated} formazione/i generata/e su {1 + n_backup} richieste, "
+        f"totale complessivo {totale} pt attesi.\n"
+        "Pool: TUTTI i giocatori della lega (discovery globale), non solo posseduti. "
+        "Sinergie/anti-stack/captain calcolati come nel tool unificato.\n"
+        + "=" * 70 + "\n\n"
+        + "\n\n".join(lineup_blocks)
+    )
     out_path = os.path.join(out_dir, f'best_five_{ts}.txt')
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(report)
 
-    html_report = formatta_report_html(lega, risultati, n_backup)
+    page_title = f"Best Five — {lega.upper()}"
+    page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
+                     f"{generated}/{1 + n_backup} formazioni, pool TUTTI i giocatori della lega "
+                     f"(discovery globale, non solo posseduti). Sinergie/anti-stack/captain "
+                     f"come nel tool unificato.")
+    footer = "Script separato e READ-ONLY rispetto alla pipeline di produzione."
+    html_report = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer)
     html_path = os.path.join(out_dir, f'best_five_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_report)

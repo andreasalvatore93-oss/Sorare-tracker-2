@@ -165,7 +165,7 @@ query PlayerAvgScores($slug: String!) {
 # Se uno dei tre valori manca (tipico di chi ha poco storico/esordienti),
 # il giocatore viene ESCLUSO per sicurezza -- coerente con l'intento
 # "solo giocatori affidabili e con storico", non un'approssimazione al ribasso.
-MIN_AVG_SCORE_QUALITY = float(os.environ.get('MIN_AVG_SCORE_QUALITY', '30.0'))
+MIN_AVG_SCORE_QUALITY = float(os.environ.get('MIN_AVG_SCORE_QUALITY', '40.0'))
 
 
 def get_quality_average(slug):
@@ -208,7 +208,7 @@ def fetch_team_players_by_position(team_slug, position):
         if not club:
             log(f"[{team_slug}] ATTENZIONE: nessun dato club restituito. "
                 f"Risposta: {json.dumps(data, ensure_ascii=False)[:500]}")
-            return []
+            return [], {}
         conn = club.get('activePlayers') or {}
         all_nodes.extend(conn.get('nodes') or [])
         page_info = conn.get('pageInfo') or {}
@@ -222,6 +222,11 @@ def fetch_team_players_by_position(team_slug, position):
         if n.get('slug') and position in (n.get('anyPositions') or [])
         and (n.get('activeClub') or {}).get('slug') == team_slug
     ]
+    # NUOVO (30/07, tema Best Five): displayName reale Sorare per ogni slug -- il campo
+    # e' gia' nella risposta (vedi TEAM_ROSTER_QUERY sopra), prima veniva scartato,
+    # zero chiamate API aggiuntive per persisterlo.
+    names = {n['slug']: n.get('displayName') for n in nodes
+             if n.get('slug') and n.get('displayName')}
     n_stale = sum(
         1 for n in nodes
         if n.get('slug') and position in (n.get('anyPositions') or [])
@@ -231,17 +236,19 @@ def fetch_team_players_by_position(team_slug, position):
         log(f"[{team_slug}] {n_stale} {position.lower()} scartati: activeClub non corrisponde "
             f"(dato Sorare stantio, giocatore trasferito altrove).")
     log(f"[{team_slug}] {len(nodes)} giocatori totali, {len(matched)} {position.lower()}.")
-    return matched
+    return matched, names
 
 
 def main():
     log(f"Avvio discovery GLOBALE attaccanti MLS su {len(MLS_TEAM_SLUGS)} squadre...")
 
     all_slugs = set()
+    all_names = {}
     for idx, team_slug in enumerate(MLS_TEAM_SLUGS, 1):
         log(f"[{idx}/{len(MLS_TEAM_SLUGS)}] Squadra: {team_slug}")
-        players = fetch_team_players_by_position(team_slug, TARGET_POSITION)
+        players, names_batch = fetch_team_players_by_position(team_slug, TARGET_POSITION)
         all_slugs.update(players)
+        all_names.update(names_batch)
         time.sleep(0.3)
 
     slugs = sorted(all_slugs)
@@ -256,6 +263,14 @@ def main():
     out_path = os.path.join(OUTPUT_DIR, 'player_slugs.json')
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(slugs, f, ensure_ascii=False, indent=2)
+
+    # NUOVO (30/07, tema Best Five, richiesta esplicita utente: "il nome sulle carte deve
+    # essere il display name non lo slug"): nomi SOLO per gli slug sopravvissuti al
+    # filtro qualita' (coerente con player_slugs.json/player_quality.json).
+    names_path = os.path.join(OUTPUT_DIR, 'player_names.json')
+    with open(names_path, 'w', encoding='utf-8') as f:
+        json.dump({s: all_names[s] for s in slugs if s in all_names}, f, ensure_ascii=False)
+    log(f"Salvati {sum(1 for s in slugs if s in all_names)} nomi in {names_path}")
 
     log(f"Salvati {len(slugs)} slug in {out_path}")
 
