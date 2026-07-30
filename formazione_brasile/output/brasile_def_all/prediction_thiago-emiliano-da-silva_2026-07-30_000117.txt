@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T00:01:17.788392Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) thiago-emiliano-da-silva: 54 pt attesi (37-73)
+   ORDINAMENTO: 60.50
+   SQUADRA: fluminense-rio-de-janeiro-rio-de-janeiro | AVVERSARIO: bahia-salvador-bahia
+======================================================================
+
+######################################################################
+# GIOCATORE: thiago-emiliano-da-silva
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: thiago-emiliano-da-silva (squadra: fluminense-rio-de-janeiro-rio-de-janeiro)
+Generato: 2026-07-30T00:01:17.787902Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-03 | FLU vs GRE | campeonato-brasileiro-serie-a | score=73.0 | peso=0.616
+  2025-08-31 | SAN vs FLU | campeonato-brasileiro-serie-a | score=66.6 | peso=0.637
+  2025-09-28 | FLU vs BOT | campeonato-brasileiro-serie-a | score=58.5 | peso=0.660
+  2025-10-04 | FLU vs CAM | campeonato-brasileiro-serie-a | score=77.4 | peso=0.683
+  2025-10-09 | MIR vs FLU | campeonato-brasileiro-serie-a | score=42.2 | peso=0.707
+  2025-10-17 | FLU vs JUV | campeonato-brasileiro-serie-a | score=82.9 | peso=0.732
+  2025-10-20 | VAS vs FLU | campeonato-brasileiro-serie-a | score=38.4 | peso=0.758
+  2025-10-25 | FLU vs INT | campeonato-brasileiro-serie-a | score=72.1 | peso=0.785
+  2025-10-29 | FLU vs CEA | campeonato-brasileiro-serie-a | score=60.9 | peso=0.812
+  2025-11-06 | FLU vs MIR | campeonato-brasileiro-serie-a | score=57.4 | peso=0.841
+  2025-11-09 | CRU vs FLU | campeonato-brasileiro-serie-a | score=50.5 | peso=0.871
+  2025-11-20 | FLU vs FLA | campeonato-brasileiro-serie-a | score=36.0 | peso=0.901
+  2025-11-27 | FLU vs SPA | campeonato-brasileiro-serie-a | score=54.9 | peso=0.933
+  2025-12-07 | FLU vs BAH | campeonato-brasileiro-serie-a | score=77.6 | peso=0.966
+  2026-07-26 | GRE vs FLU | campeonato-brasileiro-serie-a | score=41.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 58.60
+  di cui Punteggio decisivo (level_score) medio: 38.57 | Punteggio complessivo (granulari) medio: 20.03 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.78, delta avversario -0.40 | Passaggio condizionato: delta venue -0.11, delta avversario +0.27 | Clean sheet/disimpegni condizionato: delta venue +1.08, delta avversario -1.15 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.93
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.9 - 77.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.08 (differenza: +1.85)
+Media score in casa: 65.08 | Media score fuori casa: 47.92
+Fattore casa/trasferta applicato: 1.008 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.0
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.759
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.010
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.991
+Fattore gol subiti (goals_conceded, con cap): 1.014
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.013
+Fattore trend (media ultime 5: 52.2 vs media ultime 10: 57.3): 1.000
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T00:30
+Casa: Fluminense FC | Trasferta: EC Bahia
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.8 (range 37.1 - 72.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 60.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.13
+Punteggio REALE ottenuto in quella partita: 41.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      70.9    38.4    -32.5    16.5        NO
+   7        7      69.9    72.1     +2.2    19.6        SI
+   8        8      73.6    60.9    -12.6    18.6        SI
+   9        9      74.4    57.4    -17.0    17.4        SI
+  10       10      50.6    50.5     -0.1    16.5        SI
+  11       11      36.8    36.0     -0.8    16.3        SI
+  12       12      58.2    54.9     -3.2    17.9        SI
+  13       13      45.2    77.6    +32.4    17.1        NO
+  14       14      61.1    41.9    -19.2    17.6        NO
+
+MAE (errore assoluto medio): 13.34
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
