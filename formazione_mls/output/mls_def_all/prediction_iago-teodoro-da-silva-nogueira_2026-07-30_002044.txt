@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T00:20:44.137898Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) iago-teodoro-da-silva-nogueira: 40 pt attesi (22-59)
+   ORDINAMENTO: 43.84
+   SQUADRA: orlando-city-lake-mary-florida | AVVERSARIO: new-york-rb-secaucus-new-jersey
+======================================================================
+
+######################################################################
+# GIOCATORE: iago-teodoro-da-silva-nogueira
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: iago-teodoro-da-silva-nogueira (squadra: orlando-city-lake-mary-florida)
+Generato: 2026-07-30T00:20:44.136489Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 48
+Escluse (DID_NOT_PLAY): 33
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-06 | MIR vs FLA | campeonato-brasileiro-serie-a | score=25.6 | peso=0.707
+  2026-03-14 | ORL vs MTL | mlspa | score=38.8 | peso=0.732
+  2026-03-21 | NSH vs ORL | mlspa | score=22.8 | peso=0.758
+  2026-04-05 | LAFC vs ORL | mlspa | score=0.0 | peso=0.785
+  2026-04-12 | CLB vs ORL | mlspa | score=56.4 | peso=0.812
+  2026-04-18 | ORL vs HOU | mlspa | score=54.9 | peso=0.841
+  2026-04-22 | ORL vs CLT | mlspa | score=37.8 | peso=0.871
+  2026-04-25 | DC vs ORL | mlspa | score=43.0 | peso=0.901
+  2026-05-02 | MIA vs ORL | mlspa | score=60.0 | peso=0.933
+  2026-05-09 | MTL vs ORL | mlspa | score=64.0 | peso=0.966
+  2026-05-13 | ORL vs PHI | mlspa | score=43.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 41.82
+  di cui Punteggio decisivo (level_score) medio: 38.42 | Punteggio complessivo (granulari) medio: 3.40 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -1.23, delta avversario -1.62 | Passaggio condizionato: delta venue +0.61, delta avversario -0.41 | Clean sheet/disimpegni condizionato: delta venue +0.36, delta avversario +0.54 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.82
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 22.8 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.02 (differenza: +5.80)
+Media score in casa: 43.84 | Media score fuori casa: 41.04
+Fattore casa/trasferta applicato: 1.005 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.6
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.014
+Fattore falli (casa/trasferta, da dati reali): 0.985
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 0.990
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.005
+Fattore trend (media ultime 5: 49.7 vs media ultime 10: 42.2): 1.000
+P(gioca): 30.00% (fonte: starterOddsBasisPoints (3000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: New York Red Bulls | Trasferta: Orlando City SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 40.5 (range 21.5 - 58.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 43.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.57
+Punteggio REALE ottenuto in quella partita: 43.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +2.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      34.8    37.8     +3.0    23.9        SI
+   7        7      36.2    43.0     +6.8    22.0        SI
+   8        8      29.1    60.0    +30.9    20.7        NO
+   9        9      47.0    64.0    +17.0    21.7        SI
+  10       10      52.9    43.8     -9.1    22.6        SI
+
+MAE (errore assoluto medio): 13.36
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

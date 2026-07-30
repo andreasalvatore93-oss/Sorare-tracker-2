@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T00:19:31.477030Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) sergi-altimira-clavell: 55 pt attesi (37-68)
+   SQUADRA: sporting-cp-lisboa | AVVERSARIO: estrela-amadora
+======================================================================
+
+######################################################################
+# GIOCATORE: sergi-altimira-clavell
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sergi-altimira-clavell (squadra: sporting-cp-lisboa)
+Generato: 2026-07-30T00:19:31.476321Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 50
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: primeira-liga-pt (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-18 | ELC vs BET | laliga-es | score=60.9 | peso=0.642
+  2025-08-22 | BET vs ALA | laliga-es | score=62.7 | peso=0.660
+  2025-08-27 | CEL vs BET | laliga-es | score=51.5 | peso=0.678
+  2025-08-31 | BET vs ATH | laliga-es | score=69.2 | peso=0.697
+  2025-09-14 | LEV vs BET | laliga-es | score=73.5 | peso=0.717
+  2025-10-02 | RAZ vs BET | uefa-europa-league | score=41.8 | peso=0.737
+  2025-10-23 | GNK vs BET | uefa-europa-league | score=67.1 | peso=0.758
+  2025-11-27 | BET vs UTR | uefa-europa-league | score=45.8 | peso=0.779
+  2025-12-11 | DIN vs BET | uefa-europa-league | score=60.5 | peso=0.801
+  2026-01-17 | BET vs VIL | laliga-es | score=81.8 | peso=0.824
+  2026-01-22 | PKT vs BET | uefa-europa-league | score=40.6 | peso=0.847
+  2026-01-25 | ALA vs BET | laliga-es | score=57.1 | peso=0.871
+  2026-03-08 | GET vs BET | laliga-es | score=46.6 | peso=0.895
+  2026-03-12 | PAO vs BET | uefa-europa-league | score=57.3 | peso=0.920
+  2026-04-04 | BET vs ESP | laliga-es | score=70.8 | peso=0.946
+  2026-04-12 | OSA vs BET | laliga-es | score=36.6 | peso=0.973
+  2026-05-09 | RSO vs BET | laliga-es | score=92.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 59.90
+  di cui Punteggio decisivo (level_score) medio: 38.12 | Punteggio complessivo (granulari) medio: 21.78 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 39.00 (delta +0.88)
+  Efficacia offensiva condizionata: delta venue +0.05, delta avversario +0.00 | Passaggio condizionato: delta venue -0.85, delta avversario +0.00 | Gol subiti condizionato: delta venue -0.11, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.45
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.8 - 73.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.90 (differenza: +3.55)
+Media score in casa: 66.06 | Media score fuori casa: 57.18
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.9
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.175
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 0.989
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.988
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore trend (media ultime 5: 60.8 vs media ultime 10: 59.0): 1.006
+P(gioca): 34.00% (fonte: tasso di presenza storico (17/50))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T19:30
+Casa: CF Estrela da Amadora | Trasferta: Sporting Clube de Portugal
+Competizione: primeira-liga-pt
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.8 (range 36.7 - 68.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.33
+Punteggio REALE ottenuto in quella partita: 92.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +35.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.2 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.9    67.1    +20.2    15.2        NO
+   7        7      50.4    45.8     -4.6    14.5        SI
+   8        8      38.7    60.5    +21.8    15.3        NO
+   9        9      45.6    81.8    +36.2    14.3        NO
+  10       10      60.1    40.6    -19.5    16.8        NO
+  11       11      68.2    57.1    -11.1    18.3        SI
+  12       12      52.7    46.6     -6.1    17.4        SI
+  13       13      56.4    57.3     +0.9    17.4        SI
+  14       14      63.9    70.8     +6.9    16.6        SI
+  15       15      71.5    36.6    -34.9    16.7        NO
+  16       16      54.8    92.7    +37.9    18.1        NO
+
+MAE (errore assoluto medio): 18.19
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 45.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
