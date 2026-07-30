@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:07:26.477498Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) christopher-trimmel: 55 pt attesi (37-71)
+   ORDINAMENTO: 48.43
+   SQUADRA: union-berlin-berlin | AVVERSARIO: eintracht-frankfurt-frankfurt-am-main
+======================================================================
+
+######################################################################
+# GIOCATORE: christopher-trimmel
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: christopher-trimmel (squadra: union-berlin-berlin)
+Generato: 2026-07-30T10:07:26.476352Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | FCU vs VFB | bundesliga-de | score=49.5 | peso=0.500
+  2025-08-31 | BVB vs FCU | bundesliga-de | score=53.1 | peso=0.518
+  2025-09-13 | FCU vs TSG | bundesliga-de | score=25.5 | peso=0.536
+  2025-09-21 | SGE vs FCU | bundesliga-de | score=29.7 | peso=0.555
+  2025-09-28 | FCU vs HSV | bundesliga-de | score=45.1 | peso=0.574
+  2025-10-04 | B04 vs FCU | bundesliga-de | score=23.1 | peso=0.595
+  2025-10-24 | SVW vs FCU | bundesliga-de | score=44.4 | peso=0.616
+  2025-11-23 | STP vs FCU | bundesliga-de | score=48.0 | peso=0.637
+  2025-11-29 | FCU vs FCH | bundesliga-de | score=54.3 | peso=0.660
+  2025-12-06 | WOB vs FCU | bundesliga-de | score=39.2 | peso=0.683
+  2025-12-20 | KOE vs FCU | bundesliga-de | score=63.5 | peso=0.707
+  2026-01-15 | FCA vs FCU | bundesliga-de | score=50.9 | peso=0.732
+  2026-02-06 | FCU vs SGE | bundesliga-de | score=39.4 | peso=0.758
+  2026-02-14 | HSV vs FCU | bundesliga-de | score=40.4 | peso=0.785
+  2026-02-21 | FCU vs B04 | bundesliga-de | score=51.9 | peso=0.812
+  2026-03-15 | SCF vs FCU | bundesliga-de | score=61.0 | peso=0.841
+  2026-03-21 | BAY vs FCU | bundesliga-de | score=21.0 | peso=0.871
+  2026-04-18 | FCU vs WOB | bundesliga-de | score=62.9 | peso=0.901
+  2026-04-24 | RBL vs FCU | bundesliga-de | score=30.3 | peso=0.933
+  2026-05-10 | M05 vs FCU | bundesliga-de | score=74.8 | peso=0.966
+  2026-05-16 | FCU vs FCA | bundesliga-de | score=68.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 47.68
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 12.68 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +1.15, delta avversario +0.95 | Passaggio condizionato: delta venue +1.68, delta avversario +2.09 | Clean sheet/disimpegni condizionato: delta venue +1.44, delta avversario +0.83 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.41
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.7 - 63.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.05 (differenza: +2.35)
+Media score in casa: 49.64 | Media score fuori casa: 44.57
+Fattore casa/trasferta applicato: 0.987 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.947
+Fattore falli (casa/trasferta, da dati reali): 0.982
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.013
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.983
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 1.010
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.016
+Fattore trend (media ultime 5: 51.5 vs media ultime 10: 50.1): 1.000
+P(gioca): 61.76% (fonte: tasso di presenza storico (21/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FC Union Berlin | Trasferta: Eintracht Frankfurt
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.1 (range 37.1 - 70.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 48.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.21
+Punteggio REALE ottenuto in quella partita: 68.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +22.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.1    44.4     -3.6    14.2        SI
+   7        7      52.3    48.0     -4.3    13.4        SI
+   8        8      50.2    54.3     +4.1    13.0        SI
+   9        9      51.4    39.2    -12.2    13.5        SI
+  10       10      47.7    63.5    +15.8    12.6        NO
+  11       11      47.1    50.9     +3.8    14.7        SI
+  12       12      46.5    39.4     -7.0    14.0        SI
+  13       13      53.3    40.4    -12.9    13.4        SI
+  14       14      37.7    51.9    +14.2    12.7        NO
+  15       15      42.4    61.0    +18.7    12.3        NO
+  16       16      32.0    21.0    -11.0    13.1        SI
+  17       17      49.8    62.9    +13.1    15.5        SI
+  18       18      34.7    30.3     -4.4    16.2        SI
+  19       19      45.0    74.8    +29.8    16.3        NO
+  20       20      46.0    68.5    +22.5    18.9        NO
+
+MAE (errore assoluto medio): 11.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
