@@ -219,15 +219,28 @@ STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non e
 # vecchio bonus FLAT unico (TEAMMATE_SYNERGY_BONUS_VARIANCE=5 per qualunque
 # coppia DEF/MID/FWD) con un valore per coppia -- usa chosen_roles_by_team,
 # stessa infrastruttura di CROSS_TEAM_PENALTY_BY_PAIR.
+#
+# RI-MISURATO 30/07 (richiesta esplicita utente, campione quasi 25x piu'
+# grande: 30.068 coppie/162 squadre, dopo il fix anyPlayers->activePlayers)
+# -- quasi tutte le correlazioni sono uscite PIU' DEBOLI del 28/07 (def-mid
+# 0.136->0.094, gk-mid 0.143->0.107, mid-mid 0.130->0.108, def-fwd
+# 0.093->0.060), stabili split-half su tutte. Eccezione: fwd-fwd molto PIU'
+# FORTE e ora su un campione solido (0.154->0.223, n=945 contro i 173 di
+# prima). def-def/gk-def sostanzialmente invariati. Nessun cambio di
+# METODO oggi (resta lo scaling x20 grezzo) -- solo refresh dei numeri con
+# dati piu' puliti; il modello decisionale dedicato (legare la dimensione
+# del bonus alla reale probabilita' di superare la soglia premio Arena/
+# All Stars, invece di scalare la correlazione a naso) resta in backlog,
+# mai iniziato.
 SAME_TEAM_SYNERGY_BONUS_BY_PAIR = {
-    frozenset(('GK', 'DEF')): 7,    # +0.355 * 20 ~= 7.1
-    frozenset(('DEF', 'DEF')): 4,   # +0.221 * 20 ~= 4.4
-    frozenset(('FWD', 'MID')): 3,   # +0.169 * 20 ~= 3.4
-    frozenset(('GK', 'MID')): 3,    # +0.143 * 20 ~= 2.9
-    frozenset(('DEF', 'MID')): 3,   # +0.136 * 20 ~= 2.7
-    frozenset(('MID', 'MID')): 3,   # +0.130 * 20 ~= 2.6
-    frozenset(('FWD', 'FWD')): 3,   # +0.154 * 20 ~= 3.1 (n=173, meno solido)
-    frozenset(('DEF', 'FWD')): 2,   # +0.093 * 20 ~= 1.9
+    frozenset(('GK', 'DEF')): 7,    # +0.333 * 20 ~= 6.7 (30/07)
+    frozenset(('DEF', 'DEF')): 4,   # +0.219 * 20 ~= 4.4 (30/07)
+    frozenset(('FWD', 'MID')): 3,   # +0.135 * 20 ~= 2.7 (30/07)
+    frozenset(('GK', 'MID')): 2,    # +0.107 * 20 ~= 2.1 (30/07, era 3)
+    frozenset(('DEF', 'MID')): 2,   # +0.094 * 20 ~= 1.9 (30/07, era 3)
+    frozenset(('MID', 'MID')): 2,   # +0.108 * 20 ~= 2.2 (30/07, era 3)
+    frozenset(('FWD', 'FWD')): 4,   # +0.223 * 20 ~= 4.5 (30/07, era 3 su n=173; ora n=945)
+    frozenset(('DEF', 'FWD')): 1,   # +0.060 * 20 ~= 1.2 (30/07, era 2)
     # GK-FWD/GK-GK: non significativi nella ri-misurazione, non modellati.
 }
 
