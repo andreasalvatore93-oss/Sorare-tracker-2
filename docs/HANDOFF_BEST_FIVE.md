@@ -1,210 +1,103 @@
-# HANDOFF — Funzione "Best Five" (K League, pilota)
+# HANDOFF — Funzione "Best Five"
 
-Scritto il 30/07/2026 sera, a fine sessione. **Questo file esiste perché la prossima sessione
-potrebbe partire da un account Claude diverso, senza accesso alla memoria automatica di questa
-sessione** — tutto il contesto necessario per continuare deve stare qui, non altrove. Leggerlo
-per intero prima di agire.
+Riscritto il 30/07/2026 sera (sessione "Best Five K League", seconda parte). La versione precedente
+di questo file descriveva un'architettura ormai sostituita (top-N per ruolo, un job sequenziale) —
+riscritto da zero per non essere fuorviante. Leggerlo per intero prima di agire.
 
 ## Cos'è "Best Five"
 
-Funzione richiesta dall'utente (30/07): per UNA lega scelta (test pilota: **K League**), trovare
-la miglior formazione POSSIBILE scegliendo tra TUTTE le carte disponibili nella lega (non solo
-quelle possedute dall'utente), con "copie di backup" per ogni ruolo (titolare + N backup, nel
-caso il titolare scelto non scenda in campo quella giornata).
+Per UNA lega scelta, genera la **formazione IN SEASON ottimale** (GK/DEF/MID/FWD/EXTRA, con
+sinergie/anti-stack/captain) scegliendo tra **TUTTE** le carte della lega, non solo quelle
+possedute dall'utente. Script separato e READ-ONLY rispetto alla pipeline di produzione
+(`formazione_giornata.yml`).
 
-Script separato e READ-ONLY rispetto alla pipeline di produzione (`formazione_giornata.yml`) —
-non tocca budget/anti-stack/sinergie/multi-lineup, quello resta specifico delle formazioni REALI
-sui posseduti.
+**Non è più** un elenco "titolare + N backup per ruolo" calcolato con una logica propria — quello
+era il design della prima sessione (30/07 pomeriggio) ed è stato **sostituito**, su richiesta
+esplicita dell'utente, con la generazione di 1+N formazioni COMPLETE reali (vedi sotto).
 
-## Cosa è stato implementato (30/07, questa sessione)
+## Architettura attuale (5 job paralleli, `.github/workflows/best_five.yml`)
 
-1. **`PLAYER_POOL=global|posseduti`** (default `posseduti`), aggiunto e scollegato da
-   `CALIBRATION_MODE` in tutti e 4 gli script K League:
-   `formazione_kleague/predict/test_{gk,def,mid,fwd=test_mls_fwd_all}.py`.
-   Quando `PLAYER_POOL=global`, `DISCOVERY_FILE` punta al pool GLOBALE
-   (`formazione_kleague/output/kleague_<ruolo>_discovery_global/player_slugs.json`, tutti i
-   giocatori della lega) invece che ai posseduti — SENZA attivare il grid search
-   (`CALIBRATION_MODE` continua a implicare il pool globale come prima, comportamento invariato
-   per la ricalibrazione — nessuna regressione lì).
+1. **pool_shard**: legge il pool già filtrato per qualità (discovery_global), lo sharda in ≤20
+   gruppi. Nessuna query di rete.
+2. **prefiltro** (matrice, max-parallel 20): controlla le starterOdds (soglia configurabile, input
+   `starter_odds`) SOLO sul proprio shard.
+3. **prefiltro_merge**: unisce i sopravvissuti, li risharda in ≤20 gruppi per il predict.
+4. **predict** (matrice, max-parallel 20): un subprocess `TARGET_SLUG` per giocatore, per ogni
+   shard. Riusa `pipeline_artifacts.py` (stage/apply) per passare i file tra job via artifact.
+5. **report**: applica gli artifact, delega il ranking a `build_consiglio_<ruolo>.py` (lo stesso
+   script della produzione, zero logica duplicata), poi costruisce la **formazione vera**, salva
+   su main, notifica Telegram.
 
-2. **`best_five.py`** (nuovo file, root del repo). Orchestratore via **subprocess** (non import
-   diretto — più sicuro, zero refactoring dei moduli `test_<ruolo>.py` che eseguono codice a
-   livello di modulo). Uso:
-   ```
-   python best_five.py kleague --run --backups 2
-   ```
-   Con `--run` lancia ogni `test_<ruolo>.py` con `PLAYER_POOL=global` sull'**intero** pool della
-   lega (nessun `TARGET_SLUG` → lo script interno processa tutti i candidati in sequenza), poi
-   fa il parsing del riepilogo comparativo già scritto in cima a `prediction_all_*.txt` (stesso
-   `ORDINAMENTO` senza shrinkage già calcolato dallo script sorgente — zero duplicazione di
-   logica di scoring) per estrarre titolare + N backup per ruolo. Report finale salvato in
-   `formazione_kleague/output/best_five/best_five_<timestamp>.txt`.
+Tempo misurato sull'ultimo run completo riuscito (K League, tutti e 4 i ruoli): circa 7 minuti,
+vicino ai ~5 minuti della pipeline di produzione.
 
-3. **Persistenza del quality score in discovery** (fase 2, ottimizzazione tempi — vedi sotto):
-   modificato `filter_by_quality()` in tutti e 4 gli script
-   `formazione_kleague/discovery/kleague_{gk,def,mid,fwd}_discovery_global.py` per ritornare
-   `(kept, quality_map)` invece di solo `kept`; `main()` ora scrive anche `player_quality.json`
-   (`{slug: avg_score}`, media L5+L10+L40/3 già calcolata per il filtro qualità esistente,
-   `MIN_AVG_SCORE_QUALITY=30.0`) accanto a `player_slugs.json` (quello resta invariato,
-   retrocompatibile). **Zero chiamate API aggiuntive** — il valore era già calcolato e prima
-   veniva solo scartato.
+**Nota**: questa architettura a 5 job è passata per diversi bug reali durante lo sviluppo (redirect
+stdout che corrompeva GITHUB_OUTPUT, job senza `pip install requests curl_cffi`, precedenza sbagliata
+tra formato vecchio/nuovo dei risultati) — tutti fixati e committati. Se un run fallisce, controllare
+per primo se un job nuovo/modificato ha dimenticato lo step `pip install`.
 
-`py_compile` pulito su tutti i file toccati. Parser di `best_five.py` testato con un file
-sintetico che riproduce esattamente il formato del riepilogo — funziona.
+## Come genera la formazione vera (il cambio più grande di questa sessione)
 
-## STATO DEI CALCOLI — GK e DEF PRONTI E COMMITTATI, MID e FWD DA FARE
+`costruisci_formazione_vera()` in `best_five.py` **non duplica nessuna logica di sinergia/anti-
+stack/captain**: importa dinamicamente `formazione_mls/build_formazione_finale.py` (stesso schema
+di `generatore_formazioni/build_formazione_globale.py`) e chiama DAVVERO `CardPool`,
+`generate_lineups_for_type('IN_SEASON', 1+n_backup, ...)`, `render_report_html`.
 
-**Questa sessione (30/07) ha eseguito IN LOCALE `python best_five.py kleague --run --backups 2`,
-avviato alle 14:08:58 UTC.** Su richiesta esplicita dell'utente il run è stato **fermato
-volontariamente a metà del ruolo MID** (non un crash, non un timeout — l'utente ha detto "fermo
-con mid" per poter chiudere la sessione e passare il testimone), e questa sessione ha
-**committato e pushato** i risultati dei ruoli già completati prima di chiudere:
+La differenza col tool unificato è **solo nella CardPool**: invece delle copie realmente possedute,
+si passa `CardPool({}, names=...)` — la classe stessa ripiega già su 1 copia IN_SEASON virtuale per
+ogni slug non presente nei counts, quindi ogni giocatore del pool globale risulta "posseduto" con 1
+copia, zero codice ad-hoc per simularlo. Stesso motivo per cui il bonus XP è naturalmente a zero
+(nessun `power` breakdown noto), coerente con la richiesta dell'utente di vedere lo score grezzo.
 
-- **GK: COMPLETATO** (22/22 giocatori) — output in
-  `formazione_kleague/output/kleague_gk_all/` (prediction, cache, grid_search), **committato e
-  pushato su main**.
-- **DEF: COMPLETATO** (97/97 giocatori) — output in
-  `formazione_kleague/output/kleague_def_all/`, **committato e pushato su main**.
-- **MID: INTERROTTO A META'** (fermato a 11/85 giocatori, su richiesta esplicita, non un
-  fallimento) — la cache parziale generata (11 giocatori) è rimasta SOLO in locale, **NON
-  committata** (irrilevante, si può ignorare o cancellare: `test_mid.py` la ricostruirà/estenderà
-  comunque da sola al prossimo run, la cache è puramente un'ottimizzazione, non richiede pulizia
-  manuale).
-- **FWD: MAI INIZIATO** (0/75).
+Conseguenza pratica: dato che ogni giocatore ha solo 1 copia virtuale, generare `count > 1`
+formazioni produce automaticamente formazioni ALTERNATIVE con giocatori diversi (non può riusare
+chi è già stato schierato) — questo ha sostituito il vecchio concetto di "backup per ruolo": ora
+sono "formazioni di backup" complete.
 
-**Rate osservato** (per calibrare le attese sul resto): GK molto veloce (~1m40s per 22 giocatori,
-quasi tutto già in cache da una calibrazione precedente); DEF più lento (~22s/giocatore, meno
-cache disponibile) — su 97 giocatori, DEF da solo ha impiegato **circa 35-40 minuti**. MID (85
-giocatori) e FWD (75 giocatori) probabilmente simili a DEF in assenza di cache pregressa (la
-cache di 11 giocatori per MID committata... anzi NON committata, vedi sopra, quindi da capo)
-→ **stima 30-35 minuti per MID + 25-30 minuti per FWD, totale ~60-65 minuti residui.**
+**Testato**: solo offline/in locale contro dati K League reali già su disco (mai un run GitHub
+Actions completo con QUESTA architettura confermato riuscito al momento della scrittura — l'ultimo
+run lanciato in questa sessione è ancora in corso). Verificare lo stato prima di fidarsi ciecamente.
 
-### Come riprendere (comando esatto)
+## Altre feature aggiunte in questa sessione
 
-Grazie al nuovo flag `--roles` aggiunto in questa sessione, **NON serve rifare GK/DEF**:
+- **Report HTML**: layout a riga (stesso `render_report_html`/CSS della produzione, quindi
+  automaticamente coerente — niente più template custom di Best Five).
+- **Notifica Telegram**: stesso canale `BUNDLE_TELEGRAM_TOKEN`/`BUNDLE_TELEGRAM_CHAT_ID` (bundle/
+  formazioni/bot_profit), NON il canale del tracker prezzi. Link via raw.githack.com, come
+  `generatore_formazioni/formazione_telegram_notify.py`.
+- **Carte cliccabili**: ogni pcard del report apre `https://sorare.com/it/football/players/<slug>`
+  al click (script iniettato in post-processing, non tocca `build_formazione_finale.py` condiviso).
 
-```
-python best_five.py kleague --run --backups 2 --roles mid,fwd
-```
+## Cosa NON è ancora attivo (rimandato dall'utente, "ci penseremo dopo")
 
-Questo esegue SOLO `test_mid.py` e `test_mls_fwd_all.py` in modalità `PLAYER_POOL=global` (pool
-completo, versione NON ottimizzata — vedi sezione sotto sui limiti dell'ottimizzazione). Il
-ranking finale (`costruisci_best_five`) resta invece calcolato su **tutti e 4 i ruoli**, perché
-legge sempre l'ultimo `prediction_all_*.txt` disponibile per ciascuno — per GK e DEF userà
-automaticamente i file già committati da questa sessione, senza bisogno di rilanciarli.
+Due funzioni sono **scritte e pushate ma inerti** perché i file di cui hanno bisogno non esistono:
 
-Dopo che MID e FWD sono finiti, il report finale con tutti e 4 i ruoli si genera da solo alla
-fine dello stesso comando (non serve un passaggio separato).
+- **Cap qualità prima delle starterOdds** (`BEST_FIVE_TOP_K_QUALITA`, default 40, input workflow
+  `top_k_qualita`): legge `player_quality.json` in ogni `*_discovery_global/`. Non esiste ancora.
+- **Nomi reali (displayName) sulle carte** invece dello slug: legge `player_names.json` in ogni
+  `*_discovery_global/`. Non esiste ancora. **Attenzione**: il tool unificato ha `player_names.json`
+  ma in una cartella DIVERSA (`*_discovery/`, non `*_discovery_global/`) e con copertura limitata
+  alle sole carte possedute (fonte: CARDS_QUERY) — inutile per il pool globale di Best Five, che ha
+  bisogno di nomi per giocatori mai posseduti. Serve una fonte diversa (TeamRoster, già cablata nel
+  codice di discovery_global, il campo `displayName` era già nella risposta e veniva scartato).
 
-## Ottimizzazione dei tempi — SCRITTA E TESTATA (con dati sintetici), MAI TESTATA DAL VIVO
+**Per attivare entrambe**: rilanciare `formazione_<lega>/discovery/<lega>_<ruolo>_discovery_global.py`
+per tutti e 4 i ruoli, per ciascuna lega supportata (kleague/mls/germania) — richiede query API,
+quindi va fatto su GitHub Actions con permesso esplicito dell'utente, non in locale (manca il
+cookie) e non di propria iniziativa. Nel frattempo entrambe le funzioni degradano in sicurezza
+(nessun cap, nomi = slug title-case) — nessun crash, nessuna esclusione silenziosa.
 
-Sessione successiva (30/07, stessa giornata, nuova conversazione): completato il design che nella
-sessione precedente era rimasto solo abbozzato. Decisione finale con l'utente sul K (quante carte
-tenere nel pre-ranking qualità, mai discusso prima): **nessun cap per numero** — solo i due filtri
-già decisi, quality score ≥30 (già applicato a monte in discovery, non serviva altro codice) e
-starterOdds ≥0.70 (nuovo).
+## Leghe supportate
 
-Cosa è stato scritto in questa sessione, tutto in `best_five.py`:
-
-1. **`fetch_next_match_starter_odds(slug)`** — query GraphQL leggera (la bozza già pensata nella
-   sessione precedente, verificata contro la struttura già in uso in `test_mid.py` per lo stesso
-   campo `footballPlayingStatusOdds.starterOddsBasisPoints`). Sessione HTTP minima propria
-   (curl_cffi se disponibile, altrimenti `requests`), NON riusa l'infrastruttura di retry/circuit
-   breaker dei `test_<ruolo>.py` (scelta deliberata: la query è talmente piccola/economica che un
-   retry semplice a 3 tentativi basta, non vale la complessità di condividere quello stato).
-
-2. **`carica_pool_qualita_filtrato()`** — legge `player_slugs.json` della discovery globale. Nota
-   importante scoperta in questa sessione: **il filtro qualità (`filter_by_quality`, media
-   L5/L10/L40 ≥30) era GIÀ applicato in discovery PRIMA di questa sessione** — la persistenza
-   scritta nella sessione precedente (punto 3, `player_quality.json`) salva solo il VALORE della
-   media per ogni slug già filtrato, non introduce un filtro nuovo. Quindi `player_slugs.json`
-   della discovery globale K League è GIÀ il pool filtrato per qualità — **non serve rigenerare
-   nulla, non serve nemmeno `player_quality.json`** dato che non c'è un cap per numero (K) da
-   applicare. Il punto 3 della sessione precedente resta comunque a posto/committato, semplicemente
-   non serve altro lavoro su quel fronte.
-
-3. **`prefiltra_starter_odds()`** — chiama la query leggera per ogni slug del pool, tiene solo chi
-   ha odds ≥0.70. **Chi ha odds mancanti (nessuna partita futura fissata, dato non disponibile)
-   viene ESCLUSO**, non tenuto per default — scelta esplicita fatta in questa sessione (non
-   discussa esplicitamente con l'utente, ma coerente con la motivazione originale: un dato ignoto
-   è rischioso quanto uno basso). Da rivedere se in pratica scarta troppi candidati con partita
-   lontana non ancora quotata.
-
-4. **Rewiring completo del loop di esecuzione**: `run_prediction_pool_prefiltrato()` sostituisce
-   il vecchio `run_prediction_pool_globale()` — carica il pool, applica il prefiltro, poi lancia
-   UN subprocess per slug sopravvissuto con `TARGET_SLUG=<slug>` (stile job matrix della
-   pipeline di produzione), invece di UN subprocess che processa l'intero pool internamente.
-
-5. **Parsing aggiornato per il nuovo formato di output**: con `TARGET_SLUG` impostato,
-   `test_<ruolo>.py` scrive `prediction_<slug>_<timestamp>.txt` (un file per giocatore, come già
-   fa la pipeline di produzione — vedi `formazione_kleague/consiglio/build_consiglio_mid.py` per
-   il pattern equivalente già esistente in produzione) invece di un unico `prediction_all_*.txt`
-   con il riepilogo comparativo di tutti insieme. `costruisci_best_five()` ora supporta ENTRAMBI i
-   formati: se trova un `prediction_all_*.txt` (formato vecchio — es. GK/DEF K League già
-   committati nella sessione precedente) lo usa e ha PRECEDENZA; altrimenti raccoglie tutti i
-   `prediction_<slug>_*.txt` presenti e li aggrega/ordina lui (per `ORDINAMENTO` se presente,
-   come già per DEF/FWD, altrimenti per `pt_attesi` come per GK/MID). Questo significa che GK/DEF
-   già pronti da questa sessione precedente continuano a funzionare SENZA rilanciarli.
-
-**Testato in questa sessione, solo con dati sintetici/dati già su disco (nessuna chiamata API
-live)**:
-- Parser del nuovo formato per-slug (`parse_file_singolo_slug` + `trova_output_per_slug`) — testato
-  con 3 file sintetici, ranking per `pt_attesi` corretto.
-- Retrocompatibilità col formato vecchio (`prediction_all_*.txt`) — testato sui file REALI già
-  committati di GK e DEF K League, ranking confermato invariato (DEF usa correttamente
-  `ORDINAMENTO`).
-- `py_compile` pulito.
-
-**NON testato — manca `SORARE_COOKIE` in locale in questa sessione** (l'utente non ce l'ha a
-disposizione localmente): `fetch_next_match_starter_odds()` non è mai stata chiamata contro l'API
-vera. Nessun run end-to-end (`--run`) di questa nuova architettura è mai stato lanciato, né in
-locale né su GitHub Actions. **Il primo test reale sarà quindi il primo run vero** — possibile solo
-via GitHub Actions (l'utente non ha il cookie in locale). Rischi noti da verificare al primo run
-reale:
-- La query leggera potrebbe avere un campo/struttura leggermente diverso da quanto assunto (mai
-  eseguita, solo dedotta dalla query più grande già in uso in produzione per lo stesso campo).
-- Il volume di sub-processi lanciati in sequenza (uno per slug sopravvissuto) potrebbe essere più
-  lento del previsto per via dell'overhead di avvio Python per processo — da osservare sul primo
-  run reale, non stimabile a tavolino.
-- La regex `trova_output_per_slug` assume il timestamp nel nome file nel formato esatto
-  `YYYY-MM-DD_HHMMSS` — coerente con quanto scrive `test_<ruolo>.py` (`datetime.utcnow().strftime`),
-  ma non ancora verificato su un file vero generato da questa nuova modalità.
-
-**Prima di lanciare qualunque run su GitHub Actions**: resta valida la regola esplicita
-dell'utente — **mai lanciare una run Actions senza chiedere prima**, vale anche lavorando "in
-autonomia". Questo vale anche per `best_five` quando/se verrà portato su CI o testato lì per la
-prima volta.
-
-## File toccati — COMMITTATI E PUSHATI su main (sessione precedente + questa)
-
-Codice:
-- `formazione_kleague/predict/test_{gk,def,mid,fwd=test_mls_fwd_all}.py` (PLAYER_POOL — sessione
-  precedente)
-- `formazione_kleague/discovery/kleague_{gk,def,mid,fwd}_discovery_global.py` (persistenza
-  quality — sessione precedente, di fatto non serve più a valle vedi sopra)
-- `best_five.py` (query starterOdds + rewiring completo per il prefiltro — QUESTA sessione,
-  ancora da committare a fine sessione)
-- `docs/HANDOFF_BEST_FIVE.md` (questo file)
-
-Risultati (voluminosi ma committati apposta, per evitare che chi riprende debba rifare GK/DEF):
-- `formazione_kleague/output/kleague_gk_all/` (prediction, `.cache/`, `.game_log_cache/`, `grid_search/`)
-- `formazione_kleague/output/kleague_def_all/` (idem)
-
-**NON committato** (lasciato locale, irrilevante):
-- `best_five_run.log` (log di debug del run interrotto della sessione precedente)
-- Cache parziale di MID (11 giocatori, in `formazione_kleague/output/kleague_mid_all/`) — non
-  vale la pena portarsela dietro, `test_mid.py` la ricostruisce da sola.
+`LEGHE_SUPPORTATE = ('mls', 'kleague', 'germania')` in `best_five.py` — richiede discovery globale
+completa per tutti e 4 i ruoli. Testato quasi esclusivamente su K League finora; MLS ha avuto un
+run fallito per timeout del vecchio prefiltro sequenziale (causa risolta con la parallelizzazione),
+non ancora riconfermato con un run completo pulito.
 
 ## Prossimo passo consigliato
 
-1. **Primo run reale della nuova architettura** (prefiltro starterOdds + loop TARGET_SLUG), MAI
-   testato dal vivo in questa sessione per mancanza di `SORARE_COOKIE` in locale — va fatto su
-   GitHub Actions: `python best_five.py kleague --run --backups 2 --roles mid,fwd` (GK/DEF restano
-   quelli già pronti, formato vecchio, letti automaticamente). **Chiedere conferma esplicita
-   all'utente prima di lanciare la run Actions** (regola esplicita, vedi sotto) — non è ancora
-   stato chiesto in questa sessione.
-2. Aspettarsi possibili intoppi al primo run vero (query mai eseguita contro l'API reale, vedi
-   rischi elencati sopra) — non dare per scontato che funzioni al primo colpo, verificare i log.
-3. Se il prefiltro scarta troppo aggressivamente (es. molti giocatori con partita futura non
-   ancora quotata finiscono esclusi per odds N/D), rivedere con l'utente la scelta fatta in questa
-   sessione di escludere anche i dati mancanti, non solo quelli sotto soglia.
+1. Verificare l'esito dell'ultimo run lanciato (K League, tutti i ruoli, `starter_odds=0.80`) —
+   se riuscito, è la prima conferma end-to-end della nuova architettura a formazione vera.
+2. Se confermato, ripetere su MLS per validare anche lì.
+3. Quando richiesto dall'utente: rilanciare le 12 discovery_global (3 leghe × 4 ruoli) per attivare
+   cap qualità + nomi reali.
