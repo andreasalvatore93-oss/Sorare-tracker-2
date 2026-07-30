@@ -1,0 +1,78 @@
+name: Best Five
+
+# Trova la miglior formazione POSSIBILE per UNA lega scegliendo tra TUTTE le
+# carte disponibili (pool globale, non solo posseduti), con backup per ruolo.
+# Script separato e READ-ONLY rispetto alla pipeline di produzione
+# (formazione_giornata.yml) -- vedi best_five.py e docs/HANDOFF_BEST_FIVE.md.
+#
+# Un solo job sequenziale (niente matrice): best_five.py gia' fa il lavoro di
+# orchestrazione lui stesso (prefiltro qualita'+starterOdds, poi un subprocess
+# per giocatore sopravvissuto). Primo run reale di questa architettura mai
+# testato dal vivo prima di questa run -- vedi handoff per i rischi noti.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lega:
+        description: 'Lega (es. kleague)'
+        required: false
+        default: 'kleague'
+      roles:
+        description: 'Ruoli da rigenerare, separati da virgola (vuoto = tutti e 4)'
+        required: false
+        default: 'mid,fwd'
+      backups:
+        description: 'Numero di backup per ruolo'
+        required: false
+        default: '2'
+
+permissions:
+  contents: write
+
+jobs:
+  best_five:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi
+      - name: Run best_five
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -u
+          ARGS="${{ github.event.inputs.lega || 'kleague' }} --run --backups ${{ github.event.inputs.backups || '2' }}"
+          if [ -n "${{ github.event.inputs.roles }}" ]; then
+            ARGS="$ARGS --roles ${{ github.event.inputs.roles }}"
+          fi
+          python best_five.py $ARGS
+      - name: Salva risultati
+        if: always()
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -A formazione_*/output/*_gk_all formazione_*/output/*_def_all formazione_*/output/*_mid_all formazione_*/output/*_fwd_all formazione_*/output/best_five 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da salvare."
+            exit 0
+          fi
+          git commit -m "Best Five: risultati run $(date -u '+%Y-%m-%d %H:%M UTC')"
+          attempt=0
+          until git push; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main
+          done
+          echo "Salvato correttamente."
