@@ -4586,4 +4586,124 @@ configurazione di codice ha dato 7m55s e 8m19s in due run distinte, la differenz
 latenza Sorare, non un effetto del codice. **Chiuso qui su richiesta esplicita dell'utente**
 ("non c'è più target se non esaurire i miglioramenti possibili... si torna alla versione più
 veloce poi committa pusha tutto e fermati"): configurazione 45 bin / 8 giocatori per shard
+
+## 37. Sessione 30/07 — bug reale discovery_global, ricalibrazione completa, checklist maestra: NESSUN cambio di produzione
+
+Sessione lunga e con parecchi errori operativi nel mezzo (documentati sotto per non ripeterli),
+partita da una domanda dell'utente su un ritardo di calibrazione Germania e finita in un audit
+completo di 3 leghe.
+
+### A. Bug reale trovato: `anyPlayers` (roster storico) invece di `activePlayers` (rosa attuale)
+
+Tutti gli script `*_discovery_global.py` (MLS/K League/Germania, 4 ruoli ciascuno = 12 file)
+usavano `anyPlayers(first: 50)` — il roster STORICO completo del club su Sorare (es. Bayern
+Monaco: 346 giocatori, incluse giovanili/ex-tesserati), senza paginazione. Due conseguenze reali,
+scoperte a partire da un caso concreto segnalato dall'utente (Manuel Neuer mancante tra i
+portieri Bundesliga):
+1. Giocatori oltre la prima pagina (50) sparivano in silenzio.
+2. Giocatori TRASFERITI in un'altra lega tracciata restavano ancora elencati nel club vecchio
+   (dato Sorare non ripulito), creando **doppioni cross-lega** nel pool di calibrazione GLOBALE
+   — casi reali: Pep Biel (oggi Charlotte FC/MLS) ancora tracciato in Germania, Tyler
+   Adams/Brenden Aaronson/Paxten Aaronson (vivaio NY Red Bulls, oggi Bundesliga) ancora in MLS.
+
+**Fix** su tutti e 12 gli script: `anyPlayers` → `activePlayers` (rosa attuale, non storica —
+Bayern passa da 346 a 44 giocatori) + paginazione difensiva + verifica esplicita
+`activeClub.slug == team_slug` (stesso campo, nessuna query aggiuntiva) per scartare residui
+stantii. Aggiunta anche deduplica cross-campionato in `aggregate_grid_search.py` (modalità
+GLOBALE): a parità di slug tra due leghe, tenuta solo l'entry con `n_test` più alto.
+
+**Impatto misurato**: doppioni cross-lega passati da ~20 a 1 residuo (verificato con controllo
+indipendente sui file, non solo sul log dello script). Pool qualificati per ruolo cresciuti
+sensibilmente ovunque (es. MLS FWD 41→189, K League DEF 15→97, Germania GK 11→29).
+
+### B. Bug collaterali trovati e corretti nello stesso giro
+
+1. **`KeyError: 'indice'` in CALIBRATION_MODE DEF MLS**: `rigorous_backtest_prod_def()` (usata
+   quando CALIBRATION_MODE è attivo) produce righe con chiave `'i'`, ma `format_output()`
+   cercava ancora `'indice'`/`'partite_storico_usate'`/`'range_conf'` del vecchio
+   `rigorous_backtest()` — mai aggiornato quando il backtest prod-aligned fu introdotto. Il
+   crash avveniva PRIMA del salvataggio del `grid.json`, quindi ogni giocatore che incontrava il
+   bug perdeva silenziosamente tutta la calibrazione. **Isolato a MLS DEF** (unica combinazione
+   lega/ruolo la cui CALIBRATION_MODE chiama la funzione prod-aligned — le altre 27 leghe usano
+   ancora `run_grid_search` generico, compatibile). Fix con `.get()`/fallback, compatibile con
+   entrambi i formati di riga.
+2. **Bug concorrenza GitHub Actions**: `git pull` senza strategia esplicita (`--no-rebase`)
+   falliva con "divergent branches" su git recenti quando c'erano commit sia locali che remoti
+   (sempre più probabile con tanti bot che committano in parallelo) — il loop di retry ripeteva
+   lo stesso errore all'infinito senza mai pushare (run FWD MLS bloccata ~15 minuti, lavoro
+   completato ma mai salvato). Fix: `--no-rebase` esplicito nei due workflow di discovery.
+3. **Bug concorrenza batch**: `calibrazione_lega.yml` aveva un `concurrency group` condiviso per
+   lega+ruolo (non per `batch_index`) — lanciare più batch in rapida successione ne cancellava
+   la maggior parte in coda (GitHub Actions tiene solo l'ultimo run in coda per gruppo, anche con
+   `cancel-in-progress: false`, che protegge solo il run GIÀ in esecuzione). Fix: raggruppato
+   anche per `batch_index`.
+4. **Griglia di calibrazione ferma a `half_life=[9.0, 12.0]`/`trend_intensity=[0.7, 1.0, 1.3]`**:
+   residuo di una versione precedente, mai aggiornata dopo che una ricerca più ampia (fatta in
+   altra sede, mai riportata in questa griglia) aveva già trovato gli half_life REALMENTE in
+   produzione oggi (GK=6.0, DEF=20.0, MID=25.0, FWD=25.0) e i trend reali (DEF=0.0, MID=0.2,
+   FWD=0.3) — il "vincitore" del grid search non era mai stato confrontato con questi valori,
+   perché semplicemente non erano tra le opzioni testate. Allargata a
+   `half_life=[6,9,12,15,20,25,30]`, `trend_intensity=[0.0,0.2,0.3,0.7,1.0,1.3]` su tutti e 4 i
+   ruoli, MLS/K League/Germania. Invalidati e cancellati tutti i `grid_search/*.json` calcolati
+   prima dell'allargamento (label incompatibili).
+
+**Lezione operativa da non ripetere**: prima di proporre un cambio di parametro, verificare i
+valori REALI attuali nel codice (`grep` diretto), non fidarsi della memoria di sezioni precedenti
+di questo RIASSUNTO — sono state trovate e corrette IN CORSA due proposte sbagliate fatte
+dall'assistente nella stessa sessione (GK `opponent_sensitivity`, che non esiste nemmeno nella
+formula reale di GK/MID/FWD — solo un residuo del vecchio `rigorous_backtest`; e un half_life
+GK basato su un valore di produzione ormai superato di 3 sessioni).
+
+### C. Ricalibrazione completa e checklist maestra — risultato: NESSUN cambio di produzione
+
+Rilanciata la calibrazione su tutti e 4 i ruoli, 3 leghe (14 batch GitHub Actions), con la griglia
+allargata. Risultato: **23.211 partite / 1.633 giocatori** (da 8.082/787 pre-fix, +99%/+93%).
+
+**Checklist maestra (sez. 0) ripetuta per intero su questo campione**:
+- **A (parametri base)**: bootstrap su griglia allargata — GK/MID/FWD segnale DEBOLE (5-23%
+  win-rate), DEF INCERTO (59.7%, valore centrale bootstrap hl≈11.75 vs produzione hl=20.0, non
+  abbastanza forte per agire). **Nessun cambio.**
+- **B (shrink_k, range coverage)**: differenze shrink_k tra migliore e attuale sotto lo 0.15% di
+  MAE su tutti i ruoli — rumore. Range coverage ancora sopra il target 68% (72-80%), resta
+  cosmetico. **Nessun cambio.**
+- **C (correlazione compagni di squadra)**: ricalcolata su ~30k coppie (era ~7-8k). Tutte le
+  correlazioni same-team restano positive/significative ma più DEBOLI con dati puliti più ampi:
+  mid-mid dimezzata (0.166→0.108), def-mid (0.156→0.094), gk-mid (0.142→0.107), def-fwd
+  (0.107→0.060). Solo def-gk resta forte e stabile (0.333, era 0.349). **Segnalato ma non
+  applicato**: i bonus sinergia Arena/All Stars potrebbero essere leggermente sovra-tarati,
+  serve un ridisegno dedicato (non un nudge estemporaneo) per aggiornarli correttamente.
+- **D (selection quality/lift)**: modello batte sempre il caso (GK +4.0%, DEF +20.4%, MID
+  +31.1%, FWD +22.8% di lift catturato). Unico segnale minore: per MID lo shrinkage è ora
+  leggermente sotto la media pesata semplice (31.1% vs 32.1%) — dentro il rumore, da tenere
+  d'occhio. **Nessun cambio.**
+- **E (cap 260)**: riconfermato che inseguirlo attivamente non conviene (-44.7pt medi su 24
+  giornate simulate contro un break-even teorico di 12pt). **Nessun cambio.**
+
+**Trovato collateralmente**: `nonregression_score_atteso_def.py`/`_fwd.py` falliscono per un
+parsing di stringa ormai obsoleto (cercano un pattern di codice rimosso dal fix "p_gioca" del
+28/07) — non è una divergenza reale della formula (nessuna formula toccata oggi), solo script
+diagnostico da aggiornare. Backlog, non urgente.
+
+**Conclusione**: il lavoro di oggi non ha cambiato una virgola del comportamento delle formazioni
+consigliate — ha reso il pool di calibrazione molto più pulito e ampio, corretto tre bug reali di
+infrastruttura, e CONFERMATO (non smentito) che i parametri di produzione attuali reggono anche
+contro un campione quasi triplicato.
+
+### D. Nota separata: progetto "Best Five" (backlog, design condiviso, poi implementato v1 in
+altra sessione parallela)
+
+Richiesta dell'utente durante l'attesa della ricalibrazione: nuova funzione che trovi la miglior
+formazione ASSOLUTA in una lega (non tra i posseduti), con backup per slot. Analisi di
+fattibilità condivisa in chat (riusa discovery_global + test_<ruolo>.py come libreria, script
+separato, non nel workflow di produzione). Vedi memoria
+`project_backlog_best_five_funzione.md` per il design completo e lo stato di implementazione
+(v1 già scritta in una sessione parallela al momento di scrivere, non ancora testata end-to-end).
+
+### E. Stato repo a fine sessione
+
+Tutto pushato su `origin/main`. Commit principali: fix discovery (`6c88bc77e0`,
+`72b5d3e835`), fix KeyError DEF (`2c792e6679`), fix concorrenza workflow
+(`d880de6d26`, e il fix `--no-rebase` sui due workflow discovery), griglia allargata
+(`aed9157041`), rimozione vecchi grid_search (`2f7afcc089`), aggregazione finale
+(`7a7aae1b3b`). Nessun parametro di produzione modificato.
 confermata come la migliore misurata, tutto committato e pushato su `main`.
