@@ -263,12 +263,13 @@ POOL_LEAGUE_BY_TYPE = {
 # Applicato SIA alla richiesta esplicita (viene troncata se la supera) SIA
 # alla fase "opzionale" sotto (mai generate oltre il cap). Le Arene (dedicate
 # e All Stars) non hanno un vero limite Sorare, ma gli si mette comunque un
-# tetto pratico di 10 per tipo per non esaurire il pool su un solo tipo.
+# tetto pratico per tipo per non esaurire il pool su un solo tipo (alzato
+# 10->20 il 30/07, richiesta esplicita utente).
 HARD_CAP_BY_TYPE = {
     'MLS_IN_SEASON': 6, 'KLEAGUE_IN_SEASON': 6,
     'ALLSTARS_U23': 4, 'ALLSTARS': 4,
 }
-ARENA_OPTIONAL_CAP = 10
+ARENA_OPTIONAL_CAP = 20
 
 
 def _is_arena_type(tipo):
