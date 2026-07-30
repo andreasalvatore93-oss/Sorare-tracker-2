@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:41:39.821218Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) ayoub-jabbari: 44 pt attesi (35-56)
+   ORDINAMENTO: 52.65
+   SQUADRA: cincinnati-cincinnati-ohio | AVVERSARIO: sj-earthquakes-santa-clara-california
+======================================================================
+
+######################################################################
+# GIOCATORE: ayoub-jabbari
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ayoub-jabbari (squadra: cincinnati-cincinnati-ohio)
+Generato: 2026-07-30T10:41:39.820998Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 20
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-21 | CIN vs ATL | mlspa | score=44.7 | peso=0.946
+  2026-02-28 | MIN vs CIN | mlspa | score=48.4 | peso=0.973
+  2026-03-22 | CIN vs MTL | mlspa | score=65.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 53.09
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=3): 53.50 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.57 | Punteggio complessivo (granulari) medio: 9.53 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.14 (delta +0.08) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 9.15
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.7 - 65.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 55.15 | Media score fuori casa: 48.40
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.3
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.678
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.990
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.010
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.990
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 20.00% (fonte: starterOddsBasisPoints (2000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: FC Cincinnati | Trasferta: San Jose Earthquakes
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.5 (range 35.1 - 56.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 52.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.58
+Punteggio REALE ottenuto in quella partita: 65.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +19.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
