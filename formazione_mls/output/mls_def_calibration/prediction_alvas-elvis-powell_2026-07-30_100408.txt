@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:04:08.699579Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) alvas-elvis-powell: 44 pt attesi (27-60)
+   ORDINAMENTO: 56.76
+   SQUADRA: cincinnati-cincinnati-ohio | AVVERSARIO: sj-earthquakes-santa-clara-california
+======================================================================
+
+######################################################################
+# GIOCATORE: alvas-elvis-powell
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: alvas-elvis-powell (squadra: cincinnati-cincinnati-ohio)
+Generato: 2026-07-30T10:04:08.699378Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | CIN vs NYC | mlspa | score=40.9 | peso=0.901
+  2025-10-04 | RBNY vs CIN | mlspa | score=68.4 | peso=0.933
+  2025-10-18 | CIN vs MTL | mlspa | score=46.5 | peso=0.966
+  2026-03-22 | CIN vs MTL | mlspa | score=74.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 57.80
+  di cui Punteggio decisivo (level_score) medio: 41.58 | Punteggio complessivo (granulari) medio: 16.22 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.50, delta avversario +0.62 | Passaggio condizionato: delta venue +0.30, delta avversario -0.22 | Clean sheet/disimpegni condizionato: delta venue -0.78, delta avversario -0.20 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.9 - 74.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 53.83 | Media score fuori casa: 68.36
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.767
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.993
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: FC Cincinnati | Trasferta: San Jose Earthquakes
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.5 (range 26.6 - 59.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 56.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.00
+Punteggio REALE ottenuto in quella partita: 74.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +22.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
