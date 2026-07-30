@@ -1,0 +1,134 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T11:34:22.321198Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) diant-ramaj: 49 pt attesi (32-65)
+   SQUADRA: borussia-dortmund-dortmund | AVVERSARIO: hamburger-sv-hamburg
+======================================================================
+
+######################################################################
+# GIOCATORE: diant-ramaj
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: diant-ramaj (squadra: borussia-dortmund-dortmund)
+Generato: 2026-07-30T11:34:22.315587Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | RBL vs FCH | bundesliga-de | score=48.7 | peso=0.035
+  2025-09-13 | FCH vs BVB | bundesliga-de | score=50.6 | peso=0.039
+  2025-09-20 | HSV vs FCH | bundesliga-de | score=50.7 | peso=0.044
+  2025-09-27 | FCH vs FCA | bundesliga-de | score=41.9 | peso=0.050
+  2025-10-05 | VFB vs FCH | bundesliga-de | score=44.6 | peso=0.056
+  2025-10-18 | FCH vs SVW | bundesliga-de | score=34.6 | peso=0.062
+  2025-10-25 | TSG vs FCH | bundesliga-de | score=39.4 | peso=0.070
+  2025-11-01 | FCH vs SGE | bundesliga-de | score=42.6 | peso=0.079
+  2025-11-08 | B04 vs FCH | bundesliga-de | score=0.0 | peso=0.088
+  2025-11-22 | FCH vs BMG | bundesliga-de | score=30.6 | peso=0.099
+  2025-11-29 | FCU vs FCH | bundesliga-de | score=41.1 | peso=0.111
+  2025-12-06 | FCH vs SCF | bundesliga-de | score=48.3 | peso=0.125
+  2025-12-13 | STP vs FCH | bundesliga-de | score=10.1 | peso=0.140
+  2025-12-21 | FCH vs BAY | bundesliga-de | score=33.4 | peso=0.157
+  2026-01-10 | FCH vs KOE | bundesliga-de | score=58.1 | peso=0.177
+  2026-01-13 | M05 vs FCH | bundesliga-de | score=28.2 | peso=0.198
+  2026-01-17 | WOB vs FCH | bundesliga-de | score=40.4 | peso=0.223
+  2026-01-24 | FCH vs RBL | bundesliga-de | score=26.7 | peso=0.250
+  2026-02-01 | BVB vs FCH | bundesliga-de | score=9.5 | peso=0.281
+  2026-02-07 | FCH vs HSV | bundesliga-de | score=39.1 | peso=0.315
+  2026-02-15 | FCA vs FCH | bundesliga-de | score=36.0 | peso=0.354
+  2026-02-22 | FCH vs VFB | bundesliga-de | score=38.6 | peso=0.397
+  2026-03-07 | FCH vs TSG | bundesliga-de | score=27.7 | peso=0.445
+  2026-03-14 | SGE vs FCH | bundesliga-de | score=54.8 | peso=0.500
+  2026-03-21 | FCH vs B04 | bundesliga-de | score=21.8 | peso=0.561
+  2026-04-04 | BMG vs FCH | bundesliga-de | score=18.9 | peso=0.630
+  2026-04-11 | FCH vs FCU | bundesliga-de | score=42.0 | peso=0.707
+  2026-04-19 | SCF vs FCH | bundesliga-de | score=35.5 | peso=0.794
+  2026-04-25 | FCH vs STP | bundesliga-de | score=88.2 | peso=0.891
+  2026-05-02 | BAY vs FCH | bundesliga-de | score=26.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 38.30
+  di cui Punteggio decisivo (level_score) medio: 34.23 | Punteggio complessivo (granulari) medio: 4.07 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 36.97 (delta +2.74 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.30, delta avversario +2.98 | Possesso condizionato per venue: delta +0.18 | Goalkeeping condizionato per venue: delta +0.22 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 20.15
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 21.8 - 54.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.49 (differenza: +8.66)
+Media score in casa: 41.61 | Media score fuori casa: 32.27
+Fattore casa/trasferta applicato: 1.095 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.157
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.010
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.999
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 3.3% (bonus atteso incorporato nella media pesata: ~0.8pt)
+Fattore trend (media ultime 5: 42.1 vs media ultime 10: 39.0): 1.057
+P(gioca): 90.91% (fonte: tasso di presenza storico (30/33))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T16:30
+Casa: Borussia Dortmund | Trasferta: Hamburger SV
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.8 (range 32.3 - 65.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.85
+Punteggio REALE ottenuto in quella partita: 26.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -13.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.2x+opp_sens=29.0+trend_int=0.3+granulari' (half_life=30.0, range_mult=1.2, opp_sens=29.0, trend_int=0.3)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.8    39.4     -4.4     6.9        SI
+   7        7      43.4    42.6     -0.8     6.8        SI
+   8        8      43.2     0.0    -43.2     6.4        NO
+   9        9      48.9    30.6    -18.3    18.2        NO
+  10       10      36.8    41.1     +4.3    17.5        SI
+  11       11      36.3    48.3    +12.0    16.6        SI
+  12       12      47.1    10.1    -37.0    16.2        NO
+  13       13      28.3    33.4     +5.1    18.3        SI
+  14       14      48.3    58.1     +9.8    17.6        SI
+  15       15      35.7    28.2     -7.5    18.3        SI
+  16       16      40.8    40.4     -0.4    17.9        SI
+  17       17      34.0    26.7     -7.3    17.3        SI
+  18       18      26.5     9.5    -17.0    17.0        NO
+  19       19      46.8    39.1     -7.7    18.3        SI
+  20       20      29.2    36.0     +6.8    17.7        SI
+  21       21      33.1    38.6     +5.5    17.2        SI
+  22       22      34.9    27.7     -7.2    16.7        SI
+  23       23      29.6    54.8    +25.2    16.4        NO
+  24       24      37.1    21.8    -15.3    16.8        SI
+  25       25      38.5    18.9    -19.6    16.8        NO
+  26       26      41.5    42.0     +0.5    16.9        SI
+  27       27      30.6    35.5     +4.9    16.6        SI
+  28       28      51.7    88.2    +36.5    16.2        NO
+  29       29      24.1    26.1     +2.0    20.8        SI
+
+MAE (errore assoluto medio): 12.42
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
