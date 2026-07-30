@@ -1212,8 +1212,10 @@ def compute_score_atteso_mid(scores, is_home_flags, opponent_rankings,
     # presenza/punteggio +0.53: chi gioca poco rende MENO anche quando gioca.
     # presence_rate=None (calibrazione/backtest) ricade sul prior fisso,
     # comportamento INVARIATO.
+    # Ricalibrato 30/07 (n=519, pool post-fix anyPlayers->activePlayers,
+    # decisione utente via popup): era 42.68 + 12.34 * presence_rate.
     if presence_rate is not None:
-        media_ruolo_prior = max(0.0, 34.89 + 19.42 * presence_rate)
+        media_ruolo_prior = max(0.0, 42.68 + 12.34 * presence_rate)
     grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     grezzo_corretto = (
         (n / (n + shrink_k)) * grezzo

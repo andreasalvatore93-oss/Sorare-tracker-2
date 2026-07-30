@@ -850,7 +850,7 @@ TEAM_ROSTER_MAX_PAGES = 10  # tetto di sicurezza (fino a 1000 giocatori/squadra)
 # cambia, la voce viene considerata non valida e la squadra si riscarica -- cosi'
 # un cambio di parametro non resta silenziosamente "congelato" nella cache.
 ROSTER_CACHE_PATH = os.environ.get('ROSTER_CACHE_PATH', 'bot_profit_roster_cache.json')
-ROSTER_CACHE_HOURS = float(os.environ.get('ROSTER_CACHE_HOURS', '18'))
+ROSTER_CACHE_HOURS = float(os.environ.get('ROSTER_CACHE_HOURS', '48'))
 
 _roster_cache_lock = threading.Lock()
 _roster_cache = [None]
@@ -1932,7 +1932,7 @@ BUY_SIGNAL_IMMINENTE_HOURS = 54.0
 # selettivo qualunque sia lo stato del mercato di quella lega.
 BUY_SIGNAL_SOGLIA_COMPRA = float(os.environ.get('BUY_SIGNAL_SOGLIA_COMPRA', '10.0'))
 BUY_SIGNAL_SOGLIA_BUONA = float(os.environ.get('BUY_SIGNAL_SOGLIA_BUONA', '4.0'))
-BUY_SIGNAL_MAX_PER_GRUPPO = int(os.environ.get('BUY_SIGNAL_MAX_PER_GRUPPO', '8'))
+BUY_SIGNAL_MAX_PER_GRUPPO = int(os.environ.get('BUY_SIGNAL_MAX_PER_GRUPPO', '15'))
 
 # Una riga della classifica persistente puo' venire da una run precedente (il
 # CSV non riparte mai vuoto, vedi load_previous_tracked). Un prezzo di due
@@ -2079,8 +2079,15 @@ def _assegna_segnali(rows_gruppo):
 # finestra, per segnalare quando lo sconto e' meno affidabile. Dal 29/07 pesa
 # anche potenziale_score (vedi TREND_SCORE_MULTIPLIER sopra), non e' piu' solo
 # un indicatore visivo.
-TREND_RECENT_WINDOW_DAYS = int(os.environ.get('TREND_RECENT_WINDOW_DAYS', '2'))
-TREND_FLAT_THRESHOLD_PERCENT = float(os.environ.get('TREND_FLAT_THRESHOLD_PERCENT', '10.0'))
+#
+# Ricalibrati 30/07 sul dataset pattern_raw_transactions (3658 tx, 142 carte):
+# a parita' di sconto, 1gg/5% e' la combinazione con l'ordine down<flat<up piu'
+# pulito e il divario piu' ampio tra i due estremi (n grandi in entrambe le
+# code). Da finestra=3-4gg in su l'ordine si rompe spesso ('flat' supera 'up').
+# Verificato che non rompe il caso reale Munie (crash confermato dall'utente):
+# a window=1gg il trend resta 'down' negli stessi punti temporali di window=2gg.
+TREND_RECENT_WINDOW_DAYS = int(os.environ.get('TREND_RECENT_WINDOW_DAYS', '1'))
+TREND_FLAT_THRESHOLD_PERCENT = float(os.environ.get('TREND_FLAT_THRESHOLD_PERCENT', '5.0'))
 
 
 def _split_recent_vs_storico(tx_con_date, now=None):

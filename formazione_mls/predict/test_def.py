@@ -1258,7 +1258,9 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
                              half_life=None, trend_intensity=None,
                              shrink_k=SHRINK_K_OUTLIER_DEF,
                              media_ruolo_prior=MEDIA_RUOLO_DEF_PRIOR,
-                             use_stadio_d=True, presence_rate=None, opponent_lambda_mult=1.0):
+                             use_stadio_d=True, presence_rate=None, opponent_lambda_mult=None,
+                             opponent_team_slugs_hist=None, game_dates_hist=None,
+                             next_opponent_team_slug=None, next_game_date=None, league='mls'):
     """FUNZIONE CONDIVISA (27/07): calcola lo `score_atteso` DEF di PRODUZIONE, da
     usare SIA in build_prediction (predizione reale) SIA nel backtest walk-forward
     di calibrazione -- cosi' le due non possono piu' divergere (prima il backtest
@@ -1271,7 +1273,17 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     alla produzione; nel backtest si variano half_life/trend_intensity.
 
     Tutti gli array sono lo STORICO (stessa lunghezza n, ordine cronologico); target_*
-    e' la partita da predire. p_gioca=1.0 nel backtest (sappiamo che ha giocato)."""
+    e' la partita da predire. p_gioca=1.0 nel backtest (sappiamo che ha giocato).
+
+    FIX (30/07, bug reale trovato dal nonregression test): opponent_lambda_mult e
+    opponent_forte_flags/next_forte (Stadio D avversario) dipendono da SLUG squadra
+    avversaria + data storica, dato che nel backtest walk-forward prima non veniva
+    passato -- ricadevano sempre sul default neutro/sul vecchio domesticLeagueRanking
+    (scoperto contaminato, sez. 33.A del RIASSUNTO), pur essendo gia' sostituiti in
+    build_prediction dal 29/07. opponent_team_slugs_hist/game_dates_hist/
+    next_opponent_team_slug ora opzionali: se assenti (vecchi chiamanti diagnostici
+    senza questo dato), comportamento INVARIATO (lambda_mult=1.0, Stadio D avversario
+    su ranking come prima)."""
     if half_life is None:
         half_life = HALF_LIFE_GAMES
     if trend_intensity is None:
@@ -1283,8 +1295,16 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     media_granulari_pesata = weighted_mean(granulari_values, weights)
     # opponent_lambda_mult (29/07, vedi opponent_strength.py): gol subiti
     # dal prossimo avversario nelle ultime 10 partite (dato storico reale),
-    # sostituisce il vecchio fattore_forza_avversario contaminato. Default
-    # 1.0 = nessun effetto (i chiamanti di backtest non lo passano).
+    # sostituisce il vecchio fattore_forza_avversario contaminato. Se non
+    # passato esplicitamente, calcolato da next_opponent_team_slug quando
+    # disponibile (30/07); altrimenti resta 1.0 = nessun effetto (vecchio
+    # comportamento per chi non ha questo dato).
+    if opponent_lambda_mult is None:
+        if next_opponent_team_slug:
+            opponent_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+                league, 'def', next_opponent_team_slug, next_game_date or datetime.datetime.utcnow())
+        else:
+            opponent_lambda_mult = 1.0
     lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
@@ -1295,8 +1315,10 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     # verso un prior realistico per chi gioca poco. Misurato su dati reali,
     # n=381, corr presenza/punteggio +0.45. presence_rate=None (backtest)
     # ricade sul prior fisso, comportamento INVARIATO.
+    # Ricalibrato 30/07 (n=596, pool post-fix anyPlayers->activePlayers,
+    # decisione utente via popup): era 45.36 + 7.96 * presence_rate.
     if presence_rate is not None:
-        media_ruolo_prior = max(0.0, 38.08 + 14.95 * presence_rate)
+        media_ruolo_prior = max(0.0, 45.36 + 7.96 * presence_rate)
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     grezzo_nuovo_corretto = (
         (n / (n + shrink_k)) * grezzo_nuovo
@@ -1315,14 +1337,28 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     # Stadio D aggiunge o toglie): coi default resta True = produzione.
     if not use_stadio_d:
         return score_atteso
-    valid_opp_ranks = [r for r in opponent_rankings if r is not None]
-    avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
-    opponent_forte_flags = [
-        (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
-        for r in opponent_rankings
-    ]
-    next_forte = (target_opp_rank < avg_opp_rank_hist) if (
-        target_opp_rank is not None and avg_opp_rank_hist is not None) else None
+    # Stadio D avversario (30/07): usa il dato pulito opponent_is_strong
+    # (gol subiti reali, ancorato alla data storica -- stesso meccanismo di
+    # build_prediction dal 29/07) quando lo slug squadra avversaria e'
+    # disponibile; altrimenti ricade sul vecchio domesticLeagueRanking
+    # (comportamento INVARIATO per i chiamanti diagnostici senza questo dato).
+    if opponent_team_slugs_hist is not None and next_opponent_team_slug:
+        _dates_hist = game_dates_hist if game_dates_hist is not None else [None] * len(opponent_team_slugs_hist)
+        opponent_forte_flags = [
+            opponent_strength.opponent_is_strong(league, opp_slug, dt) if opp_slug else None
+            for opp_slug, dt in zip(opponent_team_slugs_hist, _dates_hist)
+        ]
+        next_forte = opponent_strength.opponent_is_strong(
+            league, next_opponent_team_slug, next_game_date or datetime.datetime.utcnow())
+    else:
+        valid_opp_ranks = [r for r in opponent_rankings if r is not None]
+        avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
+        opponent_forte_flags = [
+            (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
+            for r in opponent_rankings
+        ]
+        next_forte = (target_opp_rank < avg_opp_rank_hist) if (
+            target_opp_rank is not None and avg_opp_rank_hist is not None) else None
 
     def _delta_venue_avversario(values):
         fallback = weighted_mean(values, weights)
@@ -1343,7 +1379,8 @@ def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,
                                pos_decisive_values, neg_decisive_values,
                                goals_conceded_values, passing_values, clean_sheet_values,
                                min_history=6, half_life=None, trend_intensity=None,
-                               range_multiplier=1.0):
+                               range_multiplier=1.0,
+                               opponent_team_slugs_hist=None, game_dates_hist=None, league='mls'):
     """Backtest walk-forward ALLINEATO ALLA PRODUZIONE (27/07): ad ogni partita
     richiama compute_score_atteso_def() -- la STESSA funzione della predizione reale --
     usando solo lo storico precedente, e confronta con lo score reale. Sostituisce il
@@ -1352,7 +1389,12 @@ def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,
     parametri su un modello che non era quello che schiera davvero le formazioni.
 
     P(gioca)=1.0 (sappiamo che ha giocato). Ritorna la stessa struttura di rigorous_backtest
-    (rows + mae + pct_dentro_range) cosi' che aggregate_grid_search.py resti compatibile."""
+    (rows + mae + pct_dentro_range) cosi' che aggregate_grid_search.py resti compatibile.
+
+    opponent_team_slugs_hist/game_dates_hist (30/07, fix bug reale): se passati,
+    fanno usare a compute_score_atteso_def il dato pulito opponent_is_strong/
+    opponent_lambda_mult invece del fallback (vedi commento esteso in
+    compute_score_atteso_def) -- allinea davvero il backtest alla produzione."""
     if half_life is None:
         half_life = HALF_LIFE_GAMES
     if trend_intensity is None:
@@ -1367,7 +1409,12 @@ def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,
             pos_decisive_values[:i], neg_decisive_values[:i],
             goals_conceded_values[:i], passing_values[:i], clean_sheet_values[:i],
             target_is_home=is_home_flags[i], target_opp_rank=opponent_rankings[i],
-            p_gioca=1.0, half_life=half_life, trend_intensity=trend_intensity)
+            p_gioca=1.0, half_life=half_life, trend_intensity=trend_intensity,
+            opponent_team_slugs_hist=opponent_team_slugs_hist[:i] if opponent_team_slugs_hist else None,
+            game_dates_hist=game_dates_hist[:i] if game_dates_hist else None,
+            next_opponent_team_slug=opponent_team_slugs_hist[i] if opponent_team_slugs_hist else None,
+            next_game_date=game_dates_hist[i] if game_dates_hist else None,
+            league=league)
         reale = scores[i]
         w = exponential_weights(i, half_life)
         dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
@@ -1421,7 +1468,8 @@ def run_grid_search_prod_def(scores, is_home_flags, opponent_rankings,
                              residual_values, granulari_values,
                              pos_decisive_values, neg_decisive_values,
                              goals_conceded_values, passing_values, clean_sheet_values,
-                             min_history=6):
+                             min_history=6,
+                             opponent_team_slugs_hist=None, game_dates_hist=None, league='mls'):
     """Grid search ALLINEATO: gira rigorous_backtest_prod_def (che internamente
     chiama compute_score_atteso_def, la STESSA funzione della predizione reale)
     su GRID_SEARCH_COMBINATIONS_PROD. Stesso composite score e stesso formato di
@@ -1435,7 +1483,9 @@ def run_grid_search_prod_def(scores, is_home_flags, opponent_rankings,
             pos_decisive_values, neg_decisive_values,
             goals_conceded_values, passing_values, clean_sheet_values,
             min_history=min_history, half_life=half_life,
-            trend_intensity=trend_intensity, range_multiplier=range_mult)
+            trend_intensity=trend_intensity, range_multiplier=range_mult,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist, league=league)
         bt.update({'label': label, 'half_life': half_life,
                    'range_multiplier': range_mult, 'trend_intensity': trend_intensity,
                    'opponent_sensitivity': None})
@@ -1890,7 +1940,7 @@ def build_prediction(player_slug):
     # fattore_casa_trasferta e delle correzioni additive Stadio D sotto.
     # Prior di ruolo DINAMICO (28/07): vedi commento esteso nella gemella
     # compute_score_atteso_def sopra -- stessa formula, stessi coefficienti.
-    _media_ruolo_prior_dinamico = max(0.0, 38.08 + 14.95 * presence_rate)
+    _media_ruolo_prior_dinamico = max(0.0, 45.36 + 7.96 * presence_rate)
     grezzo_nuovo_corretto = (
         (n / (n + SHRINK_K_OUTLIER_DEF)) * grezzo_nuovo
         + (SHRINK_K_OUTLIER_DEF / (n + SHRINK_K_OUTLIER_DEF)) * _media_ruolo_prior_dinamico
@@ -1973,7 +2023,9 @@ def build_prediction(player_slug):
         pos_decisive_values, neg_decisive_values,
         goals_conceded_values, passing_values, clean_sheet_values,
         target_is_home=next_is_home, target_opp_rank=next_opp_rank,
-        p_gioca=p_gioca, shrink_k=0.0)
+        p_gioca=p_gioca, shrink_k=0.0,
+        opponent_team_slugs_hist=opponent_team_slugs_hist, game_dates_hist=game_dates_hist,
+        next_opponent_team_slug=next_opponent_team_slug, league='mls')
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
@@ -2015,7 +2067,9 @@ def build_prediction(player_slug):
             residual_values, granulari_values,
             pos_decisive_values, neg_decisive_values,
             goals_conceded_values, passing_values, clean_sheet_values,
-            min_history=6)
+            min_history=6,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist, league='mls')
         rigorous_bt = grid_results[0] if grid_results else None
     else:
         log("Esecuzione backtest rigoroso sui parametri fissati...")

@@ -1628,7 +1628,7 @@ def build_prediction(player_slug):
     # uguale per titolari e riserve).
     media_ruolo_prior = MEDIA_RUOLO_GK_PRIOR
     if presence_rate is not None:
-        media_ruolo_prior = max(0.0, 45.41 + 4.36 * presence_rate)
+        media_ruolo_prior = max(0.0, 46.20 + 4.05 * presence_rate)
     _grezzo_gk = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     _grezzo_gk_corretto = (
         (n / (n + SHRINK_K_OUTLIER_GK)) * _grezzo_gk

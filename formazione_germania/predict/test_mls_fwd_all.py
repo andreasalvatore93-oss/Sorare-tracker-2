@@ -1143,7 +1143,7 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     fattore_trend_granulare, _s, _l = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
     if presence_rate is not None:
-        media_ruolo_prior = max(0.0, 34.42 + 18.71 * presence_rate)
+        media_ruolo_prior = max(0.0, 47.44 + 6.62 * presence_rate)
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     grezzo_nuovo_corretto = (
         (n / (n + shrink_k)) * grezzo_nuovo
@@ -1602,7 +1602,7 @@ def build_prediction(player_slug):
     # Shrinkage outlier/hot-streak (29/07, esteso a tutte le leghe, vedi SHRINK_K_OUTLIER_FWD
     # sopra): prior dinamico da presence_rate storico (stessa regressione usata in MLS, sez.31.D
     # del RIASSUNTO -- principio 'modello unico globale', stessi coefficienti ovunque).
-    _media_ruolo_prior_dinamico = max(0.0, 34.42 + 18.71 * presence_rate)
+    _media_ruolo_prior_dinamico = max(0.0, 47.44 + 6.62 * presence_rate)
     grezzo_nuovo_corretto = (
         (n / (n + SHRINK_K_OUTLIER_FWD)) * grezzo_nuovo
         + (SHRINK_K_OUTLIER_FWD / (n + SHRINK_K_OUTLIER_FWD)) * _media_ruolo_prior_dinamico
