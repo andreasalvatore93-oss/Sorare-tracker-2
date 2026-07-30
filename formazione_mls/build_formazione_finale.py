@@ -244,8 +244,40 @@ SAME_TEAM_SYNERGY_BONUS_BY_PAIR = {
     # GK-FWD/GK-GK: non significativi nella ri-misurazione, non modellati.
 }
 
+# Sinergia same-team per In Season (30/07, NUOVO -- prima esclusa del tutto,
+# vedi commento storico su variance_mode piu' sotto). L'esclusione si basava
+# su un ragionamento incompleto ("il target e' fisso quindi il valore atteso
+# non dipende dalla correlazione, nessun beneficio") -- vero per il valore
+# atteso, MA la correlazione cambia comunque la PROBABILITA' di superare il
+# target fisso (piu' varianza aiuta se il bersaglio e' sopra la media, che e'
+# il caso comune: bersagli reali forniti dall'utente 340/360/400/420/460).
+# Misurato con formazione_mls/diagnostics/estimate_inseason_synergy_
+# allpairs.py: Monte Carlo su punteggi REALI (non normale), coppie
+# same-team/data osservate davvero, pool "top 60% per media" (n=1085-4177
+# osservazioni per coppia dopo l'ampliamento richiesto dall'utente -- il
+# giro iniziale a top 25%/n=175-326 aveva anche un bug di campionamento,
+# corretto: il pool di coppie reali aveva media diversa dal pool generale,
+# gonfiando il delta misurato prima della correzione). Valori = punti
+# equivalenti medi sui 5 target reali (quanto dovrebbe salire la media SENZA
+# sinergia per eguagliare la P(superare il target) CON sinergia). Solo LE
+# COPPIE CON SEGNALE CHIARO: gk-mid e def-fwd erano sostanzialmente zero su
+# tutti i target, non modellate (comportamento invariato per quelle due).
+# Bonus MOLTO piu' piccoli di SAME_TEAM_SYNERGY_BONUS_BY_PAIR (Arena/All
+# Stars) perche' In Season ha "6 vite" per un solo premio: il beneficio
+# marginale della varianza dentro UNA formazione e' diluito dal poter gia'
+# tentare piu' formazioni indipendenti (vedi MATCH_REUSE_PENALTY).
+IN_SEASON_SYNERGY_BONUS_BY_PAIR = {
+    frozenset(('FWD', 'FWD')): 6,   # 5.90pt equivalenti (n=507)
+    frozenset(('FWD', 'MID')): 3,   # 3.40pt equivalenti (n=2306)
+    frozenset(('GK', 'DEF')): 2,    # 2.46pt equivalenti (n=1823)
+    frozenset(('MID', 'MID')): 2,   # 2.02pt equivalenti (n=1085)
+    frozenset(('DEF', 'DEF')): 1,   # 1.08pt equivalenti (n=2282)
+    frozenset(('DEF', 'MID')): 1,   # 1.06pt equivalenti (n=4177)
+    # GK-MID/DEF-FWD: effetto trascurabile su tutti i 5 target, non modellate.
+}
 
-def _same_team_synergy_bonus(role, row, chosen_roles_by_team):
+
+def _same_team_synergy_bonus(role, row, chosen_roles_by_team, bonus_dict=None):
     """Analogo a _cross_team_penalty ma per compagni di squadra (bonus, non
     penalita'). Somma il bonus per OGNI OCCORRENZA di ruolo gia' scelta nella
     STESSA squadra di 'row' che forma una coppia con sinergia positiva
@@ -253,7 +285,11 @@ def _same_team_synergy_bonus(role, row, chosen_roles_by_team):
     e' un CONTATORE per ruolo, non un set, altrimenti 2 compagni DEF gia'
     scelti (caso strutturale in All Stars, che ha 2 slot DEF) valevano quanto
     1 solo, sottostimando sistematicamente bonus/penalita' ogni volta che una
-    squadra ha 2+ giocatori dello stesso ruolo gia' in formazione."""
+    squadra ha 2+ giocatori dello stesso ruolo gia' in formazione.
+    'bonus_dict' (30/07): quale tabella usare -- SAME_TEAM_SYNERGY_BONUS_BY_PAIR
+    (Arena/All Stars, default) o IN_SEASON_SYNERGY_BONUS_BY_PAIR."""
+    if bonus_dict is None:
+        bonus_dict = SAME_TEAM_SYNERGY_BONUS_BY_PAIR
     if not chosen_roles_by_team:
         return 0
     team_slug = row.get('team_slug')
@@ -261,7 +297,7 @@ def _same_team_synergy_bonus(role, row, chosen_roles_by_team):
         return 0
     bonus = 0
     for prev_role, count in chosen_roles_by_team.get(team_slug, {}).items():
-        w = SAME_TEAM_SYNERGY_BONUS_BY_PAIR.get(frozenset((role, prev_role)))
+        w = bonus_dict.get(frozenset((role, prev_role)))
         if w:
             bonus += w * count
     return bonus
@@ -348,7 +384,7 @@ def _cross_team_penalty(role, row, chosen_roles_by_team):
 
 def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
                       variance_mode=False, apply_positive_synergy=True, used_matches=None,
-                      chosen_roles_by_team=None):
+                      chosen_roles_by_team=None, synergy_bonus_dict=None):
     """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
     dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
@@ -375,8 +411,14 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
         elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
             adjusted += POSITIVE_SYNERGY_BONUS
         adjusted -= _cross_team_penalty(role, row, chosen_roles_by_team)
-    if variance_mode and team_slug:
-        adjusted += _same_team_synergy_bonus(role, row, chosen_roles_by_team)
+    # apply_positive_synergy nel gate (30/07): prima non serviva perche' In
+    # Season aveva variance_mode sempre False -- ora che la sinergia same-team
+    # e' abilitata anche li', deve rispettare lo stesso "greedy puro dalla
+    # 2a formazione in poi" delle altre sinergie (vedi docstring sopra),
+    # altrimenti le In Season multiple userebbero la sinergia solo per la
+    # PRIMA formazione in modo incoerente col resto.
+    if variance_mode and team_slug and apply_positive_synergy:
+        adjusted += _same_team_synergy_bonus(role, row, chosen_roles_by_team, synergy_bonus_dict)
     if apply_stack_guard and team_slug and team_counts and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT:
         adjusted -= STACK_GUARD_PENALTY
     if used_matches and _match_key(row) in used_matches:
@@ -386,7 +428,7 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
 
 def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
                            variance_mode=False, apply_positive_synergy=True, used_matches=None,
-                           chosen_roles_by_team=None):
+                           chosen_roles_by_team=None, synergy_bonus_dict=None):
     """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
     anti-sinergia col portiere scelto (vedi synergy_sort_key), la sinergia
     da correlazione misurata (SOLO variance_mode) ed eventualmente per il
@@ -402,7 +444,7 @@ def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_count
     return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug,
                                                            team_counts, apply_stack_guard, variance_mode,
                                                            apply_positive_synergy, used_matches,
-                                                           chosen_roles_by_team),
+                                                           chosen_roles_by_team, synergy_bonus_dict),
                   reverse=True)
 
 
@@ -767,7 +809,8 @@ def _consume_pick(card_pool, slug):
 
 
 def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guard=False, variance_mode=False,
-                      apply_positive_synergy=True, strict_gk_anti_synergy=False, used_matches=None):
+                      apply_positive_synergy=True, strict_gk_anti_synergy=False, used_matches=None,
+                      synergy_bonus_dict=None):
     """Costruisce UNA formazione secondo 'shape' (uno dei FORMATION_SHAPES),
     tenendo conto delle copie gia' esaurite (card_pool) e del vincolo
     max_classic della shape (None = nessun vincolo). Se l10_cap e' impostato
@@ -964,7 +1007,8 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                     pool_rows = [r for r in pool_rows if r.get('team_slug') != gk_opponent_slug]
                 candidates = synergy_adjusted_rows(role, pool_rows, gk_team_slug, gk_opponent_slug,
                                                     team_counts, apply_stack_guard, variance_mode,
-                                                    apply_positive_synergy, used_matches, chosen_roles_by_team)
+                                                    apply_positive_synergy, used_matches, chosen_roles_by_team,
+                                                    synergy_bonus_dict)
                 row, ctype = pick(candidates, l10_cap is not None, reserve, slot_label=slot_label)
 
             if row is None:
@@ -1005,7 +1049,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
                                                         team_counts, apply_stack_guard, variance_mode,
                                                         apply_positive_synergy, used_matches,
-                                                        chosen_roles_by_team), reverse=True)
+                                                        chosen_roles_by_team, synergy_bonus_dict), reverse=True)
 
         extra_rows = [row for _role, row in combined]
         extra_role_by_slug = {row['slug']: role for role, row in combined}
@@ -1677,9 +1721,15 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
     # In Season E All Stars (soglie/percentuali diverse ma stesso meccanismo),
     # non per Arena (che ha il suo cap L10 obbligatorio separato, nessun bonus).
     stack_guard = tipo in ('IN_SEASON', 'ALLSTARS')
-    # Sinergia da correlazione misurata (vedi SAME_TEAM_SYNERGY_BONUS_BY_PAIR):
-    # SOLO dove la varianza conta, cioe' tutto tranne In Season (target fisso).
-    variance_mode = tipo != 'IN_SEASON'
+    # Sinergia da correlazione misurata: ABILITATA anche per In Season dal
+    # 30/07 (richiesta esplicita utente, vedi IN_SEASON_SYNERGY_BONUS_BY_PAIR
+    # sopra per il perche' -- il vecchio "il target e' fisso quindi nessun
+    # beneficio" era incompleto, misurato con Monte Carlo su dati reali che
+    # la correlazione cambia comunque la probabilita' di superare il target).
+    # Tabella diversa per tipo: In Season usa bonus molto piu' piccoli
+    # (6 vite diluiscono il beneficio marginale per formazione).
+    variance_mode = True
+    synergy_bonus_dict = IN_SEASON_SYNERGY_BONUS_BY_PAIR if tipo == 'IN_SEASON' else SAME_TEAM_SYNERGY_BONUS_BY_PAIR
     # 27/07, richiesta esplicita utente: quando si richiedono 2+ In Season,
     # SOLO la prima usa la sinergia GK-DEF soft (comportamento storico); dalla
     # seconda in poi e' greedy puro (solo punteggio, nessuna priorita' di
@@ -1706,7 +1756,7 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
         formazione, error, l10_ok, stack_perso = build_one_lineup(
             shape, role_data, card_pool, l10_cap=cap, apply_stack_guard=stack_guard,
             variance_mode=variance_mode, apply_positive_synergy=apply_positive_synergy,
-            strict_gk_anti_synergy=strict_gk_anti_synergy)
+            strict_gk_anti_synergy=strict_gk_anti_synergy, synergy_bonus_dict=synergy_bonus_dict)
         if error:
             msg = f"Formazione {shape['label']} #{idx}: NON GENERATA — {error}"
             if print_output:

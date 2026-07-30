@@ -775,11 +775,20 @@ def main():
         if 'error' in r:
             lineup_html_blocks.append(f'<p class="error-block">{r["error"]}</p>')
             continue
+        # apply_xp_bonus=False (30/07, richiesta esplicita utente, relay dalla
+        # sessione "Best Five K League"): il report HTML mostra sempre lo
+        # score_atteso GREZZO (senza bonus XP/collezione/stagione), per poter
+        # confrontare i valori 1:1 con i prediction_*.txt sorgente e con altri
+        # tool (es. Best Five) senza dover fare a mente il calcolo inverso.
+        # SOLO cosmetico: la SELEZIONE di chi entra in formazione continua a
+        # usare gli score con XP bonus dove previsto (righe 520-530 sopra,
+        # invariate) -- cambia solo il numero mostrato sulla card, non chi
+        # viene scelto.
         lineup_html = bff.render_lineup_html(
             r['label'], r['idx'], r['formazione'], card_pool, l10_cap=r['l10_cap'],
             l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
             check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
-            avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=r['tipo'] in XP_BONUS_TYPES)
+            avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=False)
         lineup_html_blocks.append(lineup_html)
 
     # Giocatori candidati (idonei per starter-odds + finestra giornata, vedi
