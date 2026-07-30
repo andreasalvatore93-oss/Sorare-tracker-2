@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:50:29.312736Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) japhet-sery: 50 pt attesi (35-63)
+   ORDINAMENTO: 48.92
+   SQUADRA: philadelphia-union-chester-pennsylvania | AVVERSARIO: atlanta-united-atlanta-georgia
+======================================================================
+
+######################################################################
+# GIOCATORE: japhet-sery
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: japhet-sery (squadra: philadelphia-union-chester-pennsylvania)
+Generato: 2026-07-30T10:50:29.312177Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 47
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-30 | RBS vs BRA | uefa-champions-league | score=21.5 | peso=0.555
+  2025-08-02 | S08 vs BRA | eliteserien | score=49.8 | peso=0.574
+  2025-08-07 | BKH vs BRA | uefa-europa-league | score=35.0 | peso=0.595
+  2025-10-26 | RBK vs BRA | eliteserien | score=33.0 | peso=0.616
+  2025-11-06 | BOL vs BRA | uefa-europa-league | score=58.4 | peso=0.637
+  2025-11-09 | BRA vs KFU | eliteserien | score=42.0 | peso=0.660
+  2025-11-22 | MOL vs BRA | eliteserien | score=46.2 | peso=0.683
+  2025-11-27 | PKT vs BRA | uefa-europa-league | score=50.0 | peso=0.707
+  2025-12-11 | BRA vs FB | uefa-europa-league | score=32.1 | peso=0.732
+  2026-02-22 | DC vs PHI | mlspa | score=51.9 | peso=0.758
+  2026-03-01 | PHI vs NYC | mlspa | score=60.0 | peso=0.785
+  2026-03-08 | PHI vs SJ | mlspa | score=51.2 | peso=0.812
+  2026-03-19 | AME vs PHI | concacaf-champions-league | score=41.5 | peso=0.841
+  2026-04-04 | CLT vs PHI | mlspa | score=30.6 | peso=0.871
+  2026-04-11 | MTL vs PHI | mlspa | score=78.2 | peso=0.901
+  2026-04-18 | PHI vs DC | mlspa | score=45.7 | peso=0.933
+  2026-04-22 | TOR vs PHI | mlspa | score=25.1 | peso=0.966
+  2026-04-25 | CLB vs PHI | mlspa | score=51.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 45.14
+  di cui Punteggio decisivo (level_score) medio: 37.29 | Punteggio complessivo (granulari) medio: 7.85 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.81, delta avversario +0.62 | Passaggio condizionato: delta venue -0.18, delta avversario +0.41 | Clean sheet/disimpegni condizionato: delta venue +0.90, delta avversario +0.65 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 13.75
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.6 - 58.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.18 (differenza: +3.58)
+Media score in casa: 52.30 | Media score fuori casa: 46.42
+Fattore casa/trasferta applicato: 1.015 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.238
+Fattore falli (casa/trasferta, da dati reali): 0.982
+Fattore duelli (casa/trasferta, da dati reali): 0.988
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.010
+Fattore gol subiti (goals_conceded, con cap): 1.008
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.010
+Fattore trend (media ultime 5: 46.2 vs media ultime 10: 46.8): 1.000
+P(gioca): 30.00% (fonte: starterOddsBasisPoints (3000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Philadelphia Union | Trasferta: Atlanta United
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.6 (range 35.1 - 62.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 48.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.66
+Punteggio REALE ottenuto in quella partita: 51.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +6.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+trend_int=0.7+range=1.2x' (half_life=12.0, range_mult=1.2, opp_sens=None, trend_int=0.7)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.3    46.2     -2.1     N/D        SI
+   7        7      48.2    50.0     +1.8     N/D        SI
+   8        8      48.4    32.1    -16.2     N/D        NO
+   9        9      47.6    51.9     +4.3     N/D        SI
+  10       10      48.5    60.0    +11.5     N/D        SI
+  11       11      48.4    51.2     +2.8     N/D        SI
+  12       12      48.9    41.5     -7.4     N/D        SI
+  13       13      48.7    30.6    -18.1     N/D        NO
+  14       14      47.4    78.2    +30.8     N/D        NO
+  15       15      50.2    45.7     -4.5     N/D        SI
+  16       16      51.6    25.1    -26.5     N/D        NO
+  17       17      47.6    51.3     +3.6     N/D        SI
+
+MAE (errore assoluto medio): 10.81
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
