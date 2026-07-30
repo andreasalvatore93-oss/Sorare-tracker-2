@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T07:21:11.792386Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) stefan-bell: 49 pt attesi (19-75)
+   ORDINAMENTO: 50.72
+   SQUADRA: mainz-05-mainz | AVVERSARIO: paderborn-paderborn
+======================================================================
+
+######################################################################
+# GIOCATORE: stefan-bell
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: stefan-bell (squadra: mainz-05-mainz)
+Generato: 2026-07-30T07:21:11.791432Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-18 | M05 vs B04 | bundesliga-de | score=35.4 | peso=0.732
+  2025-10-26 | VFB vs M05 | bundesliga-de | score=22.6 | peso=0.758
+  2025-11-30 | SCF vs M05 | bundesliga-de | score=15.1 | peso=0.785
+  2025-12-14 | BAY vs M05 | bundesliga-de | score=64.4 | peso=0.812
+  2026-01-10 | FCU vs M05 | bundesliga-de | score=43.1 | peso=0.841
+  2026-01-13 | M05 vs FCH | bundesliga-de | score=49.7 | peso=0.871
+  2026-01-17 | KOE vs M05 | bundesliga-de | score=78.3 | peso=0.901
+  2026-01-24 | M05 vs WOB | bundesliga-de | score=69.0 | peso=0.933
+  2026-01-31 | RBL vs M05 | bundesliga-de | score=32.1 | peso=0.966
+  2026-02-07 | M05 vs FCA | bundesliga-de | score=96.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 52.18
+  di cui Punteggio decisivo (level_score) medio: 45.60 | Punteggio complessivo (granulari) medio: 6.57 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.69, delta avversario +0.00 | Passaggio condizionato: delta venue +0.72, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.75, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 24.90
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 22.6 - 78.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.38 (differenza: +6.53)
+Media score in casa: 62.53 | Media score fuori casa: 42.59
+Fattore casa/trasferta applicato: 1.006 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.8
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.800
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.011
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.014
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.018
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.017
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.985
+Fattore gol subiti (goals_conceded, con cap): 1.008
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.013
+Fattore trend (media ultime 5: 65.0 vs media ultime 10: 50.6): 1.000
+P(gioca): 29.41% (fonte: tasso di presenza storico (10/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FSV Mainz 05 | Trasferta: SC Paderborn 07
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.0 (range 19.5 - 75.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 50.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.41
+Punteggio REALE ottenuto in quella partita: 96.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +49.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=20.0+trend_int=0.7' (half_life=9.0, range_mult=1.6, opp_sens=20.0, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.3    78.3    +26.0    26.2        SI
+   7        7      63.2    69.0     +5.8    33.6        SI
+   8        8      33.9    32.1     -1.8    33.5        SI
+   9        9      47.9    96.0    +48.0    32.6        NO
+
+MAE (errore assoluto medio): 20.41
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

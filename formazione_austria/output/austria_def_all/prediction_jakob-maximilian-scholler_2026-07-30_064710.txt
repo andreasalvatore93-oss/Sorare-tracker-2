@@ -1,0 +1,80 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T06:47:10.305722Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jakob-maximilian-scholler: 50 pt attesi (36-94)
+   ORDINAMENTO: 61.41
+   SQUADRA: rapid-wien-wien | AVVERSARIO: rheindorf-altach-altach
+======================================================================
+
+######################################################################
+# GIOCATORE: jakob-maximilian-scholler
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jakob-maximilian-scholler (squadra: rapid-wien-wien)
+Generato: 2026-07-30T06:47:10.305030Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-26 | SCR vs RBS | austrian-bundesliga | score=55.4 | peso=0.841
+  2026-05-04 | ASK vs SCR | austrian-bundesliga | score=45.2 | peso=0.871
+  2026-05-10 | SCR vs FAK | austrian-bundesliga | score=41.6 | peso=0.901
+  2026-05-17 | STU vs SCR | austrian-bundesliga | score=41.6 | peso=0.933
+  2026-05-22 | SVR vs SCR | austrian-bundesliga | score=46.2 | peso=0.966
+  2026-05-25 | SCR vs SVR | austrian-bundesliga | score=100.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 55.68
+  di cui Punteggio decisivo (level_score) medio: 41.35 | Punteggio complessivo (granulari) medio: 14.33 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +1.25, delta avversario +0.58 | Passaggio condizionato: delta venue +0.72, delta avversario -0.01 | Clean sheet/disimpegni condizionato: delta venue +1.10, delta avversario +0.57 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.34
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.6 - 100.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.98 (differenza: +16.36)
+Media score in casa: 65.66 | Media score fuori casa: 44.34
+Fattore casa/trasferta applicato: 1.008 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 2.2
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.201
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.984
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.986
+Fattore gol subiti (goals_conceded, con cap): 1.014
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.011
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T17:00
+Casa: SK Rapid Wien | Trasferta: CASHPOINT SCR Altach
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.1 (range 36.0 - 94.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 61.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.85
+Punteggio REALE ottenuto in quella partita: 100.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +54.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
