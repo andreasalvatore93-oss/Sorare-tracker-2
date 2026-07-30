@@ -62,7 +62,15 @@ jobs:
           if [ -n "${{ github.event.inputs.roles }}" ]; then
             ARGS="$ARGS --roles ${{ github.event.inputs.roles }}"
           fi
-          python best_five.py $ARGS >> "$GITHUB_OUTPUT"
+          # NON reindirizzare tutto lo stdout su $GITHUB_OUTPUT (bug reale,
+          # run 30560234622): best_five.py stampa anche i log ("[gk] Pool
+          # globale...") su stdout, che con >> finivano TUTTI dentro
+          # GITHUB_OUTPUT insieme alla riga "gruppi=..." -- formato non
+          # valido, il file deve contenere SOLO righe "chiave=valore". Lo
+          # script scrive gia' la riga "gruppi=..." direttamente nel file
+          # (vedi cmd_matrice, os.environ['GITHUB_OUTPUT']), qui basta
+          # lasciarlo girare normalmente.
+          python best_five.py $ARGS
 
   predict:
     needs: prefiltro
