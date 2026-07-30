@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Best Five — KLEAGUE</title>
+<style>
+  :root {
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530;
+    --text: #edf1f6; --muted: #8a93a6; --gold: #f4c542; --border: rgba(255,255,255,0.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4;
+      --text: #1a2029; --muted: #5b6474; --border: rgba(20,25,35,0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 24px 64px; max-width: 900px; margin: 0 auto;
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .subhead { color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }
+  /* Layout A RIGA (30/07, richiesta esplicita utente): i 4 ruoli affiancati
+     in un'unica riga -- stessa struttura orizzontale della formazione vera
+     (formazione_mls/build_formazione_finale.py, .lineup-row/.card-strip),
+     non piu' una sezione per ruolo impilata verticalmente. */
+  .formazione-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+  .ruolo-colonna { flex: 1 1 200px; min-width: 180px; }
+  .role-title {
+    font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--role-color); margin-bottom: 10px;
+  }
+  .pcard {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; position: relative; margin-bottom: 8px;
+  }
+  .pcard.titolare { border-color: var(--role-color); box-shadow: 0 0 0 1px var(--role-color); }
+  .pcard.backup { padding: 8px 10px; }
+  .pcard-tag {
+    font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--role-color); margin-bottom: 6px;
+  }
+  .pcard.backup .pcard-tag { margin-bottom: 2px; }
+  .pcard-name { font-size: 0.8rem; font-weight: 650; line-height: 1.25; margin-bottom: 6px; }
+  .pcard.backup .pcard-name { font-size: 0.72rem; margin-bottom: 2px; }
+  .pcard-score { font-size: 1.3rem; font-weight: 800; color: var(--role-color); font-variant-numeric: tabular-nums; }
+  .pcard.backup .pcard-score { font-size: 0.9rem; }
+  .pcard-range { font-size: 0.62rem; color: var(--muted); margin-bottom: 6px; }
+  .pcard.backup .pcard-range { margin-bottom: 0; }
+  .pcard-match { font-size: 0.66rem; color: var(--text); opacity: 0.8; line-height: 1.3; }
+  .pcard.backup .pcard-match { display: none; }
+  .empty { color: var(--muted); font-size: 0.8rem; }
+  .footer { margin-top: 32px; color: var(--muted); font-size: 0.72rem; }
+</style>
+</head>
+<body>
+<h1>Best Five — KLEAGUE</h1>
+<p class="subhead">Generato 30/07/2026 17:07Z — titolare + 2 backup per ruolo, pool TUTTI i giocatori della lega (discovery globale, non solo posseduti).</p>
+<div class="formazione-row">
+<div class="ruolo-colonna"><div class="role-title" style="--role-color:#8b7cf6">PORTIERE</div><div class="pcard titolare" style="--role-color:#8b7cf6"><div class="pcard-tag">TITOLARE</div><div class="pcard-name">jeong-hoon-kim-2001-04-20</div><div class="pcard-score">53</div><div class="pcard-range">37-78 pt attesi</div><div class="pcard-match">anyang-anyang vs ulsan-ulsan</div></div><div class="pcard backup" style="--role-color:#8b7cf6"><div class="pcard-tag">BACKUP</div><div class="pcard-name">bum-keun-song</div><div class="pcard-score">52</div><div class="pcard-range">37-66 pt attesi</div><div class="pcard-match">jeonbuk-motors-jeonju vs seoul-seoul</div></div><div class="pcard backup" style="--role-color:#8b7cf6"><div class="pcard-tag">BACKUP</div><div class="pcard-name">da-sol-kim</div><div class="pcard-score">52</div><div class="pcard-range">40-71 pt attesi</div><div class="pcard-match">anyang-anyang vs ulsan-ulsan</div></div></div>
+<div class="ruolo-colonna"><div class="role-title" style="--role-color:#3aa1e8">DIFENSORE</div><div class="pcard titolare" style="--role-color:#3aa1e8"><div class="pcard-tag">TITOLARE</div><div class="pcard-name">gi-hyuk-lee</div><div class="pcard-score">59</div><div class="pcard-range">41-73 pt attesi</div><div class="pcard-match">gangwon-gangneung vs bucheon-1995-bucheon</div></div><div class="pcard backup" style="--role-color:#3aa1e8"><div class="pcard-tag">BACKUP</div><div class="pcard-name">joon-hyuck-kang</div><div class="pcard-score">59</div><div class="pcard-range">40-77 pt attesi</div><div class="pcard-match">gangwon-gangneung vs bucheon-1995-bucheon</div></div><div class="pcard backup" style="--role-color:#3aa1e8"><div class="pcard-tag">BACKUP</div><div class="pcard-name">marko-tuci</div><div class="pcard-score">57</div><div class="pcard-range">40-81 pt attesi</div><div class="pcard-match">gangwon-gangneung vs bucheon-1995-bucheon</div></div></div>
+<div class="ruolo-colonna"><div class="role-title" style="--role-color:#2fbf8f">CENTROCAMPISTA</div><div class="pcard titolare" style="--role-color:#2fbf8f"><div class="pcard-tag">TITOLARE</div><div class="pcard-name">dong-kyung-lee</div><div class="pcard-score">61</div><div class="pcard-range">43-72 pt attesi</div><div class="pcard-match">ulsan-ulsan vs anyang-anyang</div></div><div class="pcard backup" style="--role-color:#2fbf8f"><div class="pcard-tag">BACKUP</div><div class="pcard-name">matheus-oliveira-santos</div><div class="pcard-score">60</div><div class="pcard-range">40-77 pt attesi</div><div class="pcard-match">anyang-anyang vs ulsan-ulsan</div></div><div class="pcard backup" style="--role-color:#2fbf8f"><div class="pcard-tag">BACKUP</div><div class="pcard-name">bong-soo-kim</div><div class="pcard-score">58</div><div class="pcard-range">44-66 pt attesi</div><div class="pcard-match">daejeon-citizen-daejeon vs gwangju-gwangju</div></div></div>
+<div class="ruolo-colonna"><div class="role-title" style="--role-color:#ef5b5b">ATTACCANTE</div><div class="pcard titolare" style="--role-color:#ef5b5b"><div class="pcard-tag">TITOLARE</div><div class="pcard-name">masatoshi-ishida</div><div class="pcard-score">61</div><div class="pcard-range">42-79 pt attesi</div><div class="pcard-match">daejeon-citizen-daejeon vs gwangju-gwangju</div></div><div class="pcard backup" style="--role-color:#ef5b5b"><div class="pcard-tag">BACKUP</div><div class="pcard-name">dong-kyung-lee</div><div class="pcard-score">59</div><div class="pcard-range">41-70 pt attesi</div><div class="pcard-match">ulsan-ulsan vs anyang-anyang</div></div><div class="pcard backup" style="--role-color:#ef5b5b"><div class="pcard-tag">BACKUP</div><div class="pcard-name">jin-su-seo</div><div class="pcard-score">59</div><div class="pcard-range">43-80 pt attesi</div><div class="pcard-match">daejeon-citizen-daejeon vs gwangju-gwangju</div></div></div>
+</div>
+<p class="footer">Script separato e READ-ONLY rispetto alla pipeline di produzione — non tiene conto di budget/anti-stack/sinergie/multi-lineup.</p>
+</body>
+</html>
