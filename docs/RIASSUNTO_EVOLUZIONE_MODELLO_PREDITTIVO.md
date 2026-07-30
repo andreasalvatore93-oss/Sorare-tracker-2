@@ -4754,4 +4754,63 @@ Tutto pushato su `origin/main`. Commit principali: fix discovery (`6c88bc77e0`,
 (`d880de6d26`, e il fix `--no-rebase` sui due workflow discovery), griglia allargata
 (`aed9157041`), rimozione vecchi grid_search (`2f7afcc089`), aggregazione finale
 (`7a7aae1b3b`). Nessun parametro di produzione modificato.
+
+### F. HANDOFF ESPLICITO per la prossima sessione — decisione presa via popup, NON ANCORA
+applicata al codice, priorità massima quando si riprende
+
+L'utente ha scelto via `AskUserQuestion` (popup, fine sessione) QUALI delle 5 anti-sinergie
+cross-team del punto 37 sopra aggiungere alla produzione. Risposta: **def-fwd, gk-mid, def-mid
+SÌ** (i 3 segnali più forti/solidi), **mid-mid e fwd-mid NO** (troppo deboli). Sulla domanda
+granulari (punto 38) l'utente non ha espresso preferenza — la raccomandazione data (nessun
+bonus granulare nuovo, rischio overfitting su 406 confronti) resta quindi quella da seguire in
+assenza di indicazione contraria, ma non è stata confermata esplicitamente.
+
+**Cosa fare, esattamente, quando si riprende** (analisi già fatta, non ripartire da zero):
+
+Il meccanismo esiste già in `formazione_mls/build_formazione_finale.py` (righe ~283-321,
+`CROSS_TEAM_PENALTY_BY_PAIR` + `_cross_team_penalty()`), aggiunto il 28/07 su un campione più
+piccolo (25 leghe/1213 partite). **Solo questo file conta**: `generatore_formazioni/
+build_formazione_globale.py` importa `formazione_mls/build_formazione_finale.py` come modulo
+condiviso per TUTTE le leghe (verificato in sessione precedente) — le 25 copie nelle altre
+cartelle `formazione_<lega>/build_formazione_finale.py` sono legacy/non chiamate dalla pipeline
+reale (eccetto una sincronizzazione manuale fatta una volta su richiesta esplicita per
+`formazione_kleague/` "per coerenza", non necessaria funzionalmente).
+
+1. **DEF-FWD**: aggiornare il valore nel dict `CROSS_TEAM_PENALTY_BY_PAIR` — oggi
+   `frozenset(('DEF','FWD')): 3` (basato su -0.126 di 25 leghe), il dato di oggi (30/07, 4845
+   coppie) dà **-0.195**, più forte. Scala ~20x → penalty **4** (era 3).
+2. **DEF-MID**: **AGGIUNGERE come voce nuova** — non c'era (esclusa il 28/07 per instabilità
+   split-half su un campione più piccolo). Oggi (30/07, 6021 coppie, il campione cross-team più
+   grande di tutti) risulta **-0.131**, significativa. Scala ~20x → penalty **3**.
+   `frozenset(('DEF','MID')): 3`.
+3. **GK-MID**: **NON serve nuovo codice** — è già coperto dal meccanismo ESISTENTE e diverso
+   (`ANTI_SYNERGY_PENALTY`, riga ~349 di `synergy_sort_key`: `if role in ('MID','FWD') and
+   gk_opponent_slug and team_slug == gk_opponent_slug: adjusted -= ANTI_SYNERGY_PENALTY`) — un
+   filtro DURO uguale per MID e FWD contro la squadra avversaria del portiere, indipendente
+   dalla forza specifica della correlazione. Il dato di oggi (gk-mid -0.143, significativo)
+   CONFERMA che questo filtro ha senso anche per MID, non solo FWD (per cui era stato pensato
+   in origine) — nessuna modifica di codice necessaria, solo presa d'atto che il filtro esiste
+   già e la richiesta dell'utente è già soddisfatta strutturalmente.
+4. **DEF-DEF (voce esistente, NON toccata oggi)**: attenzione, il dato di oggi (30/07, 3663
+   coppie) dà **-0.030, NON significativo** (p=0.067) — la voce attuale nel dict
+   (`frozenset(('DEF','DEF')): 3`, basata su -0.137 del 28/07) potrebbe essere superata da
+   dati più recenti/puliti. **NON rimossa in questa sessione** (l'utente non l'ha chiesto,
+   principio "non decidere da soli/un tema alla volta") — segnalare esplicitamente e chiedere
+   prima di toccarla.
+5. **MID-MID (voce esistente, NON toccata oggi)**: l'utente ha scelto di NON aggiungere/
+   aggiornare mid-mid (segnale oggi -0.082, più debole del -0.118 su cui si basa la voce
+   attuale `frozenset(('MID','MID')): 2`) — la voce ESISTENTE resta com'è, non modificata,
+   ma il dato che la sosteneva è oggi più debole. Stessa cautela del punto 4: non toccare senza
+   chiedere di nuovo.
+
+**Verifica da fare prima di committare**: `py_compile` sul file, poi idealmente un run reale
+(o almeno un controllo a vista con `build_formazione_finale.py` importato in una shell Python)
+per confermare che il nuovo dict non rompa nulla — nessun test automatico di non-regressione
+copre questo file specifico.
+
+**Fonte dati esatta per i nuovi valori** (per chi riprende e vuole verificare prima di
+applicare): output di `formazione_mls/diagnostics/measure_teammate_correlation.py`, sezione
+"Cross-team: GK vs ruoli di movimento della squadra AVVERSARIA" — rilanciabile in locale in
+pochi minuti (nessuna query API, solo cache già su disco), oppure vedi sez. 37 sopra per i
+numeri già estratti.
 confermata come la migliore misurata, tutto committato e pushato su `main`.

@@ -2,7 +2,53 @@
 
 Continuazione di `docs/BOT_PROFIT_RIASSUNTO_2026-07-29.md` (leggerlo per intero prima di riprendere, non solo l'ultima sezione).
 
-**Contesto invariato**: l'utente non ha un terminale, solo GitHub Desktop — ogni operazione git va fatta da Claude Code. Attenzione alle collisioni con la sessione parallela sulle formazioni (stessa working directory): durante questa sessione `git status` mostrava modifiche non mie in `formazione_mls/`, `calibrazione_globale/` — **non committarle mai insieme alle proprie**, vedi il pattern del worktree temporaneo nel riassunto del 28/07 sezione 5.
+---
+
+# ⭐ HANDOFF — leggere questa parte per prima
+
+## Stato al momento della chiusura
+
+**Tutto committato e pushato su `main`.** `git pull origin main` per ripartire, non serve nessun branch. Ultima run: **74, verde, 2m42s, zero HTTP 429** — il bot è in uno stato funzionante e migliore di come era all'inizio della sessione su entrambi i fronti richiesti.
+
+Due commit prodotti in questa sessione:
+1. `Bot Profit: rate limit risolto alla radice (barriera globale + ritmo adattivo) e verdetto d'acquisto per carta`
+2. `Bot Profit: viewer compatto col bottone che illumina i COMPRA ORA, e ritmo tarato sul Retry-After reale di Sorare`
+
+File toccati (solo questi, nient'altro): `scanners/bot_profit.py`, `scanners/bot_profit_viewer.html`, `scanners/bot_profit_telegram_notify.py`, `.github/workflows/bot_profit.yml`, questo documento. Più `bot_profit_roster_cache.json`, generato e committato dal bot stesso durante le run.
+
+## Regole di lavoro imposte dall'utente (valgono anche per chi continua)
+
+1. **Avvisare SEMPRE prima di lanciare qualunque run GitHub.** Vincolo posto esplicitamente in corsa in questa sessione. Le run 73 e 74 sono state entrambe autorizzate una per una.
+2. **L'utente non ha un terminale**, solo GitHub Desktop: ogni operazione git (commit/push/pull) va fatta da Claude Code, mai chiedergli di eseguire comandi.
+3. **Sessione parallela attiva sulla stessa working directory** (lavora su formazioni/modello predittivo). Durante questa sessione `git status` ha mostrato più volte modifiche non mie (`formazione_mls/`, `calibrazione_globale/`, `formazione_kleague/predict/*`, `best_five.py`): **non committarle mai insieme alle proprie**. Pattern usato con successo due volte qui: commit locale dei soli file propri → `git worktree add --detach <tmp> origin/main` → `git cherry-pick <commit>` → `git push origin HEAD:main` → `git worktree remove --force`. `origin/main` si è mosso sotto i piedi entrambe le volte, serve `git fetch` + `git rebase origin/main` dentro il worktree prima del push.
+4. Le run vanno lanciate con `gh workflow run bot_profit.yml --ref main -f git_ref=main` (tutti gli altri input hanno default corretti).
+
+## Cosa è stato fatto, in una riga ciascuno
+
+- **Rate limit**: causa individuata sui log (token bucket Sorare + `Retry-After` da 45s), risolta con barriera globale sul 429, ritmo adattivo AIMD e **cache roster su disco** — quest'ultima è la leva che ha davvero cambiato i numeri. Sezioni 1, 5-bis, 5-ter.
+- **Segnale d'acquisto**: nuove colonne `segnale` / `punteggio_occasione` / `motivo_segnale` / `aggiornato_il`, tarate su 3658 transazioni reali già nel repo. Sezione 2.
+- **Viewer**: bottone che illumina i COMPRA ORA + tabella compattata del 28%. Sezione 3.
+- **Due bug reali corretti**: righe sotto i 2,5 EUR sopravvissute nella classifica persistente (sezione 2, in fondo); `Retry-After` applicato anche agli straggler (sezione 5-bis, punto 3).
+
+## Cosa NON è stato fatto / da riprendere (in ordine di priorità)
+
+1. **Verificare la prima run con cache SCADUTA** (TTL 18h, quindi la mattina dopo): è l'unico pezzo del lavoro sul rate limit mai provato sul campo. Le correzioni post-run-73 dovrebbero portare le ondate da 4 a 1. Se non succede, la leva successiva è alzare `ROSTER_CACHE_HOURS` (vedi punto 3).
+2. **Chiedere all'utente se i COMPRA ORA hanno senso** guardando l'output reale. La taratura è statisticamente solida ma non ha ancora passato il suo giudizio su casi concreti — che è il metodo che ha funzionato meglio in tutte le sessioni precedenti (vedi i casi Fernández-Mercau e Jonathan Bond del 28/07).
+3. **`ROSTER_CACHE_HOURS`=18 è prudente, non misurato**: alzarlo a 48-72h renderebbe *tutte* le run come la 74 invece di una sì e una no. Da decidere con l'utente perché allunga la finestra in cui un giocatore trasferito resta sulla squadra vecchia (caso Leo Sauer, già in backlog).
+4. **`BUY_SIGNAL_MAX_PER_GRUPPO`=8 e `BUY_SIGNAL_SOGLIA_COMPRA`=10** scelti su UN solo snapshot: rivedere con più snapshot.
+5. **`TREND_RECENT_WINDOW_DAYS`/`TREND_FLAT_THRESHOLD_PERCENT`** (2gg/10%) mai ricalibrati — voce aperta dal 28/07. Ora il dataset per farlo c'è (`pattern_raw_transactions_*.csv`), non è più un problema di dati.
+6. **Estendere a tutti i campionati**: non affrontato in sé. Qui il bot è stato reso *capace* di reggerlo; l'aggiunta vera (whitelist squadre, gruppi di output) resta da fare ed è il motivo per cui l'utente ha chiesto il lavoro sul rate limit.
+
+## Trappole da non ricalpestare
+
+- **Non riproporre il filtro "salta le squadre lontane dalla partita"**: sembra la leva più grossa, è stato verificato sui dati e scartato (sezione 1, in fondo).
+- **Non fidarsi del confronto tra le durate delle run**: la run 72 a 4m37s non era "il bot veloce", era una run corta abbastanza da stare dentro il secchio pieno (la 71, stesso carico, era 7m23s). Guardare **429 e numero di richieste**, non i minuti.
+- **Non valutare il trend senza controllare per lo sconto**: senza controllo 'down' sembra il segnale migliore, ed è un artefatto di regressione verso la media (sezione 2).
+- Il simulatore del rate limiter (`stress_rl.py`, temporaneo, non nel repo) va usato con **tutte** le costanti di tempo scalate dello stesso fattore: la prima versione scalava il bucket ma non la barriera, e il test andava in timeout senza motivo apparente.
+
+---
+
+**Contesto invariato**: l'utente non ha un terminale, solo GitHub Desktop — ogni operazione git va fatta da Claude Code.
 
 ## 0. Richiesta dell'utente (un solo messaggio, poi lavoro in autonomia)
 
@@ -30,15 +76,21 @@ Due osservazioni che spiegano tutto:
 - **Run 72**: il primo 429 è scattato **esattamente 122 secondi dopo la prima query**, cioè dopo ~600 richieste al ritmo di 0,2s. La fase roster (78 squadre) ha occupato i primi 45 secondi.
 - **Run 66**: il log mostra un ciclo regolare — ~2 minuti puliti (0 429), poi ~2-3 minuti **quasi completamente bloccati** (minuti interi con 110-118 429 e **zero giocatori completati**), poi di nuovo puliti. Quattro cicli identici.
 
-È il comportamento di un **token bucket lato Sorare: capienza ~600 richieste, ricarica ~1,8 richieste al secondo**. Il ritmo fisso di 0,2s (5 req/s) è quindi ~3 volte oltre il sostenibile: una volta svuotato il secchio non esiste ritmo "sicuro" che tenga, e i 10 worker continuavano a sbattere contro il muro ognuno per conto proprio (ogni 429 costava fino a 2+4+16=22s di backoff SOLO a quel thread, mentre gli altri 9 generavano altri 429). Nella run 66, **835 429 su ~2000 richieste totali = il 42% del traffico buttato**.
+È il comportamento di un **token bucket lato Sorare: capienza ~600 richieste, ricarica ~1,8 richieste al secondo**.
+
+> ⚠️ **La stima della ricarica è stata poi corretta a ~1 richiesta/s dalla run 73 — vedi sezione 5-bis, che è la fonte aggiornata.** Le 1,8/s erano dedotte dal solo comportamento dei primi due minuti, cioè dal secchio pieno: è la velocità con cui si *svuota*, non quella con cui si *ricarica*. La capienza ~600 invece regge. Il resto dell'analisi qui sotto (la forma del problema e le contromisure) resta valido.
+
+Il ritmo fisso di 0,2s (5 req/s) è quindi ~3 volte oltre il sostenibile: una volta svuotato il secchio non esiste ritmo "sicuro" che tenga, e i 10 worker continuavano a sbattere contro il muro ognuno per conto proprio (ogni 429 costava fino a 2+4+16=22s di backoff SOLO a quel thread, mentre gli altri 9 generavano altri 429). Nella run 66, **835 429 su ~2000 richieste totali = il 42% del traffico buttato**.
 
 Questo spiega anche il sintomo che dava più fastidio all'utente: le raffiche disconnettevano lui stesso dal sito Sorare, perché il limite è per account.
 
 ### Cosa è stato fatto
 
-**A. Barriera globale sul 429.** Quando arriva un 429 si alza una pausa **condivisa da tutti i thread** (`_pace_blocked_until`), invece di far aspettare solo lo sfortunato. Un 429 non si moltiplica più per il numero di worker. I 429 che arrivano mentre la barriera è già alzata sono riconosciuti come coda della stessa ondata e non contano come nuova penalità — altrimenti 10 worker moltiplicherebbero per 10 la reazione a un singolo evento. Pausa iniziale 5s, raddoppia a ogni ondata fino a 45s, si dimezza quando il ritmo si riprende. `Retry-After` di Sorare rispettato se presente (solo forma numerica).
+**A. Barriera globale sul 429.** Quando arriva un 429 si alza una pausa **condivisa da tutti i thread** (`_pace_blocked_until`), invece di far aspettare solo lo sfortunato. Un 429 non si moltiplica più per il numero di worker. I 429 che arrivano mentre la barriera è già alzata sono riconosciuti come coda della stessa ondata e non contano come nuova penalità — altrimenti 10 worker moltiplicherebbero per 10 la reazione a un singolo evento. Pausa iniziale 5s, raddoppia a ogni ondata fino a 45s, si dimezza quando il ritmo si riprende. **`Retry-After` di Sorare ha la precedenza** su questa stima — e la run 73 ha poi mostrato che c'è davvero, e vale ~45s (vedi 5-bis): la pausa reale è quindi quasi sempre la sua, non la nostra.
 
 **B. Ritmo adattivo (AIMD, come il controllo di congestione TCP).** Si parte veloci (0,2s, che sfrutta la capienza iniziale del secchio), a ogni ondata l'intervallo si moltiplica per 1,6 (tetto 1,5s), e dopo 40 richieste consecutive riuscite si riavvicina al pavimento. **È questa la parte che regge l'aggiunta di nuovi campionati**: più volume non significa più 429, significa solo che il ritmo si assesta da solo dove Sorare lo consente, senza dover ritarare a mano un numero su una run passata.
+
+Il **pavimento** della ripresa non è però fisso (aggiunto dopo la run 73, vedi 5-bis): vale 0,2s finché la capienza iniziale regge, e sale a `GRAPHQL_MIN_INTERVAL_SECONDS_SAFE` (0,9s) dal primo 429 in poi.
 
 **C. Backoff locale rimosso.** `graphql_query` non dorme più 2/4/16s nel proprio thread: aspetta la barriera, che il bot avrebbe comunque rispettato. Di conseguenza `GRAPHQL_MAX_RETRIES` è passato da 3 a 5 — ritentare ora è quasi gratis, e riduce i giocatori persi per `rate_limited_max_retries_exceeded` (erano 30 nella run 66).
 
@@ -128,7 +180,7 @@ Rileggendo i CSV committati: **45 righe su 144 avevano un prezzo minimo sotto i 
 
 **Telegram**: intestazione per gruppo ("MLS: 8 da comprare ora"), fino a 3 pick con prezzo, guadagno atteso e motivo su riga propria, e il conteggio delle altre. Se non c'è nulla lo dice esplicitamente. Link al viewer invariato (raw.githack).
 
-## 4. Verifiche fatte (nessuna run Sorare consumata)
+## 4. Verifiche fatte PRIMA di consumare una run Sorare
 
 - **Viewer verificato dal vivo** in un browser reale su CSV veri (server locale): 8 righe gialle, 8 badge COMPRA ORA, 2 badge "dato non aggiornato", filtro funzionante (19 = 8 COMPRA + 11 buone), zero errori in console. *(Nota: nelle sessioni precedenti il browser di test non riusciva a caricare `file://` o `localhost` — con `preview_start` su un `python -m http.server` funziona.)*
 - **23 controlli automatici** sull'intera pipeline, tutti superati: ordinamento dei trend, effetto finestra, penalità partita imminente, sovrapprezzo/dato vecchio/partita passata a zero, monotonia della curva, tetto del punteggio, cache roster (scrittura/rilettura/invalidazione per soglia/disattivazione), scrittura dei 3 CSV, ordinamento per verdetto, nessun prezzo sotto soglia, tetto COMPRA ORA per gruppo, nessun COMPRA ORA su dati vecchi, colonne complete.
@@ -139,6 +191,7 @@ Rileggendo i CSV committati: **45 righe su 144 avevano un prezzo minimo sotto i 
 
 | Parametro | Default | Cosa fa |
 |---|---|---|
+| `GRAPHQL_MIN_INTERVAL_SECONDS_SAFE` | **0.9** (era 0.45) | ritmo sostenibile misurato: pavimento della ripresa dal primo 429 in poi |
 | `GRAPHQL_MAX_INTERVAL_SECONDS` | 1.5 | tetto del ritmo adattivo |
 | `GRAPHQL_PACE_BACKOFF_FACTOR` | 1.6 | quanto rallenta a ogni ondata |
 | `GRAPHQL_PACE_RECOVER_EVERY` | 40 | successi consecutivi prima di riaccelerare |
@@ -176,10 +229,37 @@ Conseguenze, tutte applicate:
 
 **Nota di metodo**: la run 72 a 4m37s non era "il bot veloce", era una run abbastanza corta da stare quasi tutta dentro il secchio pieno. Non è una velocità replicabile su carichi maggiori, e infatti la run 71 (stesso carico) era durata 7m23s con 291 429. Il confronto onesto per giudicare le prossime run è **429 e richieste totali**, non i minuti.
 
+## 5-ter. Run 74 — il risultato che chiude il tema rate limit
+
+Prima run con la cache roster **popolata** (verificato prima del lancio che il commit di checkout contenesse sia il codice nuovo sia le 78 squadre in cache). Esito:
+
+| | run 66 (a freddo, prima) | run 72 (miglior caso, prima) | run 73 (codice nuovo, cache vuota) | **run 74 (codice nuovo, cache piena)** |
+|---|---|---|---|---|
+| Durata | 16m58s | 4m37s | 10m37s | **2m42s** |
+| HTTP 429 | 835 | 36 | 22 | **0** |
+| Ondate (45s di fermo l'una) | — | — | 4 | **0** |
+| Ritmo finale | fisso 0,2s | fisso 0,2s | 0,89s | **0,20s (mai rallentato)** |
+| Roster da cache | — | — | 0/78 | **78/78, zero query** |
+
+**Zero 429, 2 minuti e 42 secondi.** Il bot non ha mai toccato il muro, quindi non ha mai pagato un `Retry-After` da 45s e non ha mai avuto motivo di rallentare: è rimasto a 0,2s per tutta la run.
+
+Perché ha funzionato, in ordine di importanza:
+
+1. **La cache roster ha tolto ~195 richieste su ~470** (78 squadre servite a costo zero). Il totale è sceso sotto la capienza iniziale del secchio, quindi il rate limit non è mai scattato. È la leva più grossa delle tre, ed è anche l'unica che **scala**: con tutti i campionati risparmierà oltre 1000 richieste per run invece di 195.
+2. La barriera globale e il ritmo adattivo non sono nemmeno entrati in funzione in questa run — restano la rete di sicurezza per quando il volume tornerà sopra la capienza (prima run dopo la scadenza della cache, o all'aggiunta di nuovi campionati). È lì che valgono i −97% misurati nel simulatore.
+3. Il filtro sul prezzo minimo ha ripulito la classifica: `0 escluse per minimo sotto 2.5EUR` (contro le 44-45 della run precedente) — le righe vecchie sotto soglia sono state espulse una volta per tutte.
+
+Segnali prodotti: **8 / 6 / 1 COMPRA ORA** su MLS / K-League / Eredivisie+Belgio. Notifica Telegram e commit finale: `success`.
+
+**Cosa NON dimostra questa run**: il comportamento quando la cache è scaduta (TTL 18h) e il volume torna pieno. Quella è la run 73, che con lo stesso volume di partenza aveva 4 ondate — con le correzioni fatte dopo (pavimento a 0,9s e `Retry-After` solo sulla nuova ondata) dovrebbe fermarsi a 1 ondata, ma **non è ancora stato verificato su una run vera**.
+
 ## 6. Stato e prossimi passi
 
-- **Nessuna run GitHub lanciata in questa sessione** (l'utente ha chiesto di essere avvisato sempre prima).
-- **La run di verifica è il prossimo passo naturale** e serve a confermare tre cose che il test simulato non può dimostrare: 1) i 429 reali crollano davvero come nel simulatore, 2) la cache roster viene committata e riletta alla run successiva (il risparmio si vede solo dalla SECONDA run in poi), 3) i COMPRA ORA su dati freschi hanno senso all'occhio dell'utente.
+- **Run lanciate in questa sessione: 73 e 74**, entrambe autorizzate esplicitamente dall'utente prima del lancio (è un vincolo che ha posto in corsa e vale anche per le sessioni future: **avvisare SEMPRE prima di lanciare qualunque run GitHub**).
+- Esito run 73 e correzioni che ne sono seguite: **sezione 5-bis**, che è la parte più importante di questo documento — è lì che si è scoperto il `Retry-After` da 45s e si è corretta la stima del ritmo sostenibile.
+- Esito run 74 (prima run con la cache roster popolata, il vero banco di prova del risparmio di richieste): **sezione 5-ter**.
+- **Da verificare alla prima run con cache scaduta** (dopo 18h, quindi la mattina dopo): che le correzioni post-run-73 riducano le ondate da 4 a 1. È l'unico pezzo del lavoro sul rate limit non ancora provato sul campo.
 - Da rivedere dopo qualche run reale: `BUY_SIGNAL_MAX_PER_GRUPPO`=8 e `BUY_SIGNAL_SOGLIA_COMPRA`=10 sono stati scelti guardando la distribuzione di UN solo snapshot (quello del 30/07 mattina) — vanno riguardati quando ci saranno più snapshot con la nuova colonna.
+- **`ROSTER_CACHE_HOURS`=18 è una scelta prudente, non misurata**: le medie L5/L10/L40 cambiano solo dopo una partita, quindi in teoria reggerebbe di più (2-3 giorni). Alzarla renderebbe *tutte* le run come la 74 invece di una sì e una no — ma va deciso con l'utente, perché allunga la finestra in cui un giocatore appena trasferito resta associato alla squadra vecchia (vedi il caso Leo Sauer già in backlog).
 - `TREND_RECENT_WINDOW_DAYS`/`TREND_FLAT_THRESHOLD_PERCENT` (2 giorni / 10%) restano **non ricalibrati** — voce aperta dal 28/07. Ora c'è il dataset per farlo (`pattern_raw_transactions`), non è più un ostacolo di dati ma di tempo.
 - Il tema "estendere a tutti i campionati" non è stato affrontato in sé: qui si è reso il bot **capace di reggerlo** (ritmo adattivo + cache roster). L'aggiunta vera delle leghe (whitelist squadre, gruppi di output) resta da fare.
