@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T11:09:39.299079Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) warren-steven-madrigal-molina: 46 pt attesi (35-69)
+   ORDINAMENTO: 42.64
+   SQUADRA: nashville-sc | AVVERSARIO: dc-united-washington-district-of-columbia
+======================================================================
+
+######################################################################
+# GIOCATORE: warren-steven-madrigal-molina
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: warren-steven-madrigal-molina (squadra: nashville-sc)
+Generato: 2026-07-30T11:09:39.298066Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-19 | ? vs ? | wc-qualification-concacaf | score=38.9 | peso=0.660
+  2026-02-18 | ATO vs NSH | concacaf-champions-league | score=43.7 | peso=0.678
+  2026-02-22 | NSH vs NE | mlspa | score=77.5 | peso=0.697
+  2026-03-01 | DAL vs NSH | mlspa | score=38.0 | peso=0.717
+  2026-03-11 | NSH vs MIA | concacaf-champions-league | score=41.4 | peso=0.737
+  2026-03-14 | CLB vs NSH | mlspa | score=32.2 | peso=0.758
+  2026-03-31 | ? vs ? | friendlies | score=35.0 | peso=0.779
+  2026-04-08 | NSH vs AME | concacaf-champions-league | score=39.5 | peso=0.801
+  2026-04-11 | CLT vs NSH | mlspa | score=45.7 | peso=0.824
+  2026-04-15 | AME vs NSH | concacaf-champions-league | score=38.6 | peso=0.847
+  2026-04-29 | NSH vs TIG | concacaf-champions-league | score=31.7 | peso=0.871
+  2026-05-02 | PHI vs NSH | mlspa | score=29.3 | peso=0.895
+  2026-05-06 | TIG vs NSH | concacaf-champions-league | score=27.2 | peso=0.920
+  2026-05-13 | NE vs NSH | mlspa | score=66.4 | peso=0.946
+  2026-05-18 | NSH vs LAFC | mlspa | score=68.7 | peso=0.973
+  2026-05-24 | NSH vs NYC | mlspa | score=36.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 43.16
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=16): 45.68 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 40.52 | Punteggio complessivo (granulari) medio: 2.63 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 1.68 (delta -0.07) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.48
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.7 - 66.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.10 (differenza: +2.38)
+Media score in casa: 49.17 | Media score fuori casa: 40.14
+Fattore casa/trasferta applicato: 0.994 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.2
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.061
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 45.6 vs media ultime 10: 41.8): 1.027
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: DC United | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 34.6 - 69.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 42.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.73
+Punteggio REALE ottenuto in quella partita: 36.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.6x+opp_sens=29.0+trend_int=1.3' (half_life=9.0, range_mult=1.6, opp_sens=29.0, trend_int=1.3)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.3    35.0     -9.3    23.6        SI
+   7        7      42.9    39.5     -3.4    22.2        SI
+   8        8      43.0    45.7     +2.7    20.4        SI
+   9        9      41.8    38.6     -3.2    18.9        SI
+  10       10      50.0    31.7    -18.3    17.7        NO
+  11       11      44.2    29.3    -14.9    17.5        SI
+  12       12      44.3    27.2    -17.1    17.5        SI
+  13       13      29.2    66.4    +37.2    17.6        NO
+  14       14      33.1    68.7    +35.6    21.9        NO
+  15       15      45.3    36.2     -9.1    24.8        SI
+
+MAE (errore assoluto medio): 15.08
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
