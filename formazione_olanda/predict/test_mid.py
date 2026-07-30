@@ -43,6 +43,7 @@ import sys
 import json
 import math
 import time
+import tempfile
 import datetime
 import requests
 
@@ -150,14 +151,52 @@ def log(msg):
     print(f"[{ts}] [test_mid] {msg}")
 
 
-MIN_QUERY_INTERVAL_SECONDS = 0.5  # pausa minima tra chiamate GraphQL consecutive, per non concentrare troppe richieste ravvicinate
+# Pacing ADATTIVO delle chiamate GraphQL (29/07 notte, misurato sui log della
+# run 30501219037): ogni giocatore e' un PROCESSO separato e fa ~4,6 chiamate
+# GraphQL, quindi con la pausa FISSA di 0,5s se ne andavano ~2,3s per giocatore
+# di sola attesa autoimposta -- su 865 giocatori, ~2000 secondi dei ~5400 di
+# lavoro totale della fase predict, cioe' la voce di costo piu' grande rimasta.
+# Nello stesso log: UN solo 429 su 106 chiamate, quindi il margine c'era.
+#
+# Ora la pausa PARTE bassa e si alza da sola al primo 429, con lo stato
+# condiviso su file tra i processi dello stesso runner (ogni giocatore e' un
+# processo nuovo: senza condividerlo, ognuno ripartirebbe dal valore basso e
+# l'adattamento non servirebbe a niente). Se Sorare protesta la pipeline
+# rallenta da sola fino al valore prudente di prima, invece di accumulare
+# errori: il caso peggiore e' il comportamento precedente, non uno peggiore.
+MIN_QUERY_INTERVAL_SECONDS = 0.2  # pausa di PARTENZA tra chiamate consecutive
+MAX_QUERY_INTERVAL_SECONDS = 0.8  # tetto, raggiunto dopo alcuni 429
+_PACING_FILE = os.path.join(
+    os.environ.get('RUNNER_TEMP') or tempfile.gettempdir(), 'sorare_pacing.txt')
 _last_query_ts = [0.0]
 
 
+def _pacing_corrente():
+    try:
+        with open(_PACING_FILE, encoding='utf-8') as f:
+            return min(MAX_QUERY_INTERVAL_SECONDS,
+                       max(MIN_QUERY_INTERVAL_SECONDS, float(f.read().strip())))
+    except (OSError, ValueError):
+        return MIN_QUERY_INTERVAL_SECONDS
+
+
+def _rallenta_pacing():
+    """Alza la pausa (e la rende visibile ai processi successivi dello stesso
+    runner). Chiamata solo quando Sorare risponde 429."""
+    nuovo = min(MAX_QUERY_INTERVAL_SECONDS, _pacing_corrente() * 2)
+    try:
+        with open(_PACING_FILE, 'w', encoding='utf-8') as f:
+            f.write(f'{nuovo}')
+    except OSError:
+        pass
+    return nuovo
+
+
 def _throttle_query():
+    intervallo = _pacing_corrente()
     elapsed = time.time() - _last_query_ts[0]
-    if elapsed < MIN_QUERY_INTERVAL_SECONDS:
-        time.sleep(MIN_QUERY_INTERVAL_SECONDS - elapsed)
+    if elapsed < intervallo:
+        time.sleep(intervallo - elapsed)
     _last_query_ts[0] = time.time()
 
 
@@ -190,8 +229,9 @@ def graphql_query(query, variables=None, operation_name=None):
             if resp.status_code == 429:
                 retry_after = resp.headers.get('Retry-After')
                 sleep_s = float(retry_after) if retry_after else backoff
+                _nuovo_pacing = _rallenta_pacing()
                 log(f"[GraphQL 429] {label} tentativo {attempt+1}/5, attesa {sleep_s:.1f}s "
-                    f"(dump: {debug_file})")
+                    f"(pacing alzato a {_nuovo_pacing:.2f}s) (dump: {debug_file})")
                 time.sleep(sleep_s)
                 backoff *= 2
                 continue
