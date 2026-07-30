@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T11:03:10.451858Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) mohammed-sofo: 33 pt attesi (31-39)
+   ORDINAMENTO: 28.87
+   SQUADRA: new-york-rb-secaucus-new-jersey | AVVERSARIO: orlando-city-lake-mary-florida
+======================================================================
+
+######################################################################
+# GIOCATORE: mohammed-sofo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mohammed-sofo (squadra: new-york-rb-secaucus-new-jersey)
+Generato: 2026-07-30T11:03:10.451631Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | RBNY vs RSL | mlspa | score=26.5 | peso=0.871
+  2025-08-24 | CLT vs RBNY | mlspa | score=14.0 | peso=0.895
+  2025-08-30 | RBNY vs CLB | mlspa | score=28.9 | peso=0.920
+  2025-09-14 | POR vs RBNY | mlspa | score=34.8 | peso=0.946
+  2026-03-14 | TOR vs RBNY | mlspa | score=33.1 | peso=0.973
+  2026-04-25 | CIN vs RBNY | mlspa | score=33.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 28.66
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=6): 40.06 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 31.81 | Punteggio complessivo (granulari) medio: -3.15 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 1.37 (delta -0.04) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 6.98
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.5 - 34.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 2.85 (differenza: +4.12)
+Media score in casa: 27.70 | Media score fuori casa: 28.80
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.057
+Fattore falli (casa/trasferta, da dati reali): 0.989
+Fattore duelli (casa/trasferta, da dati reali): 0.989
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.990
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: New York Red Bulls | Trasferta: Orlando City SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 33.2 (range 31.1 - 39.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 28.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 27.65
+Punteggio REALE ottenuto in quella partita: 33.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +5.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
