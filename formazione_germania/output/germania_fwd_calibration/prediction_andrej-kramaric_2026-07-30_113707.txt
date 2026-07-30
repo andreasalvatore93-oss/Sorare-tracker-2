@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T11:37:07.123923Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) andrej-kramaric: 58 pt attesi (37-80)
+   ORDINAMENTO: 61.64
+   SQUADRA: hoffenheim-sinsheim | AVVERSARIO: koln-koln
+======================================================================
+
+######################################################################
+# GIOCATORE: andrej-kramaric
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andrej-kramaric (squadra: hoffenheim-sinsheim)
+Generato: 2026-07-30T11:37:07.118408Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | B04 vs TSG | bundesliga-de | score=45.9 | peso=0.559
+  2025-09-13 | FCU vs TSG | bundesliga-de | score=73.0 | peso=0.574
+  2025-09-28 | SCF vs TSG | bundesliga-de | score=47.1 | peso=0.590
+  2025-10-19 | STP vs TSG | bundesliga-de | score=96.4 | peso=0.607
+  2025-10-25 | TSG vs FCH | bundesliga-de | score=90.5 | peso=0.624
+  2025-11-08 | TSG vs RBL | bundesliga-de | score=43.7 | peso=0.642
+  2025-12-13 | TSG vs HSV | bundesliga-de | score=41.1 | peso=0.660
+  2026-01-14 | TSG vs BMG | bundesliga-de | score=96.4 | peso=0.678
+  2026-01-17 | TSG vs B04 | bundesliga-de | score=42.9 | peso=0.697
+  2026-01-24 | SGE vs TSG | bundesliga-de | score=36.2 | peso=0.717
+  2026-01-31 | TSG vs FCU | bundesliga-de | score=80.1 | peso=0.737
+  2026-02-08 | BAY vs TSG | bundesliga-de | score=64.4 | peso=0.758
+  2026-02-14 | TSG vs SCF | bundesliga-de | score=49.4 | peso=0.779
+  2026-02-21 | KOE vs TSG | bundesliga-de | score=72.2 | peso=0.801
+  2026-02-28 | TSG vs STP | bundesliga-de | score=34.1 | peso=0.824
+  2026-03-07 | FCH vs TSG | bundesliga-de | score=76.2 | peso=0.847
+  2026-03-14 | TSG vs WOB | bundesliga-de | score=46.8 | peso=0.871
+  2026-04-10 | FCA vs TSG | bundesliga-de | score=39.9 | peso=0.895
+  2026-04-18 | TSG vs BVB | bundesliga-de | score=83.3 | peso=0.920
+  2026-04-25 | HSV vs TSG | bundesliga-de | score=37.7 | peso=0.946
+  2026-05-02 | TSG vs VFB | bundesliga-de | score=82.7 | peso=0.973
+  2026-05-09 | TSG vs SVW | bundesliga-de | score=72.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 61.41
+  di cui Punteggio decisivo (level_score) medio: 50.88 | Punteggio complessivo (granulari) medio: 10.53 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 5.67 (delta -0.33) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 20.49
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.9 - 83.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.24 (differenza: +1.25)
+Media score in casa: 63.63 | Media score fuori casa: 58.90
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.4
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.125
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 63.2 vs media ultime 10: 59.5): 1.019
+P(gioca): 64.71% (fonte: tasso di presenza storico (22/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FC Köln | Trasferta: TSG Hoffenheim
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.5 (range 37.0 - 80.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.69
+Punteggio REALE ottenuto in quella partita: 72.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.4x+opp_sens=29.0+trend_int=0.0+granulari' (half_life=30.0, range_mult=1.4, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      71.7    41.1    -30.6    30.6        SI
+   7        7      63.6    96.4    +32.8    30.9        NO
+   8        8      54.8    42.9    -11.9    33.0        SI
+   9        9      60.6    36.2    -24.4    32.8        SI
+  10       10      62.2    80.1    +17.9    33.3        SI
+  11       11      43.5    64.4    +20.9    32.6        SI
+  12       12      57.5    49.4     -8.1    31.0        SI
+  13       13      72.5    72.2     -0.3    30.1        SI
+  14       14      80.4    34.1    -46.3    29.1        NO
+  15       15      76.2    76.2     +0.0    29.9        SI
+  16       16      71.6    46.8    -24.8    29.4        SI
+  17       17      57.9    39.9    -18.0    28.8        SI
+  18       18      40.7    83.3    +42.6    28.8        NO
+  19       19      66.9    37.7    -29.2    29.0        NO
+  20       20      46.2    82.7    +36.5    29.2        NO
+  21       21      71.4    72.6     +1.2    29.3        SI
+
+MAE (errore assoluto medio): 21.60
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
