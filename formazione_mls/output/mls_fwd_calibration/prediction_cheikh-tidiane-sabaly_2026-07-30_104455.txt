@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:44:55.895235Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) cheikh-tidiane-sabaly: 47 pt attesi (34-69)
+   ORDINAMENTO: 47.87
+   SQUADRA: vancouver-whitecaps-vancouver-british-columbia | AVVERSARIO: los-angeles-fc-los-angeles-california
+======================================================================
+
+######################################################################
+# GIOCATORE: cheikh-tidiane-sabaly
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: cheikh-tidiane-sabaly (squadra: vancouver-whitecaps-vancouver-british-columbia)
+Generato: 2026-07-30T10:44:55.894277Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 54
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 19
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | MET vs STR | ligue-1-fr | score=32.0 | peso=0.660
+  2025-09-21 | ASM vs MET | ligue-1-fr | score=70.5 | peso=0.678
+  2025-09-28 | MET vs HAC | ligue-1-fr | score=32.4 | peso=0.697
+  2025-10-04 | MET vs OM | ligue-1-fr | score=43.9 | peso=0.717
+  2025-10-19 | TFC vs MET | ligue-1-fr | score=40.1 | peso=0.737
+  2025-10-26 | LIL vs MET | ligue-1-fr | score=37.6 | peso=0.758
+  2025-10-29 | MET vs RCL | ligue-1-fr | score=34.6 | peso=0.779
+  2025-11-02 | NAN vs MET | ligue-1-fr | score=75.1 | peso=0.801
+  2025-11-09 | MET vs NIC | ligue-1-fr | score=33.8 | peso=0.824
+  2025-11-23 | BRE vs MET | ligue-1-fr | score=40.2 | peso=0.847
+  2025-12-07 | AJA vs MET | ligue-1-fr | score=33.6 | peso=0.871
+  2026-04-05 | VAN vs POR | mlspa | score=34.3 | peso=0.895
+  2026-04-11 | VAN vs NYC | mlspa | score=57.2 | peso=0.920
+  2026-04-26 | VAN vs RAP | mlspa | score=69.0 | peso=0.946
+  2026-05-03 | LA vs VAN | mlspa | score=44.8 | peso=0.973
+  2026-05-14 | DAL vs VAN | mlspa | score=60.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.67
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=16): 48.35 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 41.54 | Punteggio complessivo (granulari) medio: 5.13 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 5.16 (delta +0.89) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.47
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.6 - 69.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.90 (differenza: +1.56)
+Media score in casa: 53.50 | Media score fuori casa: 52.40
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.759
+Fattore falli (casa/trasferta, da dati reali): 0.991
+Fattore duelli (casa/trasferta, da dati reali): 1.012
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.023
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.019
+Fattore trend (media ultime 5: 53.1 vs media ultime 10: 48.3): 1.030
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Vancouver Whitecaps FC | Trasferta: Los Angeles FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.9 (range 33.9 - 69.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 47.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.57
+Punteggio REALE ottenuto in quella partita: 60.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +14.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=1.0+granulari' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.5    34.6     -7.9    17.6        SI
+   7        7      41.2    75.1    +33.9    16.5        NO
+   8        8      46.3    33.8    -12.5    22.9        SI
+   9        9      44.6    40.2     -4.4    22.1        SI
+  10       10      44.3    33.6    -10.7    20.7        SI
+  11       11      42.1    34.3     -7.8    20.0        SI
+  12       12      36.4    57.2    +20.8    19.2        NO
+  13       13      49.2    69.0    +19.8    19.3        NO
+  14       14      50.1    44.8     -5.3    21.3        SI
+  15       15      41.7    60.0    +18.3    20.2        SI
+
+MAE (errore assoluto medio): 14.14
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
