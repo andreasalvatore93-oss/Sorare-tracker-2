@@ -1,0 +1,123 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T22:15:12.452965Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) jonathan-osorio: 51 pt attesi (35-69)
+   SQUADRA: toronto-toronto | AVVERSARIO: new-york-city-new-york-new-york
+======================================================================
+
+######################################################################
+# GIOCATORE: jonathan-osorio
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jonathan-osorio (squadra: toronto-toronto)
+Generato: 2026-07-30T22:15:12.451618Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | PHI vs TOR | mlspa | score=35.6 | peso=0.529
+  2025-08-16 | TOR vs CLB | mlspa | score=62.2 | peso=0.543
+  2025-08-24 | ATL vs TOR | mlspa | score=54.4 | peso=0.559
+  2025-08-30 | TOR vs MTL | mlspa | score=73.3 | peso=0.574
+  2025-09-20 | CLB vs TOR | mlspa | score=84.9 | peso=0.590
+  2025-09-27 | TOR vs MIA | mlspa | score=46.9 | peso=0.607
+  2025-10-05 | CHI vs TOR | mlspa | score=42.4 | peso=0.624
+  2025-10-18 | TOR vs ORL | mlspa | score=71.1 | peso=0.642
+  2026-02-22 | DAL vs TOR | mlspa | score=74.1 | peso=0.660
+  2026-03-01 | VAN vs TOR | mlspa | score=34.9 | peso=0.678
+  2026-03-08 | CIN vs TOR | mlspa | score=52.2 | peso=0.697
+  2026-03-14 | TOR vs RBNY | mlspa | score=45.8 | peso=0.717
+  2026-03-21 | TOR vs CLB | mlspa | score=46.0 | peso=0.737
+  2026-04-04 | TOR vs RAP | mlspa | score=68.4 | peso=0.758
+  2026-04-11 | TOR vs CIN | mlspa | score=60.0 | peso=0.779
+  2026-04-18 | TOR vs ATX | mlspa | score=44.4 | peso=0.801
+  2026-04-22 | TOR vs PHI | mlspa | score=39.6 | peso=0.824
+  2026-04-25 | TOR vs ATL | mlspa | score=53.2 | peso=0.847
+  2026-05-02 | TOR vs SJ | mlspa | score=63.8 | peso=0.871
+  2026-05-09 | TOR vs MIA | mlspa | score=61.6 | peso=0.895
+  2026-05-16 | CLT vs TOR | mlspa | score=44.3 | peso=0.920
+  2026-05-24 | CHI vs TOR | mlspa | score=33.4 | peso=0.946
+  2026-07-22 | NE vs TOR | mlspa | score=34.6 | peso=0.973
+  2026-07-25 | DC vs TOR | mlspa | score=31.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 51.29
+  di cui Punteggio decisivo (level_score) medio: 39.69 | Punteggio complessivo (granulari) medio: 11.59 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 39.10 (delta -0.60)
+  Efficacia offensiva condizionata: delta venue +0.19, delta avversario -0.36 | Passaggio condizionato: delta venue -0.41, delta avversario -0.10 | Gol subiti condizionato: delta venue +0.19, delta avversario -0.03 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.44
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.6 - 68.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.78 (differenza: +1.66)
+Media score in casa: 56.64 | Media score fuori casa: 47.47
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.881
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.991
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore trend (media ultime 5: 41.1 vs media ultime 10: 46.6): 0.976
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-31T23:30
+Casa: New York City FC | Trasferta: Toronto FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.5 (range 34.8 - 68.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.47
+Punteggio REALE ottenuto in quella partita: 31.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -21.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.2 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2)
+Partite testate: 18 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.6    42.4     -3.2    18.0        SI
+   7        7      57.4    71.1    +13.7    17.9        SI
+   8        8      50.8    74.1    +23.3    17.5        NO
+   9        9      42.9    34.9     -8.0    17.2        SI
+  10       10      53.4    52.2     -1.2    18.6        SI
+  11       11      55.9    45.8    -10.1    17.7        SI
+  12       12      60.8    46.0    -14.8    17.2        SI
+  13       13      62.3    68.4     +6.1    16.8        SI
+  14       14      51.6    60.0     +8.4    16.5        SI
+  15       15      67.5    44.4    -23.1    15.9        NO
+  16       16      65.3    39.6    -25.7    15.7        NO
+  17       17      64.8    53.2    -11.6    15.8        SI
+  18       18      42.2    63.8    +21.6    15.2        NO
+  19       19      41.4    61.6    +20.2    14.9        NO
+  20       20      49.2    44.3     -4.9    14.6        SI
+  21       21      45.0    33.4    -11.6    14.4        SI
+  22       22      42.3    34.6     -7.7    15.1        SI
+  23       23      51.8    31.4    -20.4    15.4        NO
+
+MAE (errore assoluto medio): 13.09
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
