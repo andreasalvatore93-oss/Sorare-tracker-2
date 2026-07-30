@@ -302,11 +302,13 @@ def parse_riepilogo(path):
     if corrente:
         righe.append(corrente)
 
-    # Riordina per ORDINAMENTO se presente (stesso criterio usato dallo
-    # script sorgente), altrimenti mantiene l'ordine gia' presente nel file.
-    if any(r['ordinamento'] is not None for r in righe):
-        righe.sort(key=lambda r: (r['ordinamento'] if r['ordinamento'] is not None else -1e9),
-                   reverse=True)
+    # Si ordina sempre per pt_attesi (score MOSTRATO, con shrinkage) --
+    # ALLINEATO alla produzione (30/07, "Revert score_ordinamento": il
+    # ranking per ORDINAMENTO senza shrinkage duplicato qui aveva prodotto
+    # proprio il caso reale che ha fatto scattare il revert, un DEF con 4
+    # partite preferito a due backup piu' stabili). Il campo 'ordinamento'
+    # resta nel dizionario solo per diagnostica, non entra piu' nel sort.
+    righe.sort(key=lambda r: r['pt_attesi'], reverse=True)
     return righe
 
 
@@ -345,24 +347,136 @@ def parse_file_singolo_slug(path):
     return riga
 
 
+# ruolo -> nome file script in formazione_<lega>/consiglio/
+CONSIGLIO_SCRIPTS = {
+    'gk': 'build_consiglio_gk.py',
+    'def': 'build_consiglio_def.py',
+    'mid': 'build_consiglio_mid.py',
+    'fwd': 'build_consiglio.py',  # nome storico (FWD), stesso di ROLE_SCRIPTS['fwd']
+}
+
+CONSIGLIO_RIGA_RE = re.compile(r'^\d+\)\s+([\w\-]+):\s+(-?\d+)\s+pt\s+\((-?\d+)-(-?\d+)\)\s*$')
+
+_SLUG_DA_FILENAME_RE = re.compile(r'^prediction_(.+)_\d{4}-\d{2}-\d{2}_\d{6}\.txt$')
+
+
+def slugs_con_prediction(lega, ruolo):
+    """Slug per cui esiste almeno un prediction_<slug>_*.txt (formato NUOVO,
+    un file per giocatore) -- l'insieme da passare a build_consiglio_<ruolo>.py
+    via CONSIGLIO_DISCOVERY_FILE."""
+    slugs = []
+    for path in trova_output_per_slug(lega, ruolo):
+        m = _SLUG_DA_FILENAME_RE.match(os.path.basename(path))
+        if m:
+            slugs.append(m.group(1))
+    return sorted(slugs)
+
+
+def esegui_consiglio(lega, ruolo):
+    """Chiama DAVVERO build_consiglio_<ruolo>.py (lo stesso script della
+    pipeline di produzione, in subprocess) invece di duplicare qui la logica
+    di parsing/ordinamento -- zero drift quando quella cambia (30/07: la
+    produzione ha cambiato il criterio di ordinamento DEF/FWD mentre questo
+    file duplicava ancora quello vecchio, vedi 'Revert score_ordinamento').
+    Punta CONSIGLIO_DISCOVERY_FILE ai soli slug del pool Best Five (non i
+    posseduti) tramite un JSON temporaneo. Ritorna il path del
+    consiglio_*.txt generato, o None se non ci sono predizioni per questo
+    ruolo o lo script fallisce (in quel caso si ricade sul parsing diretto)."""
+    slugs = slugs_con_prediction(lega, ruolo)
+    if not slugs:
+        return None
+    script = CONSIGLIO_SCRIPTS.get(ruolo)
+    script_path = os.path.join(REPO_ROOT, f'formazione_{lega}', 'consiglio', script or '')
+    if not script or not os.path.exists(script_path):
+        return None
+
+    tmp_dir = os.path.join(REPO_ROOT, f'formazione_{lega}', 'output', 'best_five')
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
+    slugs_path = os.path.join(tmp_dir, f'_consiglio_slugs_{ruolo}.json')
+    with open(slugs_path, 'w', encoding='utf-8') as f:
+        json.dump(slugs, f)
+
+    env = dict(os.environ)
+    env['CONSIGLIO_DISCOVERY_FILE'] = slugs_path
+    proc = subprocess.run([sys.executable, script_path], cwd=REPO_ROOT, env=env,
+                           capture_output=True, text=True)
+    if proc.returncode != 0:
+        log(f"[{ruolo}] ATTENZIONE: {script} ha fallito (codice {proc.returncode}): "
+            f"{proc.stderr[-500:]} — ricado sul parsing diretto.")
+        return None
+    m = re.search(r'Salvato in:\s*(\S+)', proc.stdout)
+    if not m:
+        log(f"[{ruolo}] ATTENZIONE: {script} non ha stampato il path di output atteso "
+            f"— ricado sul parsing diretto.")
+        return None
+    # Il path stampato e' relativo alla cwd del SUBPROCESS (REPO_ROOT), non
+    # necessariamente alla cwd di QUESTO processo (es. nei test) -- risolto
+    # esplicitamente per evitare un FileNotFoundError silenzioso.
+    return os.path.join(REPO_ROOT, m.group(1))
+
+
+def parse_consiglio_output(path):
+    """Estrae il ranking gia' pronto (gia' ordinato da build_consiglio_<ruolo>.py
+    -- NESSUN re-sort qui, l'ordine del file e' quello giusto)."""
+    with open(path, 'r', encoding='utf-8') as f:
+        testo = f.read()
+
+    righe = []
+    corrente = None
+    for line in testo.splitlines():
+        m = CONSIGLIO_RIGA_RE.match(line.strip())
+        if m:
+            if corrente:
+                righe.append(corrente)
+            corrente = {
+                'slug': m.group(1),
+                'pt_attesi': int(m.group(2)),
+                'low': int(m.group(3)),
+                'high': int(m.group(4)),
+                'ordinamento': None,
+                'squadra': None,
+                'avversario': None,
+            }
+            continue
+        if corrente is not None:
+            m2 = RIGA_SQUADRA_RE.match(line)
+            if m2:
+                corrente['squadra'] = m2.group(1)
+                corrente['avversario'] = m2.group(2)
+                continue
+        if line.startswith('(') and 'esclusi' in line:
+            break
+    if corrente:
+        righe.append(corrente)
+    return righe
+
+
 def costruisci_best_five(lega, ruoli, n_backup):
     risultati = {}
     for ruolo in ruoli:
         path_all = trova_ultimo_output(lega, ruolo)
+        consiglio_path = None if path_all else esegui_consiglio(lega, ruolo)
         if path_all:
+            # Formato VECCHIO (pool intero, es. GK/DEF K League gia'
+            # committati prima del prefiltro starterOdds) -- parse_riepilogo
+            # ordina comunque per pt_attesi, vedi sopra.
             righe = parse_riepilogo(path_all)
             log(f"[{ruolo}] {len(righe)} giocatori trovati nel riepilogo di {os.path.basename(path_all)} "
                 f"(formato pool intero).")
+        elif consiglio_path:
+            righe = parse_consiglio_output(consiglio_path)
+            log(f"[{ruolo}] {len(righe)} giocatori trovati nel consiglio prodotto da "
+                f"{CONSIGLIO_SCRIPTS[ruolo]} (delegato alla produzione, zero logica duplicata).")
         else:
+            # Fallback: build_consiglio_<ruolo>.py non disponibile/fallito --
+            # parsing diretto dei file per-slug, sort per pt_attesi (allineato
+            # comunque al criterio attuale di produzione, vedi parse_riepilogo).
             paths = trova_output_per_slug(lega, ruolo)
             righe = [r for r in (parse_file_singolo_slug(p) for p in paths) if r]
-            if any(r['ordinamento'] is not None for r in righe):
-                righe.sort(key=lambda r: (r['ordinamento'] if r['ordinamento'] is not None else -1e9),
-                           reverse=True)
-            else:
-                righe.sort(key=lambda r: r['pt_attesi'], reverse=True)
+            righe.sort(key=lambda r: r['pt_attesi'], reverse=True)
             log(f"[{ruolo}] {len(righe)} giocatori trovati in {len(paths)} file prediction_<slug>_*.txt "
-                f"(formato prefiltro starterOdds).")
+                f"(fallback, parsing diretto).")
         if not righe:
             log(f"[{ruolo}] Nessun output trovato in {output_dir_per_ruolo(lega, ruolo)} "
                 f"— esegui con --run per generarlo.")
