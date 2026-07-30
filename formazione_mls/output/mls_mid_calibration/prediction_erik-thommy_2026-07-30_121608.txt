@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T12:16:08.551927Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) erik-thommy: 47 pt attesi (34-68)
+   SQUADRA: la-galaxy-los-angeles-california | AVVERSARIO: dallas-frisco-texas
+======================================================================
+
+######################################################################
+# GIOCATORE: erik-thommy
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: erik-thommy (squadra: la-galaxy-los-angeles-california)
+Generato: 2026-07-30T12:16:08.551699Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | SKC vs VAN | mlspa | score=58.1 | peso=0.871
+  2025-10-19 | SKC vs HOU | mlspa | score=42.4 | peso=0.895
+  2026-03-15 | LA vs SKC | mlspa | score=47.8 | peso=0.920
+  2026-03-22 | POR vs LA | mlspa | score=62.7 | peso=0.946
+  2026-04-11 | ATX vs LA | mlspa | score=74.9 | peso=0.973
+  2026-05-17 | SEA vs LA | mlspa | score=41.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 54.58
+  di cui Punteggio decisivo (level_score) medio: 39.34 | Punteggio complessivo (granulari) medio: 15.24 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 38.62 (delta -0.72)
+  Efficacia offensiva condizionata: delta venue +0.13, delta avversario -0.37 | Passaggio condizionato: delta venue -0.24, delta avversario +0.35 | Gol subiti condizionato: delta venue -0.06, delta avversario +0.19 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.16
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.2 - 74.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.08 (differenza: +4.08)
+Media score in casa: 47.80 | Media score fuori casa: 59.60
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.8
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.802
+Fattore falli (casa/trasferta, da dati reali): 0.991
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.994
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T02:30
+Casa: LA Galaxy | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.3 (range 33.9 - 67.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.48
+Punteggio REALE ottenuto in quella partita: 41.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
