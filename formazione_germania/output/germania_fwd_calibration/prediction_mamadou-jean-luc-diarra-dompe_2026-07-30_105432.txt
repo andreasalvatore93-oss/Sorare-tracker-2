@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:54:32.146034Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) mamadou-jean-luc-diarra-dompe: 61 pt attesi (46-80)
+   ORDINAMENTO: 57.51
+   SQUADRA: hamburger-sv-hamburg | AVVERSARIO: borussia-dortmund-dortmund
+======================================================================
+
+######################################################################
+# GIOCATORE: mamadou-jean-luc-diarra-dompe
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mamadou-jean-luc-diarra-dompe (squadra: hamburger-sv-hamburg)
+Generato: 2026-07-30T10:54:32.144875Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | HSV vs FCH | bundesliga-de | score=47.6 | peso=0.758
+  2025-09-28 | FCU vs HSV | bundesliga-de | score=47.3 | peso=0.779
+  2025-10-05 | HSV vs M05 | bundesliga-de | score=74.4 | peso=0.801
+  2025-10-18 | RBL vs HSV | bundesliga-de | score=52.8 | peso=0.824
+  2025-10-25 | HSV vs WOB | bundesliga-de | score=66.4 | peso=0.847
+  2025-11-02 | KOE vs HSV | bundesliga-de | score=86.7 | peso=0.871
+  2025-11-08 | HSV vs BVB | bundesliga-de | score=39.0 | peso=0.895
+  2025-11-22 | FCA vs HSV | bundesliga-de | score=45.1 | peso=0.920
+  2025-12-07 | HSV vs SVW | bundesliga-de | score=64.5 | peso=0.946
+  2026-01-17 | HSV vs BMG | bundesliga-de | score=43.0 | peso=0.973
+  2026-03-07 | WOB vs HSV | bundesliga-de | score=76.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 58.64
+  di cui Punteggio decisivo (level_score) medio: 41.95 | Punteggio complessivo (granulari) medio: 16.69 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 7.02 (delta -0.67) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.36
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.0 - 76.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.52 (differenza: +2.84)
+Media score in casa: 55.82 | Media score fuori casa: 61.72
+Fattore casa/trasferta applicato: 1.007 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.4
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.677
+Fattore falli (casa/trasferta, da dati reali): 1.010
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 53.7 vs media ultime 10: 59.6): 0.970
+P(gioca): 32.35% (fonte: tasso di presenza storico (11/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T16:30
+Casa: Borussia Dortmund | Trasferta: Hamburger SV
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 61.5 (range 45.8 - 79.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.54
+Punteggio REALE ottenuto in quella partita: 76.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +20.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      41.9    39.0     -2.9    17.8        SI
+   7        7      57.6    45.1    -12.5    19.6        SI
+   8        8      66.6    64.5     -2.1    19.1        SI
+   9        9      61.0    43.0    -18.0    18.0        NO
+  10       10      65.8    76.7    +10.9    17.9        SI
+
+MAE (errore assoluto medio): 9.29
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
