@@ -57,6 +57,10 @@ gruppo:
   - profit_tracking_mlspa_<timestamp_utc>.csv -> top 50 carte MLS per potenziale_score
   - profit_tracking_k-league-1_<timestamp_utc>.csv -> top 50 carte K-League per potenziale_score
   - profit_tracking_eredivisie_belgio_<timestamp_utc>.csv -> top 50 carte Eredivisie+Belgio MESCOLATE per potenziale_score
+  - profit_tracking_global_<timestamp_utc>.csv -> FIX 30/07 sera (richiesta
+    esplicita utente): le righe GIA' scritte nei 3 file sopra, rimescolate in
+    un'unica classifica ordinata per verdetto/punteggio_occasione (vedi
+    _write_global_csv) -- e' l'unico file che la notifica Telegram legge ora.
 Il nome include data/ora UTC (formato YYYYMMDD_HHMM); ad ogni riscrittura il
 file con timestamp precedente (PER QUEL GRUPPO) viene cancellato, quindi ne
 resta sempre e solo uno per gruppo (il piu' recente). Riscritto ad ogni commit
@@ -2221,16 +2225,23 @@ def _write_ranked_csv(rows_liquidi, path, label):
     per potenziale_score, dove il timing pesa 0.40 e poteva sotterrare una
     carta con uno sconto enorme ma la partita lontana)."""
     rows_sorted = _assegna_segnali(list(rows_liquidi))[:TOP_N_OUTPUT]
+    _write_plain_csv(rows_sorted, path)
+    n_compra = sum(1 for r in rows_sorted if r.get('segnale') == SEGNALE_COMPRA)
+    n_buona = sum(1 for r in rows_sorted if r.get('segnale') == SEGNALE_BUONA)
+    log(f"[csv] {label}: scritte {len(rows_sorted)}/{len(rows_liquidi)} carte in {path} "
+        f"-- {n_compra} da COMPRARE ORA, {n_buona} buone occasioni")
+    return rows_sorted
+
+
+def _write_plain_csv(rows_sorted, path):
+    """Scrive rows_sorted cosi' come sono, senza ricalcolare segnale/punteggio
+    (gia' assegnati da _assegna_segnali) -- usato sia per i file per gruppo sia
+    per il file globale, che si limita a rimescolare righe gia' valutate."""
     with open(path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
         writer.writeheader()
         for r in rows_sorted:
             writer.writerow(r)
-    n_compra = sum(1 for r in rows_sorted if r.get('segnale') == SEGNALE_COMPRA)
-    n_buona = sum(1 for r in rows_sorted if r.get('segnale') == SEGNALE_BUONA)
-    log(f"[csv] {label}: scritte {len(rows_sorted)}/{len(rows_liquidi)} carte in {path} "
-        f"-- {n_compra} da COMPRARE ORA, {n_buona} buone occasioni")
-    return len(rows_sorted)
 
 
 def _run_timestamp_utc():
@@ -2246,7 +2257,8 @@ def _cleanup_and_write_ranked_csv(rows_liquidi, dir_path, prefix, timestamp, lab
     for old_path in glob.glob(os.path.join(dir_path, f"{prefix}_*.csv")):
         os.remove(old_path)
     path = os.path.join(dir_path, f"{prefix}_{timestamp}.csv")
-    return path, _write_ranked_csv(rows_liquidi, path, label)
+    rows_sorted = _write_ranked_csv(rows_liquidi, path, label)
+    return path, len(rows_sorted), rows_sorted
 
 
 # FIX 29/07 quater (estensione K-League, richiesta esplicita utente: classifiche
@@ -2340,16 +2352,45 @@ def write_csv_snapshot():
     timestamp = _run_timestamp_utc()
 
     per_lega_riepilogo = []
+    rows_per_gruppo = []
     for group_name, group_leagues in OUTPUT_GROUPS.items():
         rows_gruppo = [r for r in rows_liquidi if r.get('league_slug') in group_leagues]
-        path, n_scritte = _cleanup_and_write_ranked_csv(
+        path, n_scritte, rows_scritte = _cleanup_and_write_ranked_csv(
             rows_gruppo, OUTPUT_DIR, f'profit_tracking_{group_name}', timestamp, group_name)
         per_lega_riepilogo.append(f"{group_name}: {n_scritte} nel file {path}")
+        rows_per_gruppo.extend(rows_scritte)
 
     log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
         f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni, "
         f"{esclusi_prezzo_basso} escluse per minimo sotto {MIN_PRICE_EUR_THRESHOLD}EUR "
         f"({'; '.join(per_lega_riepilogo)})")
+
+    _write_global_csv(rows_per_gruppo, timestamp)
+
+
+# FIX 30/07 sera (richiesta esplicita utente: troppe notifiche Telegram, una
+# per gruppo -- vuole un'unica classifica globale mescolata tra campionati e
+# la notifica solo su quella). Non ricalcola segnale/punteggio_occasione: li
+# riusa cosi' come sono gia' stati assegnati PER GRUPPO da _assegna_segnali
+# (quindi il tetto BUY_SIGNAL_MAX_PER_GRUPPO resta per lega, non diventa
+# globale) -- questo file e' una "selezione dentro la selezione": rimescola le
+# righe gia' scelte da ciascun gruppo in un'unica classifica ordinata per
+# verdetto/punteggio, non ne calcola una nuova.
+GLOBAL_OUTPUT_PREFIX = 'profit_tracking_global'
+
+
+def _write_global_csv(rows_tutti_i_gruppi, timestamp):
+    rows_sorted = sorted(
+        rows_tutti_i_gruppi,
+        key=lambda r: (SEGNALE_RANK.get(r.get('segnale'), 0), r['punteggio_occasione'],
+                       r['potenziale_score'] if r.get('potenziale_score') is not None else -999),
+        reverse=True)[:TOP_N_OUTPUT]
+    for old_path in glob.glob(os.path.join(OUTPUT_DIR, f"{GLOBAL_OUTPUT_PREFIX}_*.csv")):
+        os.remove(old_path)
+    path = os.path.join(OUTPUT_DIR, f"{GLOBAL_OUTPUT_PREFIX}_{timestamp}.csv")
+    _write_plain_csv(rows_sorted, path)
+    n_compra = sum(1 for r in rows_sorted if r.get('segnale') == SEGNALE_COMPRA)
+    log(f"[csv] globale: scritte {len(rows_sorted)} carte in {path} -- {n_compra} da COMPRARE ORA")
 
 
 # =====================================================================================
