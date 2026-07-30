@@ -675,6 +675,90 @@ def bin_round_robin(items, n_bin):
     return [b for b in bins if b]
 
 
+def _scrivi_gruppi_output(nome_var, gruppi):
+    """Scrive 'nome_var=<json compatto>' su GITHUB_OUTPUT (se presente) e su
+    stdout -- stesso formato per tutti gli step 'matrice' del workflow."""
+    output_line = f'{nome_var}=' + json.dumps(gruppi, separators=(',', ':'))
+    github_output = os.environ.get('GITHUB_OUTPUT')
+    if github_output:
+        with open(github_output, 'a', encoding='utf-8') as f:
+            f.write(output_line + '\n')
+    print(output_line)
+
+
+def _gruppi_da_items(items, n_bin):
+    """bin_round_robin + incapsulamento in payload base64/etichetta --
+    fattorizzato perche' usato sia per shardare il pool (prima delle
+    starterOdds) sia per shardare i sopravvissuti (prima del predict)."""
+    gruppi_raw = bin_round_robin(items, n_bin)
+    gruppi = []
+    for i, g in enumerate(gruppi_raw):
+        payload = base64.b64encode(json.dumps(g, separators=(',', ':')).encode()).decode()
+        etichetta = ' '.join(f"{it['ruolo']}/{it['slug']}" for it in g[:2])
+        if len(g) > 2:
+            etichetta += f' +{len(g) - 2}'
+        gruppi.append({'nome': f"{i + 1:02d} {etichetta}", 'g': payload})
+    return gruppi
+
+
+def cmd_matrice_pool(lega, ruoli, n_bin):
+    """NUOVO (30/07, parallelizzazione del prefiltro): sharda il pool GIA'
+    filtrato per qualita' in <= n_bin gruppi, SENZA controllare le
+    starterOdds qui -- quel controllo (costoso, una query per giocatore)
+    avviene poi in parallelo nel job 'prefiltro' a matrice, invece che in un
+    unico job sequenziale (era il vero collo di bottiglia: ~5-6 minuti per
+    ~280 candidati K League, misurato sui run reali del 30/07)."""
+    pool_piatto = []
+    for ruolo in ruoli:
+        pool = carica_pool_qualita_filtrato(lega, ruolo)
+        log(f"[{ruolo}] Pool globale (gia' filtrato per qualita'): {len(pool)} giocatori.")
+        pool_piatto.extend({'ruolo': ruolo, 'slug': s} for s in pool)
+    gruppi = _gruppi_da_items(pool_piatto, n_bin)
+    _scrivi_gruppi_output('gruppi_pool', gruppi)
+    log(f"[matrice-pool] {len(pool_piatto)} candidati totali (pre-starterOdds) in {len(gruppi)} gruppi.")
+
+
+def cmd_prefiltra_shard(lega, payload_b64, out_path):
+    """Controlla le starterOdds SOLO per lo shard ricevuto (una frazione del
+    pool totale) e scrive i sopravvissuti su disco, per essere caricati come
+    artifact e uniti nel job 'prefiltro_merge'. Gira in parallelo con gli
+    altri shard (fino a SLOT_CONCORRENTI insieme) -- stesso guadagno di
+    velocita' gia' visto per il predict."""
+    items = json.loads(base64.b64decode(payload_b64).decode())
+    per_ruolo = {}
+    for it in items:
+        per_ruolo.setdefault(it['ruolo'], []).append(it['slug'])
+    sopravvissuti = []
+    for ruolo, slugs in per_ruolo.items():
+        log(f"[{ruolo}] Prefiltro starterOdds >= {MIN_STARTER_ODDS_PREFILTER:.0%} "
+            f"su {len(slugs)} candidati di questo shard...")
+        survived = prefiltra_starter_odds(ruolo, slugs)
+        sopravvissuti.extend({'ruolo': ruolo, 'slug': s} for s in survived)
+    os.makedirs(os.path.dirname(out_path) or '.', exist_ok=True)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump(sopravvissuti, f)
+    log(f"Shard: {len(sopravvissuti)}/{len(items)} sopravvissuti, scritti in {out_path}")
+
+
+def cmd_merge_prefiltro(artifacts_dir, n_bin):
+    """Unisce i sopravvissuti di tutti gli shard del prefiltro (un file
+    survivors.json per artifact scaricato) e li risharda in <= n_bin gruppi
+    per il job predict -- STESSO output ('gruppi=', vedi _scrivi_gruppi_output)
+    di quando il prefiltro era un unico job sequenziale, cosi' il job
+    'predict' a valle non ha bisogno di nessuna modifica."""
+    sopravvissuti = []
+    if os.path.isdir(artifacts_dir):
+        for root, _dirs, files in os.walk(artifacts_dir):
+            for name in files:
+                if name == 'survivors.json':
+                    with open(os.path.join(root, name), encoding='utf-8') as f:
+                        sopravvissuti.extend(json.load(f))
+    gruppi = _gruppi_da_items(sopravvissuti, n_bin)
+    _scrivi_gruppi_output('gruppi', gruppi)
+    log(f"[merge-prefiltro] {len(sopravvissuti)} sopravvissuti totali (da tutti gli shard) "
+        f"in {len(gruppi)} gruppi per il predict.")
+
+
 def cmd_matrice(lega, ruoli, n_bin):
     """Prefiltro (qualita' gia' fatta in discovery, starterOdds qui) + shard
     in <= n_bin gruppi per il job predict a matrice -- stesso schema
@@ -683,21 +767,8 @@ def cmd_matrice(lega, ruoli, n_bin):
     doppio filtro e' piccolo (decine, non centinaia) e i tempi per giocatore
     abbastanza uniformi da non giustificare quella complessita'."""
     sopravvissuti = raccogli_sopravvissuti(lega, ruoli)
-    gruppi_raw = bin_round_robin(sopravvissuti, n_bin)
-    gruppi = []
-    for i, g in enumerate(gruppi_raw):
-        payload = base64.b64encode(json.dumps(g, separators=(',', ':')).encode()).decode()
-        etichetta = ' '.join(f"{it['ruolo']}/{it['slug']}" for it in g[:2])
-        if len(g) > 2:
-            etichetta += f' +{len(g) - 2}'
-        gruppi.append({'nome': f"{i + 1:02d} {etichetta}", 'g': payload})
-
-    output_line = 'gruppi=' + json.dumps(gruppi, separators=(',', ':'))
-    github_output = os.environ.get('GITHUB_OUTPUT')
-    if github_output:
-        with open(github_output, 'a', encoding='utf-8') as f:
-            f.write(output_line + '\n')
-    print(output_line)
+    gruppi = _gruppi_da_items(sopravvissuti, n_bin)
+    _scrivi_gruppi_output('gruppi', gruppi)
     log(f"[matrice] {len(sopravvissuti)} sopravvissuti totali in {len(gruppi)} gruppi "
         f"(target <= {n_bin}).")
 
@@ -736,18 +807,51 @@ def main():
     # sola e ritornano subito, non condividono il resto di main() (che serve
     # invece al job 'report', identico a prima: legge i file gia' su disco e
     # costruisce il ranking, senza bisogno di flag nuovi).
-    if '--matrice' in args:
-        ruoli_tutti = ('gk', 'def', 'mid', 'fwd')
+    ruoli_tutti = ('gk', 'def', 'mid', 'fwd')
+
+    def _ruoli_da_args():
         ruoli = ruoli_tutti
         if '--roles' in args:
             idx = args.index('--roles')
             richiesti = [r.strip() for r in args[idx + 1].split(',') if r.strip()]
             ruoli = tuple(r for r in richiesti if r in ruoli_tutti) or ruoli_tutti
+        return ruoli
+
+    def _n_bin_da_args():
         n_bin = SLOT_CONCORRENTI
         if '--n-bin' in args:
             idx = args.index('--n-bin')
             n_bin = int(args[idx + 1])
-        cmd_matrice(lega, ruoli, n_bin)
+        return n_bin
+
+    if '--matrice' in args:
+        cmd_matrice(lega, _ruoli_da_args(), _n_bin_da_args())
+        return
+
+    # --matrice-pool / --prefiltra-shard / --merge-prefiltro (30/07,
+    # parallelizzazione del prefiltro: richiesta esplicita utente dopo aver
+    # visto che il prefiltro sequenziale (--matrice, sopra) restava
+    # comunque 5-6 minuti su ~280 candidati K League -- il collo di
+    # bottiglia non era il predict ma le query starterOdds una per una.
+    # Sostituisce --matrice nel workflow con 3 step: shard del pool (qui),
+    # controllo starterOdds in parallelo (job a matrice), poi merge +
+    # shard dei sopravvissuti per il predict (identico a prima da qui in poi).
+    if '--matrice-pool' in args:
+        cmd_matrice_pool(lega, _ruoli_da_args(), _n_bin_da_args())
+        return
+
+    if '--prefiltra-shard' in args:
+        idx = args.index('--prefiltra-shard')
+        payload = args[idx + 1]
+        idx_out = args.index('--out')
+        out_path = args[idx_out + 1]
+        cmd_prefiltra_shard(lega, payload, out_path)
+        return
+
+    if '--merge-prefiltro' in args:
+        idx = args.index('--merge-prefiltro')
+        artifacts_dir = args[idx + 1]
+        cmd_merge_prefiltro(artifacts_dir, _n_bin_da_args())
         return
 
     if '--predict-shard' in args:

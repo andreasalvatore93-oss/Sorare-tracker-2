@@ -5,18 +5,25 @@ name: Best Five
 # Script separato e READ-ONLY rispetto alla pipeline di produzione
 # (formazione_giornata.yml) -- vedi best_five.py e docs/HANDOFF_BEST_FIVE.md.
 #
-# 3 job, STESSO schema discovery/predict/consiglio della pipeline di
+# 5 job, STESSO schema discovery/predict/consiglio della pipeline di
 # produzione (parallelizzazione a matrice, non piu' un unico job sequenziale
 # -- richiesta esplicita dell'utente dopo il primo run reale, 20 minuti per
 # 45 giocatori contro i ~5 minuti della pipeline principale):
-#   1) prefiltro: qualita' (gia' fatta in discovery) + starterOdds >= soglia,
-#      poi shard dei sopravvissuti in <= 20 gruppi (bin_round_robin).
-#   2) predict: matrice sui gruppi (max-parallel 20, stesso tetto reale
+#   1) pool_shard: qualita' (gia' fatta in discovery) sharda il pool in <= 20
+#      gruppi, SENZA controllare le starterOdds -- solo la lista dei candidati.
+#   2) prefiltro: matrice sui gruppi (max-parallel 20), controlla le
+#      starterOdds >= soglia SOLO per il proprio shard. NUOVO (30/07): prima
+#      era un job unico sequenziale, ~5-6 minuti su K League e OLTRE i 15
+#      minuti di timeout su MLS (pool piu' grande) -- era il vero collo di
+#      bottiglia, non il predict.
+#   3) prefiltro_merge: unisce i sopravvissuti di tutti gli shard, poi li
+#      risharda in <= 20 gruppi per il predict (bin_round_robin).
+#   4) predict: matrice sui gruppi (max-parallel 20, stesso tetto reale
 #      dell'account usato da formazione_giornata.yml), un subprocess
 #      TARGET_SLUG per giocatore dentro ogni gruppo. Riusa pipeline_artifacts.py
 #      (stage/apply) per passare i risultati tra job via artifact invece che
 #      via commit+push, stesso motivo/fix di velocita' gia' documentato li'.
-#   3) report: applica tutti gli artifact, costruisce il ranking finale
+#   5) report: applica tutti gli artifact, costruisce il ranking finale
 #      (nessuna chiamata API), salva su main, notifica Telegram col link
 #      all'HTML.
 
@@ -44,42 +51,81 @@ permissions:
   contents: write
 
 jobs:
-  prefiltro:
+  pool_shard:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     outputs:
-      gruppi: ${{ steps.matrice.outputs.gruppi }}
+      gruppi_pool: ${{ steps.matrice.outputs.gruppi_pool }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - id: matrice
+        name: Shard del pool (gia' filtrato per qualita' in discovery)
+        run: |
+          set -u
+          ARGS="${{ github.event.inputs.lega || 'kleague' }} --matrice-pool"
+          if [ -n "${{ github.event.inputs.roles }}" ]; then
+            ARGS="$ARGS --roles ${{ github.event.inputs.roles }}"
+          fi
+          python best_five.py $ARGS
+
+  prefiltro:
+    needs: pool_shard
+    if: needs.pool_shard.outputs.gruppi_pool != '' && needs.pool_shard.outputs.gruppi_pool != '[]'
+    name: prefiltro ${{ matrix.gruppo.nome }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        gruppo: ${{ fromJson(needs.pool_shard.outputs.gruppi_pool) }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install requests curl_cffi
-      - id: matrice
-        name: Qualita' (gia' in discovery) + starterOdds, poi shard
+      - name: starterOdds sul proprio shard
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           BEST_FIVE_MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds || '0.70' }}
           PYTHONUNBUFFERED: "1"
         run: |
-          set -u
-          ARGS="${{ github.event.inputs.lega || 'kleague' }} --matrice"
-          if [ -n "${{ github.event.inputs.roles }}" ]; then
-            ARGS="$ARGS --roles ${{ github.event.inputs.roles }}"
-          fi
-          # NON reindirizzare tutto lo stdout su $GITHUB_OUTPUT (bug reale,
-          # run 30560234622): best_five.py stampa anche i log ("[gk] Pool
-          # globale...") su stdout, che con >> finivano TUTTI dentro
-          # GITHUB_OUTPUT insieme alla riga "gruppi=..." -- formato non
-          # valido, il file deve contenere SOLO righe "chiave=valore". Lo
-          # script scrive gia' la riga "gruppi=..." direttamente nel file
-          # (vedi cmd_matrice, os.environ['GITHUB_OUTPUT']), qui basta
-          # lasciarlo girare normalmente.
-          python best_five.py $ARGS
+          mkdir -p _prefiltro_stage
+          python best_five.py "${{ github.event.inputs.lega || 'kleague' }}" \
+            --prefiltra-shard "${{ matrix.gruppo.g }}" --out _prefiltro_stage/survivors.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bf-surv-${{ strategy.job-index }}
+          path: _prefiltro_stage
+          retention-days: 1
+
+  prefiltro_merge:
+    needs: prefiltro
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      gruppi: ${{ steps.merge.outputs.gruppi }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          pattern: bf-surv-*
+      - id: merge
+        name: Unisci i sopravvissuti + shard per il predict
+        run: python best_five.py --merge-prefiltro _artifacts
 
   predict:
-    needs: prefiltro
-    if: needs.prefiltro.outputs.gruppi != '' && needs.prefiltro.outputs.gruppi != '[]'
+    needs: prefiltro_merge
+    if: needs.prefiltro_merge.outputs.gruppi != '' && needs.prefiltro_merge.outputs.gruppi != '[]'
     name: predict ${{ matrix.gruppo.nome }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -87,7 +133,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        gruppo: ${{ fromJson(needs.prefiltro.outputs.gruppi) }}
+        gruppo: ${{ fromJson(needs.prefiltro_merge.outputs.gruppi) }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -110,8 +156,8 @@ jobs:
           retention-days: 1
 
   report:
-    needs: [prefiltro, predict]
-    if: needs.prefiltro.outputs.gruppi != '' && needs.prefiltro.outputs.gruppi != '[]'
+    needs: [prefiltro_merge, predict]
+    if: needs.prefiltro_merge.outputs.gruppi != '' && needs.prefiltro_merge.outputs.gruppi != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
