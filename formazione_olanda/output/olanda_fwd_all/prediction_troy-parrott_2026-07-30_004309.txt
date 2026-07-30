@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T00:43:09.546771Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) troy-parrott: 53 pt attesi (30-69)
+   ORDINAMENTO: 53.19
+   SQUADRA: az-alkmaar | AVVERSARIO: ado-den-haag-den-haag
+======================================================================
+
+######################################################################
+# GIOCATORE: troy-parrott
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: troy-parrott (squadra: az-alkmaar)
+Generato: 2026-07-30T00:43:09.546127Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-18 | AJA vs AZ | eredivisie | score=68.1 | peso=0.559
+  2025-10-26 | AZ vs UTR | eredivisie | score=81.3 | peso=0.574
+  2025-11-02 | SPA vs AZ | eredivisie | score=43.1 | peso=0.590
+  2025-11-09 | AZ vs PSV | eredivisie | score=53.3 | peso=0.607
+  2025-11-23 | HEE vs AZ | eredivisie | score=60.0 | peso=0.624
+  2025-11-30 | TWE vs AZ | eredivisie | score=23.6 | peso=0.642
+  2025-12-07 | AZ vs GAE | eredivisie | score=63.5 | peso=0.660
+  2025-12-21 | FOR vs AZ | eredivisie | score=60.0 | peso=0.678
+  2026-01-10 | AZ vs VOL | eredivisie | score=25.7 | peso=0.697
+  2026-01-17 | ZWO vs AZ | eredivisie | score=37.1 | peso=0.717
+  2026-01-21 | AZ vs EXC | eredivisie | score=63.4 | peso=0.737
+  2026-01-25 | TEL vs AZ | eredivisie | score=64.2 | peso=0.758
+  2026-01-31 | AZ vs NEC | eredivisie | score=71.0 | peso=0.779
+  2026-02-08 | AZ vs AJA | eredivisie | score=49.1 | peso=0.801
+  2026-02-14 | EXC vs AZ | eredivisie | score=69.6 | peso=0.824
+  2026-02-22 | AZ vs SPA | eredivisie | score=68.0 | peso=0.847
+  2026-03-07 | PSV vs AZ | eredivisie | score=11.8 | peso=0.871
+  2026-03-15 | AZ vs HER | eredivisie | score=87.1 | peso=0.895
+  2026-03-22 | GRO vs AZ | eredivisie | score=33.9 | peso=0.920
+  2026-04-12 | AZ vs HEE | eredivisie | score=74.4 | peso=0.946
+  2026-05-03 | AZ vs TWE | eredivisie | score=31.5 | peso=0.973
+  2026-05-10 | FEY vs AZ | eredivisie | score=61.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 54.43
+  di cui Punteggio decisivo (level_score) medio: 50.17 | Punteggio complessivo (granulari) medio: 4.27 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.19 (delta +0.22) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.98
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.5 - 71.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.62 (differenza: +3.36)
+Media score in casa: 60.75 | Media score fuori casa: 48.43
+Fattore casa/trasferta applicato: 1.006 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.018
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.010
+Fattore trend (media ultime 5: 57.6 vs media ultime 10: 55.8): 1.010
+P(gioca): 73.33% (fonte: tasso di presenza storico (22/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T19:00
+Casa: AZ | Trasferta: HFC ADO Den Haag
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.5 (range 29.6 - 69.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.99
+Punteggio REALE ottenuto in quella partita: 61.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +7.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      69.8    63.5     -6.3    25.8        SI
+   7        7      61.5    60.0     -1.5    24.2        SI
+   8        8      77.4    25.7    -51.7    22.6        NO
+   9        9      63.4    37.1    -26.3    25.4        NO
+  10       10      56.7    63.4     +6.7    24.9        SI
+  11       11      58.5    64.2     +5.7    24.2        SI
+  12       12      42.7    71.0    +28.3    23.5        NO
+  13       13      49.0    49.1     +0.1    23.5        SI
+  14       14      61.5    69.6     +8.1    22.6        SI
+  15       15      63.2    68.0     +4.8    22.5        SI
+  16       16      40.5    11.8    -28.7    22.1        NO
+  17       17      75.1    87.1    +12.0    26.8        SI
+  18       18      53.2    33.9    -19.3    28.5        SI
+  19       19      54.3    74.4    +20.1    28.5        SI
+  20       20      47.3    31.5    -15.8    28.5        SI
+  21       21      37.4    61.3    +23.9    28.7        SI
+
+MAE (errore assoluto medio): 16.19
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

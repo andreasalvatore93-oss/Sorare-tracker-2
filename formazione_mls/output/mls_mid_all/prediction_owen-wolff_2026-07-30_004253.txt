@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T00:42:53.606486Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) owen-wolff: 54 pt attesi (32-71)
+   SQUADRA: austin-austin-texas | AVVERSARIO: colorado-rapids-denver-colorado
+======================================================================
+
+######################################################################
+# GIOCATORE: owen-wolff
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: owen-wolff (squadra: austin-austin-texas)
+Generato: 2026-07-30T00:42:53.605248Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | ATX vs HOU | mlspa | score=72.2 | peso=0.697
+  2025-08-17 | ATX vs DAL | mlspa | score=83.0 | peso=0.717
+  2025-08-23 | MTL vs ATX | mlspa | score=71.3 | peso=0.737
+  2025-08-31 | ATX vs SJ | mlspa | score=77.9 | peso=0.758
+  2025-09-07 | SKC vs ATX | mlspa | score=93.1 | peso=0.779
+  2025-09-14 | DAL vs ATX | mlspa | score=39.5 | peso=0.801
+  2025-09-21 | ATX vs SEA | mlspa | score=54.2 | peso=0.824
+  2025-10-05 | ATX vs STL | mlspa | score=71.9 | peso=0.847
+  2025-10-12 | ATX vs LAFC | mlspa | score=77.3 | peso=0.871
+  2025-10-30 | LAFC vs ATX | mlspa | score=80.4 | peso=0.895
+  2025-11-03 | ATX vs LAFC | mlspa | score=40.7 | peso=0.920
+  2026-05-17 | ATX vs SKC | mlspa | score=44.5 | peso=0.946
+  2026-05-23 | STL vs ATX | mlspa | score=41.2 | peso=0.973
+  2026-07-26 | HOU vs ATX | mlspa | score=45.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 62.53
+  di cui Punteggio decisivo (level_score) medio: 47.57 | Punteggio complessivo (granulari) medio: 14.96 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 47.87 (delta +0.30)
+  Efficacia offensiva condizionata: delta venue +0.08, delta avversario +0.08 | Passaggio condizionato: delta venue -0.04, delta avversario -0.65 | Gol subiti condizionato: delta venue -0.49, delta avversario +0.30 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 18.06
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.2 - 80.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.22 (differenza: +1.83)
+Media score in casa: 65.21 | Media score fuori casa: 61.85
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.9
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.212
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.988
+Fattore gol subiti (goals_conceded, con cap): 0.989
+Fattore trend (media ultime 5: 50.5 vs media ultime 10: 58.8): 0.972
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T01:30
+Casa: Colorado Rapids | Trasferta: Austin FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.6 (range 32.3 - 71.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 64.10
+Punteggio REALE ottenuto in quella partita: 45.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.2 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      75.6    54.2    -21.4    23.9        SI
+   7        7      69.4    71.9     +2.5    23.8        SI
+   8        8      57.1    77.3    +20.2    22.2        SI
+   9        9      56.4    80.4    +24.0    21.0        NO
+  10       10      60.2    40.7    -19.5    20.2        SI
+  11       11      89.2    44.5    -44.7    23.4        NO
+  12       12      65.7    41.2    -24.5    24.4        NO
+  13       13      57.7    45.6    -12.1    25.3        SI
+
+MAE (errore assoluto medio): 21.12
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

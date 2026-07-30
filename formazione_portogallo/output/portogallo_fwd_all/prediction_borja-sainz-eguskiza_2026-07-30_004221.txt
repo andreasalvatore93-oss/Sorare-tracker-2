@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T00:42:21.856920Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) borja-sainz-eguskiza: 48 pt attesi (32-72)
+   ORDINAMENTO: 50.10
+   SQUADRA: porto-porto | AVVERSARIO: alverca-alverca
+======================================================================
+
+######################################################################
+# GIOCATORE: borja-sainz-eguskiza
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: borja-sainz-eguskiza (squadra: porto-porto)
+Generato: 2026-07-30T00:42:21.856237Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: primeira-liga-pt (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-11 | POR vs VIG | primeira-liga-pt | score=65.7 | peso=0.717
+  2025-08-24 | POR vs CSP | primeira-liga-pt | score=79.0 | peso=0.737
+  2025-08-30 | SCP vs POR | primeira-liga-pt | score=33.5 | peso=0.758
+  2025-09-13 | POR vs NAC | primeira-liga-pt | score=74.8 | peso=0.779
+  2025-09-19 | RIO vs POR | primeira-liga-pt | score=44.9 | peso=0.801
+  2025-09-29 | ARO vs POR | primeira-liga-pt | score=67.8 | peso=0.824
+  2025-10-05 | POR vs SLB | primeira-liga-pt | score=40.1 | peso=0.847
+  2025-11-30 | POR vs EST | primeira-liga-pt | score=40.6 | peso=0.871
+  2025-12-15 | POR vs EST | primeira-liga-pt | score=38.7 | peso=0.895
+  2025-12-22 | ALV vs POR | primeira-liga-pt | score=77.8 | peso=0.920
+  2026-01-18 | VIG vs POR | primeira-liga-pt | score=30.7 | peso=0.946
+  2026-01-26 | POR vs GIL | primeira-liga-pt | score=39.0 | peso=0.973
+  2026-02-09 | POR vs SCP | primeira-liga-pt | score=34.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 50.40
+  di cui Punteggio decisivo (level_score) medio: 45.48 | Punteggio complessivo (granulari) medio: 4.92 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.24 (delta +0.28) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.68
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.5 - 74.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.28 (differenza: +1.40)
+Media score in casa: 51.55 | Media score fuori casa: 50.94
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.069
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.990
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 44.1 vs media ultime 10: 48.9): 0.971
+P(gioca): 38.24% (fonte: tasso di presenza storico (13/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T17:00
+Casa: FC Porto | Trasferta: Alverca
+Competizione: primeira-liga-pt
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.0 (range 32.1 - 72.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.98
+Punteggio REALE ottenuto in quella partita: 34.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -17.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.1    40.1     -7.0    22.8        SI
+   7        7      60.5    40.6    -19.9    23.4        SI
+   8        8      67.3    38.7    -28.6    23.3        NO
+   9        9      54.3    77.8    +23.5    23.1        NO
+  10       10      52.6    30.7    -21.9    24.3        SI
+  11       11      45.1    39.0     -6.1    25.4        SI
+  12       12      38.1    34.5     -3.6    24.9        SI
+
+MAE (errore assoluto medio): 15.80
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
