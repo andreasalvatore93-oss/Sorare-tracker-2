@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:11:07.800475Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) finn-jeltsch: 46 pt attesi (29-68)
+   ORDINAMENTO: 48.07
+   SQUADRA: stuttgart-stuttgart | AVVERSARIO: bayern-munchen-munchen
+======================================================================
+
+######################################################################
+# GIOCATORE: finn-jeltsch
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: finn-jeltsch (squadra: stuttgart-stuttgart)
+Generato: 2026-07-30T10:11:07.799381Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | VFB vs BMG | bundesliga-de | score=74.1 | peso=0.616
+  2025-09-13 | SCF vs VFB | bundesliga-de | score=12.4 | peso=0.637
+  2025-09-19 | VFB vs STP | bundesliga-de | score=60.9 | peso=0.660
+  2025-10-26 | VFB vs M05 | bundesliga-de | score=35.3 | peso=0.683
+  2025-11-09 | VFB vs FCA | bundesliga-de | score=52.8 | peso=0.707
+  2025-11-22 | BVB vs VFB | bundesliga-de | score=37.9 | peso=0.732
+  2025-12-14 | SVW vs VFB | bundesliga-de | score=86.4 | peso=0.758
+  2026-01-25 | BMG vs VFB | bundesliga-de | score=50.9 | peso=0.785
+  2026-02-01 | VFB vs SCF | bundesliga-de | score=54.2 | peso=0.812
+  2026-02-07 | STP vs VFB | bundesliga-de | score=84.0 | peso=0.841
+  2026-02-14 | VFB vs KOE | bundesliga-de | score=33.3 | peso=0.871
+  2026-03-01 | VFB vs WOB | bundesliga-de | score=49.9 | peso=0.901
+  2026-03-15 | VFB vs RBL | bundesliga-de | score=68.8 | peso=0.933
+  2026-03-22 | FCA vs VFB | bundesliga-de | score=36.4 | peso=0.966
+  2026-04-04 | VFB vs BVB | bundesliga-de | score=40.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 51.80
+  di cui Punteggio decisivo (level_score) medio: 37.29 | Punteggio complessivo (granulari) medio: 14.51 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -1.24, delta avversario -0.62 | Passaggio condizionato: delta venue +0.69, delta avversario -0.05 | Clean sheet/disimpegni condizionato: delta venue -0.69, delta avversario -0.91 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.22
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.3 - 74.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.42 (differenza: +3.80)
+Media score in casa: 52.18 | Media score fuori casa: 51.32
+Fattore casa/trasferta applicato: 1.008 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.3
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.680
+Fattore falli (casa/trasferta, da dati reali): 0.988
+Fattore duelli (casa/trasferta, da dati reali): 1.011
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.009
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.988
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.986
+Fattore gol subiti (goals_conceded, con cap): 0.985
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.993
+Fattore trend (media ultime 5: 45.7 vs media ultime 10: 54.2): 1.000
+P(gioca): 44.12% (fonte: tasso di presenza storico (15/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-28T18:30
+Casa: FC Bayern München | Trasferta: VfB Stuttgart
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.7 (range 29.2 - 68.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 48.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.86
+Punteggio REALE ottenuto in quella partita: 40.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.7    86.4    +33.7    22.8        NO
+   7        7      55.0    50.9     -4.1    27.9        SI
+   8        8      45.4    54.2     +8.8    25.7        SI
+   9        9      66.4    84.0    +17.6    23.8        SI
+  10       10      67.9    33.3    -34.5    25.6        NO
+  11       11      71.3    49.9    -21.3    25.7        SI
+  12       12      37.0    68.8    +31.8    24.2        NO
+  13       13      53.2    36.4    -16.8    23.6        SI
+  14       14      36.1    40.2     +4.1    23.4        SI
+
+MAE (errore assoluto medio): 19.20
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
