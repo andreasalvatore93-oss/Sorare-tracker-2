@@ -45,6 +45,7 @@ import re
 import json
 import glob
 import time
+import base64
 import subprocess
 import datetime
 
@@ -495,14 +496,125 @@ def formatta_report_html(lega, risultati, n_backup):
                                  role_blocks="\n".join(role_blocks), footer=footer)
 
 
+# Tetto REALE di job concorrenti dell'account GitHub Actions (stesso valore
+# di SLOT_CONCORRENTI in pipeline_artifacts.py, verificato sulla pipeline di
+# produzione — vedi commento li' per i dettagli della misura).
+SLOT_CONCORRENTI = 20
+
+
+def raccogli_sopravvissuti(lega, ruoli):
+    """Per ogni ruolo richiesto: pool gia' filtrato per qualita' + prefiltro
+    starterOdds. Ritorna una lista PIATTA di {'ruolo': r, 'slug': s} su tutti
+    i ruoli insieme (il job predict a matrice non distingue per ruolo, vedi
+    bin_round_robin)."""
+    sopravvissuti = []
+    for ruolo in ruoli:
+        pool = carica_pool_qualita_filtrato(lega, ruolo)
+        log(f"[{ruolo}] Pool globale (gia' filtrato per qualita'): {len(pool)} giocatori.")
+        log(f"[{ruolo}] Prefiltro starterOdds >= {MIN_STARTER_ODDS_PREFILTER:.0%} sulla prossima partita...")
+        survived = prefiltra_starter_odds(ruolo, pool)
+        log(f"[{ruolo}] Sopravvissuti al prefiltro: {len(survived)}/{len(pool)}.")
+        sopravvissuti.extend({'ruolo': ruolo, 'slug': s} for s in survived)
+    return sopravvissuti
+
+
+def bin_round_robin(items, n_bin):
+    """Distribuisce items in <= n_bin gruppi bilanciati per NUMERO (non per
+    costo stimato: a differenza della pipeline di produzione, qui non c'e'
+    ancora uno storico di costi misurati per giocatore -- vedi
+    pipeline_costi.json/LPT in pipeline_artifacts.py per il modello completo,
+    non replicato qui per semplicita', il pool e' molto piu' piccolo). Ordine
+    round-robin invece che a blocchi, cosi' un ruolo piu' lento (es. MID,
+    ~28s/giocatore contro i ~20s di FWD) non finisce concentrato in pochi bin."""
+    if not items:
+        return []
+    n_bin = max(1, min(n_bin, len(items)))
+    bins = [[] for _ in range(n_bin)]
+    for i, item in enumerate(items):
+        bins[i % n_bin].append(item)
+    return [b for b in bins if b]
+
+
+def cmd_matrice(lega, ruoli, n_bin):
+    """Prefiltro (qualita' gia' fatta in discovery, starterOdds qui) + shard
+    in <= n_bin gruppi per il job predict a matrice -- stesso schema
+    discovery/predict di formazione_giornata.yml (vedi pipeline_artifacts.py
+    'matrice'), senza pero' il modello di costo storico: qui il pool dopo il
+    doppio filtro e' piccolo (decine, non centinaia) e i tempi per giocatore
+    abbastanza uniformi da non giustificare quella complessita'."""
+    sopravvissuti = raccogli_sopravvissuti(lega, ruoli)
+    gruppi_raw = bin_round_robin(sopravvissuti, n_bin)
+    gruppi = []
+    for i, g in enumerate(gruppi_raw):
+        payload = base64.b64encode(json.dumps(g, separators=(',', ':')).encode()).decode()
+        etichetta = ' '.join(f"{it['ruolo']}/{it['slug']}" for it in g[:2])
+        if len(g) > 2:
+            etichetta += f' +{len(g) - 2}'
+        gruppi.append({'nome': f"{i + 1:02d} {etichetta}", 'g': payload})
+
+    output_line = 'gruppi=' + json.dumps(gruppi, separators=(',', ':'))
+    github_output = os.environ.get('GITHUB_OUTPUT')
+    if github_output:
+        with open(github_output, 'a', encoding='utf-8') as f:
+            f.write(output_line + '\n')
+    print(output_line)
+    log(f"[matrice] {len(sopravvissuti)} sopravvissuti totali in {len(gruppi)} gruppi "
+        f"(target <= {n_bin}).")
+
+
+def cmd_predict_shard(lega, payload_b64):
+    """Esegue le predizioni per lo shard ricevuto (lista di {'ruolo','slug'}),
+    un subprocess TARGET_SLUG per giocatore, in sequenza DENTRO questo job --
+    ma il job stesso gira in parallelo con gli altri shard della matrice
+    (fino a SLOT_CONCORRENTI insieme, gestito da GitHub Actions), che e' dove
+    sta il guadagno di velocita' reale rispetto al vecchio loop sequenziale
+    in un unico job."""
+    items = json.loads(base64.b64decode(payload_b64).decode())
+    log(f"Shard ricevuto: {len(items)} giocatori.")
+    for idx, item in enumerate(items, 1):
+        ruolo, slug = item['ruolo'], item['slug']
+        log(f"[{ruolo}] [{idx}/{len(items)}] Predizione per {slug}...")
+        run_prediction_su_slug(lega, ruolo, slug)
+        if idx < len(items):
+            time.sleep(2.0)
+
+
 def main():
     args = sys.argv[1:]
     if not args:
         print(f"Uso: python best_five.py <lega> [--run] [--backups N] [--roles gk,def,mid,fwd]\n"
+              f"     python best_five.py <lega> --matrice [--roles ...] [--n-bin N]   # job 'prefiltro'\n"
+              f"     python best_five.py <lega> --predict-shard <base64>              # job 'predict' (un bin)\n"
               f"Leghe supportate (discovery globale completa): {', '.join(LEGHE_SUPPORTATE)}")
         sys.exit(1)
 
     lega = args[0]
+
+    # Modalita' a matrice (30/07, parallelizzazione stile formazione_giornata.yml):
+    # tre job separati invece di un unico loop sequenziale -- vedi
+    # .github/workflows/best_five.yml. Queste due modalita' fanno UNA cosa
+    # sola e ritornano subito, non condividono il resto di main() (che serve
+    # invece al job 'report', identico a prima: legge i file gia' su disco e
+    # costruisce il ranking, senza bisogno di flag nuovi).
+    if '--matrice' in args:
+        ruoli_tutti = ('gk', 'def', 'mid', 'fwd')
+        ruoli = ruoli_tutti
+        if '--roles' in args:
+            idx = args.index('--roles')
+            richiesti = [r.strip() for r in args[idx + 1].split(',') if r.strip()]
+            ruoli = tuple(r for r in richiesti if r in ruoli_tutti) or ruoli_tutti
+        n_bin = SLOT_CONCORRENTI
+        if '--n-bin' in args:
+            idx = args.index('--n-bin')
+            n_bin = int(args[idx + 1])
+        cmd_matrice(lega, ruoli, n_bin)
+        return
+
+    if '--predict-shard' in args:
+        idx = args.index('--predict-shard')
+        cmd_predict_shard(lega, args[idx + 1])
+        return
+
     esegui = '--run' in args
     n_backup = 2
     if '--backups' in args:

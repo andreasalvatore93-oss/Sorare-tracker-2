@@ -5,10 +5,20 @@ name: Best Five
 # Script separato e READ-ONLY rispetto alla pipeline di produzione
 # (formazione_giornata.yml) -- vedi best_five.py e docs/HANDOFF_BEST_FIVE.md.
 #
-# Un solo job sequenziale (niente matrice): best_five.py gia' fa il lavoro di
-# orchestrazione lui stesso (prefiltro qualita'+starterOdds, poi un subprocess
-# per giocatore sopravvissuto). Primo run reale di questa architettura mai
-# testato dal vivo prima di questa run -- vedi handoff per i rischi noti.
+# 3 job, STESSO schema discovery/predict/consiglio della pipeline di
+# produzione (parallelizzazione a matrice, non piu' un unico job sequenziale
+# -- richiesta esplicita dell'utente dopo il primo run reale, 20 minuti per
+# 45 giocatori contro i ~5 minuti della pipeline principale):
+#   1) prefiltro: qualita' (gia' fatta in discovery) + starterOdds >= soglia,
+#      poi shard dei sopravvissuti in <= 20 gruppi (bin_round_robin).
+#   2) predict: matrice sui gruppi (max-parallel 20, stesso tetto reale
+#      dell'account usato da formazione_giornata.yml), un subprocess
+#      TARGET_SLUG per giocatore dentro ogni gruppo. Riusa pipeline_artifacts.py
+#      (stage/apply) per passare i risultati tra job via artifact invece che
+#      via commit+push, stesso motivo/fix di velocita' gia' documentato li'.
+#   3) report: applica tutti gli artifact, costruisce il ranking finale
+#      (nessuna chiamata API), salva su main, notifica Telegram col link
+#      all'HTML.
 
 on:
   workflow_dispatch:
@@ -30,24 +40,81 @@ permissions:
   contents: write
 
 jobs:
-  best_five:
+  prefiltro:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 15
+    outputs:
+      gruppi: ${{ steps.matrice.outputs.gruppi }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+        with: { python-version: "3.11" }
       - run: pip install requests curl_cffi
-      - name: Run best_five
+      - id: matrice
+        name: Qualita' (gia' in discovery) + starterOdds, poi shard
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -u
+          ARGS="${{ github.event.inputs.lega || 'kleague' }} --matrice"
+          if [ -n "${{ github.event.inputs.roles }}" ]; then
+            ARGS="$ARGS --roles ${{ github.event.inputs.roles }}"
+          fi
+          python best_five.py $ARGS >> "$GITHUB_OUTPUT"
+
+  predict:
+    needs: prefiltro
+    if: needs.prefiltro.outputs.gruppi != '' && needs.prefiltro.outputs.gruppi != '[]'
+    name: predict ${{ matrix.gruppo.nome }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        gruppo: ${{ fromJson(needs.prefiltro.outputs.gruppi) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - name: Predict shard
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
+        run: python best_five.py "${{ github.event.inputs.lega || 'kleague' }}" --predict-shard "${{ matrix.gruppo.g }}"
+      - if: always()
+        run: python pipeline_artifacts.py stage _artifact_stage
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bf-pred-${{ strategy.job-index }}
+          path: _artifact_stage
+          retention-days: 1
+
+  report:
+    needs: [prefiltro, predict]
+    if: needs.prefiltro.outputs.gruppi != '' && needs.prefiltro.outputs.gruppi != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          pattern: bf-pred-*
+      - run: python pipeline_artifacts.py apply _artifacts
+      - name: Costruisci report (nessuna chiamata API, solo parsing)
         run: |
           set -u
-          ARGS="${{ github.event.inputs.lega || 'kleague' }} --run --backups ${{ github.event.inputs.backups || '2' }}"
+          ARGS="${{ github.event.inputs.lega || 'kleague' }} --backups ${{ github.event.inputs.backups || '2' }}"
           if [ -n "${{ github.event.inputs.roles }}" ]; then
             ARGS="$ARGS --roles ${{ github.event.inputs.roles }}"
           fi
