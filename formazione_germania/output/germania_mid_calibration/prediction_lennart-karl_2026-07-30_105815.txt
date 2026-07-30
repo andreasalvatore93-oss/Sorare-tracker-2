@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:58:15.588641Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) lennart-karl: 54 pt attesi (30-75)
+   SQUADRA: bayern-munchen-munchen | AVVERSARIO: stuttgart-stuttgart
+======================================================================
+
+######################################################################
+# GIOCATORE: lennart-karl
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lennart-karl (squadra: bayern-munchen-munchen)
+Generato: 2026-07-30T10:58:15.587741Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | TSG vs BAY | bundesliga-de | score=60.0 | peso=0.737
+  2025-11-22 | BAY vs SCF | bundesliga-de | score=86.1 | peso=0.758
+  2025-11-29 | BAY vs STP | bundesliga-de | score=33.9 | peso=0.779
+  2025-12-14 | BAY vs M05 | bundesliga-de | score=77.6 | peso=0.801
+  2025-12-21 | FCH vs BAY | bundesliga-de | score=48.1 | peso=0.824
+  2026-01-24 | BAY vs FCA | bundesliga-de | score=24.0 | peso=0.847
+  2026-02-14 | SVW vs BAY | bundesliga-de | score=65.5 | peso=0.871
+  2026-03-06 | BAY vs BMG | bundesliga-de | score=80.8 | peso=0.895
+  2026-03-14 | B04 vs BAY | bundesliga-de | score=39.6 | peso=0.920
+  2026-03-21 | BAY vs FCU | bundesliga-de | score=32.5 | peso=0.946
+  2026-04-04 | SCF vs BAY | bundesliga-de | score=70.0 | peso=0.973
+  2026-05-16 | BAY vs KOE | bundesliga-de | score=67.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 56.99
+  di cui Punteggio decisivo (level_score) medio: 51.25 | Punteggio complessivo (granulari) medio: 5.74 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 50.86 (delta -0.39)
+  Efficacia offensiva condizionata: delta venue -0.48, delta avversario +1.37 | Passaggio condizionato: delta venue +1.03, delta avversario -0.35 | Gol subiti condizionato: delta venue -0.15, delta avversario -0.15 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 19.85
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.5 - 77.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.94 (differenza: +2.91)
+Media score in casa: 57.44 | Media score fuori casa: 56.64
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.761
+Fattore falli (casa/trasferta, da dati reali): 0.986
+Fattore duelli (casa/trasferta, da dati reali): 1.011
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.012
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 0.994
+Fattore trend (media ultime 5: 58.0 vs media ultime 10: 53.9): 1.015
+P(gioca): 35.29% (fonte: tasso di presenza storico (12/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-28T18:30
+Casa: FC Bayern München | Trasferta: VfB Stuttgart
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.3 (range 29.8 - 74.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.89
+Punteggio REALE ottenuto in quella partita: 67.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=20.0+trend_int=0.7+granulari' (half_life=9.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.4    65.5     +1.1    26.9        SI
+   7        7      55.7    80.8    +25.1    25.0        NO
+   8        8      43.2    39.6     -3.6    25.5        SI
+   9        9      56.2    32.5    -23.7    25.0        SI
+  10       10      39.7    70.0    +30.3    25.3        NO
+  11       11      66.0    67.2     +1.2    24.5        SI
+
+MAE (errore assoluto medio): 14.18
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
