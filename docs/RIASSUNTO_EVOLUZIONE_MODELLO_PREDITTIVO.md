@@ -376,6 +376,50 @@ salvo diversa indicazione esplicita nella riga.
 5. Se un test conferma la produzione attuale, annotarlo qui con la data e i numeri (anche un
    "riconfermato, nessun cambio" è informazione utile per non riproporlo).
 
+### H. Nuovi test aggiunti il 30/07 (matrice sinergie completa, mai fatta prima)
+
+Richiesti esplicitamente dall'utente dopo la sessione di ricalibrazione (sez. 37): "matrice
+completa" di correlazione compagni/avversari, non solo le coppie scelte a intuito. Script nuovi:
+`formazione_mls/diagnostics/measure_full_synergy_matrix.py` (granulari cross-ruolo completi +
+granulare-vs-totale + eventi decisivi) e `measure_synergy_conditional.py` (casa/trasferta,
+per-lega, momentum N→N+1).
+
+37. **Cross-team completo (le 5 coppie "rimandate" ora rifatte)** — riusa
+    `measure_teammate_correlation.py` (gia' calcola TUTTE le coppie cross-team, non solo
+    fwd-gk/gk-mid come mostrato nei run precedenti). Su ~30k coppie: def-mid -0.131*,
+    def-fwd -0.195*, fwd-mid -0.057*, mid-mid -0.082*, gk-mid -0.143* (tutte significative,
+    negative come atteso per un'anti-sinergia) — def-def -0.030 e fwd-fwd -0.052 NON
+    significative (p=0.067/0.081), def-gk/gk-gk vicine a zero. **Segnale reale per
+    estendere l'anti-sinergia oltre fwd-gk** (unica in produzione oggi) — NON ancora
+    applicato, serve una decisione esplicita dell'utente su quali soglie/bonus aggiungere
+    (stesso principio "non decidere da soli" gia' vissuto su questo tema).
+38. **Matrice granulari cross-ruolo/campo completa (`measure_full_synergy_matrix.py`)** —
+    invece delle 4 coppie ipotizzate a mano il 29/07, tutte le combinazioni (ruolo,campo)
+    testate. Trovato: gran parte delle correlazioni piu' forti (es. def:gc vs mid:gc +0.854,
+    def:gc vs def:cs +0.658) sono in realta' lo STESSO evento di squadra (gol subiti in
+    quella partita) visto da piu' angolazioni/giocatori — non sinergia "nuova" in senso
+    stretto, ma la conferma meccanica che gol_subiti/clean_sheet sono eventi condivisi di
+    squadra. Segnali piu' interessanti (non spiegabili da un singolo evento condiviso):
+    `fwd:of vs fwd:gran` (+0.439), `def:pa vs mid:pa` (+0.345) — attaccanti/centrocampisti
+    che "giocano bene insieme" in fase di possesso. Nessun cambio di produzione proposto:
+    servirebbe smontare quanto di questi segnali sia gia' catturato dal residuo generico
+    gia' in uso (sez. C standard) prima di aggiungere bonus specifici per sottocategoria.
+39. **Sinergia condizionata da casa/trasferta (`measure_synergy_conditional.py`)** — nessuna
+    differenza rilevante: +0.122 in casa vs +0.123 in trasferta. **Nessun cambio**: la
+    sinergia non ha bisogno di essere condizionata per venue.
+40. **Sinergia per lega (stabilita' cross-campionato)** — MLS +0.116, K League +0.121,
+    Germania +0.080 (ma n=52, campione minuscolo, non affidabile). Sostanzialmente stabile
+    tra le 2 leghe con dati sufficienti. **Nessun cambio**: il modello pooled (stesso bonus
+    per tutte le leghe) resta corretto.
+41. **Momentum di squadra (partita N vs N+1 di un compagno)** — quasi zero (-0.011, contro
+    +0.138 della sinergia ISTANTANEA stessa partita). **Conferma pulita**: l'effetto e'
+    davvero "stessa partita" (contesto condiviso: arbitro, ritmo, episodi), non una forma
+    di squadra che persiste nel tempo. Nessun cambio necessario, ma buona conferma che non
+    serve un fattore "trend di squadra" separato dal trend individuale gia' in uso.
+
+**Trovato collateralmente**: `nonregression_score_atteso_def.py`/`_fwd.py` continuano a fallire
+per il parsing di stringa obsoleto gia' segnalato in sez. 37 — non ancora corretto, backlog.
+
 ## 1. Contesto: cos'è il tool formazione (riassunto minimo)
 
 Sistema che, dato l'elenco delle carte MLS possedute dall'utente su Sorare (fantasy game calcio
