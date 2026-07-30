@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T07:19:19.255052Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) onur-bulut: 46 pt attesi (26-68)
+   ORDINAMENTO: 51.19
+   SQUADRA: istanbul-basaksehir-istanbul | AVVERSARIO: inter-turku-turku-abo
+======================================================================
+
+######################################################################
+# GIOCATORE: onur-bulut
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: onur-bulut (squadra: istanbul-basaksehir-istanbul)
+Generato: 2026-07-30T07:19:19.254047Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 40
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-31 | IBFK vs CHM | uefa-europa-conference-league | score=52.2 | peso=0.707
+  2025-08-07 | VIK vs IBFK | uefa-europa-conference-league | score=48.9 | peso=0.732
+  2025-08-13 | IBFK vs VIK | uefa-europa-conference-league | score=9.0 | peso=0.758
+  2025-08-17 | IBFK vs KAY | spor-toto-super-lig | score=29.9 | peso=0.785
+  2025-08-21 | IBFK vs UCR | uefa-europa-conference-league | score=36.6 | peso=0.812
+  2025-10-26 | ANT vs IBFK | spor-toto-super-lig | score=59.9 | peso=0.841
+  2025-10-31 | IBFK vs KOC | spor-toto-super-lig | score=83.9 | peso=0.871
+  2025-11-07 | GNÇ vs IBFK | spor-toto-super-lig | score=35.2 | peso=0.901
+  2025-11-24 | IBFK vs TS | spor-toto-super-lig | score=63.0 | peso=0.933
+  2025-12-14 | SAM vs IBFK | spor-toto-super-lig | score=52.4 | peso=0.966
+  2026-04-19 | TS vs IBFK | spor-toto-super-lig | score=72.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 50.46
+  di cui Punteggio decisivo (level_score) medio: 35.88 | Punteggio complessivo (granulari) medio: 14.58 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.65, delta avversario +0.00 | Passaggio condizionato: delta venue -0.16, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.37, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.89
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.9 - 72.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.50 (differenza: +6.39)
+Media score in casa: 45.76 | Media score fuori casa: 53.75
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.012
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 61.4 vs media ultime 10: 49.1): 1.000
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T16:00
+Casa: FC Inter Turku | Trasferta: İstanbul Başakşehir Futbol Kulübü
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.5 (range 25.9 - 68.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 51.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.84
+Punteggio REALE ottenuto in quella partita: 72.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +24.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.4x+opp_sens=29.0+trend_int=1.0' (half_life=9.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.5    83.9    +43.5    23.6        NO
+   7        7      55.4    35.2    -20.2    31.9        SI
+   8        8      34.1    63.0    +28.9    29.9        SI
+   9        9      44.5    52.4     +7.9    28.9        SI
+  10       10      46.6    72.2    +25.6    27.0        SI
+
+MAE (errore assoluto medio): 25.21
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
