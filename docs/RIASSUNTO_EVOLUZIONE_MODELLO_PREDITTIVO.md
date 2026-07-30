@@ -4864,3 +4864,52 @@ applicare): output di `formazione_mls/diagnostics/measure_teammate_correlation.p
 pochi minuti (nessuna query API, solo cache già su disco), oppure vedi sez. 37 sopra per i
 numeri già estratti.
 confermata come la migliore misurata, tutto committato e pushato su `main`.
+
+### G. Sessione 30/07 sera — fix appesi applicati, ottimizzazione congiunta testata e SCARTATA,
+stato a fine sessione (token esauriti, riprendere da qui)
+
+**Il punto F sopra (handoff cross-team) è ormai RISOLTO**: `CROSS_TEAM_PENALTY_BY_PAIR` in
+`formazione_mls/build_formazione_finale.py` aggiornato (def-fwd: 3→4, def-mid: 3 NUOVA voce,
+mid-mid invariato a 2, def-def NON toccato) — verificato nel codice, commit già su `main`.
+
+**Fix applicati e pushati oggi**:
+1. `discovery_fixture.py`: se GAMEWEEK/FIXTURE_SLUG non sono valorizzati, risolve
+   automaticamente la prossima giornata non ancora conclusa (prima falliva con "impossibile
+   risolvere la giornata").
+2. `SPLIT_SHRINK_K`/`SPLIT_SHRINK_K_GK` (fattore casa/trasferta) alzato 5.0→20.0, validato via
+   backtest su tutti e 4 i ruoli (MAE -0.2/-0.6%), propagato da MLS a tutte le 27 leghe
+   (resto_mondo esclusa).
+3. `ARENA_OPTIONAL_CAP` (tetto pratico formazioni opzionali Arena/All Stars per tipo) alzato
+   10→20 su richiesta esplicita utente, in `generatore_formazioni/build_formazione_globale.py`.
+
+**Testato e SCARTATO (non applicare senza nuova richiesta esplicita)**:
+- **Tetto massimo su `opponent_lambda_multiplier` per GK/DEF/MID** (estensione del fix FWD
+  1.0→0.4 di sessione precedente): testato con backtest walk-forward, il miglioramento è
+  minimo/rumoroso (0.1-0.4% MAE) e concettualmente più invasivo del caso FWD (avrebbe
+  disattivato il lato bonus del meccanismo). Script pronto per riprendere:
+  `formazione_mls/diagnostics/validate_opponent_lambda_cap_allroles.py [ruolo]`.
+- **Ottimizzazione CONGIUNTA (MILP) delle formazioni**, invece della scelta greedy sequenziale
+  attuale: primo giro di test aveva mostrato un guadagno enorme (+8/13%), ma era un **bug di
+  misurazione** (confronto tra totale CON bonus capitano e totale SENZA, non la stessa metrica
+  sui due lati). Ricalcolato correttamente: guadagno reale **0.3-0.7%**, non significativo.
+  Motivo principale per NON procedere anche col guadagno residuo positivo: il MILP ignora
+  completamente la sinergia/anti-stack tarata con Monte Carlo (serve ad alzare la probabilità
+  di superare le soglie fisse premio Arena/All Stars, non l'atteso puro) — **verificato
+  concretamente** (non solo in teoria) che la sinergia cambia davvero la selezione dei
+  giocatori in circa 1 formazione su 8 in un run reale
+  (`formazione_mls/diagnostics/check_synergy_selection_impact.py`, committato). Codice del
+  tentativo MILP scritto e poi interamente rimosso (revert) su richiesta esplicita utente.
+
+**Aperto per la prossima sessione, non urgente**:
+- Quantificare con un Monte Carlo mirato (riusando `estimate_threshold_win_probability_mc.py`
+  come base) l'impatto REALE della sinergia sulla probabilità di superare le soglie premio,
+  sulle formazioni dove sappiamo già che la selezione cambia (All Stars #4 del run di oggi come
+  caso concreto di partenza).
+- Slug competizione "Contender" (bassa priorità, mai iniziato): mai iniziata la scoperta via
+  `eligibleSo5Competitions` contenente `'seasonal-contenders'` (meccanismo identificato, script
+  non scritto).
+- DEF-DEF: dato di sessione precedente (30/07 mattina) mostrava -0.030 non significativo contro
+  il -0.137 su cui si basa la voce attuale nel dict (penalty 3) — non toccato, da rivalutare se
+  richiesto esplicitamente.
+
+Tutto pushato su `origin/main` a fine sessione, nessuna modifica pendente.
