@@ -294,10 +294,23 @@ def _match_key(row):
 # Scala ~20x la correlazione misurata, stessa convenzione di
 # SAME_TEAM_SYNERGY_BONUS_BY_PAIR (nudge
 # soft, mai un'esclusione). Chiave = coppia di ruoli non ordinata.
+#
+# AGGIORNAMENTO 30/07 (sez. 37/38 RIASSUNTO, ricalibrazione su 23.211 partite
+# dopo il fix anyPlayers->activePlayers, campione cross-team quasi triplicato
+# e piu' pulito -- decisione utente via popup a fine sessione): DEF-FWD
+# rimisurata piu' forte (-0.195, era -0.126) -> penalty 3->4. DEF-MID
+# rimisurata SIGNIFICATIVA e ora il campione cross-team piu' grande di tutti
+# (6021 coppie) da' -0.131 -> AGGIUNTA (era esclusa il 28/07 per instabilita'
+# split-half su un campione molto piu' piccolo). DEF-DEF oggi non
+# significativo (-0.030, p=0.067) e MID-MID piu' debole (-0.082): entrambi
+# lasciati INVARIATI su richiesta esplicita dell'utente (non decidere da soli
+# su voci esistenti senza conferma), nonostante il dato che le sosteneva sia
+# oggi piu' debole -- richiede conferma esplicita prima di toccarli.
 CROSS_TEAM_PENALTY_BY_PAIR = {
-    frozenset(('DEF', 'DEF')): 3,   # -0.137 * 20 ~= 2.7
-    frozenset(('DEF', 'FWD')): 3,   # -0.126 * 20 ~= 2.5
-    frozenset(('MID', 'MID')): 2,   # -0.118 * 20 ~= 2.4
+    frozenset(('DEF', 'DEF')): 3,   # -0.137 * 20 ~= 2.7 (28/07, non riconfermato oggi)
+    frozenset(('DEF', 'FWD')): 4,   # -0.195 * 20 ~= 3.9 (30/07)
+    frozenset(('MID', 'MID')): 2,   # -0.118 * 20 ~= 2.4 (28/07, non riconfermato oggi)
+    frozenset(('DEF', 'MID')): 3,   # -0.131 * 20 ~= 2.6 (30/07, nuova)
 }
 
 
