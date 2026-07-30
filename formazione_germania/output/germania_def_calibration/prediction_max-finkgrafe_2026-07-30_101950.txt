@@ -1,0 +1,79 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:19:50.845425Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) max-finkgrafe: 46 pt attesi (18-72)
+   ORDINAMENTO: 61.27
+   SQUADRA: rb-leipzig-leipzig | AVVERSARIO: borussia-m-gladbach-monchengladbach
+======================================================================
+
+######################################################################
+# GIOCATORE: max-finkgrafe
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: max-finkgrafe (squadra: rb-leipzig-leipzig)
+Generato: 2026-07-30T10:19:50.845238Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-15 | RBL vs WOB | bundesliga-de | score=67.7 | peso=0.871
+  2026-04-18 | SGE vs RBL | bundesliga-de | score=74.2 | peso=0.901
+  2026-04-24 | RBL vs FCU | bundesliga-de | score=85.1 | peso=0.933
+  2026-05-02 | B04 vs RBL | bundesliga-de | score=31.4 | peso=0.966
+  2026-05-16 | SCF vs RBL | bundesliga-de | score=42.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 59.51
+  di cui Punteggio decisivo (level_score) medio: 44.82 | Punteggio complessivo (granulari) medio: 14.70 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.87, delta avversario -0.38 | Passaggio condizionato: delta venue +0.34, delta avversario +0.11 | Clean sheet/disimpegni condizionato: delta venue +0.04, delta avversario +0.04 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 20.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.4 - 85.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.97 (differenza: +6.31)
+Media score in casa: 76.42 | Media score fuori casa: 49.33
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.6
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.083
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.017
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 1.009
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.006
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 14.71% (fonte: tasso di presenza storico (5/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: RB Leipzig | Trasferta: Borussia Mönchengladbach
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.1 (range 17.9 - 71.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 61.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 64.17
+Punteggio REALE ottenuto in quella partita: 42.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -21.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
