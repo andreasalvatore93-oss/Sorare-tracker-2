@@ -759,6 +759,34 @@ def costruisci_formazione_vera(lega, count):
     return bff, generated, totale, lineup_blocks, lineup_html_blocks
 
 
+def rendi_carte_cliccabili(html_report):
+    """Aggiunge un click-handler alle pcard del report (30/07, richiesta
+    esplicita utente: "che mi rimandino proprio alla carta") che apre la
+    pagina Sorare del giocatore in una nuova scheda -- stesso pattern URL
+    gia' usato in produzione (scanners/bot_profit.py, _sorare_market_link,
+    pagina PROFILO giocatore, non lo shop/mercato con filtro rarita': li' si
+    vedono comunque le carte in vendita). Post-processing via <script>
+    iniettato invece di modificare render_card_html/render_report_html in
+    formazione_mls/build_formazione_finale.py -- quel file resta condiviso
+    con la produzione (drag&drop tra formazioni reali), toccarlo per un
+    comportamento SOLO di Best Five sarebbe rischioso. Le pcard hanno gia'
+    'data-slug' (vedi render_card_html), qui si legge soltanto."""
+    script = """
+<script>
+document.querySelectorAll('.pcard[data-slug]').forEach(function (card) {
+  card.style.cursor = 'pointer';
+  card.title = 'Apri su Sorare';
+  card.addEventListener('click', function () {
+    window.open('https://sorare.com/it/football/players/' + card.dataset.slug, '_blank', 'noopener');
+  });
+});
+</script>
+"""
+    if '</body>' in html_report:
+        return html_report.replace('</body>', script + '</body>')
+    return html_report + script
+
+
 # Tetto REALE di job concorrenti dell'account GitHub Actions (stesso valore
 # di SLOT_CONCORRENTI in pipeline_artifacts.py, verificato sulla pipeline di
 # produzione — vedi commento li' per i dettagli della misura).
@@ -1050,6 +1078,7 @@ def main():
                      f"come nel tool unificato.")
     footer = "Script separato e READ-ONLY rispetto alla pipeline di produzione."
     html_report = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer)
+    html_report = rendi_carte_cliccabili(html_report)
     html_path = os.path.join(out_dir, f'best_five_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_report)
