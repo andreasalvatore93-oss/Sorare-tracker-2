@@ -76,3 +76,12 @@ jobs:
             git merge --no-edit -X ours origin/main
           done
           echo "Salvato correttamente."
+      # Notifica DOPO il salvataggio (non "always()": un link a un HTML mai
+      # pushato sarebbe rotto) -- stesso schema di formazione_telegram_notify.py.
+      - name: Notifica Telegram
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GIT_REF: main
+          LEGA: ${{ github.event.inputs.lega || 'kleague' }}
+        run: python best_five_telegram_notify.py

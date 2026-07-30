@@ -393,6 +393,108 @@ def formatta_report(lega, risultati, n_backup):
     return "\n".join(lines)
 
 
+# Stessi colori per ruolo del generatore formazioni principale
+# (formazione_mls/build_formazione_finale.py, ROLE_COLORS_HTML) — coerenza
+# visiva tra i due report HTML.
+ROLE_COLORS_HTML = {'gk': '#8b7cf6', 'def': '#3aa1e8', 'mid': '#2fbf8f', 'fwd': '#ef5b5b'}
+
+HTML_TEMPLATE = """<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>{page_title}</title>
+<style>
+  :root {{
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530;
+    --text: #edf1f6; --muted: #8a93a6; --gold: #f4c542; --border: rgba(255,255,255,0.08);
+  }}
+  @media (prefers-color-scheme: light) {{
+    :root {{
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4;
+      --text: #1a2029; --muted: #5b6474; --border: rgba(20,25,35,0.08);
+    }}
+  }}
+  * {{ box-sizing: border-box; }}
+  body {{
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 24px 64px; max-width: 900px; margin: 0 auto;
+  }}
+  h1 {{ font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }}
+  .subhead {{ color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }}
+  .role-block {{ margin-bottom: 28px; }}
+  .role-title {{
+    font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--role-color); margin-bottom: 10px;
+  }}
+  .card-row {{ display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }}
+  .pcard {{
+    flex: 0 0 160px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; position: relative;
+  }}
+  .pcard.titolare {{ border-color: var(--role-color); box-shadow: 0 0 0 1px var(--role-color); }}
+  .pcard-tag {{
+    font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--role-color); margin-bottom: 6px;
+  }}
+  .pcard-name {{ font-size: 0.8rem; font-weight: 650; line-height: 1.25; margin-bottom: 6px; min-height: 2em; }}
+  .pcard-score {{ font-size: 1.3rem; font-weight: 800; color: var(--role-color); font-variant-numeric: tabular-nums; }}
+  .pcard-range {{ font-size: 0.62rem; color: var(--muted); margin-bottom: 6px; }}
+  .pcard-match {{ font-size: 0.66rem; color: var(--text); opacity: 0.8; line-height: 1.3; }}
+  .empty {{ color: var(--muted); font-size: 0.8rem; }}
+  .footer {{ margin-top: 32px; color: var(--muted); font-size: 0.72rem; }}
+</style>
+</head>
+<body>
+<h1>{page_title}</h1>
+<p class="subhead">{page_subhead}</p>
+{role_blocks}
+<p class="footer">{footer}</p>
+</body>
+</html>
+"""
+
+
+def _card_html(c, ruolo, is_titolare):
+    tag = "TITOLARE" if is_titolare else "BACKUP"
+    color = ROLE_COLORS_HTML[ruolo]
+    match = f"{c['squadra'] or 'N/D'} vs {c['avversario'] or 'N/D'}"
+    classe = "pcard titolare" if is_titolare else "pcard"
+    return (
+        f'<div class="{classe}" style="--role-color:{color}">'
+        f'<div class="pcard-tag">{tag}</div>'
+        f'<div class="pcard-name">{c["slug"]}</div>'
+        f'<div class="pcard-score">{c["pt_attesi"]}</div>'
+        f'<div class="pcard-range">{c["low"]}-{c["high"]} pt attesi</div>'
+        f'<div class="pcard-match">{match}</div>'
+        f'</div>'
+    )
+
+
+def formatta_report_html(lega, risultati, n_backup):
+    role_blocks = []
+    for ruolo in ('gk', 'def', 'mid', 'fwd'):
+        candidati = risultati.get(ruolo, [])
+        color = ROLE_COLORS_HTML[ruolo]
+        cards = "".join(_card_html(c, ruolo, idx == 0) for idx, c in enumerate(candidati))
+        body = cards if candidati else '<p class="empty">Nessun dato disponibile.</p>'
+        role_blocks.append(
+            f'<div class="role-block">'
+            f'<div class="role-title" style="--role-color:{color}">{ROLE_LABELS[ruolo]}</div>'
+            f'<div class="card-row">{body}</div>'
+            f'</div>'
+        )
+
+    page_title = f"Best Five — {lega.upper()}"
+    page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
+                     f"titolare + {n_backup} backup per ruolo, pool TUTTI i giocatori "
+                     f"della lega (discovery globale, non solo posseduti).")
+    footer = ("Script separato e READ-ONLY rispetto alla pipeline di produzione — non tiene conto "
+              "di budget/anti-stack/sinergie/multi-lineup.")
+    return HTML_TEMPLATE.format(page_title=page_title, page_subhead=page_subhead,
+                                 role_blocks="\n".join(role_blocks), footer=footer)
+
+
 def main():
     args = sys.argv[1:]
     if not args:
@@ -445,8 +547,14 @@ def main():
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(report)
 
+    html_report = formatta_report_html(lega, risultati, n_backup)
+    html_path = os.path.join(out_dir, f'best_five_{ts}.html')
+    with open(html_path, 'w', encoding='utf-8') as f:
+        f.write(html_report)
+
     print("\n" + report)
     log(f"Report salvato in: {out_path}")
+    log(f"Report HTML salvato in: {html_path}")
 
 
 if __name__ == '__main__':
