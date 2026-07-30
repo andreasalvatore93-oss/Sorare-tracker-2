@@ -135,6 +135,9 @@ query TeamRoster($slug: String!, $first: Int!, $after: String) {
           slug
           displayName
           anyPositions
+          activeClub {
+            slug
+          }
         }
         pageInfo {
           hasNextPage
