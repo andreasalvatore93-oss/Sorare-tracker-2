@@ -1,0 +1,80 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:17:13.737238Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) luca-reggiani: 48 pt attesi (20-97)
+   ORDINAMENTO: 55.21
+   SQUADRA: borussia-dortmund-dortmund | AVVERSARIO: hamburger-sv-hamburg
+======================================================================
+
+######################################################################
+# GIOCATORE: luca-reggiani
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luca-reggiani (squadra: borussia-dortmund-dortmund)
+Generato: 2026-07-30T10:17:13.737018Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-17 | BVB vs ATA | uefa-champions-league | score=57.3 | peso=0.841
+  2026-02-21 | RBL vs BVB | bundesliga-de | score=22.2 | peso=0.871
+  2026-03-14 | BVB vs FCA | bundesliga-de | score=100.0 | peso=0.901
+  2026-05-03 | BMG vs BVB | bundesliga-de | score=55.2 | peso=0.933
+  2026-05-08 | BVB vs SGE | bundesliga-de | score=23.3 | peso=0.966
+  2026-05-16 | SVW vs BVB | bundesliga-de | score=51.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 51.44
+  di cui Punteggio decisivo (level_score) medio: 39.09 | Punteggio complessivo (granulari) medio: 12.35 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.18, delta avversario +0.15 | Passaggio condizionato: delta venue +0.73, delta avversario +1.14 | Clean sheet/disimpegni condizionato: delta venue +0.64, delta avversario -0.13 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 25.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 23.3 - 100.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.82 (differenza: +11.99)
+Media score in casa: 60.23 | Media score fuori casa: 43.06
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.138
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.007
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 33.33% (fonte: tasso di presenza storico (6/18))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T16:30
+Casa: Borussia Dortmund | Trasferta: Hamburger SV
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.3 (range 20.2 - 96.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 55.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.36
+Punteggio REALE ottenuto in quella partita: 51.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
