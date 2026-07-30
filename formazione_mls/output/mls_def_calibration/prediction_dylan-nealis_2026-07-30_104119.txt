@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:41:19.544514Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) dylan-nealis: 48 pt attesi (29-67)
+   ORDINAMENTO: 43.22
+   SQUADRA: new-york-rb-secaucus-new-jersey | AVVERSARIO: orlando-city-lake-mary-florida
+======================================================================
+
+######################################################################
+# GIOCATORE: dylan-nealis
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: dylan-nealis (squadra: new-york-rb-secaucus-new-jersey)
+Generato: 2026-07-30T10:41:19.543775Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | RBNY vs PHI | mlspa | score=72.0 | peso=0.536
+  2025-08-30 | RBNY vs CLB | mlspa | score=62.8 | peso=0.555
+  2025-09-14 | POR vs RBNY | mlspa | score=27.7 | peso=0.574
+  2025-10-04 | RBNY vs CIN | mlspa | score=29.8 | peso=0.595
+  2025-10-18 | CLB vs RBNY | mlspa | score=24.9 | peso=0.616
+  2026-02-22 | ORL vs RBNY | mlspa | score=54.6 | peso=0.637
+  2026-02-28 | RBNY vs NE | mlspa | score=57.7 | peso=0.660
+  2026-04-04 | RBNY vs CIN | mlspa | score=44.7 | peso=0.683
+  2026-04-11 | MIA vs RBNY | mlspa | score=37.2 | peso=0.707
+  2026-04-18 | MTL vs RBNY | mlspa | score=14.0 | peso=0.732
+  2026-04-22 | RBNY vs DC | mlspa | score=25.6 | peso=0.758
+  2026-04-25 | CIN vs RBNY | mlspa | score=100.0 | peso=0.785
+  2026-05-02 | RBNY vs DAL | mlspa | score=47.3 | peso=0.812
+  2026-05-09 | CHI vs RBNY | mlspa | score=88.6 | peso=0.841
+  2026-05-13 | RBNY vs CLB | mlspa | score=22.8 | peso=0.871
+  2026-05-16 | RBNY vs NYC | mlspa | score=24.6 | peso=0.901
+  2026-05-24 | SKC vs RBNY | mlspa | score=35.1 | peso=0.933
+  2026-07-22 | PHI vs RBNY | mlspa | score=32.6 | peso=0.966
+  2026-07-25 | RBNY vs CLT | mlspa | score=28.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 42.95
+  di cui Punteggio decisivo (level_score) medio: 36.37 | Punteggio complessivo (granulari) medio: 6.58 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.61, delta avversario -0.13 | Passaggio condizionato: delta venue +0.56, delta avversario +0.20 | Clean sheet/disimpegni condizionato: delta venue +0.97, delta avversario -0.94 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 23.08
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 24.6 - 62.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.51 (differenza: +4.57)
+Media score in casa: 41.62 | Media score fuori casa: 46.07
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.045
+Fattore falli (casa/trasferta, da dati reali): 0.984
+Fattore duelli (casa/trasferta, da dati reali): 0.990
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.991
+Fattore gol subiti (goals_conceded, con cap): 1.008
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.013
+Fattore trend (media ultime 5: 28.8 vs media ultime 10: 41.9): 1.000
+P(gioca): 30.00% (fonte: starterOddsBasisPoints (3000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: New York Red Bulls | Trasferta: Orlando City SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.5 (range 29.2 - 67.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 43.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.03
+Punteggio REALE ottenuto in quella partita: 28.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -15.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+trend_int=0.7+range=1.2x' (half_life=9.0, range_mult=1.2, opp_sens=None, trend_int=0.7)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.9    57.7     +5.8     N/D        SI
+   7        7      56.2    44.7    -11.5     N/D        SI
+   8        8      47.1    37.2     -9.9     N/D        SI
+   9        9      44.0    14.0    -30.0     N/D        NO
+  10       10      51.0    25.6    -25.5     N/D        NO
+  11       11      44.3   100.0    +55.7     N/D        NO
+  12       12      53.7    47.3     -6.4     N/D        SI
+  13       13      47.5    88.6    +41.1     N/D        NO
+  14       14      53.3    22.8    -30.5     N/D        SI
+  15       15      52.5    24.6    -27.9     N/D        SI
+  16       16      46.3    35.1    -11.2     N/D        SI
+  17       17      44.1    32.6    -11.5     N/D        SI
+  18       18      49.4    28.7    -20.7     N/D        SI
+
+MAE (errore assoluto medio): 22.13
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
