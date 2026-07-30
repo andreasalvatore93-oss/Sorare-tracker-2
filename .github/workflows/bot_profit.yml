@@ -66,6 +66,18 @@ on:
         description: "Modalita' snapshot: quanti giocatori processare in parallelo (il rate limit verso Sorare resta comunque governato da _graphql_throttle, condiviso tra i worker)"
         required: false
         default: "10"
+      roster_cache_hours:
+        description: "Per quante ore riusare il roster gia' scaricato (rosa + medie L5/L10/L40) invece di richiederlo a Sorare -- cambia solo quando si gioca, e' ~1 richiesta su 4 di ogni run. 0 = cache disattivata"
+        required: false
+        default: "18"
+      buy_signal_soglia_compra:
+        description: "Guadagno % atteso a 48h sotto il quale una carta NON puo' essere 'COMPRA ORA' (soglia assoluta, vedi BUY_SIGNAL_CURVE tarata sui dati storici)"
+        required: false
+        default: "10.0"
+      buy_signal_max_per_gruppo:
+        description: "Quante carte al massimo possono essere marcate 'COMPRA ORA' (evidenziate in giallo) per ogni campionato -- tiene il segnale selettivo anche quando un'intera lega e' scontata"
+        required: false
+        default: "8"
 permissions:
   contents: write
 concurrency:
@@ -106,6 +118,9 @@ jobs:
           EREDIVISIE_TEAM_WHITELIST: ${{ github.event.inputs.eredivisie_team_whitelist || 'ado-den-haag-den-haag,az-alkmaar,ajax-amsterdam,cambuur-leeuwarden,excelsior-rotterdam,feyenoord-rotterdam,fortuna-sittard-sittard,go-ahead-eagles-deventer,groningen-groningen,heerenveen-heerenveen-1920,nec-nijmegen,pec-zwolle-zwolle,psv-eindhoven,sparta-rotterdam-rotterdam,telstar-velsen-zuid,twente-enschede,utrecht-utrecht,willem-ii-tilburg' }}
           BELGIO_TEAM_WHITELIST: ${{ github.event.inputs.belgio_team_whitelist || 'anderlecht-bruxelles-brussel,antwerp-deurne,cercle-brugge-brugge,club-brugge-brugge,genk-genk,gent-gent,kortrijk-kortrijk,la-louviere-la-louviere,lommel-lommel,mechelen-mechelen-malines,oh-leuven-heverlee,sint-truiden-sint-truiden-st-trond,sporting-charleroi-charleroi,standard-liege-liege-luik,union-saint-gilloise-bruxelles-brussels,waasland-beveren-beveren-waas,westerlo-westerlo,zulte-waregem-waregem' }}
           SNAPSHOT_WORKER_THREADS: ${{ github.event.inputs.snapshot_worker_threads || '10' }}
+          ROSTER_CACHE_HOURS: ${{ github.event.inputs.roster_cache_hours || '18' }}
+          BUY_SIGNAL_SOGLIA_COMPRA: ${{ github.event.inputs.buy_signal_soglia_compra || '10.0' }}
+          BUY_SIGNAL_MAX_PER_GRUPPO: ${{ github.event.inputs.buy_signal_max_per_gruppo || '8' }}
         run: python scanners/bot_profit.py
       - name: Notifica Telegram con link ai CSV per gruppo
         if: always()
@@ -128,8 +143,18 @@ jobs:
           # rispetto a origin (commit locali in sospeso, di questo step o di
           # un giro periodico precedente non riuscito a pushare) e pusha.
           BRANCH="${{ github.event.inputs.git_ref || 'main' }}"
-          FILES="bot_profit_output sorare_lista_nera_profit.txt"
-          if [ -n "$(git status --porcelain -- $FILES)" ]; then
+          # bot_profit_roster_cache.json aggiunto 30/07: se non viene committato,
+          # la cache muore col runner effimero e la run successiva riscarica
+          # tutti i roster da zero -- cioe' il risparmio di richieste (~1 su 4)
+          # non si realizzerebbe mai. Solo i path esistenti finiscono in FILES:
+          # "git add" fallisce (exit 1, step rosso) su un pathspec che non
+          # corrisponde a nulla, e questo step gira con if:always(), quindi anche
+          # dopo una run interrotta prima che il file venisse scritto.
+          FILES=""
+          for f in bot_profit_output sorare_lista_nera_profit.txt bot_profit_roster_cache.json; do
+            [ -e "$f" ] && FILES="$FILES $f"
+          done
+          if [ -n "$FILES" ] && [ -n "$(git status --porcelain -- $FILES)" ]; then
             git config user.name "bot-profit"
             git config user.email "bot-profit@users.noreply.github.com"
             git add $FILES

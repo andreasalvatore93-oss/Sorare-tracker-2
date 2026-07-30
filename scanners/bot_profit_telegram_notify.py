@@ -56,43 +56,34 @@ def _viewer_url(csv_path):
     return f"{viewer_base}?csv={_raw_url(csv_path)}"
 
 
-# FIX 29/07 ter (richiesta esplicita utente: il top pick per potenziale_score
-# NON e' detto sia una buona carta DA COMPRARE ADESSO -- serve incrociare chi
-# e' realmente dentro la finestra di acquisto ORA (ore_alla_partita nel range
-# BUY_WINDOW_HOURS_MIN/MAX), ha uno sconto_percent REALE (positivo -- uno
-# sconto negativo e' in realta' un sovrapprezzo, l'utente l'ha segnalato come
-# "non ha senso" da proporre) e un trend non in caduta ('down' escluso).
-# Rank tra i candidati superstiti: sconto_percent pesato con lo stesso
-# TREND_SCORE_MULTIPLIER gia' usato in compute_potenziale_score (coerenza con
-# la formula ufficiale, non un criterio nuovo inventato qui).
-def _best_pick_now_for_group(path):
+# FIX 30/07 (richiesta esplicita utente: "ricevo consigli molto generici...
+# voglio gia' sapere esattamente se quello e' un buon momento per comprare").
+# La notifica non ricalcola piu' niente per conto suo: legge la colonna
+# 'segnale' che bot_profit.py ha gia' scritto nel CSV (vedi valuta_occasione /
+# _assegna_segnali li'). Prima invece questo file aveva una TERZA formula
+# parallela -- una nel bot, una nel viewer, una qui -- che poteva indicare una
+# carta diversa da quella evidenziata nel viewer aperto dallo stesso link.
+MAX_PICK_IN_NOTIFICA = 3
+
+
+def _occasioni_del_gruppo(path):
+    """(lista COMPRA ORA, lista buone occasioni) nell'ordine gia' deciso dal
+    CSV, che e' scritto per verdetto decrescente."""
     with open(path, 'r', newline='', encoding='utf-8') as f:
         rows = list(csv.DictReader(f))
+    compra = [r for r in rows if r.get('segnale') == bp.SEGNALE_COMPRA]
+    buone = [r for r in rows if r.get('segnale') == bp.SEGNALE_BUONA]
+    return compra, buone
 
-    candidati = []
-    for r in rows:
-        try:
-            ore = float(r.get('ore_alla_partita') or '')
-        except ValueError:
-            continue
-        if not (bp.BUY_WINDOW_HOURS_MIN <= ore <= bp.BUY_WINDOW_HOURS_MAX):
-            continue
-        try:
-            sconto = float(r.get('sconto_percent') or '')
-        except ValueError:
-            continue
-        if sconto <= 0:
-            continue
-        trend = r.get('trend_recente') or None
-        if trend == 'down':
-            continue
-        mult = bp.TREND_SCORE_MULTIPLIER.get(trend, bp.TREND_SCORE_MULTIPLIER[None])
-        candidati.append((sconto * mult, r))
 
-    if not candidati:
-        return None
-    candidati.sort(key=lambda x: -x[0])
-    return candidati[0][1]
+def _riga_pick(r):
+    nome = r.get('player_name') or r.get('player_slug') or '?'
+    tipo = r.get('tipo_carta') or ''
+    prezzo = r.get('min_attuale_eur') or '?'
+    atteso = r.get('punteggio_occasione') or '?'
+    motivo = r.get('motivo_segnale') or ''
+    return (f"   \U0001F7E1 <b>{nome}</b> {tipo} — {prezzo}€, atteso +{atteso}% a 48h\n"
+            f"      {motivo}")
 
 
 def main():
@@ -104,25 +95,22 @@ def main():
     for group_name, label in GROUP_LABELS.items():
         path = _latest_csv_for_group(group_name)
         if path:
-            righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{label}: apri viewer</a>")
-            top = _best_pick_now_for_group(path)
-            if top:
-                nome = top.get('player_name') or top.get('player_slug') or '?'
-                finestra = top.get('finestra_acquisto_ideale') or 'n/d'
-                sconto = top.get('sconto_percent') or '?'
-                trend = top.get('trend_recente') or 'n/d'
-                # FIX 29/07 bis (richiesta esplicita utente: notifica illeggibile,
-                # tutto attaccato su una riga) -- nome su riga propria, finestra
-                # su riga propria sotto, cosi' Telegram la spezza in modo leggibile
-                # invece di un unico blocco di testo compresso.
-                righe.append(f"   \U0001F947 <b>{nome}</b> (sconto {sconto}%, trend {trend})")
-                righe.append(f"      compra: {finestra}")
-            else:
-                righe.append("   nessuna carta e' dentro la finestra ideale in questo momento.")
+            compra, buone = _occasioni_del_gruppo(path)
+            intestazione = (f"{label}: {len(compra)} da comprare ora"
+                            if compra else f"{label}: nessuna da comprare ora")
+            righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{intestazione} — apri viewer</a>")
+            for r in compra[:MAX_PICK_IN_NOTIFICA]:
+                righe.append(_riga_pick(r))
+            if len(compra) > MAX_PICK_IN_NOTIFICA:
+                righe.append(f"      ...e altre {len(compra) - MAX_PICK_IN_NOTIFICA} "
+                             f"evidenziate in giallo nel viewer.")
+            if not compra:
+                righe.append(f"   nessun segnale d'acquisto forte adesso"
+                             f"{f' ({len(buone)} occasioni minori nel viewer)' if buone else ''}.")
         else:
             righe.append(f"⚠️ {label}: nessun CSV trovato in questa run.")
 
-    message = "<b>Bot Profit -- run completata</b>\n" + "\n".join(righe)
+    message = "<b>Bot Profit — run completata</b>\n" + "\n".join(righe)
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML', 'disable_web_page_preview': True}
     try:
