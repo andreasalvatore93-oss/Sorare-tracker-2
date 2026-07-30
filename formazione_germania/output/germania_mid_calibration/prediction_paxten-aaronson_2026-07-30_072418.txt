@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T07:24:18.567024Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) paxten-aaronson: 59 pt attesi (41-74)
+   SQUADRA: colorado-rapids-denver-colorado | AVVERSARIO: austin-austin-texas
+======================================================================
+
+######################################################################
+# GIOCATORE: paxten-aaronson
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: paxten-aaronson (squadra: colorado-rapids-denver-colorado)
+Generato: 2026-07-30T07:24:18.566009Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-31 | SKC vs RAP | mlspa | score=50.9 | peso=0.590
+  2025-09-14 | RAP vs HOU | mlspa | score=54.5 | peso=0.607
+  2025-09-21 | DAL vs RAP | mlspa | score=46.5 | peso=0.624
+  2025-09-28 | RAP vs MIN | mlspa | score=38.5 | peso=0.642
+  2025-10-05 | RSL vs RAP | mlspa | score=49.0 | peso=0.660
+  2025-10-19 | RAP vs LAFC | mlspa | score=69.1 | peso=0.678
+  2026-02-23 | SEA vs RAP | mlspa | score=26.7 | peso=0.697
+  2026-02-28 | RAP vs POR | mlspa | score=74.2 | peso=0.717
+  2026-03-08 | RAP vs LA | mlspa | score=76.0 | peso=0.737
+  2026-03-14 | NYC vs RAP | mlspa | score=40.5 | peso=0.758
+  2026-03-22 | SKC vs RAP | mlspa | score=70.0 | peso=0.779
+  2026-04-04 | TOR vs RAP | mlspa | score=73.0 | peso=0.801
+  2026-04-12 | RAP vs HOU | mlspa | score=84.0 | peso=0.824
+  2026-04-18 | RAP vs MIA | mlspa | score=52.3 | peso=0.847
+  2026-05-10 | RAP vs STL | mlspa | score=49.0 | peso=0.871
+  2026-05-14 | MIN vs RAP | mlspa | score=83.3 | peso=0.895
+  2026-05-17 | RSL vs RAP | mlspa | score=66.0 | peso=0.920
+  2026-05-24 | RAP vs DAL | mlspa | score=59.4 | peso=0.946
+  2026-07-23 | RAP vs SD | mlspa | score=60.0 | peso=0.973
+  2026-07-26 | STL vs RAP | mlspa | score=38.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 58.59
+  di cui Punteggio decisivo (level_score) medio: 46.11 | Punteggio complessivo (granulari) medio: 12.48 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 45.53 (delta -0.58)
+  Efficacia offensiva condizionata: delta venue +0.90, delta avversario +0.00 | Passaggio condizionato: delta venue +1.30, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.31, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.64
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.5 - 74.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.52 (differenza: +2.12)
+Media score in casa: 61.70 | Media score fuori casa: 54.43
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.217
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.013
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.011
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.009
+Fattore trend (media ultime 5: 61.4 vs media ultime 10: 63.5): 0.993
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T01:30
+Casa: Colorado Rapids | Trasferta: Austin FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.6 (range 40.5 - 74.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 59.98
+Punteggio REALE ottenuto in quella partita: 38.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -21.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=1.3' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.7    26.7    -27.0    11.7        NO
+   7        7      52.7    74.2    +21.5    15.5        NO
+   8        8      58.2    76.0    +17.8    18.3        SI
+   9        9      49.3    40.5     -8.8    19.8        SI
+  10       10      74.0    70.0     -4.0    19.4        SI
+  11       11      66.8    73.0     +6.2    19.3        SI
+  12       12      60.2    84.0    +23.8    19.4        NO
+  13       13      56.0    52.3     -3.7    20.9        SI
+  14       14      60.6    49.0    -11.6    20.0        SI
+  15       15      66.2    83.3    +17.1    19.3        SI
+  16       16      58.7    66.0     +7.3    20.4        SI
+  17       17      57.5    59.4     +1.9    19.5        SI
+  18       18      65.2    60.0     -5.2    18.7        SI
+  19       19      59.3    38.4    -20.9    17.9        NO
+
+MAE (errore assoluto medio): 12.62
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
