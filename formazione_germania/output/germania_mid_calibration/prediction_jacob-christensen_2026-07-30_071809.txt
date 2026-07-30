@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T07:18:09.040814Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jacob-christensen: 45 pt attesi (34-58)
+   SQUADRA: molde-molde | AVVERSARIO: sarpsborg-08-sarpsborg
+======================================================================
+
+######################################################################
+# GIOCATORE: jacob-christensen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jacob-christensen (squadra: molde-molde)
+Generato: 2026-07-30T07:18:09.039890Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: eliteserien (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-26 | BOD vs MOL | eliteserien | score=34.0 | peso=0.824
+  2025-11-01 | MOL vs RBK | eliteserien | score=56.3 | peso=0.847
+  2025-11-09 | HAU vs MOL | eliteserien | score=66.5 | peso=0.871
+  2025-11-22 | MOL vs BRA | eliteserien | score=38.1 | peso=0.895
+  2026-03-14 | MOL vs RBK | eliteserien | score=59.8 | peso=0.920
+  2026-03-21 | VIK vs MOL | eliteserien | score=41.7 | peso=0.946
+  2026-04-12 | MOL vs HAM | eliteserien | score=36.6 | peso=0.973
+  2026-04-19 | STA vs MOL | eliteserien | score=44.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 47.07
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 12.07 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 35.00 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue -0.16, delta avversario +0.00 | Passaggio condizionato: delta venue +0.16, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.66, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 11.14
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.6 - 59.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.74 (differenza: +2.40)
+Media score in casa: 47.70 | Media score fuori casa: 46.72
+Fattore casa/trasferta applicato: 0.987 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.901
+Fattore falli (casa/trasferta, da dati reali): 0.982
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 1.012
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T15:00
+Casa: Molde FK | Trasferta: Sarpsborg 08 FF
+Competizione: eliteserien
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.0 (range 34.5 - 57.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.45
+Punteggio REALE ottenuto in quella partita: 44.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.4x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.1    36.6    -16.5    16.6        SI
+   7        7      61.3    44.7    -16.6    16.6        NO
+
+MAE (errore assoluto medio): 16.55
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

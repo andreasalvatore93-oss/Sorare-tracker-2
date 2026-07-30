@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T07:17:59.950886Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) hugo-bolin: 43 pt attesi (35-61)
+   SQUADRA: borussia-m-gladbach-monchengladbach | AVVERSARIO: rb-leipzig-leipzig
+======================================================================
+
+######################################################################
+# GIOCATORE: hugo-bolin
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: hugo-bolin (squadra: borussia-m-gladbach-monchengladbach)
+Generato: 2026-07-30T07:17:59.949841Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-30 | MFF vs RFS | uefa-champions-league | score=35.0 | peso=0.717
+  2025-08-12 | FCK vs MFF | uefa-champions-league | score=20.5 | peso=0.737
+  2025-08-21 | MFF vs OLO | uefa-europa-league | score=35.0 | peso=0.758
+  2025-09-24 | MFF vs RAZ | uefa-europa-league | score=46.3 | peso=0.779
+  2025-10-02 | PLZ vs MFF | uefa-europa-league | score=33.2 | peso=0.801
+  2025-10-23 | MFF vs DIN | uefa-europa-league | score=34.8 | peso=0.824
+  2025-11-06 | MFF vs PAO | uefa-europa-league | score=39.2 | peso=0.847
+  2026-01-22 | MFF vs CZV | uefa-europa-league | score=38.0 | peso=0.871
+  2026-02-22 | SCF vs BMG | bundesliga-de | score=42.7 | peso=0.895
+  2026-03-06 | BAY vs BMG | bundesliga-de | score=33.5 | peso=0.920
+  2026-03-13 | BMG vs STP | bundesliga-de | score=36.4 | peso=0.946
+  2026-04-19 | BMG vs M05 | bundesliga-de | score=60.0 | peso=0.973
+  2026-05-16 | BMG vs TSG | bundesliga-de | score=72.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 41.43
+  di cui Punteggio decisivo (level_score) medio: 39.46 | Punteggio complessivo (granulari) medio: 1.97 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 38.18 (delta -1.27)
+  Efficacia offensiva condizionata: delta venue -0.20, delta avversario +0.82 | Passaggio condizionato: delta venue +0.62, delta avversario -0.76 | Gol subiti condizionato: delta venue -0.72, delta avversario +0.72 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.5 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.87 (differenza: +5.16)
+Media score in casa: 56.23 | Media score fuori casa: 38.10
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.821
+Fattore falli (casa/trasferta, da dati reali): 1.007
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.009
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.992
+Fattore gol subiti (goals_conceded, con cap): 0.990
+Fattore trend (media ultime 5: 49.0 vs media ultime 10: 43.6): 1.024
+P(gioca): 48.15% (fonte: tasso di presenza storico (13/27))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: RB Leipzig | Trasferta: Borussia Mönchengladbach
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.6 (range 34.6 - 61.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 38.36
+Punteggio REALE ottenuto in quella partita: 72.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +33.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3+granulari' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      34.4    39.2     +4.8     8.7        SI
+   7        7      35.3    38.0     +2.7     8.2        SI
+   8        8      35.7    42.7     +7.0     7.6        SI
+   9        9      30.2    33.5     +3.3     7.6        SI
+  10       10      57.4    36.4    -21.0     7.2        NO
+  11       11      41.2    60.0    +18.8     6.7        NO
+  12       12      36.8    72.3    +35.5    11.3        NO
+
+MAE (errore assoluto medio): 13.30
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 57.1%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
