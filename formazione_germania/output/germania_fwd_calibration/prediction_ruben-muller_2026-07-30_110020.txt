@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T11:00:20.506834Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) ruben-muller: 40 pt attesi (26-48)
+   ORDINAMENTO: 41.07
+   SQUADRA: paderborn-paderborn | AVVERSARIO: mainz-05-mainz
+======================================================================
+
+######################################################################
+# GIOCATORE: ruben-muller
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ruben-muller (squadra: paderborn-paderborn)
+Generato: 2026-07-30T11:00:20.505814Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-27 | SCP vs FCK | 2-bundesliga | score=84.3 | peso=0.697
+  2025-10-03 | EBS vs SCP | 2-bundesliga | score=58.0 | peso=0.717
+  2026-02-22 | SCP vs BSC | 2-bundesliga | score=27.8 | peso=0.737
+  2026-02-28 | FCK vs SCP | 2-bundesliga | score=48.7 | peso=0.758
+  2026-03-07 | SCP vs EBS | 2-bundesliga | score=26.5 | peso=0.779
+  2026-03-14 | DSC vs SCP | 2-bundesliga | score=46.8 | peso=0.801
+  2026-03-21 | SCP vs SGD | 2-bundesliga | score=41.1 | peso=0.824
+  2026-04-05 | SGF vs SCP | 2-bundesliga | score=47.0 | peso=0.847
+  2026-04-12 | SCP vs FCM | 2-bundesliga | score=23.1 | peso=0.871
+  2026-04-18 | H96 vs SCP | 2-bundesliga | score=39.8 | peso=0.895
+  2026-04-26 | SCP vs S04 | 2-bundesliga | score=33.9 | peso=0.920
+  2026-05-17 | SVD vs SCP | 2-bundesliga | score=42.3 | peso=0.946
+  2026-05-21 | WOB vs SCP | play-offs-1-2-de | score=26.7 | peso=0.973
+  2026-05-25 | SCP vs WOB | play-offs-1-2-de | score=39.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 40.91
+  di cui Punteggio decisivo (level_score) medio: 36.48 | Punteggio complessivo (granulari) medio: 4.43 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 7.01 (delta -1.54) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.40
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.7 - 48.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.03 (differenza: +5.37)
+Media score in casa: 39.38 | Media score fuori casa: 44.17
+Fattore casa/trasferta applicato: 1.010 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.4
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 0.988
+Fattore falli (casa/trasferta, da dati reali): 0.991
+Fattore duelli (casa/trasferta, da dati reali): 1.010
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.983
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore trend (media ultime 5: 36.3 vs media ultime 10: 36.6): 0.998
+P(gioca): 38.89% (fonte: tasso di presenza storico (14/36))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FSV Mainz 05 | Trasferta: SC Paderborn 07
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 40.1 (range 25.8 - 47.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.09
+Punteggio REALE ottenuto in quella partita: 39.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.1    41.1     -7.0    22.3        SI
+   7        7      55.1    47.0     -8.1    20.4        SI
+   8        8      50.5    23.1    -27.4    18.7        NO
+   9        9      32.0    39.8     +7.8    19.8        SI
+  10       10      24.1    33.9     +9.8    18.5        SI
+  11       11      32.1    42.3    +10.2    17.5        SI
+  12       12      50.4    26.7    -23.7    16.4        NO
+  13       13      40.2    39.0     -1.2    16.5        SI
+
+MAE (errore assoluto medio): 11.91
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
