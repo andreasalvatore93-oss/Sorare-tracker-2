@@ -1234,7 +1234,7 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
         granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     if presence_rate is not None:
-        media_ruolo_prior = max(0.0, 38.08 + 14.95 * presence_rate)
+        media_ruolo_prior = max(0.0, 45.36 + 7.96 * presence_rate)
     grezzo_nuovo_corretto = (
         (n / (n + shrink_k)) * grezzo_nuovo
         + (shrink_k / (n + shrink_k)) * media_ruolo_prior
@@ -1789,7 +1789,7 @@ def build_prediction(player_slug):
     # --- Shrinkage outlier/hot-streak (27/07, vedi SHRINK_K_OUTLIER_DEF sopra):
     # si applica al grezzo (level_score_atteso + granulare_atteso), PRIMA di
     # fattore_casa_trasferta e delle correzioni additive Stadio D sotto.
-    _media_ruolo_prior_dinamico = max(0.0, 38.08 + 14.95 * presence_rate)
+    _media_ruolo_prior_dinamico = max(0.0, 45.36 + 7.96 * presence_rate)
     grezzo_nuovo_corretto = (
         (n / (n + SHRINK_K_OUTLIER_DEF)) * grezzo_nuovo
         + (SHRINK_K_OUTLIER_DEF / (n + SHRINK_K_OUTLIER_DEF)) * _media_ruolo_prior_dinamico

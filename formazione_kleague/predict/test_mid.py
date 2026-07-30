@@ -1601,7 +1601,7 @@ def build_prediction(player_slug):
     # gioca poco rende MENO anche quando gioca. presence_rate=None ricade sul
     # prior fisso sopra, comportamento INVARIATO.
     if presence_rate is not None:
-        MEDIA_RUOLO_MID_PRIOR = max(0.0, 34.89 + 19.42 * presence_rate)
+        MEDIA_RUOLO_MID_PRIOR = max(0.0, 42.68 + 12.34 * presence_rate)
     _grezzo_mid = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     _grezzo_mid_corretto = (
         (n / (n + SHRINK_K_OUTLIER_MID)) * _grezzo_mid

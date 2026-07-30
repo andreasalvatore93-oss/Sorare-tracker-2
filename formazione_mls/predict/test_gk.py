@@ -1297,8 +1297,10 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     # uguale per titolari e riserve. presence_rate=None (calibrazione/
     # backtest, nessun concetto di "storico totale esaminato" disponibile)
     # ricade sul prior fisso originale, comportamento INVARIATO.
+    # Ricalibrato 30/07 (n=146, pool post-fix anyPlayers->activePlayers,
+    # decisione utente via popup): era 46.20 + 4.05 * presence_rate.
     if presence_rate is not None:
-        media_ruolo_prior = max(0.0, 45.41 + 4.36 * presence_rate)
+        media_ruolo_prior = max(0.0, 46.20 + 4.05 * presence_rate)
     grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     grezzo_corretto = (
         (n / (n + shrink_k)) * grezzo

@@ -1188,7 +1188,9 @@ def compute_score_atteso_fwd(scores, is_home_flags,
                              shrink_k=SHRINK_K_OUTLIER_FWD,
                              media_ruolo_prior=MEDIA_RUOLO_FWD_PRIOR,
                              use_stadio_d=True,
-                             presence_rate=None):
+                             presence_rate=None, opponent_lambda_mult=None,
+                             next_opponent_team_slug=None, next_game_date=None, league='mls',
+                             offensive_values=None):
     """FUNZIONE CONDIVISA (27/07, punto 26.D.4): calcola lo `score_atteso` FWD di
     PRODUZIONE, da usare SIA in build_prediction SIA nel backtest di calibrazione,
     cosi' le due non possono divergere. Gemella di compute_score_atteso_def in
@@ -1200,7 +1202,16 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     Non serve opponent_rankings: per FWD non entra in nessun pezzo dello score.
 
     Tutti gli array sono lo STORICO (stessa lunghezza n, ordine cronologico);
-    target_is_home e' la partita da predire. p_gioca=1.0 nel backtest."""
+    target_is_home e' la partita da predire. p_gioca=1.0 nel backtest.
+
+    FIX (30/07, stesso bug reale di compute_score_atteso_def): opponent_lambda_mult
+    mancava del tutto qui (mai applicato in backtest/calibrazione, sempre neutro),
+    pur essendo gia' applicato in build_prediction dal 29/07. Se non passato
+    esplicitamente, calcolato da next_opponent_team_slug quando disponibile;
+    altrimenti 1.0 = nessun effetto (comportamento INVARIATO per vecchi chiamanti).
+    Stessa cosa per offensive_values/fwd_offense_granular_delta (validato 29/07,
+    checklist punto 19): assente qui, presente solo nell'inline di build_prediction --
+    applicato ora solo se offensive_values e next_opponent_team_slug sono forniti."""
     if half_life is None:
         half_life = HALF_LIFE_GAMES
     if trend_intensity is None:
@@ -1210,14 +1221,26 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     weights = exponential_weights(n, half_life)
 
     media_granulari_pesata = weighted_mean(granulari_values, weights)
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    if opponent_lambda_mult is None:
+        if next_opponent_team_slug:
+            opponent_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+                league, 'fwd', next_opponent_team_slug, next_game_date or datetime.datetime.utcnow())
+        else:
+            opponent_lambda_mult = 1.0
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    # Ricalibrato 30/07 (n=418, pool post-fix anyPlayers->activePlayers,
+    # decisione utente via popup): era 47.44 + 6.62 * presence_rate.
     if presence_rate is not None:
-        media_ruolo_prior = max(0.0, 34.42 + 18.71 * presence_rate)
+        media_ruolo_prior = max(0.0, 47.44 + 6.62 * presence_rate)
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    if offensive_values is not None and next_opponent_team_slug:
+        _offensive_hist = weighted_mean(offensive_values, weights)
+        grezzo_nuovo += opponent_strength.fwd_offense_granular_delta(
+            league, next_opponent_team_slug, next_game_date or datetime.datetime.utcnow(), _offensive_hist)
     grezzo_nuovo_corretto = (
         (n / (n + shrink_k)) * grezzo_nuovo
         + (shrink_k / (n + shrink_k)) * media_ruolo_prior
@@ -1247,7 +1270,9 @@ def rigorous_backtest_prod_fwd(scores, is_home_flags,
                                pos_decisive_values, neg_decisive_values,
                                passing_values,
                                min_history=6, half_life=None, trend_intensity=None,
-                               range_multiplier=1.0):
+                               range_multiplier=1.0,
+                               opponent_team_slugs_hist=None, league='mls',
+                               offensive_values=None):
     """Backtest walk-forward ALLINEATO ALLA PRODUZIONE per FWD: ad ogni partita
     richiama compute_score_atteso_fwd() -- la STESSA funzione della predizione
     reale -- sul solo storico precedente. Stessa struttura di ritorno del vecchio
@@ -1264,7 +1289,10 @@ def rigorous_backtest_prod_fwd(scores, is_home_flags,
             scores[:i], is_home_flags[:i], residual_values[:i], granulari_values[:i],
             pos_decisive_values[:i], neg_decisive_values[:i], passing_values[:i],
             target_is_home=is_home_flags[i], p_gioca=1.0,
-            half_life=half_life, trend_intensity=trend_intensity)
+            half_life=half_life, trend_intensity=trend_intensity,
+            next_opponent_team_slug=opponent_team_slugs_hist[i] if opponent_team_slugs_hist else None,
+            league=league,
+            offensive_values=offensive_values[:i] if offensive_values else None)
         reale = scores[i]
         w = exponential_weights(i, half_life)
         dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
@@ -1702,7 +1730,7 @@ def build_prediction(player_slug):
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
-    _media_ruolo_prior_dinamico = max(0.0, 34.42 + 18.71 * presence_rate)
+    _media_ruolo_prior_dinamico = max(0.0, 47.44 + 6.62 * presence_rate)
     # NUOVO (29/07, vedi opponent_strength.py, gruppo fwd_vs_def validato):
     # delta ADDITIVO sul granulare "offensivo" in base al poss_lost_ctrl medio
     # dei difensori avversari (ultime 10 partite) -- avversario che perde
@@ -1734,7 +1762,9 @@ def build_prediction(player_slug):
     score_ordinamento = compute_score_atteso_fwd(
         scores, is_home_flags, residual_values, granulari_values,
         pos_decisive_values, neg_decisive_values, passing_values,
-        target_is_home=next_is_home, p_gioca=p_gioca, shrink_k=0.0)
+        target_is_home=next_is_home, p_gioca=p_gioca, shrink_k=0.0,
+        next_opponent_team_slug=next_opponent_team_slug, league='mls',
+        offensive_values=offensive_values)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
