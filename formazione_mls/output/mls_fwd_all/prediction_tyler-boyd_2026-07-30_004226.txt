@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T00:42:26.950259Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) tyler-boyd: 42 pt attesi (28-65)
+   ORDINAMENTO: 50.60
+   SQUADRA: los-angeles-fc-los-angeles-california | AVVERSARIO: vancouver-whitecaps-vancouver-british-columbia
+======================================================================
+
+######################################################################
+# GIOCATORE: tyler-boyd
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tyler-boyd (squadra: los-angeles-fc-los-angeles-california)
+Generato: 2026-07-30T00:42:26.949258Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-04 | MTL vs NSH | mlspa | score=37.3 | peso=0.920
+  2026-04-05 | LAFC vs ORL | mlspa | score=74.6 | peso=0.946
+  2026-04-11 | POR vs LAFC | mlspa | score=50.1 | peso=0.973
+  2026-05-14 | STL vs LAFC | mlspa | score=45.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 51.77
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=4): 52.86 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 41.16 | Punteggio complessivo (granulari) medio: 10.61 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 5.04 (delta -0.32) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.82
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.3 - 74.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 74.60 | Media score fuori casa: 47.60
+Fattore casa/trasferta applicato: 0.992 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.724
+Fattore falli (casa/trasferta, da dati reali): 1.011
+Fattore duelli (casa/trasferta, da dati reali): 1.012
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.987
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: Vancouver Whitecaps FC | Trasferta: Los Angeles FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.1 (range 27.6 - 64.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 50.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.12
+Punteggio REALE ottenuto in quella partita: 45.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

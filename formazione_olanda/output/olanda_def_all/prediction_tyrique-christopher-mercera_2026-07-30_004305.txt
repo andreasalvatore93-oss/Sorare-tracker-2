@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T00:43:05.704814Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) tyrique-christopher-mercera: 38 pt attesi (30-47)
+   ORDINAMENTO: 31.33
+   SQUADRA: groningen-groningen | AVVERSARIO: utrecht-utrecht
+======================================================================
+
+######################################################################
+# GIOCATORE: tyrique-christopher-mercera
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tyrique-christopher-mercera (squadra: groningen-groningen)
+Generato: 2026-07-30T00:43:05.703898Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-28 | GRO vs FEY | eredivisie | score=26.5 | peso=0.812
+  2025-10-03 | NAC vs GRO | eredivisie | score=28.9 | peso=0.841
+  2025-10-19 | GRO vs SPA | eredivisie | score=24.8 | peso=0.871
+  2025-12-13 | GRO vs VOL | eredivisie | score=53.7 | peso=0.901
+  2026-02-08 | GRO vs PSV | eredivisie | score=16.1 | peso=0.933
+  2026-02-22 | TWE vs GRO | eredivisie | score=42.1 | peso=0.966
+  2026-03-01 | VOL vs GRO | eredivisie | score=35.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 32.75
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: -2.25 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.39, delta avversario -0.78 | Passaggio condizionato: delta venue +0.19, delta avversario +0.10 | Clean sheet/disimpegni condizionato: delta venue -0.09, delta avversario -1.09 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 11.58
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 24.8 - 42.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.50 (differenza: +5.07)
+Media score in casa: 30.27 | Media score fuori casa: 35.53
+Fattore casa/trasferta applicato: 1.010 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.882
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.991
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.991
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.998
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 20.00% (fonte: tasso di presenza storico (7/35))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T12:30
+Casa: FC Groningen | Trasferta: FC Utrecht
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 37.5 (range 29.6 - 46.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 31.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 32.21
+Punteggio REALE ottenuto in quella partita: 35.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +3.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.5    35.6     -4.9    15.1        SI
+
+MAE (errore assoluto medio): 4.94
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
