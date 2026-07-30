@@ -1,0 +1,79 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:26:26.418039Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) sean-nealis: 43 pt attesi (26-60)
+   ORDINAMENTO: 45.41
+   SQUADRA: dc-united-washington-district-of-columbia | AVVERSARIO: nashville-sc
+======================================================================
+
+######################################################################
+# GIOCATORE: sean-nealis
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sean-nealis (squadra: dc-united-washington-district-of-columbia)
+Generato: 2026-07-30T10:26:26.417811Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | RBNY vs RSL | mlspa | score=25.9 | peso=0.871
+  2025-08-30 | RBNY vs CLB | mlspa | score=54.5 | peso=0.901
+  2025-10-18 | CLB vs RBNY | mlspa | score=60.2 | peso=0.933
+  2026-04-04 | DC vs DAL | mlspa | score=32.3 | peso=0.966
+  2026-07-23 | HOU vs DC | mlspa | score=41.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 42.84
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 7.84 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +1.05, delta avversario -1.06 | Passaggio condizionato: delta venue +0.53, delta avversario +0.09 | Clean sheet/disimpegni condizionato: delta venue +0.90, delta avversario -0.04 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.78
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.9 - 60.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.01 (differenza: +3.77)
+Media score in casa: 40.22 | Media score fuori casa: 60.18
+Fattore casa/trasferta applicato: 0.994 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.736
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 0.990
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.012
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.989
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.989
+Fattore gol subiti (goals_conceded, con cap): 1.013
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.009
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: DC United | Trasferta: Nashville SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.6 (range 25.7 - 60.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 45.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.33
+Punteggio REALE ottenuto in quella partita: 41.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
