@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:53:23.776690Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) jamal-musiala: 44 pt attesi (17-71)
+   SQUADRA: bayern-munchen-munchen | AVVERSARIO: stuttgart-stuttgart
+======================================================================
+
+######################################################################
+# GIOCATORE: jamal-musiala
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jamal-musiala (squadra: bayern-munchen-munchen)
+Generato: 2026-07-30T10:53:23.776500Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-21 | BAY vs SGE | bundesliga-de | score=42.8 | peso=0.895
+  2026-03-06 | BAY vs BMG | bundesliga-de | score=65.5 | peso=0.920
+  2026-04-11 | STP vs BAY | bundesliga-de | score=75.9 | peso=0.946
+  2026-05-09 | WOB vs BAY | bundesliga-de | score=41.3 | peso=0.973
+  2026-05-16 | BAY vs KOE | bundesliga-de | score=21.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 48.98
+  di cui Punteggio decisivo (level_score) medio: 42.63 | Punteggio complessivo (granulari) medio: 6.35 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 40.17 (delta -2.46)
+  Efficacia offensiva condizionata: delta venue -0.95, delta avversario +1.12 | Passaggio condizionato: delta venue -0.88, delta avversario +0.98 | Gol subiti condizionato: delta venue -0.30, delta avversario +0.20 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 19.47
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 21.3 - 75.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.06 (differenza: +8.41)
+Media score in casa: 43.20 | Media score fuori casa: 58.60
+Fattore casa/trasferta applicato: 0.994 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.6
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.669
+Fattore falli (casa/trasferta, da dati reali): 1.013
+Fattore duelli (casa/trasferta, da dati reali): 1.013
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.989
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.987
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 0.985
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 14.71% (fonte: tasso di presenza storico (5/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-28T18:30
+Casa: FC Bayern München | Trasferta: VfB Stuttgart
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.3 (range 16.7 - 71.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.39
+Punteggio REALE ottenuto in quella partita: 21.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -35.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
