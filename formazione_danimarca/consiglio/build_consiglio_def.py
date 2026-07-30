@@ -125,10 +125,10 @@ def main():
     # (senza shrinkage la dispersione fra giocatori e' piu' ampia), quindi
     # mescolarli nella stessa sort confronterebbe grandezze non omogenee. Se anche
     # un solo giocatore non ha la riga, si ordina tutto per pt attesi come prima.
-    if ok_rows and all(r.get('ordinamento') is not None for r in ok_rows):
-        ok_rows.sort(key=lambda r: r['ordinamento'], reverse=True)
-    else:
-        ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
+    # REVERTITO (30/07, richiesta esplicita utente, stesso motivo di
+    # formazione_mls/consiglio/build_consiglio_def.py): si ordina sempre per
+    # 'atteso' (score mostrato), non piu' per 'ordinamento' senza shrinkage.
+    ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
 
     lines = []
     lines.append(f"Consiglio difensori — {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')}Z")

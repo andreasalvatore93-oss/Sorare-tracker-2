@@ -105,7 +105,7 @@ PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
 HALF_LIFE_GAMES = 25.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_mult/Stadio D/goals_conceded cap, backtest walk-forward su TUTTE le 28 leghe (360 giocatori) -- ginocchio rendimento decrescente a 25 (MAE -0.32% circa vs 12.0), grid esteso fino a 150 senza vero minimo interno.
-RANGE_MULTIPLIER = 1.4  # FISSATO (25/07): idem — nota: il valore vincente e' 1.4, non 1.6 come nel tentativo precedente; la copertura ideale viene dalla combinazione GIUSTA di tutti i parametri insieme, non dal range preso da solo
+RANGE_MULTIPLIER = 1.15  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py, FWD). Solo cosmetico -- non tocca score_atteso/selezione.
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.3  # AGGIORNATO (29/07, esteso a tutte le leghe): backtest walk-forward post-retuning half_life, MAE -0.73% (validato MLS/Korea), stesso valore ora applicato a tutte le leghe -- vedi backlog 'produzione solo MLS/Korea'
@@ -2058,6 +2058,17 @@ def main():
     out_path = os.path.join(OUTPUT_DIR, f'prediction_{file_suffix}_{ts}.txt')
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(final_text)
+    # Pulizia automatica (30/07, richiesta esplicita utente): tiene solo l'ultimo
+    # prediction_*.txt per slug/OUTPUT_DIR -- build_consiglio_* legge solo il piu'
+    # recente, i precedenti erano peso morto (37k file/166MB nel repo, mai riletti).
+    _pred_prefix = f'prediction_{file_suffix}_'
+    for _pred_fn in os.listdir(OUTPUT_DIR):
+        if (_pred_fn.startswith(_pred_prefix) and _pred_fn.endswith('.txt')
+                and _pred_fn != os.path.basename(out_path)):
+            try:
+                os.remove(os.path.join(OUTPUT_DIR, _pred_fn))
+            except OSError:
+                pass
 
     log(f"\nOutput completo scritto in: {out_path}")
     log(f"Dump diagnostici di tutte le chiamate GraphQL salvati in: {DEBUG_DIR}/")

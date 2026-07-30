@@ -120,15 +120,16 @@ def main():
         else:
             excluded_count += 1
 
-    # Ordina per lo score di ordinamento (senza shrinkage) -- vedi ORDINAMENTO_RE
-    # sopra. Il fallback e' TUTTO-O-NIENTE: i due score vivono su scale diverse
-    # (senza shrinkage la dispersione fra giocatori e' piu' ampia), quindi
-    # mescolarli nella stessa sort confronterebbe grandezze non omogenee. Se anche
-    # un solo giocatore non ha la riga, si ordina tutto per pt attesi come prima.
-    if ok_rows and all(r.get('ordinamento') is not None for r in ok_rows):
-        ok_rows.sort(key=lambda r: r['ordinamento'], reverse=True)
-    else:
-        ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
+    # REVERTITO (30/07, richiesta esplicita utente, caso reale Wanderson Best
+    # Five K League: titolare a 47pt preferito a backup 58pt con storico 7x
+    # piu' lungo): il ritest di oggi con dataset molto piu' ampio/pulito
+    # (measure_reliability_vs_score_allroles.py / selection_quality_
+    # shrinkage_allroles.py, DEF 328 giornate/16 leghe vs le 123/1 lega del
+    # 27/07) mostra che ordinare SENZA shrinkage non batte piu' lo score
+    # mostrato (lift 19.5% vs 20.4% -- si e' invertito rispetto a fine
+    # luglio, campione di allora gia' segnalato come "sottile"). Si ordina
+    # sempre per 'atteso' (lo stesso score mostrato), come GK/MID.
+    ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
 
     lines = []
     lines.append(f"Consiglio difensori — {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')}Z")

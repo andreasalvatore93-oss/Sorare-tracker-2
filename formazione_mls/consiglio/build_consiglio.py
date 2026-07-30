@@ -113,14 +113,11 @@ def main():
         else:
             excluded_count += 1
 
-    # Ordina per lo score di ordinamento (senza shrinkage) -- stesso principio
-    # gia' in produzione su build_consiglio_def.py. Fallback TUTTO-O-NIENTE:
-    # se anche un solo giocatore non ha la riga, si ordina tutto per pt
-    # attesi come prima.
-    if ok_rows and all(r.get('ordinamento') is not None for r in ok_rows):
-        ok_rows.sort(key=lambda r: r['ordinamento'], reverse=True)
-    else:
-        ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
+    # REVERTITO (30/07, richiesta esplicita utente) -- stesso motivo di
+    # build_consiglio_def.py: il ritest con dataset piu' ampio mostra che
+    # ordinare SENZA shrinkage non batte piu' lo score mostrato (FWD lift
+    # 21.7% vs 22.8% con shrinkage). Si ordina sempre per 'atteso'.
+    ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
 
     lines = []
     lines.append(f"Consiglio attaccanti — {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')}Z")

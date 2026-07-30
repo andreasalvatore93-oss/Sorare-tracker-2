@@ -120,7 +120,7 @@ PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
 HALF_LIFE_GAMES = 6.0  # AGGIORNATO (29/07): ridotto da 12.0 a 6.0 SOLO per GK, su richiesta esplicita dell'utente dopo un caso reale (Daniel De Sousa Brito, media pesata 46.6 vs media reale ultime 11 partite 41.2 -- il modello si aspettava un punteggio del 29% sopra lo standard recente senza nessun segnale di miglioramento). Verificato con backtest rigoroso pooled su 66 portieri/538 partite (16 campionati): l'intera griglia half_life 4-30 sta in una forbice di MAE dell'1.4%, quindi accorciarlo non peggiora sensibilmente l'accuratezza aggregata mentre risolve l'incoerenza logica sui casi con un tratto di forma alta ormai superato nella finestra storica.
-RANGE_MULTIPLIER = 1.4  # AGGIORNATO (ricalibrazione su 10 campionati, sessione 27/07): range_multiplier 1.6->1.4, MAE 18.30 vs 18.32 (-0.1%, scarto minimo ma applicato su richiesta esplicita dell'utente, stesso principio gia' seguito per altri parametri in questo progetto).
+RANGE_MULTIPLIER = 1.15  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py). Solo cosmetico -- non tocca score_atteso/selezione.
 OPPONENT_SENSITIVITY = 29.0  # AGGIORNATO (26/07): grid search allargato K League su 3 portieri qualificati (>=3 partite test, campione MOLTO piccolo -- MAE 17.47 vs 17.6x circa con 20.0). Applicato per coerenza con MLS GK (stesso fix, stesso giorno) e con opp_sens=29.0 confermato su TUTTI gli altri ruoli K League (MID/FWD gia' a 29.0) tranne DEF (vedi nota separata, segnale opposto non applicato).
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.7  # FISSATO (25/07): idem
@@ -2190,6 +2190,17 @@ def main():
     out_path = os.path.join(OUTPUT_DIR, f'prediction_{file_suffix}_{ts}.txt')
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(final_text)
+    # Pulizia automatica (30/07, richiesta esplicita utente): tiene solo l'ultimo
+    # prediction_*.txt per slug/OUTPUT_DIR -- build_consiglio_* legge solo il piu'
+    # recente, i precedenti erano peso morto (37k file/166MB nel repo, mai riletti).
+    _pred_prefix = f'prediction_{file_suffix}_'
+    for _pred_fn in os.listdir(OUTPUT_DIR):
+        if (_pred_fn.startswith(_pred_prefix) and _pred_fn.endswith('.txt')
+                and _pred_fn != os.path.basename(out_path)):
+            try:
+                os.remove(os.path.join(OUTPUT_DIR, _pred_fn))
+            except OSError:
+                pass
 
     log(f"\nOutput completo scritto in: {out_path}")
     log(f"Dump diagnostici di tutte le chiamate GraphQL salvati in: {DEBUG_DIR}/")

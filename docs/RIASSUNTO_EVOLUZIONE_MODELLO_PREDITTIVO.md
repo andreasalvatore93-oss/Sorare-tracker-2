@@ -281,18 +281,27 @@ salvo diversa indicazione esplicita nella riga.
     (45.1% vs 43.6%, ma solo 33 giornate/1 lega)**; **FWD: shrink k=5 PEGGIORA il lift (8.8% vs
     12.3-13.2% senza shrink, 21 giornate/1 lega)** — stesso problema storico di DEF, risolto con
     lo `score_ordinamento` (punto 30).
-30. **Ordinamento senza shrinkage (`score_ordinamento`)** — separazione fra il numero MOSTRATO
-    (con shrinkage, minimizza MAE) e l'ordine usato per selezionare (`shrink_k=0`, minimizza il
-    lift). **IMPLEMENTATO PER DEF (tutte le leghe, sez. 28.E) e ORA ANCHE PER FWD (29/07, tutte
-    le 27 leghe)** — MLS ce l'aveva già solo per FWD (mai propagato alle altre 26, bug trovato e
-    corretto in corsa: quelle 26 leghe non hanno una funzione condivisa
-    `compute_score_atteso_fwd` come MLS, quindi si riusa `grezzo_nuovo` già in scope invece di
-    chiamare una funzione inesistente — verificato con py_compile/import prima di committare).
-    **GK/MID non hanno `score_ordinamento`** — dal ritest sopra lo shrink li AIUTA (non li
-    danneggia come FWD), quindi per ora non serve — ma il campione è piccolo (11-33 giornate),
-    **da riverificare quando crescono più leghe con abbastanza candidati/giornata per GK/MID**
-    (oggi quasi tutte le giornate valide vengono da una sola lega, non abbastanza titolari/
-    giornata nelle leghe piccole per un vero test). Sez. 27.F, oggi.
+30. **Ordinamento senza shrinkage (`score_ordinamento`) — REVERTITO 30/07** — era la separazione
+    fra il numero MOSTRATO (con shrinkage, minimizza MAE) e l'ordine usato per selezionare
+    (`shrink_k=0`, minimizza il lift), implementato per DEF/FWD il 27-29/07 su un campione
+    piccolo (123-140 giornate, 1 lega). **Ritestato 30/07** (`selection_quality_shrinkage_
+    allroles.py`, dataset molto più ampio post-ricalibrazione: DEF 328 giornate/16 leghe/491
+    giocatori, FWD 182 giornate/11 leghe/323 giocatori) dopo che un caso reale (Best Five K
+    League: un DEF con 4 sole partite, una delle quali 100pt, preferito via `score_ordinamento`
+    a due backup con 19-28 partite e media stabile ~63-64) ha fatto notare all'utente che il
+    meccanismo può fidarsi di campioni minuscoli/fortunati più del dovuto. **Risultato: il verdetto
+    si è invertito** — lo score MOSTRATO (con shrinkage) ora vince su entrambi (DEF 20.4% vs
+    19.5% lift, FWD 22.8% vs 21.7%), il vecchio campione era already segnalato come "sottile"
+    (IC95% includeva lo zero) e non si è confermato. **Rimosso `score_ordinamento` come criterio
+    di scelta** in `build_consiglio_def.py`/`build_consiglio.py` (TUTTE le 28 leghe, incluso
+    resto_mondo — verificato non aveva comunque mai avuto il meccanismo per DEF, solo per FWD):
+    si ordina sempre per `atteso`, come GK/MID (che non hanno mai avuto questo meccanismo,
+    confermato tuttora corretto: shrink li aiuta, non li danneggia). Righe `ORDINAMENTO:` nei
+    file prediction_*.txt lasciate (write-only, innocue, nessuno le rilegge più per ordinare).
+    **Rifare con** `selection_quality_shrinkage_allroles.py` **ad ogni crescita sostanziale del
+    pool di calibrazione** (non solo per nuove leghe) — è il test più sensibile alla dimensione
+    del campione di tutta la checklist: il verdetto si è già invertito una volta passando da
+    ~130 a ~330 giornate.
 31. **Non-regressione formula produzione vs backtest** — `nonregression_score_atteso_def.py`,
     `nonregression_score_atteso_fwd.py` — confrontano la funzione condivisa `compute_score_atteso_
     <ruolo>` contro il blocco inline REALE di produzione (estratto ed eseguito con `exec`, non
