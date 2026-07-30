@@ -395,15 +395,19 @@ per-lega, momentum N→N+1).
     (stesso principio "non decidere da soli" gia' vissuto su questo tema).
 38. **Matrice granulari cross-ruolo/campo completa (`measure_full_synergy_matrix.py`)** —
     invece delle 4 coppie ipotizzate a mano il 29/07, tutte le combinazioni (ruolo,campo)
-    testate. Trovato: gran parte delle correlazioni piu' forti (es. def:gc vs mid:gc +0.854,
-    def:gc vs def:cs +0.658) sono in realta' lo STESSO evento di squadra (gol subiti in
-    quella partita) visto da piu' angolazioni/giocatori — non sinergia "nuova" in senso
-    stretto, ma la conferma meccanica che gol_subiti/clean_sheet sono eventi condivisi di
-    squadra. Segnali piu' interessanti (non spiegabili da un singolo evento condiviso):
-    `fwd:of vs fwd:gran` (+0.439), `def:pa vs mid:pa` (+0.345) — attaccanti/centrocampisti
-    che "giocano bene insieme" in fase di possesso. Nessun cambio di produzione proposto:
-    servirebbe smontare quanto di questi segnali sia gia' catturato dal residuo generico
-    gia' in uso (sez. C standard) prima di aggiungere bonus specifici per sottocategoria.
+    testate: 406 coppie con campione sufficiente, 104 con |corr|>=0.05 (quasi tutte
+    p<0.05, ma la significativita' e' facile da raggiungere con migliaia di punti — il
+    criterio decisivo e' la MAGNITUDINE, non la sola significativita'). Trovato: le
+    correlazioni piu' forti (def:gc vs mid:gc +0.854, gk:pos vs def:cs +0.849, def:gc vs
+    def:cs +0.658, ecc.) sono in realta' lo STESSO evento di squadra (gol subiti in quella
+    partita/clean sheet) visto da piu' angolazioni/giocatori — non sinergia "nuova" in
+    senso stretto, conferma meccanica che gol_subiti/clean_sheet sono eventi condivisi di
+    squadra (gia' impliciti nel residuo generico usato in sez. C standard). Escludendo
+    queste coppie meccaniche, il resto delle 104 correlazioni e' quasi tutto sotto 0.15 —
+    stesso pattern "collina piatta rumorosa" gia' visto nei bootstrap dei parametri base.
+    **Nessun cambio di produzione**: nessun segnale abbastanza grande/pulito da giustificare
+    un nuovo bonus specifico per sottocategoria granulare, il rischio di overfitting su
+    rumore e' alto vista la quantita' di coppie testate (multiple comparison).
 39. **Sinergia condizionata da casa/trasferta (`measure_synergy_conditional.py`)** — nessuna
     differenza rilevante: +0.122 in casa vs +0.123 in trasferta. **Nessun cambio**: la
     sinergia non ha bisogno di essere condizionata per venue.
