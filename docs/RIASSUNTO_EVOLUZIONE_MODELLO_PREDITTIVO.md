@@ -4226,10 +4226,12 @@ opponent_strength) **non è ancora stato verificato dal vivo** per il suo effett
 velocità di FWD, perché quella run non è mai arrivata al job predict.
 
 Scritto un documento di handoff dedicato per continuare questo lavoro senza dover rileggere tutta
-la sessione: **`docs/HANDOFF_VELOCITA_PIPELINE.md`** — contiene lo scope esatto del test, tutti i
+la sessione: `docs/HANDOFF_VELOCITA_PIPELINE.md` — contenente lo scope esatto del test, tutti i
 6 fix con motivazione, cosa NON toccare (redesign single-process, formule di scoring, copertura
-discovery), stato esatto delle run pendenti, e i prossimi passi in ordine. Chiunque riprenda
-questo filone (anche altra sessione/modello) deve partire da lì.
+discovery), stato esatto delle run pendenti, e i prossimi passi in ordine.
+*(Nota aggiunta il 30/07: quel filone è stato ripreso e chiuso nella sez. 36 qui sotto; il
+documento di handoff è stato fuso per intero nella sez. 36.A2 e poi eliminato — questo RIASSUNTO
+è ora l'unico documento sull'evoluzione del bot.)*
 
 **Task secondario, priorità più bassa, non urgente**: workflow `calibrazione_lega.yml` (generico,
 riusabile per qualunque lega) lanciato per `lega=germania, ruolo=gk, batch_index=0, batch_size=200`
@@ -4240,9 +4242,8 @@ Bundesliga solo dopo che la velocità è risolta e stabile.
 
 In ordine di priorità dichiarato dall'utente:
 
-1. **[PRIORITÀ 1, aperto] Velocità pipeline sotto i 10 minuti** — non ancora confermata. Prossimo
-   passo: verificare l'esito della run `30494326179` e continuare il loop fix→test come descritto
-   in `docs/HANDOFF_VELOCITA_PIPELINE.md`. Nessun fix di formula, solo infrastruttura.
+1. **[PRIORITÀ 1, aperto] Velocità pipeline sotto i 10 minuti** — non ancora confermata a fine
+   sessione 35. *(Chiuso il 30/07 nella sez. 36: tempo sceso a ~8m, vedi 36.K.)*
 2. **[PRIORITÀ 2, aperto] Calibrazione Bundesliga** — solo `gk` lanciato (run `30491495720`, mai
    riverificato), mancano `def`/`mid`/`fwd`. Da riprendere solo dopo il punto 1.
 3. **[Backlog, non urgente] `formazione_resto_mondo` arretrata** — riaperta il 29/07 su richiesta
@@ -4266,11 +4267,13 @@ In ordine di priorità dichiarato dall'utente:
    laterale del tema più ampio annunciato, non sostituisce la spiegazione dell'utente.
 di fix). Nessuna modifica pendente non salvata a fine sezione.
 
-## 36. Sessione 29/07 notte (ripresa dall'handoff) — Velocità pipeline: da 21m06s a ~10m, causa radice trovata nei log
+## 36. Sessioni 29-30/07 notte — Velocità pipeline: da 21m06s a ~8m, causa radice trovata nei log
 
-**Punto di partenza**: `docs/HANDOFF_VELOCITA_PIPELINE.md`, scritto dalla sessione precedente
-(Sonnet 5) che non aveva raggiunto il target. Run di riferimento verificata a scope identico
-(gw98, `arena_dedicata=portogallo:2,scozia:2,croazia:2`): **21m06s** (`30494326179`, chiusa con
+**Punto di partenza**: una sessione precedente (Sonnet 5) aveva lavorato tutta la notte del 29/07
+sullo stesso obiettivo senza raggiungerlo, lasciando un documento di handoff (poi fuso qui per
+intero, vedi 36.A2, ed eliminato come file separato — questo RIASSUNTO è l'unico documento
+sull'evoluzione del bot). Run di riferimento verificata a scope identico (gw98,
+`arena_dedicata=portogallo:2,scozia:2,croazia:2`): **21m06s** (`30494326179`, chiusa con
 successo — la sessione precedente non aveva potuto verificarne l'esito).
 
 ### 36.A — I due vincoli veri, misurati (non ipotizzati)
@@ -4303,6 +4306,39 @@ governato da `somma_job_secondi / 20`, e ogni job in più aggiunge i suoi ~19s f
 commento in `discovery_fixture.py` e sez. 30) ma poi contraddetto: il fix #4 della sessione
 precedente aveva **abbassato** `PREDICT_SHARD_TARGET_SIZE` da 25 a 15, cioè aumentato il numero
 di job, che con un tetto fisso a 20 non aiuta e paga solo più overhead.
+
+### 36.A2 — Tentativo di redesign scartato e guardrail (merge dall'ex `HANDOFF_VELOCITA_PIPELINE.md`)
+
+Contenuto storico della sessione precedente (Sonnet 5), fuso qui perché il RIASSUNTO deve restare
+l'unico documento sull'evoluzione del bot — l'handoff separato è stato eliminato.
+
+**Tentativo di redesign strutturale (single-process invece di matrice GitHub Actions)**: fatto su
+branch separato `redesign-async-pipeline` (in un clone a parte), testato dal vivo 4 volte, poi
+**ELIMINATO COMPLETAMENTE** su richiesta esplicita dell'utente dopo che i test hanno confermato un
+limite strutturale: il rate-limit Sorare reagisce fortemente a **connessioni concorrenti dalla
+stessa fonte/IP**, non solo al volume medio di richieste — un solo processo (sequenziale o con
+pool di thread, anche con pacing conservativo) non riesce a eguagliare il throughput della
+pipeline a matrice multi-runner (dove ogni runner GitHub Actions ha un IP diverso). L'utente ha
+definito questo tentativo "fallito miseramente". **Non riproporlo.**
+
+**Guardrail confermati validi per tutto il filone (sez. 36 intera)**:
+- non toccare la logica di scoring/shrinkage/formule nei `test_{gk,def,mid,mls_fwd_all}.py` per
+  guadagnare velocità — quella parte è tarata a lungo e chiusa (vedi sez. "Roadmap tuning
+  definitivo"); il problema è sempre stato di infrastruttura/velocità di esecuzione, mai di
+  formula (unica eccezione, non di formula ma di bug: il fix `presence_rate` in 36.E, che
+  ripristina predizioni mancanti per errore, non ne cambia la logica);
+- non abbassare la qualità/copertura della discovery (saltare leghe, ridurre pagine scansionate)
+  per andare più veloci — precedente reale di una scansione troncata che perdeva giocatori
+  posseduti in silenzio ("Zinckernagel perso in silenzio", vedi commenti in `discovery_fixture.py`);
+- nei log dei job discovery/predict compare il tag `[turchia_gk_discovery]` — è solo il nome del
+  modulo Python condiviso (`turchia_gk_discovery.py`, importato come `base` da quasi tutti gli
+  script) usato per il logging, **non significa che c'entri la lega Turchia**.
+
+**Task secondario indipendente, menzionato nell'handoff originale**: workflow `calibrazione_lega.yml`
+(generico, riusabile) lanciato per `lega=germania, ruolo=gk` (run `30491495720`, mai riverificato
+nel corso di questo filone). Non correlato alla velocità della pipeline formazioni: resta un
+elemento della checklist generale a priorità più bassa (vedi sezione dedicata più avanti se
+presente, o verificarne lo stato quando si riprende quel filone).
 
 ### 36.B — Cosa è stato cambiato (solo infrastruttura, nessuna formula toccata)
 
