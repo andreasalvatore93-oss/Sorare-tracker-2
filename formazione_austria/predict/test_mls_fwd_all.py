@@ -1109,6 +1109,102 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
     return results
 
 
+def compute_score_atteso_fwd(scores, is_home_flags,
+                             residual_values, granulari_values,
+                             pos_decisive_values, neg_decisive_values,
+                             passing_values,
+                             target_is_home, p_gioca=1.0,
+                             half_life=None, trend_intensity=None,
+                             shrink_k=SHRINK_K_OUTLIER_FWD,
+                             media_ruolo_prior=MEDIA_RUOLO_FWD_PRIOR,
+                             use_stadio_d=True,
+                             presence_rate=None):
+    """FUNZIONE CONDIVISA (30/07, propagata da MLS a tutte le leghe, vedi
+    backlog project_backlog_fwd_shared_function_solo_mls): calcola lo
+    `score_ordinamento` FWD con la STESSA formula (meno shrinkage, shrink_k=0)
+    usata per il punteggio reale, cosi' le due non possono divergere. Gemella
+    di compute_score_atteso_fwd in formazione_mls/predict/test_mls_fwd_all.py.
+    Non include le correzioni opponent_lambda_mult/fwd_offense_delta (dipendono
+    dallo slug squadra avversaria, non passato qui) -- stessa limitazione gia'
+    presente nella versione MLS originale.
+
+    Tutti gli array sono lo STORICO (stessa lunghezza n, ordine cronologico);
+    target_is_home e' la partita da predire. p_gioca=1.0 nel backtest."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    n = len(scores)
+    weights = exponential_weights(n, half_life)
+
+    media_granulari_pesata = weighted_mean(granulari_values, weights)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _s, _l = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 34.42 + 18.71 * presence_rate)
+    grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    grezzo_nuovo_corretto = (
+        (n / (n + shrink_k)) * grezzo_nuovo
+        + (shrink_k / (n + shrink_k)) * media_ruolo_prior
+    )
+    fattore_casa_trasferta = compute_split_factor(residual_values, is_home_flags, target_is_home)
+    score_atteso = grezzo_nuovo_corretto * fattore_casa_trasferta
+
+    # --- Stadio D (FWD): sola correzione "Passaggio" condizionata per venue ---
+    if not use_stadio_d:
+        return score_atteso
+    fallback_passaggio = weighted_mean(passing_values, weights)
+    media_passaggio_condizionata_venue = media_condizionata(
+        passing_values, weights, is_home_flags, target_is_home, fallback_passaggio)
+    score_atteso += (media_passaggio_condizionata_venue - fallback_passaggio)
+    return score_atteso
+
+
+def rigorous_backtest_prod_fwd(scores, is_home_flags,
+                               residual_values, granulari_values,
+                               pos_decisive_values, neg_decisive_values,
+                               passing_values,
+                               min_history=6, half_life=None, trend_intensity=None,
+                               range_multiplier=1.0):
+    """Backtest walk-forward ALLINEATO ALLA PRODUZIONE per FWD: ad ogni partita
+    richiama compute_score_atteso_fwd() -- la STESSA funzione usata per
+    score_ordinamento -- sul solo storico precedente. Stessa struttura di
+    ritorno del vecchio rigorous_backtest, per restare compatibile con
+    aggregate_grid_search.py."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    rows = []
+    n = len(scores)
+    for i in range(min_history, n):
+        predetto = compute_score_atteso_fwd(
+            scores[:i], is_home_flags[:i], residual_values[:i], granulari_values[:i],
+            pos_decisive_values[:i], neg_decisive_values[:i], passing_values[:i],
+            target_is_home=is_home_flags[i], p_gioca=1.0,
+            half_life=half_life, trend_intensity=trend_intensity)
+        reale = scores[i]
+        w = exponential_weights(i, half_life)
+        dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
+        range_conf = dev_std * range_multiplier
+        dentro_range = abs(reale - predetto) <= range_conf if range_conf > 0 else None
+        rows.append({'i': i, 'predetto': predetto, 'reale': reale,
+                     'errore': reale - predetto, 'dentro_range': dentro_range})
+
+    if not rows:
+        return {'rows': [], 'mae': None, 'pct_dentro_range': None, 'n_test': 0}
+    errori = [abs(r['errore']) for r in rows]
+    mae = sum(errori) / len(errori)
+    coperti = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
+    pct = (sum(1 for c in coperti if c) / len(coperti) * 100.0) if coperti else None
+    return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct, 'n_test': len(rows)}
+
+
 def build_prediction(player_slug):
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games, live_team_slug = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
@@ -1517,16 +1613,18 @@ def build_prediction(player_slug):
     )
     score_atteso = grezzo_nuovo_corretto * fattore_casa_trasferta
 
-    # --- SCORE DI ORDINAMENTO (29/07, esteso a tutte le leghe -- gia' in produzione
-    # su MLS, sez. 27.C/28.E del RIASSUNTO): lo shrinkage minimizza il MAE del singolo
-    # punteggio ma comprime le differenze fra giocatori, il segnale che serve per
-    # SCEGLIERE chi schierare. MLS usa una funzione condivisa compute_score_atteso_fwd
-    # (non esistente qui, sez. 31.D/backlog project_backlog_fwd_shared_function_solo_mls
-    # -- FWD non ha mai avuto la funzione condivisa fuori da MLS): con shrink_k=0 la
-    # formula shrinkage si riduce algebricamente a grezzo_nuovo puro (n/(n+0)=1,
-    # 0/(n+0)=0), quindi si riusa direttamente la variabile gia' calcolata sopra,
-    # nessuna nuova funzione necessaria.
-    score_ordinamento = grezzo_nuovo * fattore_casa_trasferta
+    # --- SCORE DI ORDINAMENTO (30/07, funzione condivisa propagata da MLS,
+    # vedi compute_score_atteso_fwd sopra): stesso principio gia' in
+    # produzione MLS -- lo shrinkage minimizza il MAE del singolo punteggio
+    # ma comprime le differenze fra giocatori, il segnale che serve per
+    # SCEGLIERE chi schierare. shrink_k=0 riduce algebricamente alla stessa
+    # formula di grezzo_nuovo puro, ma passa ora dalla funzione condivisa
+    # invece di un calcolo locale duplicato.
+    score_ordinamento = compute_score_atteso_fwd(
+        scores, is_home_flags, residual_values, granulari_values,
+        pos_decisive_values, neg_decisive_values, passing_values,
+        target_is_home=next_is_home, p_gioca=p_gioca, shrink_k=0.0,
+        use_stadio_d=False)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
