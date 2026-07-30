@@ -551,25 +551,35 @@ HTML_TEMPLATE = """<!doctype html>
   }}
   h1 {{ font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }}
   .subhead {{ color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }}
-  .role-block {{ margin-bottom: 28px; }}
+  /* Layout A RIGA (30/07, richiesta esplicita utente): i 4 ruoli affiancati
+     in un'unica riga -- stessa struttura orizzontale della formazione vera
+     (formazione_mls/build_formazione_finale.py, .lineup-row/.card-strip),
+     non piu' una sezione per ruolo impilata verticalmente. */
+  .formazione-row {{ display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }}
+  .ruolo-colonna {{ flex: 1 1 200px; min-width: 180px; }}
   .role-title {{
     font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--role-color); margin-bottom: 10px;
   }}
-  .card-row {{ display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }}
   .pcard {{
-    flex: 0 0 160px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px; position: relative;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; position: relative; margin-bottom: 8px;
   }}
   .pcard.titolare {{ border-color: var(--role-color); box-shadow: 0 0 0 1px var(--role-color); }}
+  .pcard.backup {{ padding: 8px 10px; }}
   .pcard-tag {{
     font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--role-color); margin-bottom: 6px;
   }}
-  .pcard-name {{ font-size: 0.8rem; font-weight: 650; line-height: 1.25; margin-bottom: 6px; min-height: 2em; }}
+  .pcard.backup .pcard-tag {{ margin-bottom: 2px; }}
+  .pcard-name {{ font-size: 0.8rem; font-weight: 650; line-height: 1.25; margin-bottom: 6px; }}
+  .pcard.backup .pcard-name {{ font-size: 0.72rem; margin-bottom: 2px; }}
   .pcard-score {{ font-size: 1.3rem; font-weight: 800; color: var(--role-color); font-variant-numeric: tabular-nums; }}
+  .pcard.backup .pcard-score {{ font-size: 0.9rem; }}
   .pcard-range {{ font-size: 0.62rem; color: var(--muted); margin-bottom: 6px; }}
+  .pcard.backup .pcard-range {{ margin-bottom: 0; }}
   .pcard-match {{ font-size: 0.66rem; color: var(--text); opacity: 0.8; line-height: 1.3; }}
+  .pcard.backup .pcard-match {{ display: none; }}
   .empty {{ color: var(--muted); font-size: 0.8rem; }}
   .footer {{ margin-top: 32px; color: var(--muted); font-size: 0.72rem; }}
 </style>
@@ -577,7 +587,9 @@ HTML_TEMPLATE = """<!doctype html>
 <body>
 <h1>{page_title}</h1>
 <p class="subhead">{page_subhead}</p>
-{role_blocks}
+<div class="formazione-row">
+{colonne_ruolo}
+</div>
 <p class="footer">{footer}</p>
 </body>
 </html>
@@ -588,7 +600,7 @@ def _card_html(c, ruolo, is_titolare):
     tag = "TITOLARE" if is_titolare else "BACKUP"
     color = ROLE_COLORS_HTML[ruolo]
     match = f"{c['squadra'] or 'N/D'} vs {c['avversario'] or 'N/D'}"
-    classe = "pcard titolare" if is_titolare else "pcard"
+    classe = "pcard titolare" if is_titolare else "pcard backup"
     return (
         f'<div class="{classe}" style="--role-color:{color}">'
         f'<div class="pcard-tag">{tag}</div>'
@@ -601,16 +613,16 @@ def _card_html(c, ruolo, is_titolare):
 
 
 def formatta_report_html(lega, risultati, n_backup):
-    role_blocks = []
+    colonne = []
     for ruolo in ('gk', 'def', 'mid', 'fwd'):
         candidati = risultati.get(ruolo, [])
         color = ROLE_COLORS_HTML[ruolo]
         cards = "".join(_card_html(c, ruolo, idx == 0) for idx, c in enumerate(candidati))
         body = cards if candidati else '<p class="empty">Nessun dato disponibile.</p>'
-        role_blocks.append(
-            f'<div class="role-block">'
+        colonne.append(
+            f'<div class="ruolo-colonna">'
             f'<div class="role-title" style="--role-color:{color}">{ROLE_LABELS[ruolo]}</div>'
-            f'<div class="card-row">{body}</div>'
+            f'{body}'
             f'</div>'
         )
 
@@ -621,7 +633,7 @@ def formatta_report_html(lega, risultati, n_backup):
     footer = ("Script separato e READ-ONLY rispetto alla pipeline di produzione — non tiene conto "
               "di budget/anti-stack/sinergie/multi-lineup.")
     return HTML_TEMPLATE.format(page_title=page_title, page_subhead=page_subhead,
-                                 role_blocks="\n".join(role_blocks), footer=footer)
+                                 colonne_ruolo="\n".join(colonne), footer=footer)
 
 
 # Tetto REALE di job concorrenti dell'account GitHub Actions (stesso valore
