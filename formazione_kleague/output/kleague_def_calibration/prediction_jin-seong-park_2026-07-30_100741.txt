@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:07:41.689531Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jin-seong-park: 41 pt attesi (33-57)
+   ORDINAMENTO: 52.01
+   SQUADRA: sangju-sangmu-sangju | AVVERSARIO: pohang-steelers-pohang
+======================================================================
+
+######################################################################
+# GIOCATORE: jin-seong-park
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jin-seong-park (squadra: sangju-sangmu-sangju)
+Generato: 2026-07-30T10:07:41.689345Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 26
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-05-13 | ANY vs SAN | k-league-1 | score=68.0 | peso=0.933
+  2026-07-18 | GAN vs SAN | k-league-1 | score=45.7 | peso=0.966
+  2026-07-22 | GWA vs SAN | k-league-1 | score=44.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 52.44
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 17.44 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.00, delta avversario -0.23 | Passaggio condizionato: delta venue +0.00, delta avversario -0.40 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.22 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 10.70
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.5 - 68.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 52.44 | Media score fuori casa: 52.71
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.7
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.011
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T10:30
+Casa: Pohang Steelers FC | Trasferta: Gimcheon Sangmu
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.2 (range 33.2 - 56.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 52.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.65
+Punteggio REALE ottenuto in quella partita: 44.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
