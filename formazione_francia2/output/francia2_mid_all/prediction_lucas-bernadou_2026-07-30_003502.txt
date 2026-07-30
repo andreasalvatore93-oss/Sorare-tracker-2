@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T00:35:02.152027Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) lucas-bernadou: 49 pt attesi (33-66)
+   SQUADRA: grenoble-foot-38-grenoble | AVVERSARIO: dunkerque-dunkerque
+======================================================================
+
+######################################################################
+# GIOCATORE: lucas-bernadou
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lucas-bernadou (squadra: grenoble-foot-38-grenoble)
+Generato: 2026-07-30T00:35:02.151426Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 15
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-06 | ANN vs GRE | ligue-2-fr | score=35.4 | peso=0.758
+  2026-02-14 | GRE vs SR | ligue-2-fr | score=41.1 | peso=0.779
+  2026-02-20 | NAN vs GRE | ligue-2-fr | score=57.5 | peso=0.801
+  2026-02-27 | GRE vs BOU | ligue-2-fr | score=55.2 | peso=0.824
+  2026-03-06 | ROD vs GRE | ligue-2-fr | score=32.5 | peso=0.847
+  2026-03-14 | GRE vs STE | ligue-2-fr | score=56.1 | peso=0.871
+  2026-03-20 | LAV vs GRE | ligue-2-fr | score=71.4 | peso=0.895
+  2026-04-03 | GRE vs CLE | ligue-2-fr | score=34.2 | peso=0.920
+  2026-04-25 | GRE vs LEM | ligue-2-fr | score=56.4 | peso=0.946
+  2026-05-02 | DUN vs GRE | ligue-2-fr | score=35.2 | peso=0.973
+  2026-05-09 | GRE vs TRO | ligue-2-fr | score=66.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 49.57
+  di cui Punteggio decisivo (level_score) medio: 37.33 | Punteggio complessivo (granulari) medio: 12.24 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 38.78 (delta +1.45)
+  Efficacia offensiva condizionata: delta venue +0.14, delta avversario +0.40 | Passaggio condizionato: delta venue -0.22, delta avversario -0.42 | Gol subiti condizionato: delta venue -0.16, delta avversario -0.73 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.51
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.2 - 66.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.70 (differenza: +1.81)
+Media score in casa: 51.63 | Media score fuori casa: 46.40
+Fattore casa/trasferta applicato: 1.009 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.056
+Fattore falli (casa/trasferta, da dati reali): 0.986
+Fattore duelli (casa/trasferta, da dati reali): 0.980
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.989
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore trend (media ultime 5: 52.8 vs media ultime 10: 50.6): 1.009
+P(gioca): 73.33% (fonte: tasso di presenza storico (11/15))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T18:45
+Casa: US du Littoral de Dunkerque | Trasferta: Grenoble Foot 38
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.8 (range 33.4 - 66.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.57
+Punteggio REALE ottenuto in quella partita: 66.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +19.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.2 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.3    71.4    +15.1    14.5        NO
+   7        7      58.0    34.2    -23.8    18.3        NO
+   8        8      35.4    56.4    +21.0    18.7        NO
+   9        9      50.1    35.2    -14.9    17.9        SI
+  10       10      35.6    66.8    +31.2    18.0        NO
+
+MAE (errore assoluto medio): 21.21
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 20.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

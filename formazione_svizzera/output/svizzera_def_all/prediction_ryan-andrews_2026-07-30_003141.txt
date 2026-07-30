@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T00:31:41.065098Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) ryan-andrews: 40 pt attesi (20-53)
+   ORDINAMENTO: 35.36
+   SQUADRA: young-boys-bern | AVVERSARIO: thun-thun
+======================================================================
+
+######################################################################
+# GIOCATORE: ryan-andrews
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ryan-andrews (squadra: young-boys-bern)
+Generato: 2026-07-30T00:31:41.064612Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: super-league-ch (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-26 | FCZ vs YBB | super-league-ch | score=14.4 | peso=0.785
+  2025-10-30 | GCZ vs YBB | super-league-ch | score=35.1 | peso=0.812
+  2025-11-02 | YBB vs BAS | super-league-ch | score=56.2 | peso=0.841
+  2025-11-09 | STG vs YBB | super-league-ch | score=36.1 | peso=0.871
+  2025-11-30 | SER vs YBB | super-league-ch | score=48.0 | peso=0.901
+  2025-12-07 | SIO vs YBB | super-league-ch | score=46.3 | peso=0.933
+  2025-12-17 | YBB vs GCZ | super-league-ch | score=2.9 | peso=0.966
+  2026-01-17 | YBB vs LAU | super-league-ch | score=38.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 34.70
+  di cui Punteggio decisivo (level_score) medio: 32.28 | Punteggio complessivo (granulari) medio: 2.42 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.89, delta avversario +0.30 | Passaggio condizionato: delta venue -0.33, delta avversario +0.22 | Clean sheet/disimpegni condizionato: delta venue -0.73, delta avversario -0.01 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.74
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 14.4 - 48.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.63 (differenza: +6.11)
+Media score in casa: 32.67 | Media score fuori casa: 35.98
+Fattore casa/trasferta applicato: 1.010 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.2
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.819
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.009
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.990
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T18:30
+Casa: FC Thun | Trasferta: BSC Young Boys
+Competizione: super-league-ch
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 40.0 (range 19.7 - 53.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 35.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 34.01
+Punteggio REALE ottenuto in quella partita: 38.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=20.0+range=1.2x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      38.3     2.9    -35.4    15.5        NO
+   7        7      33.4    38.9     +5.5    21.6        SI
+
+MAE (errore assoluto medio): 20.47
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
