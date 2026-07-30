@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T11:05:13.549946Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) younes-ebnoutalib: 54 pt attesi (30-74)
+   ORDINAMENTO: 58.74
+   SQUADRA: eintracht-frankfurt-frankfurt-am-main | AVVERSARIO: union-berlin-berlin
+======================================================================
+
+######################################################################
+# GIOCATORE: younes-ebnoutalib
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: younes-ebnoutalib (squadra: eintracht-frankfurt-frankfurt-am-main)
+Generato: 2026-07-30T11:05:13.548910Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-29 | BSC vs ELV | 2-bundesliga | score=82.3 | peso=0.697
+  2025-09-14 | ELV vs SGD | 2-bundesliga | score=76.1 | peso=0.717
+  2025-09-20 | EBS vs ELV | 2-bundesliga | score=70.0 | peso=0.737
+  2025-09-27 | ELV vs KIE | 2-bundesliga | score=42.4 | peso=0.758
+  2025-10-05 | FCM vs ELV | 2-bundesliga | score=31.5 | peso=0.779
+  2025-10-19 | ELV vs SGF | 2-bundesliga | score=95.9 | peso=0.801
+  2025-10-25 | DSC vs ELV | 2-bundesliga | score=33.1 | peso=0.824
+  2025-11-08 | S04 vs ELV | 2-bundesliga | score=25.2 | peso=0.847
+  2025-11-23 | KSC vs ELV | 2-bundesliga | score=60.0 | peso=0.871
+  2025-11-30 | ELV vs SVD | 2-bundesliga | score=40.0 | peso=0.895
+  2025-12-06 | SCP vs ELV | 2-bundesliga | score=64.4 | peso=0.920
+  2025-12-14 | ELV vs F95 | 2-bundesliga | score=48.6 | peso=0.946
+  2025-12-21 | PRM vs ELV | 2-bundesliga | score=77.6 | peso=0.973
+  2026-01-09 | SGE vs BVB | bundesliga-de | score=61.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 57.43
+  di cui Punteggio decisivo (level_score) medio: 52.46 | Punteggio complessivo (granulari) medio: 4.97 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.78 (delta +0.12) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 20.31
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.1 - 77.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.59 (differenza: +3.72)
+Media score in casa: 60.60 | Media score fuori casa: 55.51
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.003
+Fattore falli (casa/trasferta, da dati reali): 0.988
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.986
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.991
+Fattore trend (media ultime 5: 58.4 vs media ultime 10: 53.8): 1.026
+P(gioca): 36.84% (fonte: tasso di presenza storico (14/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FC Union Berlin | Trasferta: Eintracht Frankfurt
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.3 (range 30.0 - 74.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.08
+Punteggio REALE ottenuto in quella partita: 61.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=20.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      67.5    33.1    -34.4    27.8        NO
+   7        7      30.1    25.2     -4.9    29.4        SI
+   8        8      51.7    60.0     +8.3    31.0        SI
+   9        9      39.3    40.0     +0.7    28.9        SI
+  10       10      31.7    64.4    +32.7    27.7        NO
+  11       11      66.1    48.6    -17.5    26.3        SI
+  12       12      71.6    77.6     +6.0    24.9        SI
+  13       13      61.7    61.2     -0.5    25.1        SI
+
+MAE (errore assoluto medio): 13.12
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
