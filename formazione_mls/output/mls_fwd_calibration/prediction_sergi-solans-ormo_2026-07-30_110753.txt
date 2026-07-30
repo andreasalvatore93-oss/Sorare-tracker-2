@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T11:07:53.224534Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) sergi-solans-ormo: 51 pt attesi (28-77)
+   ORDINAMENTO: 52.49
+   SQUADRA: real-salt-lake-salt-lake-city-utah | AVVERSARIO: st-louis-city-st-louis-missouri
+======================================================================
+
+######################################################################
+# GIOCATORE: sergi-solans-ormo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sergi-solans-ormo (squadra: real-salt-lake-salt-lake-city-utah)
+Generato: 2026-07-30T11:07:53.223808Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-08 | ATL vs RSL | mlspa | score=79.4 | peso=0.758
+  2026-03-15 | RSL vs ATX | mlspa | score=32.6 | peso=0.779
+  2026-03-22 | SD vs RSL | mlspa | score=60.0 | peso=0.801
+  2026-04-04 | RSL vs SKC | mlspa | score=70.5 | peso=0.824
+  2026-04-19 | RSL vs SD | mlspa | score=96.1 | peso=0.847
+  2026-04-23 | RSL vs MIA | mlspa | score=30.5 | peso=0.871
+  2026-05-02 | RSL vs POR | mlspa | score=60.9 | peso=0.895
+  2026-05-17 | RSL vs RAP | mlspa | score=73.1 | peso=0.920
+  2026-05-23 | MIN vs RSL | mlspa | score=34.7 | peso=0.946
+  2026-07-23 | LAFC vs RSL | mlspa | score=32.2 | peso=0.973
+  2026-07-26 | POR vs RSL | mlspa | score=25.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 53.20
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=11): 53.37 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 50.84 | Punteggio complessivo (granulari) medio: 2.37 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.17 (delta -0.06) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 22.94
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.5 - 79.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.79 (differenza: +4.14)
+Media score in casa: 60.62 | Media score fuori casa: 46.44
+Fattore casa/trasferta applicato: 0.990 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.4
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.884
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 45.4 vs media ultime 10: 51.6): 0.963
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: St. Louis City SC | Trasferta: Real Salt Lake
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.7 (range 28.0 - 76.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 52.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.37
+Punteggio REALE ottenuto in quella partita: 25.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -30.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=20.0+trend_int=1.3' (half_life=9.0, range_mult=1.2, opp_sens=20.0, trend_int=1.3)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      55.9    60.9     +5.0    29.3        SI
+   7        7      65.8    73.1     +7.3    26.5        SI
+   8        8      54.9    34.7    -20.2    24.9        SI
+   9        9      31.3    32.2     +0.9    26.0        SI
+  10       10      42.9    25.9    -17.0    26.5        SI
+
+MAE (errore assoluto medio): 10.11
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
