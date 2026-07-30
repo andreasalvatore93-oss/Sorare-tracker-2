@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T11:37:14.734674Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) andrej-ilic: 49 pt attesi (26-77)
+   ORDINAMENTO: 49.12
+   SQUADRA: union-berlin-berlin | AVVERSARIO: eintracht-frankfurt-frankfurt-am-main
+======================================================================
+
+######################################################################
+# GIOCATORE: andrej-ilic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andrej-ilic (squadra: union-berlin-berlin)
+Generato: 2026-07-30T11:37:14.730586Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | FCU vs VFB | bundesliga-de | score=60.0 | peso=0.559
+  2025-08-31 | BVB vs FCU | bundesliga-de | score=30.7 | peso=0.574
+  2025-09-13 | FCU vs TSG | bundesliga-de | score=19.1 | peso=0.590
+  2025-09-21 | SGE vs FCU | bundesliga-de | score=80.0 | peso=0.607
+  2025-09-28 | FCU vs HSV | bundesliga-de | score=21.8 | peso=0.624
+  2025-10-04 | B04 vs FCU | bundesliga-de | score=31.5 | peso=0.642
+  2025-10-17 | FCU vs BMG | bundesliga-de | score=34.9 | peso=0.660
+  2025-11-01 | FCU vs SCF | bundesliga-de | score=33.6 | peso=0.678
+  2025-11-23 | STP vs FCU | bundesliga-de | score=60.0 | peso=0.697
+  2026-01-10 | FCU vs M05 | bundesliga-de | score=25.3 | peso=0.717
+  2026-01-18 | VFB vs FCU | bundesliga-de | score=30.5 | peso=0.737
+  2026-01-24 | FCU vs BVB | bundesliga-de | score=34.0 | peso=0.758
+  2026-01-31 | TSG vs FCU | bundesliga-de | score=24.1 | peso=0.779
+  2026-02-14 | HSV vs FCU | bundesliga-de | score=76.6 | peso=0.801
+  2026-02-21 | FCU vs B04 | bundesliga-de | score=38.2 | peso=0.824
+  2026-03-08 | FCU vs SVW | bundesliga-de | score=41.9 | peso=0.847
+  2026-03-15 | SCF vs FCU | bundesliga-de | score=36.3 | peso=0.871
+  2026-04-05 | FCU vs STP | bundesliga-de | score=77.5 | peso=0.895
+  2026-04-11 | FCH vs FCU | bundesliga-de | score=41.2 | peso=0.920
+  2026-04-18 | FCU vs WOB | bundesliga-de | score=70.3 | peso=0.946
+  2026-05-10 | M05 vs FCU | bundesliga-de | score=74.9 | peso=0.973
+  2026-05-16 | FCU vs FCA | bundesliga-de | score=77.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 48.03
+  di cui Punteggio decisivo (level_score) medio: 47.09 | Punteggio complessivo (granulari) medio: 0.95 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.23 (delta +0.24) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 20.89
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.3 - 76.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.96 (differenza: +0.94)
+Media score in casa: 44.54 | Media score fuori casa: 48.58
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.951
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 68.4 vs media ultime 10: 55.9): 1.067
+P(gioca): 64.71% (fonte: tasso di presenza storico (22/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FC Union Berlin | Trasferta: Eintracht Frankfurt
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.8 (range 26.1 - 77.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.13
+Punteggio REALE ottenuto in quella partita: 77.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +31.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.3    34.9    -11.4    26.5        SI
+   7        7      37.9    33.6     -4.3    24.1        SI
+   8        8      53.6    60.0     +6.4    22.2        SI
+   9        9      42.7    25.3    -17.4    22.5        SI
+  10       10      32.6    30.5     -2.1    22.0        SI
+  11       11      29.3    34.0     +4.7    20.8        SI
+  12       12      34.9    24.1    -10.8    19.5        SI
+  13       13      41.5    76.6    +35.1    19.1        NO
+  14       14      37.6    38.2     +0.6    23.7        SI
+  15       15      50.9    41.9     -9.0    22.4        SI
+  16       16      41.9    36.3     -5.6    21.2        SI
+  17       17      56.0    77.5    +21.5    20.1        NO
+  18       18      65.1    41.2    -23.9    23.3        NO
+  19       19      57.6    70.3    +12.7    22.2        SI
+  20       20      51.2    74.9    +23.7    23.1        NO
+  21       21      53.6    77.9    +24.3    24.2        NO
+
+MAE (errore assoluto medio): 13.34
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
