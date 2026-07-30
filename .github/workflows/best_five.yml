@@ -35,6 +35,10 @@ on:
         description: 'Numero di backup per ruolo'
         required: false
         default: '2'
+      starter_odds:
+        description: 'Soglia starterOdds prefiltro (0-1), stesso significato di starter_odds_min in formazione_giornata.yml'
+        required: false
+        default: '0.70'
 
 permissions:
   contents: write
@@ -55,6 +59,7 @@ jobs:
         name: Qualita' (gia' in discovery) + starterOdds, poi shard
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          BEST_FIVE_MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds || '0.70' }}
           PYTHONUNBUFFERED: "1"
         run: |
           set -u
