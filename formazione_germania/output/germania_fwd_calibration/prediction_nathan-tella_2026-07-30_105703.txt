@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:57:03.620069Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) nathan-tella: 51 pt attesi (30-62)
+   ORDINAMENTO: 61.64
+   SQUADRA: bayer-leverkusen-leverkusen | AVVERSARIO: elversberg-saarbrucken
+======================================================================
+
+######################################################################
+# GIOCATORE: nathan-tella
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: nathan-tella (squadra: bayer-leverkusen-leverkusen)
+Generato: 2026-07-30T10:57:03.619159Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | B04 vs TSG | bundesliga-de | score=42.3 | peso=0.801
+  2025-08-30 | SVW vs B04 | bundesliga-de | score=60.0 | peso=0.824
+  2025-09-12 | B04 vs SGE | bundesliga-de | score=75.1 | peso=0.847
+  2025-12-20 | RBL vs B04 | bundesliga-de | score=70.2 | peso=0.871
+  2026-04-04 | B04 vs WOB | bundesliga-de | score=72.0 | peso=0.895
+  2026-04-11 | BVB vs B04 | bundesliga-de | score=37.4 | peso=0.920
+  2026-04-18 | B04 vs FCA | bundesliga-de | score=51.7 | peso=0.946
+  2026-04-25 | KOE vs B04 | bundesliga-de | score=70.9 | peso=0.973
+  2026-05-02 | B04 vs RBL | bundesliga-de | score=87.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 63.44
+  di cui Punteggio decisivo (level_score) medio: 52.98 | Punteggio complessivo (granulari) medio: 10.46 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 4.20 (delta -0.83) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.66
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.3 - 75.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.20 (differenza: +4.46)
+Media score in casa: 65.74 | Media score fuori casa: 59.62
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.782
+Fattore falli (casa/trasferta, da dati reali): 0.989
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.981
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 26.47% (fonte: tasso di presenza storico (9/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: SV 07 Elversberg | Trasferta: Bayer 04 Leverkusen
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.6 (range 29.5 - 62.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.03
+Punteggio REALE ottenuto in quella partita: 87.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +27.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      61.3    51.7     -9.6    17.9        SI
+   7        7      69.8    70.9     +1.1    16.7        SI
+   8        8      47.5    87.6    +40.1    16.3        NO
+
+MAE (errore assoluto medio): 16.95
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
