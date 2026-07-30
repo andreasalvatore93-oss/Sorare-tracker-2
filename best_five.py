@@ -456,6 +456,20 @@ def costruisci_best_five(lega, ruoli, n_backup):
     risultati = {}
     for ruolo in ruoli:
         path_all = trova_ultimo_output(lega, ruolo)
+        # Il formato VECCHIO (pool intero) ha la PRECEDENZA solo se e'
+        # davvero il piu' recente -- FIX (30/07, bug reale segnalato
+        # dall'utente): senza questo confronto, un run FRESCO in formato
+        # NUOVO (es. GK/DEF ricalcolati oggi) veniva scartato in favore di un
+        # prediction_all_*.txt vecchio di ore, perche' il vecchio formato
+        # aveva sempre la precedenza a prescindere dall'eta'. Le starterOdds
+        # cambiano di continuo, un risultato di ore fa non va bene per un
+        # uso ripetuto nel tempo (non solo "oggi").
+        per_slug_paths = trova_output_per_slug(lega, ruolo)
+        piu_recente_per_slug = max((os.path.getmtime(p) for p in per_slug_paths), default=None)
+        if path_all and piu_recente_per_slug is not None and piu_recente_per_slug > os.path.getmtime(path_all):
+            log(f"[{ruolo}] Formato pool intero ({os.path.basename(path_all)}) piu' vecchio "
+                f"dei risultati per-slug piu' recenti -- ignorato, uso quelli freschi.")
+            path_all = None
         consiglio_path = None if path_all else esegui_consiglio(lega, ruolo)
         if path_all:
             # Formato VECCHIO (pool intero, es. GK/DEF K League gia'
