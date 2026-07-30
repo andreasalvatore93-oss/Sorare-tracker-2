@@ -4,20 +4,28 @@
 lavoro** (l'utente alterna due account, poca/nessuna memoria condivisa tra sessioni). Non
 presupporre nessun contesto pregresso: tutto quello che serve è qui dentro.
 
-**Aggiornato 27/07/2026 (sera)**: se cerchi solo "qual è lo stato adesso", salta direttamente
-alla **sezione 26** (l'ultima) — è l'HANDOFF completo di questa sessione, scritto apposta per il
-prossimo account Claude: espansione a 20 campionati, calibrazione pooled, la SCOPERTA che il
-backtest di calibrazione era divergente dalla formula di produzione, e il refactor DEF avviato
-(funzione condivisa `compute_score_atteso_def` + backtest allineato) con i PROSSIMI PASSI ESATTI da
-cui ripartire. La sezione 25 resta come stato del pomeriggio (i due filoni allora sospesi sono ora
-completati, vedi sezione 26A). Le sezioni 1-24 restano cronistoria
-utile per il PERCHÉ delle decisioni, non per lo stato attuale. Leggi comunque SEMPRE questo
-documento dall'inizio alla fine prima di concludere che qualcosa manca, non fidarti solo
-dell'ultima sezione o della memoria persistente (la sezione 14D spiega perché, con un caso reale).
-Le sezioni 1-13 restano come cronistoria di come ci si è arrivati (parametri di produzione
-FINALIZZATI per DEF/MID/FWD/GK, scoperta e validazione della formula `level_score`/floor,
-implementazione Arena/All Stars, infrastruttura K League completa), utile se serve capire IL
-PERCHÉ di una decisione, non per sapere lo stato attuale.
+**Aggiornato 30/07/2026 (sera)**: se cerchi solo "qual è lo stato adesso e cosa fare subito",
+salta direttamente alla **sezione 37, sottosezione F** (le ultime del documento) — è l'HANDOFF
+completo ed ESPLICITO di questa sessione, scritto apposta perché la prossima sessione possa
+partire da zero senza alcuna memoria persistente condivisa (l'utente alterna account diversi,
+NESSUNA memoria è garantita in comune tra questa sessione e la prossima — tutto quello che serve
+deve stare in QUESTO file, non altrove).
+
+**La cosa più urgente da fare, in una riga**: applicare a `formazione_mls/build_formazione_finale.py`
+una modifica al dizionario `CROSS_TEAM_PENALTY_BY_PAIR` (già decisa dall'utente via popup, MAI
+ancora scritta nel codice) — istruzioni esatte, valori, righe di codice e motivazione completa
+nella sezione 37.F. Non serve rileggere tutto il resto per iniziare da lì, ma leggere comunque
+l'intero documento (vedi sotto il perché) prima di considerarlo l'UNICA cosa in sospeso.
+
+Sezioni 1-36 restano cronistoria di come si è arrivati fin qui (parametri di produzione
+FINALIZZATI per DEF/MID/FWD/GK — vedi comunque sez. 37.C per l'ultima riconferma dell'intera
+checklist maestra fatta oggi —, scoperta e validazione della formula `level_score`/floor,
+implementazione Arena/All Stars, infrastruttura K League/Germania completa, velocità pipeline
+GitHub Actions ottimizzata). Leggi comunque SEMPRE questo documento dall'inizio alla fine prima
+di concludere che qualcosa manca, non fidarti solo dell'ultima sezione: più volte in passato una
+sessione ha proposto come "nuovo" un tema già chiuso in una sezione di mezzo mai letta per
+intero (la sezione 14D spiega perché, con un caso reale; la sezione 37 di questa stessa sessione
+ne è un altro esempio — vedi 37.B, "lezione operativa da non ripetere").
 
 Repo: `Sorare-tracker-2` (github.com/andreasalvatore93-oss/Sorare-tracker-2), cartella locale
 `C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2`, branch `main`. Stato scritto qui: **tutto
@@ -4737,15 +4745,34 @@ consigliate — ha reso il pool di calibrazione molto più pulito e ampio, corre
 infrastruttura, e CONFERMATO (non smentito) che i parametri di produzione attuali reggono anche
 contro un campione quasi triplicato.
 
-### D. Nota separata: progetto "Best Five" (backlog, design condiviso, poi implementato v1 in
-altra sessione parallela)
+### D. Nota separata: progetto "Best Five" — NUOVA funzione, in corso in un'ALTRA sessione
+parallela (non questa), stato riportato qui solo per contesto
 
-Richiesta dell'utente durante l'attesa della ricalibrazione: nuova funzione che trovi la miglior
-formazione ASSOLUTA in una lega (non tra i posseduti), con backup per slot. Analisi di
-fattibilità condivisa in chat (riusa discovery_global + test_<ruolo>.py come libreria, script
-separato, non nel workflow di produzione). Vedi memoria
-`project_backlog_best_five_funzione.md` per il design completo e lo stato di implementazione
-(v1 già scritta in una sessione parallela al momento di scrivere, non ancora testata end-to-end).
+Richiesta dell'utente durante l'attesa della ricalibrazione di oggi: una nuova funzione che
+trovi la miglior formazione ASSOLUTA in UNA lega scelta (test pilota: K League), scegliendo tra
+TUTTE le carte disponibili nella lega (non solo quelle possedute dall'utente), con "copie di
+backup" per ogni slot/ruolo (es. 3 candidati per ruolo, nel caso il titolare scelto non scenda
+in campo quella giornata).
+
+**Design condiviso in chat** (poi implementato v1 in una sessione parallela, NON in questa):
+riusa `formazione_<lega>/discovery/<lega>_<ruolo>_discovery_global.py` (già scansiona tutti i
+giocatori della lega, non solo i posseduti) per il pool candidati, e `test_<ruolo>.py` come
+libreria per calcolare lo `score_atteso` della prossima giornata sul pool globale invece che sui
+posseduti (nuovo parametro `PLAYER_POOL=global|posseduti`, scollegato da `CALIBRATION_MODE` che
+prima univa "quale lista" e "che calcolo fare"). Script SEPARATO dedicato (`best_five.py`,
+orchestratore via subprocess, non import diretto), NON un ramo dentro il workflow di produzione
+esistente. Nessuna logica di budget/anti-stack/sinergia (quella serve solo per le formazioni
+REALI con le proprie carte) — solo un ranking puro per slot con backup.
+
+**Stato più recente noto** (da un'altra sessione, non verificato da questa): v1 implementata
+(`PLAYER_POOL=global` aggiunto ai 4 script K League, `best_five.py` scritto e compilante, parser
+testato solo su dati sintetici) — **in corso un test dal vivo in background al momento di
+scrivere, non concluso**, e una "fase 2" di ottimizzazione tempi (quality score fatto,
+prefiltro su starterOdds ancora da scrivere). Se si riprende questo filone in una sessione
+futura, verificare PRIMA lo stato reale su disco/`git log` invece di fidarsi di questa nota
+(che è già una descrizione di seconda mano al momento in cui viene scritta) — cercare il file
+`best_five.py` nella root del repo e `formazione_kleague/output/best_five/` per eventuali
+risultati già prodotti.
 
 ### E. Stato repo a fine sessione
 
