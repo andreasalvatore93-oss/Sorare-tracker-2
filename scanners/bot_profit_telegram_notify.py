@@ -27,12 +27,8 @@ download/drag&drop manuale.
 import csv
 import glob
 import os
-import sys
 
 import requests
-
-sys.path.insert(0, os.path.dirname(__file__))
-import bot_profit as bp  # noqa: E402
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
@@ -71,15 +67,12 @@ def _viewer_url(csv_path):
 MAX_PICK_IN_NOTIFICA = 8
 
 
+# FIX 30/07 sera bis (richiesta esplicita utente): il CSV globale ora contiene
+# SOLO righe COMPRA ORA (vedi _write_global_csv) -- niente piu' da filtrare
+# qui, il file stesso e' gia' la lista finale.
 def _occasioni_globali(path):
-    """(lista COMPRA ORA, lista buone occasioni) nell'ordine gia' deciso dal
-    CSV globale, che e' scritto per verdetto decrescente (vedi
-    _write_global_csv in bot_profit.py)."""
     with open(path, 'r', newline='', encoding='utf-8') as f:
-        rows = list(csv.DictReader(f))
-    compra = [r for r in rows if r.get('segnale') == bp.SEGNALE_COMPRA]
-    buone = [r for r in rows if r.get('segnale') == bp.SEGNALE_BUONA]
-    return compra, buone
+        return list(csv.DictReader(f))
 
 
 def _riga_pick(r):
@@ -101,18 +94,16 @@ def main():
     path = _latest_global_csv()
     righe = []
     if path:
-        compra, buone = _occasioni_globali(path)
-        intestazione = (f"{len(compra)} da comprare ora"
-                        if compra else "nessuna da comprare ora")
-        righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{intestazione} — apri viewer</a>")
-        for r in compra[:MAX_PICK_IN_NOTIFICA]:
-            righe.append(_riga_pick(r))
-        if len(compra) > MAX_PICK_IN_NOTIFICA:
-            righe.append(f"      ...e altre {len(compra) - MAX_PICK_IN_NOTIFICA} "
-                         f"evidenziate in giallo nel viewer.")
-        if not compra:
-            righe.append(f"   nessun segnale d'acquisto forte adesso"
-                         f"{f' ({len(buone)} occasioni minori nel viewer)' if buone else ''}.")
+        compra = _occasioni_globali(path)
+        if compra:
+            intestazione = f"{len(compra)} da comprare ora"
+            righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{intestazione} — apri viewer</a>")
+            for r in compra[:MAX_PICK_IN_NOTIFICA]:
+                righe.append(_riga_pick(r))
+            if len(compra) > MAX_PICK_IN_NOTIFICA:
+                righe.append(f"      ...e altre {len(compra) - MAX_PICK_IN_NOTIFICA} nel viewer.")
+        else:
+            righe.append("nessun segnale d'acquisto forte adesso.")
     else:
         righe.append("⚠️ nessun CSV globale trovato in questa run.")
 
