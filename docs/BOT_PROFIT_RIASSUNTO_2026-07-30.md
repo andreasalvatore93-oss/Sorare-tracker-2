@@ -117,7 +117,12 @@ Rileggendo i CSV committati: **45 righe su 144 avevano un prezzo minimo sotto i 
 
 ## 3. Viewer e notifica Telegram
 
-**Viewer** (`scanners/bot_profit_viewer.html`): righe `COMPRA ORA` **evidenziate in giallo sempre**, non più dietro un bottone da premere; badge colorato per livello con il motivo nel tooltip; colonna "Guadagno atteso 48h"; ordinamento di default per verdetto (pinnato, così resta raggruppato anche riordinando per altre colonne); riepilogo in testa ("🟡 8 da comprare ora, 11 buone occasioni"). Il vecchio bottone 🏆 Top 5 è diventato **🟡 Solo occasioni** (filtro).
+**Viewer** (`scanners/bot_profit_viewer.html`) — assetto finale dopo la correzione chiesta dall'utente a run 73 conclusa ("voglio la pagina html compatta, non devo scorrere ogni volta per vedere chi è nel momento compra ora" + "è un'informazione da mettere come bottone, se cliccato tutti quelli da comprare ora si devono illuminare come meccanismo coppe"):
+
+- **Bottone 🟡 Compra ora**: illumina in giallo le righe COMPRA ORA, stesso meccanismo del vecchio bottone coppe. *Un primo tentativo con l'evidenziazione sempre accesa è stato scartato dall'utente* — colorava la tabella in permanenza invece di rispondere a una domanda quando gliela si fa.
+- **I COMPRA ORA sono già in cima** senza bisogno di ordinare nulla: l'ordinamento di default è per guadagno atteso decrescente, e COMPRA ORA è per costruzione l'insieme dei punteggi più alti del gruppo (soglia + tetto per campionato). Verificato: occupano esattamente le posizioni 1-8.
+- **Tabella compattata da 1448px a 1038px** (16 → 13 colonne), così a 1090px di larghezza **non serve più scorrere in orizzontale**. Tolte dalla tabella (restano tutte nel CSV): `segnale` e `motivo_segnale` — che l'avrebbero allargata proprio mentre si chiedeva di restringerla, il verdetto si vede dal bottone e il motivo è nel tooltip del nome; `media_transazioni_7gg_trimmed_eur` (ridondante: `sconto_percent` **è** il confronto tra minimo e quella media); `prossima_partita_data` (le date sono già in `finestra_acquisto_ideale`); `prossimo_avversario` (la colonna più larga di tutte e la meno usata per decidere, visto che il segnale è sul prezzo). Intestazioni accorciate (`Min. attuale €`→`Min €`, `Transazioni`→`Tx`, `Ultima partita`→`Ultima`, `Finestra acquisto`→`Finestra`): costo zero in informazione, molte colonne erano larghe solo per via del titolo.
+- Colonna **"Atteso 48h"** (`+18.5%`), riepilogo in testa ("🟡 8 da comprare ora, 34 buone occasioni").
 
 **Punto di metodo**: il verdetto NON viene più ricalcolato in tre posti diversi. Prima `bot_profit.py`, il viewer e la notifica Telegram avevano **tre formule parallele** per la stessa domanda, che potevano contraddirsi (la notifica poteva segnalare una carta diversa da quella evidenziata nel viewer aperto dallo stesso link). Ora la regola vive solo in `valuta_occasione`/`_assegna_segnali`, viewer e notifica **leggono la colonna** del CSV.
 
@@ -148,6 +153,28 @@ Rileggendo i CSV committati: **45 righe su 144 avevano un prezzo minimo sotto i 
 | `SEGNALE_MAX_AGE_HOURS` | 12 | oltre, segnale sospeso |
 
 Nel workflow YAML sono esposti come input: `roster_cache_hours`, `buy_signal_soglia_compra`, `buy_signal_max_per_gruppo`. Corretto anche lo step di commit finale, che ora include `bot_profit_roster_cache.json` e costruisce la lista dei file **solo con quelli esistenti** (`git add` fallisce su un pathspec che non corrisponde a nulla, e quello step gira con `if: always()`).
+
+## 5-bis. Run 73 (prima run reale col codice nuovo) — cosa ha confermato e cosa ha corretto
+
+Lanciata su main dopo il push. Esito: **success, 10m37s**, 976 blacklist / 249 ok / 14 prezzo basso.
+
+**Confermato**: **HTTP 429 da 36 (run 72, stesso carico) a 22**, concentrati in **sole 4 ondate**. La barriera globale funziona: un 429 non si moltiplica più per i 10 worker. Cache roster scritta e **committata su main** (`bot_profit_roster_cache.json`, 78 squadre) — il risparmio si vedrà dalla run successiva. Notifica Telegram e CSV con le nuove colonne prodotti correttamente (8 / 7 / 1 COMPRA ORA sui tre gruppi).
+
+**Ma la durata è salita da 4m37s a 10m37s**, e il log ha spiegato perché — rivelando un dato che nessuna delle analisi precedenti aveva colto:
+
+### Sorare manda un header `Retry-After` di ~45 secondi
+
+Le pause nel log sono `45.0s`, `45.0s`, `45.0s`, poi `40.0s` e `39.0s`. La nostra stima interna alla prima ondata è **5s**: quei 45 non li abbiamo scritti noi, sono il conto alla rovescia di Sorare (i valori calanti 40→39 sono il tempo mancante alla fine della sua finestra). **Ogni ondata di 429 costa quindi 45 secondi di fermo totale**: 4 ondate = 180s, cioè il 28% della run.
+
+Conseguenze, tutte applicate:
+
+1. **Il ritmo sostenibile vero è ~1 richiesta/s, non 1,8.** Misurato sulla run 73: 470 richieste in 637s, che al netto dei 180s di pausa fanno ~1,03/s — e le ondate scattavano ancora a 0,72s/richiesta (1,39/s). La stima di 1,8/s derivava dal solo comportamento iniziale, che è il secchio pieno, non il regime. `GRAPHQL_MIN_INTERVAL_SECONDS_SAFE` **0,45 → 0,9**.
+2. **Il pavimento della ripresa sale dopo il primo 429** (nuovo `_pace_floor`): prima resta 0,2s, dopo diventa 0,9s. La capienza iniziale del secchio è un regalo che si spende **una volta sola** — tornare a spingere dopo averla esaurita non recupera tempo, lo perde a blocchi da 45 secondi. Senza questo, l'AIMD riportava il ritmo verso 0,2s e si ricomprava puntualmente l'ondata successiva (è esattamente la sequenza vista nella run 73: 0,45 → 0,72 → 1,15 → 1,50).
+3. **Bug corretto: gli "stragglers" riallungavano la barriera.** `Retry-After` veniva applicato a *ogni* 429, anche a quelli che sono solo le risposte di richieste già in volo quando la barriera si era alzata. Ognuno spostava la fine della barriera a "adesso + 45s", facendola scorrere in avanti per un evento già gestito. Ora `Retry-After` si applica **solo sulla nuova ondata**.
+
+**La leva più grossa non è però il ritmo: è la cache roster**, che in questa run era vuota (0 squadre servite) e ha quindi pagato ~195 richieste su ~470 totali. Dalla prossima run quelle spariscono: ~275 richieste, che stanno **dentro la capienza iniziale del secchio** — possibile zero ondate e zero pause da 45s.
+
+**Nota di metodo**: la run 72 a 4m37s non era "il bot veloce", era una run abbastanza corta da stare quasi tutta dentro il secchio pieno. Non è una velocità replicabile su carichi maggiori, e infatti la run 71 (stesso carico) era durata 7m23s con 291 429. Il confronto onesto per giudicare le prossime run è **429 e richieste totali**, non i minuti.
 
 ## 6. Stato e prossimi passi
 
