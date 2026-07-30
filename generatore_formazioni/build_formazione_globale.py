@@ -239,14 +239,16 @@ bff.CAPTAIN_BONUS_BY_TYPE.update(CAPTAIN_BONUS_BY_TYPE)
 bff.CAP260_L10_THRESHOLD_BY_TYPE.update(CAP260_THRESHOLD_BY_TYPE)
 
 # Ordine di generazione FISSO (priorita' decisa dall'utente).
-# Ordine: In Season -> Arene dedicate (nell'ordine di ARENA_LEAGUES, cioe'
-# MLS e K League per prime, poi gli altri campionati) -> Arena All Stars ->
-# All Stars. Il CardPool e' condiviso: se le carte finiscono, restano scoperte
-# le formazioni meno prioritarie.
+# Ordine (AGGIORNATO 30/07, richiesta esplicita utente): In Season ->
+# Under23 (le formazioni da 7) -> Arene dedicate (nell'ordine di
+# ARENA_LEAGUES, cioe' MLS e K League per prime, poi gli altri campionati)
+# -> Arena All Stars -> All Stars (da 7, sempre per ultima). Il CardPool e'
+# condiviso: se le carte finiscono, restano scoperte le formazioni meno
+# prioritarie.
 PRIORITY_ORDER = (
-    ['MLS_IN_SEASON', 'KLEAGUE_IN_SEASON']
+    ['MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS_U23']
     + [arena_type(lg) for lg in ARENA_LEAGUES]
-    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS_U23', 'ALLSTARS']
+    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS']
 )
 
 POOL_LEAGUE_BY_TYPE = {
@@ -254,6 +256,24 @@ POOL_LEAGUE_BY_TYPE = {
     'ARENA_ALLSTARS_260': 'mixed', 'ARENA_ALLSTARS_220': 'mixed', 'ARENA_ALLSTARS_UNCAPPED': 'mixed',
     'ALLSTARS': 'mixed', 'ALLSTARS_U23': 'mixed_u23',
 }
+
+# Cap DURI per tipo (30/07, richiesta esplicita utente): In Season/Under23/
+# All Stars non si possono comunque schierare oltre questi numeri su Sorare
+# -- generarne di piu' sprecherebbe solo il pool condiviso, mai utile.
+# Applicato SIA alla richiesta esplicita (viene troncata se la supera) SIA
+# alla fase "opzionale" sotto (mai generate oltre il cap). Le Arene (dedicate
+# e All Stars) non hanno un vero limite Sorare, ma gli si mette comunque un
+# tetto pratico di 10 per tipo per non esaurire il pool su un solo tipo.
+HARD_CAP_BY_TYPE = {
+    'MLS_IN_SEASON': 6, 'KLEAGUE_IN_SEASON': 6,
+    'ALLSTARS_U23': 4, 'ALLSTARS': 4,
+}
+ARENA_OPTIONAL_CAP = 10
+
+
+def _is_arena_type(tipo):
+    return tipo in ('ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED') \
+        or tipo in {arena_type(lg) for lg in ARENA_LEAGUES}
 
 # Flag Sorare u23Eligible per slug (28/07, richiesta esplicita utente: vive
 # sulla CARTA non sul giocatore, ma e' un flag di gioco -- non un calcolo
@@ -413,13 +433,14 @@ def build_quality_pools(role_data):
 
 
 def _sort_ordinamento(rows):
-    # Ordina per lo score di ordinamento (senza shrinkage) -- vedi sezione
-    # 27.C del RIASSUNTO. Fallback TUTTO-O-NIENTE: i due score stanno su
-    # scale diverse, mescolarli nella stessa sort non e' omogeneo.
-    if rows and all(r.get('ordinamento') is not None for r in rows):
-        rows.sort(key=lambda r: r['ordinamento'], reverse=True)
-    else:
-        rows.sort(key=lambda r: r['atteso'], reverse=True)
+    # REVERTITO (30/07, stesso motivo di build_consiglio_def.py/build_
+    # consiglio.py -- vedi RIASSUNTO sez. 0.D punto 30): il vecchio
+    # ordinamento per 'ordinamento' (senza shrinkage) non si conferma piu'
+    # con dati aggiornati, e questa funzione lo stava ancora usando qui
+    # nonostante il fix a monte -- bug reale trovato in corsa. Ordina sempre
+    # per 'sort_score' se presente (bonus XP per la selezione, vedi
+    # _apply_xp_bonus), altrimenti per 'atteso' (il punteggio vero).
+    rows.sort(key=lambda r: r.get('sort_score', r['atteso']), reverse=True)
     return rows
 
 
@@ -476,17 +497,23 @@ def _raw_view_for(role_data, pool_league, role):
 
 
 def _apply_xp_bonus(rows, card_pool):
-    """Ritorna una COPIA delle righe con atteso/ordinamento/low/high
-    moltiplicati per (1 + bonus power della carta, vedi
-    CardPool.power_bonus_fraction) -- MAI muta le righe originali (condivise
-    fra tutti i tipi di formazione nella stessa run, incluse le Arene dove
-    questo bonus NON si applica, vedi XP_BONUS_TYPES). Righe senza bonus noto
-    (frazione 0.0) restano le stesse istanze, nessuna copia inutile.
-    RI-ORDINA sempre il risultato (non solo per i ruoli/tipi che poi passano
-    da synergy_adjusted_rows, es. il portiere non ci passa mai se non c'e'
-    used_matches): senza questo il boost cambierebbe i punteggi ma non
-    l'ordine di scelta, vanificando "preferire un giocatore piu' debole ma
-    con bonus" per lo slot GK."""
+    """Ritorna una COPIA delle righe con un campo 'sort_score' aggiunto
+    (atteso moltiplicato per 1 + bonus power della carta, vedi
+    CardPool.power_bonus_fraction) -- usato SOLO per decidere l'ORDINE di
+    scelta tra candidati, MAI per il numero mostrato.
+
+    FIX 30/07 (bug reale trovato dall'utente, caso Navarro: 69pt in una
+    formazione In Season contro 62pt -- lo stesso identico contesto -- in
+    un'Arena): PRIMA questa funzione mutava 'atteso'/'low'/'high' stessi,
+    quindi il candidato SELEZIONATO portava con se' il numero gonfiato fino
+    al rendering, e il fix del 30/07 mattina (apply_xp_bonus=False nel
+    render) toglieva solo il tag separato "+XX% XP", non il numero di base
+    gia' inquinato a monte. Ora 'atteso'/'low'/'high' non vengono MAI
+    toccati -- il bonus entra in gioco solo per scegliere CHI vince lo slot,
+    il punteggio mostrato resta sempre quello vero. MAI muta le righe
+    originali (condivise fra tutti i tipi di formazione nella stessa run,
+    incluse le Arene dove questo bonus NON si applica, vedi XP_BONUS_TYPES).
+    Righe senza bonus noto (frazione 0.0) restano le stesse istanze."""
     out = []
     for r in rows:
         frac = card_pool.power_bonus_fraction(r['slug'])
@@ -494,14 +521,7 @@ def _apply_xp_bonus(rows, card_pool):
             out.append(r)
             continue
         r2 = dict(r)
-        mult = 1.0 + frac
-        r2['atteso'] = round(r['atteso'] * mult)
-        if r.get('ordinamento') is not None:
-            r2['ordinamento'] = round(r['ordinamento'] * mult)
-        if r.get('low') is not None:
-            r2['low'] = round(r['low'] * mult)
-        if r.get('high') is not None:
-            r2['high'] = round(r['high'] * mult)
+        r2['sort_score'] = round(r['atteso'] * (1.0 + frac))
         out.append(r2)
     return _sort_ordinamento(out)
 
@@ -673,6 +693,19 @@ def main():
         'ALLSTARS_U23': allstars_u23_qty,
     }
     counts.update({arena_type(lg): arena_dedicata_req.get(lg, 0) for lg in ARENA_LEAGUES})
+
+    # Clamp ai cap duri (30/07, richiesta esplicita utente): richiederne di
+    # piu' di quante se ne possano schierare su Sorare spreca solo il pool
+    # condiviso senza alcun beneficio.
+    for _tipo, _cap in HARD_CAP_BY_TYPE.items():
+        if counts.get(_tipo, 0) > _cap:
+            print(f"NOTA: {LABELS[_tipo]} richieste {counts[_tipo]}, limitate al cap {_cap} (non schierabili di piu').")
+            counts[_tipo] = _cap
+    for _tipo in list(counts):
+        if _is_arena_type(_tipo) and counts[_tipo] > ARENA_OPTIONAL_CAP:
+            print(f"NOTA: {LABELS[_tipo]} richieste {counts[_tipo]}, limitate al tetto pratico {ARENA_OPTIONAL_CAP}.")
+            counts[_tipo] = ARENA_OPTIONAL_CAP
+
     num_totale = sum(counts.values())
     richiesti = [t for t in PRIORITY_ORDER if counts.get(t)]
 
@@ -756,6 +789,61 @@ def main():
     for tipo in PRIORITY_ORDER:
         all_results.extend(generate_lineups_for_type(tipo, counts[tipo], role_data, pools, card_pool))
 
+    # FASE 1b: formazioni OPZIONALI extra (30/07, richiesta esplicita
+    # utente -- sostituisce il vecchio "sondaggio" che si limitava a CONTARE
+    # quante se ne sarebbero potute fare in piu' con una copia del pool
+    # scartata: ora le genera davvero, con lo stesso pool REALE gia' consumato
+    # dalla FASE 1, cosi' quelle "sicure" restano intonse e le opzionali
+    # attingono solo al residuo). SOLO per i tipi gia' richiesti esplicitamente
+    # (count>0): nessuna formazione di un tipo mai selezionato in questa run.
+    # In Season/Under23/All Stars: estende fino al cap duro (6/4). Le Arene
+    # (dedicate + All Stars a cap): round-robin fra tutte quelle richieste,
+    # una alla volta per tipo, cosi' il pool residuo non si esaurisce tutto
+    # sul primo tipo in lista prima di toccare gli altri -- fino al tetto di
+    # ARENA_OPTIONAL_CAP o a esaurimento pool per quel tipo.
+    extra_results = []
+    for tipo, cap in HARD_CAP_BY_TYPE.items():
+        n_primary = counts.get(tipo, 0)
+        if n_primary <= 0 or n_primary >= cap:
+            continue
+        batch = generate_lineups_for_type(tipo, cap - n_primary, role_data, pools, card_pool)
+        for i, r in enumerate(batch):
+            if 'error' in r:
+                break
+            r['idx'] = n_primary + i + 1
+            r['extra'] = True
+            extra_results.append(r)
+
+    arena_types_requested = [t for t in PRIORITY_ORDER if counts.get(t, 0) > 0 and _is_arena_type(t)]
+    arena_progress = {t: counts.get(t, 0) for t in arena_types_requested}
+    active = set(arena_types_requested)
+    while active:
+        made_progress = False
+        for tipo in list(active):
+            if arena_progress[tipo] >= ARENA_OPTIONAL_CAP:
+                active.discard(tipo)
+                continue
+            batch = generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
+            if not batch or 'error' in batch[0]:
+                active.discard(tipo)
+                continue
+            arena_progress[tipo] += 1
+            r = batch[0]
+            r['idx'] = arena_progress[tipo]
+            r['extra'] = True
+            extra_results.append(r)
+            made_progress = True
+        if not made_progress:
+            break
+
+    n_extra = len(extra_results)
+    if n_extra:
+        print(f"\nFormazioni OPZIONALI extra generate con il pool residuo: {n_extra} "
+              "(" + ", ".join(f"{LABELS[t]}={sum(1 for r in extra_results if r['tipo'] == t)}"
+                               for t in PRIORITY_ORDER
+                               if any(r['tipo'] == t for r in extra_results)) + ")")
+    all_results.extend(extra_results)
+
     generated_by_type = {t: 0 for t in PRIORITY_ORDER}
     grand_total = 0
     for r in all_results:
@@ -771,6 +859,7 @@ def main():
     # FASE 2: rendering (28/07: pannello alternative/drag&drop RIMOSSO su
     # richiesta esplicita utente -- non serviva piu', bastano le formazioni).
     lineup_html_blocks = []
+    _extra_divider_done = False
     for r in all_results:
         if 'error' in r:
             lineup_html_blocks.append(f'<p class="error-block">{r["error"]}</p>')
@@ -789,6 +878,23 @@ def main():
             l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
             check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
             avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=False)
+        # Formazioni OPZIONALI (30/07): separatore ben visibile la prima
+        # volta che se ne incontra una, poi ogni blocco un po' piu' piccolo
+        # (font-size ridotto) per distinguerle a colpo d'occhio da quelle
+        # richieste esplicitamente.
+        if r.get('extra'):
+            if not _extra_divider_done:
+                lineup_html_blocks.append(
+                    '<div style="margin:28px 0 10px 0;padding-top:18px;'
+                    'border-top:2px dashed var(--border)">'
+                    '<div style="font-weight:700;font-size:1.05rem;opacity:0.85">'
+                    'Formazioni OPZIONALI (extra, con il pool residuo)</div>'
+                    '<div style="font-size:0.8rem;opacity:0.65;margin-top:2px">'
+                    'Non richieste esplicitamente -- generate in coda se il pool '
+                    'lo permetteva, entro i cap per tipo.</div></div>'
+                )
+                _extra_divider_done = True
+            lineup_html = f'<div style="font-size:0.85em;opacity:0.92">{lineup_html}</div>'
         lineup_html_blocks.append(lineup_html)
 
     # Giocatori candidati (idonei per starter-odds + finestra giornata, vedi
@@ -925,117 +1031,33 @@ def main():
                 if top_esclusi_lg:
                     _attach_panel(idx, top_esclusi_lg)
 
-    # Capienza residua (29/07, richiesta esplicita utente): con i giocatori
-    # rimasti FUORI dalle formazioni generate, quante ALTRE formazioni si
-    # sarebbero potute generare. Per OGNI tipologia di competizione richiesta,
-    # non solo per le Arene dedicate: vale anche per In Season MLS, In Season
-    # K League, All Stars, All Stars U23 e Arena All Stars. Il conteggio
-    # "Candidati non schierati" sopra dice quanti giocatori restano sul banco,
-    # ma non se bastano a comporre una formazione valida (servono i ruoli
-    # giusti, e per le Arene anche il cap L10) -- questo lo dice.
-    #
-    # Calcolata rigenerando su una COPIA del card_pool, quindi non tocca in
-    # alcun modo le formazioni prodotte; e viene calcolata DOPO il rendering
-    # (FASE 2, gia' fatto sopra), cosi' per costruzione non puo' influenzare
-    # l'output nemmeno per errore.
-    # Budget di tempo oltre al tetto sul conteggio: ogni sondaggio e' una
-    # generazione greedy completa (~1-2s con il pool pieno), e con molte
-    # tipologie richieste dal pool misto il conteggio da solo potrebbe
-    # allungare sensibilmente questo job. Esaurito il budget, il numero
-    # riportato diventa un "almeno N" invece di un valore esatto.
-    MAX_SONDAGGIO_CAPIENZA = 20
-    BUDGET_SONDAGGIO_S = 20.0
-    _t0_sondaggio = datetime.datetime.utcnow()
-    capienza_extra = {}
-    capienza_parziale = set()
-    capienza_residuo_ruolo = {}
+    # Riepilogo formazioni OPZIONALI (30/07, sostituisce il vecchio
+    # "sondaggio" che rigenerava su una COPIA del pool solo per CONTARE
+    # quante se ne sarebbero potute fare in piu' -- ora extra_results
+    # (FASE 1b sopra) le ha gia' generate DAVVERO col pool reale, quindi qui
+    # basta riassumere cosa e' stato fatto, nessuna rigenerazione).
+    extra_by_type = {}
+    for r in extra_results:
+        extra_by_type[r['tipo']] = extra_by_type.get(r['tipo'], 0) + 1
 
-    def pool_league_di(t):
-        return POOL_LEAGUE_BY_TYPE[t]
-    for tipo in PRIORITY_ORDER:
-        if counts[tipo] <= 0:
-            continue
-        sonda = copy.deepcopy(card_pool)
-        extra = 0
-        while extra < MAX_SONDAGGIO_CAPIENZA:
-            trascorso = (datetime.datetime.utcnow() - _t0_sondaggio).total_seconds()
-            if trascorso > BUDGET_SONDAGGIO_S:
-                capienza_parziale.add(tipo)
-                break
-            res = generate_lineups_for_type(tipo, 1, role_data, pools, sonda)
-            if not res or any('error' in r for r in res):
-                break
-            extra += 1
-        if extra >= MAX_SONDAGGIO_CAPIENZA:
-            capienza_parziale.add(tipo)
-        capienza_extra[tipo] = extra
-        # PERCHE' si e' fermata (29/07, verifica richiesta dall'utente: il
-        # sospetto era che pescasse solo dai "top esclusi"). Verificato che il
-        # pool contiene TUTTI i candidati con starter odds >= soglia
-        # (_NoFilterPool.passing == full_candidates, nessun taglio nel percorso
-        # di costruzione), e che il cap L10 non e' il vincolo (somma minima dei
-        # 5 L10 piu' bassi: 195-204 contro un cap di 260). Il vero collo di
-        # bottiglia sono le COPIE per ruolo: Portogallo ha 2 portieri
-        # candidati, la Scozia 1 -- dopo 2 (rispettivamente 1) formazioni non
-        # resta nessun GK schierabile. Riportarlo per ruolo dice esattamente
-        # quale carta manca per fare una formazione in piu'.
-        leghe_pool = (LEAGUES if pool_league_di(tipo) in ('mixed', 'mixed_u23')
-                      else (pool_league_di(tipo),))
-        residuo = {}
-        for role in ROLES:
-            n = 0
-            for lg in leghe_pool:
-                for row in role_data.get(lg, {}).get(role, []):
-                    n += max(0, sonda.remaining_in_season(row['slug'])) \
-                        + max(0, sonda.remaining_classic(row['slug']))
-            residuo[role] = n
-        capienza_residuo_ruolo[tipo] = residuo
-
-    if capienza_extra:
-        print("\nFormazioni AGGIUNTIVE possibili con i giocatori rimasti fuori:")
-        for tipo, extra in capienza_extra.items():
-            fatte = generated_by_type.get(tipo, 0)
-            if extra:
-                print(f"  {LABELS[tipo]}: {fatte} generate ma potevi generarne "
-                      f"altre {extra}"
-                      + (" o piu'" if tipo in capienza_parziale else ""))
-            else:
-                res = capienza_residuo_ruolo.get(tipo, {})
-                vuoti = [r for r in ROLES if res.get(r, 0) == 0]
-                motivo = (f" -- manca {'/'.join(vuoti)} (0 carte residue)"
-                          if vuoti else
-                          " -- carte residue " +
-                          ", ".join(f"{r}:{res.get(r, 0)}" for r in ROLES) +
-                          ", ma non componibili entro i vincoli")
-                print(f"  {LABELS[tipo]}: {fatte} generate, il pool residuo non "
-                      f"basta per un'altra{motivo}")
-
-    # Blocco dedicato nel report, UNA RIGA PER COMPETIZIONE (29/07, richiesta
-    # esplicita utente: nel sottotitolo, tutto su una riga, non si leggeva per
-    # singola competizione). Messo in testa al corpo del report, prima delle
-    # formazioni, cosi' e' la prima cosa che si vede.
     capienza_html = ""
-    if capienza_extra:
+    if extra_by_type:
         righe = []
-        for tipo, extra in capienza_extra.items():
-            fatte = generated_by_type.get(tipo, 0)
-            piu = "+" if tipo in capienza_parziale else ""
-            if extra:
-                testo = (f'<span style="font-weight:700">altre {extra}{piu} '
-                         f'possibili</span>')
-            else:
-                testo = ('<span style="opacity:0.7">pool residuo insufficiente '
-                         'per un\'altra</span>')
+        for tipo in PRIORITY_ORDER:
+            if tipo not in extra_by_type:
+                continue
+            richieste = counts.get(tipo, 0)
             righe.append(
                 f'<tr><td style="padding:3px 14px 3px 0">{LABELS[tipo]}</td>'
                 f'<td style="padding:3px 14px 3px 0;white-space:nowrap">'
-                f'{fatte} generate</td>'
-                f'<td style="padding:3px 0;white-space:nowrap">{testo}</td></tr>'
+                f'{richieste} richieste</td>'
+                f'<td style="padding:3px 0;white-space:nowrap">'
+                f'<span style="font-weight:700">+{extra_by_type[tipo]} opzionali generate</span></td></tr>'
             )
         capienza_html = (
             '<div class="alt-panel" style="margin:0 0 18px 0">'
             '<div style="font-weight:700;margin-bottom:6px">'
-            'Formazioni aggiuntive possibili con i giocatori rimasti fuori</div>'
+            'Formazioni opzionali extra generate con il pool residuo (vedi in fondo al report)</div>'
             '<table style="border-collapse:collapse;font-size:0.86rem">'
             + "".join(righe) +
             '</table></div>'

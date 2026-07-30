@@ -402,8 +402,13 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     INVARIATO rispetto a prima). Se False (formazioni "greedy" #2..N delle In
     Season multiple), niente bonus/penalita' di correlazione: solo punteggio
     grezzo -- il vincolo di schieramento resta comunque garantito dal filtro
-    duro, applicato a monte, non da qui."""
-    adjusted = row['atteso']
+    duro, applicato a monte, non da qui.
+    'sort_score' (30/07, vedi _apply_xp_bonus in build_formazione_globale.py):
+    se il candidato ha un punteggio boost-XP calcolato SOLO per l'ordine di
+    scelta (senza gonfiare 'atteso', il numero mostrato), si parte da quello
+    invece che da 'atteso' -- stesso principio di 'ordinamento' ma per il
+    bonus XP invece dello shrinkage."""
+    adjusted = row.get('sort_score', row['atteso'])
     team_slug = row.get('team_slug')
     if apply_positive_synergy:
         if role in ('MID', 'FWD') and gk_opponent_slug and team_slug == gk_opponent_slug:
@@ -1403,22 +1408,16 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
     )
     totale_atteso = sum(row['atteso'] for _, row, _ in formazione)
     captain_bonus_pct = CAPTAIN_BONUS_BY_TYPE.get(tipo, 0.5)
-    # FIX 28/07 sera (bug reale trovato dall'utente): i bonus Sorare si
-    # SOMMANO in basis points e si applicano come UN SOLO moltiplicatore
-    # (season+collection+xp+capitano+antistack ecc., vedi memoria di
-    # sessione), MAI a cascata. 'captain_row[atteso]' qui include GIA' il
+    # SEMPLIFICATO 30/07: prima 'captain_row[atteso]' poteva includere il
     # bonus xp/collezione/stagione (vedi _apply_xp_bonus in
-    # build_formazione_globale.py, che moltiplica atteso PRIMA che arrivi
-    # qui) -- calcolare il +50% capitano su quel valore gia' gonfiato lo
-    # applica in cascata (1+xp)*(1+cap) invece che addizionato (1+xp+cap),
-    # sovrastimando il capitano (es. 59pt raw, +13% xp -> 67, poi +50% su 67
-    # = 34 pt extra, totale 101 invece dei 96 corretti = 59*1.63). Fix:
-    # riporta il punteggio al valore raw (pre-xp-bonus) prima di applicare
-    # la percentuale capitano, cosi' il bonus aggiuntivo mostrato e'
-    # esattamente cio' che manca per arrivare al totale corretto.
-    xp_frac = card_pool.power_bonus_fraction(captain_row['slug']) if apply_xp_bonus else 0.0
-    captain_raw_atteso = captain_row['atteso'] / (1 + xp_frac) if xp_frac else captain_row['atteso']
-    bonus = round(captain_raw_atteso * captain_bonus_pct)
+    # build_formazione_globale.py, che moltiplicava atteso PRIMA che
+    # arrivasse qui), quindi serviva "de-gonfiarlo" per non applicare il
+    # bonus capitano a cascata sopra un numero gia' gonfiato (fix 28/07).
+    # Dal 30/07 'atteso' non viene PIU' mai gonfiato (il bonus XP entra solo
+    # in 'sort_score', usato per scegliere chi schierare, mai per il
+    # punteggio mostrato) -- 'captain_row[atteso]' e' sempre il valore vero,
+    # nessuna correzione necessaria.
+    bonus = round(captain_row['atteso'] * captain_bonus_pct)
     totale_con_capitano = totale_atteso + bonus
     l10_note = ''
     if l10_cap is not None:
