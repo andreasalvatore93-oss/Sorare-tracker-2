@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:58:55.233068Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) kelvin-yeboah: 47 pt attesi (32-70)
+   ORDINAMENTO: 45.61
+   SQUADRA: minnesota-united-minneapolis-saint-paul-minnesota | AVVERSARIO: san-diego-san-diego
+======================================================================
+
+######################################################################
+# GIOCATORE: kelvin-yeboah
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kelvin-yeboah (squadra: minnesota-united-minneapolis-saint-paul-minnesota)
+Generato: 2026-07-30T10:58:55.231971Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | MIN vs RAP | mlspa | score=48.9 | peso=0.559
+  2025-08-17 | MIN vs SEA | mlspa | score=39.4 | peso=0.574
+  2025-08-24 | RSL vs MIN | mlspa | score=43.0 | peso=0.590
+  2025-08-31 | MIN vs POR | mlspa | score=33.3 | peso=0.607
+  2025-09-14 | SD vs MIN | mlspa | score=34.7 | peso=0.624
+  2025-11-25 | SD vs MIN | mlspa | score=30.9 | peso=0.642
+  2026-02-22 | ATX vs MIN | mlspa | score=68.9 | peso=0.660
+  2026-02-28 | MIN vs CIN | mlspa | score=64.5 | peso=0.678
+  2026-03-08 | NSH vs MIN | mlspa | score=35.5 | peso=0.697
+  2026-03-15 | VAN vs MIN | mlspa | score=46.3 | peso=0.717
+  2026-03-22 | MIN vs SEA | mlspa | score=38.4 | peso=0.737
+  2026-04-05 | LA vs MIN | mlspa | score=69.9 | peso=0.758
+  2026-04-12 | SD vs MIN | mlspa | score=69.4 | peso=0.779
+  2026-04-19 | MIN vs POR | mlspa | score=69.4 | peso=0.801
+  2026-04-23 | DAL vs MIN | mlspa | score=33.2 | peso=0.824
+  2026-04-25 | MIN vs LAFC | mlspa | score=17.4 | peso=0.847
+  2026-05-02 | CLB vs MIN | mlspa | score=80.0 | peso=0.871
+  2026-05-10 | MIN vs ATX | mlspa | score=22.3 | peso=0.895
+  2026-05-14 | MIN vs RAP | mlspa | score=29.0 | peso=0.920
+  2026-05-16 | NE vs MIN | mlspa | score=68.0 | peso=0.946
+  2026-07-23 | SKC vs MIN | mlspa | score=41.7 | peso=0.973
+  2026-07-26 | MIN vs VAN | mlspa | score=35.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.33
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=22): 47.70 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.74 | Punteggio complessivo (granulari) medio: 2.59 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 3.23 (delta +0.43) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.22
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.9 - 69.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.03 (differenza: +2.20)
+Media score in casa: 39.79 | Media score fuori casa: 51.79
+Fattore casa/trasferta applicato: 0.990 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.119
+Fattore falli (casa/trasferta, da dati reali): 0.983
+Fattore duelli (casa/trasferta, da dati reali): 0.983
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 39.3 vs media ultime 10: 46.6): 0.953
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Minnesota United | Trasferta: San Diego FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.1 (range 31.6 - 70.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 45.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.04
+Punteggio REALE ottenuto in quella partita: 35.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.6x+opp_sens=29.0+trend_int=1.0' (half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=1.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.9    68.9    +26.0     9.7        NO
+   7        7      37.7    64.5    +26.8    20.6        NO
+   8        8      31.9    35.5     +3.6    22.6        SI
+   9        9      32.4    46.3    +13.9    21.8        SI
+  10       10      49.6    38.4    -11.2    20.4        SI
+  11       11      56.5    69.9    +13.4    19.5        SI
+  12       12      58.0    69.4    +11.4    22.5        SI
+  13       13      54.3    69.4    +15.1    23.9        SI
+  14       14      51.8    33.2    -18.6    24.6        SI
+  15       15      40.9    17.4    -23.5    24.9        SI
+  16       16      51.9    80.0    +28.1    28.1        NO
+  17       17      60.7    22.3    -38.4    30.8        NO
+  18       18      49.8    29.0    -20.8    31.9        SI
+  19       19      29.4    68.0    +38.6    31.6        NO
+  20       20      51.1    41.7     -9.4    31.8        SI
+  21       21      32.7    35.3     +2.6    30.7        SI
+
+MAE (errore assoluto medio): 18.84
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
