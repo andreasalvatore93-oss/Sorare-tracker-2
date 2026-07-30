@@ -1118,7 +1118,9 @@ def compute_score_atteso_fwd(scores, is_home_flags,
                              shrink_k=SHRINK_K_OUTLIER_FWD,
                              media_ruolo_prior=MEDIA_RUOLO_FWD_PRIOR,
                              use_stadio_d=True,
-                             presence_rate=None):
+                             presence_rate=None, opponent_lambda_mult=None,
+                             next_opponent_team_slug=None, next_game_date=None, league='portogallo',
+                             offensive_values=None):
     """FUNZIONE CONDIVISA (30/07, propagata da MLS a tutte le leghe, vedi
     backlog project_backlog_fwd_shared_function_solo_mls): calcola lo
     `score_ordinamento` FWD con la STESSA formula (meno shrinkage, shrink_k=0)
@@ -1139,7 +1141,17 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     weights = exponential_weights(n, half_life)
 
     media_granulari_pesata = weighted_mean(granulari_values, weights)
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
+    # opponent_lambda_mult (29/07, vedi opponent_strength.py) -- FIX 30/07
+    # (propagato da MLS, bug reale: mai applicato nel backtest/ordinamento,
+    # vedi commit 0a24b40cda): calcolato da next_opponent_team_slug quando
+    # disponibile, altrimenti 1.0 = comportamento invariato.
+    if opponent_lambda_mult is None:
+        if next_opponent_team_slug:
+            opponent_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+                league, 'fwd', next_opponent_team_slug, next_game_date or datetime.datetime.utcnow())
+        else:
+            opponent_lambda_mult = 1.0
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
@@ -1147,6 +1159,10 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     if presence_rate is not None:
         media_ruolo_prior = max(0.0, 47.44 + 6.62 * presence_rate)
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    if offensive_values is not None and next_opponent_team_slug:
+        _offensive_hist = weighted_mean(offensive_values, weights)
+        grezzo_nuovo += opponent_strength.fwd_offense_granular_delta(
+            league, next_opponent_team_slug, next_game_date or datetime.datetime.utcnow(), _offensive_hist)
     grezzo_nuovo_corretto = (
         (n / (n + shrink_k)) * grezzo_nuovo
         + (shrink_k / (n + shrink_k)) * media_ruolo_prior
@@ -1624,7 +1640,9 @@ def build_prediction(player_slug):
         scores, is_home_flags, residual_values, granulari_values,
         pos_decisive_values, neg_decisive_values, passing_values,
         target_is_home=next_is_home, p_gioca=p_gioca, shrink_k=0.0,
-        use_stadio_d=False)
+        use_stadio_d=False,
+        next_opponent_team_slug=next_opponent_team_slug, league='portogallo',
+        offensive_values=offensive_values)
 
     # --- Stadio D, approfondimento (26/07, notte, DECISO CON L'UTENTE mentre
     # dormiva -- "testare level_score/granulare piu' a fondo per tutti i
