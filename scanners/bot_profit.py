@@ -850,7 +850,7 @@ TEAM_ROSTER_MAX_PAGES = 10  # tetto di sicurezza (fino a 1000 giocatori/squadra)
 # cambia, la voce viene considerata non valida e la squadra si riscarica -- cosi'
 # un cambio di parametro non resta silenziosamente "congelato" nella cache.
 ROSTER_CACHE_PATH = os.environ.get('ROSTER_CACHE_PATH', 'bot_profit_roster_cache.json')
-ROSTER_CACHE_HOURS = float(os.environ.get('ROSTER_CACHE_HOURS', '18'))
+ROSTER_CACHE_HOURS = float(os.environ.get('ROSTER_CACHE_HOURS', '48'))
 
 _roster_cache_lock = threading.Lock()
 _roster_cache = [None]
