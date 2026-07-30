@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T07:19:53.025037Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) rasmus-carstensen: 48 pt attesi (33-66)
+   ORDINAMENTO: 52.52
+   SQUADRA: agf-arhus | AVVERSARIO: lyngby-lyngby-kongens-lyngby
+======================================================================
+
+######################################################################
+# GIOCATORE: rasmus-carstensen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rasmus-carstensen (squadra: agf-arhus)
+Generato: 2026-07-30T07:19:53.024021Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: superliga-dk (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | AGF vs VB | superliga-dk | score=64.1 | peso=0.637
+  2025-08-31 | AGF vs FRE | superliga-dk | score=89.5 | peso=0.660
+  2025-09-14 | VFF vs AGF | superliga-dk | score=36.4 | peso=0.683
+  2025-10-19 | BIF vs AGF | superliga-dk | score=42.9 | peso=0.707
+  2025-10-24 | AGF vs FCN | superliga-dk | score=43.1 | peso=0.732
+  2025-11-03 | FCM vs AGF | superliga-dk | score=17.2 | peso=0.758
+  2025-11-09 | AGF vs SJE | superliga-dk | score=38.2 | peso=0.785
+  2025-11-21 | SIF vs AGF | superliga-dk | score=60.0 | peso=0.812
+  2025-11-30 | AGF vs FCK | superliga-dk | score=90.2 | peso=0.841
+  2025-12-07 | RFC vs AGF | superliga-dk | score=45.5 | peso=0.871
+  2026-02-09 | AGF vs OB | superliga-dk | score=37.4 | peso=0.901
+  2026-02-15 | FRE vs AGF | superliga-dk | score=51.7 | peso=0.933
+  2026-03-01 | VB vs AGF | superliga-dk | score=70.0 | peso=0.966
+  2026-03-15 | SJE vs AGF | superliga-dk | score=48.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 52.39
+  di cui Punteggio decisivo (level_score) medio: 43.70 | Punteggio complessivo (granulari) medio: 8.68 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.15, delta avversario +0.00 | Passaggio condizionato: delta venue -0.19, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.35, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.31
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.4 - 70.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.60 (differenza: +4.71)
+Media score in casa: 60.40 | Media score fuori casa: 46.45
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.079
+Fattore falli (casa/trasferta, da dati reali): 0.990
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.985
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.996
+Fattore trend (media ultime 5: 50.5 vs media ultime 10: 50.1): 1.000
+P(gioca): 45.16% (fonte: tasso di presenza storico (14/31))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T16:00
+Casa: Lyngby Boldklub | Trasferta: Aarhus Gymnastikforening
+Competizione: superliga-dk
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.2 (range 33.3 - 65.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 52.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.82
+Punteggio REALE ottenuto in quella partita: 48.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.8    38.2    -21.6    27.1        SI
+   7        7      41.1    60.0    +18.9    25.0        SI
+   8        8      41.2    90.2    +49.0    23.9        NO
+   9        9      54.9    45.5     -9.4    28.3        SI
+  10       10      65.1    37.4    -27.7    26.6        NO
+  11       11      55.8    51.7     -4.1    25.7        SI
+  12       12      65.4    70.0     +4.6    24.2        SI
+  13       13      63.7    48.0    -15.8    23.9        SI
+
+MAE (errore assoluto medio): 18.89
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
