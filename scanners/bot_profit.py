@@ -482,12 +482,83 @@ def eur_price_from_amounts(amounts, eth_rate):
 # Ripristinato il compromesso precedente (0.2s/0.45s/30s), che resta il
 # miglior punto trovato finora (5m14s-5m28s, ~70 rate-limited di cui 0
 # persistenti dopo il secondo giro).
+#
+# FIX 30/07 -- RITMO ADATTIVO + BARRIERA GLOBALE (richiesta esplicita utente:
+# risolvere il rate limit "per davvero", non arginarlo, in vista di TUTTI i
+# campionati e non solo 3). Analisi dei log reali delle run 66/69/71/72:
+#
+#   run 66 (a freddo)  16m58s  835 HTTP 429  ~1150 richieste andate a buon fine
+#   run 69             12m21s  551 HTTP 429
+#   run 71              7m23s  291 HTTP 429
+#   run 72 (a regime)   4m37s   36 HTTP 429
+#
+# Nella run 72 il PRIMO 429 e' scattato esattamente 122s dopo la prima query,
+# cioe' dopo ~600 richieste al ritmo di 0.2s -- e nella run 66 il log mostra un
+# ciclo regolare di ~2 minuti di lavoro pulito seguiti da ~2-3 minuti quasi
+# completamente bloccati (minuti interi con 110+ 429 e ZERO giocatori
+# completati). Il comportamento e' quello di un token bucket lato Sorare:
+# capienza ~600 richieste, ricarica di ~1.5-2 richieste al secondo. Il ritmo
+# fisso di 0.2s (5 req/s) e' quindi ~3 volte oltre il sostenibile: una volta
+# svuotato il secchio non c'e' ritmo "sicuro" che tenga, e i 10 worker
+# continuavano a sbattere contro il muro ognuno per conto suo (ogni 429 costava
+# fino a 2+4+16=22s di backoff SOLO a quel thread, mentre gli altri 9
+# continuavano a generare altri 429).
+#
+# Due cambiamenti, entrambi mirati alla causa e non al sintomo:
+#  1) BARRIERA GLOBALE: quando arriva un 429 si alza una pausa CONDIVISA da
+#     tutti i thread (nessuno parte finche' non scade), invece di far
+#     aspettare solo lo sfortunato. Un 429 quindi non si moltiplica piu' per
+#     il numero di worker. I 429 che arrivano mentre la barriera e' gia'
+#     alzata sono la coda della stessa ondata e NON vengono contati come
+#     nuova penalita' (altrimenti 10 worker moltiplicherebbero per 10 la
+#     reazione a un singolo evento).
+#  2) RITMO ADATTIVO (AIMD, stessa idea del controllo di congestione TCP):
+#     si parte veloci (GRAPHQL_MIN_INTERVAL_SECONDS_FAST, che sfrutta la
+#     capienza iniziale del secchio), a ogni ondata di 429 l'intervallo viene
+#     moltiplicato per GRAPHQL_PACE_BACKOFF_FACTOR, e dopo
+#     GRAPHQL_PACE_RECOVER_EVERY richieste consecutive andate a buon fine
+#     viene riavvicinato al pavimento. Cosi' il bot TROVA DA SOLO il ritmo
+#     sostenibile del momento invece di usarne uno tarato a mano su una run
+#     passata -- ed e' la parte che regge l'aggiunta di nuovi campionati:
+#     piu' volume non significa piu' 429, significa solo che il ritmo si
+#     assesta dove Sorare lo consente.
+#
+# Effetto atteso (e motivo per cui non e' un compromesso velocita/429): oggi il
+# tempo perso NON e' nell'attesa, e' nelle richieste sprecate. Nella run 66,
+# 835 429 su ~2000 richieste totali = il 42% del traffico buttato, piu' i
+# backoff. Andare al ritmo giusto fin da subito significa fare MENO richieste
+# in totale e non restare bloccati per minuti interi.
 GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.2'))
+# Ritmo minimo a cui il controllo adattivo puo' scendere DOPO aver incassato un
+# 429 (non torna mai sotto questo valore nella stessa ondata).
 GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.45'))
+# Tetto: oltre questo intervallo non si rallenta piu' (a 1.5s/richiesta siamo
+# gia' ampiamente sotto la soglia sostenibile misurata, se Solare limita ancora
+# il problema non e' il ritmo).
+GRAPHQL_MAX_INTERVAL_SECONDS = float(os.environ.get('GRAPHQL_MAX_INTERVAL_SECONDS', '1.5'))
+GRAPHQL_PACE_BACKOFF_FACTOR = float(os.environ.get('GRAPHQL_PACE_BACKOFF_FACTOR', '1.6'))
+GRAPHQL_PACE_RECOVER_EVERY = int(os.environ.get('GRAPHQL_PACE_RECOVER_EVERY', '40'))
+GRAPHQL_PACE_RECOVER_FACTOR = float(os.environ.get('GRAPHQL_PACE_RECOVER_FACTOR', '0.9'))
+# Pausa globale (tutti i thread) alla prima ondata di 429; raddoppia a ogni
+# ondata successiva fino al tetto, si dimezza quando il ritmo si riprende.
+GRAPHQL_429_GLOBAL_PAUSE_SECONDS = float(os.environ.get('GRAPHQL_429_GLOBAL_PAUSE_SECONDS', '5.0'))
+GRAPHQL_429_GLOBAL_PAUSE_MAX = float(os.environ.get('GRAPHQL_429_GLOBAL_PAUSE_MAX', '45.0'))
 GRAPHQL_429_COOLDOWN_SECONDS = float(os.environ.get('GRAPHQL_429_COOLDOWN_SECONDS', '30.0'))
+# Alzato da 3 a 5 (FIX 30/07): ora un tentativo fallito non costa piu' un
+# backoff locale lungo, costa solo l'attesa della barriera globale che il bot
+# avrebbe comunque rispettato -- ritentare di piu' e' quasi gratis e riduce i
+# giocatori persi per 'rate_limited_max_retries_exceeded' (30 persistenti nella
+# run 66).
+GRAPHQL_MAX_RETRIES = int(os.environ.get('GRAPHQL_MAX_RETRIES', '5'))
 _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
+_pace_interval = [GRAPHQL_MIN_INTERVAL_SECONDS_FAST]
+_pace_ok_streak = [0]
+_pace_blocked_until = [0.0]
+_pace_penalty = [0.0]
+_pace_429_totali = [0]
+_pace_ondate = [0]
 
 # ESPERIMENTO 29/07 (richiesta esplicita utente, osservazione su un log reale):
 # nella run delle 07:35 il primo 429 e' scattato solo dopo ~1m39s e ~250
@@ -509,30 +580,130 @@ _burst_paused_until = [0.0]
 
 
 def _graphql_throttle():
+    """Ritmo globale adattivo + barriera condivisa (vedi il blocco di commento
+    sopra le costanti GRAPHQL_PACE_*). Due attese distinte:
+      - la BARRIERA (_pace_blocked_until): nessun thread parte finche' non
+        scade, e' la reazione condivisa a un'ondata di 429;
+      - lo SLOT di ritmo: ogni chiamante si prenota il prossimo istante utile
+        spostando _graphql_last_call_ts, cosi' N thread si distribuiscono
+        ordinatamente invece di dormire tutti fino allo stesso istante e poi
+        partire insieme (che era il difetto della versione precedente)."""
+    while True:
+        with _graphql_throttle_lock:
+            now = time.time()
+            attesa_burst = 0.0
+            if GRAPHQL_BURST_WORK_SECONDS > 0:
+                if _burst_window_start[0] is None:
+                    _burst_window_start[0] = now
+                if now < _burst_paused_until[0]:
+                    attesa_burst = _burst_paused_until[0] - now
+                elif now - _burst_window_start[0] >= GRAPHQL_BURST_WORK_SECONDS:
+                    _burst_paused_until[0] = now + GRAPHQL_BURST_PAUSE_SECONDS
+                    _burst_window_start[0] = _burst_paused_until[0]
+                    attesa_burst = GRAPHQL_BURST_PAUSE_SECONDS
+                    log(f"[burst] {GRAPHQL_BURST_WORK_SECONDS:.0f}s di lavoro completati, "
+                        f"pausa fissa di {GRAPHQL_BURST_PAUSE_SECONDS:.0f}s...")
+            # max() e non somma: sono due pause indipendenti (barriera 429 e
+            # pausa fissa sperimentale), aspettare la piu' lunga le soddisfa
+            # entrambe. Sommandole, una barriera gia' scaduta (valore negativo)
+            # avrebbe potuto annullare una pausa burst ancora attiva.
+            attesa_barriera = max(_pace_blocked_until[0] - now, attesa_burst)
+            if attesa_barriera <= 0:
+                slot = max(now, _graphql_last_call_ts[0] + _pace_interval[0])
+                _graphql_last_call_ts[0] = slot
+                attesa_slot = slot - now
+                break
+        # Fuori dal lock: dormire tenendolo bloccherebbe anche chi deve solo
+        # registrare un esito. Si ricontrolla in cima al giro perche' nel
+        # frattempo un altro thread puo' aver allungato la barriera.
+        time.sleep(min(attesa_barriera, 2.0))
+    if attesa_slot > 0:
+        time.sleep(attesa_slot)
+    # Uno slot prenotato puo' cadere DOPO che un altro thread ha alzato la
+    # barriera (con 10 worker gli slot sono prenotati fino a ~10 intervalli
+    # avanti): senza questo secondo controllo quelle richieste partirebbero
+    # comunque contro il muro, che e' esattamente cio' che la barriera esiste
+    # per evitare. Qui NON si riprenota lo slot -- e' gia' stato consumato,
+    # si aspetta solo che la barriera cada.
+    while True:
+        with _graphql_throttle_lock:
+            residuo = _pace_blocked_until[0] - time.time()
+        if residuo <= 0:
+            return
+        time.sleep(min(residuo, 2.0))
+
+
+def _pace_registra_429(retry_after=None):
+    """Registra un 429. Ritorna (pausa_globale_applicata, intervallo_corrente):
+    pausa_globale_applicata e' None se questo 429 e' stato riconosciuto come
+    coda di un'ondata gia' gestita (nessuna nuova penalita')."""
     with _graphql_throttle_lock:
         now = time.time()
-        pause_remaining = 0.0
-        if GRAPHQL_BURST_WORK_SECONDS > 0:
-            if _burst_window_start[0] is None:
-                _burst_window_start[0] = now
-            if now < _burst_paused_until[0]:
-                pause_remaining = _burst_paused_until[0] - now
-            elif now - _burst_window_start[0] >= GRAPHQL_BURST_WORK_SECONDS:
-                _burst_paused_until[0] = now + GRAPHQL_BURST_PAUSE_SECONDS
-                _burst_window_start[0] = _burst_paused_until[0]
-                pause_remaining = GRAPHQL_BURST_PAUSE_SECONDS
-                log(f"[burst] {GRAPHQL_BURST_WORK_SECONDS:.0f}s di lavoro completati, "
-                    f"pausa fissa di {GRAPHQL_BURST_PAUSE_SECONDS:.0f}s...")
-        recent_429 = (now - _graphql_last_429_ts[0]) < GRAPHQL_429_COOLDOWN_SECONDS
-        min_interval = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE if recent_429 else GRAPHQL_MIN_INTERVAL_SECONDS_FAST
-        wait = min_interval - (now - _graphql_last_call_ts[0])
-        total_wait = max(wait, 0.0) + pause_remaining
-        if total_wait > 0:
-            time.sleep(total_wait)
-        _graphql_last_call_ts[0] = time.time()
+        _graphql_last_429_ts[0] = now
+        _pace_429_totali[0] += 1
+        _pace_ok_streak[0] = 0
+        nuova_ondata = now >= _pace_blocked_until[0]
+        pausa = None
+        if nuova_ondata:
+            _pace_ondate[0] += 1
+            _pace_interval[0] = max(
+                min(_pace_interval[0] * GRAPHQL_PACE_BACKOFF_FACTOR, GRAPHQL_MAX_INTERVAL_SECONDS),
+                GRAPHQL_MIN_INTERVAL_SECONDS_SAFE,
+            )
+            _pace_penalty[0] = min(
+                max(_pace_penalty[0] * 2, GRAPHQL_429_GLOBAL_PAUSE_SECONDS),
+                GRAPHQL_429_GLOBAL_PAUSE_MAX,
+            )
+            pausa = _pace_penalty[0]
+        # Un Retry-After esplicito di Sorare vale piu' di qualunque stima
+        # nostra: se c'e', si rispetta (anche a barriera gia' alzata).
+        if retry_after is not None:
+            pausa = max(pausa or 0.0, min(retry_after, GRAPHQL_429_GLOBAL_PAUSE_MAX))
+        if pausa:
+            _pace_blocked_until[0] = max(_pace_blocked_until[0], now + pausa)
+        return pausa, _pace_interval[0]
 
 
-def graphql_query(query, variables=None, max_retries=3):
+def _pace_registra_successo():
+    """Ripresa graduale: dopo GRAPHQL_PACE_RECOVER_EVERY richieste consecutive
+    riuscite, il ritmo torna un passo verso il pavimento. Serve a non restare
+    lenti per il resto della run dopo una singola ondata passeggera."""
+    with _graphql_throttle_lock:
+        _pace_ok_streak[0] += 1
+        if (_pace_ok_streak[0] >= GRAPHQL_PACE_RECOVER_EVERY
+                and _pace_interval[0] > GRAPHQL_MIN_INTERVAL_SECONDS_FAST):
+            _pace_ok_streak[0] = 0
+            _pace_interval[0] = max(
+                _pace_interval[0] * GRAPHQL_PACE_RECOVER_FACTOR, GRAPHQL_MIN_INTERVAL_SECONDS_FAST)
+            _pace_penalty[0] = _pace_penalty[0] / 2
+
+
+def _pace_riepilogo():
+    with _graphql_throttle_lock:
+        return (f"HTTP 429 totali: {_pace_429_totali[0]} in {_pace_ondate[0]} ondate distinte, "
+                f"ritmo finale: {_pace_interval[0]:.2f}s/richiesta "
+                f"(pavimento {GRAPHQL_MIN_INTERVAL_SECONDS_FAST:.2f}s)")
+
+
+def _retry_after_seconds(response):
+    """Retry-After di Sorare, se presente. Gestita solo la forma numerica (in
+    secondi), non la variante con data HTTP: non e' mai stata osservata nei log
+    e interpretarla male sarebbe peggio che ignorarla. None se assente o
+    illeggibile -- in quel caso vale la stima interna."""
+    valore = None
+    try:
+        valore = response.headers.get('Retry-After') or response.headers.get('retry-after')
+    except Exception:
+        return None
+    if not valore:
+        return None
+    try:
+        return max(float(str(valore).strip()), 0.0)
+    except ValueError:
+        return None
+
+
+def graphql_query(query, variables=None, max_retries=None):
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -554,19 +725,23 @@ def graphql_query(query, variables=None, max_retries=3):
     if SORARE_DEVICE_FINGERPRINT:
         headers['device_fingerprint'] = SORARE_DEVICE_FINGERPRINT
     payload = {"query": query, "variables": variables or {}}
+    if max_retries is None:
+        max_retries = GRAPHQL_MAX_RETRIES
     for attempt in range(max_retries):
         _graphql_throttle()
         r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
-            _graphql_last_429_ts[0] = time.time()
-            # FIX 29/07 bis: backoff dimezzato (2/4/8s) provato e SCARTATO --
-            # ha piu' che raddoppiato i giocatori persi per retry esauriti
-            # (69 -> 140+) a fronte di un risparmio di tempo minimo (~25%).
-            # Ripristinato l'originale: il backoff lungo da' al retry il tempo
-            # di uscire dalla finestra di penalita' prima di rinunciare.
-            wait_seconds = min((2 ** attempt) * 2, 16.0)
-            log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), attendo {wait_seconds:.1f}s...")
-            time.sleep(wait_seconds)
+            # FIX 30/07: niente piu' backoff LOCALE del singolo thread (era
+            # 2/4/16s, quindi fino a 22s buttati da ogni thread mentre gli
+            # altri continuavano a generare altri 429). Ora la pausa e'
+            # GLOBALE e viene decisa una volta sola per ondata da
+            # _pace_registra_429 -- al giro successivo _graphql_throttle()
+            # aspetta la barriera per conto di tutti. Log emesso SOLO alla
+            # nuova ondata: nella run 66 questa riga era stampata 835 volte.
+            pausa, ritmo = _pace_registra_429(_retry_after_seconds(r))
+            if pausa:
+                log(f"[rate limit] HTTP 429: pausa globale di {pausa:.1f}s per tutti i thread, "
+                    f"ritmo rallentato a {ritmo:.2f}s/richiesta (ondata #{_pace_ondate[0]})")
             continue
         # FIX 29/07 (bug reale, run crashata: Sorare ha risposto con un body
         # vuoto/non-JSON, probabile errore 5xx transitorio -- r.json() faceva
@@ -576,13 +751,15 @@ def graphql_query(query, variables=None, max_retries=3):
         # chiamanti via data.get('errors')) se i tentativi si esauriscono,
         # invece di un crash fatale.
         try:
-            return r.json()
+            data = r.json()
         except ValueError:
             wait_seconds = min((2 ** attempt) * 2, 16.0)
             log(f"[errore HTTP] risposta non-JSON (status {r.status_code}, tentativo "
                 f"{attempt + 1}/{max_retries}), attendo {wait_seconds:.1f}s...")
             time.sleep(wait_seconds)
             continue
+        _pace_registra_successo()
+        return data
     return {"errors": [{"message": "rate_limited_max_retries_exceeded"}]}
 
 
@@ -620,6 +797,110 @@ query TeamRoster($slug: String!, $first: Int!, $after: String) {
 
 TEAM_ROSTER_PAGE_SIZE = 100
 TEAM_ROSTER_MAX_PAGES = 10  # tetto di sicurezza (fino a 1000 giocatori/squadra)
+
+# =====================================================================================
+# CACHE ROSTER SU DISCO (FIX 30/07, richiesta esplicita utente: ridurre il rate
+# limit in vista di TUTTI i campionati)
+#
+# Il roster e' la meta' NASCOSTA del costo di una run: nella run 72 le 78
+# squadre hanno richiesto 78 query di prima pagina + le pagine successive
+# (roster storici da 111 a 229 giocatori, quindi 2-3 pagine ciascuna) = ~190
+# richieste, spese nei primi 45 secondi su 275 totali. Con tutti i campionati
+# (~27 leghe x ~18 squadre) diventerebbero da sole oltre 1000 richieste PRIMA
+# ancora di guardare un prezzo.
+#
+# Ma il contenuto di quella query cambia pochissimo: chi e' in rosa e le medie
+# L5/L10/L40 si muovono SOLO quando si gioca una partita, cioe' una volta a
+# settimana per squadra -- mentre il bot fa 1-2 snapshot di mercato al giorno.
+# Ricaricarlo ad ogni run e' spreco puro. Qui viene salvato su disco (JSON
+# committato nel repo come i CSV, cosi' sopravvive tra una run GitHub Actions e
+# l'altra) e riusato entro ROSTER_CACHE_HOURS.
+#
+# La cache memorizza il roster GIA' FILTRATO (stessa logica di fetch_team_roster:
+# solo giocatori ancora al club e sopra ROSTER_MIN_AVG_SCORE). Se la soglia
+# cambia, la voce viene considerata non valida e la squadra si riscarica -- cosi'
+# un cambio di parametro non resta silenziosamente "congelato" nella cache.
+ROSTER_CACHE_PATH = os.environ.get('ROSTER_CACHE_PATH', 'bot_profit_roster_cache.json')
+ROSTER_CACHE_HOURS = float(os.environ.get('ROSTER_CACHE_HOURS', '18'))
+
+_roster_cache_lock = threading.Lock()
+_roster_cache = [None]
+_roster_cache_modificata = [False]
+_roster_cache_stats = {'da_cache': 0, 'scaricati': 0}
+
+
+def _roster_cache_leggi():
+    with _roster_cache_lock:
+        if _roster_cache[0] is None:
+            dati = {}
+            if os.path.exists(ROSTER_CACHE_PATH):
+                try:
+                    with open(ROSTER_CACHE_PATH, 'r', encoding='utf-8') as f:
+                        letto = json.load(f)
+                    if isinstance(letto, dict) and isinstance(letto.get('squadre'), dict):
+                        dati = letto['squadre']
+                except (ValueError, OSError) as e:
+                    log(f"[cache roster] file illeggibile ({e}), riparto da cache vuota")
+            _roster_cache[0] = dati
+        return _roster_cache[0]
+
+
+def _roster_da_cache(team_slug):
+    """Roster valido in cache per questa squadra, o None se assente/scaduto."""
+    if ROSTER_CACHE_HOURS <= 0:
+        return None
+    voce = _roster_cache_leggi().get(team_slug)
+    if not voce:
+        return None
+    if voce.get('soglia_media') != ROSTER_MIN_AVG_SCORE:
+        return None
+    try:
+        scaricato = datetime.datetime.fromisoformat(voce['scaricato_il'])
+    except (KeyError, ValueError, TypeError):
+        return None
+    eta_ore = (datetime.datetime.now(datetime.timezone.utc) - scaricato).total_seconds() / 3600.0
+    if eta_ore > ROSTER_CACHE_HOURS:
+        return None
+    roster = []
+    for p in voce.get('giocatori') or []:
+        roster.append((p['slug'], p.get('nome') or p['slug'], {
+            'l5': p.get('l5'), 'l10': p.get('l10'), 'l40': p.get('l40'),
+            'squadra': p.get('squadra'), 'squadra_slug': p.get('squadra_slug'),
+            'prossimo_avversario': None, 'next_game_date_str': None,
+            'ultima_partita_score': None, 'match_dates': [],
+        }))
+    return roster, eta_ore
+
+
+def _roster_salva_in_cache(team_slug, roster):
+    with _roster_cache_lock:
+        if _roster_cache[0] is None:
+            _roster_cache[0] = {}
+        _roster_cache[0][team_slug] = {
+            'scaricato_il': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            'soglia_media': ROSTER_MIN_AVG_SCORE,
+            'giocatori': [
+                {'slug': slug, 'nome': nome, 'l5': snap.get('l5'), 'l10': snap.get('l10'),
+                 'l40': snap.get('l40'), 'squadra': snap.get('squadra'),
+                 'squadra_slug': snap.get('squadra_slug')}
+                for slug, nome, snap in roster
+            ],
+        }
+        _roster_cache_modificata[0] = True
+
+
+def scrivi_roster_cache():
+    with _roster_cache_lock:
+        if not _roster_cache_modificata[0] or _roster_cache[0] is None:
+            return
+        dati = {'squadre': _roster_cache[0]}
+        _roster_cache_modificata[0] = False
+    try:
+        with open(ROSTER_CACHE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(dati, f, ensure_ascii=False, indent=1, sort_keys=True)
+        log(f"[cache roster] salvata ({len(dati['squadre'])} squadre) in {ROSTER_CACHE_PATH}")
+    except OSError as e:
+        log(f"[cache roster] impossibile salvare {ROSTER_CACHE_PATH}: {e}")
 
 
 def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
@@ -674,7 +955,21 @@ def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
     prossima partita e transazioni in un'unica query combinata (vedi
     fetch_player_combined_snapshot, FIX 27/07 quater) -- nessuno di questi e'
     annidabile dentro una lista anyPlayers per limite esplicito dello schema
-    Sorare."""
+    Sorare.
+
+    FIX 30/07 (richiesta esplicita utente, rate limit): prima di scaricare si
+    controlla la cache su disco (vedi ROSTER_CACHE_PATH) -- rosa e medie
+    L5/L10/L40 cambiano solo quando si gioca, non serve rileggerle a ogni
+    snapshot di mercato."""
+    in_cache = _roster_da_cache(team_slug)
+    if in_cache is not None:
+        roster, eta_ore = in_cache
+        _roster_cache_stats['da_cache'] += 1
+        log(f"[roster] {team_slug}: {len(roster)} rilevanti da cache "
+            f"(aggiornata {eta_ore:.1f}h fa, zero query)")
+        return roster
+
+    _roster_cache_stats['scaricati'] += 1
     all_nodes = []
     cursor = None
     for _ in range(TEAM_ROSTER_MAX_PAGES):
@@ -715,6 +1010,12 @@ def fetch_team_roster(team_slug, page_size=TEAM_ROSTER_PAGE_SIZE):
     log(f"[roster] {team_slug}: {len(roster_completo)} giocatori totali nel roster storico, "
         f"{scartati_ex} scartati subito (non piu' al club), {scartati_media_bassa} scartati per "
         f"L5/L10/L40 <= {ROSTER_MIN_AVG_SCORE} (una qualsiasi), {len(roster)} rilevanti da processare.")
+    # Non si mette in cache un roster vuoto: quasi sempre e' il sintomo di una
+    # query andata male (errore GraphQL/rate limit, vedi i break sopra), non di
+    # una squadra davvero senza giocatori rilevanti -- congelarlo per ore
+    # cancellerebbe la squadra dalle run successive.
+    if roster:
+        _roster_salva_in_cache(team_slug, roster)
     return roster
 
 
@@ -1286,7 +1587,27 @@ def _clamp(value, lo, hi):
 # forte; 'up' = sconto affidabile (mercato in salita) -> premiato; 'flat' =
 # nessuna correzione; mancante (storico insufficiente per lo split 2gg/7gg) =
 # leggera cautela.
-TREND_SCORE_MULTIPLIER = {'up': 1.2, 'flat': 1.0, 'down': 0.5, None: 0.8}
+#
+# RITARATO 30/07 sui dati reali (analisi del dataset grezzo
+# bot_profit_output/pattern_raw_transactions_20260729_1845.csv, 3658
+# transazioni / 142 carte, prodotto da bot_profit_pattern_export.py). Misura
+# fatta: per ogni transazione, sconto rispetto alla media della stessa carta
+# nei 3 giorni precedenti, e variazione % media del prezzo nelle 48h
+# SUCCESSIVE. Incrociando sconto e trend (n = numero di casi):
+#
+#   sconto >=10%  trend down  n=173  mediana  +9.9%   68% positivi
+#   sconto >=10%  trend flat  n=183  mediana +17.7%   84% positivi
+#   sconto >=10%  trend up    n= 56  mediana +25.4%   88% positivi
+#
+# Il verso della vecchia taratura e' confermato (down peggio di flat, flat
+# peggio di up), ma la PENALITA' ERA TROPPO DURA: 'down' non e' affatto un
+# esito negativo (mediana +9.9%, due volte su tre in guadagno), mentre 0.5
+# lo dimezzava fino a farlo sparire dalla classifica. Rapporto reale misurato
+# 9.9/17.7 = 0.56 sul singolo bucket ma solo 0.51/... sui bucket di sconto
+# piu' bassi (dati piu' rumorosi, n minore) -- adottato 0.65, prudente ma non
+# punitivo, e 1.25 per 'up' (rapporto misurato 25.4/17.7 = 1.44, tenuto piu'
+# basso perche' e' il bucket con meno campioni).
+TREND_SCORE_MULTIPLIER = {'up': 1.25, 'flat': 1.0, 'down': 0.65, None: 0.85}
 
 # FIX 29/07 (richiesta esplicita utente, caso reale Nicolas Fernandez-Mercau
 # in season: sconto_percent=-79.6%, cioe' il prezzo minimo attuale e' quasi il
@@ -1414,13 +1735,18 @@ def _upsert_tracked_row(key, row):
         return len(_tracked), is_new
 
 
+# FIX 30/07: 'segnale', 'punteggio_occasione', 'motivo_segnale' e
+# 'aggiornato_il' sono le colonne del verdetto per-carta (vedi valuta_occasione)
+# -- messe SUBITO dopo il nome, sono la prima cosa che si legge aprendo il file.
 CSV_FIELDNAMES = [
-    'player_slug', 'player_name', 'link_sorare', 'league_slug', 'tipo_carta', 'potenziale_score',
+    'player_slug', 'player_name', 'segnale', 'punteggio_occasione', 'motivo_segnale',
+    'link_sorare', 'league_slug', 'tipo_carta', 'potenziale_score',
     'squadra', 'prossimo_avversario',
     'ultima_partita_score', 'l5', 'l10', 'l40',
     'min_attuale_eur', 'media_transazioni_7gg_trimmed_eur', 'n_transazioni_usate',
     'sconto_percent', 'trend_recente', 'media_transazioni_recente_eur', 'media_transazioni_storica_eur',
-    'prossima_partita_data', 'ore_alla_partita', 'finestra_acquisto_ideale', 'ultimo_tipo_evento',
+    'prossima_partita_data', 'ore_alla_partita', 'finestra_acquisto_ideale', 'aggiornato_il',
+    'ultimo_tipo_evento',
 ]
 
 # FIX 29/07 (richiesta esplicita utente, analisi pattern_raw_transactions_
@@ -1485,6 +1811,232 @@ def _finestra_acquisto_ideale(prossima_partita_data_iso):
     # fianco) -- formato compatto, solo le due date/ore della finestra.
     fmt = '%d/%m %H:%M'
     return f"{start.strftime(fmt)}-{end.strftime(fmt)} UTC"
+
+
+# =====================================================================================
+# SEGNALE DI ACQUISTO (FIX 30/07 -- richiesta esplicita utente: "dopo ogni
+# snapshot voglio gia' sapere esattamente se quello e' un buon momento per
+# comprare il giocatore analizzato... un segnale chiaro e forte nel csv")
+#
+# Fino a ieri il CSV rispondeva solo "quando sarebbe la finestra ideale"
+# (finestra_acquisto_ideale) e dava un potenziale_score astratto: due
+# informazioni generiche, che lasciavano all'utente il lavoro di incrociarle.
+# Qui il bot prende posizione carta per carta.
+#
+# COME E' STATA DEFINITA LA REGOLA -- non a intuito, misurata sul dataset
+# grezzo gia' presente nel repo (pattern_raw_transactions_20260729_1845.csv,
+# 3658 transazioni reali su 142 carte, 3 gruppi di campionati). Domanda posta
+# ai dati: "se compro una carta a questo prezzo, com'e' il prezzo di quella
+# stessa carta nelle 48 ore successive?". Risposta, per fascia di sconto
+# rispetto alla media della carta nei 3 giorni precedenti:
+#
+#   sconto      n     mediana a 48h    % di casi in guadagno
+#   < 0%      1690      -4.3%                 33-42%
+#   0-5%       295      +0.8%                   55%
+#   5-10%      217      +3.2%                   59%
+#   10-20%     315      +7.9%                   70%
+#   >= 20%     310     +25.2%                   82%
+#
+# Lo SCONTO e' quindi il segnale dominante, ed e' monotono: piu' e' grande,
+# piu' spesso e piu' forte il prezzo sale dopo. Uno sconto negativo
+# (sovrapprezzo) e' altrettanto affidabile al contrario: perde in 6 casi su 10.
+#
+# I due modificatori, misurati sullo stesso dataset:
+#  - TREND (vedi TREND_SCORE_MULTIPLIER): a parita' di sconto >=10%, mediana
+#    +9.9% con trend 'down', +17.7% 'flat', +25.4% 'up'.
+#  - FINESTRA TEMPORALE: a parita' di sconto >=10%, chi era dentro la finestra
+#    -3.5/-2.5 giorni dal kickoff ha reso mediana +21.0% con il 93% di casi in
+#    guadagno, contro +14.0% e 75% fuori finestra. La finestra quindi NON crea
+#    l'occasione (uno sconto forte rende bene anche lontano dalla partita:
+#    misurato +20.4% mediana, 88% positivi, a piu' di 5.5 giorni dal kickoff)
+#    ma la amplifica di circa 1.4x. Per questo NON viene usata come filtro --
+#    e' stata verificata e scartata l'idea di saltare del tutto le squadre
+#    lontane dalla partita: avrebbe buttato via una delle fasce piu' redditizie.
+#    A meno di 1.5 giorni dal kickoff, invece, il prezzo e' in PREMIO (dal
+#    grafico per bin da mezza giornata: da +3.7% a +6.6% sopra la media della
+#    carta): comprare li' e' il momento peggiore, penalizzato.
+#
+# PUNTEGGIO_OCCASIONE = stima del guadagno % a 48 ore, cioe' un numero che si
+# legge direttamente ("questa carta vale circa +18%"), non un indice astratto
+# tra 0 e 1 come potenziale_score. Interpolazione lineare sulle mediane
+# misurate sopra, poi moltiplicata per trend e finestra.
+BUY_SIGNAL_CURVE = (
+    # (sconto_percent, guadagno_mediano_% misurato a 48h) -- punti centrali
+    # delle fasce della tabella qui sopra; in mezzo si interpola linearmente
+    # cosi' il punteggio e' continuo (con le fasce a gradino, due carte con
+    # sconto 19.9% e 20.1% finivano in due mondi diversi).
+    (0.0, 0.0),
+    (2.5, 0.8),
+    (7.5, 3.2),
+    (15.0, 7.9),
+    (30.0, 25.0),
+)
+BUY_SIGNAL_CURVE_SLOPE_OLTRE = 1.14   # pendenza oltre il 30% di sconto
+BUY_SIGNAL_CURVE_CAP = 45.0           # tetto: oltre non ci sono dati che reggano
+# Compressione della coda alta del punteggio FINALE (dopo trend e finestra).
+# Senza, uno sconto del 50% con trend in salita dentro la finestra arriverebbe a
+# +70% atteso: un numero che nessuna misura nel dataset sostiene (il bucket
+# migliore osservato, sconto >=20% con trend 'up', ha mediana +25.4% e media
+# +33.6%). Oltre la soglia l'eccedenza viene schiacciata invece che tagliata di
+# netto: un taglio secco appiattirebbe le carte migliori tutte sullo stesso
+# numero, perdendo l'ordine tra loro, mentre cosi' restano distinguibili senza
+# promettere cifre fuori scala.
+BUY_SIGNAL_COMPRESSIONE_SOPRA = 25.0
+BUY_SIGNAL_COMPRESSIONE_FATTORE = 0.3
+BUY_SIGNAL_PUNTEGGIO_CAP = 45.0
+BUY_SIGNAL_WINDOW_MULT = 1.4          # dentro la finestra -3.5/-2.5gg
+BUY_SIGNAL_IMMINENTE_MULT = 0.75      # partita a meno di BUY_SIGNAL_IMMINENTE_HOURS
+# 54h = 2.25 giorni: e' il punto in cui, nei bin da mezza giornata del dataset
+# grezzo, il prezzo smette di essere scontato e passa in PREMIO rispetto alla
+# media della carta (-2.5gg: -4.2%, ma gia' -2.0gg: +6.6%, -1.5gg: +5.5%,
+# -1.0gg: +3.7%, kickoff: +2.9%). Sotto questa soglia si compra caro.
+BUY_SIGNAL_IMMINENTE_HOURS = 54.0
+
+# Soglie dei livelli. COMPRA ORA vuole DUE condizioni insieme:
+#  1) superare la soglia assoluta (un guadagno atteso che valga la pena),
+#  2) essere tra i primi BUY_SIGNAL_MAX_PER_GRUPPO del proprio campionato.
+# Il punto 2 non e' cosmetico: lo sconto medio varia enormemente da lega a lega
+# e da momento a momento (nell'ultima run reale la mediana era +15.8% in MLS,
+# +8.1% in K-League e -0.2% in Eredivisie/Belgio) -- con la sola soglia
+# assoluta, in MLS sarebbero finite in giallo 27 righe su 50, che non e' un
+# segnale ma un colore di sfondo. Il tetto per gruppo tiene il segnale
+# selettivo qualunque sia lo stato del mercato di quella lega.
+BUY_SIGNAL_SOGLIA_COMPRA = float(os.environ.get('BUY_SIGNAL_SOGLIA_COMPRA', '10.0'))
+BUY_SIGNAL_SOGLIA_BUONA = float(os.environ.get('BUY_SIGNAL_SOGLIA_BUONA', '4.0'))
+BUY_SIGNAL_MAX_PER_GRUPPO = int(os.environ.get('BUY_SIGNAL_MAX_PER_GRUPPO', '8'))
+
+# Una riga della classifica persistente puo' venire da una run precedente (il
+# CSV non riparte mai vuoto, vedi load_previous_tracked). Un prezzo di due
+# giorni fa non puo' generare un "COMPRA ORA": oltre questa eta' il segnale
+# viene sospeso e la riga lo dichiara esplicitamente.
+SEGNALE_MAX_AGE_HOURS = float(os.environ.get('SEGNALE_MAX_AGE_HOURS', '12'))
+
+SEGNALE_COMPRA = 'COMPRA ORA'
+SEGNALE_BUONA = 'buona occasione'
+SEGNALE_NEUTRO = 'neutro'
+SEGNALE_EVITA = 'evita (sovrapprezzo)'
+SEGNALE_NON_VALUTABILE = 'dato non aggiornato'
+SEGNALE_RANK = {SEGNALE_COMPRA: 4, SEGNALE_BUONA: 3, SEGNALE_NEUTRO: 2,
+                SEGNALE_EVITA: 1, SEGNALE_NON_VALUTABILE: 0}
+
+
+def _guadagno_atteso_da_sconto(sconto_percent):
+    """Interpolazione lineare sulla curva misurata (BUY_SIGNAL_CURVE)."""
+    if sconto_percent is None or sconto_percent <= 0:
+        return 0.0
+    ultimo_x, ultimo_y = BUY_SIGNAL_CURVE[-1]
+    if sconto_percent >= ultimo_x:
+        return min(ultimo_y + (sconto_percent - ultimo_x) * BUY_SIGNAL_CURVE_SLOPE_OLTRE,
+                   BUY_SIGNAL_CURVE_CAP)
+    for i in range(1, len(BUY_SIGNAL_CURVE)):
+        x0, y0 = BUY_SIGNAL_CURVE[i - 1]
+        x1, y1 = BUY_SIGNAL_CURVE[i]
+        if sconto_percent <= x1:
+            return y0 + (y1 - y0) * (sconto_percent - x0) / (x1 - x0)
+    return ultimo_y
+
+
+def _eta_riga_ore(aggiornato_il_iso):
+    """Da quante ore il prezzo di questa riga non viene rinfrescato. None se il
+    dato manca (righe scritte prima dell'introduzione della colonna)."""
+    if not aggiornato_il_iso:
+        return None
+    try:
+        dt = datetime.datetime.fromisoformat(str(aggiornato_il_iso).replace('Z', '+00:00'))
+    except (ValueError, AttributeError):
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+    return (datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds() / 3600.0
+
+
+def valuta_occasione(sconto_percent, trend_recente, prossima_partita_data_iso, aggiornato_il_iso):
+    """Verdetto su UNA riga. Ritorna (punteggio_occasione, motivo, ore_alla_partita).
+
+    punteggio_occasione = guadagno % atteso a 48h (0 se non c'e' occasione).
+    Il livello finale (COMPRA ORA / buona / ...) NON si decide qui: dipende
+    anche dal confronto con le altre carte dello stesso gruppo, quindi viene
+    assegnato al momento della scrittura del CSV (vedi _assegna_segnali)."""
+    eta_ore = _eta_riga_ore(aggiornato_il_iso)
+    if eta_ore is None or eta_ore > SEGNALE_MAX_AGE_HOURS:
+        eta_txt = 'mai aggiornata' if eta_ore is None else f'{eta_ore:.0f}h fa'
+        return 0.0, f"dato vecchio ({eta_txt}), prezzo non verificato in questa run", None
+
+    ore = hours_until(prossima_partita_data_iso)
+    if ore is None:
+        return 0.0, 'prossima partita sconosciuta', None
+    if ore <= 0:
+        return 0.0, "partita gia' iniziata o in corso", ore
+
+    if sconto_percent is None:
+        return 0.0, 'nessuno storico prezzi utilizzabile', ore
+    if sconto_percent <= 0:
+        return 0.0, (f"prezzo {abs(sconto_percent):.0f}% SOPRA la sua media 7gg "
+                     f"(sovrapprezzo, non e' un affare)"), ore
+
+    base = _guadagno_atteso_da_sconto(sconto_percent)
+    mult_trend = TREND_SCORE_MULTIPLIER.get(trend_recente, TREND_SCORE_MULTIPLIER[None])
+
+    if BUY_WINDOW_HOURS_MIN <= ore <= BUY_WINDOW_HOURS_MAX:
+        mult_finestra = BUY_SIGNAL_WINDOW_MULT
+        nota_finestra = 'DENTRO la finestra ideale ora'
+    elif ore < BUY_SIGNAL_IMMINENTE_HOURS:
+        mult_finestra = BUY_SIGNAL_IMMINENTE_MULT
+        nota_finestra = f'partita tra {ore:.0f}h, finestra passata (prezzi in premio)'
+    else:
+        mult_finestra = 1.0
+        nota_finestra = f'partita tra {ore / 24:.1f}gg, fuori finestra'
+
+    grezzo = base * mult_trend * mult_finestra
+    if grezzo > BUY_SIGNAL_COMPRESSIONE_SOPRA:
+        grezzo = BUY_SIGNAL_COMPRESSIONE_SOPRA + (
+            grezzo - BUY_SIGNAL_COMPRESSIONE_SOPRA) * BUY_SIGNAL_COMPRESSIONE_FATTORE
+    punteggio = round(min(grezzo, BUY_SIGNAL_PUNTEGGIO_CAP), 1)
+    trend_txt = {'up': 'trend in salita', 'flat': 'trend stabile',
+                 'down': 'trend in calo'}.get(trend_recente, 'trend sconosciuto')
+    motivo = f"sconto {sconto_percent:.0f}% | {trend_txt} | {nota_finestra}"
+    return punteggio, motivo, ore
+
+
+def _assegna_segnali(rows_gruppo):
+    """Assegna segnale/punteggio_occasione/motivo_segnale a tutte le righe di un
+    gruppo e le riordina: prima i livelli piu' alti, poi il punteggio, poi il
+    vecchio potenziale_score come spareggio. Il CSV che ne esce si legge
+    dall'alto: le prime righe sono le carte da comprare adesso."""
+    for r in rows_gruppo:
+        punteggio, motivo, _ore = valuta_occasione(
+            r.get('sconto_percent'), r.get('trend_recente'),
+            r.get('prossima_partita_data'), r.get('aggiornato_il'))
+        r['punteggio_occasione'] = punteggio
+        r['motivo_segnale'] = motivo
+        r['finestra_acquisto_ideale'] = _finestra_acquisto_ideale(r.get('prossima_partita_data'))
+
+    rows_gruppo.sort(
+        key=lambda r: (r['punteggio_occasione'],
+                       r['potenziale_score'] if r.get('potenziale_score') is not None else -999),
+        reverse=True)
+
+    promossi = 0
+    for r in rows_gruppo:
+        punteggio = r['punteggio_occasione']
+        motivo = r['motivo_segnale']
+        if motivo.startswith('dato vecchio'):
+            r['segnale'] = SEGNALE_NON_VALUTABILE
+        elif punteggio <= 0:
+            r['segnale'] = SEGNALE_EVITA if 'sovrapprezzo' in motivo else SEGNALE_NEUTRO
+        elif punteggio >= BUY_SIGNAL_SOGLIA_COMPRA and promossi < BUY_SIGNAL_MAX_PER_GRUPPO:
+            r['segnale'] = SEGNALE_COMPRA
+            promossi += 1
+        elif punteggio >= BUY_SIGNAL_SOGLIA_BUONA:
+            r['segnale'] = SEGNALE_BUONA
+        else:
+            r['segnale'] = SEGNALE_NEUTRO
+
+    rows_gruppo.sort(
+        key=lambda r: (SEGNALE_RANK.get(r['segnale'], 0), r['punteggio_occasione'],
+                       r['potenziale_score'] if r.get('potenziale_score') is not None else -999),
+        reverse=True)
+    return rows_gruppo
 
 # FIX 27/07 quinquies (richiesta esplicita utente): lo sconto_percent confronta
 # il minimo attuale con la media dell'INTERA finestra a 7gg -- se il prezzo sta
@@ -1609,6 +2161,13 @@ def load_previous_tracked():
                         'media_transazioni_storica_eur': _parse_float_or_none(row.get('media_transazioni_storica_eur')),
                         'prossima_partita_data': row.get('prossima_partita_data') or None,
                         'ore_alla_partita': _parse_float_or_none(row.get('ore_alla_partita')),
+                        # FIX 30/07: quando questa riga e' stata davvero
+                        # rinfrescata. Serve a non spacciare per "COMPRA ORA"
+                        # un prezzo ereditato da una run di due giorni fa (la
+                        # classifica e' persistente, vedi SEGNALE_MAX_AGE_HOURS).
+                        # Righe scritte prima di questa colonna: campo vuoto,
+                        # trattate come non aggiornate finche' non si rivedono.
+                        'aggiornato_il': row.get('aggiornato_il') or None,
                         'ultimo_tipo_evento': row.get('ultimo_tipo_evento') or None,
                     }
                     caricate += 1
@@ -1616,21 +2175,25 @@ def load_previous_tracked():
 
 
 def _write_ranked_csv(rows_liquidi, path, label):
-    """Ordina per potenziale_score decrescente, taglia a TOP_N_OUTPUT e scrive
-    su disco."""
-    rows_sorted = sorted(
-        rows_liquidi,
-        key=lambda r: (r['potenziale_score'] if r['potenziale_score'] is not None else -999),
-        reverse=True,
-    )[:TOP_N_OUTPUT]
+    """FIX 30/07 (richiesta esplicita utente: segnale chiaro e forte nel CSV):
+    l'ordinamento non e' piu' il solo potenziale_score, ma il VERDETTO --
+    prima i COMPRA ORA, poi le buone occasioni, poi il resto (vedi
+    _assegna_segnali), col punteggio_occasione come criterio interno e il
+    potenziale_score come spareggio. Effetto pratico: le carte da comprare
+    adesso stanno nelle prime righe del file e nessuna di esse puo' finire
+    tagliata fuori dal top TOP_N_OUTPUT (prima poteva succedere: il taglio era
+    per potenziale_score, dove il timing pesa 0.40 e poteva sotterrare una
+    carta con uno sconto enorme ma la partita lontana)."""
+    rows_sorted = _assegna_segnali(list(rows_liquidi))[:TOP_N_OUTPUT]
     with open(path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
         writer.writeheader()
         for r in rows_sorted:
-            r['finestra_acquisto_ideale'] = _finestra_acquisto_ideale(r.get('prossima_partita_data'))
             writer.writerow(r)
-    log(f"[csv] {label}: scritte {len(rows_sorted)}/{len(rows_liquidi)} carte "
-        f"(top {TOP_N_OUTPUT} per potenziale_score) in {path}")
+    n_compra = sum(1 for r in rows_sorted if r.get('segnale') == SEGNALE_COMPRA)
+    n_buona = sum(1 for r in rows_sorted if r.get('segnale') == SEGNALE_BUONA)
+    log(f"[csv] {label}: scritte {len(rows_sorted)}/{len(rows_liquidi)} carte in {path} "
+        f"-- {n_compra} da COMPRARE ORA, {n_buona} buone occasioni")
     return len(rows_sorted)
 
 
@@ -1723,6 +2286,21 @@ def write_csv_snapshot():
     rows_liquidi = [r for r in rows_con_storico if _n_totali(r) >= MIN_TRANSACTIONS_FOR_RANKING]
     esclusi_poco_liquidi = len(rows_con_storico) - len(rows_liquidi)
 
+    # BUG REALE trovato 30/07 rileggendo i CSV committati: la classifica e'
+    # PERSISTENTE (load_previous_tracked ricarica tutto quello che c'era) ma il
+    # ricaricamento non riapplica MIN_PRICE_EUR_THRESHOLD -- righe scritte
+    # quando la soglia era 1 EUR sono rimaste dentro anche dopo che l'utente
+    # l'ha alzata prima a 2 e poi a 2.5, e nell'ultimo CSV reale ce n'erano
+    # ancora a 1.24/1.40/1.52 EUR. Su una carta da 1.24 EUR anche un 17% di
+    # sconto vale 21 centesimi: non e' un'occasione, ed e' esattamente cio' che
+    # la soglia doveva togliere di mezzo. Il filtro va quindi applicato anche
+    # in scrittura, non solo in fase di raccolta.
+    rows_liquidi = [
+        r for r in rows_liquidi
+        if r.get('min_attuale_eur') is None or r['min_attuale_eur'] >= MIN_PRICE_EUR_THRESHOLD
+    ]
+    esclusi_prezzo_basso = (len(rows_con_storico) - esclusi_poco_liquidi) - len(rows_liquidi)
+
     timestamp = _run_timestamp_utc()
 
     per_lega_riepilogo = []
@@ -1733,7 +2311,8 @@ def write_csv_snapshot():
         per_lega_riepilogo.append(f"{group_name}: {n_scritte} nel file {path}")
 
     log(f"[csv] totale tracciate: {len(rows)}, {esclusi_senza_storico} escluse per assenza di storico, "
-        f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni "
+        f"{esclusi_poco_liquidi} escluse per meno di {MIN_TRANSACTIONS_FOR_RANKING} transazioni, "
+        f"{esclusi_prezzo_basso} escluse per minimo sotto {MIN_PRICE_EUR_THRESHOLD}EUR "
         f"({'; '.join(per_lega_riepilogo)})")
 
 
@@ -1751,9 +2330,15 @@ def _commit_output_se_serve():
         # (timestamp) -- si committa l'intera cartella invece di elencare nomi
         # fissi, cosi' git vede automaticamente sia i file nuovi sia la
         # cancellazione di quelli vecchi (vedi _cleanup_and_write_ranked_csv).
+        scrivi_roster_cache()
         paths_da_committare = [OUTPUT_DIR]
         if os.path.exists(LISTA_NERA_PROFIT_PATH):
             paths_da_committare.append(LISTA_NERA_PROFIT_PATH)
+        # FIX 30/07: la cache roster va committata come i CSV, altrimenti resta
+        # nel runner effimero di GitHub Actions e la run successiva riparte da
+        # zero -- cioe' il risparmio di query non arriverebbe mai.
+        if os.path.exists(ROSTER_CACHE_PATH):
+            paths_da_committare.append(ROSTER_CACHE_PATH)
         status = subprocess.run(
             ['git', 'status', '--porcelain', '--'] + paths_da_committare,
             capture_output=True, text=True, timeout=30
@@ -2219,6 +2804,7 @@ def _process_player_snapshot(player_slug, player_name, expected_team_slug, leagu
             'media_transazioni_storica_eur': round(media_storica, 2) if media_storica is not None else None,
             'prossima_partita_data': next_game_date_str,
             'ore_alla_partita': round(ore_alla_partita, 1) if ore_alla_partita is not None else None,
+            'aggiornato_il': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
             'ultimo_tipo_evento': 'in_season' if is_in_season else 'classic',
         }
         key = _row_key(player_slug, is_in_season, league_slug)
@@ -2246,7 +2832,10 @@ def run_snapshot_sweep(eth_rate):
         for player_slug, player_name, snapshot in fetch_team_roster(team_slug):
             roster.setdefault(player_slug, (player_name, team_slug, snapshot, league_slug))
 
-    log(f"Roster totale (deduplicato): {len(roster)} giocatori.")
+    log(f"Roster totale (deduplicato): {len(roster)} giocatori "
+        f"({_roster_cache_stats['da_cache']} squadre servite dalla cache, "
+        f"{_roster_cache_stats['scaricati']} riscaricate da Sorare).")
+    scrivi_roster_cache()
 
     # FIX 27/07 (run troppo lento, richiesta esplicita utente): pool di worker
     # invece del giro sequenziale con pausa fissa -- _graphql_throttle() e' gia'
@@ -2344,6 +2933,7 @@ def run_snapshot_sweep(eth_rate):
         log(f"[retry rate-limit] secondo giro completato. Riepilogo aggiornato: {stats}")
 
     log(f"SNAPSHOT completato. Riepilogo per giocatore: {stats}")
+    log(f"[rate limit] {_pace_riepilogo()}")
     return stats
 
 
