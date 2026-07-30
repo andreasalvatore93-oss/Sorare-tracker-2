@@ -72,7 +72,7 @@ jobs:
           git add formazione_${{ github.event.inputs.lega }}/output/${{ github.event.inputs.lega }}_${{ matrix.ruolo }}_discovery_global
           git diff --cached --quiet && exit 0
           git commit -m "Discovery globale ${{ github.event.inputs.lega }} (${{ matrix.ruolo }}): player_slugs.json rigenerati (fix activePlayers+activeClub)"
-          until git pull --no-edit origin main && git push origin main; do
+          until git pull --no-edit --no-rebase origin main && git push origin main; do
             echo "push fallito, retry..."
             sleep 5
           done

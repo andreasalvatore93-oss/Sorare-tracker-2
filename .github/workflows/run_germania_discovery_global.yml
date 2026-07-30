@@ -37,5 +37,5 @@ jobs:
                    formazione_germania/output/germania_mid_discovery_global \
                    formazione_germania/output/germania_fwd_discovery_global
           git diff --cached --quiet || git commit -m "Discovery globale Bundesliga: player_slugs.json generati"
-          git pull --no-edit origin main
+          git pull --no-edit --no-rebase origin main
           git push origin main
