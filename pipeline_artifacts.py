@@ -137,10 +137,14 @@ COSTI_PATH = 'pipeline_costi.json'
 # cosa dica la stima. I costi misurati servono solo a ordinare il
 # riempimento dei bin, con pavimento e tetto per non credere a stime assurde.
 
-# Nessuno shard oltre questo numero di giocatori. Caso peggiore misurato:
-# ~31s per giocatore -> uno shard non puo' superare ~250s anche se la stima
-# lo dava per gratuito.
-MAX_GIOCATORI_PER_SHARD = 8
+# Nessuno shard oltre questo numero di giocatori. Abbassato da 8 a 5 (30/07)
+# assieme all'aumento di N_BIN: col pacing adattivo il lavoro totale di
+# predict e' scesso a 2416s (pavimento ~156s a 20 slot) ma il wall era rimasto
+# a 285s, cioe' 129s di sola inefficienza di packing. Il tail era un bin
+# dispatchato TARDI che si e' rivelato lungo (161s) perche' la tabella dei
+# costi lo dava per leggero: con stime inevitabilmente stantie (i costi si
+# muovono a ogni run) l'unica difesa e' che nessun bin possa essere lungo.
+MAX_GIOCATORI_PER_SHARD = 5
 
 # Pavimento e tetto applicati al costo marginale misurato quando si pesa uno
 # shard: proteggono dalle stime a 0s (che facevano finire 46 giocatori in un
@@ -158,7 +162,8 @@ COSTO_IGNOTO = (15.0, 5.0)
 SLOT_CONCORRENTI = 20
 TARGET_MIN_S = 45.0
 
-# Numero di bin emessi. Volutamente MOLTO maggiore di SLOT_CONCORRENTI e
+# Numero di bin emessi (alzato da 45 a 65 il 30/07, vedi
+# MAX_GIOCATORI_PER_SHARD). Volutamente MOLTO maggiore di SLOT_CONCORRENTI e
 # ordinati dal piu' pesante al piu' leggero: Actions ne avvia 20 e mette gli
 # altri in coda, avviandoli man mano che uno slot si libera. E' bilanciamento
 # dinamico gratuito, e con costi per giocatore instabili (vedi sopra) e' il
@@ -167,7 +172,7 @@ TARGET_MIN_S = 45.0
 # congelato in un'assegnazione statica. Il prezzo sono ~22s fissi di
 # checkout+setup per bin in piu' (45 bin = ~990 job-secondi = ~50s di wall a
 # 20 slot), che si ripagano al primo shard mal stimato evitato.
-N_BIN = 45
+N_BIN = 65
 
 
 # ---------------------------------------------------------------- stage ----

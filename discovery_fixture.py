@@ -269,6 +269,15 @@ def odds_e_l10_singola(slug, inizio, fine):
     due gruppi di campi sullo stesso 'anyPlayer(slug)' -- dimezza le
     richieste verso Sorare per ogni sopravvissuto."""
     d = base.graphql_query(ODDS_AND_L10_QUERY, {"slug": slug}, operation_name="NextOddsAndL10")
+    # Query FALLITA (429 con retry esauriti, blocco CloudFront, ecc.): oggi
+    # finiva indistinguibile da "nessuna partita nella finestra" e il
+    # giocatore posseduto sparisce dalle formazioni SENZA errore visibile --
+    # la stessa classe di bug di "Zinckernagel perso in silenzio". Il
+    # comportamento non cambia (non abbiamo il dato, il giocatore resta
+    # fuori), ma ora si vede nel log.
+    if not ((d or {}).get('data') or {}).get('anyPlayer'):
+        log(f"  ATTENZIONE: odds/L10 non ottenute per {slug} (query fallita, "
+            f"non 'nessuna partita in finestra') -- giocatore NON considerato")
     p = (d.get('data') or {}).get('anyPlayer') or {}
     l10 = p.get('lastTenPlayedAvgScore')
     for n in ((p.get('anyFutureGames') or {}).get('nodes') or []):
