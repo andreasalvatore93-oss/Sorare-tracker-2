@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:22:34.465229Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) otavio-manoel-galdino-fernandes: 42 pt attesi (19-63)
+   ORDINAMENTO: 43.13
+   SQUADRA: eintracht-frankfurt-frankfurt-am-main | AVVERSARIO: union-berlin-berlin
+======================================================================
+
+######################################################################
+# GIOCATORE: otavio-manoel-galdino-fernandes
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: otavio-manoel-galdino-fernandes (squadra: eintracht-frankfurt-frankfurt-am-main)
+Generato: 2026-07-30T10:22:34.464279Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-07 | EST vs ARO | primeira-liga-pt | score=61.8 | peso=0.707
+  2025-12-15 | POR vs EST | primeira-liga-pt | score=9.8 | peso=0.732
+  2026-01-19 | EST vs EST | primeira-liga-pt | score=17.4 | peso=0.758
+  2026-01-25 | SLB vs EST | primeira-liga-pt | score=33.7 | peso=0.785
+  2026-01-31 | ALV vs EST | primeira-liga-pt | score=68.5 | peso=0.812
+  2026-02-07 | EST vs SCL | primeira-liga-pt | score=51.1 | peso=0.841
+  2026-02-14 | VIG vs EST | primeira-liga-pt | score=42.2 | peso=0.871
+  2026-02-28 | AVS vs EST | primeira-liga-pt | score=38.2 | peso=0.901
+  2026-04-26 | EST vs POR | primeira-liga-pt | score=38.1 | peso=0.933
+  2026-05-02 | MOR vs EST | primeira-liga-pt | score=46.8 | peso=0.966
+  2026-05-16 | BRA vs EST | primeira-liga-pt | score=36.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 40.58
+  di cui Punteggio decisivo (level_score) medio: 35.55 | Punteggio complessivo (granulari) medio: 5.02 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 | Passaggio condizionato: delta venue -0.55, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.10, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.54
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 17.4 - 61.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.89 (differenza: +4.65)
+Media score in casa: 42.11 | Media score fuori casa: 39.39
+Fattore casa/trasferta applicato: 1.008 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.113
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.989
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 40.4 vs media ultime 10: 38.2): 1.000
+P(gioca): 35.48% (fonte: tasso di presenza storico (11/31))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FC Union Berlin | Trasferta: Eintracht Frankfurt
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.8 (range 18.7 - 63.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 43.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.06
+Punteggio REALE ottenuto in quella partita: 36.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=20.0+trend_int=1.3' (half_life=12.0, range_mult=1.2, opp_sens=20.0, trend_int=1.3)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.3    42.2     -2.0    25.9        SI
+   7        7      62.5    38.2    -24.3    23.6        NO
+   8        8      24.0    38.1    +14.2    21.8        SI
+   9        9      38.3    46.8     +8.5    20.2        SI
+  10       10      35.7    36.6     +0.9    19.1        SI
+
+MAE (errore assoluto medio): 9.97
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
