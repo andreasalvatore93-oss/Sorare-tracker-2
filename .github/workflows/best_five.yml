@@ -188,6 +188,14 @@ jobs:
           pattern: bf-pred-*
       - run: python pipeline_artifacts.py apply _artifacts
       - name: Costruisci report (nessuna chiamata API, solo parsing)
+        env:
+          # FIX BUG REALE (30/07, segnalato dall'utente): senza questo, la
+          # formazione poteva includere giocatori sotto la soglia
+          # starterOdds -- prediction_<slug>_*.txt di run precedenti (anche
+          # della produzione, stessa cartella) venivano ripescati senza
+          # ricontrollare il prefiltro DI QUESTO run. Vedi
+          # _sopravvissuti_run_corrente in best_five.py.
+          PREFILTRO_GRUPPI: ${{ needs.prefiltro_merge.outputs.gruppi }}
         run: |
           set -u
           ARGS="${{ github.event.inputs.lega || 'kleague' }} --backups ${{ github.event.inputs.backups || '2' }}"

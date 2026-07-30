@@ -396,15 +396,57 @@ CONSIGLIO_RIGA_RE = re.compile(r'^\d+\)\s+([\w\-]+):\s+(-?\d+)\s+pt\s+\((-?\d+)-
 _SLUG_DA_FILENAME_RE = re.compile(r'^prediction_(.+)_\d{4}-\d{2}-\d{2}_\d{6}\.txt$')
 
 
+def _sopravvissuti_run_corrente():
+    """Lista {'ruolo','slug'} sopravvissuta al prefiltro starterOdds di
+    QUESTO run (passata dal job 'prefiltro_merge' via env PREFILTRO_GRUPPI,
+    stesso JSON dei gruppi mandati al predict -- vedi _gruppi_da_items).
+    None se non impostata (uso manuale/locale, nessun filtro extra).
+
+    FIX BUG REALE (30/07, segnalato dall'utente): senza questo controllo,
+    slugs_con_prediction prendeva QUALUNQUE prediction_<slug>_*.txt gia'
+    presente nella cartella -- condivisa con la pipeline di produzione, che
+    scrive li' le SUE predizioni per i posseduti, a QUALUNQUE starterOdds
+    (test_<ruolo>.py non filtra per starterOdds, MIN_STARTER_ODDS e'
+    disattivato li'). Risultato osservato: due giocatori con starterOdds
+    30% e 70% finiti nella formazione nonostante soglia=80%, perche' un
+    file prediction_<slug>_*.txt per loro esisteva gia' (da un run
+    precedente, non necessariamente di Best Five) e veniva ripescato senza
+    ricontrollare la soglia DI QUESTO run."""
+    raw = os.environ.get('PREFILTRO_GRUPPI', '').strip()
+    if not raw:
+        return None
+    try:
+        gruppi = json.loads(raw)
+    except json.JSONDecodeError:
+        log("ATTENZIONE: PREFILTRO_GRUPPI non e' JSON valido, ignorato (nessun filtro extra).")
+        return None
+    items = []
+    for g in gruppi:
+        items.extend(json.loads(base64.b64decode(g['g']).decode()))
+    return items
+
+
 def slugs_con_prediction(lega, ruolo):
     """Slug per cui esiste almeno un prediction_<slug>_*.txt (formato NUOVO,
     un file per giocatore) -- l'insieme da passare a build_consiglio_<ruolo>.py
-    via CONSIGLIO_DISCOVERY_FILE."""
+    via CONSIGLIO_DISCOVERY_FILE. Se PREFILTRO_GRUPPI e' impostata (run da
+    workflow), filtra ANCHE per chi ha davvero superato il prefiltro
+    starterOdds DI QUESTO run (vedi _sopravvissuti_run_corrente)."""
     slugs = []
     for path in trova_output_per_slug(lega, ruolo):
         m = _SLUG_DA_FILENAME_RE.match(os.path.basename(path))
         if m:
             slugs.append(m.group(1))
+
+    sopravvissuti = _sopravvissuti_run_corrente()
+    if sopravvissuti is not None:
+        ammessi = {it['slug'] for it in sopravvissuti if it['ruolo'] == ruolo}
+        prima = len(slugs)
+        slugs = [s for s in slugs if s in ammessi]
+        scartati = prima - len(slugs)
+        if scartati:
+            log(f"[{ruolo}] {scartati} slug con prediction gia' su disco ma NON sopravvissuti al "
+                f"prefiltro di questo run -- esclusi dalla formazione.")
     return sorted(slugs)
 
 
