@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:23:48.524493Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) peyton-james-miller: 43 pt attesi (26-62)
+   ORDINAMENTO: 40.03
+   SQUADRA: new-england-foxborough-massachusetts | AVVERSARIO: montreal-impact-montreal-quebec
+======================================================================
+
+######################################################################
+# GIOCATORE: peyton-james-miller
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: peyton-james-miller (squadra: new-england-foxborough-massachusetts)
+Generato: 2026-07-30T10:23:48.523886Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | NE vs DC | mlspa | score=73.7 | peso=0.595
+  2025-08-16 | NE vs LAFC | mlspa | score=24.1 | peso=0.616
+  2025-08-23 | CLB vs NE | mlspa | score=39.7 | peso=0.637
+  2025-08-30 | NE vs CLT | mlspa | score=38.2 | peso=0.660
+  2025-09-07 | CHI vs NE | mlspa | score=60.0 | peso=0.683
+  2025-09-13 | NE vs TOR | mlspa | score=40.0 | peso=0.707
+  2025-09-20 | PHI vs NE | mlspa | score=8.6 | peso=0.732
+  2026-04-18 | NE vs CLB | mlspa | score=37.9 | peso=0.758
+  2026-04-25 | MIA vs NE | mlspa | score=32.7 | peso=0.785
+  2026-05-02 | NE vs CLT | mlspa | score=44.9 | peso=0.812
+  2026-05-09 | NE vs PHI | mlspa | score=13.4 | peso=0.841
+  2026-05-13 | NE vs NSH | mlspa | score=37.1 | peso=0.871
+  2026-05-16 | NE vs MIN | mlspa | score=33.2 | peso=0.901
+  2026-05-23 | CLT vs NE | mlspa | score=56.6 | peso=0.933
+  2026-07-22 | NE vs TOR | mlspa | score=48.6 | peso=0.966
+  2026-07-25 | NE vs ATL | mlspa | score=62.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 40.96
+  di cui Punteggio decisivo (level_score) medio: 38.39 | Punteggio complessivo (granulari) medio: 2.57 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.56, delta avversario +0.33 | Passaggio condizionato: delta venue +0.73, delta avversario -0.36 | Clean sheet/disimpegni condizionato: delta venue -1.23, delta avversario -0.17 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.44
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 24.1 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.29 (differenza: +3.15)
+Media score in casa: 41.27 | Media score fuori casa: 39.53
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.159
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.015
+Fattore gol subiti (goals_conceded, con cap): 0.993
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.987
+Fattore trend (media ultime 5: 47.7 vs media ultime 10: 37.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: CF Montreal | Trasferta: New England Revolution
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.8 (range 25.9 - 61.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 40.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.05
+Punteggio REALE ottenuto in quella partita: 62.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +23.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+trend_int=1.3+range=1.0x' (half_life=9.0, range_mult=1.0, opp_sens=None, trend_int=1.3)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.7     8.6    -41.1     N/D        NO
+   7        7      50.4    37.9    -12.5     N/D        SI
+   8        8      44.0    32.7    -11.3     N/D        SI
+   9        9      46.8    44.9     -1.9     N/D        SI
+  10       10      47.7    13.4    -34.3     N/D        NO
+  11       11      46.4    37.1     -9.3     N/D        SI
+  12       12      45.6    33.2    -12.4     N/D        SI
+  13       13      42.2    56.6    +14.4     N/D        SI
+  14       14      44.0    48.6     +4.6     N/D        SI
+  15       15      46.1    62.9    +16.8     N/D        NO
+
+MAE (errore assoluto medio): 15.86
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
