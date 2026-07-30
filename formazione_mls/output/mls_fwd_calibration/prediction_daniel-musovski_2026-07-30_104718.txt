@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:47:18.768319Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) daniel-musovski: 53 pt attesi (32-81)
+   ORDINAMENTO: 51.43
+   SQUADRA: seattle-sounders-renton-washington | AVVERSARIO: portland-timbers-portland-oregon
+======================================================================
+
+######################################################################
+# GIOCATORE: daniel-musovski
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: daniel-musovski (squadra: seattle-sounders-renton-washington)
+Generato: 2026-07-30T10:47:18.767195Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-11 | LA vs SEA | mlspa | score=72.8 | peso=0.717
+  2025-08-25 | SEA vs SKC | mlspa | score=80.5 | peso=0.737
+  2025-09-14 | SEA vs LA | mlspa | score=76.8 | peso=0.758
+  2025-09-21 | ATX vs SEA | mlspa | score=60.2 | peso=0.779
+  2025-11-04 | SEA vs MIN | mlspa | score=60.0 | peso=0.801
+  2025-11-08 | MIN vs SEA | mlspa | score=77.7 | peso=0.824
+  2026-03-15 | SJ vs SEA | mlspa | score=31.9 | peso=0.847
+  2026-04-05 | HOU vs SEA | mlspa | score=30.2 | peso=0.871
+  2026-04-19 | SEA vs STL | mlspa | score=43.4 | peso=0.895
+  2026-04-26 | SEA vs DAL | mlspa | score=26.8 | peso=0.920
+  2026-05-02 | SKC vs SEA | mlspa | score=38.8 | peso=0.946
+  2026-05-14 | SEA vs SJ | mlspa | score=27.8 | peso=0.973
+  2026-07-23 | ATX vs SEA | mlspa | score=40.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 49.65
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=13): 50.78 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 48.84 | Punteggio complessivo (granulari) medio: 0.81 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.20 (delta +0.11) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.58
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.8 - 76.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.03 (differenza: +1.55)
+Media score in casa: 52.55 | Media score fuori casa: 50.26
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.021
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.009
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore trend (media ultime 5: 35.4 vs media ultime 10: 43.7): 0.943
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T02:45
+Casa: Portland Timbers | Trasferta: Seattle Sounders FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.5 (range 31.7 - 80.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 51.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.59
+Punteggio REALE ottenuto in quella partita: 40.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.0' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.0)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.8    31.9    -17.9    10.1        NO
+   7        7      51.9    30.2    -21.7    20.1        NO
+   8        8      54.0    43.4    -10.6    23.7        SI
+   9        9      50.2    26.8    -23.4    22.8        NO
+  10       10      50.3    38.8    -11.5    24.5        SI
+  11       11      31.5    27.8     -3.7    23.5        SI
+  12       12      44.7    40.2     -4.5    23.7        SI
+
+MAE (errore assoluto medio): 13.33
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 57.1%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
