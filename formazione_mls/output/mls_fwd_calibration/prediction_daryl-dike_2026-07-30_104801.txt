@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:48:01.359837Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) daryl-dike: 42 pt attesi (24-72)
+   ORDINAMENTO: 42.75
+   SQUADRA: orlando-city-lake-mary-florida | AVVERSARIO: new-york-rb-secaucus-new-jersey
+======================================================================
+
+######################################################################
+# GIOCATORE: daryl-dike
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: daryl-dike (squadra: orlando-city-lake-mary-florida)
+Generato: 2026-07-30T10:48:01.359630Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 48
+Escluse (DID_NOT_PLAY): 24
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-07 | WBA vs STO | football-league-championship | score=29.3 | peso=0.871
+  2026-03-07 | SHU vs WBA | football-league-championship | score=36.3 | peso=0.895
+  2026-03-11 | WBA vs SOT | football-league-championship | score=73.9 | peso=0.920
+  2026-04-10 | WBA vs MIL | football-league-championship | score=25.2 | peso=0.946
+  2026-04-21 | WBA vs WAT | football-league-championship | score=67.1 | peso=0.973
+  2026-04-25 | WBA vs IPS | football-league-championship | score=27.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 43.22
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=6): 48.00 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.44 | Punteggio complessivo (granulari) medio: -0.23 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.76 (delta +0.53) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.2 - 73.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.29 (differenza: +3.52)
+Media score in casa: 44.52 | Media score fuori casa: 36.30
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.2
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.960
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 0.988
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.016
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 12.50% (fonte: tasso di presenza storico (6/48))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: New York Red Bulls | Trasferta: Orlando City SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.5 (range 23.5 - 72.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 42.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.72
+Punteggio REALE ottenuto in quella partita: 27.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
