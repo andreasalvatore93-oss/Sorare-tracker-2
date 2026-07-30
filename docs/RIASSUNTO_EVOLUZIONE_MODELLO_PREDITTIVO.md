@@ -107,8 +107,22 @@ salvo diversa indicazione esplicita nella riga.
     reale) — validato con `validate_opponent_conceded_level.py`,
     `validate_opponent_conceded_level_allroles.py`,
     `validate_opponent_conceded_level_isolated_otherleagues.py` (quest'ultimo isola le 26 leghe
-    extra da MLS/Korea, stesso guadagno confermato). Produzione: GK 0.7, DEF 0.8, MID 0.7, FWD 1.0
-    — MLS/Korea, non ancora ritestato sulle altre 26 leghe estese oggi. Sez. 33.B, 34.D.
+    extra da MLS/Korea, stesso guadagno confermato). Sez. 33.B, 34.D.
+    **RITEST 30/07** (richiesto dall'utente dopo un caso reale sospetto — Rafael Navarro,
+    moltiplicatore 1.95 contro una difesa (Austin) che aveva subito 2.4 gol/partita nelle ultime
+    10, quasi il doppio della media di lega, SENZA alcun tetto massimo nella formula):
+    **GK 0.7 e DEF 0.8/MID 0.7 confermati** (l'ottimo di oggi è nel rumore statistico, differenze
+    <0.05% di MAE). **FWD invece NO**: 1.0 (produzione) è oggi PEGGIORE di nessun aggiustamento
+    (+0.10% MAE), l'ottimo reale è 0.3-0.5 (guadagno comunque marginale, -0.05%). Il -0.58% di
+    guadagno che giustificò FWD=1.0 il 29/07 non si è riconfermato su un campione molto più
+    grande/pulito. **Abbassato FWD a 0.4** (formazione_mls/opponent_strength.py). Testato anche
+    (`validate_opponent_lambda_cap.py`, nuovo oggi) un TETTO massimo sul moltiplicatore invece di
+    abbassare la sensibilità: migliora ANCH'ESSO in modo monotono fino a disattivare del tutto
+    l'effetto — stesso segnale, sensibilità 1.0 semplicemente non regge più. **Promemoria per chi
+    riprende**: rifare questo test (e gli altri della sez. A "parametri base") ogni volta che il
+    pool di calibrazione cresce sostanzialmente, non solo per nuove leghe -- è il secondo caso in
+    un giorno (dopo `score_ordinamento`, sez. 0.D punto 30) in cui un parametro "confermato" con
+    un campione più piccolo si ribalta con più dati.
 10b. **`validate_opponent_sensitivity_posttuning.py`** — ricontrolla SENSITIVITY_BY_ROLE DOPO il
     retuning 29/07 di half_life/trend (i due parametri interagiscono: half_life diverso cambia
     lambda_pos/lambda_neg su cui la sensitivity agisce). Da rilanciare ogni volta che half_life/

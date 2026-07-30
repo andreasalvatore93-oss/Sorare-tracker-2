@@ -92,7 +92,16 @@ N_GAMES_DEFAULT = 10
 # di oggi, walk-forward su tutte le leghe -- GK 1.0->0.7 (-0.04% MAE), DEF
 # 1.0->0.8 (-0.01% MAE), minimi interni puliti. MID lasciato a 0.7 (guadagno
 # indistinguibile dal rumore, 0.0001 di MAE). FWD gia' ottimale a 1.0.
-SENSITIVITY_BY_ROLE = {'gk': 0.7, 'def': 0.8, 'mid': 0.7, 'fwd': 1.0}
+# FWD RIVISTO (30/07, richiesta esplicita utente dopo un caso reale sospetto
+# -- Rafael Navarro, moltiplicatore 1.95 contro Austin che aveva subito 2.4
+# gol/partita nelle ultime 10, quasi il doppio della media di lega): con un
+# pool di calibrazione molto piu' grande/pulito di fine luglio, FWD=1.0 e'
+# oggi PEGGIORE di nessun aggiustamento (+0.10% MAE walk-forward reale,
+# formazione_mls/diagnostics/validate_opponent_conceded_level.py) -- il
+# -0.58% che giustificava 1.0 il 29/07 non si e' riconfermato. Nuovo ottimo
+# 0.3-0.5 (guadagno comunque marginale, -0.05%), preso il centro 0.4.
+# GK/DEF/MID confermati nello stesso ritest (differenze nel rumore, <0.05%).
+SENSITIVITY_BY_ROLE = {'gk': 0.7, 'def': 0.8, 'mid': 0.7, 'fwd': 0.4}
 # Media/std GLOBALI FISSE (29/07), prese dal backtest di validazione pooled
 # su 16 campionati (formazione_mls/diagnostics/validate_opponent_conceded_
 # level_allroles.py): la sensibilita' sopra e' stata calibrata usando
