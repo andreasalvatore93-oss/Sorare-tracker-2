@@ -65,6 +65,10 @@ jobs:
         with: { ref: main, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
+      # NECESSARIO (bug reale, run 30583862116): best_five.py importa
+      # curl_cffi/requests a livello di modulo, fallisce all'IMPORT anche
+      # qui che non fa nessuna chiamata di rete (solo shard del pool).
+      - run: pip install requests curl_cffi
       - id: matrice
         name: Shard del pool (gia' filtrato per qualita' in discovery)
         env:
@@ -121,6 +125,7 @@ jobs:
         with: { ref: main, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
       - uses: actions/download-artifact@v4
         with:
           path: _artifacts
