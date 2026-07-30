@@ -2079,8 +2079,15 @@ def _assegna_segnali(rows_gruppo):
 # finestra, per segnalare quando lo sconto e' meno affidabile. Dal 29/07 pesa
 # anche potenziale_score (vedi TREND_SCORE_MULTIPLIER sopra), non e' piu' solo
 # un indicatore visivo.
-TREND_RECENT_WINDOW_DAYS = int(os.environ.get('TREND_RECENT_WINDOW_DAYS', '2'))
-TREND_FLAT_THRESHOLD_PERCENT = float(os.environ.get('TREND_FLAT_THRESHOLD_PERCENT', '10.0'))
+#
+# Ricalibrati 30/07 sul dataset pattern_raw_transactions (3658 tx, 142 carte):
+# a parita' di sconto, 1gg/5% e' la combinazione con l'ordine down<flat<up piu'
+# pulito e il divario piu' ampio tra i due estremi (n grandi in entrambe le
+# code). Da finestra=3-4gg in su l'ordine si rompe spesso ('flat' supera 'up').
+# Verificato che non rompe il caso reale Munie (crash confermato dall'utente):
+# a window=1gg il trend resta 'down' negli stessi punti temporali di window=2gg.
+TREND_RECENT_WINDOW_DAYS = int(os.environ.get('TREND_RECENT_WINDOW_DAYS', '1'))
+TREND_FLAT_THRESHOLD_PERCENT = float(os.environ.get('TREND_FLAT_THRESHOLD_PERCENT', '5.0'))
 
 
 def _split_recent_vs_storico(tx_con_date, now=None):
