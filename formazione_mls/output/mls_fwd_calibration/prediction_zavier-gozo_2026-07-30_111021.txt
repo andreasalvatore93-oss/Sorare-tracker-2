@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T11:10:21.471581Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) zavier-gozo: 55 pt attesi (33-72)
+   ORDINAMENTO: 57.81
+   SQUADRA: real-salt-lake-salt-lake-city-utah | AVVERSARIO: st-louis-city-st-louis-missouri
+======================================================================
+
+######################################################################
+# GIOCATORE: zavier-gozo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: zavier-gozo (squadra: real-salt-lake-salt-lake-city-utah)
+Generato: 2026-07-30T11:10:21.470379Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | RBNY vs RSL | mlspa | score=76.2 | peso=0.543
+  2025-08-16 | CLT vs RSL | mlspa | score=38.0 | peso=0.559
+  2025-09-14 | RSL vs SKC | mlspa | score=75.0 | peso=0.574
+  2025-09-18 | RSL vs LAFC | mlspa | score=68.4 | peso=0.590
+  2025-09-22 | LAFC vs RSL | mlspa | score=46.0 | peso=0.607
+  2025-10-19 | STL vs RSL | mlspa | score=77.0 | peso=0.624
+  2025-10-23 | POR vs RSL | mlspa | score=46.0 | peso=0.642
+  2026-02-22 | VAN vs RSL | mlspa | score=29.2 | peso=0.660
+  2026-03-01 | RSL vs SEA | mlspa | score=72.5 | peso=0.678
+  2026-03-08 | ATL vs RSL | mlspa | score=62.1 | peso=0.697
+  2026-03-15 | RSL vs ATX | mlspa | score=63.5 | peso=0.717
+  2026-03-22 | SD vs RSL | mlspa | score=61.5 | peso=0.737
+  2026-04-04 | RSL vs SKC | mlspa | score=88.9 | peso=0.758
+  2026-04-19 | RSL vs SD | mlspa | score=88.6 | peso=0.779
+  2026-04-23 | RSL vs MIA | mlspa | score=43.5 | peso=0.801
+  2026-04-26 | LA vs RSL | mlspa | score=42.3 | peso=0.824
+  2026-05-02 | RSL vs POR | mlspa | score=73.7 | peso=0.847
+  2026-05-10 | DAL vs RSL | mlspa | score=38.2 | peso=0.871
+  2026-05-14 | RSL vs HOU | mlspa | score=76.5 | peso=0.895
+  2026-05-17 | RSL vs RAP | mlspa | score=65.5 | peso=0.920
+  2026-05-23 | MIN vs RSL | mlspa | score=60.0 | peso=0.946
+  2026-07-23 | LAFC vs RSL | mlspa | score=59.2 | peso=0.973
+  2026-07-26 | POR vs RSL | mlspa | score=35.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 60.00
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=23): 58.88 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 49.13 | Punteggio complessivo (granulari) medio: 10.87 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 5.73 (delta +0.23) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.94
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.2 - 76.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.26 (differenza: +1.67)
+Media score in casa: 71.61 | Media score fuori casa: 51.63
+Fattore casa/trasferta applicato: 0.983 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.949
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.984
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore trend (media ultime 5: 59.3 vs media ultime 10: 58.3): 1.005
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: St. Louis City SC | Trasferta: Real Salt Lake
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.0 (range 33.2 - 71.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 57.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.51
+Punteggio REALE ottenuto in quella partita: 35.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -26.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 17 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      71.7    46.0    -25.7    18.5        NO
+   7        7      48.2    29.2    -19.0    18.6        NO
+   8        8      58.9    72.5    +13.6    21.8        SI
+   9        9      74.4    62.1    -12.3    21.4        SI
+  10       10      71.6    63.5     -8.1    20.1        SI
+  11       11      63.2    61.5     -1.7    18.9        SI
+  12       12      73.1    88.9    +15.8    17.8        SI
+  13       13      78.5    88.6    +10.1    20.1        SI
+  14       14      57.0    43.5    -13.5    21.2        SI
+  15       15      70.4    42.3    -28.1    21.6        NO
+  16       16      70.6    73.7     +3.1    21.8        SI
+  17       17      57.2    38.2    -19.0    21.3        SI
+  18       18      51.2    76.5    +25.3    21.9        NO
+  19       19      66.6    65.5     -1.1    21.6        SI
+  20       20      57.1    60.0     +2.9    20.8        SI
+  21       21      45.1    59.2    +14.1    19.9        SI
+  22       22      60.2    35.5    -24.7    19.2        NO
+
+MAE (errore assoluto medio): 14.01
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
