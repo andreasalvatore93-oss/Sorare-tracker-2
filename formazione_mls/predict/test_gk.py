@@ -1023,7 +1023,7 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     # di partite in quel bucket -- stesso principio Empirical Bayes dello
     # shrinkage verso il prior di ruolo, applicato qui alla deviazione invece
     # che al livello assoluto.
-    SPLIT_SHRINK_K = 5.0
+    SPLIT_SHRINK_K = 20.0  # ALZATO 5.0->20.0 (30/07): validato con backtest walk-forward, migliora la MAE su tutti i ruoli
     n_context = len(context_vals)
     shrink = n_context / (n_context + SPLIT_SHRINK_K)
     fattore = 1.0 + (delta_normalizzato * SPLIT_FACTOR_SCALE_PER_STD * shrink)
@@ -1314,7 +1314,7 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
     overall_avg_for_factor = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
 
-    SPLIT_SHRINK_K_GK = 5.0
+    SPLIT_SHRINK_K_GK = 20.0  # ALZATO 5.0->20.0 (30/07, caso reale Turner/Sirois): validato con backtest walk-forward, migliora la MAE
     fattore_casa_trasferta = 1.0
     if overall_avg_for_factor > 0:
         if target_is_home:
@@ -1696,7 +1696,7 @@ def build_prediction(player_slug):
     # il fattore casa/trasferta con un rapporto grezzo home_avg/away_avg senza
     # alcuna cautela sul campione -- qui il fattore viene tirato verso il
     # neutro 1.0 proporzionalmente al numero di partite nel bucket usato.
-    SPLIT_SHRINK_K_GK = 5.0
+    SPLIT_SHRINK_K_GK = 20.0  # ALZATO 5.0->20.0 (30/07, caso reale Turner/Sirois): validato con backtest walk-forward, migliora la MAE
     fattore_casa_trasferta = 1.0
     if overall_avg_for_factor > 0:
         if next_is_home:

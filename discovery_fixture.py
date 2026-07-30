@@ -18,6 +18,7 @@ Variabili d'ambiente:
   FIXTURE_SLUG   slug esplicito (es. football-28-31-jul-2026)
   MIN_STARTER_ODDS  soglia (default 0.80); odds assenti = ESCLUSO
 """
+import datetime
 import json
 import os
 import sys
@@ -347,7 +348,42 @@ def risolvi_fixture():
             return (aperte or match)[0]
         disponibili = sorted({str(n.get('seasonGameWeek')) for n in nodes})
         log(f"ATTENZIONE: gameweek {GAMEWEEK} non fra quelle restituite: {disponibili}")
-    return None
+        return None
+    # NUOVO (30/07, richiesta esplicita utente): se ne' FIXTURE_SLUG ne'
+    # GAMEWEEK sono valorizzati, risolve automaticamente la PROSSIMA
+    # giornata -- senza bisogno di indovinare/aggiornare un numero a mano
+    # ad ogni run (causa del fallimento "impossibile risolvere la
+    # giornata" quando l'input restava vuoto). Se uno dei due campi E'
+    # valorizzato, il comportamento sopra resta identico (punta a quella
+    # specifica, mai sovrascritto da questo fallback).
+    nodes, _d = _resolve_query_with_retry(
+        FIXTURE_BY_GW, {"first": 30}, "FixtureList",
+        lambda d: (((d.get('data') or {}).get('so5') or {}).get('so5Fixtures') or {}).get('nodes') or None)
+    nodes = nodes or []
+    if not nodes:
+        log("ATTENZIONE: nessuna giornata restituita da Sorare per la risoluzione automatica.")
+        return None
+    now_iso = datetime.datetime.utcnow().isoformat()
+    # "Prossima" = non ancora conclusa (endDate >= adesso), la piu' vicina
+    # per data di inizio -- copre sia la giornata IN CORSO (endDate futuro,
+    # startDate gia' passato) sia la successiva non ancora iniziata.
+    non_concluse = [n for n in nodes if (n.get('endDate') or '') >= now_iso]
+    if non_concluse:
+        non_concluse.sort(key=lambda n: n.get('startDate') or '')
+        scelta = non_concluse[0]
+        log(f"GAMEWEEK/FIXTURE_SLUG non impostati: risolta automaticamente la "
+            f"prossima giornata (gameweek {scelta.get('seasonGameWeek')}).")
+        return scelta
+    # Fallback estremo (nessuna delle 30 restituite e' ancora aperta/futura,
+    # improbabile mafunziona -- possibile solo se so5Fixtures(first: 30)
+    # ritorna solo giornate passate): prende comunque la piu' recente invece
+    # di fallire, con log ben visibile per non farlo passare inosservato.
+    nodes.sort(key=lambda n: n.get('startDate') or '')
+    scelta = nodes[-1]
+    log(f"ATTENZIONE: nessuna giornata futura trovata fra le 30 restituite -- "
+        f"uso la piu' recente disponibile (gameweek {scelta.get('seasonGameWeek')}) "
+        f"come fallback, verificarla.")
+    return scelta
 
 
 def main():

@@ -896,7 +896,7 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     # di partite in quel bucket -- stesso principio Empirical Bayes dello
     # shrinkage verso il prior di ruolo, applicato qui alla deviazione invece
     # che al livello assoluto.
-    SPLIT_SHRINK_K = 5.0
+    SPLIT_SHRINK_K = 20.0  # ALZATO 5.0->20.0 (30/07): validato con backtest walk-forward, migliora la MAE su tutti i ruoli
     n_context = len(context_vals)
     shrink = n_context / (n_context + SPLIT_SHRINK_K)
     fattore = 1.0 + (delta_normalizzato * SPLIT_FACTOR_SCALE_PER_STD * shrink)
