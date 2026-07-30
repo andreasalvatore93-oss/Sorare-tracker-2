@@ -176,13 +176,7 @@
   tr.buy-now:hover { background: rgba(255,206,0,.24); }
   tr.buy-now td.name { border-left: 3px solid #ffce00; }
   tr.buy-now td { font-weight: 600; }
-  .sig { display:inline-block; padding:2px 7px; border-radius:999px; font-size:10.5px;
-         font-weight:700; letter-spacing:.03em; white-space:nowrap; }
-  .sig.compra { background:#ffce00; color:#1a1400; }
-  .sig.buona  { background:rgba(20,224,196,.18); color:var(--teal); }
-  .sig.neutro { background:rgba(255,255,255,.07); color:var(--muted); }
-  .sig.evita  { background:rgba(255,90,90,.14); color:#ff8a8a; }
-  .sig.vecchio{ background:rgba(255,255,255,.04); color:var(--muted); font-weight:500; }
+  .btn.ghost.active { background:#ffce00; color:#1a1400; border-color:#ffce00; }
 
   .empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
   .empty .big { font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--text); margin-bottom: 6px; }
@@ -244,7 +238,7 @@
       <input type="number" id="fOreMax" placeholder="∞">
     </div>
     <button class="btn ghost" id="clearFilters">Pulisci filtri</button>
-    <button class="btn ghost" id="topPicksBtn" title="Mostra SOLO le carte con un segnale operativo: COMPRA ORA (evidenziate in giallo) e buone occasioni. Il verdetto arriva dal CSV, calcolato da bot_profit.py sui pattern misurati (sconto, trend, distanza dalla partita)">🟡 Solo occasioni</button>
+    <button class="btn ghost" id="topPicksBtn" title="Illumina in giallo le carte da comprare ADESSO. Il verdetto arriva dal CSV, calcolato da bot_profit.py sui pattern misurati (sconto, trend, distanza dalla partita) -- sono gia' in cima alla tabella, ordinate per guadagno atteso">🟡 Compra ora</button>
   </div>
 
   <div class="sortchain" id="sortChain"></div>
@@ -264,27 +258,25 @@
 // Colonne NON elencate qui vengono comunque mostrate (testo semplice, label = chiave).
 const KNOWN_COLUMNS = {
   player_name:      { label: 'Giocatore', type: 'text' },
-  segnale:          { label: 'Segnale', type: 'text', render: 'segnale' },
-  punteggio_occasione: { label: 'Guadagno atteso 48h', type: 'number', render: 'attesa' },
-  motivo_segnale:   { label: 'Perche', type: 'text', render: 'truncate' },
+  punteggio_occasione: { label: 'Atteso 48h', type: 'number', render: 'attesa' },
   tipo_carta:       { label: 'Tipo', type: 'text', render: 'badge' },
   potenziale_score: { label: 'Score', type: 'number', render: 'score' },
   squadra:          { label: 'Squadra', type: 'text', render: 'truncate' },
   prossimo_avversario: { label: 'Prossimo avversario', type: 'text', render: 'truncate' },
-  ultima_partita_score: { label: 'Ultima partita', type: 'number' },
+  ultima_partita_score: { label: 'Ultima', type: 'number' },
   l5:  { label: 'L5', type: 'number' },
   l10: { label: 'L10', type: 'number' },
   l40: { label: 'L40', type: 'number' },
-  min_attuale_eur:  { label: 'Min. attuale €', type: 'number', render: 'eur' },
-  prezzo_attuale_eur: { label: 'Prezzo attuale €', type: 'number', render: 'eur' },
-  media_transazioni_7gg_trimmed_eur: { label: 'Media 7gg €', type: 'number', render: 'eur' },
-  target_rivendita_eur: { label: 'Target rivendita €', type: 'number', render: 'eur' },
-  n_transazioni_usate: { label: 'Transazioni', type: 'text' },
+  min_attuale_eur:  { label: 'Min €', type: 'number', render: 'eur' },
+  prezzo_attuale_eur: { label: 'Prezzo €', type: 'number', render: 'eur' },
+  media_transazioni_7gg_trimmed_eur: { label: 'Media 7gg', type: 'number', render: 'eur' },
+  target_rivendita_eur: { label: 'Target €', type: 'number', render: 'eur' },
+  n_transazioni_usate: { label: 'Tx', type: 'text' },
   sconto_percent: { label: 'Sconto %', type: 'number', render: 'pct' },
   trend_recente: { label: 'Trend', type: 'text', render: 'trend' },
   prossima_partita_data: { label: 'Prossima partita', type: 'text', render: 'date' },
   ore_alla_partita: { label: 'Ore alla partita', type: 'number' },
-  finestra_acquisto_ideale: { label: 'Finestra acquisto', type: 'text', render: 'truncate' },
+  finestra_acquisto_ideale: { label: 'Finestra', type: 'text', render: 'truncate' },
 };
 
 // FIX (richiesta esplicita utente): player_slug e ultimo_tipo_evento eliminati
@@ -304,10 +296,26 @@ const KNOWN_COLUMNS = {
 // la riga e' ereditata da una run vecchia (vedi SEGNALE_MAX_AGE_HOURS lato
 // Python) -- una colonna in piu' costringerebbe di nuovo a scorrere in
 // orizzontale, che l'utente ha gia' segnalato come fastidio.
+// FIX 30/07 bis (richiesta esplicita utente: "voglio la pagina html compatta,
+// non devo scorrere ogni volta"): 'segnale' e 'motivo_segnale' NON diventano
+// due colonne -- allargavano la tabella proprio mentre si chiedeva di
+// restringerla. Il verdetto si vede dal bottone che illumina le righe (stesso
+// meccanismo del vecchio bottone coppe) e dal badge accanto al nome; il motivo
+// per esteso e' nel tooltip del nome. Restano comunque entrambi nel CSV grezzo.
+// Tolte anche (30/07 bis, stessa richiesta di compattezza) tre colonne diventate
+// ridondanti da quando esiste il verdetto:
+//   - media_transazioni_7gg_trimmed_eur: sconto_percent E' gia' il confronto tra
+//     minimo attuale e quella media, mostrarli entrambi e' la stessa cosa due volte
+//   - prossima_partita_data: finestra_acquisto_ideale contiene gia' le date
+//   - prossimo_avversario: la colonna piu' larga di tutte ("New York Red Bulls
+//     (trasferta)") e la meno usata per decidere, visto che il segnale e' sul prezzo
+// Restano tutte nel CSV grezzo.
 const EXCLUDED_COLUMNS = new Set([
   'player_slug', 'ultimo_tipo_evento', 'link_sorare',
   'media_transazioni_recente_eur', 'media_transazioni_storica_eur',
   'league_slug', 'l40', 'ore_alla_partita', 'aggiornato_il',
+  'segnale', 'motivo_segnale',
+  'media_transazioni_7gg_trimmed_eur', 'prossima_partita_data', 'prossimo_avversario',
 ]);
 
 // Ordine preferito (richiesta esplicita utente: info importanti vicine, es.
@@ -315,8 +323,8 @@ const EXCLUDED_COLUMNS = new Set([
 // presenti nel CSV caricato) restano in coda, nell'ordine con cui compaiono
 // nel file.
 const PREFERRED_ORDER = [
-  'player_name', 'segnale', 'punteggio_occasione', 'trend_recente', 'tipo_carta',
-  'min_attuale_eur', 'prezzo_attuale_eur', 'sconto_percent', 'motivo_segnale',
+  'player_name', 'punteggio_occasione', 'trend_recente', 'tipo_carta',
+  'min_attuale_eur', 'prezzo_attuale_eur', 'sconto_percent',
   'potenziale_score', 'finestra_acquisto_ideale',
   'media_transazioni_7gg_trimmed_eur', 'target_rivendita_eur', 'n_transazioni_usate',
   'squadra', 'prossimo_avversario', 'prossima_partita_data',
@@ -354,16 +362,6 @@ let topPicksActive = false;
 // classifica e' lunga. L'evidenziazione gialla invece e' sempre attiva.
 const SEGNALE_COMPRA = 'COMPRA ORA';
 const SEGNALE_BUONA = 'buona occasione';
-const SEGNALE_RANK = { [SEGNALE_COMPRA]: 4, [SEGNALE_BUONA]: 3, 'neutro': 2,
-                       'evita (sovrapprezzo)': 1, 'dato non aggiornato': 0 };
-
-function segnaleClass(v) {
-  if (v === SEGNALE_COMPRA) return 'compra';
-  if (v === SEGNALE_BUONA) return 'buona';
-  if (v === 'evita (sovrapprezzo)') return 'evita';
-  if (v === 'dato non aggiornato') return 'vecchio';
-  return 'neutro';
-}
 
 const $ = (id) => document.getElementById(id);
 
@@ -430,22 +428,19 @@ function loadCSVText(text) {
   COLUMNS = buildColumns(fields, data[0]);
   const numericKeys = COLUMNS.filter(c => c.type === 'number').map(c => c.key);
   const hasTrend = COLUMNS.some(c => c.key === 'trend_recente');
-  const hasSegnale = COLUMNS.some(c => c.key === 'segnale');
   rawRows = data.map(r => {
     const row = { ...r };
     numericKeys.forEach(k => { row['_num_' + k] = toNum(r[k]); });
     if (hasTrend) row['_num_trend_recente'] = TREND_SORT_RANK[r.trend_recente] ?? -1;
-    if (hasSegnale) row['_num_segnale'] = SEGNALE_RANK[r.segnale] ?? -1;
     return row;
   });
-  // FIX 30/07: ordine di default = il VERDETTO (COMPRA ORA in cima), poi il
-  // guadagno atteso, poi il vecchio potenziale_score come spareggio -- lo
-  // stesso ordine con cui bot_profit.py scrive gia' il CSV, cosi' viewer e
-  // file grezzo raccontano la stessa storia. Il criterio 'segnale' resta
-  // pinnato: se l'utente ordina per un'altra colonna, i COMPRA ORA restano
-  // comunque raggruppati in cima invece di sparire in mezzo alla tabella.
+  // FIX 30/07: ordine di default = guadagno atteso decrescente, poi il vecchio
+  // potenziale_score come spareggio. Non serve un criterio 'segnale' a parte:
+  // COMPRA ORA e' per costruzione l'insieme dei punteggi piu' alti del gruppo
+  // (soglia assoluta + tetto per campionato, vedi _assegna_segnali lato
+  // Python), quindi ordinando per punteggio finiscono comunque tutti in cima --
+  // che e' il punto richiesto dall'utente: non dover scorrere per trovarli.
   sortChain = [];
-  if (hasSegnale) sortChain.push({ key: 'segnale', dir: -1, pinned: true });
   if (COLUMNS.some(c => c.key === 'punteggio_occasione')) {
     sortChain.push({ key: 'punteggio_occasione', dir: -1, pinned: false });
   }
@@ -578,9 +573,6 @@ function applyFilters(rows) {
   const pKey = prezzoKey();
 
   return rows.filter(r => {
-    // FIX 30/07: il bottone (ex "Top 5") ora filtra sul verdetto gia' scritto
-    // nel CSV invece di ricalcolarne uno proprio.
-    if (topPicksActive && r.segnale !== SEGNALE_COMPRA && r.segnale !== SEGNALE_BUONA) return false;
     if (search && !(r.player_name || '').toLowerCase().includes(search)) return false;
     if (tipo && r.tipo_carta !== tipo) return false;
     if (pKey) {
@@ -601,11 +593,10 @@ function applySort(rows) {
     for (const crit of sortChain) {
       const col = COLUMNS.find(c => c.key === crit.key);
       let av, bv;
+      if (!col) continue;   // criterio su una colonna non presente in questo CSV
       // trend_recente e' 'text' per la resa (freccia), ma va ordinato come
-      // rank numerico (vedi TREND_SORT_RANK) -- non alfabeticamente. Stessa
-      // cosa per 'segnale' (30/07): alfabeticamente "COMPRA ORA" finirebbe
-      // dopo "buona occasione" e prima di "evita", cioe' a caso.
-      if (col.type === 'number' || crit.key === 'trend_recente' || crit.key === 'segnale') {
+      // rank numerico (vedi TREND_SORT_RANK) -- non alfabeticamente.
+      if (col.type === 'number' || crit.key === 'trend_recente') {
         av = a['_num_' + crit.key]; bv = b['_num_' + crit.key];
         av = (av === null || av === undefined) ? -Infinity : av;
         bv = (bv === null || bv === undefined) ? -Infinity : bv;
@@ -787,7 +778,6 @@ function render() {
       return `<td class="name">${marker}${nameHtml}${r.player_slug ? `<span class="slug">${r.player_slug}</span>` : ''}</td>`;
     }
     switch (col.render) {
-      case 'segnale': return `<td><span class="sig ${segnaleClass(v)}" title="${(r.motivo_segnale || '').replace(/"/g,'&quot;')}">${v || '—'}</span></td>`;
       case 'attesa': {
         // Guadagno % atteso a 48h (stima tarata sui dati storici, vedi
         // BUY_SIGNAL_CURVE in bot_profit.py) -- non una promessa, una media.
@@ -807,10 +797,11 @@ function render() {
     }
   }
 
-  // FIX 30/07: evidenziazione gialla SEMPRE attiva per i COMPRA ORA (richiesta
-  // esplicita utente) -- non dipende piu' da un bottone da premere.
+  // FIX 30/07 bis (richiesta esplicita utente): l'evidenziazione gialla torna
+  // dietro al BOTTONE, come il vecchio meccanismo delle coppe -- si accende
+  // quando serve invece di colorare la tabella in permanenza.
   const tbody = `<tbody>${sorted.map(r => {
-    const isBuyNow = r.segnale === SEGNALE_COMPRA;
+    const isBuyNow = topPicksActive && r.segnale === SEGNALE_COMPRA;
     return `<tr class="${isBuyNow ? 'buy-now' : ''}">${COLUMNS.map(col => renderCell(col, r, isBuyNow)).join('')}</tr>`;
   }).join('')}</tbody>`;
 

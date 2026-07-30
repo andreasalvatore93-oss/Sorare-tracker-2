@@ -529,9 +529,25 @@ def eur_price_from_amounts(amounts, eth_rate):
 # backoff. Andare al ritmo giusto fin da subito significa fare MENO richieste
 # in totale e non restare bloccati per minuti interi.
 GRAPHQL_MIN_INTERVAL_SECONDS_FAST = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_FAST', '0.2'))
-# Ritmo minimo a cui il controllo adattivo puo' scendere DOPO aver incassato un
-# 429 (non torna mai sotto questo valore nella stessa ondata).
-GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.45'))
+# Ritmo sostenibile stimato, cioe' il PAVIMENTO valido DOPO il primo 429 della
+# run (prima resta GRAPHQL_MIN_INTERVAL_SECONDS_FAST).
+#
+# MISURATO sulla run 73 (la prima con questo codice): 470 richieste in 637s con
+# 4 ondate di 429. Escludendo i ~180s di pausa forzata, il ritmo effettivo e'
+# stato ~1.03 richieste/s, e le ondate scattavano ancora a 0.72s/richiesta
+# (1.39/s) -- il sostenibile vero sta quindi intorno a 1 richiesta/s, non alle
+# 1.8/s stimate dal solo comportamento iniziale.
+#
+# Perche' e' un PAVIMENTO e non un semplice punto di partenza: la run 73 ha
+# mostrato che Sorare risponde ai 429 con un header **Retry-After di ~45
+# secondi** (le pause da 45.0s/40.0s/39.0s nel log non sono stime nostre --
+# la nostra prima stima e' 5s -- sono il suo conto alla rovescia). Un 429
+# costa quindi 45 secondi di fermo totale: la capienza iniziale del secchio e'
+# un regalo che si spende UNA volta, e tornare a spingere dopo averla esaurita
+# non fa recuperare tempo, lo fa perdere a blocchi da 45s. Da qui la scelta di
+# non far piu' risalire il ritmo sopra questa soglia una volta incassato il
+# primo 429.
+GRAPHQL_MIN_INTERVAL_SECONDS_SAFE = float(os.environ.get('GRAPHQL_MIN_INTERVAL_SECONDS_SAFE', '0.9'))
 # Tetto: oltre questo intervallo non si rallenta piu' (a 1.5s/richiesta siamo
 # gia' ampiamente sotto la soglia sostenibile misurata, se Solare limita ancora
 # il problema non e' il ritmo).
@@ -554,6 +570,10 @@ _graphql_throttle_lock = threading.Lock()
 _graphql_last_call_ts = [0.0]
 _graphql_last_429_ts = [0.0]
 _pace_interval = [GRAPHQL_MIN_INTERVAL_SECONDS_FAST]
+# Pavimento corrente della ripresa: parte da FAST (finche' la capienza iniziale
+# del secchio regge) e diventa SAFE dopo il primo 429 -- vedi il commento su
+# GRAPHQL_MIN_INTERVAL_SECONDS_SAFE.
+_pace_floor = [GRAPHQL_MIN_INTERVAL_SECONDS_FAST]
 _pace_ok_streak = [0]
 _pace_blocked_until = [0.0]
 _pace_penalty = [0.0]
@@ -646,20 +666,28 @@ def _pace_registra_429(retry_after=None):
         pausa = None
         if nuova_ondata:
             _pace_ondate[0] += 1
+            # Dal primo 429 in poi la capienza iniziale del secchio e' esaurita:
+            # il pavimento della ripresa sale al ritmo sostenibile misurato,
+            # cosi' l'AIMD non riporta il bot a spingere fino al 45s successivo.
+            _pace_floor[0] = GRAPHQL_MIN_INTERVAL_SECONDS_SAFE
             _pace_interval[0] = max(
                 min(_pace_interval[0] * GRAPHQL_PACE_BACKOFF_FACTOR, GRAPHQL_MAX_INTERVAL_SECONDS),
-                GRAPHQL_MIN_INTERVAL_SECONDS_SAFE,
+                _pace_floor[0],
             )
             _pace_penalty[0] = min(
                 max(_pace_penalty[0] * 2, GRAPHQL_429_GLOBAL_PAUSE_SECONDS),
                 GRAPHQL_429_GLOBAL_PAUSE_MAX,
             )
             pausa = _pace_penalty[0]
-        # Un Retry-After esplicito di Sorare vale piu' di qualunque stima
-        # nostra: se c'e', si rispetta (anche a barriera gia' alzata).
-        if retry_after is not None:
-            pausa = max(pausa or 0.0, min(retry_after, GRAPHQL_429_GLOBAL_PAUSE_MAX))
-        if pausa:
+            # Un Retry-After esplicito di Sorare vale piu' di qualunque stima
+            # nostra (sulla run 73 diceva ~45s, contro i 5s che stimavamo noi).
+            # Applicato SOLO qui, sulla nuova ondata: i 429 successivi sono le
+            # risposte di richieste gia' in volo quando la barriera si e'
+            # alzata, e usarli per riallungare la barriera la faceva scorrere in
+            # avanti a ogni straggler -- attesa piu' lunga del necessario per un
+            # evento gia' gestito.
+            if retry_after is not None:
+                pausa = max(pausa, min(retry_after, GRAPHQL_429_GLOBAL_PAUSE_MAX))
             _pace_blocked_until[0] = max(_pace_blocked_until[0], now + pausa)
         return pausa, _pace_interval[0]
 
@@ -671,18 +699,19 @@ def _pace_registra_successo():
     with _graphql_throttle_lock:
         _pace_ok_streak[0] += 1
         if (_pace_ok_streak[0] >= GRAPHQL_PACE_RECOVER_EVERY
-                and _pace_interval[0] > GRAPHQL_MIN_INTERVAL_SECONDS_FAST):
+                and _pace_interval[0] > _pace_floor[0]):
             _pace_ok_streak[0] = 0
             _pace_interval[0] = max(
-                _pace_interval[0] * GRAPHQL_PACE_RECOVER_FACTOR, GRAPHQL_MIN_INTERVAL_SECONDS_FAST)
+                _pace_interval[0] * GRAPHQL_PACE_RECOVER_FACTOR, _pace_floor[0])
             _pace_penalty[0] = _pace_penalty[0] / 2
 
 
 def _pace_riepilogo():
     with _graphql_throttle_lock:
-        return (f"HTTP 429 totali: {_pace_429_totali[0]} in {_pace_ondate[0]} ondate distinte, "
+        return (f"HTTP 429 totali: {_pace_429_totali[0]} in {_pace_ondate[0]} ondate distinte "
+                f"(ogni ondata costa ~45s di fermo, e' il Retry-After di Sorare), "
                 f"ritmo finale: {_pace_interval[0]:.2f}s/richiesta "
-                f"(pavimento {GRAPHQL_MIN_INTERVAL_SECONDS_FAST:.2f}s)")
+                f"(pavimento corrente {_pace_floor[0]:.2f}s)")
 
 
 def _retry_after_seconds(response):
