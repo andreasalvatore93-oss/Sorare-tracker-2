@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T00:05:02.855070Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) kasper-dolberg: 46 pt attesi (32-64)
+   ORDINAMENTO: 46.62
+   SQUADRA: ajax-amsterdam | AVVERSARIO: vojvodina-novi-sad
+======================================================================
+
+######################################################################
+# GIOCATORE: kasper-dolberg
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kasper-dolberg (squadra: ajax-amsterdam)
+Generato: 2026-07-30T00:05:02.854179Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 50
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-07 | AND vs SHE | uefa-europa-conference-league | score=66.1 | peso=0.574
+  2025-08-10 | AND vs ZWA | jupiler-pro-league | score=60.0 | peso=0.590
+  2025-08-21 | AND vs AEK | uefa-europa-conference-league | score=72.3 | peso=0.607
+  2025-08-28 | AEK vs AND | uefa-europa-conference-league | score=33.7 | peso=0.624
+  2025-09-05 | ? vs ? | wc-qualification-europe | score=30.7 | peso=0.642
+  2025-12-06 | FOR vs AJA | eredivisie | score=37.7 | peso=0.660
+  2025-12-10 | QAR vs AJA | uefa-champions-league | score=67.6 | peso=0.678
+  2025-12-14 | AJA vs FEY | eredivisie | score=41.0 | peso=0.697
+  2025-12-20 | NEC vs AJA | eredivisie | score=65.5 | peso=0.717
+  2026-01-11 | TEL vs AJA | eredivisie | score=32.1 | peso=0.737
+  2026-01-17 | AJA vs GAE | eredivisie | score=64.0 | peso=0.758
+  2026-01-20 | VIL vs AJA | uefa-champions-league | score=38.0 | peso=0.779
+  2026-01-24 | AJA vs VOL | eredivisie | score=34.5 | peso=0.801
+  2026-01-28 | AJA vs OLY | uefa-champions-league | score=65.0 | peso=0.824
+  2026-02-01 | EXC vs AJA | eredivisie | score=68.2 | peso=0.847
+  2026-02-08 | AZ vs AJA | eredivisie | score=34.1 | peso=0.871
+  2026-02-14 | AJA vs FOR | eredivisie | score=60.0 | peso=0.895
+  2026-02-21 | AJA vs NEC | eredivisie | score=28.9 | peso=0.920
+  2026-05-02 | AJA vs PSV | eredivisie | score=36.4 | peso=0.946
+  2026-05-24 | AJA vs UTR | eredivisie | score=37.7 | peso=0.973
+  2026-07-23 | VOJ vs AJA | uefa-europa-conference-league | score=47.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 47.94
+  di cui Punteggio decisivo (level_score) medio: 45.05 | Punteggio complessivo (granulari) medio: 2.89 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.74 (delta +0.39) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.91
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.7 - 66.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.07 (differenza: +0.84)
+Media score in casa: 45.94 | Media score fuori casa: 48.86
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.8
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.011
+Fattore duelli (casa/trasferta, da dati reali): 0.986
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.983
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.017
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.989
+Fattore trend (media ultime 5: 42.1 vs media ultime 10: 45.0): 0.981
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T18:00
+Casa: AFC Ajax | Trasferta: FK Vojvodina Novi Sad
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.1 (range 31.9 - 64.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.96
+Punteggio REALE ottenuto in quella partita: 47.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.1    67.6    +18.5    23.2        SI
+   7        7      36.1    41.0     +4.9    23.2        SI
+   8        8      44.5    65.5    +21.0    22.2        SI
+   9        9      68.4    32.1    -36.3    21.9        NO
+  10       10      58.0    64.0     +6.0    22.5        SI
+  11       11      42.6    38.0     -4.6    22.1        SI
+  12       12      65.9    34.5    -31.4    21.8        NO
+  13       13      49.8    65.0    +15.2    21.7        SI
+  14       14      56.8    68.2    +11.4    21.7        SI
+  15       15      48.4    34.1    -14.3    21.9        SI
+  16       16      53.3    60.0     +6.7    22.0        SI
+  17       17      40.8    28.9    -11.9    21.5        SI
+  18       18      36.7    36.4     -0.3    22.2        SI
+  19       19      44.8    37.7     -7.1    21.9        SI
+  20       20      45.9    47.7     +1.8    21.5        SI
+
+MAE (errore assoluto medio): 12.77
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 86.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T00:01:37.390281Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) samuele-vignato: 45 pt attesi (33-53)
+   ORDINAMENTO: 49.60
+   SQUADRA: rijeka-rijeka | AVVERSARIO: derry-city-derry
+======================================================================
+
+######################################################################
+# GIOCATORE: samuele-vignato
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: samuele-vignato (squadra: rijeka-rijeka)
+Generato: 2026-07-30T00:01:37.389654Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-27 | RIJ vs OSI | 1-hnl | score=48.7 | peso=0.737
+  2025-11-06 | LIN vs RIJ | uefa-europa-conference-league | score=47.7 | peso=0.758
+  2025-11-22 | RIJ vs HAJ | 1-hnl | score=78.7 | peso=0.779
+  2025-11-27 | RIJ vs AEK | uefa-europa-conference-league | score=59.5 | peso=0.801
+  2025-12-06 | RIJ vs V91 | 1-hnl | score=42.7 | peso=0.824
+  2025-12-11 | RIJ vs CEL | uefa-europa-conference-league | score=96.1 | peso=0.847
+  2025-12-18 | SHK vs RIJ | uefa-europa-conference-league | score=52.8 | peso=0.871
+  2025-12-21 | RIJ vs GOR | 1-hnl | score=43.9 | peso=0.895
+  2026-01-24 | RIJ vs SLA | 1-hnl | score=41.1 | peso=0.920
+  2026-02-01 | OSI vs RIJ | 1-hnl | score=35.7 | peso=0.946
+  2026-02-22 | HAJ vs RIJ | 1-hnl | score=40.0 | peso=0.973
+  2026-02-26 | RIJ vs OMO | uefa-europa-conference-league | score=47.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 52.26
+  di cui Punteggio decisivo (level_score) medio: 38.93 | Punteggio complessivo (granulari) medio: 13.34 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 8.03 (delta -1.27) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.79
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.0 - 59.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.69 (differenza: +6.10)
+Media score in casa: 57.29 | Media score fuori casa: 44.05
+Fattore casa/trasferta applicato: 0.992 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.7
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.009
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.987
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.982
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 41.7 vs media ultime 10: 53.8): 0.932
+P(gioca): 28.57% (fonte: tasso di presenza storico (12/42))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-07-30T17:30
+Casa: Derry City FC | Trasferta: HNK Rijeka
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.3 (range 33.1 - 52.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.76
+Punteggio REALE ottenuto in quella partita: 47.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -5.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.4x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.3    52.8     -9.5    27.2        SI
+   7        7      61.5    43.9    -17.6    25.5        SI
+   8        8      61.0    41.1    -19.9    25.1        SI
+   9        9      60.0    35.7    -24.3    24.9        SI
+  10       10      43.0    40.0     -3.0    25.2        SI
+  11       11      50.5    47.6     -2.9    24.6        SI
+
+MAE (errore assoluto medio): 12.86
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
