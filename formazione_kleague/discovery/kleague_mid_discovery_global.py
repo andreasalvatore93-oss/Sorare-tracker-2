@@ -113,16 +113,23 @@ def graphql_query(query, variables=None, operation_name=None):
 
 
 TEAM_ROSTER_QUERY = """
-query TeamRoster($slug: String!, $first: Int!) {
+query TeamRoster($slug: String!, $first: Int!, $after: String) {
   football {
     club(slug: $slug) {
       slug
       name
-      anyPlayers(first: $first) {
+      activePlayers(first: $first, after: $after) {
         nodes {
           slug
           displayName
           anyPositions
+          activeClub {
+            slug
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
         }
       }
     }
@@ -183,19 +190,37 @@ def filter_by_quality(slugs, min_avg=MIN_AVG_SCORE_QUALITY):
 def fetch_team_players_by_position(team_slug, position):
     """Ritorna la lista di slug per una squadra, filtrando lato client su
     anyPositions contenente `position`."""
-    data = graphql_query(TEAM_ROSTER_QUERY, {"slug": team_slug, "first": 50},
-                          operation_name="TeamRoster")
-    club = ((data.get('data') or {}).get('football') or {}).get('club')
-    if not club:
-        log(f"[{team_slug}] ATTENZIONE: nessun dato club restituito. "
-            f"Risposta: {json.dumps(data, ensure_ascii=False)[:500]}")
-        return []
+    all_nodes = []
+    after = None
+    while True:
+        data = graphql_query(TEAM_ROSTER_QUERY, {"slug": team_slug, "first": 50, "after": after},
+                              operation_name="TeamRoster")
+        club = ((data.get('data') or {}).get('football') or {}).get('club')
+        if not club:
+            log(f"[{team_slug}] ATTENZIONE: nessun dato club restituito. "
+                f"Risposta: {json.dumps(data, ensure_ascii=False)[:500]}")
+            return []
+        conn = club.get('activePlayers') or {}
+        all_nodes.extend(conn.get('nodes') or [])
+        page_info = conn.get('pageInfo') or {}
+        if not page_info.get('hasNextPage'):
+            break
+        after = page_info.get('endCursor')
 
-    nodes = (club.get('anyPlayers') or {}).get('nodes') or []
+    nodes = all_nodes
     matched = [
         n['slug'] for n in nodes
         if n.get('slug') and position in (n.get('anyPositions') or [])
+        and (n.get('activeClub') or {}).get('slug') == team_slug
     ]
+    n_stale = sum(
+        1 for n in nodes
+        if n.get('slug') and position in (n.get('anyPositions') or [])
+        and (n.get('activeClub') or {}).get('slug') != team_slug
+    )
+    if n_stale:
+        log(f"[{team_slug}] {n_stale} {position.lower()} scartati: activeClub non corrisponde "
+            f"(dato Sorare stantio, giocatore trasferito altrove).")
     log(f"[{team_slug}] {len(nodes)} giocatori totali, {len(matched)} {position.lower()}.")
     return matched
 

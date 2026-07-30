@@ -178,7 +178,30 @@ def load_players():
         per_campionato[campionato] = len(players)
         total_excluded += n_excluded
         all_players.extend(players)
-    return all_players, total_excluded, per_campionato
+
+    # DEDUP CROSS-CAMPIONATO (30/07, fix bug reale: un giocatore trasferito
+    # tra due leghe tracciate -- es. Pep Biel, MLS+Germania -- compariva in
+    # ENTRAMBE le cartelle di calibrazione con lo STESSO storico partite
+    # (game log per-giocatore, non per-lega), quindi pesava DUE VOLTE nel
+    # pool GLOBALE, sfalsando l'aggregazione verso i giocatori doppi. A
+    # parita' di slug si tiene solo l'entry con n_test piu' alto (piu'
+    # partite di backtest = piu' affidabile); le altre vengono scartate.
+    by_slug = {}
+    n_dedup_dropped = 0
+    for p in all_players:
+        existing = by_slug.get(p['slug'])
+        if existing is None:
+            by_slug[p['slug']] = p
+        elif p['n_test'] > existing['n_test']:
+            by_slug[p['slug']] = p
+            n_dedup_dropped += 1
+        else:
+            n_dedup_dropped += 1
+    if n_dedup_dropped:
+        print(f"[dedup cross-campionato] {n_dedup_dropped} entry duplicate scartate "
+              f"(stesso giocatore tracciato in piu' di una lega, tenuta solo la versione "
+              f"con n_test piu' alto).")
+    return list(by_slug.values()), total_excluded, per_campionato
 
 
 def load_all_grids():

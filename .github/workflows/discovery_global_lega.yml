@@ -1,0 +1,78 @@
+name: Discovery globale lega (generico, riusabile, a matrice)
+
+# Workflow generico (30/07) che sostituisce/generalizza
+# run_germania_discovery_global.yml: lancia formazione_<lega>/discovery/
+# <lega>_<ruolo>_discovery_global.py per il ruolo scelto (o "all" per tutti
+# e 4 a matrice, un job per ruolo -- IP diverso per job, meno rate-limit
+# rispetto a un run sequenziale locale/singolo-job).
+#
+# Uso: gh workflow run "Discovery globale lega (generico, riusabile, a matrice)" \
+#        -f lega=mls -f ruolo=all
+
+on:
+  workflow_dispatch:
+    inputs:
+      lega:
+        description: 'Nome cartella lega (es. mls, kleague, germania)'
+        required: true
+        type: string
+      ruolo:
+        description: 'Ruolo (gk/def/mid/fwd) o "all" per tutti e 4 a matrice'
+        required: true
+        type: choice
+        options: [all, gk, def, mid, fwd]
+        default: all
+
+permissions:
+  contents: write
+
+concurrency:
+  group: discovery-global-${{ github.event.inputs.lega }}
+  cancel-in-progress: false
+
+jobs:
+  build_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      ruoli: ${{ steps.set.outputs.ruoli }}
+    steps:
+      - id: set
+        run: |
+          if [ "${{ github.event.inputs.ruolo }}" = "all" ]; then
+            echo 'ruoli=["gk","def","mid","fwd"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "ruoli=[\"${{ github.event.inputs.ruolo }}\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+  discovery:
+    needs: build_matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        ruolo: ${{ fromJson(needs.build_matrix.outputs.ruoli) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python formazione_${{ github.event.inputs.lega }}/discovery/${{ github.event.inputs.lega }}_${{ matrix.ruolo }}_discovery_global.py
+      - name: Commit risultati (retry su push)
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add formazione_${{ github.event.inputs.lega }}/output/${{ github.event.inputs.lega }}_${{ matrix.ruolo }}_discovery_global
+          git diff --cached --quiet && exit 0
+          git commit -m "Discovery globale ${{ github.event.inputs.lega }} (${{ matrix.ruolo }}): player_slugs.json rigenerati (fix activePlayers+activeClub)"
+          until git pull --no-edit origin main && git push origin main; do
+            echo "push fallito, retry..."
+            sleep 5
+          done
