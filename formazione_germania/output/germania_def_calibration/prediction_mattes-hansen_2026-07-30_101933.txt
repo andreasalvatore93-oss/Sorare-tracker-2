@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:19:33.580661Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) mattes-hansen: 48 pt attesi (31-73)
+   ORDINAMENTO: 51.60
+   SQUADRA: paderborn-paderborn | AVVERSARIO: mainz-05-mainz
+======================================================================
+
+######################################################################
+# GIOCATORE: mattes-hansen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mattes-hansen (squadra: paderborn-paderborn)
+Generato: 2026-07-30T10:19:33.579458Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | SCP vs BOC | 2-bundesliga | score=59.0 | peso=0.555
+  2025-09-20 | BSC vs SCP | 2-bundesliga | score=45.6 | peso=0.574
+  2025-09-27 | SCP vs FCK | 2-bundesliga | score=58.2 | peso=0.595
+  2025-10-03 | EBS vs SCP | 2-bundesliga | score=85.0 | peso=0.616
+  2025-10-18 | SCP vs DSC | 2-bundesliga | score=13.5 | peso=0.637
+  2025-10-25 | SGD vs SCP | 2-bundesliga | score=51.1 | peso=0.660
+  2025-11-02 | SCP vs SGF | 2-bundesliga | score=42.6 | peso=0.683
+  2025-11-09 | FCM vs SCP | 2-bundesliga | score=62.2 | peso=0.707
+  2025-11-22 | SCP vs H96 | 2-bundesliga | score=49.0 | peso=0.732
+  2025-11-28 | S04 vs SCP | 2-bundesliga | score=40.9 | peso=0.758
+  2025-12-13 | KSC vs SCP | 2-bundesliga | score=51.0 | peso=0.785
+  2025-12-19 | SCP vs SVD | 2-bundesliga | score=52.0 | peso=0.812
+  2026-02-01 | F95 vs SCP | 2-bundesliga | score=19.6 | peso=0.841
+  2026-04-05 | SGF vs SCP | 2-bundesliga | score=35.1 | peso=0.871
+  2026-05-08 | SCP vs KSC | 2-bundesliga | score=65.5 | peso=0.901
+  2026-05-17 | SVD vs SCP | 2-bundesliga | score=88.1 | peso=0.933
+  2026-05-21 | WOB vs SCP | play-offs-1-2-de | score=34.7 | peso=0.966
+  2026-05-25 | SCP vs WOB | play-offs-1-2-de | score=76.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 52.03
+  di cui Punteggio decisivo (level_score) medio: 34.54 | Punteggio complessivo (granulari) medio: 17.49 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.56, delta avversario -0.37 | Passaggio condizionato: delta venue -1.11, delta avversario -0.44 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.80
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.7 - 76.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.22 (differenza: +3.57)
+Media score in casa: 52.07 | Media score fuori casa: 51.33
+Fattore casa/trasferta applicato: 1.004 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.6
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 0.979
+Fattore falli (casa/trasferta, da dati reali): 0.990
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.986
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 1.014
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 60.0 vs media ultime 10: 51.3): 1.000
+P(gioca): 50.00% (fonte: tasso di presenza storico (18/36))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FSV Mainz 05 | Trasferta: SC Paderborn 07
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.1 (range 30.8 - 72.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 51.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.07
+Punteggio REALE ottenuto in quella partita: 76.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +26.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.3    42.6    -16.7    26.1        SI
+   7        7      57.7    62.2     +4.5    24.1        SI
+   8        8      36.9    49.0    +12.1    22.8        SI
+   9        9      36.2    40.9     +4.7    21.2        SI
+  10       10      51.1    51.0     -0.1    20.3        SI
+  11       11      40.8    52.0    +11.2    19.0        SI
+  12       12      65.8    19.6    -46.2    17.9        NO
+  13       13      53.9    35.1    -18.8    20.4        SI
+  14       14      44.0    65.5    +21.5    19.9        NO
+  15       15      37.4    88.1    +50.7    20.1        NO
+  16       16      63.7    34.7    -29.0    23.8        NO
+  17       17      59.1    76.8    +17.7    23.4        SI
+
+MAE (errore assoluto medio): 19.43
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
