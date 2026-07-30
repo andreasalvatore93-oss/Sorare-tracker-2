@@ -1,129 +1,221 @@
-# BOT PROFIT — Riassunto sessione 30/07 — per continuare su un'altra chat/account
+# BOT PROFIT — stato al 30/07/2026
 
-Continuazione di `docs/BOT_PROFIT_RIASSUNTO_2026-07-29.md` (leggerlo per intero prima di riprendere, non solo l'ultima sezione).
-
----
-
-# ⭐ HANDOFF — leggere questa parte per prima
-
-## Stato al momento della chiusura
-
-**Tutto committato e pushato su `main`.** `git pull origin main` per ripartire, non serve nessun branch. Ultima run: **74, verde, 2m42s, zero HTTP 429** — il bot è in uno stato funzionante e migliore di come era all'inizio della sessione su entrambi i fronti richiesti.
-
-Due commit prodotti in questa sessione:
-1. `Bot Profit: rate limit risolto alla radice (barriera globale + ritmo adattivo) e verdetto d'acquisto per carta`
-2. `Bot Profit: viewer compatto col bottone che illumina i COMPRA ORA, e ritmo tarato sul Retry-After reale di Sorare`
-
-File toccati (solo questi, nient'altro): `scanners/bot_profit.py`, `scanners/bot_profit_viewer.html`, `scanners/bot_profit_telegram_notify.py`, `.github/workflows/bot_profit.yml`, questo documento. Più `bot_profit_roster_cache.json`, generato e committato dal bot stesso durante le run.
-
-## Regole di lavoro imposte dall'utente (valgono anche per chi continua)
-
-1. **Avvisare SEMPRE prima di lanciare qualunque run GitHub.** Vincolo posto esplicitamente in corsa in questa sessione. Le run 73 e 74 sono state entrambe autorizzate una per una.
-2. **L'utente non ha un terminale**, solo GitHub Desktop: ogni operazione git (commit/push/pull) va fatta da Claude Code, mai chiedergli di eseguire comandi.
-3. **Sessione parallela attiva sulla stessa working directory** (lavora su formazioni/modello predittivo). Durante questa sessione `git status` ha mostrato più volte modifiche non mie (`formazione_mls/`, `calibrazione_globale/`, `formazione_kleague/predict/*`, `best_five.py`): **non committarle mai insieme alle proprie**. Pattern usato con successo due volte qui: commit locale dei soli file propri → `git worktree add --detach <tmp> origin/main` → `git cherry-pick <commit>` → `git push origin HEAD:main` → `git worktree remove --force`. `origin/main` si è mosso sotto i piedi entrambe le volte, serve `git fetch` + `git rebase origin/main` dentro il worktree prima del push.
-4. Le run vanno lanciate con `gh workflow run bot_profit.yml --ref main -f git_ref=main` (tutti gli altri input hanno default corretti).
-
-## Cosa è stato fatto, in una riga ciascuno
-
-- **Rate limit**: causa individuata sui log (token bucket Sorare + `Retry-After` da 45s), risolta con barriera globale sul 429, ritmo adattivo AIMD e **cache roster su disco** — quest'ultima è la leva che ha davvero cambiato i numeri. Sezioni 1, 5-bis, 5-ter.
-- **Segnale d'acquisto**: nuove colonne `segnale` / `punteggio_occasione` / `motivo_segnale` / `aggiornato_il`, tarate su 3658 transazioni reali già nel repo. Sezione 2.
-- **Viewer**: bottone che illumina i COMPRA ORA + tabella compattata del 28%. Sezione 3.
-- **Due bug reali corretti**: righe sotto i 2,5 EUR sopravvissute nella classifica persistente (sezione 2, in fondo); `Retry-After` applicato anche agli straggler (sezione 5-bis, punto 3).
-
-## Cosa NON è stato fatto / da riprendere (in ordine di priorità)
-
-1. **Verificare la prima run con cache SCADUTA** (TTL 18h, quindi la mattina dopo): è l'unico pezzo del lavoro sul rate limit mai provato sul campo. Le correzioni post-run-73 dovrebbero portare le ondate da 4 a 1. Se non succede, la leva successiva è alzare `ROSTER_CACHE_HOURS` (vedi punto 3).
-2. **Chiedere all'utente se i COMPRA ORA hanno senso** guardando l'output reale. La taratura è statisticamente solida ma non ha ancora passato il suo giudizio su casi concreti — che è il metodo che ha funzionato meglio in tutte le sessioni precedenti (vedi i casi Fernández-Mercau e Jonathan Bond del 28/07).
-3. **`ROSTER_CACHE_HOURS`=18 è prudente, non misurato**: alzarlo a 48-72h renderebbe *tutte* le run come la 74 invece di una sì e una no. Da decidere con l'utente perché allunga la finestra in cui un giocatore trasferito resta sulla squadra vecchia (caso Leo Sauer, già in backlog).
-4. **`BUY_SIGNAL_MAX_PER_GRUPPO`=8 e `BUY_SIGNAL_SOGLIA_COMPRA`=10** scelti su UN solo snapshot: rivedere con più snapshot.
-5. **`TREND_RECENT_WINDOW_DAYS`/`TREND_FLAT_THRESHOLD_PERCENT`** (2gg/10%) mai ricalibrati — voce aperta dal 28/07. Ora il dataset per farlo c'è (`pattern_raw_transactions_*.csv`), non è più un problema di dati.
-6. **Estendere a tutti i campionati**: non affrontato in sé. Qui il bot è stato reso *capace* di reggerlo; l'aggiunta vera (whitelist squadre, gruppi di output) resta da fare ed è il motivo per cui l'utente ha chiesto il lavoro sul rate limit.
-
-## Trappole da non ricalpestare
-
-- **Non riproporre il filtro "salta le squadre lontane dalla partita"**: sembra la leva più grossa, è stato verificato sui dati e scartato (sezione 1, in fondo).
-- **Non fidarsi del confronto tra le durate delle run**: la run 72 a 4m37s non era "il bot veloce", era una run corta abbastanza da stare dentro il secchio pieno (la 71, stesso carico, era 7m23s). Guardare **429 e numero di richieste**, non i minuti.
-- **Non valutare il trend senza controllare per lo sconto**: senza controllo 'down' sembra il segnale migliore, ed è un artefatto di regressione verso la media (sezione 2).
-- Il simulatore del rate limiter (`stress_rl.py`, temporaneo, non nel repo) va usato con **tutte** le costanti di tempo scalate dello stesso fattore: la prima versione scalava il bucket ma non la barriera, e il test andava in timeout senza motivo apparente.
+**Questo documento è scritto per chi arriva da zero**: un altro account/sessione, senza memoria di quello che è successo prima e senza aver letto i riassunti dei giorni precedenti. Contiene tutto il necessario per riprendere il lavoro. I riassunti precedenti (`docs/BOT_PROFIT_RIASSUNTO_2026-07-26/27/28/29.md`) restano come archivio storico: **non serve leggerli per lavorare**, solo per capire perché una certa scelta è stata fatta a suo tempo.
 
 ---
 
-**Contesto invariato**: l'utente non ha un terminale, solo GitHub Desktop — ogni operazione git va fatta da Claude Code.
+# PARTE A — Cosa devi sapere prima di toccare qualsiasi cosa
 
-## 0. Richiesta dell'utente (un solo messaggio, poi lavoro in autonomia)
+## A.1 Che cos'è il Bot Profit
 
-Due problemi, dichiarati insieme:
-1. **Rate limit**: gli argini messi il 29/07 (blacklist TTL, soglia 2,5 EUR) non reggeranno quando i campionati saranno tutti, oggi sono 3 (Belgio ed Eredivisie fusi, e va bene così). Chiesto di guardare le ultime run, in particolare la **numero 72**.
-2. **Consigli troppo generici** ("questa è la finestra di acquisto..."): vuole sapere dopo ogni snapshot **se quello è un buon momento per comprare quel giocatore**, con un segnale chiaro e forte nel CSV (es. evidenziare in giallo chi è in un ottimo momento d'acquisto), definendo il criterio in base ai pattern emersi dalle run.
+Uno scanner del mercato di **Sorare** (gioco di fantacalcio con carte digitali scambiabili). Il suo unico scopo è **dire all'utente quali carte conviene comprare adesso**. Non compra, non fa offerte, non gioca: legge il mercato, calcola, scrive tre file CSV e manda una notifica Telegram.
 
-Output invariato: notifica Telegram che punta ai CSV per campionato (1 MLS, 1 Korea, 1 fuso Eredivisie+Belgio).
+> ⚠️ **Nel repo esiste un ALTRO bot che invece compra davvero**: `bots/bot_definitivo.py` (autobuy/makeoffer). È tutta un'altra storia, con una sua calibrazione. **Non confonderli.** Se trovi documentazione o memorie che parlano di "margini", "offerte", "autobuy", quasi certamente riguardano quell'altro bot.
 
-**Vincolo posto in corsa dall'utente**: avvisarlo SEMPRE prima di lanciare qualunque run GitHub.
+Gira su **GitHub Actions**, non in locale: l'utente lo lancia dal form del workflow 1-2 volte al giorno. Una run dura oggi 2-3 minuti.
 
-## 1. Rate limit — la causa vera, misurata sui log (non ipotizzata)
+## A.2 L'utente, e le regole di lavoro che ha imposto
 
-Analisi dei log delle run reali (`gh run view <id> --log`), contando i 429 per minuto e i giocatori completati per minuto:
+Sono vincoli espliciti, non preferenze. Rispettarli.
 
-| Run | Durata | HTTP 429 | ok | blacklist | prezzo basso | persi |
-|---|---|---|---|---|---|---|
-| 66 (a freddo) | 16m58s | **835** | 571 | 328 | 309 | 30 |
-| 69 | 12m21s | 551 | 288 | 651 | 299 | — |
-| 71 | 7m23s | 291 | 272 | 957 | 9 | — |
-| 72 (a regime) | 4m37s | 36 | 263 | 970 | 6 | — |
+1. **Avvisare SEMPRE prima di lanciare qualunque run GitHub**, anche dentro un lavoro delegato "in autonomia". Le run girano sul suo account Sorare reale e consumano il rate limit condiviso: mentre il bot martella, lui viene disconnesso dal sito se ci sta navigando. Chiedere **una volta per run**, non una volta per sessione.
+2. **Non ha un terminale**, usa solo GitHub Desktop. Ogni operazione git (commit/push/pull) la devi fare tu dall'ambiente Claude Code. Non dirgli mai "lancia questo comando".
+3. **C'è una seconda sessione Claude Code attiva sulla stessa working directory**, che lavora su tutt'altro (formazioni / modello predittivo, cartelle `formazione_*/`, `calibrazione_globale/`, `generatore_formazioni/`). Vedi A.6 per come conviverci senza rompere niente.
+4. Preferisce **un tema alla volta**, risposte brevi, e verificare le ipotesi su **casi reali** (una carta concreta, un prezzo concreto) prima di accettarle. Questo metodo ha trovato più bug veri di qualunque analisi astratta.
 
-Due osservazioni che spiegano tutto:
+## A.3 Le meccaniche Sorare che servono per capire il codice
 
-- **Run 72**: il primo 429 è scattato **esattamente 122 secondi dopo la prima query**, cioè dopo ~600 richieste al ritmo di 0,2s. La fase roster (78 squadre) ha occupato i primi 45 secondi.
-- **Run 66**: il log mostra un ciclo regolare — ~2 minuti puliti (0 429), poi ~2-3 minuti **quasi completamente bloccati** (minuti interi con 110-118 429 e **zero giocatori completati**), poi di nuovo puliti. Quattro cicli identici.
+- **Rarità**: il bot guarda solo le carte **`limited`** (una delle rarità di Sorare). Tutto il resto è ignorato.
+- **In season vs classic**: una carta "in season" è della stagione corrente. Quando Sorare rilascia le nuove carte in season, quelle vecchie diventano "classic". **Per MLS, K-League, Eredivisie e Belgio i due mercati sono completamente separati** — stesso giocatore, due prezzi diversi, due storici diversi, due righe distinte nel CSV. Per tutti gli altri campionati si mescolano in una riga sola (`tipo_carta='misto'`). La lista sta in `EXCLUDED_LEAGUE_SLUGS`.
+- **Minimo attuale**: il prezzo più basso a cui qualcuno sta vendendo *adesso* (query `liveSingleSaleOffers`). È il prezzo che l'utente pagherebbe comprando ora.
+- **Transazioni**: le vendite già avvenute (query `tokenPrices`). Il bot usa quelle degli ultimi 7 giorni per capire quanto vale "normalmente" una carta. **Esclude aste e acquisti diretti dalla riserva Sorare** (`TokenPrimaryOffer`, venditore nullo): non sono prezzi di mercato tra manager. Restano solo i `TokenOffer`.
+- **Medie voto L5 / L10 / L40**: media dei punteggi delle ultime 5 / 10 / 40 partite giocate. Sono l'indicatore di forma.
+- **Il rate limit di Sorare è per ACCOUNT**, non per IP: se il bot esagera, l'utente viene buttato fuori dal sito mentre naviga. Vedi la parte C, è il tema centrale di questa sessione.
 
-È il comportamento di un **token bucket lato Sorare: capienza ~600 richieste, ricarica ~1,8 richieste al secondo**.
+## A.4 Dove vive il codice
 
-> ⚠️ **La stima della ricarica è stata poi corretta a ~1 richiesta/s dalla run 73 — vedi sezione 5-bis, che è la fonte aggiornata.** Le 1,8/s erano dedotte dal solo comportamento dei primi due minuti, cioè dal secchio pieno: è la velocità con cui si *svuota*, non quella con cui si *ricarica*. La capienza ~600 invece regge. Il resto dell'analisi qui sotto (la forma del problema e le contromisure) resta valido.
+| File | Cosa fa |
+|---|---|
+| `scanners/bot_profit.py` | il bot (3012 righe). Tutta la logica: query, filtri, punteggi, scrittura CSV, commit |
+| `scanners/bot_profit_viewer.html` | pagina HTML che legge un CSV e lo mostra come tabella filtrabile |
+| `scanners/bot_profit_telegram_notify.py` | notifica di fine run, con link al viewer |
+| `scanners/bot_profit_pattern_export.py` | script separato e read-only: esporta le transazioni grezze per le analisi |
+| `.github/workflows/bot_profit.yml` | il workflow, con tutti i parametri come input |
+| `sorare_lista_nera_profit.txt` | blacklist a scadenza, formato `motivo,slug,scadenza_iso` |
+| `bot_profit_output/` | i CSV di output (in root, non sotto `scanners/`) |
+| `bot_profit_roster_cache.json` | cache dei roster, scritta e committata dal bot stesso |
 
-Il ritmo fisso di 0,2s (5 req/s) è quindi ~3 volte oltre il sostenibile: una volta svuotato il secchio non esiste ritmo "sicuro" che tenga, e i 10 worker continuavano a sbattere contro il muro ognuno per conto proprio (ogni 429 costava fino a 2+4+16=22s di backoff SOLO a quel thread, mentre gli altri 9 generavano altri 429). Nella run 66, **835 429 su ~2000 richieste totali = il 42% del traffico buttato**.
+**Repo**: `andreasalvatore93-oss/Sorare-tracker-2`, **pubblico** (importante: i link `raw.githack.com` della notifica Telegram funzionano solo perché è pubblico).
 
-Questo spiega anche il sintomo che dava più fastidio all'utente: le raffiche disconnettevano lui stesso dal sito Sorare, perché il limite è per account.
+**Secret GitHub usati**: `SORARE_COOKIE`, `SORARE_CSRF`, `SORARE_VERSION`, `SORARE_BUILD`, `SORARE_DEVICE_FINGERPRINT`, e per Telegram `BUNDLE_TELEGRAM_TOKEN` / `BUNDLE_TELEGRAM_CHAT_ID` (lo stesso canale di altri script del repo).
 
-### Cosa è stato fatto
+**Nell'ambiente Claude Code non ci sono credenziali Sorare**: qualunque verifica dal vivo richiede una run GitHub, quindi il permesso dell'utente (regola A.2.1). Tutto il resto va testato offline, sui CSV già committati.
 
-**A. Barriera globale sul 429.** Quando arriva un 429 si alza una pausa **condivisa da tutti i thread** (`_pace_blocked_until`), invece di far aspettare solo lo sfortunato. Un 429 non si moltiplica più per il numero di worker. I 429 che arrivano mentre la barriera è già alzata sono riconosciuti come coda della stessa ondata e non contano come nuova penalità — altrimenti 10 worker moltiplicherebbero per 10 la reazione a un singolo evento. Pausa iniziale 5s, raddoppia a ogni ondata fino a 45s, si dimezza quando il ritmo si riprende. **`Retry-After` di Sorare ha la precedenza** su questa stima — e la run 73 ha poi mostrato che c'è davvero, e vale ~45s (vedi 5-bis): la pausa reale è quindi quasi sempre la sua, non la nostra.
+## A.5 Come si lancia e si controlla una run
 
-**B. Ritmo adattivo (AIMD, come il controllo di congestione TCP).** Si parte veloci (0,2s, che sfrutta la capienza iniziale del secchio), a ogni ondata l'intervallo si moltiplica per 1,6 (tetto 1,5s), e dopo 40 richieste consecutive riuscite si riavvicina al pavimento. **È questa la parte che regge l'aggiunta di nuovi campionati**: più volume non significa più 429, significa solo che il ritmo si assesta da solo dove Sorare lo consente, senza dover ritarare a mano un numero su una run passata.
-
-Il **pavimento** della ripresa non è però fisso (aggiunto dopo la run 73, vedi 5-bis): vale 0,2s finché la capienza iniziale regge, e sale a `GRAPHQL_MIN_INTERVAL_SECONDS_SAFE` (0,9s) dal primo 429 in poi.
-
-**C. Backoff locale rimosso.** `graphql_query` non dorme più 2/4/16s nel proprio thread: aspetta la barriera, che il bot avrebbe comunque rispettato. Di conseguenza `GRAPHQL_MAX_RETRIES` è passato da 3 a 5 — ritentare ora è quasi gratis, e riduce i giocatori persi per `rate_limited_max_retries_exceeded` (erano 30 nella run 66).
-
-**D. Correzione di un difetto trovato rileggendo il codice**: uno slot di ritmo prenotato può cadere DOPO che un altro thread ha alzato la barriera (con 10 worker gli slot sono prenotati fino a ~10 intervalli avanti). Aggiunto un secondo controllo della barriera dopo l'attesa dello slot, senza riprenotarlo. Non è cosmetico: senza, ~10 richieste per ondata partivano comunque contro il muro.
-
-**E. Cache roster su disco** (`bot_profit_roster_cache.json`, committata nel repo come i CSV, TTL `ROSTER_CACHE_HOURS`=18). Il roster è la metà nascosta del costo: nella run 72 le 78 squadre sono costate ~190 richieste (78 prime pagine + le successive: i roster storici vanno da 111 a 229 giocatori, quindi 2-3 pagine ciascuna) nei primi 45 secondi su 275 totali. Ma rosa e medie L5/L10/L40 cambiano **solo quando si gioca**, cioè una volta a settimana per squadra, mentre il bot fa 1-2 snapshot al giorno: rileggerle a ogni run è spreco puro. Con tutti i campionati (~27 leghe × ~18 squadre) sarebbero oltre 1000 richieste per run prima ancora di guardare un prezzo. La cache memorizza il roster **già filtrato** e si invalida da sola se `ROSTER_MIN_AVG_SCORE` cambia (altrimenti un cambio di parametro resterebbe congelato). Un roster vuoto non viene mai messo in cache: quasi sempre è il sintomo di una query fallita, congelarlo cancellerebbe la squadra dalle run successive.
-
-### Misura del guadagno (test di stress, non ipotesi)
-
-Scritto un simulatore del token bucket misurato (capienza 600, ricarica 1,8/s) con l'orologio compresso 40x — tutte le costanti di tempo del bot scalate dello stesso fattore, così le proporzioni restano identiche. 2000 richieste, 10 worker, il volume di una run a freddo:
-
-```
-PRIMA (ritmo fisso)        durata equiv. 13.0 min | HTTP 429 = 255 | perse 0
-DOPO (barriera+adattivo)   durata equiv. 13.0 min | HTTP 429 =   7 | perse 0
+```bash
+gh workflow run bot_profit.yml --ref main -f git_ref=main
+gh run list --workflow=bot_profit.yml --limit 1 --json number,databaseId,status
+gh run view <databaseId> --log > run.log     # il log c'è solo a step concluso
 ```
 
-**429 -97% a parità di durata.** La durata non scende perché il collo di bottiglia vero è la ricarica di Sorare: 2000 richieste non possono passare più in fretta di quanto il secchio si riempia, e nessuna modifica lato client può cambiarlo. Quello che cambia è che ora quelle richieste **non vengono sprecate**.
+Tutti gli altri input hanno default corretti nel YAML, non serve passarli. Cose utili da cercare nel log:
 
-**Onestà sul simulatore**: riproduce un token bucket puro, quindi NON riproduce i blocchi da 2-3 minuti visti nei log reali (dove Sorare sembra penalizzare chi insiste mentre è limitato). Sul campo il guadagno dovrebbe quindi essere **maggiore** di quello simulato, ma va verificato su una run vera.
+```bash
+grep -c "HTTP 429" run.log
+grep -oP '\): [a-z_]+$' run.log | sort | uniq -c    # esiti per giocatore
+grep -E "Roster totale|rate limit\] HTTP 429 totali|\[csv\] totale" run.log
+```
 
-### Idea valutata e SCARTATA (non riproporla senza dati nuovi)
+## A.6 Git: come lavorare senza pestare i piedi all'altra sessione
 
-Saltare del tutto le squadre lontane dalla prossima partita, per non spendere query su giocatori non acquistabili adesso. Sembrava la leva più grossa (~40% delle richieste). **Verificata sui dati e scartata**: a più di 5,5 giorni dal kickoff, le carte con sconto ≥10% hanno reso **+20,4% mediano a 48h con l'88% di casi in guadagno** (n=145) — è una delle fasce migliori, non una da buttare. Il filtro avrebbe risparmiato richieste cancellando occasioni vere.
+La working directory è condivisa con un'altra sessione Claude Code che scrive di continuo in `formazione_*/`, `calibrazione_globale/`, `generatore_formazioni/`. **Non committare mai i suoi file insieme ai tuoi** — controlla sempre `git status --porcelain` prima di ogni `git add`, e aggiungi i file per nome, mai `git add -A`.
 
-## 2. Segnale d'acquisto — tarato sui dati, non a intuito
+`origin/main` si muove sotto i piedi in continuazione (in questa sessione è successo a ogni singolo push). Il pattern che funziona, usato tre volte con successo:
 
-Il CSV rispondeva solo "quando sarebbe la finestra ideale" e dava un `potenziale_score` astratto: due informazioni generiche, che lasciavano all'utente il lavoro di incrociarle. Ora il bot prende posizione carta per carta.
+```bash
+git add <solo i tuoi file> && git commit -m "..."
+git fetch origin main
+git worktree add -q --detach /tmp/wt origin/main
+cd /tmp/wt && git cherry-pick <sha del tuo commit>   # sha ESPLICITO, non $(git rev-parse HEAD)
+git push origin HEAD:main
+cd - && git worktree remove --force /tmp/wt
+```
 
-### Come è stata definita la regola
+Un `git pull --rebase --autostash` nella working directory principale sarebbe più semplice, ma tocca il lavoro non committato dell'altra sessione: **non farlo**.
 
-Rianalizzato il dataset grezzo **già presente nel repo** (`bot_profit_output/pattern_raw_transactions_20260729_1845.csv`, 3658 transazioni reali su 142 carte, prodotto da `bot_profit_pattern_export.py`) — nessuna nuova query verso Sorare. Domanda posta ai dati: *"se compro una carta a questo prezzo, com'è il prezzo di quella stessa carta nelle 48 ore successive?"*.
+*Trappola già incontrata*: se dentro il worktree scrivi `$(git rev-parse HEAD)` quello risolve all'HEAD **del worktree** (cioè `origin/main`), non al tuo commit — il cherry-pick risulta vuoto e sembra un errore misterioso. Usa lo sha esplicito, recuperandolo con `git log --format='%H %s' | grep <messaggio>`.
 
-**Sconto rispetto alla media della carta nei 3 giorni precedenti → variazione a 48h:**
+*Può anche capitare che il tuo commit arrivi su `origin/main` "da solo"*: l'altra sessione fa `git pull` nella working directory condivisa, si tira dentro il tuo commit locale in un merge, e lo pusha col suo. È successo. Non è un problema — verifica il contenuto con `git diff origin/main -- <file>` invece di ripushare alla cieca.
+
+---
+
+# PARTE B — Come funziona il bot, in ordine di esecuzione
+
+Il bot ha due modalità. **In pratica ne esiste una sola**: `SNAPSHOT_MODE=si` è il default e non viene mai cambiato. L'altra (listener websocket sugli eventi di mercato, `run_listener`) è codice vivo ma di fatto morto — non toccarlo se non serve, ma sappi che c'è e che duplica un po' di logica.
+
+## B.1 Il giro (`run_snapshot_sweep`)
+
+**1. Roster, una volta per squadra.** Query pubblica `football.club(slug).anyPlayers` che restituisce **tutti i giocatori mai passati per quel club**, non la rosa attuale. Da qui si filtra:
+- via chi non è più al club (`activeClub.slug != team_slug`) — sono la maggioranza, anche 200 su 230;
+- via chi ha **una qualsiasi** tra L5/L10/L40 sotto `ROSTER_MIN_AVG_SCORE` (35).
+
+Restano ~16 giocatori rilevanti per squadra, ~1240 in totale sulle 78 squadre attuali. **Dal 30/07 questo passo legge da una cache su disco** (vedi C.4).
+
+**2. Blacklist, a costo zero.** Prima di qualunque query, chi è in `sorare_lista_nera_profit.txt` con scadenza futura viene saltato. Oggi ~990 giocatori su 1240 finiscono qui: **è il filtro che rende la run sostenibile**. Motivi e durate:
+
+| motivo | TTL | quando |
+|---|---|---|
+| `prezzo_basso_o_senza_annunci` | 2 giorni | minimo sotto soglia o nessun annuncio (836 voci) |
+| `not_covered` | 30 giorni | carta non coperta da Sorare (503) |
+| `blacklist_manuale` | 365 giorni | scelti a mano dall'utente, non gli interessano (201) |
+| `nessuna_partita` | 3 giorni | nessuna partita futura in calendario (109) |
+| `l5_zero_o_assente` | 30 giorni | forma a zero (36) |
+
+**3. Una query per giocatore** (`fetch_player_combined_snapshot`): prezzo, prossima partita, ultime 3 partite e prima pagina di transazioni **in un'unica richiesta GraphQL**. Prima erano tre round-trip separati.
+
+**4. Filtri, punteggi, riga.** Sotto `MIN_PRICE_EUR_THRESHOLD` (2,5 EUR) si scarta e si blacklista. Altrimenti si calcolano sconto, trend, punteggi e si scrive la riga in memoria.
+
+**5. Secondo giro per i rate-limitati.** Chi è fallito per rate limit finisce in un pool a parte e viene ritentato dopo 30s, invece di essere perso.
+
+**6. Scrittura.** Ogni 30 secondi (`COMMIT_CHUNK_SECONDS`) il bot riscrive i CSV e fa commit+push da dentro il runner. È voluto: se l'utente annulla la run a metà, non perde tutto.
+
+## B.2 Vincoli dell'API GraphQL di Sorare — già scoperti, non riprovarli
+
+- **Niente batching di più giocatori**: `p1: anyPlayer(slug:"a") p2: anyPlayer(slug:"b")` viene rifiutato con `Duplicated root field: anyPlayer`, alias o no. È una regola custom del gateway Sorare, non lo standard GraphQL. Verificato dal vivo, due volte.
+- **Root field diversi sullo stesso slug invece funzionano**: `tokens { ... }` + `anyPlayer(slug) { ... }` nella stessa query è ciò che rende possibile la query combinata del punto 3.
+- **Niente `allPlayerGameScores` o `anyFutureGames` dentro una lista `anyPlayers`**: Sorare li rifiuta esplicitamente. Vanno chiesti per singolo giocatore.
+- **Introspezione dello schema disabilitata**: i campi si scoprono dal testo degli errori ("Did you mean...").
+
+*Lezione pagata cara il 28/07*: un commento nel codice sosteneva che annidare `allPlayerGameScores` funzionasse. Non era mai stato riverificato dopo, ed era falso — tutte le 30 squadre MLS restituivano zero giocatori. **Non fidarsi di un "verificato" nei commenti senza una run reale che lo confermi.**
+
+## B.3 L'output
+
+Tre CSV in `bot_profit_output/`, uno per **gruppo** (non per lega: Eredivisie e Belgio condividono il file, su richiesta esplicita):
+
+- `profit_tracking_mlspa_<timestamp>.csv`
+- `profit_tracking_k-league-1_<timestamp>.csv`
+- `profit_tracking_eredivisie_belgio_<timestamp>.csv`
+
+Top 50 per gruppo. Il timestamp è nel nome e a ogni scrittura il file precedente **di quel gruppo** viene cancellato: ne resta sempre e solo uno.
+
+**La classifica è persistente**: a ogni avvio `load_previous_tracked()` ricarica i CSV esistenti come stato di partenza, così una carta vista ieri non sparisce se oggi non viene ricontrollata. È comodo ma è anche la fonte di una classe di bug precisa — **le righe vecchie non vengono rifiltrate con i parametri nuovi**. Ne è stato corretto uno il 30/07 (vedi D.4); se cambi un filtro, chiediti sempre se va applicato anche in scrittura.
+
+La notifica Telegram punta al **viewer** via `raw.githack.com` con il CSV come query param: un clic e la tabella è già caricata.
+
+---
+
+# PARTE C — Il rate limit (tema principale del 30/07)
+
+## C.1 Il problema di partenza
+
+L'utente: i 429 sono così tanti da disconnetterlo dal sito mentre naviga, e gli argini messi il 29/07 (blacklist a TTL, soglia prezzo) non reggeranno quando i campionati saranno tutti — oggi sono 3.
+
+## C.2 La causa, misurata sui log
+
+| Run | Durata | HTTP 429 | ok | blacklist |
+|---|---|---|---|---|
+| 66 (a freddo) | 16m58s | **835** | 571 | 328 |
+| 69 | 12m21s | 551 | 288 | 651 |
+| 71 | 7m23s | 291 | 272 | 957 |
+| 72 (a regime) | 4m37s | 36 | 263 | 970 |
+
+Due osservazioni decisive:
+
+- Nella **run 72** il primo 429 è scattato **esattamente 122 secondi dopo la prima query**, cioè dopo ~600 richieste al ritmo di 0,2s.
+- Nella **run 66** il log mostra un ciclo regolare: ~2 minuti puliti, poi ~2-3 minuti *quasi completamente bloccati* (minuti interi con 110-118 429 e **zero giocatori completati**), poi di nuovo puliti. Quattro cicli identici.
+
+È un **token bucket lato Sorare, capienza ~600 richieste**. Il ritmo fisso di 0,2s (5 req/s) era ben oltre il sostenibile: svuotato il secchio non esiste ritmo "sicuro", e i 10 worker sbattevano contro il muro **ognuno per conto proprio** (ogni 429 costava fino a 2+4+16=22s di backoff solo a quel thread, mentre gli altri 9 ne generavano altri). Nella run 66, **835 429 su ~2000 richieste = il 42% del traffico buttato**.
+
+Poi la run 73 ha aggiunto il pezzo mancante: **Sorare risponde con un header `Retry-After` di ~45 secondi**. Le pause `45.0s / 45.0s / 45.0s / 40.0s / 39.0s` nel log non sono stime nostre (la nostra prima stima è 5s), sono il suo conto alla rovescia. **Ogni ondata di 429 costa 45 secondi di fermo totale.** E il ritmo davvero sostenibile è **~1 richiesta/s**, non le 1,8/s che avevo stimato dai primi due minuti — quei primi due minuti sono la velocità con cui il secchio si *svuota*, non quella con cui si *ricarica*.
+
+## C.3 Le tre contromisure
+
+**1. Barriera globale sul 429** (`_pace_blocked_until`). Un 429 alza una pausa **condivisa da tutti i thread**, invece di far aspettare solo lo sfortunato. I 429 che arrivano a barriera già alzata sono riconosciuti come coda della stessa ondata e non contano come nuova penalità — altrimenti 10 worker moltiplicherebbero per 10 la reazione a un singolo evento.
+
+**2. Ritmo adattivo (AIMD, come il controllo di congestione TCP).** Si parte a 0,2s (sfruttando la capienza iniziale), a ogni ondata l'intervallo × 1,6 (tetto 1,5s), e dopo 40 successi consecutivi si riavvicina al pavimento. Il **pavimento non è fisso**: vale 0,2s finché la capienza iniziale regge, e sale a 0,9s (il sostenibile misurato) dal primo 429 in poi — perché la capienza iniziale è un regalo che si spende **una volta sola**, e rispingere dopo averla esaurita non recupera tempo, lo perde a blocchi da 45 secondi. **È questa la parte che regge l'aggiunta di nuovi campionati**: più volume non significa più 429, significa che il ritmo si assesta da solo dove Sorare lo consente, senza ritarare numeri a mano.
+
+**3. Cache roster su disco** (`bot_profit_roster_cache.json`, TTL 18h, committata nel repo). Rosa e medie L5/L10/L40 cambiano **solo quando si gioca** — una volta a settimana per squadra — mentre il bot fa 1-2 snapshot al giorno: rileggerle ogni volta era spreco puro. Valeva ~195 richieste su ~470. La cache conserva il roster **già filtrato** e si invalida da sola se `ROSTER_MIN_AVG_SCORE` cambia. Un roster vuoto non viene mai messo in cache (quasi sempre è il sintomo di una query fallita: congelarlo cancellerebbe la squadra dalle run successive).
+
+## C.4 I risultati
+
+| | run 66 (prima, a freddo) | run 72 (miglior caso, prima) | run 73 (codice nuovo, cache vuota) | **run 74 (codice nuovo, cache piena)** |
+|---|---|---|---|---|
+| Durata | 16m58s | 4m37s | 10m37s | **2m42s** |
+| HTTP 429 | 835 | 36 | 22 | **0** |
+| Ondate (45s l'una) | — | — | 4 | **0** |
+| Ritmo finale | fisso 0,2s | fisso 0,2s | 0,89s | **0,20s (mai rallentato)** |
+| Roster da cache | — | — | 0/78 | **78/78, zero query** |
+
+**Run 74: zero 429, 2m42s.** Il bot non ha mai toccato il muro, quindi non ha mai pagato un `Retry-After` e non ha mai avuto motivo di rallentare.
+
+La leva decisiva è stata la **cache roster** (punto 3), che ha portato il totale sotto la capienza del secchio. Barriera e ritmo adattivo in quella run non sono nemmeno entrati in funzione: sono la rete di sicurezza per quando il volume tornerà sopra. Su quel fronte c'è una misura separata, da un simulatore del token bucket con l'orologio compresso 40x: **429 da 255 a 7 (-97%) a parità di durata** su 2000 richieste.
+
+## C.5 Idee valutate e SCARTATE — non riproporle senza dati nuovi
+
+- **Saltare le squadre lontane dalla prossima partita.** Sembra la leva più grossa (~40% delle richieste): un giocatore che gioca fra 6 giorni non è comprabile *adesso*. **Verificato sui dati e scartato**: a più di 5,5 giorni dal kickoff, le carte con sconto ≥10% hanno reso **+20,4% mediano a 48h con l'88% di casi in guadagno** (n=145). È una delle fasce migliori. Il filtro avrebbe risparmiato richieste cancellando occasioni vere.
+- **Pausa fissa periodica** (60s lavoro / 20s pausa) per "svuotare" la finestra prima che scatti il limite: testata il 29/07, il primo 429 arrivava comunque nello stesso punto. Codice ancora presente ma disattivato (`GRAPHQL_BURST_WORK_SECONDS=0`).
+- **Ritmi più aggressivi** con l'idea che tanto il secondo giro recupera i persi: provato il 29/07, risultato **peggiore** (6m03s contro 5m14s), perché ogni carta finita in retry sprecava fino a 22s di backoff prima di arrendersi.
+
+## C.6 Trappola nel confrontare le run
+
+**I minuti ingannano.** La run 72 a 4m37s non era "il bot veloce": era una run abbastanza corta da stare quasi tutta dentro il secchio pieno — la run 71, stesso identico carico, era durata 7m23s con 291 429. Per giudicare una run guarda **numero di 429, numero di ondate e richieste totali**, non la durata.
+
+---
+
+# PARTE D — Il modello: da "score astratto" a "compra o no"
+
+## D.1 Il problema
+
+L'utente: *"ricevo consigli molto generici, del tipo questa è la finestra di acquisto. Io invece dopo ogni snapshot voglio già sapere esattamente se quello è un buon momento per comprare il giocatore analizzato... un segnale chiaro e forte nel csv"*.
+
+Prima il CSV dava due cose generiche: un `potenziale_score` astratto fra 0 e 1, e una colonna `finestra_acquisto_ideale` che diceva *quando* sarebbe il momento buono. Incrociarle era lavoro suo.
+
+## D.2 La taratura, fatta sui dati
+
+Rianalizzato il dataset grezzo **già presente nel repo** (`bot_profit_output/pattern_raw_transactions_20260729_1845.csv`: 3658 transazioni reali su 142 carte, prodotto da `bot_profit_pattern_export.py`) — **nessuna query nuova verso Sorare**. Domanda posta ai dati: *"se compro a questo prezzo, com'è il prezzo della stessa carta nelle 48 ore successive?"*
+
+**Sconto rispetto alla media della carta nei 3 giorni precedenti:**
 
 | sconto | n | mediana a 48h | % casi in guadagno |
 |---|---|---|---|
@@ -133,133 +225,116 @@ Rianalizzato il dataset grezzo **già presente nel repo** (`bot_profit_output/pa
 | 10-20% | 315 | +7,9% | 70% |
 | ≥ 20% | 310 | **+25,2%** | **82%** |
 
-Lo sconto è il segnale **dominante ed è monotono**. Il sovrapprezzo è altrettanto affidabile al contrario.
+Lo sconto è il segnale **dominante e monotono**; il sovrapprezzo è altrettanto affidabile al contrario. Gli altri due fattori sono moltiplicatori, non motori:
 
-**Trend (a parità di sconto ≥10%):** down +9,9% mediano / 68% positivi · flat +17,7% / 84% · up +25,4% / 88%.
+- **Trend** (a parità di sconto ≥10%): down +9,9% / 68% positivi · flat +17,7% / 84% · up +25,4% / 88%.
+- **Finestra temporale** (a parità di sconto ≥10%): dentro −3,5/−2,5 giorni dal kickoff **+21,0% / 93% positivi**, fuori +14,0% / 75%. La finestra **non crea** l'occasione, la amplifica di ~1,4x.
+- **Zona di premio**: il prezzo smette di essere scontato e passa in premio a circa **−2,25 giorni** dal kickoff (−2,5gg: −4,2%, ma già −2,0gg: +6,6%, −1,0gg: +3,7%, kickoff: +2,9%). Comprare lì è il momento peggiore.
 
-**Finestra temporale (a parità di sconto ≥10%):** dentro −3,5/−2,5 giorni dal kickoff **+21,0% mediano, 93% positivi**; fuori finestra +14,0% / 75%. La finestra **non crea** l'occasione, la amplifica di ~1,4x.
+## D.3 Cosa produce adesso il bot
 
-**Zona di premio:** nei bin da mezza giornata il prezzo smette di essere scontato e passa in premio a circa **−2,25 giorni** dal kickoff (−2,5gg: −4,2%, ma già −2,0gg: +6,6%, −1,5gg: +5,5%, −1,0gg: +3,7%, kickoff: +2,9%). Comprare lì è il momento peggiore.
+`valuta_occasione()` calcola un **`punteggio_occasione` = stima del guadagno % a 48 ore**: un numero che si legge direttamente ("questa carta vale circa +18%"), non un indice astratto. Interpolazione lineare sulle mediane misurate (`BUY_SIGNAL_CURVE`), moltiplicata per trend e finestra, con la coda alta **compressa** oltre +25% (non tagliata di netto, che appiattirebbe le carte migliori tutte sullo stesso numero perdendo l'ordine tra loro).
 
-### Cosa ne è uscito
-
-`valuta_occasione()` in `bot_profit.py` produce un **`punteggio_occasione` = stima del guadagno % a 48 ore** — un numero che si legge direttamente ("questa carta vale circa +18%"), non un indice astratto tra 0 e 1 come `potenziale_score`. Interpolazione lineare sulle mediane misurate (`BUY_SIGNAL_CURVE`), poi moltiplicata per trend e finestra. La coda alta è **compressa** oltre +25% (non tagliata di netto, che appiattirebbe le carte migliori tutte sullo stesso numero perdendo l'ordine tra loro): senza compressione uno sconto del 50% con trend in salita dentro la finestra arriverebbe a +70% atteso, cifra che nessuna misura sostiene.
-
-**Quattro nuove colonne** nel CSV, subito dopo il nome: `segnale`, `punteggio_occasione`, `motivo_segnale`, `aggiornato_il`.
-
+Quattro colonne nuove nel CSV: `segnale`, `punteggio_occasione`, `motivo_segnale`, `aggiornato_il`.
 Livelli: **COMPRA ORA** · buona occasione · neutro · evita (sovrapprezzo) · dato non aggiornato.
 
-`COMPRA ORA` richiede **due** condizioni insieme: superare la soglia assoluta (`BUY_SIGNAL_SOGLIA_COMPRA`=10, cioè +10% atteso) **e** essere tra i primi `BUY_SIGNAL_MAX_PER_GRUPPO`=8 del proprio campionato. Il secondo non è cosmetico: lo sconto medio varia enormemente da lega a lega e da momento a momento (nell'ultima run reale mediana +15,8% in MLS, +8,1% in K-League, −0,2% in Eredivisie/Belgio) — con la sola soglia assoluta in MLS sarebbero finite in giallo 27 righe su 50, che non è un segnale ma un colore di sfondo.
+**`COMPRA ORA` richiede due condizioni insieme**: superare la soglia assoluta (`BUY_SIGNAL_SOGLIA_COMPRA`=10, cioè +10% atteso) **e** essere tra i primi `BUY_SIGNAL_MAX_PER_GRUPPO`=8 del proprio campionato. Il secondo non è cosmetico: lo sconto medio varia enormemente da lega a lega e da momento a momento (in uno snapshot reale: mediana +15,8% in MLS, +8,1% in K-League, −0,2% in Eredivisie/Belgio) — con la sola soglia assoluta in MLS sarebbero finite in giallo 27 righe su 50, che non è un segnale ma un colore di sfondo.
 
-**Ordinamento e taglio del CSV cambiati**: non più solo `potenziale_score`, ma prima il verdetto, poi il punteggio, poi `potenziale_score` come spareggio. Effetto pratico: le carte da comprare adesso stanno nelle prime righe e **nessuna può finire tagliata fuori dal top 50** (prima poteva succedere — il taglio era per `potenziale_score`, dove il timing pesa 0,40 e poteva sotterrare una carta con uno sconto enorme ma la partita lontana).
+**Ordinamento del CSV cambiato**: prima il verdetto, poi il punteggio, poi `potenziale_score` come spareggio. Nessun COMPRA ORA può più finire tagliato fuori dal top 50 — prima poteva succedere, perché il taglio era per `potenziale_score`, dove il timing pesa 0,40 e poteva sotterrare una carta con uno sconto enorme ma la partita lontana.
 
-### Ritaratura di `TREND_SCORE_MULTIPLIER` (i dati hanno smentito la taratura precedente)
+**Freschezza**: `aggiornato_il` registra quando la riga è stata davvero rinfrescata. Oltre `SEGNALE_MAX_AGE_HOURS`=12 il segnale viene sospeso con motivo esplicito. Serve perché la classifica è persistente: un prezzo di due giorni fa non deve poter generare un "COMPRA ORA".
 
-Era `{up: 1.2, flat: 1.0, down: 0.5}`. Il **verso** è confermato, ma la penalità su `down` era troppo dura: 'down' non è un esito negativo (mediana +9,9%, due volte su tre in guadagno), mentre 0.5 lo dimezzava fino a farlo sparire dalla classifica. Nuovi valori: **`{up: 1.25, flat: 1.0, down: 0.65, None: 0.85}`**.
+**`TREND_SCORE_MULTIPLIER` ritarato**: era `{up: 1.2, flat: 1.0, down: 0.5}`. Il verso è confermato, ma la penalità su `down` era troppo dura — 'down' non è un esito negativo (mediana +9,9%, due volte su tre in guadagno), mentre 0.5 lo dimezzava fino a farlo sparire. Ora `{up: 1.25, flat: 1.0, down: 0.65, None: 0.85}`.
 
-Attenzione a un'insidia trovata durante l'analisi: guardando il trend **senza controllare per lo sconto**, 'down' sembra addirittura il migliore (+5,5% contro +3,4% di 'up') — è un artefatto, perché in un mercato in calo la singola transazione è già bassa e rimbalza per pura regressione verso la media. Il confronto valido è quello **a parità di sconto**, riportato sopra.
+> **Insidia statistica da conoscere**: guardando il trend **senza controllare per lo sconto**, 'down' sembra addirittura il migliore (+5,5% contro +3,4% di 'up'). È un artefatto — in un mercato in calo la singola transazione è già bassa e rimbalza per pura regressione verso la media. Il confronto valido è **a parità di sconto**.
 
-### Freschezza del dato (nuovo, importante)
+## D.4 Il vecchio `potenziale_score` (è ancora lì)
 
-La classifica è **persistente** (`load_previous_tracked` ricarica tutto quello che c'era). Un prezzo di due giorni fa non può generare un "COMPRA ORA": la nuova colonna `aggiornato_il` registra quando la riga è stata davvero rinfrescata, e oltre `SEGNALE_MAX_AGE_HOURS`=12 il segnale viene sospeso con motivo esplicito ("dato vecchio (Nh fa), prezzo non verificato in questa run"). Le righe scritte prima di questa colonna hanno il campo vuoto e sono trattate come non aggiornate finché non si rivedono.
+Non è stato rimosso, resta come colonna e come spareggio nell'ordinamento:
 
-### BUG REALE trovato e corretto
+```
+0.40 × peso_timing + 0.15 × (ultima_partita/100) + 0.10 × media_generale + 0.35 × sconto_normalizzato
+```
+con `media_generale = (0.5·L5 + 0.3·L10 + 0.2·L40)/100`, il timing a bucket (`<48h → 0.1`, `48-96h → 1.0`, `oltre → 0.3`), una penalità × 0,3 sull'intero punteggio se lo sconto è sotto −15% (sovrapprezzo estremo) e `ultima_partita_score` clampato a `L5+20` (perché una singola partita eccezionale non pesi come forma consolidata).
 
-Rileggendo i CSV committati: **45 righe su 144 avevano un prezzo minimo sotto i 2,5 EUR** (1,24 / 1,40 / 1,52 EUR...). Causa: il ricaricamento della classifica persistente **non riapplicava `MIN_PRICE_EUR_THRESHOLD`** — righe scritte quando la soglia era 1 EUR sono rimaste dentro anche dopo che l'utente l'ha alzata prima a 2 e poi a 2,5. Su una carta da 1,24 EUR anche un 17% di sconto vale 21 centesimi. Il filtro ora è applicato anche in scrittura, non solo in fase di raccolta. **Conseguenza da aspettarsi**: le classifiche si accorciano (nel test: MLS 50→34, K-League 44→35, Eredivisie/Belgio 50→30) e Eredivisie/Belgio perde i suoi COMPRA ORA, che erano tutti carte sotto i 2,5 EUR. È il comportamento corretto.
+Entrambe queste ultime due correzioni vengono da casi reali trovati dall'utente (Nicolás Fernández-Mercau e Jonathan Bond, 28/07). **Sono un buon esempio del metodo che funziona meglio con lui**: trovare una carta concreta il cui punteggio non torna, scomporre la formula, confrontarla con pick che lui ha già validato, e solo allora proporre il fix.
 
-## 3. Viewer e notifica Telegram
+## D.5 Due bug reali corretti il 30/07
 
-**Viewer** (`scanners/bot_profit_viewer.html`) — assetto finale dopo la correzione chiesta dall'utente a run 73 conclusa ("voglio la pagina html compatta, non devo scorrere ogni volta per vedere chi è nel momento compra ora" + "è un'informazione da mettere come bottone, se cliccato tutti quelli da comprare ora si devono illuminare come meccanismo coppe"):
+1. **Righe sotto soglia sopravvissute nella classifica persistente.** 45 righe su 144 avevano un prezzo minimo sotto i 2,5 EUR (fino a 1,24 EUR): `load_previous_tracked` non riapplicava `MIN_PRICE_EUR_THRESHOLD`, quindi righe scritte quando la soglia era 1 EUR erano rimaste dentro anche dopo che l'utente l'aveva alzata a 2 e poi a 2,5. Su una carta da 1,24 EUR anche un 17% di sconto vale 21 centesimi. Filtro ora applicato anche in scrittura.
+2. **`Retry-After` applicato anche agli "straggler"** — cioè ai 429 che sono solo le risposte di richieste già in volo quando la barriera si era alzata. Ognuno spostava la fine della barriera a "adesso + 45s", facendola scorrere in avanti per un evento già gestito. Ora si applica solo sulla nuova ondata.
 
-- **Bottone 🟡 Compra ora**: illumina in giallo le righe COMPRA ORA, stesso meccanismo del vecchio bottone coppe. *Un primo tentativo con l'evidenziazione sempre accesa è stato scartato dall'utente* — colorava la tabella in permanenza invece di rispondere a una domanda quando gliela si fa.
-- **I COMPRA ORA sono già in cima** senza bisogno di ordinare nulla: l'ordinamento di default è per guadagno atteso decrescente, e COMPRA ORA è per costruzione l'insieme dei punteggi più alti del gruppo (soglia + tetto per campionato). Verificato: occupano esattamente le posizioni 1-8.
-- **Tabella compattata da 1448px a 1038px** (16 → 13 colonne), così a 1090px di larghezza **non serve più scorrere in orizzontale**. Tolte dalla tabella (restano tutte nel CSV): `segnale` e `motivo_segnale` — che l'avrebbero allargata proprio mentre si chiedeva di restringerla, il verdetto si vede dal bottone e il motivo è nel tooltip del nome; `media_transazioni_7gg_trimmed_eur` (ridondante: `sconto_percent` **è** il confronto tra minimo e quella media); `prossima_partita_data` (le date sono già in `finestra_acquisto_ideale`); `prossimo_avversario` (la colonna più larga di tutte e la meno usata per decidere, visto che il segnale è sul prezzo). Intestazioni accorciate (`Min. attuale €`→`Min €`, `Transazioni`→`Tx`, `Ultima partita`→`Ultima`, `Finestra acquisto`→`Finestra`): costo zero in informazione, molte colonne erano larghe solo per via del titolo.
-- Colonna **"Atteso 48h"** (`+18.5%`), riepilogo in testa ("🟡 8 da comprare ora, 34 buone occasioni").
+---
 
-**Punto di metodo**: il verdetto NON viene più ricalcolato in tre posti diversi. Prima `bot_profit.py`, il viewer e la notifica Telegram avevano **tre formule parallele** per la stessa domanda, che potevano contraddirsi (la notifica poteva segnalare una carta diversa da quella evidenziata nel viewer aperto dallo stesso link). Ora la regola vive solo in `valuta_occasione`/`_assegna_segnali`, viewer e notifica **leggono la colonna** del CSV.
+# PARTE E — Il viewer HTML
 
-**Telegram**: intestazione per gruppo ("MLS: 8 da comprare ora"), fino a 3 pick con prezzo, guadagno atteso e motivo su riga propria, e il conteggio delle altre. Se non c'è nulla lo dice esplicitamente. Link al viewer invariato (raw.githack).
+Legge un CSV (drag&drop, file picker, o `?csv=<url>` per il caricamento automatico dal link Telegram) e lo mostra come tabella filtrabile e ordinabile.
 
-## 4. Verifiche fatte PRIMA di consumare una run Sorare
+- **Bottone 🟡 Compra ora**: illumina in giallo le righe COMPRA ORA. *Un primo tentativo con l'evidenziazione sempre accesa è stato scartato dall'utente* — colorava la tabella in permanenza invece di rispondere a una domanda quando gliela si fa.
+- **I COMPRA ORA sono già in cima** senza ordinare nulla: l'ordinamento di default è per guadagno atteso decrescente, e COMPRA ORA è per costruzione l'insieme dei punteggi più alti del gruppo. Verificato: occupano le posizioni 1-8.
+- **Tabella compattata da 1448px a 1038px** (16 → 13 colonne): a 1090px di larghezza non serve più scorrere in orizzontale. L'utente è tornato più volte sul tema "compatta, non voglio scorrere" — **tenerne conto prima di aggiungere colonne**.
 
-- **Viewer verificato dal vivo** in un browser reale su CSV veri (server locale): 8 righe gialle, 8 badge COMPRA ORA, 2 badge "dato non aggiornato", filtro funzionante (19 = 8 COMPRA + 11 buone), zero errori in console. *(Nota: nelle sessioni precedenti il browser di test non riusciva a caricare `file://` o `localhost` — con `preview_start` su un `python -m http.server` funziona.)*
-- **23 controlli automatici** sull'intera pipeline, tutti superati: ordinamento dei trend, effetto finestra, penalità partita imminente, sovrapprezzo/dato vecchio/partita passata a zero, monotonia della curva, tetto del punteggio, cache roster (scrittura/rilettura/invalidazione per soglia/disattivazione), scrittura dei 3 CSV, ordinamento per verdetto, nessun prezzo sotto soglia, tetto COMPRA ORA per gruppo, nessun COMPRA ORA su dati vecchi, colonne complete.
-- **Test di stress** del rate limiter (sezione 1).
-- Sintassi Python e YAML del workflow validate.
+**Punto di metodo importante**: il verdetto **non viene ricalcolato nel viewer**. Prima `bot_profit.py`, il viewer e la notifica Telegram avevano tre formule parallele per la stessa domanda, che potevano contraddirsi (la notifica poteva segnalare una carta diversa da quella evidenziata nel viewer aperto dallo stesso link). Ora la regola vive **solo** in `valuta_occasione`/`_assegna_segnali`, e gli altri due **leggono la colonna** del CSV. Se cambi la regola, cambiala lì.
 
-## 5. Parametri nuovi (tutti sovrascrivibili da env var / input del workflow)
+**Il viewer non può caricare `file://` in tutti gli ambienti**: per provarlo dal vivo, `python -m http.server` in una cartella con viewer + CSV, poi aprire `http://localhost:<porta>/viewer.html?csv=http://localhost:<porta>/<file>.csv`. Funziona.
+
+---
+
+# PARTE F — Parametri
+
+Tutti sovrascrivibili da variabile d'ambiente; i più importanti sono anche input del workflow.
 
 | Parametro | Default | Cosa fa |
 |---|---|---|
-| `GRAPHQL_MIN_INTERVAL_SECONDS_SAFE` | **0.9** (era 0.45) | ritmo sostenibile misurato: pavimento della ripresa dal primo 429 in poi |
+| `MIN_PRICE_EUR_THRESHOLD` | 2.5 | sotto questo minimo la carta è scartata subito |
+| `MIN_TRANSACTIONS_FOR_RANKING` | 15 | sotto, il dato è troppo rumoroso per la classifica |
+| `ROSTER_MIN_AVG_SCORE` | 35.0 | L5, L10 e L40 devono superarla tutte e tre |
+| `TOP_N_OUTPUT` | 50 | righe per CSV |
+| `TRANSACTIONS_WINDOW_DAYS` | 7 | finestra della media transazioni |
+| `PREZZO_BASSO_SKIP_DAYS` | 2 | TTL blacklist per prezzo basso |
+| `SNAPSHOT_WORKER_THREADS` | 10 | giocatori in parallelo |
+| `COMMIT_CHUNK_SECONDS` | 30 | ogni quanto il bot committa |
+| `ROSTER_CACHE_HOURS` | 18 | validità cache roster (0 = disattivata) |
+| `GRAPHQL_MIN_INTERVAL_SECONDS_FAST` | 0.2 | ritmo iniziale |
+| `GRAPHQL_MIN_INTERVAL_SECONDS_SAFE` | 0.9 | ritmo sostenibile misurato: pavimento dopo il primo 429 |
 | `GRAPHQL_MAX_INTERVAL_SECONDS` | 1.5 | tetto del ritmo adattivo |
 | `GRAPHQL_PACE_BACKOFF_FACTOR` | 1.6 | quanto rallenta a ogni ondata |
 | `GRAPHQL_PACE_RECOVER_EVERY` | 40 | successi consecutivi prima di riaccelerare |
-| `GRAPHQL_PACE_RECOVER_FACTOR` | 0.9 | quanto riaccelera |
-| `GRAPHQL_429_GLOBAL_PAUSE_SECONDS` | 5.0 | pausa condivisa alla prima ondata |
-| `GRAPHQL_429_GLOBAL_PAUSE_MAX` | 45.0 | tetto della pausa condivisa |
-| `GRAPHQL_MAX_RETRIES` | 5 | era 3 |
-| `ROSTER_CACHE_HOURS` | 18 | 0 = cache disattivata |
+| `GRAPHQL_429_GLOBAL_PAUSE_SECONDS` | 5.0 | pausa condivisa alla prima ondata (poi vince `Retry-After`) |
+| `GRAPHQL_MAX_RETRIES` | 5 | tentativi per richiesta |
 | `BUY_SIGNAL_SOGLIA_COMPRA` | 10.0 | guadagno atteso minimo per COMPRA ORA |
 | `BUY_SIGNAL_SOGLIA_BUONA` | 4.0 | soglia "buona occasione" |
 | `BUY_SIGNAL_MAX_PER_GRUPPO` | 8 | tetto COMPRA ORA per campionato |
-| `SEGNALE_MAX_AGE_HOURS` | 12 | oltre, segnale sospeso |
+| `SEGNALE_MAX_AGE_HOURS` | 12 | oltre, il segnale è sospeso |
+| `TREND_RECENT_WINDOW_DAYS` | 2 | finestra "recente" per il trend |
+| `TREND_FLAT_THRESHOLD_PERCENT` | 10.0 | soglia up/down |
 
-Nel workflow YAML sono esposti come input: `roster_cache_hours`, `buy_signal_soglia_compra`, `buy_signal_max_per_gruppo`. Corretto anche lo step di commit finale, che ora include `bot_profit_roster_cache.json` e costruisce la lista dei file **solo con quelli esistenti** (`git add` fallisce su un pathspec che non corrisponde a nulla, e quello step gira con `if: always()`).
+---
 
-## 5-bis. Run 73 (prima run reale col codice nuovo) — cosa ha confermato e cosa ha corretto
+# PARTE G — Da dove ripartire
 
-Lanciata su main dopo il push. Esito: **success, 10m37s**, 976 blacklist / 249 ok / 14 prezzo basso.
+## G.1 Stato
 
-**Confermato**: **HTTP 429 da 36 (run 72, stesso carico) a 22**, concentrati in **sole 4 ondate**. La barriera globale funziona: un 429 non si moltiplica più per i 10 worker. Cache roster scritta e **committata su main** (`bot_profit_roster_cache.json`, 78 squadre) — il risparmio si vedrà dalla run successiva. Notifica Telegram e CSV con le nuove colonne prodotti correttamente (8 / 7 / 1 COMPRA ORA sui tre gruppi).
+Tutto committato e pushato su `main`; `git pull origin main` e sei operativo. Ultima run: **74, verde, 2m42s, zero 429**. Il bot è in uno stato migliore di come era all'inizio della giornata su entrambi i fronti richiesti.
 
-**Ma la durata è salita da 4m37s a 10m37s**, e il log ha spiegato perché — rivelando un dato che nessuna delle analisi precedenti aveva colto:
+Verifiche fatte senza consumare run Sorare: 23 controlli automatici sull'intera pipeline (ordinamento dei trend, effetto finestra, penalità partita imminente, sovrapprezzo/dato vecchio/partita passata a zero, monotonia della curva, cache roster in scrittura/rilettura/invalidazione, scrittura dei 3 CSV, tetto COMPRA ORA per gruppo, nessun COMPRA ORA su dati vecchi, colonne complete), viewer provato dal vivo in un browser reale su CSV veri, test di stress del rate limiter, sintassi Python e YAML validate.
 
-### Sorare manda un header `Retry-After` di ~45 secondi
+## G.2 Aperto, in ordine di priorità
 
-Le pause nel log sono `45.0s`, `45.0s`, `45.0s`, poi `40.0s` e `39.0s`. La nostra stima interna alla prima ondata è **5s**: quei 45 non li abbiamo scritti noi, sono il conto alla rovescia di Sorare (i valori calanti 40→39 sono il tempo mancante alla fine della sua finestra). **Ogni ondata di 429 costa quindi 45 secondi di fermo totale**: 4 ondate = 180s, cioè il 28% della run.
+1. **Verificare la prima run con cache SCADUTA** (TTL 18h, quindi il giorno dopo). È l'unico pezzo del lavoro sul rate limit mai provato sul campo: le correzioni fatte dopo la run 73 dovrebbero portare le ondate da 4 a 1.
+2. **Chiedere all'utente se i COMPRA ORA hanno senso** guardando l'output reale. La taratura è statisticamente solida ma non ha ancora passato il suo giudizio su casi concreti — che è il metodo che ha trovato più bug veri (vedi D.4).
+3. **`ROSTER_CACHE_HOURS`=18 è prudente, non misurato.** Alzarlo a 48-72h renderebbe *tutte* le run come la 74 invece di una sì e una no. Da decidere **con lui**, perché allunga la finestra in cui un giocatore appena trasferito resta associato alla squadra vecchia (è un caso già noto, un certo Leo Sauer).
+4. **`BUY_SIGNAL_MAX_PER_GRUPPO`=8 e `BUY_SIGNAL_SOGLIA_COMPRA`=10** sono stati scelti guardando la distribuzione di **un solo** snapshot: rivederli con più dati.
+5. **`TREND_RECENT_WINDOW_DAYS`/`TREND_FLAT_THRESHOLD_PERCENT`** (2gg/10%) non sono mai stati ricalibrati — voce aperta dal 28/07. Ora il dataset per farlo esiste (`pattern_raw_transactions_*.csv`), non è più un problema di dati.
+6. **Estendere a tutti i campionati.** Non affrontato in sé: qui il bot è stato reso *capace* di reggerlo, l'aggiunta vera (whitelist squadre, gruppi di output) resta da fare — ed è il motivo per cui l'utente ha chiesto il lavoro sul rate limit. Oggi sono coperti MLS (30 squadre), K-League (12), Eredivisie (18) e Belgio (18).
+7. Restano ~370 giocatori MLS mai revisionati per la `blacklist_manuale`. Il flusso che ha funzionato: un artifact HTML con checklist + `localStorage` + textarea copiabile, che l'utente compila e reincolla in chat. **`sendPrompt` non esiste negli artifact pubblicati** — non provare a farlo tornare indietro da solo.
 
-Conseguenze, tutte applicate:
+## G.3 Riepilogo delle trappole (tutte già pagate)
 
-1. **Il ritmo sostenibile vero è ~1 richiesta/s, non 1,8.** Misurato sulla run 73: 470 richieste in 637s, che al netto dei 180s di pausa fanno ~1,03/s — e le ondate scattavano ancora a 0,72s/richiesta (1,39/s). La stima di 1,8/s derivava dal solo comportamento iniziale, che è il secchio pieno, non il regime. `GRAPHQL_MIN_INTERVAL_SECONDS_SAFE` **0,45 → 0,9**.
-2. **Il pavimento della ripresa sale dopo il primo 429** (nuovo `_pace_floor`): prima resta 0,2s, dopo diventa 0,9s. La capienza iniziale del secchio è un regalo che si spende **una volta sola** — tornare a spingere dopo averla esaurita non recupera tempo, lo perde a blocchi da 45 secondi. Senza questo, l'AIMD riportava il ritmo verso 0,2s e si ricomprava puntualmente l'ondata successiva (è esattamente la sequenza vista nella run 73: 0,45 → 0,72 → 1,15 → 1,50).
-3. **Bug corretto: gli "stragglers" riallungavano la barriera.** `Retry-After` veniva applicato a *ogni* 429, anche a quelli che sono solo le risposte di richieste già in volo quando la barriera si era alzata. Ognuno spostava la fine della barriera a "adesso + 45s", facendola scorrere in avanti per un evento già gestito. Ora `Retry-After` si applica **solo sulla nuova ondata**.
-
-**La leva più grossa non è però il ritmo: è la cache roster**, che in questa run era vuota (0 squadre servite) e ha quindi pagato ~195 richieste su ~470 totali. Dalla prossima run quelle spariscono: ~275 richieste, che stanno **dentro la capienza iniziale del secchio** — possibile zero ondate e zero pause da 45s.
-
-**Nota di metodo**: la run 72 a 4m37s non era "il bot veloce", era una run abbastanza corta da stare quasi tutta dentro il secchio pieno. Non è una velocità replicabile su carichi maggiori, e infatti la run 71 (stesso carico) era durata 7m23s con 291 429. Il confronto onesto per giudicare le prossime run è **429 e richieste totali**, non i minuti.
-
-## 5-ter. Run 74 — il risultato che chiude il tema rate limit
-
-Prima run con la cache roster **popolata** (verificato prima del lancio che il commit di checkout contenesse sia il codice nuovo sia le 78 squadre in cache). Esito:
-
-| | run 66 (a freddo, prima) | run 72 (miglior caso, prima) | run 73 (codice nuovo, cache vuota) | **run 74 (codice nuovo, cache piena)** |
-|---|---|---|---|---|
-| Durata | 16m58s | 4m37s | 10m37s | **2m42s** |
-| HTTP 429 | 835 | 36 | 22 | **0** |
-| Ondate (45s di fermo l'una) | — | — | 4 | **0** |
-| Ritmo finale | fisso 0,2s | fisso 0,2s | 0,89s | **0,20s (mai rallentato)** |
-| Roster da cache | — | — | 0/78 | **78/78, zero query** |
-
-**Zero 429, 2 minuti e 42 secondi.** Il bot non ha mai toccato il muro, quindi non ha mai pagato un `Retry-After` da 45s e non ha mai avuto motivo di rallentare: è rimasto a 0,2s per tutta la run.
-
-Perché ha funzionato, in ordine di importanza:
-
-1. **La cache roster ha tolto ~195 richieste su ~470** (78 squadre servite a costo zero). Il totale è sceso sotto la capienza iniziale del secchio, quindi il rate limit non è mai scattato. È la leva più grossa delle tre, ed è anche l'unica che **scala**: con tutti i campionati risparmierà oltre 1000 richieste per run invece di 195.
-2. La barriera globale e il ritmo adattivo non sono nemmeno entrati in funzione in questa run — restano la rete di sicurezza per quando il volume tornerà sopra la capienza (prima run dopo la scadenza della cache, o all'aggiunta di nuovi campionati). È lì che valgono i −97% misurati nel simulatore.
-3. Il filtro sul prezzo minimo ha ripulito la classifica: `0 escluse per minimo sotto 2.5EUR` (contro le 44-45 della run precedente) — le righe vecchie sotto soglia sono state espulse una volta per tutte.
-
-Segnali prodotti: **8 / 6 / 1 COMPRA ORA** su MLS / K-League / Eredivisie+Belgio. Notifica Telegram e commit finale: `success`.
-
-**Cosa NON dimostra questa run**: il comportamento quando la cache è scaduta (TTL 18h) e il volume torna pieno. Quella è la run 73, che con lo stesso volume di partenza aveva 4 ondate — con le correzioni fatte dopo (pavimento a 0,9s e `Retry-After` solo sulla nuova ondata) dovrebbe fermarsi a 1 ondata, ma **non è ancora stato verificato su una run vera**.
-
-## 6. Stato e prossimi passi
-
-- **Run lanciate in questa sessione: 73 e 74**, entrambe autorizzate esplicitamente dall'utente prima del lancio (è un vincolo che ha posto in corsa e vale anche per le sessioni future: **avvisare SEMPRE prima di lanciare qualunque run GitHub**).
-- Esito run 73 e correzioni che ne sono seguite: **sezione 5-bis**, che è la parte più importante di questo documento — è lì che si è scoperto il `Retry-After` da 45s e si è corretta la stima del ritmo sostenibile.
-- Esito run 74 (prima run con la cache roster popolata, il vero banco di prova del risparmio di richieste): **sezione 5-ter**.
-- **Da verificare alla prima run con cache scaduta** (dopo 18h, quindi la mattina dopo): che le correzioni post-run-73 riducano le ondate da 4 a 1. È l'unico pezzo del lavoro sul rate limit non ancora provato sul campo.
-- Da rivedere dopo qualche run reale: `BUY_SIGNAL_MAX_PER_GRUPPO`=8 e `BUY_SIGNAL_SOGLIA_COMPRA`=10 sono stati scelti guardando la distribuzione di UN solo snapshot (quello del 30/07 mattina) — vanno riguardati quando ci saranno più snapshot con la nuova colonna.
-- **`ROSTER_CACHE_HOURS`=18 è una scelta prudente, non misurata**: le medie L5/L10/L40 cambiano solo dopo una partita, quindi in teoria reggerebbe di più (2-3 giorni). Alzarla renderebbe *tutte* le run come la 74 invece di una sì e una no — ma va deciso con l'utente, perché allunga la finestra in cui un giocatore appena trasferito resta associato alla squadra vecchia (vedi il caso Leo Sauer già in backlog).
-- `TREND_RECENT_WINDOW_DAYS`/`TREND_FLAT_THRESHOLD_PERCENT` (2 giorni / 10%) restano **non ricalibrati** — voce aperta dal 28/07. Ora c'è il dataset per farlo (`pattern_raw_transactions`), non è più un ostacolo di dati ma di tempo.
-- Il tema "estendere a tutti i campionati" non è stato affrontato in sé: qui si è reso il bot **capace di reggerlo** (ritmo adattivo + cache roster). L'aggiunta vera delle leghe (whitelist squadre, gruppi di output) resta da fare.
+- Non riproporre il filtro "salta le squadre lontane dalla partita" (C.5).
+- Non confrontare le run per durata, ma per 429/ondate/richieste (C.6).
+- Non valutare il trend senza controllare per lo sconto (D.3).
+- Non fidarti di un "verificato" scritto nei commenti senza una run reale che lo confermi (B.2).
+- Se cambi un filtro, chiediti se va applicato anche in scrittura: la classifica è persistente e le righe vecchie non si rifiltrano da sole (B.3, D.5).
+- Nel worktree temporaneo usa lo sha esplicito del commit, non `$(git rev-parse HEAD)` (A.6).
+- Se scrivi un simulatore del rate limiter, scala **tutte** le costanti di tempo dello stesso fattore: la prima versione scalava il bucket ma non la barriera e andava in timeout senza motivo apparente.
