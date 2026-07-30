@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:59:30.504347Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) manuel-pherai: 36 pt attesi (22-51)
+   SQUADRA: hamburger-sv-hamburg | AVVERSARIO: borussia-dortmund-dortmund
+======================================================================
+
+######################################################################
+# GIOCATORE: manuel-pherai
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: manuel-pherai (squadra: hamburger-sv-hamburg)
+Generato: 2026-07-30T10:59:30.503474Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-21 | ELV vs EBS | 2-bundesliga | score=32.8 | peso=0.801
+  2026-03-06 | ELV vs FCM | 2-bundesliga | score=29.7 | peso=0.824
+  2026-03-13 | SGF vs ELV | 2-bundesliga | score=23.4 | peso=0.847
+  2026-03-21 | ELV vs DSC | 2-bundesliga | score=53.3 | peso=0.871
+  2026-04-12 | ELV vs S04 | 2-bundesliga | score=33.0 | peso=0.895
+  2026-04-17 | ELV vs KSC | 2-bundesliga | score=84.1 | peso=0.920
+  2026-04-25 | SVD vs ELV | 2-bundesliga | score=31.3 | peso=0.946
+  2026-05-03 | ELV vs SCP | 2-bundesliga | score=23.0 | peso=0.973
+  2026-05-10 | F95 vs ELV | 2-bundesliga | score=26.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 37.45
+  di cui Punteggio decisivo (level_score) medio: 38.99 | Punteggio complessivo (granulari) medio: -1.54 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 37.49 (delta -1.50)
+  Efficacia offensiva condizionata: delta venue -0.52, delta avversario -0.47 | Passaggio condizionato: delta venue +0.19, delta avversario -0.92 | Gol subiti condizionato: delta venue -0.99, delta avversario +0.12 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 18.72
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 23.4 - 53.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.89 (differenza: +9.82)
+Media score in casa: 42.65 | Media score fuori casa: 27.10
+Fattore casa/trasferta applicato: 0.993 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.4
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.709
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.978
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 26.47% (fonte: tasso di presenza storico (9/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T16:30
+Casa: Borussia Dortmund | Trasferta: Hamburger SV
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 35.6 (range 21.6 - 51.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 38.99
+Punteggio REALE ottenuto in quella partita: 26.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=20.0+trend_int=0.7+granulari' (half_life=9.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      29.1    31.3     +2.2    26.1        SI
+   7        7      27.2    23.0     -4.2    24.5        SI
+   8        8      51.2    26.6    -24.6    24.0        NO
+
+MAE (errore assoluto medio): 10.34
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
