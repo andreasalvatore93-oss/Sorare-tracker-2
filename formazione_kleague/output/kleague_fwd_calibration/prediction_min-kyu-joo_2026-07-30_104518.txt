@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:45:18.309460Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) min-kyu-joo: 54 pt attesi (36-71)
+   ORDINAMENTO: 50.36
+   SQUADRA: daejeon-citizen-daejeon | AVVERSARIO: gwangju-gwangju
+======================================================================
+
+######################################################################
+# GIOCATORE: min-kyu-joo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: min-kyu-joo (squadra: daejeon-citizen-daejeon)
+Generato: 2026-07-30T10:45:18.308414Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | DJO vs SCI | k-league-1 | score=61.7 | peso=0.697
+  2025-08-17 | GWA vs DJO | k-league-1 | score=40.3 | peso=0.717
+  2025-09-20 | DJO vs DAE | k-league-1 | score=80.9 | peso=0.737
+  2025-09-27 | GAN vs DJO | k-league-1 | score=37.7 | peso=0.758
+  2025-10-05 | POH vs DJO | k-league-1 | score=60.0 | peso=0.779
+  2025-10-18 | DJO vs JEJ | k-league-1 | score=81.4 | peso=0.801
+  2025-10-26 | DJO vs POH | k-league-1 | score=60.0 | peso=0.824
+  2026-03-02 | DJO vs ANY | k-league-1 | score=66.7 | peso=0.847
+  2026-03-07 | BUC vs DJO | k-league-1 | score=38.6 | peso=0.871
+  2026-03-18 | INC vs DJO | k-league-1 | score=33.9 | peso=0.895
+  2026-04-12 | DJO vs GAN | k-league-1 | score=30.2 | peso=0.920
+  2026-05-09 | DJO vs POH | k-league-1 | score=26.9 | peso=0.946
+  2026-07-04 | DJO vs BUC | k-league-1 | score=67.5 | peso=0.973
+  2026-07-12 | JEJ vs DJO | k-league-1 | score=32.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 50.45
+  di cui Punteggio decisivo (level_score) medio: 48.33 | Punteggio complessivo (granulari) medio: 2.12 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.85 (delta +0.23) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.38
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.7 - 67.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.36 (differenza: +2.02)
+Media score in casa: 59.41 | Media score fuori casa: 40.53
+Fattore casa/trasferta applicato: 1.014 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.4
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.158
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 38.2 vs media ultime 10: 49.8): 0.930
+P(gioca): 20.00% (fonte: starterOddsBasisPoints (2000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Daejeon Citizen FC | Trasferta: Gwangju FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.2 (range 36.4 - 71.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.10
+Punteggio REALE ottenuto in quella partita: 32.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=1.3' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.5    60.0     -0.5    20.9        SI
+   7        7      56.2    66.7    +10.5    18.9        SI
+   8        8      68.8    38.6    -30.2    17.5        NO
+   9        9      54.1    33.9    -20.2    19.0        NO
+  10       10      47.3    30.2    -17.1    20.3        SI
+  11       11      43.3    26.9    -16.4    21.4        SI
+  12       12      44.8    67.5    +22.7    22.4        NO
+  13       13      41.0    32.7     -8.3    22.2        SI
+
+MAE (errore assoluto medio): 15.73
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
