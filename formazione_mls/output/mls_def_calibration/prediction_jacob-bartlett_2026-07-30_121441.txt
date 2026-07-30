@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T12:14:41.324641Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) jacob-bartlett: 42 pt attesi (29-51)
+   ORDINAMENTO: 39.93
+   SQUADRA: sporting-kc-kansas-city-kansas | AVVERSARIO: houston-dynamo-houston-texas
+======================================================================
+
+######################################################################
+# GIOCATORE: jacob-bartlett
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jacob-bartlett (squadra: sporting-kc-kansas-city-kansas)
+Generato: 2026-07-30T12:14:41.322784Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-07 | SKC vs ATX | mlspa | score=41.4 | peso=0.707
+  2025-09-14 | RSL vs SKC | mlspa | score=46.4 | peso=0.732
+  2026-02-22 | SJ vs SKC | mlspa | score=45.5 | peso=0.758
+  2026-03-01 | SKC vs CLB | mlspa | score=19.5 | peso=0.785
+  2026-03-08 | SKC vs SD | mlspa | score=34.5 | peso=0.812
+  2026-03-15 | LA vs SKC | mlspa | score=48.1 | peso=0.841
+  2026-03-22 | SKC vs RAP | mlspa | score=25.9 | peso=0.871
+  2026-04-12 | SKC vs SJ | mlspa | score=63.8 | peso=0.901
+  2026-04-18 | VAN vs SKC | mlspa | score=35.2 | peso=0.933
+  2026-05-02 | SKC vs SEA | mlspa | score=42.5 | peso=0.966
+  2026-05-10 | POR vs SKC | mlspa | score=31.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 39.46
+  di cui Punteggio decisivo (level_score) medio: 35.74 | Punteggio complessivo (granulari) medio: 3.73 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.48, delta avversario +0.50 | Passaggio condizionato: delta venue -0.72, delta avversario -0.40 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 11.54
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.9 - 48.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.13 (differenza: +4.41)
+Media score in casa: 37.93 | Media score fuori casa: 41.40
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.890
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.009
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.994
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 39.8 vs media ultime 10: 39.3): 1.000
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Sporting Kansas City  | Trasferta: Houston Dynamo FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.1 (range 28.6 - 50.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 39.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.39
+Punteggio REALE ottenuto in quella partita: 31.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.7+range=1.4x' (half_life=30.0, range_mult=1.4, opp_sens=None, trend_int=0.7)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.3    25.9    -21.4     N/D        NO
+   7        7      46.6    63.8    +17.2     N/D        NO
+   8        8      48.6    35.2    -13.4     N/D        SI
+   9        9      46.0    42.5     -3.5     N/D        SI
+  10       10      46.4    31.8    -14.6     N/D        SI
+
+MAE (errore assoluto medio): 13.99
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
