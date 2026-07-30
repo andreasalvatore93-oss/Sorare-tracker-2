@@ -168,15 +168,6 @@
   tr.top-pick:hover { background: rgba(20,224,196,.14); }
   tr.top-pick td.name { border-left: 2px solid var(--teal); }
   .trophy { font-size: 11px; }
-  /* FIX 30/07 (richiesta esplicita utente: "evidenzia in giallo tutti i
-     giocatori che sono in un ottimo momento da acquistare"). L'evidenziazione
-     e' PERMANENTE, non piu' dietro un bottone da premere: chi apre il viewer
-     deve vedere subito, senza cliccare nulla, quali carte comprare adesso. */
-  tr.buy-now { background: rgba(255,206,0,.16); }
-  tr.buy-now:hover { background: rgba(255,206,0,.24); }
-  tr.buy-now td.name { border-left: 3px solid #ffce00; }
-  tr.buy-now td { font-weight: 600; }
-  .btn.ghost.active { background:#ffce00; color:#1a1400; border-color:#ffce00; }
 
   .empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
   .empty .big { font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--text); margin-bottom: 6px; }
@@ -238,7 +229,6 @@
       <input type="number" id="fOreMax" placeholder="∞">
     </div>
     <button class="btn ghost" id="clearFilters">Pulisci filtri</button>
-    <button class="btn ghost" id="topPicksBtn" title="Illumina in giallo le carte da comprare ADESSO. Il verdetto arriva dal CSV, calcolato da bot_profit.py sui pattern misurati (sconto, trend, distanza dalla partita) -- sono gia' in cima alla tabella, ordinate per guadagno atteso">🟡 Compra ora</button>
   </div>
 
   <div class="sortchain" id="sortChain"></div>
@@ -334,7 +324,6 @@ const PREFERRED_ORDER = [
 let rawRows = [];
 let COLUMNS = [];
 let sortChain = []; // [{key, dir: 1|-1, pinned: bool}]
-let topPicksActive = false;
 
 // FIX 29/07 quater (richiesta esplicita utente: il vecchio Top 5 pesava
 // potenziale_score per il trend, ma potenziale_score include GIA' timing e
@@ -447,8 +436,6 @@ function loadCSVText(text) {
   if (COLUMNS.some(c => c.key === 'potenziale_score')) {
     sortChain.push({ key: 'potenziale_score', dir: -1, pinned: false });
   }
-  topPicksActive = false;
-  $('topPicksBtn').classList.remove('active');
   $('loadZone').style.display = 'none';
   $('reloadBtn').style.display = 'inline-block';
   $('toolbar').classList.add('active');
@@ -644,11 +631,6 @@ $('clearFilters').addEventListener('click', () => {
   $('fTipo').value = '';
   render();
 });
-$('topPicksBtn').addEventListener('click', () => {
-  topPicksActive = !topPicksActive;
-  $('topPicksBtn').classList.toggle('active', topPicksActive);
-  render();
-});
 ['fSearch','fTipo','fPrezzoMin','fPrezzoMax','fScoreMin','fScontoMin','fOreMax'].forEach(id => {
   $(id).addEventListener('input', render);
   $(id).addEventListener('change', render);
@@ -759,7 +741,7 @@ function render() {
 
   // Renderer generico per cella: dispatcha in base al render dichiarato in KNOWN_COLUMNS
   // (o al type/nome chiave come euristica), cosi' funziona anche per colonne sconosciute.
-  function renderCell(col, r, isBuyNow) {
+  function renderCell(col, r) {
     const v = r[col.key];
     if (col.key === 'player_name') {
       // FIX 27/07 (richiesta esplicita utente): nome giocatore cliccabile,
@@ -773,9 +755,7 @@ function render() {
       const nameHtml = link
         ? `<a href="${link}" target="_blank" rel="noopener noreferrer">${name}</a>`
         : name;
-      const marker = isBuyNow
-        ? `<span class="trophy" title="${(r.motivo_segnale || '').replace(/"/g,'&quot;')}">🟡 </span>` : '';
-      return `<td class="name">${marker}${nameHtml}${r.player_slug ? `<span class="slug">${r.player_slug}</span>` : ''}</td>`;
+      return `<td class="name">${nameHtml}${r.player_slug ? `<span class="slug">${r.player_slug}</span>` : ''}</td>`;
     }
     switch (col.render) {
       case 'attesa': {
@@ -797,13 +777,13 @@ function render() {
     }
   }
 
-  // FIX 30/07 bis (richiesta esplicita utente): l'evidenziazione gialla torna
-  // dietro al BOTTONE, come il vecchio meccanismo delle coppe -- si accende
-  // quando serve invece di colorare la tabella in permanenza.
-  const tbody = `<tbody>${sorted.map(r => {
-    const isBuyNow = topPicksActive && r.segnale === SEGNALE_COMPRA;
-    return `<tr class="${isBuyNow ? 'buy-now' : ''}">${COLUMNS.map(col => renderCell(col, r, isBuyNow)).join('')}</tr>`;
-  }).join('')}</tbody>`;
+  // FIX 30/07 sera (richiesta esplicita utente): l'evidenziazione gialla non
+  // serve piu' -- il CSV che arriva dalla notifica (profit_tracking_global)
+  // contiene ORMAI SOLO righe COMPRA ORA (vedi _write_global_csv lato
+  // Python), quindi colorarle tutte sarebbe rumore, non un segnale.
+  const tbody = `<tbody>${sorted.map(r =>
+    `<tr>${COLUMNS.map(col => renderCell(col, r)).join('')}</tr>`
+  ).join('')}</tbody>`;
 
   $('tableHolder').innerHTML = `<div class="table-scroll">${'<table>' + thead + tbody + '</table>'}</div>`;
   const newScroll = document.querySelector('.table-scroll');

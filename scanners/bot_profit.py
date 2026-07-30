@@ -2376,21 +2376,27 @@ def write_csv_snapshot():
 # globale) -- questo file e' una "selezione dentro la selezione": rimescola le
 # righe gia' scelte da ciascun gruppo in un'unica classifica ordinata per
 # verdetto/punteggio, non ne calcola una nuova.
+#
+# FIX 30/07 sera bis (richiesta esplicita utente: "non ha senso farmi arrivare
+# anche il resto della classifica, i compra ora sono al massimo 15"): il file
+# globale contiene SOLO le righe COMPRA ORA, non il solito top TOP_N_OUTPUT
+# misto -- niente "buona occasione"/neutro/evita. Se nessun gruppo ha COMPRA
+# ORA il file resta con la sola intestazione (0 righe), la notifica lo segnala.
 GLOBAL_OUTPUT_PREFIX = 'profit_tracking_global'
 
 
 def _write_global_csv(rows_tutti_i_gruppi, timestamp):
+    rows_compra = [r for r in rows_tutti_i_gruppi if r.get('segnale') == SEGNALE_COMPRA]
     rows_sorted = sorted(
-        rows_tutti_i_gruppi,
-        key=lambda r: (SEGNALE_RANK.get(r.get('segnale'), 0), r['punteggio_occasione'],
+        rows_compra,
+        key=lambda r: (r['punteggio_occasione'],
                        r['potenziale_score'] if r.get('potenziale_score') is not None else -999),
-        reverse=True)[:TOP_N_OUTPUT]
+        reverse=True)
     for old_path in glob.glob(os.path.join(OUTPUT_DIR, f"{GLOBAL_OUTPUT_PREFIX}_*.csv")):
         os.remove(old_path)
     path = os.path.join(OUTPUT_DIR, f"{GLOBAL_OUTPUT_PREFIX}_{timestamp}.csv")
     _write_plain_csv(rows_sorted, path)
-    n_compra = sum(1 for r in rows_sorted if r.get('segnale') == SEGNALE_COMPRA)
-    log(f"[csv] globale: scritte {len(rows_sorted)} carte in {path} -- {n_compra} da COMPRARE ORA")
+    log(f"[csv] globale: scritte {len(rows_sorted)} carte COMPRA ORA in {path}")
 
 
 # =====================================================================================
