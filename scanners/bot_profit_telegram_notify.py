@@ -1,9 +1,12 @@
-"""Notifica Telegram di fine run Bot Profit con link cliccabili ai CSV di
-output (uno per GRUPPO, vedi OUTPUT_GROUPS in bot_profit.py -- Eredivisie e
-Belgio condividono lo stesso gruppo/file, MLS e K-League restano separate)
--- richiesta esplicita utente 29/07. Lanciato come step separato del workflow DOPO
-bot_profit.py (which git ha gia' pushato in quel punto il commit finale coi
-CSV), cosi' i link puntano a file effettivamente presenti su GitHub.
+"""Notifica Telegram di fine run Bot Profit con un link cliccabile al CSV
+GLOBALE (profit_tracking_global_<ts>.csv, vedi _write_global_csv in
+bot_profit.py) -- FIX 30/07 sera (richiesta esplicita utente: prima arrivavano
+3 notifiche separate, una per gruppo/campionato, "troppa roba"; ora la
+notifica legge solo il file globale, che e' gia' una selezione dentro la
+selezione: rimescola le righe che ciascun gruppo aveva gia' scelto). Lanciato
+come step separato del workflow DOPO bot_profit.py (which git ha gia' pushato
+in quel punto il commit finale coi CSV), cosi' il link punta a un file
+effettivamente presente su GitHub.
 
 Riusa lo stesso schema Telegram di scanners/track.py (TELEGRAM_TOKEN/
 TELEGRAM_CHAT_ID, non duplicato qui per non introdurre una dipendenza tra
@@ -37,12 +40,14 @@ GIT_REF = os.environ.get('GIT_REF', 'main').strip() or 'main'
 REPO_SLUG = os.environ.get('GITHUB_REPOSITORY', 'andreasalvatore93-oss/Sorare-tracker-2').strip()
 
 OUTPUT_DIR = 'bot_profit_output'
-GROUP_LABELS = {'mlspa': 'MLS', 'k-league-1': 'K-League', 'eredivisie_belgio': 'Eredivisie+Belgio'}
+GLOBAL_CSV_PREFIX = 'profit_tracking_global'
+LEAGUE_LABELS = {'mlspa': 'MLS', 'k-league-1': 'K-League',
+                  'eredivisie': 'Eredivisie', 'jupiler-pro-league': 'Belgio'}
 VIEWER_PATH = 'scanners/bot_profit_viewer.html'
 
 
-def _latest_csv_for_group(group_name):
-    candidates = sorted(glob.glob(os.path.join(OUTPUT_DIR, f'profit_tracking_{group_name}_*.csv')))
+def _latest_global_csv():
+    candidates = sorted(glob.glob(os.path.join(OUTPUT_DIR, f'{GLOBAL_CSV_PREFIX}_*.csv')))
     return candidates[-1] if candidates else None
 
 
@@ -63,12 +68,13 @@ def _viewer_url(csv_path):
 # _assegna_segnali li'). Prima invece questo file aveva una TERZA formula
 # parallela -- una nel bot, una nel viewer, una qui -- che poteva indicare una
 # carta diversa da quella evidenziata nel viewer aperto dallo stesso link.
-MAX_PICK_IN_NOTIFICA = 3
+MAX_PICK_IN_NOTIFICA = 8
 
 
-def _occasioni_del_gruppo(path):
+def _occasioni_globali(path):
     """(lista COMPRA ORA, lista buone occasioni) nell'ordine gia' deciso dal
-    CSV, che e' scritto per verdetto decrescente."""
+    CSV globale, che e' scritto per verdetto decrescente (vedi
+    _write_global_csv in bot_profit.py)."""
     with open(path, 'r', newline='', encoding='utf-8') as f:
         rows = list(csv.DictReader(f))
     compra = [r for r in rows if r.get('segnale') == bp.SEGNALE_COMPRA]
@@ -79,10 +85,11 @@ def _occasioni_del_gruppo(path):
 def _riga_pick(r):
     nome = r.get('player_name') or r.get('player_slug') or '?'
     tipo = r.get('tipo_carta') or ''
+    lega = LEAGUE_LABELS.get(r.get('league_slug'), r.get('league_slug') or '?')
     prezzo = r.get('min_attuale_eur') or '?'
     atteso = r.get('punteggio_occasione') or '?'
     motivo = r.get('motivo_segnale') or ''
-    return (f"   \U0001F7E1 <b>{nome}</b> {tipo} — {prezzo}€, atteso +{atteso}% a 48h\n"
+    return (f"   \U0001F7E1 <b>{nome}</b> {tipo} ({lega}) — {prezzo}€, atteso +{atteso}% a 48h\n"
             f"      {motivo}")
 
 
@@ -91,24 +98,23 @@ def main():
         print("[bot_profit_telegram_notify] TELEGRAM_TOKEN/TELEGRAM_CHAT_ID mancanti, salto la notifica.")
         return
 
+    path = _latest_global_csv()
     righe = []
-    for group_name, label in GROUP_LABELS.items():
-        path = _latest_csv_for_group(group_name)
-        if path:
-            compra, buone = _occasioni_del_gruppo(path)
-            intestazione = (f"{label}: {len(compra)} da comprare ora"
-                            if compra else f"{label}: nessuna da comprare ora")
-            righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{intestazione} — apri viewer</a>")
-            for r in compra[:MAX_PICK_IN_NOTIFICA]:
-                righe.append(_riga_pick(r))
-            if len(compra) > MAX_PICK_IN_NOTIFICA:
-                righe.append(f"      ...e altre {len(compra) - MAX_PICK_IN_NOTIFICA} "
-                             f"evidenziate in giallo nel viewer.")
-            if not compra:
-                righe.append(f"   nessun segnale d'acquisto forte adesso"
-                             f"{f' ({len(buone)} occasioni minori nel viewer)' if buone else ''}.")
-        else:
-            righe.append(f"⚠️ {label}: nessun CSV trovato in questa run.")
+    if path:
+        compra, buone = _occasioni_globali(path)
+        intestazione = (f"{len(compra)} da comprare ora"
+                        if compra else "nessuna da comprare ora")
+        righe.append(f"\U0001F4CA <a href=\"{_viewer_url(path)}\">{intestazione} — apri viewer</a>")
+        for r in compra[:MAX_PICK_IN_NOTIFICA]:
+            righe.append(_riga_pick(r))
+        if len(compra) > MAX_PICK_IN_NOTIFICA:
+            righe.append(f"      ...e altre {len(compra) - MAX_PICK_IN_NOTIFICA} "
+                         f"evidenziate in giallo nel viewer.")
+        if not compra:
+            righe.append(f"   nessun segnale d'acquisto forte adesso"
+                         f"{f' ({len(buone)} occasioni minori nel viewer)' if buone else ''}.")
+    else:
+        righe.append("⚠️ nessun CSV globale trovato in questa run.")
 
     message = "<b>Bot Profit — run completata</b>\n" + "\n".join(righe)
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
