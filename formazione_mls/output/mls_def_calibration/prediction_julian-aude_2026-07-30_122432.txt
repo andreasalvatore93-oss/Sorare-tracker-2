@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T12:24:32.203324Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) julian-aude: 44 pt attesi (36-63)
+   ORDINAMENTO: 48.89
+   SQUADRA: la-galaxy-los-angeles-california | AVVERSARIO: dallas-frisco-texas
+======================================================================
+
+######################################################################
+# GIOCATORE: julian-aude
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: julian-aude (squadra: la-galaxy-los-angeles-california)
+Generato: 2026-07-30T12:24:32.201482Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-11 | LA vs SEA | mlspa | score=24.4 | peso=0.758
+  2026-02-23 | LA vs NYC | mlspa | score=42.1 | peso=0.785
+  2026-03-01 | LA vs CLT | mlspa | score=70.2 | peso=0.812
+  2026-03-08 | RAP vs LA | mlspa | score=42.1 | peso=0.841
+  2026-03-15 | LA vs SKC | mlspa | score=48.7 | peso=0.871
+  2026-03-22 | POR vs LA | mlspa | score=62.5 | peso=0.901
+  2026-04-05 | LA vs MIN | mlspa | score=43.2 | peso=0.933
+  2026-04-11 | ATX vs LA | mlspa | score=45.2 | peso=0.966
+  2026-07-26 | SJ vs LA | mlspa | score=69.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 50.42
+  di cui Punteggio decisivo (level_score) medio: 36.25 | Punteggio complessivo (granulari) medio: 14.17 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.81, delta avversario -0.65 | Passaggio condizionato: delta venue +0.79, delta avversario -0.59 | Clean sheet/disimpegni condizionato: delta venue -0.84, delta avversario +0.78 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 13.95
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.1 - 69.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.51 (differenza: +3.44)
+Media score in casa: 45.74 | Media score fuori casa: 54.92
+Fattore casa/trasferta applicato: 0.989 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.2
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.889
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.012
+Fattore gol subiti (goals_conceded, con cap): 0.992
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.993
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T02:30
+Casa: LA Galaxy | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.0 (range 35.7 - 63.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 48.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.59
+Punteggio REALE ottenuto in quella partita: 69.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +22.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.2    43.2     -8.0     N/D        SI
+   7        7      50.0    45.2     -4.8     N/D        SI
+   8        8      50.5    69.8    +19.4     N/D        NO
+
+MAE (errore assoluto medio): 10.69
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
