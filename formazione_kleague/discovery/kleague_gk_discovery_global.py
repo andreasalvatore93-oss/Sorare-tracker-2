@@ -172,8 +172,17 @@ def get_quality_average(slug):
 
 
 def filter_by_quality(slugs, min_avg=MIN_AVG_SCORE_QUALITY):
+    """Ritorna (kept, quality_map): kept e' la lista slug come prima
+    (invariato, compatibilita' con chi legge gia' player_slugs.json), e
+    quality_map e' {slug: avg} per i soli slug tenuti -- NUOVO (30/07, tema
+    "Best Five"): la media (L5+L10+L40)/3 viene gia' calcolata qui per il
+    filtro, ma prima veniva scartata subito dopo l'uso. Persisterla (vedi
+    main()) permette un pre-ranking economico del pool GLOBALE a valle
+    (best_five.py) SENZA nessuna chiamata API aggiuntiva -- e' un valore
+    gia' pagato, solo salvato invece che buttato."""
     kept = []
     excluded = []
+    quality_map = {}
     for slug in slugs:
         avg = get_quality_average(slug)
         time.sleep(0.3)
@@ -181,9 +190,10 @@ def filter_by_quality(slugs, min_avg=MIN_AVG_SCORE_QUALITY):
             excluded.append((slug, avg))
             continue
         kept.append(slug)
+        quality_map[slug] = avg
     log(f"Filtro qualita' (media L5/L10/L40 >= {min_avg}): {len(excluded)} esclusi su {len(slugs)} "
         f"(storico insufficiente o media troppo bassa).")
-    return kept
+    return kept, quality_map
 
 
 def fetch_team_players_by_position(team_slug, position):
@@ -238,7 +248,7 @@ def main():
     log(f"Totale portieri K League 1 unici trovati: {len(slugs)}")
 
     log(f"Filtro qualita' (media L5/L10/L40 >= {MIN_AVG_SCORE_QUALITY})...")
-    slugs = filter_by_quality(slugs)
+    slugs, quality_map = filter_by_quality(slugs)
     log(f"Totale portieri K League 1 dopo filtro qualita': {len(slugs)}")
 
     if not os.path.exists(OUTPUT_DIR):
@@ -246,6 +256,14 @@ def main():
     out_path = os.path.join(OUTPUT_DIR, 'player_slugs.json')
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(slugs, f, ensure_ascii=False, indent=2)
+
+    # NUOVO (30/07, tema "Best Five"): media qualita' per slug, per
+    # permettere a valle un pre-ranking economico del pool globale senza
+    # richiamare l'API (vedi commento in filter_by_quality).
+    quality_path = os.path.join(OUTPUT_DIR, 'player_quality.json')
+    with open(quality_path, 'w', encoding='utf-8') as f:
+        json.dump(quality_map, f, ensure_ascii=False, indent=2)
+    log(f"Salvate {len(quality_map)} medie qualita' in {quality_path}")
 
     log(f"Salvati {len(slugs)} slug in {out_path}")
 

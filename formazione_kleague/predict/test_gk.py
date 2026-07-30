@@ -84,8 +84,16 @@ GRAPHQL_URL = 'https://api.sorare.com/graphql'
 # la ricalibrazione one-shot su piu' dati, mai in produzione.
 CALIBRATION_MODE = os.environ.get('CALIBRATION_MODE', 'no').strip().lower() in ('1', 'true', 'si', 'yes')
 
+# PLAYER_POOL (30/07, tema "Best Five"): scollegato da CALIBRATION_MODE --
+# permette di puntare al pool GLOBALE (tutti i giocatori della lega, non solo
+# posseduti) per la predizione NORMALE (score_atteso prossima giornata),
+# senza attivare il grid search completo. CALIBRATION_MODE continua a
+# implicare il pool globale (comportamento invariato per la ricalibrazione).
+PLAYER_POOL = os.environ.get('PLAYER_POOL', 'posseduti').strip().lower()
+_USE_GLOBAL_POOL = CALIBRATION_MODE or PLAYER_POOL == 'global'
+
 DISCOVERY_FILE = os.path.join(
-    'formazione_kleague/output/kleague_gk_discovery_global' if CALIBRATION_MODE else 'formazione_kleague/output/kleague_gk_discovery',
+    'formazione_kleague/output/kleague_gk_discovery_global' if _USE_GLOBAL_POOL else 'formazione_kleague/output/kleague_gk_discovery',
     'player_slugs.json')
 
 # Fallback statico SOLO se kleague_gk_discovery/player_slugs.json non esiste
