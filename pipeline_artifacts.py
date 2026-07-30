@@ -137,14 +137,20 @@ COSTI_PATH = 'pipeline_costi.json'
 # cosa dica la stima. I costi misurati servono solo a ordinare il
 # riempimento dei bin, con pavimento e tetto per non credere a stime assurde.
 
-# Nessuno shard oltre questo numero di giocatori. Abbassato da 8 a 5 (30/07)
-# assieme all'aumento di N_BIN: col pacing adattivo il lavoro totale di
-# predict e' scesso a 2416s (pavimento ~156s a 20 slot) ma il wall era rimasto
-# a 285s, cioe' 129s di sola inefficienza di packing. Il tail era un bin
-# dispatchato TARDI che si e' rivelato lungo (161s) perche' la tabella dei
-# costi lo dava per leggero: con stime inevitabilmente stantie (i costi si
-# muovono a ogni run) l'unica difesa e' che nessun bin possa essere lungo.
-MAX_GIOCATORI_PER_SHARD = 5
+# Nessuno shard oltre questo numero di giocatori: e' il presidio che regge
+# anche quando la stima di costo sbaglia (vedi sopra).
+#
+# PROVATO E SCARTATO (30/07): abbassarlo a 5 alzando N_BIN a 65, per ridurre
+# il peso di una stima sbagliata sul tail. Ha PEGGIORATO i tempi da 7m55s a
+# 10m56s. Il motivo, visibile nella distribuzione dei bin di quella run: i bin
+# piu' lenti erano quelli dispatchati TARDI (partiti a ~4 minuti dall'inizio
+# della fase) e hanno fatto ~20s per giocatore contro i ~3s dei primi. Non e'
+# packing: e' Sorare che rallenta CUMULATIVAMENTE nel corso della run (in
+# latenza, non con dei 429). Piu' bin = piu' coda = piu' lavoro spostato nella
+# parte lenta della run, quindi in questo regime sminuzzare e' controproducente.
+# 45/8 e' la configurazione col miglior tempo misurato (7m55s) ed e' anche la
+# piu' prudente verso Sorare.
+MAX_GIOCATORI_PER_SHARD = 8
 
 # Pavimento e tetto applicati al costo marginale misurato quando si pesa uno
 # shard: proteggono dalle stime a 0s (che facevano finire 46 giocatori in un
@@ -172,7 +178,7 @@ TARGET_MIN_S = 45.0
 # congelato in un'assegnazione statica. Il prezzo sono ~22s fissi di
 # checkout+setup per bin in piu' (45 bin = ~990 job-secondi = ~50s di wall a
 # 20 slot), che si ripagano al primo shard mal stimato evitato.
-N_BIN = 65
+N_BIN = 45
 
 
 # ---------------------------------------------------------------- stage ----
