@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T11:28:57.957682Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) alexander-ernesto-aravena-guzman: 36 pt attesi (29-49)
+   ORDINAMENTO: 36.22
+   SQUADRA: portland-timbers-portland-oregon | AVVERSARIO: seattle-sounders-renton-washington
+======================================================================
+
+######################################################################
+# GIOCATORE: alexander-ernesto-aravena-guzman
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: alexander-ernesto-aravena-guzman (squadra: portland-timbers-portland-oregon)
+Generato: 2026-07-30T11:28:57.957384Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 49
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 26
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-05 | ? vs ? | wc-qualification-south-america | score=32.9 | peso=0.871
+  2025-10-04 | BRA vs GRE | campeonato-brasileiro-serie-a | score=35.2 | peso=0.895
+  2025-11-18 | ? vs ? | friendlies | score=29.0 | peso=0.920
+  2026-03-08 | POR vs VAN | mlspa | score=33.1 | peso=0.946
+  2026-03-15 | HOU vs POR | mlspa | score=49.0 | peso=0.973
+  2026-04-26 | SD vs POR | mlspa | score=38.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 36.45
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=6): 44.31 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 1.45 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Passaggio condizionato per venue: 2.27 (delta -0.23) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 6.43
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.0 - 49.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 2.29 (differenza: +4.13)
+Media score in casa: 33.10 | Media score fuori casa: 43.75
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.0
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.069
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 30.00% (fonte: starterOddsBasisPoints (3000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T02:45
+Casa: Portland Timbers | Trasferta: Seattle Sounders FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 36.0 (range 28.5 - 48.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 36.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 36.01
+Punteggio REALE ottenuto in quella partita: 38.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +2.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
