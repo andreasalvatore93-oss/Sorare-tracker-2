@@ -4445,3 +4445,109 @@ mettendo da parte quei file con `git stash --keep-index` prima del commit; verif
 3. I file `ERRORE_`/`.debug/` committati non vengono mai cancellati e sono una delle ragioni per
    cui il repo è a 150MB, che a sua volta è il costo del checkout. Pulirli è indipendente dai fix
    di cui sopra ma si ripagherebbe su ogni job di ogni run.
+
+### 36.I — Seconda tornata (30/07, 00:00–00:40): da 9m17s a 7m55s, e il tetto vero
+
+Ripresa su richiesta dell'utente ("nuovo target 8 minuti", poi 7, poi "esaurisci i
+miglioramenti possibili"). Tutto misurato, come sopra.
+
+**1. L'albero di lavoro era 1,2 GB, non 150 MB.** I 150 MB sono la dimensione COMPRESSA del
+repo su GitHub; quello che ogni job copia nel checkout è l'albero. Composizione misurata:
+
+| | MB | file | |
+|---|---|---|---|
+| `.debug/` (dump GraphQL) | 654,2 | 61.746 | **54%** |
+| `.cache/` (dettaglio partite) | 244,9 | 2.445 | |
+| `prediction_*.txt` | 166,5 | 29.892 | |
+| `.game_log_cache/` | 93,8 | 2.653 | |
+| codice `.py` | 17,6 | 364 | |
+
+I dump `.debug/` contengono richiesta e risposta integrale di **ogni** chiamata GraphQL, sono
+riscritti a ogni run e **nessuno script li rilegge** (verificato: nei 112 file predict compaiono
+solo scritture e riferimenti nei commenti). Messi in `.gitignore` e rimossi dall'indice: albero da
+1204 MB/101.950 file a **550 MB/40.204 file**, e il `checkout` da **13,3s a 3,07s** (misurato su
+74 step). Sono ~880 job-secondi per run, ~44s di wall. Restano nella storia git, quindi i dump già
+committati — quelli che hanno permesso di trovare il bug di complessità — sono ancora consultabili.
+
+**2. I 36 job discovery diventano un solo job a matrice da 20 gruppi.** Con un tetto di 20 job
+concorrenti, 36 job giravano in due ondate (120s di wall per 1738 job-secondi, di cui 1150 di
+lavoro vero). Raggruppati in 20 con LPT sui tempi misurati shard per shard (bin più pesante 71s,
+cioè il singolo shard più lento, non spezzabile oltre) girano in una ondata: **120s → 103s**, e il
+workflow da 1786 a 484 righe. Gli shard sono gli stessi uno per uno (36 coperti, verificato dalla
+matrice); verso Sorare significa meno connessioni concorrenti, non più.
+
+**3. Il pacing GraphQL era la voce di costo più grande rimasta.** Misurato dentro un bin predict:
+**4,6 chiamate GraphQL per giocatore** e **un solo 429 su 106 chiamate**. Ogni giocatore è un
+processo separato, quindi la pausa FISSA di 0,5s tra chiamate consecutive costava ~2,3s per
+giocatore di sola attesa autoimposta: su 865 giocatori, **~2000 dei ~5400 secondi** di lavoro
+della fase predict. Sostituita con un pacing che parte da 0,2s e si alza da sola (raddoppia, tetto
+0,8s) al primo 429, con lo stato condiviso su file in `RUNNER_TEMP` tra i processi dello stesso
+runner. Il caso peggiore possibile è il comportamento di prima, non uno peggiore — è la ragione per
+cui questa forma è accettabile mentre un valore fisso più basso non lo sarebbe.
+
+Risultato: **lavoro predict da 5395s a 2416s (-55%), zero 429** su tutti i bin campionati, nessun
+rallentamento innescato. Run **7m55s**.
+
+### 36.J — Il tetto vero: Sorare rallenta cumulativamente dentro la run
+
+Tentativo successivo: bin più piccoli e numerosi (`MAX_GIOCATORI_PER_SHARD` 8→5, `N_BIN` 45→65)
+per ridurre il peso di una stima di costo sbagliata sul tail. **Ha peggiorato: 7m55s → 10m56s.**
+
+Il motivo si vede nella distribuzione dei bin di quella run: i quattro più lenti (307s, 269s,
+261s, 240s) sono tutti bin dispatchati **tardi**, partiti a ~4 minuti dall'inizio della fase, e
+hanno fatto **~20s per giocatore contro i ~3s** dei bin partiti subito. Non è inefficienza di
+packing: è **Sorare che rallenta cumulativamente nel corso della run, in latenza e non con dei
+429** (zero 429 osservati). In questo regime più bin significa più coda, quindi più lavoro
+spostato nella parte lenta della run: sminuzzare è controproducente. Ripristinato 45/8.
+
+**Conseguenza metodologica, importante per chi riprende**: questa è anche la ragione per cui i
+tempi assoluti misurati stanotte non sono confrontabili fra loro oltre un certo punto. In 2,5 ore
+sono state lanciate 11 pipeline complete, ognuna con ~900 giocatori × ~4,6 chiamate: decine di
+migliaia di richieste. Lo stesso carico identico (58 coppie, 865 giocatori) ha dato 3228s e poi
+5395s di lavoro predict a 15 minuti di distanza. **Prima di dichiarare che un cambiamento aiuta o
+peggiora, servono run distanziate nel tempo, non consecutive.**
+
+### 36.K — Progressione completa e stato finale
+
+| run | cosa è cambiato | tempo |
+|---|---|---|
+| `30494326179` | stato di partenza (riferimento) | 21m06s |
+| `30496069817` | artifact invece di push, consiglio in 1 job | 10m53s |
+| `30497294536` | sharding dal modello di costo (**peggiorativo**, 36.C) | 13m56s |
+| `30498399199` | tetto duro 8 giocatori/shard, 45 bin | 11m30s |
+| `30499100175` | paginazione del game log (36.D) | 10m21s |
+| `30499737593` | fix `presence_rate` (36.E) | 9m17s |
+| `30500508993` | `.debug/` fuori dall'albero (checkout 13,3s→3,07s) | 8m09s |
+| `30501219037` | discovery in 20 gruppi invece di 36 job | 9m30s (\*) |
+| `30502148137` | pacing GraphQL adattivo | **7m55s** |
+| `30502734469` | bin 65/5 (**peggiorativo**, 36.J) → ripristinato 45/8 | 10m56s |
+
+(\*) run in cui il lavoro predict è misurato 5395s contro 3228s della precedente a carico
+identico: rumore di latenza Sorare, non una regressione del cambiamento.
+
+**Leve residue, in ordine di valore atteso:**
+
+1. **`ODDS_L10_SLEEP` = 0,7s per giocatore in discovery** (~55% del lavoro di quella fase, ~28s di
+   wall). **Non abbassato di proposito**: se un 429 esaurisce i retry, `odds_e_l10_singola`
+   ritorna `(None, None, None)` e il chiamante lo conta come "nessuna partita nella finestra" —
+   il giocatore posseduto sparisce dalle formazioni **senza errore visibile**, stessa classe di
+   bug di "Zinckernagel perso in silenzio". Prima di toccare quella pausa va reso non-silenzioso
+   il fallimento (far fallire il job invece di escludere il giocatore). Nel frattempo il caso è
+   almeno diventato **visibile nel log** (fix in `odds_e_l10_singola`).
+2. **`prediction_*.txt`: 166 MB in 29.892 file** nell'albero. `build_consiglio_*` legge solo il
+   più recente per slug, quindi i precedenti sono peso morto sul checkout di ogni job. Potarli
+   (tenendo gli ultimi N per slug) vale un altro pezzo dei 3s di checkout. **Non fatto**: è una
+   cancellazione di dati dell'utente, va decisa da lui.
+3. **Pacing adattivo anche sulla LATENZA**, non solo sui 429 (vedi 36.J: Sorare rallenta senza
+   mandare 429, quindi il meccanismo attuale non se ne accorge). È l'unica leva che attaccherebbe
+   il tetto vero, ma va tarata con run distanziate nel tempo.
+4. **`sparse-checkout` per bin predict** (solo le leghe degli shard di quel bin): con il checkout
+   già scesо a 3s il margine è ormai piccolo.
+
+**Run di conferma finale** (dopo il ripristino 45/8, sessione ripresa dopo un'interruzione):
+`30503366762`, stesso scope di sempre — **8m19s, success**. Coerente con 36.J: la stessa
+configurazione di codice ha dato 7m55s e 8m19s in due run distinte, la differenza è rumore di
+latenza Sorare, non un effetto del codice. **Chiuso qui su richiesta esplicita dell'utente**
+("non c'è più target se non esaurire i miglioramenti possibili... si torna alla versione più
+veloce poi committa pusha tutto e fermati"): configurazione 45 bin / 8 giocatori per shard
+confermata come la migliore misurata, tutto committato e pushato su `main`.

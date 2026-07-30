@@ -1,11 +1,15 @@
-# Handoff velocita' pipeline — CHIUSO il 29/07 notte, vedi RIASSUNTO sez. 36
+# Handoff velocita' pipeline — CHIUSO il 30/07 notte, vedi RIASSUNTO sez. 36 (36.A-36.K)
 
-> **Questo documento e' storico.** Il lavoro descritto sotto e' stato ripreso e portato avanti
-> nella notte del 29/07: tempo di run a scope identico passato da **21m06s a ~10m**, con la causa
-> radice trovata (limite di complessita' GraphQL, vedi sotto) e due bug reali corretti.
+> **Questo documento e' storico e IL LAVORO E' CHIUSO** (richiesta esplicita dell'utente: "non
+> c'e' piu' target se non esaurire i miglioramenti possibili... si torna alla versione piu' veloce
+> poi committa pusha tutto e fermati"). Tempo di run a scope identico passato da **21m06s a
+> ~7m55s-8m19s** (le due misure sulla STESSA configurazione finale differiscono per rumore di
+> latenza Sorare, non per il codice — vedi 36.J), con la causa radice trovata (limite di
+> complessita' GraphQL) e tre bug reali corretti.
 >
-> **Per lo stato attuale, i numeri misurati fase per fase, il vicolo cieco da non ritentare e
-> cosa resta aperto, leggere `docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` sezione 36.**
+> **Per lo stato finale, i numeri misurati fase per fase, i due vicoli ciechi da non ritentare e
+> le leve residue (non implementate, con la ragione), leggere
+> `docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` sezioni 36.A-36.K.**
 >
 > Sintesi di cosa e' cambiato rispetto a quanto scritto qui sotto:
 > - il `git push` in ogni job (46% di tutta la compute) e' stato sostituito dal passaggio dati via
@@ -21,6 +25,18 @@
 > Il punto 4 delle istruzioni originali ("l'APIKEY alzerebbe il tetto a 30000") **non e'
 > percorribile**: l'utente l'ha gia' richiesta a Sorare e al momento non e' disponibile.
 > Non riproporla.
+>
+> **Seconda tornata (30/07 notte, sez. 36.I-36.K)**: tolti dall'albero i 654 MB di dump `.debug/`
+> mai riletti da nessuno script (checkout 13,3s→3,07s); i 36 job discovery unificati in un solo
+> job a matrice da 20 gruppi; pacing GraphQL adattivo (parte da 0,2s, si alza da sola sui 429,
+> stato condiviso su file tra i processi) al posto della pausa fissa da 0,5s — lavoro predict
+> -55%. **Vicolo cieco nuovo**: bin piu' piccoli/numerosi (65 bin, tetto 5 giocatori) SEMBRAVA
+> la mossa giusta ma ha peggiorato (7m55s -> 10m56s) perche' Sorare rallenta CUMULATIVAMENTE nel
+> corso della run in latenza, non con dei 429 — piu' bin sposta piu' lavoro nella coda lenta.
+> Ripristinata la configurazione 45 bin / 8 giocatori per shard, quella misurata migliore.
+> Non riproporre ne' l'APIKEY (sopra) ne' bin piu' fini senza prima misurare la latenza Sorare
+> nel tempo con run distanziate (non consecutive: il carico di un'intera sessione di test altera
+> la latenza delle run successive).
 
 ---
 
