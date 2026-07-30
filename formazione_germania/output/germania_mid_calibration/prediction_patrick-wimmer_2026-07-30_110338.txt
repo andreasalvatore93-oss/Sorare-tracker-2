@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T11:03:38.605316Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) patrick-wimmer: 48 pt attesi (32-69)
+   SQUADRA: hoffenheim-sinsheim | AVVERSARIO: koln-koln
+======================================================================
+
+######################################################################
+# GIOCATORE: patrick-wimmer
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: patrick-wimmer (squadra: hoffenheim-sinsheim)
+Generato: 2026-07-30T11:03:38.604202Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | FCH vs WOB | bundesliga-de | score=63.7 | peso=0.590
+  2025-08-31 | WOB vs M05 | bundesliga-de | score=27.7 | peso=0.607
+  2025-09-13 | WOB vs KOE | bundesliga-de | score=48.1 | peso=0.624
+  2025-09-21 | BVB vs WOB | bundesliga-de | score=41.3 | peso=0.642
+  2025-11-22 | WOB vs B04 | bundesliga-de | score=33.4 | peso=0.660
+  2025-11-30 | SGE vs WOB | bundesliga-de | score=31.3 | peso=0.678
+  2025-12-06 | WOB vs FCU | bundesliga-de | score=67.0 | peso=0.697
+  2025-12-13 | BMG vs WOB | bundesliga-de | score=79.6 | peso=0.717
+  2025-12-20 | WOB vs SCF | bundesliga-de | score=70.0 | peso=0.737
+  2026-01-11 | BAY vs WOB | bundesliga-de | score=34.2 | peso=0.758
+  2026-01-14 | WOB vs STP | bundesliga-de | score=42.6 | peso=0.779
+  2026-01-17 | WOB vs FCH | bundesliga-de | score=45.2 | peso=0.801
+  2026-01-24 | M05 vs WOB | bundesliga-de | score=20.4 | peso=0.824
+  2026-01-30 | KOE vs WOB | bundesliga-de | score=30.0 | peso=0.847
+  2026-04-04 | B04 vs WOB | bundesliga-de | score=40.9 | peso=0.871
+  2026-04-11 | WOB vs SGE | bundesliga-de | score=20.8 | peso=0.895
+  2026-04-18 | FCU vs WOB | bundesliga-de | score=85.1 | peso=0.920
+  2026-04-25 | WOB vs BMG | bundesliga-de | score=37.7 | peso=0.946
+  2026-05-03 | SCF vs WOB | bundesliga-de | score=54.9 | peso=0.973
+  2026-05-09 | WOB vs BAY | bundesliga-de | score=39.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.52
+  di cui Punteggio decisivo (level_score) medio: 41.82 | Punteggio complessivo (granulari) medio: 3.71 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 42.63 (delta +0.82)
+  Efficacia offensiva condizionata: delta venue +0.69, delta avversario -0.61 | Passaggio condizionato: delta venue -0.26, delta avversario +0.65 | Gol subiti condizionato: delta venue +0.05, delta avversario +0.46 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 18.35
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.0 - 67.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.37 (differenza: +2.99)
+Media score in casa: 43.24 | Media score fuori casa: 48.14
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.6
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.152
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.013
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore trend (media ultime 5: 47.7 vs media ultime 10: 41.7): 1.028
+P(gioca): 58.82% (fonte: tasso di presenza storico (20/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T13:30
+Casa: 1. FC Köln | Trasferta: TSG Hoffenheim
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.7 (range 32.2 - 69.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.91
+Punteggio REALE ottenuto in quella partita: 39.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.6x+opp_sens=29.0+trend_int=0.7' (half_life=12.0, range_mult=1.6, opp_sens=29.0, trend_int=0.7)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.0    67.0    +25.0    18.7        NO
+   7        7      48.3    79.6    +31.3    23.4        NO
+   8        8      44.5    70.0    +25.5    29.4        SI
+   9        9      37.0    34.2     -2.8    29.5        SI
+  10       10      72.8    42.6    -30.2    29.3        NO
+  11       11      72.2    45.2    -27.0    27.8        SI
+  12       12      52.2    20.4    -31.8    26.2        NO
+  13       13      48.8    30.0    -18.8    28.5        SI
+  14       14      31.1    40.9     +9.8    28.1        SI
+  15       15      34.4    20.8    -13.6    26.8        SI
+  16       16      34.5    85.1    +50.6    27.7        NO
+  17       17      43.3    37.7     -5.6    33.0        SI
+  18       18      40.2    54.9    +14.7    31.7        SI
+  19       19      35.1    39.9     +4.8    30.7        SI
+
+MAE (errore assoluto medio): 20.81
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 64.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
