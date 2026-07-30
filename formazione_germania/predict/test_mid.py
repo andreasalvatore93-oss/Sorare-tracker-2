@@ -1049,10 +1049,16 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 # dimensione trend_intensity, per restare comunque a un numero di
 # combinazioni gestibile pur avendo aggiunto una variabile in piu'.
 def _build_grid_combinations():
-    half_lives = [9.0, 12.0]
+    # ALLARGATA (30/07): la griglia era ferma a [9.0, 12.0], residuo di una
+    # versione precedente -- non includeva nemmeno i valori REALMENTE in
+    # produzione oggi (GK=6.0, DEF=20.0, MID/FWD=25.0), rendendo il
+    # "vincitore" del grid search non comparabile alla produzione vera.
+    half_lives = [6.0, 9.0, 12.0, 15.0, 20.0, 25.0, 30.0]
     range_mults = [1.2, 1.4, 1.6]  # 1.6 aggiunto: range di default alzato per la copertura
     opp_sens_values = [20.0, 29.0]
-    trend_intensities = [0.7, 1.0, 1.3]  # NUOVO: trend attenuato / originale / amplificato
+    # ALLARGATA (30/07): includeva solo [0.7, 1.0, 1.3], non i valori reali di
+    # produzione (DEF=0.0, MID=0.2, FWD=0.3, GK=0.7 gia' incluso).
+    trend_intensities = [0.0, 0.2, 0.3, 0.7, 1.0, 1.3]
     combos = []
     for hl in half_lives:
         for rm in range_mults:
