@@ -1932,7 +1932,7 @@ BUY_SIGNAL_IMMINENTE_HOURS = 54.0
 # selettivo qualunque sia lo stato del mercato di quella lega.
 BUY_SIGNAL_SOGLIA_COMPRA = float(os.environ.get('BUY_SIGNAL_SOGLIA_COMPRA', '10.0'))
 BUY_SIGNAL_SOGLIA_BUONA = float(os.environ.get('BUY_SIGNAL_SOGLIA_BUONA', '4.0'))
-BUY_SIGNAL_MAX_PER_GRUPPO = int(os.environ.get('BUY_SIGNAL_MAX_PER_GRUPPO', '8'))
+BUY_SIGNAL_MAX_PER_GRUPPO = int(os.environ.get('BUY_SIGNAL_MAX_PER_GRUPPO', '15'))
 
 # Una riga della classifica persistente puo' venire da una run precedente (il
 # CSV non riparte mai vuoto, vedi load_previous_tracked). Un prezzo di due
