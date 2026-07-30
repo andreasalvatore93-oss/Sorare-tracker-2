@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:19:12.309129Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) matthew-dos-santos: 48 pt attesi (31-68)
+   ORDINAMENTO: 43.11
+   SQUADRA: new-york-rb-secaucus-new-jersey | AVVERSARIO: orlando-city-lake-mary-florida
+======================================================================
+
+######################################################################
+# GIOCATORE: matthew-dos-santos
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: matthew-dos-santos (squadra: new-york-rb-secaucus-new-jersey)
+Generato: 2026-07-30T10:19:12.308536Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 17
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-22 | ORL vs RBNY | mlspa | score=57.8 | peso=0.707
+  2026-02-28 | RBNY vs NE | mlspa | score=40.4 | peso=0.732
+  2026-03-08 | RBNY vs MTL | mlspa | score=40.3 | peso=0.758
+  2026-03-14 | TOR vs RBNY | mlspa | score=26.5 | peso=0.785
+  2026-04-04 | RBNY vs CIN | mlspa | score=31.6 | peso=0.812
+  2026-04-11 | MIA vs RBNY | mlspa | score=26.1 | peso=0.841
+  2026-04-18 | MTL vs RBNY | mlspa | score=33.2 | peso=0.871
+  2026-05-02 | RBNY vs DAL | mlspa | score=35.6 | peso=0.901
+  2026-05-09 | CHI vs RBNY | mlspa | score=63.1 | peso=0.933
+  2026-05-16 | RBNY vs NYC | mlspa | score=30.5 | peso=0.966
+  2026-07-25 | RBNY vs CLT | mlspa | score=81.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 43.00
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 8.00 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue +0.06, delta avversario +0.52 | Passaggio condizionato: delta venue +1.59, delta avversario -0.11 | Clean sheet/disimpegni condizionato: delta venue -0.66, delta avversario +0.04 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.54
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.5 - 63.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.95 (differenza: +5.59)
+Media score in casa: 43.31 | Media score fuori casa: 41.32
+Fattore casa/trasferta applicato: 1.009 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.4
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.091
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.990
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.013
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.993
+Fattore trend (media ultime 5: 48.8 vs media ultime 10: 40.9): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-01T23:30
+Casa: New York Red Bulls | Trasferta: Orlando City SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.6 (range 31.1 - 67.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 43.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 38.37
+Punteggio REALE ottenuto in quella partita: 81.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +43.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+trend_int=0.7+range=1.4x' (half_life=12.0, range_mult=1.4, opp_sens=None, trend_int=0.7)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.2    33.2    -13.0     N/D        SI
+   7        7      49.2    35.6    -13.6     N/D        SI
+   8        8      45.0    63.1    +18.1     N/D        NO
+   9        9      49.0    30.5    -18.5     N/D        NO
+  10       10      47.6    81.4    +33.9     N/D        NO
+
+MAE (errore assoluto medio): 19.40
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 40.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
