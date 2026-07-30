@@ -96,86 +96,94 @@ automaticamente i file già committati da questa sessione, senza bisogno di rila
 Dopo che MID e FWD sono finiti, il report finale con tutti e 4 i ruoli si genera da solo alla
 fine dello stesso comando (non serve un passaggio separato).
 
-## Ottimizzazione dei tempi — SOLO PARZIALMENTE FATTA, non dare per scontato che sia pronta
+## Ottimizzazione dei tempi — SCRITTA E TESTATA (con dati sintetici), MAI TESTATA DAL VIVO
 
-L'utente ha chiesto esplicitamente (30/07 sera) di ridurre i tempi per l'uso futuro su GitHub
-Actions, **prima di tutto riducendo il numero di candidati nel pool**. Decisione presa con
-l'utente (via domanda a scelta multipla + correzione libera): combinare **pre-ranking per
-qualità** (punto 3 sopra, quality score) con un **filtro starterOdds ≥ 0.70** sulla prossima
-partita (soglia scelta esplicitamente dall'utente: prima proposta 0.80, poi corretta a **0.70**).
-Motivazione utente: chi ha starterOdds ≥ 70% è "quasi certo di giocare"; sotto quella soglia è
-"più rischioso e comunque non lo sceglierei/comprerei" — quindi filtrarli PRIMA della predizione
-costosa non perde candidati che l'utente avrebbe scelto comunque.
+Sessione successiva (30/07, stessa giornata, nuova conversazione): completato il design che nella
+sessione precedente era rimasto solo abbozzato. Decisione finale con l'utente sul K (quante carte
+tenere nel pre-ranking qualità, mai discusso prima): **nessun cap per numero** — solo i due filtri
+già decisi, quality score ≥30 (già applicato a monte in discovery, non serviva altro codice) e
+starterOdds ≥0.70 (nuovo).
 
-**Stato onesto: SOLO IL PUNTO 3 SOPRA (persistenza quality score) È STATO SCRITTO.** Il resto
-del design NON è implementato:
+Cosa è stato scritto in questa sessione, tutto in `best_five.py`:
 
-- ❌ **Non esiste ancora una query leggera per lo starterOdds della prossima partita.** Bozza
-  già pensata (non testata):
-  ```graphql
-  query NextMatchStarterOdds($slug: String!) {
-    anyPlayer(slug: $slug) {
-      anyFutureGames(first: 1) {
-        nodes {
-          playerGameScore(playerSlug: $slug) {
-            anyPlayerGameStats {
-              ... on PlayerGameStats {
-                footballPlayingStatusOdds { starterOddsBasisPoints reliability }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  ```
-  Va aggiunta come funzione in `best_five.py` (sessione HTTP minima; valutare se vale la pena
-  riusare l'infrastruttura di retry/circuit-breaker già presente nei `test_<ruolo>.py` invece di
-  duplicarla in piccolo).
+1. **`fetch_next_match_starter_odds(slug)`** — query GraphQL leggera (la bozza già pensata nella
+   sessione precedente, verificata contro la struttura già in uso in `test_mid.py` per lo stesso
+   campo `footballPlayingStatusOdds.starterOddsBasisPoints`). Sessione HTTP minima propria
+   (curl_cffi se disponibile, altrimenti `requests`), NON riusa l'infrastruttura di retry/circuit
+   breaker dei `test_<ruolo>.py` (scelta deliberata: la query è talmente piccola/economica che un
+   retry semplice a 3 tentativi basta, non vale la complessità di condividere quello stato).
 
-- ❌ **`best_five.py` NON usa ancora il pre-ranking per qualità né il filtro starterOdds.** Oggi
-  `--run` lancia SEMPRE l'intero pool (`PLAYER_POOL=global` sull'intero script, un subprocess che
-  processa tutti i candidati internamente — il comportamento "lento" che sta girando in questo
-  momento in locale). Il nuovo design richiede un cambio di architettura: invece di UN subprocess
-  per ruolo che processa tutti i candidati, serve un LOOP di subprocess con
-  `TARGET_SLUG=<slug>` (stile matrix della pipeline di produzione, vedi
-  `.github/workflows/formazione_giornata.yml` riga ~261) **solo sui sopravvissuti** al prefilter
-  qualità+starterOdds — stima: da 279 giocatori totali a forse 40-80 (top-K per ruolo ancora da
-  decidere, poi filtrati per starterOdds ≥0.70).
+2. **`carica_pool_qualita_filtrato()`** — legge `player_slugs.json` della discovery globale. Nota
+   importante scoperta in questa sessione: **il filtro qualità (`filter_by_quality`, media
+   L5/L10/L40 ≥30) era GIÀ applicato in discovery PRIMA di questa sessione** — la persistenza
+   scritta nella sessione precedente (punto 3, `player_quality.json`) salva solo il VALORE della
+   media per ogni slug già filtrato, non introduce un filtro nuovo. Quindi `player_slugs.json`
+   della discovery globale K League è GIÀ il pool filtrato per qualità — **non serve rigenerare
+   nulla, non serve nemmeno `player_quality.json`** dato che non c'è un cap per numero (K) da
+   applicare. Il punto 3 della sessione precedente resta comunque a posto/committato, semplicemente
+   non serve altro lavoro su quel fronte.
 
-- ❌ **`player_quality.json` non esiste ancora per il pool K League attuale** — va rigenerato
-  rilanciando la discovery_global (es. `formazione_kleague/discovery/kleague_def_discovery_global.py`
-  e gli altri 3) prima che il pre-ranking per qualità sia utilizzabile. Rilanciare la discovery
-  NON dovrebbe costare query aggiuntive rispetto a un run normale di discovery (il valore quality
-  era già calcolato prima, ora viene anche salvato) — ma è comunque un intero giro di discovery
-  (roster squadre + media qualità per ogni candidato), non istantaneo.
+3. **`prefiltra_starter_odds()`** — chiama la query leggera per ogni slug del pool, tiene solo chi
+   ha odds ≥0.70. **Chi ha odds mancanti (nessuna partita futura fissata, dato non disponibile)
+   viene ESCLUSO**, non tenuto per default — scelta esplicita fatta in questa sessione (non
+   discussa esplicitamente con l'utente, ma coerente con la motivazione originale: un dato ignoto
+   è rischioso quanto uno basso). Da rivedere se in pratica scarta troppi candidati con partita
+   lontana non ancora quotata.
 
-- ❓ **Il valore di K (quanti candidati per ruolo tenere nel pre-ranking qualità) non è mai stato
-  discusso con l'utente.** Solo la soglia starterOdds (0.70) è stata decisa. Andrebbe scelto un
-  default ragionevole (es. 15-20) e/o chiesto all'utente, prima di considerare l'ottimizzazione
-  "pronta all'uso".
+4. **Rewiring completo del loop di esecuzione**: `run_prediction_pool_prefiltrato()` sostituisce
+   il vecchio `run_prediction_pool_globale()` — carica il pool, applica il prefiltro, poi lancia
+   UN subprocess per slug sopravvissuto con `TARGET_SLUG=<slug>` (stile job matrix della
+   pipeline di produzione), invece di UN subprocess che processa l'intero pool internamente.
 
-**In sintesi, per chi riprende**: SE devi rifare il calcolo perché il run locale di questa
-sessione non è arrivato in fondo, **NON aspettarti che sia già veloce** — l'ottimizzazione non è
-completa. Puoi:
-1. Rilanciare `python best_five.py kleague --run --backups 2` così com'è (~70-90 minuti,
-   comportamento identico a quello che sta girando ora), OPPURE
-2. Finire prima il pezzo mancante (query starterOdds leggera + rewiring di `best_five.py` per il
-   loop TARGET_SLUG sui top-K prefiltrati) — più lavoro iniziale, ma poi i run futuri (anche su
-   GitHub Actions, l'uso finale previsto) saranno molto più veloci, invece di ~70-90 minuti su
-   279 giocatori.
+5. **Parsing aggiornato per il nuovo formato di output**: con `TARGET_SLUG` impostato,
+   `test_<ruolo>.py` scrive `prediction_<slug>_<timestamp>.txt` (un file per giocatore, come già
+   fa la pipeline di produzione — vedi `formazione_kleague/consiglio/build_consiglio_mid.py` per
+   il pattern equivalente già esistente in produzione) invece di un unico `prediction_all_*.txt`
+   con il riepilogo comparativo di tutti insieme. `costruisci_best_five()` ora supporta ENTRAMBI i
+   formati: se trova un `prediction_all_*.txt` (formato vecchio — es. GK/DEF K League già
+   committati nella sessione precedente) lo usa e ha PRECEDENZA; altrimenti raccoglie tutti i
+   `prediction_<slug>_*.txt` presenti e li aggrega/ordina lui (per `ORDINAMENTO` se presente,
+   come già per DEF/FWD, altrimenti per `pt_attesi` come per GK/MID). Questo significa che GK/DEF
+   già pronti da questa sessione precedente continuano a funzionare SENZA rilanciarli.
 
-**Prima di lanciare qualunque run su GitHub Actions**: c'è una regola esplicita dell'utente
-(30/07, altra memoria di sessione non riportata qui per esteso ma da rispettare comunque) — **mai
-lanciare una run Actions senza chiedere prima**, vale anche lavorando "in autonomia". Questo
-vale anche per `best_five` quando/se verrà portato su CI.
+**Testato in questa sessione, solo con dati sintetici/dati già su disco (nessuna chiamata API
+live)**:
+- Parser del nuovo formato per-slug (`parse_file_singolo_slug` + `trova_output_per_slug`) — testato
+  con 3 file sintetici, ranking per `pt_attesi` corretto.
+- Retrocompatibilità col formato vecchio (`prediction_all_*.txt`) — testato sui file REALI già
+  committati di GK e DEF K League, ranking confermato invariato (DEF usa correttamente
+  `ORDINAMENTO`).
+- `py_compile` pulito.
 
-## File toccati in questa sessione — COMMITTATI E PUSHATI su main
+**NON testato — manca `SORARE_COOKIE` in locale in questa sessione** (l'utente non ce l'ha a
+disposizione localmente): `fetch_next_match_starter_odds()` non è mai stata chiamata contro l'API
+vera. Nessun run end-to-end (`--run`) di questa nuova architettura è mai stato lanciato, né in
+locale né su GitHub Actions. **Il primo test reale sarà quindi il primo run vero** — possibile solo
+via GitHub Actions (l'utente non ha il cookie in locale). Rischi noti da verificare al primo run
+reale:
+- La query leggera potrebbe avere un campo/struttura leggermente diverso da quanto assunto (mai
+  eseguita, solo dedotta dalla query più grande già in uso in produzione per lo stesso campo).
+- Il volume di sub-processi lanciati in sequenza (uno per slug sopravvissuto) potrebbe essere più
+  lento del previsto per via dell'overhead di avvio Python per processo — da osservare sul primo
+  run reale, non stimabile a tavolino.
+- La regex `trova_output_per_slug` assume il timestamp nel nome file nel formato esatto
+  `YYYY-MM-DD_HHMMSS` — coerente con quanto scrive `test_<ruolo>.py` (`datetime.utcnow().strftime`),
+  ma non ancora verificato su un file vero generato da questa nuova modalità.
+
+**Prima di lanciare qualunque run su GitHub Actions**: resta valida la regola esplicita
+dell'utente — **mai lanciare una run Actions senza chiedere prima**, vale anche lavorando "in
+autonomia". Questo vale anche per `best_five` quando/se verrà portato su CI o testato lì per la
+prima volta.
+
+## File toccati — COMMITTATI E PUSHATI su main (sessione precedente + questa)
 
 Codice:
-- `formazione_kleague/predict/test_{gk,def,mid,fwd=test_mls_fwd_all}.py` (PLAYER_POOL)
-- `formazione_kleague/discovery/kleague_{gk,def,mid,fwd}_discovery_global.py` (persistenza quality)
-- `best_five.py` (nuovo, root del repo — incluso il flag `--roles`)
+- `formazione_kleague/predict/test_{gk,def,mid,fwd=test_mls_fwd_all}.py` (PLAYER_POOL — sessione
+  precedente)
+- `formazione_kleague/discovery/kleague_{gk,def,mid,fwd}_discovery_global.py` (persistenza
+  quality — sessione precedente, di fatto non serve più a valle vedi sopra)
+- `best_five.py` (query starterOdds + rewiring completo per il prefiltro — QUESTA sessione,
+  ancora da committare a fine sessione)
 - `docs/HANDOFF_BEST_FIVE.md` (questo file)
 
 Risultati (voluminosi ma committati apposta, per evitare che chi riprende debba rifare GK/DEF):
@@ -183,18 +191,20 @@ Risultati (voluminosi ma committati apposta, per evitare che chi riprende debba 
 - `formazione_kleague/output/kleague_def_all/` (idem)
 
 **NON committato** (lasciato locale, irrilevante):
-- `best_five_run.log` (log di debug del run interrotto)
+- `best_five_run.log` (log di debug del run interrotto della sessione precedente)
 - Cache parziale di MID (11 giocatori, in `formazione_kleague/output/kleague_mid_all/`) — non
   vale la pena portarsela dietro, `test_mid.py` la ricostruisce da sola.
 
 ## Prossimo passo consigliato
 
-1. **Lancia direttamente**: `python best_five.py kleague --run --backups 2 --roles mid,fwd`
-   (stima ~60-65 minuti, vedi sopra). GK e DEF sono già pronti, non serve rifarli.
-2. Se vuoi evitare quei 60-65 minuti, valuta prima di finire l'ottimizzazione (fase 2, vedi
-   sezione sopra — query starterOdds leggera + rewiring `best_five.py` + rigenerare
-   `player_quality.json`) — ma è lavoro non banale, non ancora iniziato oltre al punto 3.
-   **Conferma con l'utente quale delle due preferisce**, non presumere.
-3. **Prima di lanciare qualunque run su GitHub Actions** (non solo in locale): l'utente ha una
-   regola esplicita, mai lanciare una run Actions senza chiedere prima, vale anche lavorando "in
-   autonomia".
+1. **Primo run reale della nuova architettura** (prefiltro starterOdds + loop TARGET_SLUG), MAI
+   testato dal vivo in questa sessione per mancanza di `SORARE_COOKIE` in locale — va fatto su
+   GitHub Actions: `python best_five.py kleague --run --backups 2 --roles mid,fwd` (GK/DEF restano
+   quelli già pronti, formato vecchio, letti automaticamente). **Chiedere conferma esplicita
+   all'utente prima di lanciare la run Actions** (regola esplicita, vedi sotto) — non è ancora
+   stato chiesto in questa sessione.
+2. Aspettarsi possibili intoppi al primo run vero (query mai eseguita contro l'API reale, vedi
+   rischi elencati sopra) — non dare per scontato che funzioni al primo colpo, verificare i log.
+3. Se il prefiltro scarta troppo aggressivamente (es. molti giocatori con partita futura non
+   ancora quotata finiscono esclusi per odds N/D), rivedere con l'utente la scelta fatta in questa
+   sessione di escludere anche i dati mancanti, non solo quelli sotto soglia.

@@ -19,22 +19,109 @@ formazione_<lega>/output/<lega>_<ruolo>_discovery_global/player_slugs.json.
 
 Uso:
   python best_five.py kleague              # usa l'ultimo output gia' presente per ogni ruolo (se c'e')
-  python best_five.py kleague --run         # ri-esegue la predizione sul pool GLOBALE per ogni ruolo, poi rankinga
+  python best_five.py kleague --run         # ri-esegue la predizione per ogni ruolo, poi rankinga
   python best_five.py kleague --run --backups 2   # 1 titolare + 2 backup per ruolo (default: 2 backup)
+  python best_five.py kleague --run --roles mid,fwd   # solo sui ruoli indicati
 
-Il ranking usa lo stesso ORDINAMENTO (score senza shrinkage) gia' calcolato
-e stampato da ciascun test_<ruolo>.py nel riepilogo comparativo in cima al
-file di output — nessuna logica di scoring duplicata qui, solo parsing +
-selezione top N.
+Con --run (30/07 sera, ottimizzazione tempi): per ogni ruolo, il pool
+GLOBALE della lega (gia' filtrato per qualita' >= 30 a monte, in
+discovery_global) viene ulteriormente filtrato con una query leggera
+starterOdds sulla prossima partita (soglia BEST_FIVE_MIN_STARTER_ODDS,
+default 0.70, decisa esplicitamente dall'utente) PRIMA della predizione
+costosa. Solo i sopravvissuti vengono passati a test_<ruolo>.py, UN
+subprocess per giocatore (TARGET_SLUG, stile job matrix della pipeline di
+produzione) invece che un unico subprocess sull'intero pool.
+
+Il ranking usa lo stesso ORDINAMENTO (score senza shrinkage, dove
+disponibile) gia' calcolato e stampato da ciascun test_<ruolo>.py —
+nessuna logica di scoring duplicata qui, solo parsing + selezione top N.
+Per compatibilita' con risultati gia' generati in modalita' "pool intero"
+(es. GK/DEF K League del 30/07, un solo file prediction_all_*.txt per
+ruolo), quel formato resta supportato e ha precedenza se presente.
 """
 import os
 import sys
 import re
+import json
 import glob
+import time
 import subprocess
 import datetime
 
+try:
+    from curl_cffi import requests as curl_requests
+    _HAS_CURL_CFFI = True
+except ImportError:
+    _HAS_CURL_CFFI = False
+    import requests
+
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+GRAPHQL_URL = 'https://api.sorare.com/graphql'
+COOKIES = os.environ.get('SORARE_COOKIE', '')
+_http_session = curl_requests.Session(impersonate="chrome") if _HAS_CURL_CFFI else requests.Session()
+
+# Soglia starterOdds decisa esplicitamente dall'utente (30/07): sotto il 70%
+# un giocatore e' "piu' rischioso e comunque non lo sceglierebbe" -- quindi
+# filtrarlo PRIMA della predizione costosa non perde candidati che l'utente
+# avrebbe scelto comunque. Il pool su cui si applica e' gia' filtrato per
+# qualita' (media L5/L10/L40 >= 30) a monte, in discovery_global.
+MIN_STARTER_ODDS_PREFILTER = float(os.environ.get('BEST_FIVE_MIN_STARTER_ODDS', '0.70'))
+
+NEXT_MATCH_STARTER_ODDS_QUERY = """
+query NextMatchStarterOdds($slug: String!) {
+  anyPlayer(slug: $slug) {
+    anyFutureGames(first: 1) {
+      nodes {
+        playerGameScore(playerSlug: $slug) {
+          anyPlayerGameStats {
+            ... on PlayerGameStats {
+              footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_next_match_starter_odds(slug):
+    """Query leggera (nessuno storico, nessun game log) per lo starterOdds
+    della prossima partita di un giocatore. Ritorna un float 0-1, o None se
+    non disponibile (nessuna partita futura fissata, dato mancante, o
+    fallimento della query dopo i retry)."""
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    if COOKIES:
+        headers['Cookie'] = COOKIES
+    payload = {'query': NEXT_MATCH_STARTER_ODDS_QUERY, 'variables': {'slug': slug},
+               'operationName': 'NextMatchStarterOdds'}
+
+    backoff = 1.0
+    for attempt in range(3):
+        try:
+            resp = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+            if resp.status_code == 429:
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            if resp.status_code >= 400:
+                log(f"[starterOdds] {slug}: HTTP {resp.status_code}, salto (trattato come dato mancante).")
+                return None
+            data = resp.json()
+            nodes = (((data.get('data') or {}).get('anyPlayer') or {}).get('anyFutureGames') or {}).get('nodes') or []
+            if not nodes:
+                return None
+            pgs = nodes[0].get('playerGameScore') or {}
+            odds = ((pgs.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {})
+            bp = odds.get('starterOddsBasisPoints')
+            return bp / 10000.0 if bp is not None else None
+        except Exception as e:
+            log(f"[starterOdds] {slug}: eccezione tentativo {attempt+1}/3: {e!r}")
+            time.sleep(backoff)
+            backoff *= 2
+    return None
 
 # ruolo -> nome file script in formazione_<lega>/predict/
 ROLE_SCRIPTS = {
@@ -65,10 +152,43 @@ def log(msg):
     print(f"[{ts}] [best_five] {msg}")
 
 
-def run_prediction_pool_globale(lega, ruolo):
-    """Esegue test_<ruolo>.py sul pool GLOBALE (PLAYER_POOL=global, non
-    CALIBRATION_MODE) per TUTTI i giocatori della lega, senza TARGET_SLUG.
-    Streamma l'output a schermo come la pipeline di produzione."""
+def discovery_global_dir(lega, ruolo):
+    return os.path.join(REPO_ROOT, f'formazione_{lega}', 'output', f'{lega}_{ruolo}_discovery_global')
+
+
+def carica_pool_qualita_filtrato(lega, ruolo):
+    """Legge player_slugs.json della discovery globale -- gia' filtrato per
+    qualita' (media L5/L10/L40 >= 30) a monte da filter_by_quality(), nessun
+    filtro aggiuntivo da fare qui."""
+    path = os.path.join(discovery_global_dir(lega, ruolo), 'player_slugs.json')
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Discovery globale non trovata per {ruolo}: {path}")
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def prefiltra_starter_odds(ruolo, slugs, soglia=MIN_STARTER_ODDS_PREFILTER):
+    """Interroga la query leggera starterOdds per ciascuno slug e tiene solo
+    chi ha odds >= soglia sulla prossima partita. Chi ha odds mancanti (nessuna
+    partita futura fissata, dato non disponibile) viene ESCLUSO -- e' un dato
+    ignoto tanto quanto uno basso, e l'utente non lo sceglierebbe comunque."""
+    sopravvissuti = []
+    for idx, slug in enumerate(slugs, 1):
+        odds = fetch_next_match_starter_odds(slug)
+        esito = f"{odds:.0%}" if odds is not None else "N/D"
+        if odds is not None and odds >= soglia:
+            sopravvissuti.append(slug)
+            log(f"[{ruolo}] [{idx}/{len(slugs)}] {slug}: starterOdds={esito} -> TENUTO")
+        else:
+            log(f"[{ruolo}] [{idx}/{len(slugs)}] {slug}: starterOdds={esito} -> scartato (< {soglia:.0%})")
+        time.sleep(0.3)
+    return sopravvissuti
+
+
+def run_prediction_su_slug(lega, ruolo, slug):
+    """Esegue test_<ruolo>.py su UN SOLO giocatore (TARGET_SLUG), PLAYER_POOL=global
+    cosi' DISCOVERY_FILE punta comunque al pool globale (serve solo per il
+    fallback/coerenza interna dello script, il TARGET_SLUG bypassa la lista)."""
     script = ROLE_SCRIPTS[ruolo]
     script_path = os.path.join(REPO_ROOT, f'formazione_{lega}', 'predict', script)
     if not os.path.exists(script_path):
@@ -76,14 +196,30 @@ def run_prediction_pool_globale(lega, ruolo):
 
     env = dict(os.environ)
     env['PLAYER_POOL'] = 'global'
+    env['TARGET_SLUG'] = slug
     env.pop('CALIBRATION_MODE', None)
-    env.pop('TARGET_SLUG', None)
 
-    log(f"[{ruolo}] Avvio predizione sul pool GLOBALE ({script_path})...")
     proc = subprocess.run([sys.executable, script_path], cwd=REPO_ROOT, env=env)
     if proc.returncode != 0:
-        log(f"[{ruolo}] ATTENZIONE: processo terminato con codice {proc.returncode} "
-            f"(procedo comunque a leggere l'output eventualmente scritto).")
+        log(f"[{ruolo}] ATTENZIONE: processo terminato con codice {proc.returncode} per {slug} "
+            f"(procedo comunque con il prossimo).")
+
+
+def run_prediction_pool_prefiltrato(lega, ruolo):
+    """Carica il pool globale (gia' filtrato per qualita'), applica il
+    prefiltro starterOdds>=soglia, poi lancia UN subprocess per slug
+    sopravvissuto (stile job matrix della pipeline di produzione)."""
+    pool = carica_pool_qualita_filtrato(lega, ruolo)
+    log(f"[{ruolo}] Pool globale (gia' filtrato per qualita'): {len(pool)} giocatori.")
+    log(f"[{ruolo}] Prefiltro starterOdds >= {MIN_STARTER_ODDS_PREFILTER:.0%} sulla prossima partita...")
+    sopravvissuti = prefiltra_starter_odds(ruolo, pool)
+    log(f"[{ruolo}] Sopravvissuti al prefiltro: {len(sopravvissuti)}/{len(pool)}.")
+
+    for idx, slug in enumerate(sopravvissuti, 1):
+        log(f"[{ruolo}] [{idx}/{len(sopravvissuti)}] Predizione per {slug}...")
+        run_prediction_su_slug(lega, ruolo, slug)
+        if idx < len(sopravvissuti):
+            time.sleep(2.0)
 
 
 def output_dir_per_ruolo(lega, ruolo):
@@ -91,13 +227,36 @@ def output_dir_per_ruolo(lega, ruolo):
 
 
 def trova_ultimo_output(lega, ruolo):
-    """Trova il file prediction_all_*.txt piu' recente per il ruolo (scritto
-    dall'esecuzione in modalita' lista completa, cioe' senza TARGET_SLUG)."""
+    """Trova il file prediction_all_*.txt piu' recente per il ruolo (formato
+    VECCHIO, scritto da un'esecuzione sull'intero pool senza TARGET_SLUG —
+    es. GK/DEF di questa lega, gia' committati prima del prefiltro
+    starterOdds). Ritorna None se non esiste (ruolo mai eseguito in modalita'
+    pool intero -- vedi trova_output_per_slug per il formato NUOVO)."""
     out_dir = output_dir_per_ruolo(lega, ruolo)
     candidati = glob.glob(os.path.join(out_dir, 'prediction_all_*.txt'))
     if not candidati:
         return None
     return max(candidati, key=os.path.getmtime)
+
+
+def trova_output_per_slug(lega, ruolo):
+    """Formato NUOVO (prefiltro starterOdds): un file prediction_<slug>_*.txt
+    per ogni giocatore sopravvissuto al prefiltro, uno per subprocess (stile
+    job matrix). Ritorna il piu' recente per ciascuno slug trovato."""
+    out_dir = output_dir_per_ruolo(lega, ruolo)
+    tutti = glob.glob(os.path.join(out_dir, 'prediction_*_*.txt'))
+    per_slug = {}
+    for path in tutti:
+        base = os.path.basename(path)
+        if base.startswith('prediction_all_'):
+            continue
+        m = re.match(r'^prediction_(.+)_\d{4}-\d{2}-\d{2}_\d{6}\.txt$', base)
+        if not m:
+            continue
+        slug = m.group(1)
+        if slug not in per_slug or os.path.getmtime(path) > os.path.getmtime(per_slug[slug]):
+            per_slug[slug] = path
+    return list(per_slug.values())
 
 
 def parse_riepilogo(path):
@@ -150,17 +309,62 @@ def parse_riepilogo(path):
     return righe
 
 
+def parse_file_singolo_slug(path):
+    """Estrae la singola riga consiglio da un file prediction_<slug>_*.txt
+    (formato NUOVO, un giocatore per file) -- stesso schema di riga di
+    parse_riepilogo, riusa le stesse regex."""
+    with open(path, 'r', encoding='utf-8') as f:
+        testo = f.read()
+
+    riga = None
+    for line in testo.splitlines():
+        m = RIGA_GIOCATORE_RE.match(line)
+        if m:
+            riga = {
+                'slug': m.group(1),
+                'pt_attesi': int(m.group(2)),
+                'low': int(m.group(3)),
+                'high': int(m.group(4)),
+                'ordinamento': None,
+                'squadra': None,
+                'avversario': None,
+            }
+            continue
+        if riga is not None:
+            m2 = RIGA_ORDINAMENTO_RE.match(line)
+            if m2:
+                riga['ordinamento'] = float(m2.group(1))
+                continue
+            m3 = RIGA_SQUADRA_RE.match(line)
+            if m3:
+                riga['squadra'] = m3.group(1)
+                riga['avversario'] = m3.group(2)
+                continue
+            break  # dopo la prima riga giocatore, il resto e' il dump completo -- basta cosi'
+    return riga
+
+
 def costruisci_best_five(lega, ruoli, n_backup):
     risultati = {}
     for ruolo in ruoli:
-        path = trova_ultimo_output(lega, ruolo)
-        if not path:
+        path_all = trova_ultimo_output(lega, ruolo)
+        if path_all:
+            righe = parse_riepilogo(path_all)
+            log(f"[{ruolo}] {len(righe)} giocatori trovati nel riepilogo di {os.path.basename(path_all)} "
+                f"(formato pool intero).")
+        else:
+            paths = trova_output_per_slug(lega, ruolo)
+            righe = [r for r in (parse_file_singolo_slug(p) for p in paths) if r]
+            if any(r['ordinamento'] is not None for r in righe):
+                righe.sort(key=lambda r: (r['ordinamento'] if r['ordinamento'] is not None else -1e9),
+                           reverse=True)
+            else:
+                righe.sort(key=lambda r: r['pt_attesi'], reverse=True)
+            log(f"[{ruolo}] {len(righe)} giocatori trovati in {len(paths)} file prediction_<slug>_*.txt "
+                f"(formato prefiltro starterOdds).")
+        if not righe:
             log(f"[{ruolo}] Nessun output trovato in {output_dir_per_ruolo(lega, ruolo)} "
                 f"— esegui con --run per generarlo.")
-            risultati[ruolo] = []
-            continue
-        righe = parse_riepilogo(path)
-        log(f"[{ruolo}] {len(righe)} giocatori trovati nel riepilogo di {os.path.basename(path)}.")
         risultati[ruolo] = righe[:1 + n_backup]
     return risultati
 
@@ -213,9 +417,10 @@ def main():
     # sui ruoli mancanti (es. dopo che una sessione precedente ha gia'
     # completato e committato gk/def) invece di rifare tutto da capo. Il
     # ranking finale (costruisci_best_five sotto) resta invece SEMPRE su
-    # tutti e 4 i ruoli, leggendo l'ultimo prediction_all_*.txt disponibile
-    # per ciascuno -- quindi funziona anche a run misti (alcuni ruoli
-    # generati in una sessione precedente, altri in questa).
+    # tutti e 4 i ruoli, leggendo l'ultimo output disponibile per ciascuno
+    # (formato pool intero O per-slug, vedi costruisci_best_five) -- quindi
+    # funziona anche a run misti (alcuni ruoli generati in una sessione
+    # precedente, altri in questa).
     ruoli_da_eseguire = ruoli
     if '--roles' in args:
         idx = args.index('--roles')
@@ -227,7 +432,7 @@ def main():
 
     if esegui:
         for ruolo in ruoli_da_eseguire:
-            run_prediction_pool_globale(lega, ruolo)
+            run_prediction_pool_prefiltrato(lega, ruolo)
 
     risultati = costruisci_best_five(lega, ruoli, n_backup)
     report = formatta_report(lega, risultati, n_backup)
