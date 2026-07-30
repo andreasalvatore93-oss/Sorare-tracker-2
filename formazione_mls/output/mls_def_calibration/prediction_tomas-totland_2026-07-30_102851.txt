@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-07-30T10:28:51.563323Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.2, min_starter_odds=0%
+======================================================================
+1) tomas-totland: 50 pt attesi (24-80)
+   ORDINAMENTO: 58.70
+   SQUADRA: st-louis-city-st-louis-missouri | AVVERSARIO: real-salt-lake-salt-lake-city-utah
+======================================================================
+
+######################################################################
+# GIOCATORE: tomas-totland
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tomas-totland (squadra: st-louis-city-st-louis-missouri)
+Generato: 2026-07-30T10:28:51.562815Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-05 | ATX vs STL | mlspa | score=89.4 | peso=0.732
+  2025-10-19 | STL vs RSL | mlspa | score=53.4 | peso=0.758
+  2026-04-26 | STL vs SJ | mlspa | score=40.7 | peso=0.785
+  2026-05-03 | ATX vs STL | mlspa | score=14.3 | peso=0.812
+  2026-05-10 | RAP vs STL | mlspa | score=54.3 | peso=0.841
+  2026-05-14 | STL vs LAFC | mlspa | score=74.5 | peso=0.871
+  2026-05-23 | STL vs ATX | mlspa | score=59.0 | peso=0.901
+  2026-07-17 | STL vs SKC | mlspa | score=33.6 | peso=0.933
+  2026-07-23 | LA vs STL | mlspa | score=78.2 | peso=0.966
+  2026-07-26 | STL vs RAP | mlspa | score=91.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 59.53
+  di cui Punteggio decisivo (level_score) medio: 43.25 | Punteggio complessivo (granulari) medio: 16.28 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Gol subiti condizionato: delta venue -0.23, delta avversario -0.04 | Passaggio condizionato: delta venue +1.08, delta avversario -0.83 | Clean sheet/disimpegni condizionato: delta venue +0.21, delta avversario -0.46 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 23.73
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.6 - 89.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.75 (differenza: +5.98)
+Media score in casa: 58.84 | Media score fuori casa: 59.04
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.3
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.783
+Fattore falli (casa/trasferta, da dati reali): 1.006
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.010
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.009
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.990
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.990
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore trend (media ultime 5: 67.4 vs media ultime 10: 58.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: St. Louis City SC | Trasferta: Real Salt Lake
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 23.7 - 79.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 58.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.28
+Punteggio REALE ottenuto in quella partita: 91.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +36.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+trend_int=0.7+range=1.4x' (half_life=12.0, range_mult=1.4, opp_sens=None, trend_int=0.7)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.5    59.0     +6.5     N/D        SI
+   7        7      54.4    33.6    -20.8     N/D        SI
+   8        8      51.3    78.2    +26.8     N/D        SI
+   9        9      53.6    91.8    +38.1     N/D        NO
+
+MAE (errore assoluto medio): 23.07
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
