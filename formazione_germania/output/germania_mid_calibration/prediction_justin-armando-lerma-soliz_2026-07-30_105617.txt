@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:56:17.311169Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) justin-armando-lerma-soliz: 47 pt attesi (34-59)
+   SQUADRA: borussia-dortmund-dortmund | AVVERSARIO: hamburger-sv-hamburg
+======================================================================
+
+######################################################################
+# GIOCATORE: justin-armando-lerma-soliz
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: justin-armando-lerma-soliz (squadra: borussia-dortmund-dortmund)
+Generato: 2026-07-30T10:56:17.310408Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 46
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-04 | LIB vs IVA | liga-pro | score=43.0 | peso=0.642
+  2025-11-08 | IVA vs UCA | liga-pro | score=31.4 | peso=0.660
+  2025-11-23 | IVA vs ORE | liga-pro | score=51.8 | peso=0.678
+  2025-11-29 | LDU vs IVA | liga-pro | score=37.0 | peso=0.697
+  2025-12-06 | IVA vs LIB | liga-pro | score=46.3 | peso=0.717
+  2025-12-10 | IVA vs LDU | liga-pro | score=49.9 | peso=0.737
+  2025-12-14 | UCA vs IVA | liga-pro | score=61.2 | peso=0.758
+  2025-12-21 | IVA vs BAR | liga-pro | score=35.0 | peso=0.779
+  2026-03-22 | TUN vs IVA | liga-pro | score=57.3 | peso=0.801
+  2026-04-04 | IVA vs ORE | liga-pro | score=40.5 | peso=0.824
+  2026-04-16 | IVA vs UCV | conmebol-libertadores | score=47.3 | peso=0.847
+  2026-04-22 | DEL vs IVA | liga-pro | score=88.8 | peso=0.871
+  2026-04-28 | LIB vs IVA | conmebol-libertadores | score=40.0 | peso=0.895
+  2026-05-10 | IVA vs BAR | liga-pro | score=36.2 | peso=0.920
+  2026-05-20 | IVA vs LIB | conmebol-libertadores | score=72.5 | peso=0.946
+  2026-05-27 | IVA vs ROS | conmebol-libertadores | score=47.5 | peso=0.973
+  2026-05-31 | GUA vs IVA | liga-pro | score=41.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 49.13
+  di cui Punteggio decisivo (level_score) medio: 38.30 | Punteggio complessivo (granulari) medio: 10.83 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 38.05 (delta -0.25)
+  Efficacia offensiva condizionata: delta venue +0.01, delta avversario +0.00 | Passaggio condizionato: delta venue -0.16, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.13, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.52
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.2 - 61.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.23 (differenza: +4.29)
+Media score in casa: 45.84 | Media score fuori casa: 52.74
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.150
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.985
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.989
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore trend (media ultime 5: 47.6 vs media ultime 10: 50.7): 0.988
+P(gioca): 36.96% (fonte: tasso di presenza storico (17/46))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T16:30
+Casa: Borussia Dortmund | Trasferta: Hamburger SV
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.8 (range 33.9 - 58.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.70
+Punteggio REALE ottenuto in quella partita: 41.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=20.0+trend_int=0.7+granulari' (half_life=12.0, range_mult=1.2, opp_sens=20.0, trend_int=0.7)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      29.7    61.2    +31.5     8.5        NO
+   7        7      40.8    35.0     -5.8    11.1        SI
+   8        8      57.1    57.3     +0.2    11.3        SI
+   9        9      57.5    40.5    -17.0    11.7        NO
+  10       10      46.9    47.3     +0.4    11.2        SI
+  11       11      66.0    88.8    +22.8    10.5        NO
+  12       12      55.3    40.0    -15.3    19.0        SI
+  13       13      41.1    36.2     -4.9    18.4        SI
+  14       14      46.3    72.5    +26.2    18.1        NO
+  15       15      58.0    47.5    -10.5    19.3        SI
+  16       16      57.0    41.9    -15.1    18.4        SI
+
+MAE (errore assoluto medio): 13.61
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 63.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
