@@ -939,6 +939,10 @@ def main():
     _t0_sondaggio = datetime.datetime.utcnow()
     capienza_extra = {}
     capienza_parziale = set()
+    capienza_residuo_ruolo = {}
+
+    def pool_league_di(t):
+        return POOL_LEAGUE_BY_TYPE[t]
     for tipo in PRIORITY_ORDER:
         if counts[tipo] <= 0:
             continue
@@ -956,6 +960,27 @@ def main():
         if extra >= MAX_SONDAGGIO_CAPIENZA:
             capienza_parziale.add(tipo)
         capienza_extra[tipo] = extra
+        # PERCHE' si e' fermata (29/07, verifica richiesta dall'utente: il
+        # sospetto era che pescasse solo dai "top esclusi"). Verificato che il
+        # pool contiene TUTTI i candidati con starter odds >= soglia
+        # (_NoFilterPool.passing == full_candidates, nessun taglio nel percorso
+        # di costruzione), e che il cap L10 non e' il vincolo (somma minima dei
+        # 5 L10 piu' bassi: 195-204 contro un cap di 260). Il vero collo di
+        # bottiglia sono le COPIE per ruolo: Portogallo ha 2 portieri
+        # candidati, la Scozia 1 -- dopo 2 (rispettivamente 1) formazioni non
+        # resta nessun GK schierabile. Riportarlo per ruolo dice esattamente
+        # quale carta manca per fare una formazione in piu'.
+        leghe_pool = (LEAGUES if pool_league_di(tipo) in ('mixed', 'mixed_u23')
+                      else (pool_league_di(tipo),))
+        residuo = {}
+        for role in ROLES:
+            n = 0
+            for lg in leghe_pool:
+                for row in role_data.get(lg, {}).get(role, []):
+                    n += max(0, sonda.remaining_in_season(row['slug'])) \
+                        + max(0, sonda.remaining_classic(row['slug']))
+            residuo[role] = n
+        capienza_residuo_ruolo[tipo] = residuo
 
     if capienza_extra:
         print("\nFormazioni AGGIUNTIVE possibili con i giocatori rimasti fuori:")
@@ -966,8 +991,15 @@ def main():
                       f"altre {extra}"
                       + (" o piu'" if tipo in capienza_parziale else ""))
             else:
+                res = capienza_residuo_ruolo.get(tipo, {})
+                vuoti = [r for r in ROLES if res.get(r, 0) == 0]
+                motivo = (f" -- manca {'/'.join(vuoti)} (0 carte residue)"
+                          if vuoti else
+                          " -- carte residue " +
+                          ", ".join(f"{r}:{res.get(r, 0)}" for r in ROLES) +
+                          ", ma non componibili entro i vincoli")
                 print(f"  {LABELS[tipo]}: {fatte} generate, il pool residuo non "
-                      f"basta per un'altra")
+                      f"basta per un'altra{motivo}")
 
     # Blocco dedicato nel report, UNA RIGA PER COMPETIZIONE (29/07, richiesta
     # esplicita utente: nel sottotitolo, tutto su una riga, non si leggeva per
