@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:34:32.845977Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) geon-woong-kim: 42 pt attesi (33-58)
+   SQUADRA: jeju-united-seogwipo-jeju-do | AVVERSARIO: incheon-united-incheon
+======================================================================
+
+######################################################################
+# GIOCATORE: geon-woong-kim
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: geon-woong-kim (squadra: jeju-united-seogwipo-jeju-do)
+Generato: 2026-07-30T10:34:32.845773Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-01 | JEJ vs GWA | k-league-1 | score=39.5 | peso=0.895
+  2026-03-08 | ANY vs JEJ | k-league-1 | score=60.9 | peso=0.920
+  2026-03-15 | JEJ vs SEO | k-league-1 | score=36.0 | peso=0.946
+  2026-03-22 | GAN vs JEJ | k-league-1 | score=35.9 | peso=0.973
+  2026-07-26 | GWA vs JEJ | k-league-1 | score=51.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 44.71
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 9.71 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per venue: 35.00 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue +0.04, delta avversario +0.01 | Passaggio condizionato: delta venue -0.39, delta avversario -0.04 | Gol subiti condizionato: delta venue +0.10, delta avversario +0.17 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 9.82
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.9 - 60.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.65 (differenza: +3.17)
+Media score in casa: 37.75 | Media score fuori casa: 49.37
+Fattore casa/trasferta applicato: 0.986 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.6
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.979
+Fattore falli (casa/trasferta, da dati reali): 0.989
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.993
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 25.00% (fonte: tasso di presenza storico (5/20))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T10:30
+Casa: Jeju SK FC | Trasferta: Incheon United FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.5 (range 32.7 - 57.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.95
+Punteggio REALE ottenuto in quella partita: 51.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
