@@ -1,0 +1,112 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-30T10:02:00.549860Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.4, min_starter_odds=0%
+======================================================================
+1) sander-tangvik: 53 pt attesi (37-67)
+   SQUADRA: hamburger-sv-hamburg | AVVERSARIO: borussia-dortmund-dortmund
+======================================================================
+
+######################################################################
+# GIOCATORE: sander-tangvik
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sander-tangvik (squadra: hamburger-sv-hamburg)
+Generato: 2026-07-30T10:02:00.548715Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 26
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-07-31 | BAN vs RBK | uefa-europa-conference-league | score=60.0 | peso=0.125
+  2025-08-03 | KFU vs RBK | eliteserien | score=15.7 | peso=0.140
+  2025-08-07 | RBK vs HIF | uefa-europa-conference-league | score=60.0 | peso=0.157
+  2025-08-14 | HIF vs RBK | uefa-europa-conference-league | score=60.0 | peso=0.177
+  2025-08-21 | RBK vs M05 | uefa-europa-conference-league | score=44.0 | peso=0.198
+  2025-08-28 | M05 vs RBK | uefa-europa-conference-league | score=33.3 | peso=0.223
+  2025-08-31 | VIK vs RBK | eliteserien | score=41.8 | peso=0.250
+  2025-09-14 | HAU vs RBK | eliteserien | score=70.1 | peso=0.281
+  2025-09-21 | RBK vs BOD | eliteserien | score=40.2 | peso=0.315
+  2025-09-28 | HAM vs RBK | eliteserien | score=63.2 | peso=0.354
+  2025-10-05 | RBK vs S08 | eliteserien | score=39.5 | peso=0.397
+  2025-10-18 | BRY vs RBK | eliteserien | score=54.6 | peso=0.445
+  2025-10-26 | RBK vs BRA | eliteserien | score=28.6 | peso=0.500
+  2025-10-29 | RBK vs SAN | eliteserien | score=43.8 | peso=0.561
+  2025-11-01 | MOL vs RBK | eliteserien | score=49.6 | peso=0.630
+  2025-11-09 | RBK vs VIF | eliteserien | score=69.6 | peso=0.707
+  2025-11-22 | TIL vs RBK | eliteserien | score=49.6 | peso=0.794
+  2025-11-30 | RBK vs GOD | eliteserien | score=69.9 | peso=0.891
+  2026-05-16 | B04 vs HSV | bundesliga-de | score=82.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 55.77
+  di cui Punteggio decisivo (level_score) medio: 45.25 | Punteggio complessivo (granulari) medio: 10.52 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  Punteggio decisivo condizionato per forza prossimo avversario: 42.14 (delta -3.11 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -2.33, delta avversario -1.12 | Possesso condizionato per venue: delta +0.24 | Goalkeeping condizionato per venue: delta +2.59 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 16.42
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.2 - 69.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.15 (differenza: +3.27)
+Media score in casa: 49.45 | Media score fuori casa: 49.79
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.8
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.766
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.006
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.006
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.990
+Tasso storico clean sheet (porta inviolata nei primi 60'): 15.8% (bonus atteso incorporato nella media pesata: ~3.9pt)
+Fattore trend (media ultime 5: 64.2 vs media ultime 10: 55.1): 1.116
+P(gioca): 42.22% (fonte: tasso di presenza storico (19/45))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-29T16:30
+Casa: Borussia Dortmund | Trasferta: Hamburger SV
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.9 (range 37.4 - 67.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.07
+Punteggio REALE ottenuto in quella partita: 82.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +30.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.4, opp_sens=29.0, trend_int=0.7 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+range=1.2x+opp_sens=29.0+trend_int=0.7' (half_life=9.0, range_mult=1.2, opp_sens=29.0, trend_int=0.7)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      27.5    41.8    +14.3    19.3        SI
+   7        7      49.5    70.1    +20.6    17.6        NO
+   8        8      34.6    40.2     +5.6    19.7        SI
+   9        9      48.7    63.2    +14.5    18.5        SI
+  10       10      44.5    39.5     -5.0    18.4        SI
+  11       11      62.9    54.6     -8.3    17.6        SI
+  12       12      46.9    28.6    -18.3    16.7        NO
+  13       13      44.2    43.8     -0.4    17.6        SI
+  14       14      42.6    49.6     +7.0    16.6        SI
+  15       15      38.3    69.6    +31.3    15.7        NO
+  16       16      40.2    49.6     +9.4    17.1        SI
+  17       17      56.2    69.9    +13.7    16.2        SI
+  18       18      55.4    82.2    +26.8    17.1        NO
+
+MAE (errore assoluto medio): 13.48
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
