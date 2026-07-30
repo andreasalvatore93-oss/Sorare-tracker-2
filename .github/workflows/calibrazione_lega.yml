@@ -49,7 +49,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: calibrazione-lega-${{ github.event.inputs.lega }}-${{ github.event.inputs.ruolo }}
+  # FIX (30/07): raggruppare per batch_index (non solo lega+ruolo) -- con un
+  # solo gruppo condiviso, lanciare piu' batch in rapida successione ne
+  # cancellava la maggior parte in coda (GitHub Actions tiene solo l'ultimo
+  # run in coda per gruppo, anche con cancel-in-progress:false, che protegge
+  # solo il run GIA' in esecuzione). Batch diversi processano giocatori
+  # diversi, non c'e' motivo di serializzarli.
+  group: calibrazione-lega-${{ github.event.inputs.lega }}-${{ github.event.inputs.ruolo }}-${{ github.event.inputs.batch_index }}
   cancel-in-progress: false
 
 jobs:
