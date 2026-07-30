@@ -2221,8 +2221,18 @@ def format_output(result):
         lines.append(f"{'idx':>4} {'storico':>8} {'predetto':>9} {'reale':>7} {'errore':>8} {'range':>7} {'in_range':>9}")
         for r in rbt_rows:
             in_range_str = ('SI' if r['dentro_range'] else 'NO') if r['dentro_range'] is not None else 'N/D'
-            lines.append(f"{r['indice']:>4} {r['partite_storico_usate']:>8} {r['predetto']:>9.1f} "
-                         f"{r['reale']:>7.1f} {r['errore']:>+8.1f} {r['range_conf']:>7.1f} {in_range_str:>9}")
+            # FIX (30/07): rigorous_backtest_prod_def() (usato in CALIBRATION_MODE)
+            # produce righe con chiavi 'i'/'dentro_range' invece delle vecchie
+            # 'indice'/'partite_storico_usate'/'range_conf' di rigorous_backtest() --
+            # bug preesistente (KeyError 'indice') che faceva perdere il grid.json
+            # per ogni giocatore in CALIBRATION_MODE (crash prima del salvataggio).
+            # .get() con fallback copre entrambi i formati senza serve un ramo separato.
+            idx = r.get('indice', r.get('i', '?'))
+            storico = r.get('partite_storico_usate', idx if isinstance(idx, int) else '?')
+            range_conf = r.get('range_conf')
+            range_str = f"{range_conf:>7.1f}" if range_conf is not None else f"{'N/D':>7}"
+            lines.append(f"{idx:>4} {storico:>8} {r['predetto']:>9.1f} "
+                         f"{r['reale']:>7.1f} {r['errore']:>+8.1f} {range_str} {in_range_str:>9}")
         lines.append("")
         lines.append(f"MAE (errore assoluto medio): {rbt['mae']:.2f}")
         if rbt['pct_dentro_range'] is not None:
