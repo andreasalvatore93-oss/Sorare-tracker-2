@@ -37,10 +37,12 @@ RANGE_MULTS = (1.0, 1.1, 1.15, 1.2, 1.3, 1.4)
 MODULI = {
     'mid': 'formazione_mls/predict/test_mid.py',
     'fwd': 'formazione_mls/predict/test_mls_fwd_all.py',
+    'def': 'formazione_mls/predict/test_def.py',
 }
 CACHE_GLOB = {
     'mid': ('formazione_*/output/*_mid_all/.cache', 'formazione_*/output/*_mid_calibration/.cache'),
     'fwd': ('formazione_*/output/*_fwd_all/.cache', 'formazione_*/output/*_fwd_calibration/.cache'),
+    'def': ('formazione_*/output/*_def_all/.cache', 'formazione_*/output/*_def_calibration/.cache'),
 }
 
 
@@ -126,7 +128,16 @@ def carica(ruolo, mod):
                     riga = dict(dt=dt, is_home=is_home, opp=opp, score=score,
                                 gran=score - lvl, pos=pos_v, neg=neg_v,
                                 off=off_v, pas=pass_v)
-                    if ruolo == 'mid':
+                    if ruolo == 'def':
+                        def_act = mod.extract_group_score(e, mod.DEFENSIVE_ACTIONS_STATS)
+                        gc = mod.extract_group_score(e, mod.GOALS_CONCEDED_STATS)
+                        cs = mod.extract_group_score(e, mod.CLEAN_SHEET_STATS)
+                        coperto = (fouls_v + duels_v + off_v + pass_v
+                                   + def_raw + def_act + gc + cs)
+                        riga['gc'] = gc
+                        riga['cs'] = cs
+                        riga['res'] = score - coperto
+                    elif ruolo == 'mid':
                         def_act = mod.extract_group_score(e, mod.DEFENSIVE_ACTIONS_STATS)
                         gc = mod.extract_group_score(e, mod.GOALS_CONCEDED_STATS)
                         cap = mod.DEFENSE_RARE_CAP
@@ -154,6 +165,18 @@ def predici(ruolo, mod, righe, i, hl, ti, pr, lega):
         target_is_home=righe[i]['is_home'], p_gioca=1.0,
         half_life=hl, trend_intensity=ti, presence_rate=pr, league=lega,
     )
+    if ruolo == 'def':
+        return mod.compute_score_atteso_def(
+            opponent_rankings=[None] * i,
+            goals_conceded_values=[r['gc'] for r in h],
+            passing_values=[r['pas'] for r in h],
+            clean_sheet_values=[r['cs'] for r in h],
+            target_opp_rank=None,
+            opponent_team_slugs_hist=[r['opp'] for r in h],
+            game_dates_hist=[r['dt'] for r in h],
+            next_opponent_team_slug=righe[i]['opp'],
+            next_game_date=righe[i]['dt'],
+            **comune)
     if ruolo == 'mid':
         return mod.compute_score_atteso_mid(
             opponent_rankings=[None] * i,
@@ -175,7 +198,7 @@ def predici(ruolo, mod, righe, i, hl, ti, pr, lega):
 
 
 def main():
-    ruoli = sys.argv[1:] or ['mid', 'fwd']
+    ruoli = sys.argv[1:] or ['def', 'mid', 'fwd']
     for ruolo in ruoli:
         mod = imp(f'test_{ruolo}_lib', MODULI[ruolo])
         print(f"\n{'=' * 78}\nRUOLO {ruolo.upper()} — ricalibrazione su formula allineata\n{'=' * 78}")
