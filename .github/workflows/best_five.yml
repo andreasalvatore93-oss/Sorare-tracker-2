@@ -66,7 +66,7 @@ on:
       genera_cheapest:
         description: '"true" per generare ANCHE le 3 formazioni piu economiche (4 In Season+1 Classic senza cap, stesso con cap 260, nessun limite Classic con cap 260) -- prezzo minimo totale, punteggio come criterio di pareggio'
         required: false
-        default: 'false'
+        default: 'true'
   workflow_call:
     inputs:
       lega:
@@ -100,7 +100,7 @@ on:
       genera_cheapest:
         type: string
         required: false
-        default: 'false'
+        default: 'true'
 
 permissions:
   contents: write
@@ -270,7 +270,7 @@ jobs:
           # ANCHE le 3 formazioni "cheapest" (vedi CHEAPEST_CONFIGS in
           # best_five.py) -- query L10 extra se non gia' fatte da
           # rispetta_cap_l10.
-          BEST_FIVE_GENERA_CHEAPEST: ${{ inputs.genera_cheapest || 'false' }}
+          BEST_FIVE_GENERA_CHEAPEST: ${{ inputs.genera_cheapest || 'true' }}
         run: |
           set -u
           ARGS="${{ inputs.lega || 'kleague' }} --backups ${{ inputs.backups || '2' }}"
