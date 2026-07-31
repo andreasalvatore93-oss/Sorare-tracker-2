@@ -1,0 +1,30 @@
+name: Verify clubs (generico)
+
+# Generalizzazione di verify_bundesliga_clubs.yml: legge la lista club di UNA
+# O PIU competizioni via `football { competition(slug) { clubs { nodes { slug
+# name } } } }`. Sola lettura, nessuna scrittura sul repo -- output nei log.
+
+on:
+  workflow_dispatch:
+    inputs:
+      comp_slugs:
+        description: 'Slug competizioni separati da virgola (es. austrian-bundesliga,1-hnl,2-bundesliga)'
+        required: true
+        default: 'austrian-bundesliga,1-hnl,2-bundesliga'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          COMP_SLUGS: ${{ github.event.inputs.comp_slugs }}
+          PYTHONUNBUFFERED: "1"
+        run: python diagnostics/verify_clubs.py
