@@ -70,6 +70,16 @@ _http_session = curl_requests.Session(impersonate="chrome") if _HAS_CURL_CFFI el
 # qualita' (media L5/L10/L40 >= 30) a monte, in discovery_global.
 MIN_STARTER_ODDS_PREFILTER = float(os.environ.get('BEST_FIVE_MIN_STARTER_ODDS', '0.70'))
 
+# Top-N esclusi per ruolo (31/07, richiesta esplicita utente): oltre alle
+# formazioni intere generate, mostra sempre anche i migliori N candidati
+# eleggibili (sopravvissuti al prefiltro starterOdds) MAI schierati in
+# nessuna formazione -- utile soprattutto quando si chiedono molte
+# formazioni (n_backup alto) e un ruolo scarso (es. i portieri di una lega
+# piccola) esaurisce il pool prima degli altri: la lista dice comunque chi
+# altro sarebbe stato eleggibile, invece di far sembrare il pool piu'
+# povero di quanto sia davvero.
+TOP_N_ESCLUSI = int(os.environ.get('BEST_FIVE_TOP_N_ESCLUSI', '10'))
+
 # Cap per qualita' PRIMA delle starterOdds (30/07, richiesta esplicita
 # utente: "implementa cap qualita'" -- riduzione ulteriore, sopra alla
 # parallelizzazione gia' fatta, del numero di query starterOdds necessarie).
@@ -875,9 +885,39 @@ def costruisci_formazione_vera(lega, count):
     all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
     generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
 
+    testo_esclusi, html_esclusi = _blocco_top_esclusi(role_data_lega, card_pool)
+    lineup_blocks.append(testo_esclusi)
+    lineup_html_blocks.append(html_esclusi)
+
     log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica, "
         f"tipo={tipo}, stesso motore della produzione).")
     return bff, generated, totale, lineup_blocks, lineup_html_blocks
+
+
+def _blocco_top_esclusi(role_data_per_ruolo, card_pool, n=TOP_N_ESCLUSI):
+    """Top N candidati per ruolo (per 'atteso') MAI schierati in nessuna
+    delle formazioni gia' generate -- stesso concetto del pannello 'esclusi'
+    di generatore_formazioni/build_formazione_globale.py (card_pool.used_
+    slugs()), qui SOLO per i ruoli/leghe di questa run di Best Five, non per
+    l'intera pipeline di produzione. Ritorna (testo, html)."""
+    used = card_pool.used_slugs()
+    lines = ["", "=" * 70, f"TOP {n} ESCLUSI PER RUOLO (eleggibili per starterOdds, mai schierati)", "=" * 70]
+    html_parts = ['<div class="esclusi-panel"><h3>Top %d esclusi per ruolo</h3>' % n]
+    for ROLE in ('GK', 'DEF', 'MID', 'FWD'):
+        rows = role_data_per_ruolo.get(ROLE, [])
+        esclusi = sorted((r for r in rows if r['slug'] not in used),
+                         key=lambda r: r.get('atteso', 0), reverse=True)[:n]
+        lines.append(f"\n--- {ROLE} ---")
+        html_parts.append(f'<div class="esclusi-role"><strong>{ROLE}</strong><ol>')
+        if not esclusi:
+            lines.append("  (nessuno)")
+        for i, r in enumerate(esclusi, 1):
+            squadra = r.get('team_slug') or 'N/D'
+            lines.append(f"  {i}) {r['slug']}: {r.get('atteso')} pt (squadra={squadra})")
+            html_parts.append(f"<li>{r['slug']}: {r.get('atteso')} pt (squadra={squadra})</li>")
+        html_parts.append('</ol></div>')
+    html_parts.append('</div>')
+    return "\n".join(lines), "".join(html_parts)
 
 
 def _renderizza_risultati(bff, all_results, card_pool):
@@ -993,6 +1033,11 @@ def costruisci_formazione_contender(leghe, count):
 
     all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
     generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
+
+    testo_esclusi, html_esclusi = _blocco_top_esclusi(merged_role_data, card_pool)
+    lineup_blocks.append(testo_esclusi)
+    lineup_html_blocks.append(html_esclusi)
+
     log(f"Formazione Contender (leghe: {', '.join(leghe)}): {generated}/{count} generate.")
     return bff, generated, totale, lineup_blocks, lineup_html_blocks
 
