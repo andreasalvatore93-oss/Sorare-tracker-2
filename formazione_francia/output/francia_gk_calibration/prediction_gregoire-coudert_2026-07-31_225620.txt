@@ -1,0 +1,122 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-31T22:56:20.686893Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) gregoire-coudert: 46 pt attesi (35-65)
+   SQUADRA: brest-brest | AVVERSARIO: le-mans-le-mans
+======================================================================
+
+######################################################################
+# GIOCATORE: gregoire-coudert
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gregoire-coudert (squadra: brest-brest)
+Generato: 2026-07-31T22:56:20.683633Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | BRE vs PAR | ligue-1-fr | score=33.2 | peso=0.070
+  2025-09-20 | BRE vs NIC | ligue-1-fr | score=40.6 | peso=0.079
+  2025-11-23 | BRE vs MET | ligue-1-fr | score=31.0 | peso=0.088
+  2025-11-30 | STR vs BRE | ligue-1-fr | score=47.1 | peso=0.099
+  2025-12-05 | BRE vs ASM | ligue-1-fr | score=67.3 | peso=0.111
+  2025-12-13 | REN vs BRE | ligue-1-fr | score=32.0 | peso=0.125
+  2026-01-04 | BRE vs AJA | ligue-1-fr | score=64.5 | peso=0.140
+  2026-01-18 | OL vs BRE | ligue-1-fr | score=37.4 | peso=0.157
+  2026-01-25 | BRE vs TFC | ligue-1-fr | score=40.7 | peso=0.177
+  2026-02-01 | NIC vs BRE | ligue-1-fr | score=44.9 | peso=0.198
+  2026-02-07 | BRE vs FCL | ligue-1-fr | score=68.0 | peso=0.223
+  2026-02-14 | LIL vs BRE | ligue-1-fr | score=48.2 | peso=0.250
+  2026-02-20 | BRE vs OM | ligue-1-fr | score=80.2 | peso=0.281
+  2026-03-01 | MET vs BRE | ligue-1-fr | score=82.0 | peso=0.315
+  2026-03-08 | BRE vs HAC | ligue-1-fr | score=61.2 | peso=0.354
+  2026-03-14 | ASM vs BRE | ligue-1-fr | score=34.0 | peso=0.397
+  2026-03-21 | AJA vs BRE | ligue-1-fr | score=43.1 | peso=0.445
+  2026-04-04 | BRE vs REN | ligue-1-fr | score=6.1 | peso=0.500
+  2026-04-19 | NAN vs BRE | ligue-1-fr | score=46.9 | peso=0.561
+  2026-04-24 | BRE vs RCL | ligue-1-fr | score=33.6 | peso=0.630
+  2026-05-03 | PAR vs BRE | ligue-1-fr | score=29.5 | peso=0.707
+  2026-05-10 | PSG vs BRE | ligue-1-fr | score=54.4 | peso=0.794
+  2026-05-13 | BRE vs STR | ligue-1-fr | score=35.0 | peso=0.891
+  2026-05-17 | BRE vs SCO | ligue-1-fr | score=36.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 42.81
+  di cui Punteggio decisivo (level_score) medio: 38.30 | Punteggio complessivo (granulari) medio: 4.51 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 37.27 (delta -1.04 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.51, delta avversario -0.34 | Possesso condizionato per venue: delta +0.05 | Goalkeeping condizionato per venue: delta +2.76 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 16.74
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.0 - 61.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.66 (differenza: +4.08)
+Media score in casa: 46.02 | Media score fuori casa: 45.41
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.0
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.724
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.013
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.996
+Tasso storico clean sheet (porta inviolata nei primi 60'): 25.0% (bonus atteso incorporato nella media pesata: ~6.2pt)
+Fattore trend (media ultime 5: 37.9 vs media ultime 10: 38.1): 1.000
+P(gioca): 70.59% (fonte: tasso di presenza storico (24/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:45
+Casa: Le Mans FC | Trasferta: Stade Brestois 29
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.3 (range 35.4 - 64.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.61
+Punteggio REALE ottenuto in quella partita: 36.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=4.0+trend_int=0.7+range=1.0x' (half_life=4.0, range_mult=1.0, opp_sens=None, trend_int=0.7)
+Partite testate: 18 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.3    64.5    +16.2    13.7        NO
+   7        7      48.2    37.4    -10.8    15.0        SI
+   8        8      49.2    40.7     -8.5    14.0        SI
+   9        9      47.9    44.9     -3.0    12.7        SI
+  10       10      48.7    68.0    +19.3    11.4        NO
+  11       11      48.3    48.2     -0.1    13.7        SI
+  12       12      50.3    80.2    +29.9    12.4        NO
+  13       13      50.1    82.0    +31.9    16.4        NO
+  14       14      53.5    61.2     +7.7    18.2        SI
+  15       15      52.1    34.0    -18.1    16.6        NO
+  16       16      50.3    43.1     -7.2    17.9        SI
+  17       17      51.7     6.1    -45.6    17.0        NO
+  18       18      46.9    46.9     +0.0    23.4        SI
+  19       19      48.7    33.6    -15.1    21.4        SI
+  20       20      47.6    29.5    -18.1    20.1        SI
+  21       21      43.1    54.4    +11.3    19.1        SI
+  22       22      45.8    35.0    -10.8    18.1        SI
+  23       23      47.3    36.8    -10.5    16.9        SI
+
+MAE (errore assoluto medio): 14.68
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
