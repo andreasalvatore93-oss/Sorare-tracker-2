@@ -147,6 +147,71 @@ def fetch_next_match_starter_odds(slug):
             backoff *= 2
     return None
 
+
+# RISPETTA_CAP_L10 (31/07, richiesta esplicita utente): il cap 260 delle
+# Arene NON e' mai stato applicato davvero in Best Five -- ne' per MLS/K
+# League (IN_SEASON, cap sempre None per design), ne' per le Arene vere (bug
+# reale: bff._pareto_frontier collassa a 1 solo candidato per ruolo quando
+# tutti gli L10 sono sconosciuti/0.0, vedi _tipo_per_lega). Con questo flag
+# a 'true', il cap torna a essere applicato DAVVERO: serve pero' l'L10 reale
+# di ogni candidato (altrimenti si ripresenta lo stesso bug), quindi in quel
+# caso si fa UNA query in piu' per giocatore (fetch_l10_reale) -- costo
+# accettabile solo se l'utente lo chiede esplicitamente, per questo resta
+# disattivato di default. Utile per generare Arene dedicate DAVVERO valide
+# su Sorare invece di formazioni generiche senza vincolo di livello.
+RISPETTA_CAP_L10 = os.environ.get('BEST_FIVE_RISPETTA_CAP_L10', '0').strip() not in ('0', 'false', 'no', '')
+
+L10_REALE_QUERY = """
+query L10Reale($slug: String!) {
+  anyPlayer(slug: $slug) {
+    lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+  }
+}
+"""
+
+
+def fetch_l10_reale(slug):
+    """L10 reale (media SO5 ultime 10 partite giocate) di un giocatore --
+    stesso campo gia' usato in discovery_global per il filtro qualita', qui
+    riletto per singolo slug (serve solo quando RISPETTA_CAP_L10 e' attivo).
+    None se il dato non e' disponibile (storico insufficiente)."""
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    if COOKIES:
+        headers['Cookie'] = COOKIES
+    payload = {'query': L10_REALE_QUERY, 'variables': {'slug': slug}, 'operationName': 'L10Reale'}
+    backoff = 1.0
+    for attempt in range(3):
+        try:
+            resp = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+            if resp.status_code == 429:
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            if resp.status_code >= 400:
+                return None
+            data = resp.json()
+            player = (data.get('data') or {}).get('anyPlayer') or {}
+            return player.get('lastTenPlayedAvgScore')
+        except Exception as e:
+            log(f"[L10 reale] {slug}: eccezione tentativo {attempt+1}/3: {e!r}")
+            time.sleep(backoff)
+            backoff *= 2
+    return None
+
+
+def fetch_l10_per_ruoli(role_data_dict):
+    """L10 reale per TUTTI gli slug in role_data_dict (dict ROLE -> righe),
+    ritorna {slug: l10_o_None}. Chiamata SOLO se RISPETTA_CAP_L10 e' attivo."""
+    slugs = sorted({r['slug'] for rows in role_data_dict.values() for r in rows})
+    log(f"[L10 reale] Interrogo {len(slugs)} giocatori (RISPETTA_CAP_L10 attivo)...")
+    l10_map = {}
+    for idx, slug in enumerate(slugs, 1):
+        l10_map[slug] = fetch_l10_reale(slug)
+        if idx % 20 == 0 or idx == len(slugs):
+            log(f"[L10 reale] [{idx}/{len(slugs)}] fatto.")
+    return l10_map
+
+
 # ruolo -> nome file script in formazione_<lega>/predict/
 ROLE_SCRIPTS = {
     'gk': 'test_gk.py',
@@ -880,11 +945,13 @@ def _registra_tipo_arena(gg, lega):
     generare un pool globale per QUALUNQUE lega con discovery_global, non
     solo quelle gia' promosse ad Arena dedicata), se il tipo Arena non esiste
     ancora lo registra qui a runtime con gli stessi identici parametri
-    standard di un'Arena dedicata (cap L10 260 obbligatorio, capitano +20%,
-    variance_mode attivo, nessun bonus XP/cap260/stack-guard -- stesso
-    trattamento di build_formazione_globale.py per ARENA_LEAGUES). Nessun
-    impatto su produzione: 'gg' qui e' sempre un'istanza importata a parte
-    (vedi _import_gg), mai quella del workflow reale."""
+    standard di un'Arena dedicata (cap L10 260, capitano +20%, variance_mode
+    attivo, nessun bonus XP/cap260/stack-guard -- stesso trattamento di
+    build_formazione_globale.py per ARENA_LEAGUES). Il cap L10 viene poi
+    rimosso da _tipo_per_lega A MENO CHE RISPETTA_CAP_L10 sia attivo (vedi
+    li' per il motivo). Nessun impatto su produzione: 'gg' qui e' sempre
+    un'istanza importata a parte (vedi _import_gg), mai quella del workflow
+    reale."""
     tipo = gg.arena_type(lega)
     if tipo in gg.FORMATION_SHAPES:
         return tipo  # gia' una vera Arena dedicata di produzione, nulla da fare
@@ -901,15 +968,39 @@ def _registra_tipo_arena(gg, lega):
 def _tipo_per_lega(gg, lega):
     """Nome del tipo FORMATION_SHAPES di produzione per la lega scelta:
     'MLS_IN_SEASON'/'KLEAGUE_IN_SEASON' per le due leghe dedicate (stessa
-    competizione In Season che gioca l'utente), l'Arena dedicata (cap L10
-    260 obbligatorio) per qualunque altra lega -- non esiste un tipo
-    'In Season' generico per le leghe non dedicate in produzione. Se la lega
-    non ha ancora un'Arena dedicata VERA in produzione (es. Austria/
-    2.Bundesliga, usate qui solo come fonte dati per Contender), ne registra
-    una ad-hoc (vedi _registra_tipo_arena)."""
+    competizione In Season che gioca l'utente), l'Arena dedicata per
+    qualunque altra lega -- non esiste un tipo 'In Season' generico per le
+    leghe non dedicate in produzione. Se la lega non ha ancora un'Arena
+    dedicata VERA in produzione (es. Austria/2.Bundesliga, usate qui solo
+    come fonte dati per Contender), ne registra una ad-hoc (vedi
+    _registra_tipo_arena).
+
+    FIX (31/07, bug reale trovato su Scozia: "NON GENERATA" nonostante
+    decine di candidati validi disponibili -- vedi commit di questa stessa
+    sessione): il cap L10 260 delle Arene VERE si affida a
+    bff._pareto_frontier, che ordina i candidati per L10 crescente e tiene
+    solo chi migliora il punteggio rispetto ai piu' economici -- corretto
+    quando l'L10 varia da carta a carta (produzione, carte reali possedute),
+    ma la CardPool sintetica di Best Five non ha MAI l'L10 reale di un
+    giocatore non posseduto (sempre trattato come 0.0 per tutti):
+    con tutti i candidati a costo IDENTICO, la frontiera di Pareto collassa
+    al SOLO candidato con punteggio piu' alto per ruolo (il resto sembra
+    'dominato' pur non essendolo, la funzione confronta costi diversi da
+    zero). Risultato: mai piu' di 1 candidato per ruolo, formazione
+    impossibile da completare appena il migliore serve altrove.
+    Il cap 260 non era comunque MAI stato un vincolo reale in Best Five
+    (MLS/K League/Contender non lo applicano gia' oggi, sono IN_SEASON senza
+    cap) -- qui si rimuove esplicitamente ANCHE per le Arene vere (es.
+    SCOZIA_ARENA, che in produzione lo ha) SOLO per l'istanza 'gg' di questa
+    run di Best Five, mai per quella reale del workflow."""
     if lega in gg.DEDICATED_LEAGUES:
         return f'{lega.upper()}_IN_SEASON'
-    return _registra_tipo_arena(gg, lega)
+    tipo = _registra_tipo_arena(gg, lega)
+    if not RISPETTA_CAP_L10:
+        gg.L10_CAP_BY_TYPE.pop(tipo, None)
+        if gg.LABELS.get(tipo, '').endswith('(cap 260)'):
+            gg.LABELS[tipo] = gg.LABELS[tipo][:-len('(cap 260)')].strip()
+    return tipo
 
 
 def costruisci_formazione_vera(lega, count):
@@ -964,7 +1055,21 @@ def costruisci_formazione_vera(lega, count):
             with open(path, encoding='utf-8') as f:
                 names.update(json.load(f))
 
-    card_pool = bff.CardPool({}, names=names)
+    # RISPETTA_CAP_L10 (31/07): serve l'L10 REALE per far funzionare il cap
+    # 260 (altrimenti bff._pareto_frontier collassa a 1 candidato per ruolo,
+    # vedi _tipo_per_lega) -- passato al costruttore di CardPool nello stesso
+    # formato di player_card_counts.json (breakdown['l10'] per slug), cosi'
+    # CardPool.l10(slug) ritorna il valore vero invece di None/0.0.
+    if RISPETTA_CAP_L10:
+        l10_map = fetch_l10_per_ruoli(role_data_lega)
+        counts_con_l10 = {
+            ROLE: {r['slug']: {'in_season': 1, 'classic': 0, 'l10': l10_map.get(r['slug'])}
+                   for r in rows}
+            for ROLE, rows in role_data_lega.items()
+        }
+        card_pool = bff.CardPool(counts_con_l10, names=names)
+    else:
+        card_pool = bff.CardPool({}, names=names)
 
     tipo = _tipo_per_lega(gg, lega)
     role_data = {lega: role_data_lega}
@@ -1023,7 +1128,15 @@ def _blocco_top_esclusi(role_data_per_ruolo, card_pool, n=TOP_N_ESCLUSI):
             squadra = r.get('team_slug') or 'N/D'
             prezzo = _prezzo_str(r)
             lines.append(f"  {i}) {r['slug']}: {r.get('atteso')} pt (squadra={squadra}){prezzo}")
-            html_parts.append(f"<li>{r['slug']}: {r.get('atteso')} pt (squadra={squadra}){prezzo}</li>")
+            # Link cliccabile alla pagina Sorare del giocatore (31/07,
+            # richiesta esplicita utente: "anche se scritti come riga, non
+            # come carta") -- stesso pattern URL di rendi_carte_cliccabili,
+            # qui pero' un <a> diretto (nessuna carta .pcard da annotare via
+            # script per questa lista testuale).
+            link = f'https://sorare.com/it/football/players/{r["slug"]}'
+            html_parts.append(
+                f'<li><a href="{link}" target="_blank" rel="noopener">{r["slug"]}</a>: '
+                f'{r.get("atteso")} pt (squadra={squadra}){prezzo}</li>')
         html_parts.append('</ol></div>')
     html_parts.append('</div>')
     return "\n".join(lines), "".join(html_parts)

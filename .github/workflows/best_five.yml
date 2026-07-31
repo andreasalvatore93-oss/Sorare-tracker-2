@@ -59,6 +59,10 @@ on:
         description: 'Notifica Telegram di fine run ("false" per disattivarla, es. quando lorchestratore best_five_contender.yml vuole solo la notifica del merge finale)'
         required: false
         default: 'true'
+      rispetta_cap_l10:
+        description: '"true" per generare una vera Arena dedicata (cap L10 260 rispettato davvero, richiede lL10 reale di ogni candidato = query extra). "false" (default) = formazione generica solo per punteggio, nessun cap'
+        required: false
+        default: 'false'
   workflow_call:
     inputs:
       lega:
@@ -85,6 +89,10 @@ on:
         type: string
         required: false
         default: 'true'
+      rispetta_cap_l10:
+        type: string
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -240,6 +248,12 @@ jobs:
           # per il predict.
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          # NUOVO (31/07, richiesta esplicita utente): "true" per rispettare
+          # DAVVERO il cap L10 260 delle Arene dedicate (query extra per
+          # l'L10 reale di ogni candidato, altrimenti il cap resta bucato --
+          # vedi RISPETTA_CAP_L10 in best_five.py). Ignorato per MLS/K League
+          # (IN_SEASON, nessun cap per design, come nel tool unificato).
+          BEST_FIVE_RISPETTA_CAP_L10: ${{ inputs.rispetta_cap_l10 || 'false' }}
         run: |
           set -u
           ARGS="${{ inputs.lega || 'kleague' }} --backups ${{ inputs.backups || '2' }}"
