@@ -5293,3 +5293,124 @@ Ordinati per valore stimato:
 7. **Sinergie Arena/All Stars** — In Season ha il modello Monte Carlo su dati reali, Arena/All Stars
    sono ancora sul vecchio "corr x20".
 8. Minori: link Sorare che non distingue classic/in season; `MAX_HISTORY_DAYS=120` provvisorio.
+
+## 41. Sessione 31/07 (sera) — rate limit Best Five, cache a cascata, tie-break starterOdds
+
+Continuazione della sezione 40. Sessione quasi tutta guidata da osservazioni dell'utente su run
+reali: la maggior parte dei fix qui nasce da "guarda che questo numero è impossibile" o "questo ci
+mette troppo anche se ha già i dati", e in tre casi su quattro aveva ragione lui e torto la mia
+prima diagnosi.
+
+**MLS non riusciva a completare NESSUNA run — circolo chiuso.** Con 233 giocatori da prezzare
+contro gli 81 di K League, la run finiva sempre in ondate di 429 e moriva; la cache prezzi veniva
+scritta SOLO a fine ciclo, quindi ogni tentativo perdeva tutto e il successivo ripartiva da zero.
+Senza una run completa la cache non si popolava, senza cache la run non completava. Quattro
+interventi, in ordine di importanza:
+1. **Cache scritta a CHUNK** (ogni 25 giocatori, richiesta esplicita utente: "metti dei chunk al
+   registro prezzi, almeno accumula") — il lavoro si accumula anche fra run fallite. È questo che
+   ha rotto il circolo: la run successiva è ripartita da metà pool.
+2. **Pacer prudente da subito**: bot_profit parte a 0.2s/richiesta assumendo il secchio del rate
+   limit pieno e rallenta a 0.9s solo DOPO il primo 429. Vero per bot_profit, che è la prima cosa
+   che gira nel suo processo; falso per Best Five, che arriva dopo discovery+starterOdds+predict
+   con centinaia di richieste già spese sullo stesso account (fatte con `requests` diretto, mai
+   viste dal pacer). Ogni ondata costa 45s di pausa globale su tutti i thread.
+3. **LIVE_OFFERS_MAX_PAGES 2 → 1**: dimezza le richieste sui giocatori con mercato liquido, cioè
+   proprio quelli che innescavano le ondate. Per il prezzo minimo una pagina basta.
+4. **Resa anticipata dopo 2 ondate** (osservazione dell'utente: "con la cache delle predizioni le
+   puoi far morire dopo un paio di 429 ormai") — ha senso solo ORA che il lavoro si accumula:
+   insistere costa 45s a ondata e rende pochissimo. Il report esce comunque, i prezzi mancanti
+   compaiono come N/D.
+
+Esito misurato: prima run dopo i fix salva tutti i 233 prezzi (cache 219 → 452 voci), la successiva
+li legge senza una query.
+
+**Riuso delle predizioni, ancorato alla GIORNATA.** Richiesta utente per combinare più leghe
+rapidamente: "lancio korea standalone, registra le predizioni; poi lancio korea e mls insieme,
+korea usa quelle cachate e mls fa tutto dall'inizio". Chiave di validità: il kickoff della partita
+predetta, che i file `prediction_<slug>_*.txt` scrivono già nella riga `Data:`. Osservazione
+importante dell'utente sulle odds: **non entrano nella chiave, ed è corretto** — sono un filtro a
+monte, se cambiano il giocatore non supera il prefiltro e non arriva al predict, ma il punteggio
+atteso per quella partita non cambia. Prima versione basata su "kickoff ancora futuro + tetto di
+72h"; poi corretta su indicazione dell'utente ("più che una finestra temporale bisognava agganciarlo
+alla fine della gw, come abbiamo fatto per il generatore"): ora `_finestra_giornata()` risolve la
+fixture corrente e una predizione vale se e solo se la partita cade dentro quella finestra. La
+scadenza si tara sulla giornata da sola, senza soglie da indovinare.
+
+Trabocchetto risolto: le predizioni riusate stanno nella cartella isolata `best_five/_raw_<ruolo>/`
+(creata in sezione 40 per non inquinare la produzione) mentre `build_consiglio` le cerca in
+`<lega>_<ruolo>_all` — senza ricopiarle il giocatore sarebbe sparito dal consiglio *proprio perché*
+la sua predizione era già pronta.
+
+**BUG REALE — il cap L10 260 era di fatto disattivato.** Trovato dall'utente su una formazione che
+dichiarava "L10 combinata 79.0 / cap 260" per 5 giocatori, cioè ~16 di media: impossibile.
+`fetch_l10_reale` restituiva `None` SIA quando il giocatore non ha storico SIA quando la query
+falliva, e su HTTP ≥ 400 lo faceva in silenzio. A valle un `None` diventa `0.0`, quindi i giocatori
+persi per rate limit entravano nel conto come se avessero L10 zero. Ricostruzione esatta: dei 5
+schierati solo Cleveland (36) e Sealy (43) erano stati letti — 36+43=79 — mentre Yamane (48) e
+Almirón (52) risultavano a zero per errore di query, e la stessa query rifatta a mano li restituiva
+senza problemi. Conseguenza grave: non il numero sbagliato a video, ma il **vincolo del cap
+aggirabile**, con formazioni potenzialmente illegali su Sorare. Fix: la funzione distingue
+`ok`/`assente`/`errore`, ritenta chi è fallito, e il report dichiara esplicitamente quando il cap
+NON è verificato invece di far credere il contrario.
+
+**Velocità dello step report — la seconda intuizione giusta dell'utente**: "pagina prezzi comunque
+è a 3 minuti anche se li ha già". Verificato sul log: i prezzi erano davvero tutti in cache (zero
+query) e i 5 minuti erano INTERAMENTE le 233 query L10 in sequenza, senza alcuna cache, rifatte
+identiche a ogni run. Aggiunta cache L10 (`best_five_l10_cache.json`) + fetch parallelo a 5 thread,
+con **scadenza agganciata alla giornata** su indicazione dell'utente ("lega sempre cache degli L10
+anche alla fine gw, altrimenti è un casino") — corretto, perché l'L10 è la media delle ultime 10
+partite GIOCATE e cambia proprio al confine della giornata: un TTL a ore sbaglierebbe sempre da un
+lato. Riusa la finestra già risolta per le predizioni, quindi zero query in più.
+
+**Formazioni economiche sotto cap — un tentativo scartato e due adottate.** Prima versione
+("Cheapest fill 260") riempiva il cap al prezzo minimo con vincolo distributivo (nessuno oltre 1.6×
+la quota media, per evitare "uno da 80 e quattro da 30"). Concettualmente corretta, ma il risultato
+reale era 319 pt a 53 EUR: "una follia" (utente). Il cap pieno da solo non è un obiettivo sensato,
+è il prezzo a dover guidare col cap come vincolo. Sostituita da due criteri scelti dall'utente:
+- **minimo EUR/punto** sotto cap 260 → su MLS: 259 pt a 2.37 EUR
+- **la più economica da 300+ pt** sotto cap 260 → su MLS: **300 pt a 6.03 EUR**, contro i 319 pt a
+  53 EUR della versione scartata: stesso punteggio a un nono del prezzo. Se il target non è
+  raggiungibile lo DICE, indicando il massimo possibile, invece di mostrare un ripiego silenzioso.
+
+**Preferenza per le starterOdds alte a parità quasi-punteggio** (produzione + Best Five). Regola
+voluta: fra due giocatori entro 2 punti di scarto, preferire quello con odds 0.80 anche se l'altro
+ha punteggio maggiore (esempio dell'utente: Son 66 @0.70 vs Zinckernagel 64 @0.80 → Zinckernagel;
+ma con Zinckernagel a 63 → Son). Implementata come BONUS di 2 punti sul punteggio di ORDINAMENTO,
+non come confronto a coppie: "equivalenti entro 2 punti" non è un ordinamento valido (A~B e B~C non
+implicano A~C, quindi il risultato dipenderebbe dall'ordine dei confronti). Non tocca punteggi
+mostrati né totali. Il lavoro vero è stato il plumbing: le odds venivano usate per filtrare e poi
+**buttate**, quindi a valle nessuno sapeva più distinguere un titolare all'80% da un dubbio al 70%
+— ora `discovery_fixture.py` le salva in `player_card_counts.json` (nessuna query in più, il dato
+era già in mano) e Best Five le fa sopravvivere al prefiltro fino alle righe, riusando il tie-break
+del generatore invece di duplicarlo.
+
+**Spunta "formazione già schierata"** nel report di produzione (richiesta utente: "un quadratino che
+se cliccato si illumina, lo flaggo io dopo che schiero manualmente su Sorare così me lo ricordo").
+Box verde, scritta bianca, bordo verde sulla formazione segnata. Stato in `localStorage` con chiave
+"nome file del report + titolo della formazione", quindi report diversi non si sovrascrivono e le
+spunte sopravvivono alla riapertura. Limite noto: è per-browser, non segue il file su un altro
+dispositivo. Iniettata in coda al report, non dentro `render_lineup_html` (template condiviso con
+Best Five).
+
+Altre modifiche minori: starter odds di default 0.70 → 0.80 su entrambi i tool Best Five (allineata
+nei 4 punti dove viveva il valore); TTL cache prezzi 24h → 5 giorni.
+
+### Backlog aggiornato a fine sessione 31/07
+
+1. **discovery_global mancanti per Spagna, Francia, Inghilterra, Italia, Belgio** — senza, Best Five
+   su quelle leghe non ha pool globale; attiverebbe anche il codice "cap qualità + nomi reali" già
+   pushato ma inerte.
+2. **Grid search per DEF** — unico ruolo su cui non si può dire se i parametri di produzione siano
+   ottimali: i dati su disco non coprono il suo intervallo (half_life 9/12 e trend ≥0.7 contro
+   hl=20/trend=0.0 di produzione).
+3. **Verifica sul campo delle 22 leghe aggiunte** — serve una run di "Formazione giornata" perché si
+   auto-registrino creando le cartelle di output. Mai eseguita.
+4. **Velocità Contender multi-lega** — 5 leghe insieme 20-30+ minuti. Da rimisurare ora che prezzi,
+   predizioni e L10 hanno tutti una cache.
+5. **Circuit breaker CloudFront** da propagare alle altre 47 leghe — tocca solo i tempi, non la
+   qualità.
+6. **Retest venue per Italia/Inghilterra/Francia** — campione ancora troppo piccolo (21-43
+   giocatori); Germania e Spagna ora sono a posto.
+7. **Sinergie Arena/All Stars** — In Season ha il modello Monte Carlo su dati reali, Arena/All Stars
+   sono ancora sul vecchio "corr ×20".
+8. Minori: link Sorare che non distingue classic/in season; `MAX_HISTORY_DAYS=120` provvisorio.
