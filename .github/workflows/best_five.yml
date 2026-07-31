@@ -55,6 +55,10 @@ on:
         description: 'Cap per qualita PRIMA delle starterOdds (top-K per ruolo secondo media L5/L10/L40). 0 = disattivato (pool intero)'
         required: false
         default: '40'
+      notify:
+        description: 'Notifica Telegram di fine run ("false" per disattivarla, es. quando lorchestratore best_five_contender.yml vuole solo la notifica del merge finale)'
+        required: false
+        default: 'true'
   workflow_call:
     inputs:
       lega:
@@ -77,6 +81,10 @@ on:
         type: string
         required: false
         default: '40'
+      notify:
+        type: string
+        required: false
+        default: 'true'
 
 permissions:
   contents: write
@@ -262,6 +270,7 @@ jobs:
       # _CHAT_ID semplici, quelli sono il canale separato del tracker prezzi
       # (check.yml).
       - name: Notifica Telegram
+        if: ${{ inputs.notify != 'false' }}
         env:
           TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}

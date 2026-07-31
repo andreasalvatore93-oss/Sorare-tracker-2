@@ -70,6 +70,10 @@ jobs:
       backups: ${{ inputs.backups }}
       starter_odds: ${{ inputs.starter_odds }}
       top_k_qualita: ${{ inputs.top_k_qualita }}
+      # notify=false (31/07, richiesta esplicita utente): le run singole per
+      # lega sono un passaggio INTERNO dell'orchestrazione, l'utente vuole
+      # una sola notifica -- quella del merge finale, sotto.
+      notify: 'false'
     secrets: inherit
 
   merge_contender:
