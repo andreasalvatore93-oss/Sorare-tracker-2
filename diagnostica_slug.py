@@ -24,6 +24,7 @@ query Diagnostica($slug: String!) {
       name
       domesticLeague { slug displayName }
     }
+    eligibleSo5Competitions { slug displayName }
     anyFutureGames(first: 5) {
       nodes {
         id
@@ -68,6 +69,10 @@ def main():
         dl = club.get('domesticLeague') or {}
         print(f"nome: {p.get('displayName')}")
         print(f"club: {club.get('name')} | domesticLeague: {dl.get('slug') or 'NESSUNA'}")
+        elig = p.get('eligibleSo5Competitions') or []
+        print(f"eligibleSo5Competitions ({len(elig)}):")
+        for c in elig:
+            print(f"  - {c.get('slug')}: {c.get('displayName')}")
         nodes = (p.get('anyFutureGames') or {}).get('nodes') or []
         print(f"partite future restituite: {len(nodes)}")
         for n in nodes:
