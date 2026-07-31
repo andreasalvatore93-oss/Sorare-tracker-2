@@ -2091,6 +2091,264 @@ document.querySelectorAll('.pcard[data-slug]').forEach(function (card) {
     return html_report + script
 
 
+# --- Restyling report Best Five (31/07, richiesta esplicita utente) -------
+#
+# SOLO Best Five: la produzione (formazione_giornata.yml) continua a usare
+# HTML_REPORT_TEMPLATE/render_report_html di formazione_mls invariati -- qui
+# si aggiunge soltanto, in coda al documento gia' prodotto, uno <style> che
+# vince per ordine di cascata e uno <script> che raggruppa i blocchi gia'
+# presenti in sezioni navigabili. Nessuna riscrittura del markup lato server:
+# stesso identico pattern di rendi_carte_cliccabili/_annota_prezzi_html, cosi'
+# se domani cambia il template condiviso questo continua a funzionare (o al
+# massimo perde la sola parte estetica, mai i dati).
+#
+# Tab: "Intero" mostra tutto scorrevole (default), le altre mostrano SOLO la
+# sezione scelta (richiesta esplicita utente: "falle bloccare, in modo che si
+# veda solo quella selezionata").
+RESTYLE_CSS = """
+<style>
+  :root {
+    --bg: #0c1210; --surface: #141c19; --surface-2: #1d2824; --stripe: #26332d;
+    --text: #eef1ec; --muted: #8fa199; --muted-2: #63756c; --gold: #e8b84b;
+    --border: rgba(238,241,236,0.09);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f2f4f0; --surface: #ffffff; --surface-2: #eef1ec; --stripe: #e3e8e1;
+      --text: #16211c; --muted: #566159; --muted-2: #869185; --gold: #9c7414;
+      --border: rgba(20,30,25,0.10);
+    }
+  }
+  body { padding: 0 !important; max-width: none !important; }
+  .bf-topbar {
+    position: sticky; top: 0; z-index: 30;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px 0;
+  }
+  .bf-topbar-inner { max-width: 1180px; margin: 0 auto; }
+  .bf-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .bf-tabs::-webkit-scrollbar { display: none; }
+  .bf-tab {
+    appearance: none; border: none; background: none; color: var(--muted);
+    font-size: 0.82rem; font-weight: 600; padding: 10px 16px 12px; cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit;
+    transition: color 0.15s ease;
+  }
+  .bf-tab:hover { color: var(--text); }
+  .bf-tab[aria-current="true"] { color: var(--text); border-bottom-color: var(--gold); }
+  .bf-tab .bf-count { color: var(--muted-2); font-weight: 700; margin-left: 5px; }
+  .bf-strip { display: flex; gap: 10px; overflow-x: auto; padding: 14px 0 16px; }
+  .bf-strip::-webkit-scrollbar { display: none; }
+  .bf-chip {
+    flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 9px 15px; min-width: 150px; cursor: pointer; color: inherit;
+    text-decoration: none; transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .bf-chip:hover { border-color: var(--gold); transform: translateY(-1px); }
+  .bf-chip-label {
+    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); font-weight: 700;
+  }
+  .bf-chip-score { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .bf-chip-score .bf-unit { font-size: 0.66rem; color: var(--muted); font-weight: 600; margin-left: 3px; }
+  .bf-head { max-width: 1180px; margin: 0 auto; padding: 26px 32px 0; }
+  .bf-main { max-width: 1180px; margin: 0 auto; padding: 8px 32px 72px; }
+  .bf-section { scroll-margin-top: 130px; }
+  .bf-section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; margin: 34px 0 14px;
+  }
+  .bf-section-head h2 {
+    font-size: 1rem; font-weight: 800; letter-spacing: 0.01em; margin: 0;
+  }
+  .bf-section-head .bf-hint { color: var(--muted); font-size: 0.75rem; }
+  .lineup-block, .esclusi-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px; margin-bottom: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+  }
+  @media (prefers-color-scheme: light) {
+    .lineup-block, .esclusi-panel { box-shadow: 0 8px 24px rgba(20,30,25,0.07); }
+  }
+  .esclusi-panel h3 { margin-top: 0; }
+  footer { max-width: 1180px; margin: 0 auto; padding: 0 32px 48px; }
+</style>
+"""
+
+RESTYLE_JS = """
+<script>
+(function () {
+  var SEZIONI = [
+    { id: 'formazioni', label: 'Formazioni',
+      hint: 'Scelte solo per punteggio atteso, il prezzo e informativo' },
+    { id: 'esclusi', label: 'Top esclusi',
+      hint: 'Candidati eleggibili mai schierati in nessuna formazione' },
+    { id: 'cheapest', label: 'Cheapest',
+      hint: 'Prezzo totale minimo assoluto, punteggio come criterio di pareggio' },
+    { id: 'valore', label: 'Ottimizzata valore',
+      hint: 'Soglia prezzo/punteggio calcolata sul pool reale di questa run' },
+    { id: 'under23', label: 'Under 23',
+      hint: 'Solo elenco dei piu economici per ruolo, non una formazione' }
+  ];
+
+  function sezioneDi(el) {
+    if (el.classList && el.classList.contains('lineup-block')) return 'formazioni';
+    var h3 = el.querySelector ? el.querySelector('h3') : null;
+    if (!h3) return null;
+    var t = (h3.textContent || '').trim();
+    if (t.indexOf('Cheapest Under-23') === 0) return 'under23';
+    if (t.indexOf('Ottimizzata valore') === 0) return 'valore';
+    if (t.indexOf('Cheapest') === 0) return 'cheapest';
+    if (t.indexOf('Top') === 0) return 'esclusi';
+    return null;
+  }
+
+  var h1 = document.querySelector('h1');
+  var subhead = document.querySelector('p.subhead');
+  var footer = document.querySelector('footer');
+  if (!h1) return;
+
+  // Raccoglie i blocchi gia' renderizzati, nell'ordine in cui stanno nel
+  // documento (uno <style> di MINI_CARD_CSS precede ogni pannello: resta
+  // dov'e', e' inerte e vale per tutta la pagina).
+  var gruppi = {};
+  SEZIONI.forEach(function (s) { gruppi[s.id] = []; });
+  Array.prototype.slice.call(document.body.children).forEach(function (el) {
+    var sez = sezioneDi(el);
+    if (sez) gruppi[sez].push(el);
+  });
+
+  var head = document.createElement('div');
+  head.className = 'bf-head';
+  head.appendChild(h1);
+  if (subhead) head.appendChild(subhead);
+
+  var main = document.createElement('main');
+  main.className = 'bf-main';
+  SEZIONI.forEach(function (s) {
+    if (!gruppi[s.id].length) return;
+    var sec = document.createElement('section');
+    sec.className = 'bf-section';
+    sec.id = 'bf-' + s.id;
+    var sh = document.createElement('div');
+    sh.className = 'bf-section-head';
+    sh.innerHTML = '<h2></h2><span class="bf-hint"></span>';
+    sh.querySelector('h2').textContent = s.label;
+    sh.querySelector('.bf-hint').textContent = s.hint;
+    sec.appendChild(sh);
+    gruppi[s.id].forEach(function (el) { sec.appendChild(el); });
+    main.appendChild(sec);
+  });
+
+  var topbar = document.createElement('div');
+  topbar.className = 'bf-topbar';
+  var inner = document.createElement('div');
+  inner.className = 'bf-topbar-inner';
+  var nav = document.createElement('nav');
+  nav.className = 'bf-tabs';
+  var strip = document.createElement('div');
+  strip.className = 'bf-strip';
+  inner.appendChild(nav);
+  inner.appendChild(strip);
+  topbar.appendChild(inner);
+
+  document.body.insertBefore(topbar, document.body.firstChild);
+  topbar.parentNode.insertBefore(head, topbar.nextSibling);
+  head.parentNode.insertBefore(main, head.nextSibling);
+  if (footer) document.body.appendChild(footer);
+
+  function mostra(vista, btn) {
+    Array.prototype.slice.call(nav.children).forEach(function (b) {
+      b.removeAttribute('aria-current');
+    });
+    if (btn) btn.setAttribute('aria-current', 'true');
+    SEZIONI.forEach(function (s) {
+      var sec = document.getElementById('bf-' + s.id);
+      if (!sec) return;
+      sec.style.display = (vista === 'intero' || vista === s.id) ? '' : 'none';
+    });
+  }
+
+  function aggiungiTab(id, label, count) {
+    var b = document.createElement('button');
+    b.className = 'bf-tab';
+    b.type = 'button';
+    b.textContent = label;
+    if (count) {
+      var sp = document.createElement('span');
+      sp.className = 'bf-count';
+      sp.textContent = count;
+      b.appendChild(sp);
+    }
+    b.addEventListener('click', function () { mostra(id, b); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    nav.appendChild(b);
+    return b;
+  }
+
+  var tabIntero = aggiungiTab('intero', 'Intero', 0);
+  SEZIONI.forEach(function (s) {
+    if (gruppi[s.id].length) aggiungiTab(s.id, s.label, gruppi[s.id].length);
+  });
+  mostra('intero', tabIntero);
+
+  // Riepilogo cliccabile: una scheda per formazione principale, salta al
+  // blocco corrispondente tornando prima alla vista "Intero" (il blocco
+  // potrebbe stare in una sezione nascosta dal filtro attivo).
+  gruppi['formazioni'].forEach(function (blocco, i) {
+    var titolo = blocco.querySelector('.lineup-title');
+    var fig = blocco.querySelector('.lineup-total .figure');
+    var figCap = blocco.querySelector('.lineup-total .figure.with-captain');
+    var prezzo = blocco.querySelector('.lineup-prezzo-totale');
+    if (!blocco.id) blocco.id = 'bf-formazione-' + (i + 1);
+    var chip = document.createElement('a');
+    chip.className = 'bf-chip';
+    chip.href = '#' + blocco.id;
+    var lab = document.createElement('span');
+    lab.className = 'bf-chip-label';
+    lab.textContent = titolo ? titolo.textContent.trim() : ('Formazione ' + (i + 1));
+    var sc = document.createElement('span');
+    sc.className = 'bf-chip-score';
+    sc.textContent = (figCap || fig) ? (figCap || fig).textContent.trim() : '';
+    if (figCap) {
+      var u = document.createElement('span');
+      u.className = 'bf-unit';
+      u.textContent = 'c/cap.';
+      sc.appendChild(u);
+    }
+    chip.appendChild(lab);
+    chip.appendChild(sc);
+    if (prezzo) {
+      var pr = document.createElement('span');
+      pr.className = 'bf-chip-label';
+      pr.style.color = 'var(--gold)';
+      pr.textContent = (prezzo.textContent.split(':')[1] || '').trim();
+      chip.appendChild(pr);
+    }
+    chip.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      mostra('intero', tabIntero);
+      blocco.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    strip.appendChild(chip);
+  });
+  if (!gruppi['formazioni'].length) strip.style.display = 'none';
+})();
+</script>
+"""
+
+
+def applica_restyling(html_report):
+    """Restyling del report Best Five (tab Intero/per-sezione + tema e
+    spaziature), SOLO additivo -- vedi commento sopra."""
+    blocco = RESTYLE_CSS + RESTYLE_JS
+    if '</body>' in html_report:
+        return html_report.replace('</body>', blocco + '</body>')
+    return html_report + blocco
+
+
 # Tetto REALE di job concorrenti dell'account GitHub Actions (stesso valore
 # di SLOT_CONCORRENTI in pipeline_artifacts.py, verificato sulla pipeline di
 # produzione — vedi commento li' per i dettagli della misura).
@@ -2306,6 +2564,7 @@ def main():
         html_report = rendi_carte_cliccabili(html_report)
         html_report = _annota_prezzi_html(html_report, prezzi)
         html_report = _annota_eta_html(html_report, eta_map)
+        html_report = applica_restyling(html_report)
         html_path = os.path.join(out_dir, f'best_five_contender_{ts}.html')
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html_report)
@@ -2444,6 +2703,7 @@ def main():
     html_report = rendi_carte_cliccabili(html_report)
     html_report = _annota_prezzi_html(html_report, prezzi)
     html_report = _annota_eta_html(html_report, eta_map)
+    html_report = applica_restyling(html_report)
     html_path = os.path.join(out_dir, f'best_five_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_report)
