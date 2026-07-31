@@ -220,6 +220,19 @@ VARIANCE_MODE_TYPES = {'ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220',
                         'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS', 'ALLSTARS_U23'}
 VARIANCE_MODE_TYPES.update(arena_type(lg) for lg in ARENA_LEAGUES)
 
+# Tipi "In Season dedicata" (31/07): estratto in una costante propria perche'
+# due controlli piu' sotto (in_season_multi/apply_positive_synergy dentro
+# generate_lineups_for_type) erano scritti come tupla letterale
+# ('MLS_IN_SEASON', 'KLEAGUE_IN_SEASON') -- un modulo esterno (best_five.py,
+# backlog "Contender") che registra un terzo tipo In Season a runtime
+# (es. 'CONTENDER_IN_SEASON') non poteva estenderla senza modificare qui.
+# Con l'insieme mutabile, un chiamante esterno puo' fare
+# IN_SEASON_TYPES.add('CONTENDER_IN_SEASON') sulla PROPRIA istanza importata
+# del modulo (import dinamico via importlib, non quella di produzione) e
+# ottenere lo stesso trattamento di MLS/K League senza toccare questo file
+# per ogni nuovo tipo In Season temporaneo.
+IN_SEASON_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON'}
+
 # Bonus anti-stack Sorare "Multi-club" (<3 stessa squadra): SOLO In Season e
 # All Stars, mai nelle Arene (hanno il loro cap L10 obbligatorio separato).
 STACK_GUARD_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS', 'ALLSTARS_U23'}
@@ -607,7 +620,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
     # greedy puro; in ENTRAMBI i casi il vincolo portiere-vs-avversario
     # diventa DURO. Con 1 sola In Season di quella lega, comportamento
     # INVARIATO. Le Arene (dedicate o All Stars) non sono toccate.
-    in_season_multi = tipo in ('MLS_IN_SEASON', 'KLEAGUE_IN_SEASON') and count >= 2
+    in_season_multi = tipo in IN_SEASON_TYPES and count >= 2
     # Cap 370 forzato sulla PRIMA All Stars da 7 (28/07, richiesta esplicita
     # utente): la prima delle N All Stars generate, in teoria la piu' forte,
     # prova a rispettare il cap 370 (oggi solo un bonus segnalato via
@@ -656,7 +669,7 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
             # aggiornate il 30/07 sono risultate inerti sulle In Season.
             # Se un domani serve un controllo piu' fine, vanno separati in
             # tre flag distinti invece di sovraccaricare questo.
-            apply_positive_synergy = (tipo not in ('ARENA_ALLSTARS_UNCAPPED', 'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON')
+            apply_positive_synergy = (tipo not in (IN_SEASON_TYPES | {'ARENA_ALLSTARS_UNCAPPED'})
                                        and (not in_season_multi or idx == 1))
             idx_cap = 370.0 if (force_first and idx == 1) else cap
             formazione, error, l10_ok, stack_perso = build_one_lineup_with_growth(
