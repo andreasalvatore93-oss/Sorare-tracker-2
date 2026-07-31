@@ -5192,3 +5192,104 @@ applicarlo davvero al codice di `best_five.py`.
 (`consolida_dati_globali.py`) e valutare ricalibrazioni sulle leghe dove manca. Nuovo: velocizzare
 Best Five/Contender su run multi-lega (5 leghe insieme impiegano 20-30+ minuti), da affrontare in
 un'altra sessione — non urgente, il tool resta comunque utilizzabile.
+
+## 40. Sessione 31/07 (seconda metà) — fix produzione giornata, leghe non tracciate, calibrazione
+
+Continuazione della sezione 39. Qui il lavoro si è spostato dal solo Best Five alla PRODUZIONE
+(tool unificato), dove sono emersi i bug più gravi della giornata.
+
+**BUG PIÙ IMPORTANTE — giocatori di un'altra giornata schierati in produzione.** L'utente ha
+trovato in formazione Kyriani Sabbe (Club Brugge), la cui prossima partita era l'8 agosto, mentre
+la giornata generata era la 96 (31/7–4/8). Causa: `filter_by_window()` in
+`generatore_formazioni/build_formazione_globale.py` usava un giorno-count approssimato da "adesso"
+(`MATCH_WINDOW_DAYS`, 7 giorni), che per costruzione include anche la giornata successiva. Fix in
+due passi:
+
+1. `_risolvi_finestra_esplicita()` — se GAMEWEEK/FIXTURE_SLUG sono impostati, la finestra NON è più
+   una stima: chiama la STESSA `discovery_fixture.risolvi_fixture()` già usata a monte e usa il
+   `[startDate, endDate]` reale di quella fixture. `MATCH_WINDOW_DAYS` resta solo come fallback per
+   il caso auto-resolve. Servono GAMEWEEK/FIXTURE_SLUG anche nello step di generazione formazioni
+   (aggiunti in `formazione_giornata.yml`, prima li aveva solo la discovery).
+2. Fix bis: non basta che il KICKOFF cada nella finestra. Un consiglio vecchio di giorni (lega mai
+   ri-scoperta per QUESTA giornata) può avere un KICKOFF salvato che coincide per caso — successo
+   davvero con kodai-sano/olanda. Aggiunto `_source_mtime` sulle righe e un controllo di freschezza:
+   con finestra esplicita il file deve essere stato scritto non più di 24h prima dell'inizio della
+   finestra. **Nota**: il timestamp va preso dal NOME del file, non dall'mtime (commit 060d2c032d) —
+   un `git pull` riscrive gli mtime e li rende inservibili.
+
+Validato in locale prima della run reale: con GAMEWEEK=96 le leghe superstiti al filtro coincidono
+ESATTAMENTE con quelle per cui la discovery della gw96 ha davvero lanciato i predict (argentina,
+austria, croazia, danimarca, kleague, mls, scozia, svizzera), e i portieri U23 risultavano 3, il
+numero che l'utente aveva confermato a mano.
+
+**Bug reale — Best Five inquinava i consigli di produzione.** `esegui_consiglio()` in best_five.py
+chiama `build_consiglio_<ruolo>.py` (lo stesso script della produzione) che scrive comunque in
+`formazione_<lega>/output/<lega>_<ruolo>_all/` — la STESSA cartella da cui la produzione legge
+"l'ultimo file". Risultato: la produzione ha schierato in Arena Scozia giocatori MAI posseduti
+(viljani-sinisalo). Fix: l'output di Best Five viene spostato subito in
+`formazione_<lega>/output/best_five/_raw_<ruolo>/`, invisibile alla produzione. Ripulita anche la
+contaminazione già su disco (solo scozia/gk risultava inquinato, verificato su tutte le Arene
+confrontando gli slug con `player_card_counts.json`).
+
+**Leghe non tracciate — le carte possedute erano invisibili al bot** (richiesta esplicita utente,
+caso concreto Juan Brunetta/liga-mx). Il punto che conta è la mappa `LEAGUE_DIR` in
+`discovery_fixture.py`: senza una voce lì la carta veniva scartata come "lega senza pipeline".
+Aggiunte 22 leghe + pipeline predict/consiglio clonate, elenco preso dall'audit REALE delle carte
+possedute (non indovinato): messico 17 carte, spagna2 11, italia2 10, belgio2 6, germania3 5,
+russia 4, poi coda lunga 1-3. **Chiude due backlog**: la Norvegia (eliteserien) è inclusa qui, e
+`resto_mondo` non serve più (era inerte, l'utente ha chiarito che era solo il nome per "campionati
+minori non ancora tracciati"). `audit_leghe_possedute.py` ora deriva le leghe già tracciate dal
+repo invece di una lista hardcoded ferma al 27/07; lo slug MLS in domesticLeague è `mlspa`.
+
+**Verificato e SMENTITO — le leghe piccole NON hanno previsioni meno affinate.** Dubbio sollevato
+dall'utente, verificato sui valori reali: `OPPONENT_SENSITIVITY` (29.0), `SHRINK_K` (30.0), prior
+GK (46.20 + 4.05*presence_rate), `TREND_INTENSITY` (gk 0.7 / def 0.0 / mid 0.2 / fwd 0.3) e
+`RANGE_MULTIPLIER` sono IDENTICI su tutte le leghe. Il modello è unico e globale. **Attenzione ai
+commenti stale**: in `formazione_mls/predict/test_def.py` c'è scritto "applicato SOLO MLS/Korea,
+altre 26 leghe restano a 0.7" — è falso, il valore era già stato propagato. Verificare i valori,
+non i commenti. L'unica differenza vera è il circuit breaker CloudFront (solo mls/kleague), che
+tocca i tempi e non la qualità, messo in backlog dall'utente.
+
+**Consolidamento calibrazione — nessuna ricalibrazione serve.** `consolida_dati_globali.py`
+rigenerato: grid_search 1016 -> 3141 file, detail_cache 1536 -> 2518 giocatori, 26 campionati.
+Verifica sui parametri di produzione (10027 punti test): MID e FWD sono rank 3 e 4 con MAE
+IDENTICO al migliore; GK sembra peggiore (rank 56/99, +1.55%) ma il bootstrap a 1000
+ricampionamenti classifica il "vincitore" come DEBOLE (vince il 5.4% delle volte) e il MAE di
+produzione cade dentro l'IC 95% [16.12–17.54], quindi la differenza non è significativa. **DEF non è
+valutabile**: la griglia su disco copre solo half_life 9/12 e trend >=0.7 mentre produzione usa
+hl=20/trend=0.0. Corrette due liste hardcoded (`CAMPIONATI_NOTI` era ferma al 27/07 ed escludeva 6
+leghe con dati reali) e aggiunto `TOP_N` configurabile all'aggregatore.
+
+**Retest venue (casa/trasferta)** su campione allargato: aiuta su tutti e 4 i ruoli ma di
+0.026–0.048% di MAE, sotto il rumore. Il segno coerente su 4 ruoli rende credibile la direzione,
+non l'entità. Nessun motivo per toglierlo né potenziarlo. Germania (409 giocatori) e Spagna (131)
+ora hanno campione sufficiente; Italia (21), Inghilterra (26) e Francia (43) no.
+
+**Best Five — velocità e restyling.** Fetch prezzi/età portato da sequenziale a concorrente
+(ThreadPoolExecutor, stesso pattern di bot_profit.py che scandaglia 1200 giocatori in 4 minuti).
+Trovato che `_attach_eta` girava SEMPRE ignorando `GENERA_UNDER23=false`, raddoppiando le query.
+Run K League dopo i fix: 3m15s totali, step report 20s, zero 429 — ma con cache prezzi calda
+(92/93 già in cache), quindi il caso a cache fredda resta non misurato. Restyling applicato al
+codice (`applica_restyling()`): tab "Intero" + filtro per sezione, riepilogo cliccabile. È solo
+additivo (style+script in coda al documento), la produzione usa lo stesso template invariato.
+Propagato `CONSIGLIO_DISCOVERY_FILE` alle 18 leghe minori restanti (72 file, copertura ora 112/112).
+
+### Backlog aperto a fine sessione 31/07
+
+Ordinati per valore stimato:
+
+1. **discovery_global mancanti per Spagna, Francia, Inghilterra, Italia, Belgio** — senza, Best Five
+   su quelle leghe non ha pool globale; attiverebbe anche il codice "cap qualità + nomi reali" già
+   pushato ma inerte (serve rilanciare le discovery_global per generare `player_quality.json`).
+2. **Grid search per DEF** — l'unico ruolo su cui non si può dire se i parametri di produzione siano
+   ottimali: i dati su disco non coprono il suo intervallo (vedi sopra).
+3. **Verifica sul campo delle 22 leghe aggiunte** — serve una run di "Formazione giornata" perché si
+   auto-registrino creando le cartelle di output. Mai eseguita.
+4. **Velocità Best Five/Contender multi-lega** — 5 leghe insieme 20-30+ minuti. Da misurare anche il
+   caso a cache prezzi fredda (finora solo calda).
+5. **Circuit breaker CloudFront** da propagare alle altre 47 leghe — tocca solo i tempi (una run
+   passò da 4 a 22 minuti il 29/07), non la qualità.
+6. **Retest venue per Italia/Inghilterra/Francia** — campione ancora troppo piccolo (21-43 giocatori).
+7. **Sinergie Arena/All Stars** — In Season ha il modello Monte Carlo su dati reali, Arena/All Stars
+   sono ancora sul vecchio "corr x20".
+8. Minori: link Sorare che non distingue classic/in season; `MAX_HISTORY_DAYS=120` provvisorio.
