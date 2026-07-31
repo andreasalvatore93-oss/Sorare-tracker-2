@@ -5675,3 +5675,136 @@ il sito regge, automatizzarlo come controllo pre-run K League.
 10. `resto_mondo` con pipeline inerte e formula vecchia.
 11. Link Sorare che non distingue classic da in season.
 12. `MAX_HISTORY_DAYS=120` provvisorio — non toccare senza chiedere all'utente.
+
+---
+
+## 44. Sessione 01/08 — big5 coperte, calibrazione riallineata alla produzione
+
+Sessione partita dal backlog #1 della sezione 43 e finita molto più a fondo: la
+discovery era il punto di partenza, ma il valore vero è emerso guardando **cosa
+succede ai dati una volta raccolti**.
+
+### 44.A — discovery_global: le big5 sono complete
+
+Chiuso il backlog #1. Coperte le 4 leghe che mancavano; 76 slug club presi dal
+vivo con `competition.clubs` e smoke-testati uno per uno su `activePlayers`
+(76/76 rispondono con roster reale) prima di spendere un minuto di CI.
+
+| lega | GK | DEF | MID | FWD | tot |
+|---|---|---|---|---|---|
+| francia | 17 | 107 | 93 | 70 | 287 |
+| inghilterra | 28 | 124 | 123 | 104 | 379 |
+| italia | 34 | 130 | 111 | 86 | 361 |
+| belgio | 16 | 84 | 74 | 54 | 228 |
+
+**1.255 giocatori nuovi** nel pool globale. `genera_discovery_global_spagna.py`
+generalizzato in `genera_discovery_global_lega.py`: club e slug competizione in
+tabella, aggiungere una lega è una voce in più.
+
+### 44.B — La griglia di calibrazione non conteneva i parametri di produzione
+
+Backlog #3, ed è la causa a monte di un problema noto. La griglia è la lista
+delle combinazioni che il grid search prova. Sulle leghe diverse da
+mls/kleague era:
+
+| ruolo | produzione (hl / trend / range) | griglia | copriva? |
+|---|---|---|---|
+| GK | 6.0 / 0.0 / 1.15 | hl 9-12 · trend 0.7-1.3 · range 1.2-1.6 | **nessuno dei tre** |
+| MID | 25.0 / 0.2 / 1.1 | idem | **nessuno dei tre** |
+| DEF | 20.0 / 0.0 / 1.1 | hl 9-12 · trend 0.7-1.3 · range 1.0-1.4 | solo il range |
+| FWD | 25.0 / 0.3 / 1.15 | hl 6-30 · trend 0.0-1.3 · range 1.0-1.4 | sì |
+
+Il vincitore dichiarato non era confrontabile con ciò che gira: la
+calibrazione non aveva **mai provato** il punto di produzione. È esattamente il
+motivo per cui il 31/07 il DEF era risultato "non valutabile" — non un dato
+mancante, una domanda mai posta.
+
+**DEF allineato ovunque**: 24 → **168 combinazioni** su 49 leghe (24 file
+modificati, 25 erano già a posto).
+
+### 44.C — Su GK e MID non era la griglia: era un'altra formula
+
+Il ritrovamento più importante della sessione. Sulle 48 leghe non In Season,
+`CALIBRATION_MODE` non girava una griglia più piccola: chiamava la vecchia
+`run_grid_search`, cioè **media pesata × fattore casa × fattore ranking
+avversario × trend**. Niente `level_score` da tassi Poisson, niente shrinkage
+verso il prior di ruolo, e con il fattore ranking avversario che dalla
+**produzione era stato rimosso il 26/07** perché peggiorava il MAE.
+
+È lo stesso difetto che l'audit del 31/07 aveva corretto **solo su mls e
+kleague**, dove la distanza fra le due formule era stata misurata: **16.97
+contro 15.757 di MAE, il 7%**. Tarare le manopole per far sbagliare meno quel
+modello non dice nulla sul modello che schiera.
+
+Portato il percorso allineato (`compute_score_atteso_*` +
+`rigorous_backtest_prod_*`) sulle **6 leghe con discovery_global**: francia,
+inghilterra, italia, belgio, spagna, germania. Le altre 42 restano inline **per
+scelta**: hanno solo i posseduti (1-3 carte), non farebbero campione — e la
+calibrazione non è per-lega, i parametri sono globali, quindi conta il volume
+del campione, non da quale campionato arriva.
+
+**Verifica prima di committare** (il porting tocca codice che vive accanto alla
+produzione): `compute_score_atteso_gk/mid` portate devono restituire lo stesso
+identico numero del blocco inline di ogni lega. Confronto contro una replica
+letterale del codice inline, **400 casi casuali per GK e 300 per MID su tutte e
+6 le leghe: scarto massimo 0** (< 1e-9). La produzione non è toccata:
+`build_prediction` è invariata, il blocco inline convive con la funzione
+estratta esattamente come su MLS.
+
+Stato finale: mls, kleague e le 6 big5 → allineate su **tutti e 4 i ruoli**.
+
+### 44.D — Il grid search stava dietro un controllo che non lo riguardava
+
+Emerso alla prima run reale (italia/gk): **34 job verdi, zero dati**. In
+`build_prediction` il grid search sta dopo
+
+```
+if not future_games:
+    return None
+```
+
+Quel controllo serve alla **predizione**, che senza un avversario da affrontare
+non si può calcolare. La calibrazione è un **backtest sullo storico** e le
+partite future non le usa. Con i campionati fermi ogni giocatore usciva a mani
+vuote pur avendo tutto: Alex Meret aveva 12 partite utilizzabili con dettaglio
+granulare 12/12, tutte buttate.
+
+Il difetto c'era anche su mls/kleague, dove non si era mai visto solo perché
+sono In Season e una partita futura c'è sempre. Corretto su 32 file con un ramo
+anticipato; la chiamata al grid search non è riscritta ma **copiata** da quella
+già presente nel file, e il salvataggio di `<slug>_grid.json` estratto in
+`salva_grid_results()` chiamata da entrambe le strade — nessuna seconda copia
+che possa divergere.
+
+**Secondo bug, a cascata**: `KeyError: 'indice'` sui giocatori che invece la
+partita futura ce l'hanno. Le righe del backtest allineato usavano la chiave
+`i` e non esportavano `partite_storico_usate`/`range_conf`, che `format_output`
+si aspetta. Latente anche su mls/kleague. Corretto su 114 blocchi.
+
+Dopo i fix, italia/gk: **31 giocatori × 240 combinazioni**. I mancanti sono
+quelli senza storico sufficiente, fisiologico.
+
+### 44.E — Nota di metodo
+
+Due dei tre problemi di questa sessione (44.C e 44.D) **non si vedono guardando
+il codice della produzione**, che è sano e identico ovunque. Si vedono solo
+chiedendosi *cosa misura davvero lo strumento di misura*. Vale la pena
+ricordarlo: un termometro tarato male non dà la febbre al paziente, ma porta a
+curarlo per una malattia che non ha.
+
+### 44.F — Backlog aggiornato
+
+Chiusi: #1 (discovery_global big5), #3 (griglia disallineata).
+
+1. **Retest venue** su Italia/Inghilterra/Francia — era bloccato dal campione;
+   ora il pool c'è, ma la cache dei dettagli si riempie davvero solo dopo i
+   predict, quindi va rifatto **dopo** la calibrazione in corso.
+2. **Consolidare i nuovi dati di calibrazione** e rivalutare i parametri di
+   produzione ora che la griglia contiene il punto vero — in particolare il
+   DEF, finora non valutabile.
+3. **GK/MID inline sulle altre 42 leghe** — scelta consapevole, non un debito
+   urgente: senza discovery_global lì non c'è campione da calibrare.
+4. Scaling cross-team ×20 mai misurato (§43.D); sinergia ×12 da confermare su
+   più giornate (§42.D.1); segnale "crescita" su gruppi ancora piccoli.
+5. Velocità Best Five multi-lega; circuit breaker su mls/kleague soltanto;
+   `resto_mondo` inerte; link Sorare classic/in season; `MAX_HISTORY_DAYS=120`.
