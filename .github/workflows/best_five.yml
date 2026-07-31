@@ -67,6 +67,10 @@ on:
         description: '"true" per generare ANCHE le 3 formazioni piu economiche (4 In Season+1 Classic senza cap, stesso con cap 260, nessun limite Classic con cap 260) -- prezzo minimo totale, punteggio come criterio di pareggio'
         required: false
         default: 'true'
+      genera_under23:
+        description: '"true" per generare ANCHE lo stemmino U23 sulle carte + la colonna "Cheapest Under-23" (3 per ruolo) -- ATTENZIONE: raddoppia le query sequenziali nello step report (prezzi+eta per ogni candidato, niente batching), default false per non rallentare le run normali'
+        required: false
+        default: 'false'
   workflow_call:
     inputs:
       lega:
@@ -101,6 +105,10 @@ on:
         type: string
         required: false
         default: 'true'
+      genera_under23:
+        type: string
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -276,6 +284,10 @@ jobs:
           # best_five.py) -- query L10 extra se non gia' fatte da
           # rispetta_cap_l10.
           BEST_FIVE_GENERA_CHEAPEST: ${{ inputs.genera_cheapest || 'true' }}
+          # NUOVO (31/07, richiesta esplicita utente): "true" per lo stemmino
+          # U23 + colonna "Cheapest Under-23" -- default false, raddoppia le
+          # query sequenziali dello step (vedi GENERA_UNDER23 in best_five.py).
+          BEST_FIVE_GENERA_UNDER23: ${{ inputs.genera_under23 || 'false' }}
         run: |
           set -u
           ARGS="${{ inputs.lega || 'kleague' }} --backups ${{ inputs.backups || '2' }}"

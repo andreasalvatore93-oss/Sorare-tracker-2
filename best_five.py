@@ -49,6 +49,7 @@ import base64
 import subprocess
 import datetime
 import importlib.util
+import concurrent.futures
 
 try:
     from curl_cffi import requests as curl_requests
@@ -973,25 +974,35 @@ def fetch_prezzi(slugs):
     bp.LIVE_OFFERS_PAGE_SIZE = 10
     eth_rate = bp.get_eth_rate()
     ts_ora = ora.isoformat()
-    # FIX BUG REALE (31/07, run K League: 4 ondate di 429 per soli 73
-    # giocatori, quando bot_profit.py da solo ne scandaglia 1200 in 4 minuti
-    # con lo stesso pacer adattivo): il pacer di bot_profit e' un contatore
-    # LOCALE al processo, parte assumendo il bucket pieno e si autotara SOLO
-    # sui 429 che vede lui. Ma prima di arrivare qui, best_five.py ha gia'
-    # speso parte del budget REALE di rate-limit di Sorare con centinaia di
-    # richieste di discovery/starterOdds/predict fatte con 'requests' diretto
-    # (mai passate dal pacer, che quindi non ne sa nulla) -- il bucket vero e'
-    # gia' parzialmente scarico quando fetch_prezzi parte, e il pacer lo
-    # scopre solo DOPO il primo 429. Un piccolo ritmo prudente qui (stesso
-    # pattern di prefiltra_starter_odds) evita di scaricare la burst iniziale
-    # a tutta velocita' su un bucket che non e' pieno come il pacer crede.
-    for idx, slug in enumerate(da_interrogare, 1):
-        in_season, classic = _prezzi_minimi_slug(bp, eth_rate, slug)
-        prezzi[slug] = {'in_season': in_season, 'classic': classic}
-        cache[slug] = {'in_season': in_season, 'classic': classic, 'ts': ts_ora}
-        if idx % 20 == 0 or idx == len(da_interrogare):
-            log(f"[prezzi] [{idx}/{len(da_interrogare)}] fatto.")
-        time.sleep(0.3)
+
+    # FIX BUG REALE (31/07, run K League: 4 ondate di 429 SEQUENZIALI per
+    # soli 73 giocatori -- 6+ minuti solo per i prezzi, inaccettabile):
+    # bot_profit.py stesso scandaglia 1200 giocatori in 4 minuti perche' lo fa
+    # con CONCORRENZA (ThreadPoolExecutor, SNAPSHOT_WORKER_THREADS=10, vedi
+    # scanners/bot_profit.py) -- tanti worker sovrappongono l'attesa di
+    # rete, il pacer adattivo condiviso (_pace_registra_429/_pace_slot, dentro
+    # graphql_query) throttla il RITMO aggregato in uscita, non il numero di
+    # thread. Qui invece si chiamava _prezzi_minimi_slug in un for SEQUENZIALE
+    # (una richiesta alla volta, thread singolo): stesso ritmo massimo per
+    # singola richiesta ma si spreca tutta l'attesa di rete invece di
+    # sovrapporla, quindi per completare lo stesso volume ci vuole molto piu'
+    # tempo a parita' di rate limit reale. Fix: stesso ThreadPoolExecutor di
+    # bot_profit.py (import gia' fatto sopra, pacer condiviso -- funziona
+    # automaticamente anche multi-thread, e' module-level in bot_profit.py).
+    def _worker(slug):
+        return slug, _prezzi_minimi_slug(bp, eth_rate, slug)
+
+    fatti = 0
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=5, thread_name_prefix='prezzi') as executor:
+        futures = [executor.submit(_worker, slug) for slug in da_interrogare]
+        for future in concurrent.futures.as_completed(futures):
+            slug, (in_season, classic) = future.result()
+            prezzi[slug] = {'in_season': in_season, 'classic': classic}
+            cache[slug] = {'in_season': in_season, 'classic': classic, 'ts': ts_ora}
+            fatti += 1
+            if fatti % 20 == 0 or fatti == len(da_interrogare):
+                log(f"[prezzi] [{fatti}/{len(da_interrogare)}] fatto.")
     _prezzi_cache_scrivi(cache)
     return prezzi
 
@@ -1108,13 +1119,21 @@ def fetch_eta(slugs):
 
     log(f"[eta] {len(unici) - len(da_interrogare)} da cache, {len(da_interrogare)} da interrogare dal vivo.")
     ts_ora = ora.isoformat()
-    for idx, slug in enumerate(da_interrogare, 1):
-        eta = fetch_eta_reale(slug)
-        eta_map[slug] = eta
-        cache[slug] = {'age': eta, 'ts': ts_ora}
-        if idx % 20 == 0 or idx == len(da_interrogare):
-            log(f"[eta] [{idx}/{len(da_interrogare)}] fatto.")
-        time.sleep(0.3)
+    # Stesso fix di concorrenza di fetch_prezzi (vedi commento li'): richieste
+    # in parallelo invece di un for sequenziale,_http_session e' condivisa e
+    # thread-safe (usata gia' cosi' altrove in questo file).
+    fatti = 0
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=5, thread_name_prefix='eta') as executor:
+        futures = {executor.submit(fetch_eta_reale, slug): slug for slug in da_interrogare}
+        for future in concurrent.futures.as_completed(futures):
+            slug = futures[future]
+            eta = future.result()
+            eta_map[slug] = eta
+            cache[slug] = {'age': eta, 'ts': ts_ora}
+            fatti += 1
+            if fatti % 20 == 0 or fatti == len(da_interrogare):
+                log(f"[eta] [{fatti}/{len(da_interrogare)}] fatto.")
     _eta_cache_scrivi(cache)
     return eta_map
 
@@ -1386,9 +1405,16 @@ def _blocco_top_esclusi(bff, card_pool, role_data_per_ruolo, n=TOP_N_ESCLUSI):
 # CardPool per niente.
 GENERA_CHEAPEST = os.environ.get('BEST_FIVE_GENERA_CHEAPEST', '0').strip() not in ('0', 'false', 'no', '')
 
-# Cheapest Under-23 (31/07, richiesta esplicita utente): default true, stesso
-# meccanismo on/off di GENERA_CHEAPEST.
-GENERA_UNDER23 = os.environ.get('BEST_FIVE_GENERA_UNDER23', '1').strip() not in ('0', 'false', 'no', '')
+# Cheapest Under-23 (31/07, richiesta esplicita utente). Default FALSE (non
+# 'true' come GENERA_CHEAPEST): fetch_eta interroga l'API UNA VOLTA PER
+# GIOCATORE (Sorare rifiuta il batching via alias multipli sullo stesso
+# root field -- verificato dal vivo, errore "Duplicated root field:
+# anyPlayer"), quindi RADDOPPIA le richieste sequenziali nello stesso step
+# 'report' rispetto ai soli prezzi -- osservato causare rallentamenti/
+# percepita 'run bloccata' su una lega a cache fredda (K League, 31/07).
+# On-demand via BEST_FIVE_GENERA_UNDER23=1 finche' non si trova un modo piu'
+# economico di fetchare l'eta' (es. solo per un sottoinsieme piu' piccolo).
+GENERA_UNDER23 = os.environ.get('BEST_FIVE_GENERA_UNDER23', '0').strip() not in ('0', 'false', 'no', '')
 
 CHEAPEST_CONFIGS = (
     # (etichetta, max_classic, l10_cap)
