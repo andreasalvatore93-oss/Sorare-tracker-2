@@ -104,6 +104,9 @@ CAMPIONATI_NOTI = (
 # grid_search_calibrazione_<lega>.yml, pool limitato ai soli posseduti per
 # assenza di discovery globale su questi campionati)
 MIN_TEST_GAMES = int(os.environ.get('MIN_TEST_GAMES', '3'))
+# Quanti giocatori servono perche' una combinazione entri nell'aggregato.
+# ASSOLUTA, non una frazione del totale -- vedi il commento in aggregate().
+AGGREGATE_MIN_PLAYERS = int(os.environ.get('AGGREGATE_MIN_PLAYERS', '25'))
 
 CALIBRATION_DIR = f'formazione_{CAMPIONATO}/output/{CAMPIONATO}_{RUOLO}_calibration'  # solo per modalita' singolo-campionato
 
@@ -225,11 +228,32 @@ def load_all_grids():
 def aggregate(per_label, n_players):
     """Per ogni label, calcola MAE medio e copertura media (PESATI per n_test)
     SOLO sulle combinazioni presenti per un numero minimo di giocatori (per
-    non far vincere una combinazione forte su 1-2 giocatori per puro caso)."""
-    min_players_required = max(3, int(n_players * 0.5))  # almeno meta' dei giocatori disponibili
+    non far vincere una combinazione forte su 1-2 giocatori per puro caso).
+
+    FIX 31/07 (bug reale trovato analizzando DEF): la soglia era una frazione
+    FISSA dei giocatori totali (50%), e con griglie ETEROGENEE questo faceva
+    sparire dall'analisi le combinazioni migliori. Situazione reale su DEF:
+    mls ha grid da 168 combinazioni, germania e kleague da 504, tutte le altre
+    leghe da 72 (griglia vecchia) -- le combo che esistono solo nelle griglie
+    nuove (fra cui half_life=20, cioe' IL VALORE DI PRODUZIONE) erano presenti
+    in meno del 50% dei giocatori e venivano scartate. Risultato: l'aggregato
+    globale collassava sul minimo comune denominatore di 72 combo e i
+    parametri di produzione risultavano "non valutabili", quando invece i dati
+    per giudicarli c'erano eccome (verificato: su germania hl=20/trend=0.0 e'
+    la migliore per MAE, su kleague ha il MAE piu' basso in assoluto).
+
+    Ora la soglia e' ASSOLUTA (AGGREGATE_MIN_PLAYERS, default 25): serve
+    comunque un campione decente per fidarsi di una combinazione, ma una combo
+    presente "solo" su 300 giocatori non viene piu' buttata via perche' altri
+    ne hanno una griglia diversa. La colonna n_giocatori nell'output dice su
+    quanti si basa ciascuna riga, quindi le righe con campione piu' piccolo
+    restano riconoscibili a colpo d'occhio."""
+    min_players_required = min(AGGREGATE_MIN_PLAYERS, max(3, n_players))
+    scartate = 0
     results = []
     for label, entries in per_label.items():
         if len(entries) < min_players_required:
+            scartate += 1
             continue
         total_weight = sum(e['n_test'] for e in entries)
         avg_mae = sum(e['mae'] * e['n_test'] for e in entries) / total_weight
@@ -254,6 +278,9 @@ def aggregate(per_label, n_players):
             'trend_intensity': entries[0]['trend_intensity'],
         })
 
+    if scartate:
+        print(f"[aggregate] {scartate} combinazioni scartate perche' presenti su meno di "
+              f"{min_players_required} giocatori (soglia AGGREGATE_MIN_PLAYERS).")
     results.sort(key=lambda r: r['composite_score_medio'])
     return results
 
@@ -283,9 +310,17 @@ def main():
     print(f"\n{'#':>3} {'half_life':>9} {'range_x':>8} {'opp_sens':>9} {'trend_int':>10} "
           f"{'MAE medio':>10} {'copertura%':>11} {'n_gioc':>7} {'n_partite_w':>12}  etichetta")
     for i, r in enumerate(results[:int(os.environ.get("TOP_N", "20"))], 1):
+        # 31/07: alcune griglie NON variano opponent_sensitivity (le combo
+        # "prod" hanno solo half_life/trend/range), quindi il campo puo' essere
+        # None -- prima mandava in errore la formattazione appena una di quelle
+        # combo entrava in classifica. Stesso discorso per la copertura, che
+        # manca se nessuna entry aveva il dato.
+        opp = r['opponent_sensitivity']
+        cop = r['copertura_media']
         print(f"{i:>3} {r['half_life']:>9} {r['range_multiplier']:>8} "
-              f"{r['opponent_sensitivity']:>9} {r['trend_intensity']:>10} "
-              f"{r['mae_medio']:>10.2f} {r['copertura_media']:>10.1f}% {r['n_giocatori']:>7} "
+              f"{('n/d' if opp is None else opp):>9} {r['trend_intensity']:>10} "
+              f"{r['mae_medio']:>10.2f} "
+              f"{('n/d' if cop is None else f'{cop:.1f}%'):>11} {r['n_giocatori']:>7} "
               f"{r['n_partite_totali_pesate']:>12}  {r['label']}")
 
     best = results[0]
@@ -294,7 +329,9 @@ def main():
     print(f"half_life={best['half_life']}, range_multiplier={best['range_multiplier']}, "
           f"opponent_sensitivity={best['opponent_sensitivity']}, "
           f"trend_intensity={best['trend_intensity']}, {granulari_str}")
-    print(f"MAE medio: {best['mae_medio']:.2f} | copertura media: {best['copertura_media']:.1f}% "
+    _cop_best = best['copertura_media']
+    print(f"MAE medio: {best['mae_medio']:.2f} | copertura media: "
+          f"{'n/d' if _cop_best is None else f'{_cop_best:.1f}%'} "
           f"| basato su {best['n_giocatori']} giocatori ({best['n_partite_totali_pesate']} partite totali)")
 
     if GLOBALE:
