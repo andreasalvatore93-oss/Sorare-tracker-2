@@ -13,7 +13,15 @@ import glob
 import datetime
 
 OUTPUT_DIR = 'formazione_austria/output/austria_gk_all'
-DISCOVERY_FILE = os.path.join('formazione_austria/output/austria_gk_discovery', 'player_slugs.json')
+# CONSIGLIO_DISCOVERY_FILE (31/07, fix bug reale: questa lega non aveva MAI
+# ricevuto la patch del 30/07 fatta solo su MLS/K League/Germania -- Best Five
+# passava il pool giusto ma questo script ignorava l'env var e restava sui
+# soli posseduti, scartando in silenzio tutti i candidati Best Five con buone
+# starterOdds. Override opzionale -- permette a best_five.py di puntare al
+# pool GLOBALE (i sopravvissuti al prefiltro, non i posseduti) senza
+# duplicare qui la logica di parsing/sort gia' scritta in questo file. Se non
+# impostata, comportamento INVARIATO (posseduti, come sempre).
+DISCOVERY_FILE = os.environ.get('CONSIGLIO_DISCOVERY_FILE') or os.path.join('formazione_austria/output/austria_gk_discovery', 'player_slugs.json')
 
 # Pattern della riga "N) slug: X pt attesi (low-high)" gia' scritta da
 # test_gk.py nel riepilogo di ciascun job (uno per giocatore, quindi
