@@ -111,6 +111,29 @@ SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Ac
 OUTPUT_DIR = 'formazione_ucraina/output/ucraina_mid_calibration' if CALIBRATION_MODE else 'formazione_ucraina/output/ucraina_mid_all'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 
+# Circuit breaker CloudFront (29/07, propagato a questa lega il 31/07): un
+# HTTP 403 "Request blocked" NON e' un errore del singolo giocatore, e' un
+# blocco IP/sessione -- ritentare con attese progressive non lo risolve e
+# costa minuti (il 29/07 una run e' passata da ~4 a 22 minuti). Rilevato una
+# volta, per il resto del job si fa un solo tentativo secco per giocatore.
+# Il marker sta in /tmp ed e' per-lega/per-ruolo, quindi job diversi non si
+# influenzano a vicenda.
+_CIRCUIT_BREAKER_PATH = '/tmp/sorare_cloudfront_block_ucraina_mid.marker'
+
+
+def _circuit_breaker_tripped():
+    return os.path.exists(_CIRCUIT_BREAKER_PATH)
+
+
+def _trip_circuit_breaker(reason):
+    if not _circuit_breaker_tripped():
+        try:
+            with open(_CIRCUIT_BREAKER_PATH, 'w', encoding='utf-8') as f:
+                f.write(reason)
+        except OSError:
+            pass
+
+
 COOKIES = os.environ.get('SORARE_COOKIE', '')
 
 if _HAS_CURL_CFFI:
@@ -239,6 +262,14 @@ def graphql_query(query, variables=None, operation_name=None):
             if resp.status_code >= 400:
                 log(f"[GraphQL ERRORE] {label} HTTP {resp.status_code} | dump completo: {debug_file}")
                 log(f"[GraphQL ERRORE] {label} body (primi 1500 char): {resp.text[:1500]}")
+                if resp.status_code == 403 and ('cloudfront' in resp.text.lower()
+                                                or 'request blocked' in resp.text.lower()):
+                    if not _circuit_breaker_tripped():
+                        log(f"[CIRCUIT BREAKER] Blocco CloudFront rilevato (HTTP 403, "
+                            f"'Request blocked') -- non e' un errore per-giocatore, e' un "
+                            f"blocco IP/sessione che ritentare non risolve. Disattivo i "
+                            f"retry con attesa per il resto di questa job.")
+                    _trip_circuit_breaker(f"HTTP 403 CloudFront su {label}")
                 return {}
 
             data = resp.json()
@@ -1886,7 +1917,8 @@ def main():
     summary_rows = []
 
     for idx, slug in enumerate(slugs_to_process, 1):
-        if idx > 1:
+        breaker_active = _circuit_breaker_tripped()
+        if idx > 1 and not breaker_active:
             pause_s = 10.0  # pausa base tra giocatori
             log(f"Pausa di {pause_s}s prima del prossimo giocatore...")
             time.sleep(pause_s)
@@ -1899,7 +1931,10 @@ def main():
         # passa comunque al giocatore successivo (senza bloccare l'intero test).
         result = None
         last_exception = None
-        retry_delays = [10.0, 20.0, 40.0]
+        retry_delays = [] if breaker_active else [10.0, 20.0, 40.0]
+        if breaker_active:
+            log(f"[{slug}] Circuit breaker attivo (blocco CloudFront gia' rilevato in "
+                f"questa job) -- salto i retry con attesa, un solo tentativo secco.")
         attempt = 0
         cumulative_wait = 0.0
 
