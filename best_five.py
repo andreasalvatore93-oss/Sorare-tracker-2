@@ -300,10 +300,108 @@ def prefiltra_starter_odds(ruolo, slugs, soglia=MIN_STARTER_ODDS_PREFILTER):
     return sopravvissuti
 
 
+# --- Riuso delle predizioni della stessa giornata (31/07, richiesta esplicita
+# utente: "una cache predizione su giornata... lancio korea standalone, registra
+# le predizioni; poi lancio korea e mls insieme, korea usa quelle cachate e mls
+# fa tutto dall'inizio") -----------------------------------------------------
+#
+# CHIAVE DI VALIDITA': il kickoff della partita predetta, che i file
+# prediction_<slug>_*.txt scrivono gia' nella riga 'Data: YYYY-MM-DDTHH:MM'
+# (la stessa da cui build_consiglio_<ruolo>.py ricava il campo KICKOFF). Non
+# serve conoscere il numero di giornata: se quel kickoff e' ANCORA NEL FUTURO,
+# la "prossima partita" del giocatore e' la stessa di quando la predizione e'
+# stata calcolata, quindi la predizione vale ancora. Se e' passato, la
+# prossima partita e' un'altra e va ricalcolata. Questo rende la scadenza
+# automaticamente tarata sulla giornata, senza doverla configurare.
+#
+# Le starterOdds NON entrano nella chiave, ed e' corretto (osservazione
+# dell'utente): sono un filtro applicato PRIMA, a monte -- se cambiano, il
+# giocatore semplicemente non supera il prefiltro e non arriva qui, ma il
+# punteggio atteso per quella partita resta lo stesso.
+#
+# Tetto di eta' come rete di sicurezza: se fra le due run e' stata giocata
+# un'altra partita o sono cambiati i parametri del modello, la forma recente
+# puo' essersi mossa. Oltre PREDIZIONI_MAX_ORE si ricalcola comunque.
+RIUSA_PREDIZIONI = os.environ.get('BEST_FIVE_RIUSA_PREDIZIONI', '1').strip() not in ('0', 'false', 'no', '')
+PREDIZIONI_MAX_ORE = float(os.environ.get('BEST_FIVE_PREDIZIONI_MAX_ORE', '72'))
+
+_DATA_PREDIZIONE_RE = re.compile(r'^Data:\s+(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\s*$', re.MULTILINE)
+
+
+def _predizione_riutilizzabile(lega, ruolo, slug, adesso=None):
+    """True se esiste gia' una predizione valida per la PROSSIMA partita di
+    questo giocatore -- vedi il commento sopra per la regola. Ritorna
+    (riusabile, kickoff, path_del_file) -- il path serve a ricopiare la
+    predizione dove il passo consiglio se la aspetta."""
+    if not RIUSA_PREDIZIONI:
+        return False, None, None
+    candidati = glob.glob(os.path.join(_dir_predizioni_best_five(lega, ruolo),
+                                        f'prediction_{slug}_*.txt'))
+    candidati += glob.glob(os.path.join(output_dir_per_ruolo(lega, ruolo),
+                                         f'prediction_{slug}_*.txt'))
+    if not candidati:
+        return False, None, None
+    adesso = adesso or datetime.datetime.utcnow()
+    for path in sorted(candidati, key=_timestamp_da_nome_file, reverse=True):
+        eta_ore = (adesso - _timestamp_da_nome_file(path)).total_seconds() / 3600.0
+        if eta_ore > PREDIZIONI_MAX_ORE:
+            continue
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                m = _DATA_PREDIZIONE_RE.search(f.read())
+        except OSError:
+            continue
+        if not m:
+            continue
+        try:
+            kickoff = datetime.datetime.fromisoformat(m.group(1))
+        except ValueError:
+            continue
+        if kickoff > adesso:
+            return True, m.group(1), path
+    return False, None, None
+
+
+def _dir_predizioni_best_five(lega, ruolo):
+    """Cartella isolata dove Best Five tiene le proprie predizioni (vedi
+    _isola_output_best_five: NON quella condivisa con la produzione)."""
+    return os.path.join(REPO_ROOT, f'formazione_{lega}', 'output', 'best_five', f'_raw_{ruolo}')
+
+
+def _timestamp_da_nome_file(path):
+    """Timestamp dal NOME del file, non dall'mtime: un git checkout/pull
+    riscrive gli mtime e li rende inservibili (stesso motivo per cui il
+    controllo di freschezza in build_formazione_globale.py legge il nome)."""
+    m = re.search(r'_(\d{4}-\d{2}-\d{2})_(\d{6})\.txt$', os.path.basename(path))
+    if not m:
+        return datetime.datetime.min
+    try:
+        return datetime.datetime.strptime(m.group(1) + m.group(2), '%Y-%m-%d%H%M%S')
+    except ValueError:
+        return datetime.datetime.min
+
+
 def run_prediction_su_slug(lega, ruolo, slug):
     """Esegue test_<ruolo>.py su UN SOLO giocatore (TARGET_SLUG), PLAYER_POOL=global
     cosi' DISCOVERY_FILE punta comunque al pool globale (serve solo per il
     fallback/coerenza interna dello script, il TARGET_SLUG bypassa la lista)."""
+    riusabile, kickoff, path_riuso = _predizione_riutilizzabile(lega, ruolo, slug)
+    if riusabile:
+        # La predizione riusata puo' stare nella cartella ISOLATA di Best Five
+        # (_raw_<ruolo>, dove la sposta _isola_output_best_five a fine run),
+        # mentre il passo successivo -- build_consiglio_<ruolo>.py via
+        # slugs_con_prediction/trova_output_per_slug -- guarda SOLO in
+        # <lega>_<ruolo>_all. Senza questa copia il giocatore sparirebbe dal
+        # consiglio proprio perche' la sua predizione era gia' pronta.
+        dest_dir = output_dir_per_ruolo(lega, ruolo)
+        os.makedirs(dest_dir, exist_ok=True)
+        dest = os.path.join(dest_dir, os.path.basename(path_riuso))
+        if os.path.abspath(path_riuso) != os.path.abspath(dest):
+            shutil.copy2(path_riuso, dest)
+        log(f"[{ruolo}] {slug}: predizione gia' su disco per la partita del {kickoff} "
+            f"(ancora futura) -- RIUSATA, nessuna query.")
+        return
+
     script = ROLE_SCRIPTS[ruolo]
     script_path = os.path.join(REPO_ROOT, f'formazione_{lega}', 'predict', script)
     if not os.path.exists(script_path):
