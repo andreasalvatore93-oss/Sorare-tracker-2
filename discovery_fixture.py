@@ -115,6 +115,28 @@ LEAGUE_DIR = {
     # su Sorare ma scartati come "lega senza pipeline"): Kacper Urbanski
     # (Ekstraklasa, Polonia) e Francisco Gonzalez (Primera Division, Cile).
     'ekstraklasa': 'polonia', 'primera-division-cl': 'cile',
+    # Aggiunte 31/07 (richiesta esplicita utente: "basta che poi il bot
+    # riconosca che io ho quelle carte quando devo schierare"). Elenco preso
+    # dall'audit reale delle carte possedute (audit_leghe_possedute.py, run
+    # del 31/07): TUTTE le domesticLeague in cui l'utente ha almeno una carta
+    # e che non avevano ancora una cartella. Senza la voce qui,
+    # discovery_fixture.py scartava quelle carte come "lega senza pipeline"
+    # e non arrivavano mai al generatore, per quanti punti valessero.
+    # Le prime tre sono le uniche con volume significativo (17/11/10 carte),
+    # il resto e' coda lunga da 1-6 carte -- costano comunque nulla, la
+    # pipeline e' clonata e i ruoli senza candidati restano semplicemente
+    # vuoti.
+    'liga-mx': 'messico', 'segunda-division-es': 'spagna2',
+    'serie-b-it': 'italia2', 'first-division-b': 'belgio2',
+    '2-liga': 'germania3', 'russian-premier-league': 'russia',
+    'pro-league': 'arabia', 'primera-a': 'colombia',
+    'eliteserien': 'norvegia', 'k-league-2': 'kleague2',
+    'j2-league': 'giappone2', 'eerste-divisie': 'olanda2',
+    'allsvenskan': 'svezia', 'liga-1': 'romania',
+    'czech-liga': 'cechia', 'super-liga-rs': 'serbia',
+    'ligat-ha-al': 'israele', 'ukrainian-premier-league': 'ucraina',
+    'chinese-super-league': 'cina', 'primera-division-ve': 'venezuela',
+    'tipsport-liga': 'slovacchia', 'premyer-liqa': 'azerbaigian',
 }
 
 # Split delle cartelle di destinazione in n quote -- usato solo se
