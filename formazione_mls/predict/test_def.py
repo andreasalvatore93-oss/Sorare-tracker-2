@@ -1384,7 +1384,8 @@ def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,
                                goals_conceded_values, passing_values, clean_sheet_values,
                                min_history=6, half_life=None, trend_intensity=None,
                                range_multiplier=1.0,
-                               opponent_team_slugs_hist=None, game_dates_hist=None, league='mls'):
+                               opponent_team_slugs_hist=None, game_dates_hist=None, league='mls',
+                               presence_rate=None):
     """Backtest walk-forward ALLINEATO ALLA PRODUZIONE (27/07): ad ogni partita
     richiama compute_score_atteso_def() -- la STESSA funzione della predizione reale --
     usando solo lo storico precedente, e confronta con lo score reale. Sostituisce il
@@ -1418,6 +1419,7 @@ def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,
             game_dates_hist=game_dates_hist[:i] if game_dates_hist else None,
             next_opponent_team_slug=opponent_team_slugs_hist[i] if opponent_team_slugs_hist else None,
             next_game_date=game_dates_hist[i] if game_dates_hist else None,
+            presence_rate=presence_rate,
             league=league)
         reale = scores[i]
         w = exponential_weights(i, half_life)
@@ -1473,7 +1475,8 @@ def run_grid_search_prod_def(scores, is_home_flags, opponent_rankings,
                              pos_decisive_values, neg_decisive_values,
                              goals_conceded_values, passing_values, clean_sheet_values,
                              min_history=6,
-                             opponent_team_slugs_hist=None, game_dates_hist=None, league='mls'):
+                             opponent_team_slugs_hist=None, game_dates_hist=None, league='mls',
+                             presence_rate=None):
     """Grid search ALLINEATO: gira rigorous_backtest_prod_def (che internamente
     chiama compute_score_atteso_def, la STESSA funzione della predizione reale)
     su GRID_SEARCH_COMBINATIONS_PROD. Stesso composite score e stesso formato di
@@ -1489,7 +1492,8 @@ def run_grid_search_prod_def(scores, is_home_flags, opponent_rankings,
             min_history=min_history, half_life=half_life,
             trend_intensity=trend_intensity, range_multiplier=range_mult,
             opponent_team_slugs_hist=opponent_team_slugs_hist,
-            game_dates_hist=game_dates_hist, league=league)
+            game_dates_hist=game_dates_hist, league=league,
+            presence_rate=presence_rate)
         bt.update({'label': label, 'half_life': half_life,
                    'range_multiplier': range_mult, 'trend_intensity': trend_intensity,
                    'opponent_sensitivity': None})
@@ -2073,7 +2077,8 @@ def build_prediction(player_slug):
             goals_conceded_values, passing_values, clean_sheet_values,
             min_history=6,
             opponent_team_slugs_hist=opponent_team_slugs_hist,
-            game_dates_hist=game_dates_hist, league='mls')
+            game_dates_hist=game_dates_hist, league='mls',
+            presence_rate=presence_rate)
         rigorous_bt = grid_results[0] if grid_results else None
     else:
         log("Esecuzione backtest rigoroso sui parametri fissati...")
@@ -2190,7 +2195,7 @@ def format_output(result):
     lines.append(f"Media pesata esponenziale (half-life {HALF_LIFE_GAMES} partite): {result['media_pesata']:.2f}")
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
-                 f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
+                 f"(Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)")
     lines.append(f"  Gol subiti condizionato: delta venue {result['delta_gol_subiti_venue']:+.2f}, "
                  f"delta avversario {result['delta_gol_subiti_avversario']:+.2f} | Passaggio condizionato: "
                  f"delta venue {result['delta_passaggio_venue']:+.2f}, delta avversario "

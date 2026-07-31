@@ -1177,12 +1177,20 @@ def rigorous_backtest_prod_fwd(scores, is_home_flags,
                                pos_decisive_values, neg_decisive_values,
                                passing_values,
                                min_history=6, half_life=None, trend_intensity=None,
-                               range_multiplier=1.0):
+                               range_multiplier=1.0,
+                               opponent_team_slugs_hist=None, league='inghilterra',
+                               offensive_values=None,
+                               game_dates_hist=None, presence_rate=None):
     """Backtest walk-forward ALLINEATO ALLA PRODUZIONE per FWD: ad ogni partita
-    richiama compute_score_atteso_fwd() -- la STESSA funzione usata per
-    score_ordinamento -- sul solo storico precedente. Stessa struttura di
-    ritorno del vecchio rigorous_backtest, per restare compatibile con
-    aggregate_grid_search.py."""
+    richiama compute_score_atteso_fwd() -- la STESSA funzione della predizione
+    reale -- sul solo storico precedente. Stessa struttura di ritorno del vecchio
+    rigorous_backtest, per restare compatibile con aggregate_grid_search.py.
+
+    game_dates_hist/presence_rate (31/07, audit): senza la data non si puo'
+    ancorare l'aggiustamento avversario alla partita giusta, e senza
+    presence_rate lo shrinkage usa il prior FISSO invece di quello dinamico
+    -- due divergenze residue dalla produzione anche in questa versione che
+    si dichiarava "allineata"."""
     if half_life is None:
         half_life = HALF_LIFE_GAMES
     if trend_intensity is None:
@@ -1195,7 +1203,12 @@ def rigorous_backtest_prod_fwd(scores, is_home_flags,
             scores[:i], is_home_flags[:i], residual_values[:i], granulari_values[:i],
             pos_decisive_values[:i], neg_decisive_values[:i], passing_values[:i],
             target_is_home=is_home_flags[i], p_gioca=1.0,
-            half_life=half_life, trend_intensity=trend_intensity)
+            half_life=half_life, trend_intensity=trend_intensity,
+            next_opponent_team_slug=opponent_team_slugs_hist[i] if opponent_team_slugs_hist else None,
+            next_game_date=game_dates_hist[i] if game_dates_hist else None,
+            presence_rate=presence_rate,
+            league=league,
+            offensive_values=offensive_values[:i] if offensive_values else None)
         reale = scores[i]
         w = exponential_weights(i, half_life)
         dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
@@ -1211,6 +1224,60 @@ def rigorous_backtest_prod_fwd(scores, is_home_flags,
     coperti = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
     pct = (sum(1 for c in coperti if c) / len(coperti) * 100.0) if coperti else None
     return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct, 'n_test': len(rows)}
+
+
+def _build_grid_combinations_prod():
+    """Griglia per il grid search ALLINEATO. Include SEMPRE i valori reali di
+    produzione (hl=25.0, ti=0.3, rm=1.15), altrimenti il vincitore non
+    sarebbe confrontabile con cio' che gira davvero."""
+    combos = []
+    for hl in (6.0, 9.0, 12.0, 15.0, 20.0, 25.0, 30.0):
+        for ti in (0.0, 0.2, 0.3, 0.7, 1.0, 1.3):
+            for rm in (1.0, 1.1, 1.15, 1.2, 1.4):
+                combos.append((hl, ti, rm, f"hl={hl}+trend_int={ti}+range={rm}x"))
+    return combos
+
+
+GRID_SEARCH_COMBINATIONS_PROD = _build_grid_combinations_prod()
+
+
+def run_grid_search_prod_fwd(scores, is_home_flags,
+                             residual_values, granulari_values,
+                             pos_decisive_values, neg_decisive_values,
+                             passing_values, min_history=6,
+                             opponent_team_slugs_hist=None, game_dates_hist=None,
+                             presence_rate=None, league='inghilterra',
+                             offensive_values=None):
+    """Grid search ALLINEATO per FWD (31/07, audit): gira
+    rigorous_backtest_prod_fwd -- che internamente chiama
+    compute_score_atteso_fwd, la STESSA funzione della predizione reale --
+    invece della vecchia run_grid_search, che usava la formula
+    moltiplicativa senza level_score/shrinkage/opponent_lambda e col
+    fattore ranking avversario rimosso dalla produzione il 26/07.
+    Vedi il gemello run_grid_search_prod_gk in test_gk.py per il contesto
+    completo della scoperta."""
+    results = []
+    for half_life, trend_intensity, range_mult, label in GRID_SEARCH_COMBINATIONS_PROD:
+        bt = rigorous_backtest_prod_fwd(
+            scores, is_home_flags, residual_values, granulari_values,
+            pos_decisive_values, neg_decisive_values, passing_values,
+            min_history=min_history, half_life=half_life,
+            trend_intensity=trend_intensity, range_multiplier=range_mult,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist,
+            presence_rate=presence_rate, league=league,
+            offensive_values=offensive_values)
+        bt.update({'label': label, 'half_life': half_life,
+                   'range_multiplier': range_mult, 'trend_intensity': trend_intensity,
+                   'opponent_sensitivity': None})
+        if bt['mae'] is not None:
+            coverage_penalty = abs((bt['pct_dentro_range'] or 0) - 68.0) * 0.3
+            bt['composite_score'] = bt['mae'] + coverage_penalty
+        else:
+            bt['composite_score'] = float('inf')
+        results.append(bt)
+    results.sort(key=lambda r: r['composite_score'])
+    return results
 
 
 def build_prediction(player_slug):
@@ -1401,6 +1468,8 @@ def build_prediction(player_slug):
     is_home_flags = []
     opponent_rankings = []
     own_rankings = []
+    opponent_team_slugs_hist = []  # NUOVO (31/07, audit): per il grid search allineato, vedi sotto
+    game_dates_hist = []
     fouls_values = []
     duels_values = []
     offensive_values = []
@@ -1423,6 +1492,20 @@ def build_prediction(player_slug):
         is_home_flags.append(is_home)
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
+        # Slug/data dell'avversario per ogni partita storica (31/07, audit):
+        # servono al grid search ALLINEATO (run_grid_search_prod_fwd), che
+        # altrimenti non potrebbe applicare l'aggiustamento avversario e
+        # resterebbe a misurare una formula diversa dalla produzione.
+        # Stesso pattern gia' in uso in test_def.py dal 29/07.
+        _g_home, _g_away = game.get('homeTeam') or {}, game.get('awayTeam') or {}
+        if _g_home.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_away.get('slug'))
+        elif _g_away.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_home.get('slug'))
+        else:
+            opponent_team_slugs_hist.append(None)
+        game_dates_hist.append(_game_dt(node))
+
 
         fouls_v = extract_group_score(detail, FOULS_STATS)
         duels_v = extract_group_score(detail, DUELS_STATS)
@@ -1686,13 +1769,19 @@ def build_prediction(player_slug):
     # piu' veloce, mantenendo comunque MAE/copertura come indicatore di
     # affidabilita' per QUESTO specifico giocatore.
     if CALIBRATION_MODE:
-        log("CALIBRATION_MODE attivo: esecuzione grid search completo (72 combinazioni)...")
-        grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                                        fouls_values=fouls_values, duels_values=duels_values,
-                                        offensive_values=offensive_values,
-                                        passing_values=passing_values,
-                                        defense_rare_values=defense_rare_values,
-                                        residual_values=residual_values)
+        # ALLINEATO (31/07, audit): prima girava run_grid_search, cioe' la
+        # vecchia formula moltiplicativa -- si calibrava un modello diverso
+        # da quello che schiera. Vedi run_grid_search_prod_fwd sopra.
+        log(f"CALIBRATION_MODE attivo: grid search ALLINEATO "
+            f"({len(GRID_SEARCH_COMBINATIONS_PROD)} combinazioni)...")
+        grid_results = run_grid_search_prod_fwd(
+            scores, is_home_flags, residual_values, granulari_values,
+            pos_decisive_values, neg_decisive_values, passing_values,
+            min_history=6,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist,
+            presence_rate=presence_rate, league='inghilterra',
+            offensive_values=offensive_values)
         rigorous_bt = grid_results[0] if grid_results else None
     else:
         log("Esecuzione backtest rigoroso sui parametri fissati...")
@@ -1798,7 +1887,7 @@ def format_output(result):
     lines.append(f"Media pesata esponenziale (half-life {HALF_LIFE_GAMES} partite): {result['media_pesata']:.2f}")
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
-                 f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
+                 f"(Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)")
     lines.append(f"  Passaggio condizionato per venue: {result['media_passaggio_condizionata_venue']:.2f} "
                  f"(delta {result['delta_passaggio_venue']:+.2f}) "
                  f"(Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, "

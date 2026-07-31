@@ -266,6 +266,36 @@ SAME_TEAM_SYNERGY_BONUS_BY_PAIR = {
 # Stars) perche' In Season ha "6 vite" per un solo premio: il beneficio
 # marginale della varianza dentro UNA formazione e' diluito dal poter gia'
 # tentare piu' formazioni indipendenti (vedi MATCH_REUSE_PENALTY).
+#
+# !!! NON USATA IN PRODUZIONE (accertato 31/07, audit completo) !!!
+# Due fatti distinti, entrambi verificati empiricamente:
+#
+# 1. NON E' MAI STATA ATTIVA. Le formazioni reali le genera
+#    generatore_formazioni/build_formazione_globale.py, non la
+#    generate_lineups_for_type di QUESTO file (che il workflow non chiama
+#    mai -- vedi .github/workflows/formazione_giornata.yml, che lancia solo
+#    il generatore globale). Nel percorso vivo tre cose indipendenti la
+#    spengono: le In Season non sono in VARIANCE_MODE_TYPES, il gate
+#    apply_positive_synergy e' False per MLS_IN_SEASON/KLEAGUE_IN_SEASON, e
+#    build_one_lineup_with_growth non passa MAI synergy_bonus_dict (quindi
+#    _same_team_synergy_bonus ripiegherebbe comunque sulla tabella Arena).
+#    Dimostrato azzerando il dizionario: zero differenze su 6 formazioni
+#    (formazione_mls/diagnostics/check_inseason_synergy_alive.py).
+#
+# 2. ATTIVARLA NON CONVIENE, misurato su ENTRAMBE le metriche:
+#    - punti attesi (ab_inseason_synergy_gate.py): costa 0 pt su MLS e 3 pt
+#      su K League;
+#    - probabilita' di superare la soglia premio, cioe' la metrica per cui
+#      questa tabella era stata calibrata (ab_inseason_synergy_threshold.py,
+#      Monte Carlo su punteggi reali con i compagni campionati dalla STESSA
+#      partita vera): differenze fra -0.54 e +0.31 punti percentuali sulle
+#      soglie 320-420, di segno incoerente -- rumore, non un effetto. Il
+#      meccanismo funziona (dev.std del totale 49.0 -> 49.7, e una formazione
+#      in piu' con compagni di squadra) ma e' troppo piccolo per contare.
+#
+# Lasciata nel file, e non cancellata, perche' i valori misurati restano un
+# dato utile se un domani cambiano le soglie o il numero di formazioni
+# schierabili. NON riattivarla senza rifare i due test sopra.
 IN_SEASON_SYNERGY_BONUS_BY_PAIR = {
     frozenset(('FWD', 'FWD')): 6,   # 5.90pt equivalenti (n=507)
     frozenset(('FWD', 'MID')): 3,   # 3.40pt equivalenti (n=2306)
@@ -1713,7 +1743,22 @@ def generate_lineups_for_type(tipo, count, role_data, card_pool, lineup_blocks,
     blocchi HTML a lineup_html_blocks. Ritorna (generate, totale_punti). Si
     ferma in anticipo (senza errore globale) se il pool si esaurisce per
     questo tipo, ma NON impedisce la generazione del tipo successivo in
-    ordine di priorita'."""
+    ordine di priorita'.
+
+    ATTENZIONE (accertato 31/07, audit completo): questa funzione NON gira
+    nella pipeline di produzione. Le formazioni reali le costruisce
+    generatore_formazioni/build_formazione_globale.py, che ha una PROPRIA
+    generate_lineups_for_type e importa da qui solo le funzioni generiche
+    (CardPool, build_one_lineup, synergy_sort_key, pick_captain, render_*).
+    Il workflow formazione_giornata.yml lancia solo quel file.
+
+    Conseguenza pratica gia' costata un bug reale: le decisioni di
+    configurazione scritte QUI (variance_mode, scelta del synergy_bonus_dict,
+    gate apply_positive_synergy, stack_guard) non arrivano in produzione --
+    e' successo il 30/07 con IN_SEASON_SYNERGY_BONUS_BY_PAIR, calibrata e
+    poi mai eseguita. Qualunque modifica al COMPORTAMENTO va fatta nel
+    generatore globale, o in entrambi se si vuole tenere allineato anche
+    l'uso standalone/da libreria di questo file."""
     shape = FORMATION_SHAPES[tipo]
     cap = FIXED_L10_CAP_BY_TYPE.get(tipo)
     # Anti-stack e cap-bonus (26/07, confermato dall'utente): valgono per

@@ -198,9 +198,24 @@ L10_CAP_BY_TYPE = {
 L10_CAP_BY_TYPE.update({arena_type(lg): 260.0 for lg in ARENA_LEAGUES})
 
 # Sinergia da correlazione misurata (GK-DEF/GK-MID/DEF-MID/DEF-DEF): dovunque
-# TRANNE In Season, dove il target e' fisso e non c'e' beneficio (stessa
-# regola gia' in produzione nei due tool singoli, confermata dall'utente
-# valida anche per le Arene dedicate fuse).
+# TRANNE In Season.
+#
+# La motivazione storica ("il target e' fisso quindi il valore atteso non
+# dipende dalla correlazione") era incompleta -- la correlazione cambia
+# comunque la PROBABILITA' di superare un target fisso. Il 30/07 fu quindi
+# calibrata una tabella apposita (bff.IN_SEASON_SYNERGY_BONUS_BY_PAIR), che
+# pero' non e' mai stata attivata qui: e' rimasta configurata solo nella
+# generate_lineups_for_type di formazione_mls/build_formazione_finale.py,
+# che la produzione non chiama mai.
+#
+# VERIFICATO il 31/07 con la metrica giusta prima di decidere se attivarla:
+# Monte Carlo su punteggi reali, compagni di squadra campionati dalla stessa
+# partita vera (formazione_mls/diagnostics/ab_inseason_synergy_threshold.py).
+# La probabilita' di superare le soglie 320-420 cambia fra -0.54 e +0.31
+# punti percentuali, con segno incoerente: rumore. In punti attesi costa
+# 0 pt (MLS) / 3 pt (K League). Quindi In Season resta ESCLUSA per scelta
+# misurata, non piu' per un'assunzione teorica. Non riattivare senza
+# rifare quei due test.
 VARIANCE_MODE_TYPES = {'ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220',
                         'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS', 'ALLSTARS_U23'}
 VARIANCE_MODE_TYPES.update(arena_type(lg) for lg in ARENA_LEAGUES)
@@ -631,6 +646,16 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
             # (+2pt), K League 1927 -> 1927 (invariato, nessun costo). Qualunque
             # guadagno positivo giustifica la disattivazione, richiesta esplicita
             # utente ("non esiste un guadagno trascurabile").
+            # NOTA (31/07, audit): questo flag e' il gate UNICO di TRE
+            # meccanismi diversi dentro bff.synergy_sort_key -- nudge GK-DEF
+            # (POSITIVE_SYNERGY_BONUS/ANTI_SYNERGY_PENALTY), penalita'
+            # cross-team (CROSS_TEAM_PENALTY_BY_PAIR) e bonus same-team
+            # (_same_team_synergy_bonus). Metterlo a False per un tipo li
+            # spegne tutti e tre insieme, anche quando l'intenzione era
+            # spegnerne uno solo: e' cosi' che le penalita' cross-team
+            # aggiornate il 30/07 sono risultate inerti sulle In Season.
+            # Se un domani serve un controllo piu' fine, vanno separati in
+            # tre flag distinti invece di sovraccaricare questo.
             apply_positive_synergy = (tipo not in ('ARENA_ALLSTARS_UNCAPPED', 'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON')
                                        and (not in_season_multi or idx == 1))
             idx_cap = 370.0 if (force_first and idx == 1) else cap

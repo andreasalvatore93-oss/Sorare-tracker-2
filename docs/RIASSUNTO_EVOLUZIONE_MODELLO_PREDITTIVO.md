@@ -4913,3 +4913,152 @@ mid-mid invariato a 2, def-def NON toccato) — verificato nel codice, commit gi
   richiesto esplicitamente.
 
 Tutto pushato su `origin/main` a fine sessione, nessuna modifica pendente.
+
+## 38. Sessione 31/07 — AUDIT COMPLETO su richiesta esplicita dell'utente ("troppi bug")
+
+L'utente ha chiesto un audit dalla A alla Z dopo una serie di bug di "codice morto". La classe
+di errore ricorrente è sempre la stessa e va capita prima dei singoli casi: **il progetto ha due
+file che sembrano fare la stessa cosa, e solo uno gira**. Le decisioni di configurazione scritte
+nel file sbagliato non arrivano mai in produzione, ma nel codice sembrano attive.
+
+### A. Il vero call graph di produzione (verificato sul workflow, non a memoria)
+
+`formazione_giornata.yml` esegue, in quest'ordine: `discovery_fixture.py` →
+`formazione_<lega>/predict/test_{gk,def,mid,mls_fwd_all}.py` (uno per slug) →
+`formazione_<lega>/consiglio/build_consiglio*.py` → **`generatore_formazioni/
+build_formazione_globale.py`** → `formazione_telegram_notify.py`.
+
+**`formazione_mls/build_formazione_finale.py` NON viene mai eseguito**: è importato come
+libreria (CardPool, build_one_lineup, synergy_sort_key, pick_captain, render_*). La sua
+`generate_lineups_for_type` e il suo `main()` sono codice morto in produzione. Ogni scelta di
+configurazione scritta lì (variance_mode, synergy_bonus_dict, gate, stack_guard) non ha effetto.
+
+### B. Bug 1 — sinergie In Season inerti (CONFERMATO empiricamente, poi CHIUSO senza attivarle)
+
+Azzerando i dizionari non cambia NULLA su 6 formazioni
+(`formazione_mls/diagnostics/check_inseason_synergy_alive.py`). Tre cause indipendenti nel
+percorso vivo: In Season non è in `VARIANCE_MODE_TYPES`; `apply_positive_synergy=False` sempre
+per In Season; `synergy_bonus_dict` non viene MAI passato da `build_one_lineup_with_growth`
+(quindi userebbe comunque la tabella Arena). Causa radice: il lavoro del 30/07 sera
+(`IN_SEASON_SYNERGY_BONUS_BY_PAIR`) è finito nel file che non gira.
+
+**Misurato prima di decidere, su ENTRAMBE le metriche**:
+- punti attesi (`ab_inseason_synergy_gate.py`): attivarle costa 0 pt su MLS, 3 pt su K League;
+- probabilità di superare la soglia premio — la metrica per cui quella tabella era stata
+  calibrata (`ab_inseason_synergy_threshold.py`, Monte Carlo su punteggi reali con i compagni
+  campionati dalla STESSA partita vera): differenze fra −0.54 e +0.31 punti percentuali sulle
+  soglie 320-420, **di segno incoerente** — rumore. Il meccanismo funziona (dev.std del totale
+  49.0 → 49.7) ma è troppo piccolo per contare.
+
+**Decisione utente**: lasciarle spente e documentare, non cancellare. Fatto: commenti espliciti
+in `build_formazione_finale.py` (sopra il dizionario e sopra `generate_lineups_for_type`) e in
+`build_formazione_globale.py` (sopra `VARIANCE_MODE_TYPES` e sopra il gate).
+
+### C. Bug 2 — il portiere è scelto per primo, sempre a punteggio puro
+
+`role_slots` parte da `GK` e per quello slot `chosen_roles_by_team` è ancora vuoto → nessun
+riordino per sinergia. Conseguenza strutturale: la sinergia GK-DEF può solo adattare il DEF al
+GK già scelto, **mai il contrario**. È la risposta al caso reale sollevato dall'utente (perché
+Turner non viene accoppiato a Fofana, suo compagno, a parità quasi esatta di punteggio):
+non sarebbe successo nemmeno a sinergie accese.
+
+### D. Bug 3 — la calibrazione girava su una formula diversa dalla produzione (il più grave)
+
+`rigorous_backtest` (la vecchia formula: `media_pesata × fattore_casa × fattore_ranking_
+avversario × trend`) veniva usata dal grid search per **GK, MID e FWD**. Le manca il
+`level_score` da tassi Poisson, TUTTO lo shrinkage verso il prior di ruolo, lo shrinkage venue,
+e l'`opponent_lambda_mult`; in più **usa** il fattore ranking avversario che dalla produzione
+era stato rimosso il 26/07 perché peggiorava il MAE. Le versioni allineate
+(`rigorous_backtest_prod_gk/_mid/_fwd`) **esistevano ma non erano mai chiamate**; solo DEF era
+stato cablato, e per giunta solo su MLS.
+
+Distanza misurata fra le due formule (233 portieri, 3293 partite): **MAE 16.970 contro 15.757,
+il 7%**.
+
+**Ricalibrazione sulla formula corretta** (`recalibra_gk_formula_allineata.py`,
+`recalibra_mid_fwd_formula_allineata.py`) — esito RASSICURANTE, nessun parametro da cambiare:
+
+| ruolo | parametri produzione | posizione | guadagno possibile |
+|---|---|---|---|
+| GK | hl=6.0, trend=0.7, range=1.15 | 1° su 288 | 0.00% |
+| MID | hl=25.0, trend=0.2, range=1.1 | 4° su 252 | −0.42% (il "vincitore" ha MAE peggiore, vince solo sulla copertura) |
+| FWD | hl=25.0, trend=0.3, range=1.15 | 3° su 252 | −0.05% |
+
+Gli ottimi sono piattissimi (spread 0.1-0.4% su tutta la griglia): calibrare sulla formula
+sbagliata è finito comunque nel punto giusto. **Fortuna, non un risultato** — il bug andava
+comunque chiuso perché la prossima volta poteva non andare così.
+
+**Fix applicato**: scritti `run_grid_search_prod_gk/_mid/_fwd` sul modello di quello DEF, e
+cablati in `CALIBRATION_MODE`; estesi i tre `rigorous_backtest_prod_*` per ricevere
+`opponent_team_slugs_hist`/`game_dates_hist`/`presence_rate` (senza i quali restavano diversi
+dalla produzione anche dichiarandosi "allineati"); aggiunti gli array storici in GK e FWD.
+Propagato DEF a tutte le 27 leghe attive (`propaga_grid_search_allineato.py`).
+
+**VERIFICATO che nulla di tutto ciò tocca le predizioni giornaliere**: `CALIBRATION_MODE` non
+compare in `formazione_giornata.yml`, e i nuovi array sono letti solo dentro quel ramo.
+
+**Debito residuo dichiarato**: per GK e MID la funzione condivisa `compute_score_atteso_*`
+esiste SOLO su MLS (le altre 27 leghe hanno la formula inline duplicata, con valori identici —
+verificato). Finché non la si estrae, la calibrazione allineata di GK/MID resta possibile solo
+su MLS. È lo stesso debito già annotato in memoria come "GK/MID restano solo MLS".
+
+### E. Verificati e SANI (nessun intervento)
+
+- **Coerenza fra le 27 leghe attive**: pulita (`audit_coerenza_leghe.py`). Solo `resto_mondo`
+  diverge su tutto, ed è escluso dal pool di produzione (non compare in `LEAGUES`).
+  ATTENZIONE al metodo: la prima versione dello script segnalava 16 divergenze fittizie perché
+  le regex erano ancorate a inizio riga, mentre in molte leghe le costanti sono definite DENTRO
+  la funzione (indentate) o con nome diverso (`MEDIA_RUOLO_MID_PRIOR` invece di
+  `media_ruolo_prior`). Verificare sempre un "ASSENTE" prima di crederci.
+- **Arena con cap L10**: il knapsack `_optimize_capped_lineup` ignora le sinergie **per scelta
+  documentata del 27/07**, non per bug.
+- **Fix bonus XP del 30/07**: correttamente nel percorso vivo (`sort_score` senza mutare
+  `atteso`, `apply_xp_bonus=False` nel render).
+- **Anti-stack**: attivo, semplicemente non scatta perché non si formano stack.
+- **`RANGE_MULTIPLIER`**: copertura 67-69% su tutti e 4 i ruoli, centrata sul target ~68%.
+  Il punto 10c della checklist maestra riporta ancora i valori vecchi (72-78%): **doc stale**.
+
+### F. Bug 4 — l'output diceva all'utente il FALSO sui granulari (CORRETTO)
+
+Ogni file `prediction_*.txt`, per tutti e 4 i ruoli, conteneva:
+
+> `Punteggio complessivo (granulari) medio: 11.90 (Stadio A, solo diagnostico -- non applicato
+> a score_atteso)`
+
+**Falso**: `media_granulari_pesata` è un termine di primo livello della formula in tutti e
+quattro i `compute_score_atteso_*`:
+`grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare`.
+
+Misurato quanto pesa davvero (azzerando la componente e riconfrontando su 233 portieri/3293
+partite): **contributo medio 5.0% del punteggio finale, mediana 4.7%, fino al 16%** sui casi
+estremi. Non è un dettaglio: è un pezzo strutturale etichettato come inerte.
+
+Non è un errore di calcolo — il punteggio era giusto — ma un'etichetta che **induce in errore
+chiunque verifichi le predizioni a mano**, ed è esattamente ciò che l'utente stava facendo. Era
+il backlog "naming granulare diagnostico", aperto dal 29/07 e mai chiuso.
+
+**Corretto in tutti i 112 file** (4 ruoli × 28 leghe): l'etichetta ora dice esplicitamente che
+la componente È applicata e come. Le altre etichette "SOLO DIAGNOSTICO" (Stadio D, fattori
+granulari possesso/passaggio/goalkeeping/gol subiti) sono state verificate e sono **corrette**:
+quelle davvero non entrano nello score.
+
+### G. Debiti strutturali rilevati e NON toccati (servono test, non sono ritocchi)
+
+1. **Il fattore casa/trasferta di GK usa un array diverso dagli altri ruoli.** GK lo calcola
+   inline sui punteggi PIENI (`scores`); DEF/MID/FWD lo calcolano con `compute_split_factor`
+   sui RESIDUI (`residual_values`). Nessun commento dichiara la scelta come deliberata. Non
+   toccato: cambiarlo richiede un backtest dedicato, non una decisione a tavolino.
+2. **Tre copie della costante di shrinkage venue nel solo `test_gk.py`** (righe ~1026, ~1317,
+   ~1798: `SPLIT_SHRINK_K` e due `SPLIT_SHRINK_K_GK`), allineate a mano. È il motivo per cui il
+   30/07 servì un `replace_all` per cambiarne il valore. Prima o poi divergeranno.
+3. **`compute_score_atteso_gk`/`_mid` esistono solo su MLS**; le altre 27 leghe hanno la formula
+   inline duplicata (valori oggi identici, verificato). Blocca l'allineamento della calibrazione
+   GK/MID fuori da MLS.
+
+### H. Lezione di metodo (vale più dei singoli fix)
+
+Prima di calibrare o attivare qualcosa, verificare EMPIRICAMENTE che il codice giri: azzerare la
+costante e controllare che l'output cambi. Il pattern
+`formazione_mls/diagnostics/audit_costanti_vive.py` fa esattamente questo per tutte le costanti
+di tuning e va rilanciato dopo ogni sessione che ne aggiunge di nuove. Un controllo positivo è
+obbligatorio: se NESSUNA costante risulta viva, è rotto il test, non il codice.

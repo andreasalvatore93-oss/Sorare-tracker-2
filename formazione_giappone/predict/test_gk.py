@@ -1821,7 +1821,7 @@ def format_output(result):
     lines.append(f"Media pesata esponenziale (half-life {HALF_LIFE_GAMES} partite): {result['media_pesata']:.2f}")
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
-                 f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
+                 f"(Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)")
     lines.append(f"  Punteggio decisivo condizionato per forza prossimo avversario: "
                  f"{result['media_level_score_condizionata']:.2f} (delta {result['delta_condizionamento_avversario']:+.2f} "
                  f"vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 "

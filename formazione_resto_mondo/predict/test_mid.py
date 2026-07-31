@@ -1617,7 +1617,7 @@ def format_output(result):
     lines.append(f"Media pesata esponenziale (half-life {HALF_LIFE_GAMES} partite): {result['media_pesata']:.2f}")
     lines.append(f"  di cui Punteggio decisivo (level_score) medio: {result['media_level_score_pesata']:.2f} "
                  f"| Punteggio complessivo (granulari) medio: {result['media_granulari_pesata']:.2f} "
-                 f"(Stadio A, solo diagnostico -- non applicato a score_atteso)")
+                 f"(Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)")
     lines.append(f"  Punteggio decisivo condizionato per venue: {result['media_level_score_condizionata']:.2f} "
                  f"(delta {result['delta_condizionamento_venue_level']:+.2f})")
     lines.append(f"  Efficacia offensiva condizionata: delta venue {result['delta_offensivo_venue']:+.2f}, "
