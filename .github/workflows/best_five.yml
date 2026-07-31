@@ -36,7 +36,7 @@ on:
   workflow_dispatch:
     inputs:
       lega:
-        description: 'Lega (es. kleague)'
+        description: 'Lega -- valide oggi: mls, kleague, germania, austria, croazia, germania2, scozia (aggiornare qui quando se ne aggiunge una nuova)'
         required: false
         default: 'kleague'
       roles:
@@ -61,6 +61,10 @@ on:
         default: 'true'
       rispetta_cap_l10:
         description: '"true" per generare una vera Arena dedicata (cap L10 260 rispettato davvero, richiede lL10 reale di ogni candidato = query extra). "false" (default) = formazione generica solo per punteggio, nessun cap'
+        required: false
+        default: 'false'
+      genera_cheapest:
+        description: '"true" per generare ANCHE le 3 formazioni piu economiche (4 In Season+1 Classic senza cap, stesso con cap 260, nessun limite Classic con cap 260) -- prezzo minimo totale, punteggio come criterio di pareggio'
         required: false
         default: 'false'
   workflow_call:
@@ -90,6 +94,10 @@ on:
         required: false
         default: 'true'
       rispetta_cap_l10:
+        type: string
+        required: false
+        default: 'false'
+      genera_cheapest:
         type: string
         required: false
         default: 'false'
@@ -224,7 +232,11 @@ jobs:
       # starterOdds), quindi fallisce all'IMPORT anche nello step "Costruisci
       # report" che non fa nessuna chiamata di rete -- e best_five_telegram_
       # notify.py importa requests direttamente, stesso problema.
-      - run: pip install requests curl_cffi
+      # websocket-client (bug reale, run Scozia 31/07): fetch_prezzi importa
+      # scanners/bot_profit.py, che importa 'websocket' a livello di modulo
+      # (usato solo per l'ascolto live, mai chiamato qui) -- senza il
+      # pacchetto l'IMPORT fallisce anche se non serve nulla di live.
+      - run: pip install requests curl_cffi websocket-client
       - uses: actions/download-artifact@v4
         with:
           path: _artifacts
@@ -254,6 +266,11 @@ jobs:
           # vedi RISPETTA_CAP_L10 in best_five.py). Ignorato per MLS/K League
           # (IN_SEASON, nessun cap per design, come nel tool unificato).
           BEST_FIVE_RISPETTA_CAP_L10: ${{ inputs.rispetta_cap_l10 || 'false' }}
+          # NUOVO (31/07, richiesta esplicita utente): "true" per generare
+          # ANCHE le 3 formazioni "cheapest" (vedi CHEAPEST_CONFIGS in
+          # best_five.py) -- query L10 extra se non gia' fatte da
+          # rispetta_cap_l10.
+          BEST_FIVE_GENERA_CHEAPEST: ${{ inputs.genera_cheapest || 'false' }}
         run: |
           set -u
           ARGS="${{ inputs.lega || 'kleague' }} --backups ${{ inputs.backups || '2' }}"

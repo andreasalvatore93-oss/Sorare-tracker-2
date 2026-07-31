@@ -1089,6 +1089,12 @@ def costruisci_formazione_vera(lega, count):
     lineup_blocks.append(testo_esclusi)
     lineup_html_blocks.append(html_esclusi)
 
+    if GENERA_CHEAPEST:
+        l10_map_cheapest = l10_map if RISPETTA_CAP_L10 else fetch_l10_per_ruoli(role_data_lega)
+        testo_cheap, html_cheap = blocco_cheapest(role_data_lega, prezzi, l10_map_cheapest)
+        lineup_blocks.append(testo_cheap)
+        lineup_html_blocks.append(html_cheap)
+
     log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica, "
         f"tipo={tipo}, stesso motore della produzione).")
     return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi
@@ -1140,6 +1146,171 @@ def _blocco_top_esclusi(role_data_per_ruolo, card_pool, n=TOP_N_ESCLUSI):
         html_parts.append('</ol></div>')
     html_parts.append('</div>')
     return "\n".join(lines), "".join(html_parts)
+
+
+# --- Formazioni "cheapest" (31/07, richiesta esplicita utente) ------------
+#
+# Trova la formazione COMPLETA di prezzo TOTALE minimo (a parita' di prezzo,
+# punteggio piu' alto), in 3 varianti che l'utente ha chiesto esplicitamente:
+#   A) 4 In Season + 1 Classic (come MLS/K League/Contender In Season),
+#      NESSUN cap L10.
+#   B) 4 In Season + 1 Classic, CON cap L10 260 (Arena-legale davvero).
+#   C) NESSUN limite di carte Classic (tutte e 5 possono esserlo), CON cap
+#      L10 260.
+#
+# Implementazione ISOLATA (nessun uso di bff.CardPool/build_one_lineup,
+# quel motore ragiona per SCORE non per PREZZO) -- un piccolo knapsack
+# scritto qui apposta, mai eseguito in produzione. La CardPool sintetica di
+# Best Five tratta ogni carta come "1 copia in_season virtuale" quindi non
+# sa nulla di prezzo/rarita' reale: qui si lavora direttamente sui prezzi
+# gia' fetchati da fetch_prezzi (in_season/classic) senza passare da
+# CardPool per niente.
+GENERA_CHEAPEST = os.environ.get('BEST_FIVE_GENERA_CHEAPEST', '0').strip() not in ('0', 'false', 'no', '')
+
+CHEAPEST_CONFIGS = (
+    # (etichetta, max_classic, l10_cap)
+    ('4 In Season + 1 Classic, nessun cap L10', 1, None),
+    ('4 In Season + 1 Classic, cap L10 260', 1, 260.0),
+    ('Nessun limite Classic (fino a 5), cap L10 260', None, 260.0),
+)
+
+_RES_L10 = 10     # decimi di L10
+_RES_PREZZO = 100  # centesimi di EUR
+
+
+def _candidati_prezzo_ruolo(rows, prezzi, l10_map, rarita_ammesse):
+    out = []
+    for row in rows:
+        for rarita in rarita_ammesse:
+            prezzo = (prezzi.get(row['slug']) or {}).get(rarita)
+            if prezzo is None:
+                continue
+            l10 = (l10_map or {}).get(row['slug']) or 0.0
+            out.append((row, rarita, prezzo, l10))
+    return out
+
+
+def _ottimizza_lineup_min_prezzo(shape, role_data, prezzi, max_classic, l10_cap=None, l10_map=None):
+    """Ritorna {'prezzo_totale', 'punteggio_totale', 'picks'} per la
+    formazione COMPLETA di prezzo minimo che rispetta 'shape' (GK/DEF/MID/
+    FWD + 1 EXTRA da extra_roles), max_classic (0/1/None) ed l10_cap
+    (None = ignorato). None se nessuna combinazione e' possibile (pool
+    insufficiente per un ruolo, o nessuna rientra nel cap L10).
+    'picks': {ROLE: (row, rarita, prezzo)}, con 'EXTRA' anche il ruolo
+    scelto: (ruolo, row, rarita, prezzo)."""
+    rarita_ammesse = ('in_season',) if max_classic == 0 else ('in_season', 'classic')
+    cap_units = int(round(l10_cap * _RES_L10)) if l10_cap is not None else None
+
+    def candidati(role):
+        return _candidati_prezzo_ruolo(role_data.get(role, []), prezzi, l10_map, rarita_ammesse)
+
+    # stato (l10_units_usati, n_classic_usati) -> (prezzo_tot, punteggio_tot, picks, slug_usati)
+    states = {(0, 0): (0.0, 0, {}, frozenset())}
+    for role in ('GK', 'DEF', 'MID', 'FWD'):
+        cands = candidati(role)
+        if not cands:
+            return None
+        nuovi = {}
+        for (l10u, ncl), (prezzo_tot, score_tot, picks, usati) in states.items():
+            for row, rarita, prezzo, l10 in cands:
+                if row['slug'] in usati:
+                    continue
+                nc = ncl + (1 if rarita == 'classic' else 0)
+                if max_classic is not None and nc > max_classic:
+                    continue
+                l10u2 = l10u + int(round(l10 * _RES_L10))
+                if cap_units is not None and l10u2 > cap_units:
+                    continue
+                pt2 = prezzo_tot + prezzo
+                sc2 = score_tot + row['atteso']
+                key = (l10u2, nc)
+                cur = nuovi.get(key)
+                if cur is None or pt2 < cur[0] - 1e-9 or (abs(pt2 - cur[0]) < 1e-9 and sc2 > cur[1]):
+                    new_picks = dict(picks)
+                    new_picks[role] = (row, rarita, prezzo)
+                    nuovi[key] = (pt2, sc2, new_picks, usati | {row['slug']})
+        if not nuovi:
+            return None
+        states = nuovi
+
+    extra_cands = []
+    for role in shape['extra_roles']:
+        extra_cands.extend((role, row, rarita, prezzo, l10)
+                            for row, rarita, prezzo, l10 in candidati(role))
+
+    migliore = None
+    for (l10u, ncl), (prezzo_tot, score_tot, picks, usati) in states.items():
+        for role, row, rarita, prezzo, l10 in extra_cands:
+            if row['slug'] in usati:
+                continue
+            nc = ncl + (1 if rarita == 'classic' else 0)
+            if max_classic is not None and nc > max_classic:
+                continue
+            l10u2 = l10u + int(round(l10 * _RES_L10))
+            if cap_units is not None and l10u2 > cap_units:
+                continue
+            pt2 = prezzo_tot + prezzo
+            sc2 = score_tot + row['atteso']
+            if migliore is None or pt2 < migliore[0] - 1e-9 or (abs(pt2 - migliore[0]) < 1e-9 and sc2 > migliore[1]):
+                risultato = dict(picks)
+                risultato['EXTRA'] = (role, row, rarita, prezzo)
+                migliore = (pt2, sc2, risultato)
+    if migliore is None:
+        return None
+    prezzo_tot, score_tot, picks = migliore
+    return {'prezzo_totale': prezzo_tot, 'punteggio_totale': score_tot, 'picks': picks}
+
+
+def _render_cheapest(label, risultato):
+    """Testo + HTML per una formazione 'cheapest' -- non riusa format_lineup/
+    render_lineup_html (quelle si aspettano formazione come lista di (slot,
+    row, ctype) prodotta da bff.build_one_lineup, qui la struttura 'picks'
+    e' diversa) -- rendering minimale dedicato."""
+    if risultato is None:
+        testo = (f"--- Cheapest — {label} ---\n"
+                 "budget esiguo per generare la formazione (nessuna combinazione trovata "
+                 "nel pool eleggibile, anche senza limite di prezzo).")
+        html = (f'<div class="esclusi-panel"><h3>Cheapest — {label}</h3>'
+                f'<p class="empty">Budget esiguo per generare la formazione.</p></div>')
+        return testo, html
+
+    righe = [f"--- Cheapest — {label} ---"]
+    html_righe = [f'<div class="esclusi-panel"><h3>Cheapest — {label}</h3><ul>']
+    for slot in ('GK', 'DEF', 'MID', 'FWD', 'EXTRA'):
+        entry = risultato['picks'].get(slot)
+        if not entry:
+            continue
+        if slot == 'EXTRA':
+            ruolo, row, rarita, prezzo = entry
+            etichetta_slot = f"EXTRA ({ruolo})"
+        else:
+            row, rarita, prezzo = entry
+            etichetta_slot = slot
+        tag = " [CLASSIC]" if rarita == 'classic' else ""
+        righe.append(f"{etichetta_slot:<12} {row['slug']}: {row['atteso']} pt{tag} -- {prezzo:.2f}EUR")
+        link = f'https://sorare.com/it/football/players/{row["slug"]}'
+        html_righe.append(
+            f'<li><a href="{link}" target="_blank" rel="noopener">{row["slug"]}</a> '
+            f'({etichetta_slot}): {row["atteso"]} pt{tag} -- {prezzo:.2f}EUR</li>')
+    righe.append(f"TOTALE: {risultato['punteggio_totale']} pt -- {risultato['prezzo_totale']:.2f}EUR")
+    html_righe.append(f"</ul><p><strong>TOTALE: {risultato['punteggio_totale']} pt -- "
+                       f"{risultato['prezzo_totale']:.2f}EUR</strong></p></div>")
+    return "\n".join(righe), "".join(html_righe)
+
+
+def blocco_cheapest(role_data_dict, prezzi, l10_map):
+    """Genera le 3 varianti CHEAPEST_CONFIGS sullo stesso role_data_dict
+    (dict ROLE -> righe, gia' con prezzi attaccati da _attach_prezzi) e
+    ritorna (testo, html) concatenati. shape fissa GK/DEF/MID/FWD + 1 EXTRA
+    da DEF/MID/FWD -- stessa struttura di IN_SEASON/ARENA (5 slot totali)."""
+    shape = {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD']}
+    testi, html_parti = [], []
+    for label, max_classic, l10_cap in CHEAPEST_CONFIGS:
+        risultato = _ottimizza_lineup_min_prezzo(shape, role_data_dict, prezzi, max_classic, l10_cap, l10_map)
+        t, h = _render_cheapest(label, risultato)
+        testi.append(t)
+        html_parti.append(h)
+    return "\n\n".join(testi), "".join(html_parti)
 
 
 # NOTA: lo slot EXTRA e' etichettato "EXTRA (DEF)" (con parentesi, uno spazio
@@ -1320,6 +1491,12 @@ def costruisci_formazione_contender(leghe, count):
     testo_esclusi, html_esclusi = _blocco_top_esclusi(merged_role_data, card_pool)
     lineup_blocks.append(testo_esclusi)
     lineup_html_blocks.append(html_esclusi)
+
+    if GENERA_CHEAPEST:
+        l10_map_cheapest = fetch_l10_per_ruoli(merged_role_data)
+        testo_cheap, html_cheap = blocco_cheapest(merged_role_data, prezzi, l10_map_cheapest)
+        lineup_blocks.append(testo_cheap)
+        lineup_html_blocks.append(html_cheap)
 
     log(f"Formazione Contender (leghe: {', '.join(leghe)}): {generated}/{count} generate.")
     return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi
