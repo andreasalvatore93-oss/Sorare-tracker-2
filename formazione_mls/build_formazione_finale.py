@@ -232,15 +232,41 @@ STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non e
 # del bonus alla reale probabilita' di superare la soglia premio Arena/
 # All Stars, invece di scalare la correlazione a naso) resta in backlog,
 # mai iniziato.
+# SCALING x20 -> x12 (31/07): il "modello decisionale dedicato" citato qui
+# sopra come mai iniziato e' stato fatto -- vedi
+# formazione_mls/diagnostics/ab_arena_synergy_threshold.py. Monte Carlo su
+# punteggi REALI, compagni campionati dalla STESSA partita vera, e come
+# metrica la PROBABILITA' di superare la soglia invece del punteggio atteso
+# (la sinergia serve ad alzare la varianza: il valore atteso e' cieco proprio
+# all'effetto per cui questa tabella esiste).
+#
+# Misurato su ALLSTARS a soglie FISSE, x12 domina x20 su ENTRAMBE le metriche:
+# 428.5 pt attesi contro 426.2, e a 470/490/510/530/550/570 fa
+# +0.68/+2.79/+6.65/+8.65/+8.98/+6.55 punti percentuali contro
+# -0.26/+0.69/+3.47/+4.96/+5.54/+4.62 -- con x20 a soglia 470 la sinergia era
+# perfino CONTROPRODUCENTE. Plateau ottimale fra x10 e x15 (x10 e x15 danno
+# formazioni identiche), 12 e' il centro.
+#
+# Effetto sugli altri tipi: NESSUNO. Per ARENA_ALLSTARS_260/220 e le Arene
+# dedicate il cap L10 obbligatorio rende la sinergia inerte (formazioni
+# identiche ON/OFF, verificato due volte), ARENA_ALLSTARS_UNCAPPED e le In
+# Season sono gia' escluse a monte. Il cambio tocca quindi solo All Stars.
+#
+# LIMITE NOTO, da tenere presente: misurato su 4 formazioni (il cap duro per
+# ALLSTARS) di UNA sola giornata. Applicato subito per scelta esplicita
+# dell'utente, con l'impegno di rimisurare sulle prossime giornate -- vedi
+# backlog. Per rifare la misura:
+#   TIPI=ALLSTARS QUANTE=4 SCALA=12 SOGLIE="470,490,510,530,550,570" \
+#     python formazione_mls/diagnostics/ab_arena_synergy_threshold.py
 SAME_TEAM_SYNERGY_BONUS_BY_PAIR = {
-    frozenset(('GK', 'DEF')): 7,    # +0.333 * 20 ~= 6.7 (30/07)
-    frozenset(('DEF', 'DEF')): 4,   # +0.219 * 20 ~= 4.4 (30/07)
-    frozenset(('FWD', 'MID')): 3,   # +0.135 * 20 ~= 2.7 (30/07)
-    frozenset(('GK', 'MID')): 2,    # +0.107 * 20 ~= 2.1 (30/07, era 3)
-    frozenset(('DEF', 'MID')): 2,   # +0.094 * 20 ~= 1.9 (30/07, era 3)
-    frozenset(('MID', 'MID')): 2,   # +0.108 * 20 ~= 2.2 (30/07, era 3)
-    frozenset(('FWD', 'FWD')): 4,   # +0.223 * 20 ~= 4.5 (30/07, era 3 su n=173; ora n=945)
-    frozenset(('DEF', 'FWD')): 1,   # +0.060 * 20 ~= 1.2 (30/07, era 2)
+    frozenset(('GK', 'DEF')): 4,    # +0.333 * 12 ~= 4.0 (31/07, era 7 con x20)
+    frozenset(('DEF', 'DEF')): 3,   # +0.219 * 12 ~= 2.6 (31/07, era 4)
+    frozenset(('FWD', 'MID')): 2,   # +0.135 * 12 ~= 1.6 (31/07, era 3)
+    frozenset(('GK', 'MID')): 1,    # +0.107 * 12 ~= 1.3 (31/07, era 2)
+    frozenset(('DEF', 'MID')): 1,   # +0.094 * 12 ~= 1.1 (31/07, era 2)
+    frozenset(('MID', 'MID')): 1,   # +0.108 * 12 ~= 1.3 (31/07, era 2)
+    frozenset(('FWD', 'FWD')): 3,   # +0.223 * 12 ~= 2.7 (31/07, era 4)
+    frozenset(('DEF', 'FWD')): 1,   # +0.060 * 12 ~= 0.7 (31/07, era 1)
     # GK-FWD/GK-GK: non significativi nella ri-misurazione, non modellati.
 }
 
