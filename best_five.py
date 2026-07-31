@@ -1267,7 +1267,7 @@ def costruisci_formazione_vera(lega, count):
         log(f"ATTENZIONE: ruoli senza candidati: {mancanti} — la formazione potrebbe non essere generabile.")
 
     prezzi = _attach_prezzi(role_data_lega)
-    eta_map = _attach_eta(role_data_lega)
+    eta_map = _attach_eta(role_data_lega) if GENERA_UNDER23 else {}
 
     # displayName reale Sorare (30/07, richiesta esplicita utente: "il nome
     # sulle carte deve essere il display name non lo slug"). LIMITE NOTO:
@@ -2033,7 +2033,7 @@ def costruisci_formazione_contender(leghe, count):
         log(f"ATTENZIONE: ruoli senza candidati nel pool Contender combinato: {mancanti}.")
 
     prezzi = _attach_prezzi(merged_role_data)
-    eta_map = _attach_eta(merged_role_data)
+    eta_map = _attach_eta(merged_role_data) if GENERA_UNDER23 else {}
 
     role_data = {'contender': merged_role_data}
     pools = {'contender': {role: gg._NoFilterPool(role, 'contender', merged_role_data[role]) for role in gg.ROLES}}
