@@ -973,12 +973,25 @@ def fetch_prezzi(slugs):
     bp.LIVE_OFFERS_PAGE_SIZE = 10
     eth_rate = bp.get_eth_rate()
     ts_ora = ora.isoformat()
+    # FIX BUG REALE (31/07, run K League: 4 ondate di 429 per soli 73
+    # giocatori, quando bot_profit.py da solo ne scandaglia 1200 in 4 minuti
+    # con lo stesso pacer adattivo): il pacer di bot_profit e' un contatore
+    # LOCALE al processo, parte assumendo il bucket pieno e si autotara SOLO
+    # sui 429 che vede lui. Ma prima di arrivare qui, best_five.py ha gia'
+    # speso parte del budget REALE di rate-limit di Sorare con centinaia di
+    # richieste di discovery/starterOdds/predict fatte con 'requests' diretto
+    # (mai passate dal pacer, che quindi non ne sa nulla) -- il bucket vero e'
+    # gia' parzialmente scarico quando fetch_prezzi parte, e il pacer lo
+    # scopre solo DOPO il primo 429. Un piccolo ritmo prudente qui (stesso
+    # pattern di prefiltra_starter_odds) evita di scaricare la burst iniziale
+    # a tutta velocita' su un bucket che non e' pieno come il pacer crede.
     for idx, slug in enumerate(da_interrogare, 1):
         in_season, classic = _prezzi_minimi_slug(bp, eth_rate, slug)
         prezzi[slug] = {'in_season': in_season, 'classic': classic}
         cache[slug] = {'in_season': in_season, 'classic': classic, 'ts': ts_ora}
         if idx % 20 == 0 or idx == len(da_interrogare):
             log(f"[prezzi] [{idx}/{len(da_interrogare)}] fatto.")
+        time.sleep(0.3)
     _prezzi_cache_scrivi(cache)
     return prezzi
 
@@ -998,6 +1011,126 @@ def _attach_prezzi(role_data_dict):
             r['prezzo_in_season'] = info.get('in_season')
             r['prezzo_classic'] = info.get('classic')
     return prezzi
+
+
+# --- Eta / Under-23 (31/07, richiesta esplicita utente: "stemmino" su ogni
+# carta se under 23 + una colonna dedicata 'Cheapest Under-23') -----------
+#
+# Sorare espone un campo 'age' diretto su anyPlayer (verificato dal vivo,
+# nessuna auth richiesta: query di test su kieran-tierney -> age=29,
+# coerente con la sua data di nascita reale) -- niente bisogno di calcolare
+# l'eta' da una data di nascita, ne' di un nuovo campo mai visto prima nella
+# pipeline. Cache SEPARATA dai prezzi (TTL lunghissimo, l'eta' di un
+# giocatore cambia una volta l'anno, non ogni 24h) per non invalidare inutil-
+# mente le voci ad ogni run.
+UNDER23_MAX_ETA = 22  # "Under 23" = eta' <= 22 (compie 23 anni durante o dopo questa stagione)
+
+ETA_QUERY = """
+query EtaGiocatore($slug: String!) {
+  anyPlayer(slug: $slug) {
+    age
+  }
+}
+"""
+
+ETA_CACHE_PATH = os.path.join(REPO_ROOT, 'best_five_eta_cache.json')
+ETA_CACHE_TTL_ORE = float(os.environ.get('BEST_FIVE_ETA_CACHE_TTL_ORE', str(24 * 180)))  # 180 giorni
+
+
+def _eta_cache_leggi():
+    if not os.path.exists(ETA_CACHE_PATH):
+        return {}
+    try:
+        with open(ETA_CACHE_PATH, encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _eta_cache_scrivi(cache):
+    with open(ETA_CACHE_PATH, 'w', encoding='utf-8') as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2, sort_keys=True)
+
+
+def fetch_eta_reale(slug):
+    """Eta' reale (anni) di un giocatore via il campo 'age' di anyPlayer.
+    None se non disponibile. Stesso pattern di retry/backoff di
+    fetch_l10_reale (query leggera, un giocatore per chiamata)."""
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    if COOKIES:
+        headers['Cookie'] = COOKIES
+    payload = {'query': ETA_QUERY, 'variables': {'slug': slug}, 'operationName': 'EtaGiocatore'}
+    backoff = 1.0
+    for attempt in range(3):
+        try:
+            resp = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+            if resp.status_code == 429:
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            if resp.status_code >= 400:
+                return None
+            data = resp.json()
+            player = (data.get('data') or {}).get('anyPlayer') or {}
+            return player.get('age')
+        except Exception as e:
+            log(f"[eta] {slug}: eccezione tentativo {attempt+1}/3: {e!r}")
+            time.sleep(backoff)
+            backoff *= 2
+    return None
+
+
+def fetch_eta(slugs):
+    """Eta' per ciascuno slug in 'slugs' (deduplicati), con cache su disco
+    (TTL molto lungo, vedi ETA_CACHE_TTL_ORE) -- stesso meccanismo di
+    fetch_prezzi ma piu' semplice (query diretta via GraphQL, nessun import
+    di bot_profit.py). Ritorna {slug: eta_o_None}."""
+    cache = _eta_cache_leggi()
+    ora = datetime.datetime.utcnow()
+    eta_map = {}
+    da_interrogare = []
+    unici = sorted(set(slugs))
+    for slug in unici:
+        voce = cache.get(slug)
+        if voce is not None:
+            try:
+                eta_ore = (ora - datetime.datetime.fromisoformat(voce['ts'])).total_seconds() / 3600.0
+            except (KeyError, ValueError):
+                eta_ore = None
+            if eta_ore is not None and eta_ore <= ETA_CACHE_TTL_ORE:
+                eta_map[slug] = voce.get('age')
+                continue
+        da_interrogare.append(slug)
+
+    if not da_interrogare:
+        log(f"[eta] {len(unici)} giocatori tutti in cache, nessuna query.")
+        return eta_map
+
+    log(f"[eta] {len(unici) - len(da_interrogare)} da cache, {len(da_interrogare)} da interrogare dal vivo.")
+    ts_ora = ora.isoformat()
+    for idx, slug in enumerate(da_interrogare, 1):
+        eta = fetch_eta_reale(slug)
+        eta_map[slug] = eta
+        cache[slug] = {'age': eta, 'ts': ts_ora}
+        if idx % 20 == 0 or idx == len(da_interrogare):
+            log(f"[eta] [{idx}/{len(da_interrogare)}] fatto.")
+        time.sleep(0.3)
+    _eta_cache_scrivi(cache)
+    return eta_map
+
+
+def _attach_eta(role_data_dict):
+    """Fetcha l'eta' per TUTTI gli slug in role_data_dict e la attacca a
+    ogni riga come 'eta'/'under23' -- stesso pattern di _attach_prezzi.
+    Ritorna anche il dict grezzo {slug: eta_o_None} per l'annotazione HTML."""
+    tutti_slug = [r['slug'] for rows in role_data_dict.values() for r in rows]
+    eta_map = fetch_eta(tutti_slug)
+    for rows in role_data_dict.values():
+        for r in rows:
+            eta = eta_map.get(r['slug'])
+            r['eta'] = eta
+            r['under23'] = eta is not None and eta <= UNDER23_MAX_ETA
+    return eta_map
 
 
 def _registra_tipo_arena(gg, lega):
@@ -1096,6 +1229,7 @@ def costruisci_formazione_vera(lega, count):
         log(f"ATTENZIONE: ruoli senza candidati: {mancanti} — la formazione potrebbe non essere generabile.")
 
     prezzi = _attach_prezzi(role_data_lega)
+    eta_map = _attach_eta(role_data_lega)
 
     # displayName reale Sorare (30/07, richiesta esplicita utente: "il nome
     # sulle carte deve essere il display name non lo slug"). LIMITE NOTO:
@@ -1147,6 +1281,7 @@ def costruisci_formazione_vera(lega, count):
     all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
     generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
     lineup_blocks = [_annota_prezzi_testo(b, prezzi) for b in lineup_blocks]
+    lineup_blocks = [_annota_eta_testo(b, eta_map) for b in lineup_blocks]
 
     testo_esclusi, html_esclusi = _blocco_top_esclusi(bff, card_pool, role_data_lega)
     lineup_blocks.append(testo_esclusi)
@@ -1158,9 +1293,14 @@ def costruisci_formazione_vera(lega, count):
         lineup_blocks.append(testo_cheap)
         lineup_html_blocks.append(html_cheap)
 
+    if GENERA_UNDER23:
+        testo_u23, html_u23 = blocco_cheapest_under23(bff, card_pool, role_data_lega)
+        lineup_blocks.append(testo_u23)
+        lineup_html_blocks.append(html_u23)
+
     log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica, "
         f"tipo={tipo}, stesso motore della produzione).")
-    return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi
+    return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi, eta_map
 
 
 # Scale-down moderato (31/07, richiesta esplicita utente: "non troppo piu
@@ -1245,6 +1385,10 @@ def _blocco_top_esclusi(bff, card_pool, role_data_per_ruolo, n=TOP_N_ESCLUSI):
 # gia' fetchati da fetch_prezzi (in_season/classic) senza passare da
 # CardPool per niente.
 GENERA_CHEAPEST = os.environ.get('BEST_FIVE_GENERA_CHEAPEST', '0').strip() not in ('0', 'false', 'no', '')
+
+# Cheapest Under-23 (31/07, richiesta esplicita utente): default true, stesso
+# meccanismo on/off di GENERA_CHEAPEST.
+GENERA_UNDER23 = os.environ.get('BEST_FIVE_GENERA_UNDER23', '1').strip() not in ('0', 'false', 'no', '')
 
 CHEAPEST_CONFIGS = (
     # (etichetta, max_classic, l10_cap)
@@ -1546,6 +1690,56 @@ def blocco_cheapest(bff, card_pool, role_data_dict, prezzi, l10_map):
     return "\n\n".join(testi), "".join(html_parti)
 
 
+N_CHEAPEST_UNDER23 = int(os.environ.get('BEST_FIVE_N_CHEAPEST_UNDER23', '3'))
+
+
+def blocco_cheapest_under23(bff, card_pool, role_data_dict, n=N_CHEAPEST_UNDER23):
+    """Elenco (NON una formazione completa, richiesta esplicita utente:
+    "non per forza con formazione, bastano 2/3 per ogni ruolo") dei top-N
+    candidati under-23 piu' economici per ruolo, presi dallo STESSO pool
+    eleggibile per starterOdds gia' usato per le formazioni vere (non solo
+    chi e' finito in una formazione). 'Economico' = il minimo tra i prezzi
+    in_season/classic conosciuti; chi non ha NESSUN prezzo noto non entra in
+    classifica (non e' confrontabile). Richiede _attach_eta/_attach_prezzi
+    gia' chiamate su role_data_dict (legge 'under23'/'prezzo_in_season'/
+    'prezzo_classic' gia' presenti su ogni riga)."""
+    lines = ["", "=" * 70, f"CHEAPEST UNDER-23 (top {n} per ruolo, solo elenco, non formazione)", "=" * 70]
+    html_parts = [MINI_CARD_CSS, f'<div class="esclusi-panel"><h3>Cheapest Under-23 (top {n} per ruolo)</h3>']
+    for ROLE in ('GK', 'DEF', 'MID', 'FWD'):
+        rows = role_data_dict.get(ROLE, [])
+        candidati = []
+        for r in rows:
+            if not r.get('under23'):
+                continue
+            isp = r.get('prezzo_in_season')
+            cl = r.get('prezzo_classic')
+            disponibili = [p for p in (isp, cl) if p is not None]
+            if not disponibili:
+                continue
+            prezzo_min = min(disponibili)
+            rarita = 'classic' if (cl is not None and cl == prezzo_min) else 'in_season'
+            candidati.append((prezzo_min, rarita, r))
+        candidati.sort(key=lambda t: t[0])
+        top = candidati[:n]
+
+        lines.append(f"\n--- {ROLE} ---")
+        html_parts.append(f'<div class="esclusi-role"><strong>{ROLE}</strong><div class="mini-card-strip">')
+        if not top:
+            lines.append("  (nessun under-23 con prezzo noto)")
+            html_parts.append('<p class="empty">(nessun under-23 con prezzo noto)</p>')
+        for i, (prezzo_min, rarita, r) in enumerate(top, 1):
+            eta = r.get('eta')
+            lines.append(f"  {i}) {r['slug']}: {r.get('atteso')} pt, eta {eta} -- {prezzo_min:.2f}EUR ({rarita})")
+            card_html = bff.render_card_html(ROLE, r, rarita, card_pool, False)
+            html_parts.append(
+                f'<div class="mini-card">{card_html}'
+                f'<div class="pcard-prezzo" style="font-size:0.78rem;font-weight:700;'
+                f'color:var(--gold);margin-top:4px">{prezzo_min:.2f}EUR</div></div>')
+        html_parts.append('</div></div>')
+    html_parts.append('</div>')
+    return "\n".join(lines), "".join(html_parts)
+
+
 # NOTA: lo slot EXTRA e' etichettato "EXTRA (DEF)" (con parentesi, uno spazio
 # interno) -- il gruppo 1 usa '.*' GREEDY apposta cosi' cattura tutto lo slot
 # (qualunque sia la sua forma) fino all'ULTIMA occorrenza di "slug: N pt" sulla
@@ -1630,6 +1824,53 @@ def _annota_prezzi_html(html_blocco, prezzi):
     var nota = mancanti ? (' (+' + mancanti + ' senza prezzo noto)') : '';
     div.textContent = 'Prezzo totale formazione (In Season): ' + totale.toFixed(2) + 'EUR' + nota;
     meta.appendChild(div);
+  }});
+}})();
+</script>
+"""
+    if '</body>' in html_blocco:
+        return html_blocco.replace('</body>', script + '</body>')
+    return html_blocco + script
+
+
+def _annota_eta_testo(blocco_testo, eta_map):
+    """Aggiunge ' [U23]' in coda a ogni riga giocatore under-23 -- stesso
+    post-processing per riga di _annota_prezzi_testo, ma SEPARATO (chiamato
+    dopo, sulla stringa gia' annotata con i prezzi) per non toccare quella
+    funzione gia' testata."""
+    righe_nuove = []
+    for riga in blocco_testo.split("\n"):
+        m = _SLUG_RIGA_FORMAZIONE_RE.match(riga)
+        if m:
+            slug = m.group(2)
+            eta = eta_map.get(slug)
+            if eta is not None and eta <= UNDER23_MAX_ETA:
+                riga = f"{riga} [U23]"
+        righe_nuove.append(riga)
+    return "\n".join(righe_nuove)
+
+
+def _annota_eta_html(html_blocco, eta_map):
+    """Inietta un <script> che aggiunge un piccolo 'stemmino' U23 (angolo
+    opposto al badge capitano, stesso stile .pcard-captain gia' usato in
+    produzione per il badge 'C' -- nessun CSS nuovo) su ogni .pcard[data-
+    slug] under-23 (31/07, richiesta esplicita utente). Stesso pattern di
+    _annota_prezzi_html: post-processing via script separato, mai una
+    modifica di render_card_html condiviso con la produzione."""
+    payload = json.dumps(eta_map)
+    script = f"""
+<script>
+(function() {{
+  var eta = {payload};
+  document.querySelectorAll('.pcard[data-slug]').forEach(function (card) {{
+    var e = eta[card.dataset.slug];
+    if (e == null || e > {UNDER23_MAX_ETA}) return;
+    var badge = document.createElement('span');
+    badge.className = 'pcard-captain';
+    badge.style.cssText = 'left:5px; right:auto; background:#3aa1e8; font-size:0.5rem;';
+    badge.title = 'Under 23 (eta\\' ' + e + ')';
+    badge.textContent = 'U23';
+    card.appendChild(badge);
   }});
 }})();
 </script>
@@ -1747,6 +1988,7 @@ def costruisci_formazione_contender(leghe, count):
         log(f"ATTENZIONE: ruoli senza candidati nel pool Contender combinato: {mancanti}.")
 
     prezzi = _attach_prezzi(merged_role_data)
+    eta_map = _attach_eta(merged_role_data)
 
     role_data = {'contender': merged_role_data}
     pools = {'contender': {role: gg._NoFilterPool(role, 'contender', merged_role_data[role]) for role in gg.ROLES}}
@@ -1755,6 +1997,7 @@ def costruisci_formazione_contender(leghe, count):
     all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
     generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
     lineup_blocks = [_annota_prezzi_testo(b, prezzi) for b in lineup_blocks]
+    lineup_blocks = [_annota_eta_testo(b, eta_map) for b in lineup_blocks]
 
     testo_esclusi, html_esclusi = _blocco_top_esclusi(bff, card_pool, merged_role_data)
     lineup_blocks.append(testo_esclusi)
@@ -1766,8 +2009,13 @@ def costruisci_formazione_contender(leghe, count):
         lineup_blocks.append(testo_cheap)
         lineup_html_blocks.append(html_cheap)
 
+    if GENERA_UNDER23:
+        testo_u23, html_u23 = blocco_cheapest_under23(bff, card_pool, merged_role_data)
+        lineup_blocks.append(testo_u23)
+        lineup_html_blocks.append(html_u23)
+
     log(f"Formazione Contender (leghe: {', '.join(leghe)}): {generated}/{count} generate.")
-    return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi
+    return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi, eta_map
 
 
 def rendi_carte_cliccabili(html_report):
@@ -1980,7 +2228,7 @@ def main():
             idx_b = args.index('--backups')
             n_backup = int(args[idx_b + 1])
 
-        bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi = costruisci_formazione_contender(
+        bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi, eta_map = costruisci_formazione_contender(
             leghe, 1 + n_backup)
 
         out_dir = os.path.join(REPO_ROOT, 'formazione_contender', 'output', 'best_five')
@@ -2012,6 +2260,7 @@ def main():
         html_report = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer)
         html_report = rendi_carte_cliccabili(html_report)
         html_report = _annota_prezzi_html(html_report, prezzi)
+        html_report = _annota_eta_html(html_report, eta_map)
         html_path = os.path.join(out_dir, f'best_five_contender_{ts}.html')
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html_report)
@@ -2117,7 +2366,7 @@ def main():
     # sostituisce costruisci_best_five/formatta_report* come output
     # principale. count = 1 (titolare) + n_backup (formazioni alternative
     # complete, vedi costruisci_formazione_vera).
-    bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi = costruisci_formazione_vera(
+    bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi, eta_map = costruisci_formazione_vera(
         lega, 1 + n_backup)
 
     out_dir = os.path.join(REPO_ROOT, f'formazione_{lega}', 'output', 'best_five')
@@ -2149,6 +2398,7 @@ def main():
     html_report = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer)
     html_report = rendi_carte_cliccabili(html_report)
     html_report = _annota_prezzi_html(html_report, prezzi)
+    html_report = _annota_eta_html(html_report, eta_map)
     html_path = os.path.join(out_dir, f'best_five_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_report)
