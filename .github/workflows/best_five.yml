@@ -283,7 +283,7 @@ jobs:
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add -A formazione_*/output/*_gk_all formazione_*/output/*_def_all formazione_*/output/*_mid_all formazione_*/output/*_fwd_all formazione_*/output/best_five 2>/dev/null || true
+          git add -A formazione_*/output/*_gk_all formazione_*/output/*_def_all formazione_*/output/*_mid_all formazione_*/output/*_fwd_all formazione_*/output/best_five best_five_prezzi_cache.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
