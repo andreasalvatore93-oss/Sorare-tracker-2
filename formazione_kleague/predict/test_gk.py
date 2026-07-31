@@ -935,6 +935,51 @@ LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 LEVEL_SCORE_POISSON_K_MAX = 6  # troncamento Poisson: massa residua accumulata sull'ultimo bin
 
 
+SHRINK_K_OUTLIER_GK = 30.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~7500 punti di test conferma k=30 pulito su entrambi i segmenti n<8/n>=8 (-5.36%/-9.28%/-4.31%), il vecchio timore "overfitting al bordo griglia" non regge piu' con questo volume di dati -- stesso valore ora su TUTTE le leghe incluso MLS/Korea
+MEDIA_RUOLO_GK_PRIOR = 48.81
+
+# Shrinkage del fattore casa/trasferta del PORTIERE (ALZATO 5.0->20.0 il
+# 30/07 dopo il caso reale Turner/Sirois, validato con backtest walk-forward).
+# UNIFICATO a livello di modulo il 31/07 (audit): il valore era ripetuto in
+# due punti -- dentro compute_score_atteso_gk (quello che entra nello score) e
+# inline in build_prediction (quello mostrato nel report) -- e andavano tenuti
+# allineati a mano, tanto che il cambio del 30/07 richiese un replace_all. Se
+# fossero divergiti, il report avrebbe mostrato un fattore diverso da quello
+# davvero applicato al punteggio.
+SPLIT_SHRINK_K_GK = 20.0
+
+
+def venue_factor_gk(scores, is_home_flags, target_is_home, weights):
+    """Fattore casa/trasferta del portiere: rapporto fra la media dei punteggi
+    nel contesto della prossima partita e la media generale, tirato verso 1.0
+    proporzionalmente a quante partite ci sono in quel contesto (shrinkage,
+    vedi SPLIT_SHRINK_K_GK).
+
+    A differenza degli altri ruoli il portiere lo calcola sui punteggi PIENI e
+    non sui residui: verificato il 31/07 (formazione_mls/diagnostics/
+    test_venue_base_residui_vs_punteggi.py) che le due basi danno la stessa
+    MAE (differenze sotto lo 0.01% su 15.000 punti di test), quindi la
+    differenza fra i ruoli e' innocua e non vale un cambio di produzione.
+
+    FUNZIONE UNICA (31/07, audit): prima questa logica era duplicata in due
+    punti del file, con rischio di divergenza silenziosa fra il numero
+    applicato e quello mostrato."""
+    media_pesata = weighted_mean(scores, weights)
+    home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
+    away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
+    home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
+    away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
+    overall = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
+    if overall <= 0:
+        return 1.0
+    if target_is_home:
+        raw, n_bucket = home_avg / overall, len(home_scores)
+    else:
+        raw, n_bucket = away_avg / overall, len(away_scores)
+    shrink = n_bucket / (n_bucket + SPLIT_SHRINK_K_GK)
+    return 1.0 + shrink * (raw - 1.0)
+
+
 def netto_to_level(netto):
     k = max(-2, min(5, round(netto)))
     return LEVEL_TABLE[k]
@@ -1246,6 +1291,75 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
 
     results.sort(key=lambda r: r['composite_score'])
     return results
+
+
+def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
+                            pos_decisive_values, neg_decisive_values,
+                            target_is_home, p_gioca=1.0,
+                            half_life=None, trend_intensity=None,
+                            shrink_k=SHRINK_K_OUTLIER_GK,
+                            media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR,
+                            presence_rate=None, opponent_lambda_mult=1.0):
+    """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` GK di PRODUZIONE,
+    da usare SIA in build_prediction (predizione reale) SIA nel backtest
+    walk-forward di calibrazione (rigorous_backtest_prod_gk) -- cosi' le due
+    non possono piu' divergere (stesso principio gia' in produzione su
+    DEF/FWD, mancante per GK fino ad oggi: rigorous_backtest usava una
+    formula duplicata indipendente, quindi qualunque backtest/calibrazione
+    ignorava silenziosamente lo shrinkage aggiunto oggi).
+
+    p_gioca accettato per simmetria di firma con gli altri ruoli ma non
+    usato (rimosso da score_atteso il 28/07, vedi commento in build_prediction).
+    Nessun opponent_rankings/Stadio D: entrambi rimossi da score_atteso GK
+    (vedi commenti storici in build_prediction), quindi non servono qui.
+
+    opponent_lambda_mult (29/07, vedi opponent_strength.py): moltiplicatore
+    su lambda_pos_dec basato sui gol FATTI dal prossimo avversario nelle sue
+    ultime 10 partite (dato storico reale, non il domesticLeagueRanking
+    contaminato del vecchio fattore_forza_avversario). Default 1.0 (nessun
+    effetto) -- i chiamanti di backtest/calibrazione non lo passano, quindi
+    restano invariati."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    n = len(scores)
+    weights = exponential_weights(n, half_life)
+
+    media_granulari_pesata = weighted_mean(granulari_values, weights)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _s, _l = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    # Prior di ruolo DINAMICO (28/07, bug reale trovato dall'utente: Jack
+    # Skahan, David Vazquez -- giocatori di riserva veri, P(gioca) storico
+    # 19-26%, non sfortunati con pochi dati -- venivano tirati dallo
+    # shrinkage verso la media di TUTTI i giocatori (dominata dai titolari),
+    # gonfiando artificialmente il punteggio di chi gioca poco PERCHE'
+    # strutturalmente debole. Misurato sui dati reali (n=115 portieri, corr
+    # presenza/punteggio +0.245): chi gioca poco rende MENO anche quando
+    # gioca, non solo per varianza campionaria. Prior = intercetta + pendenza
+    # * presenza storica (regressione reale), non piu' un numero fisso
+    # uguale per titolari e riserve. presence_rate=None (calibrazione/
+    # backtest, nessun concetto di "storico totale esaminato" disponibile)
+    # ricade sul prior fisso originale, comportamento INVARIATO.
+    # Ricalibrato 30/07 (n=146, pool post-fix anyPlayers->activePlayers,
+    # decisione utente via popup): era 46.20 + 4.05 * presence_rate.
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 46.20 + 4.05 * presence_rate)
+    grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    grezzo_corretto = (
+        (n / (n + shrink_k)) * grezzo
+        + (shrink_k / (n + shrink_k)) * media_ruolo_prior
+    )
+
+    # Funzione condivisa con build_prediction (31/07, audit): prima la stessa
+    # logica era scritta due volte, qui e nel report.
+    fattore_casa_trasferta = venue_factor_gk(scores, is_home_flags, target_is_home, weights)
+
+    return grezzo_corretto * fattore_casa_trasferta
 
 
 def build_prediction(player_slug):
@@ -1560,17 +1674,9 @@ def build_prediction(player_slug):
     # reale Collodi: 1.319 calcolato su 3-4 partite per bucket casa/trasferta,
     # rumore spacciato per segnale). Il fattore viene tirato verso il neutro
     # 1.0 proporzionalmente al numero di partite nel bucket usato.
-    SPLIT_SHRINK_K_GK = 20.0  # ALZATO 5.0->20.0 (30/07, caso reale Turner/Sirois): validato con backtest walk-forward, migliora la MAE
-    fattore_casa_trasferta = 1.0
-    if overall_avg_for_factor > 0:
-        if next_is_home:
-            _raw_fattore = home_avg / overall_avg_for_factor
-            _n_bucket = len(home_scores)
-        else:
-            _raw_fattore = away_avg / overall_avg_for_factor
-            _n_bucket = len(away_scores)
-        _shrink_gk = _n_bucket / (_n_bucket + SPLIT_SHRINK_K_GK)
-        fattore_casa_trasferta = 1.0 + _shrink_gk * (_raw_fattore - 1.0)
+    # STESSA funzione usata da compute_score_atteso_gk (31/07, audit): il
+    # fattore mostrato nel report non puo' piu' divergere da quello applicato.
+    fattore_casa_trasferta = venue_factor_gk(scores, is_home_flags, next_is_home, weights)
 
     # --- Fattori granulari SEPARATI (26/07: falli/efficacia offensiva/eventi
     # rari rimossi, pesavano 0.0% su 268 partite reali -- vedi
@@ -1697,12 +1803,17 @@ def build_prediction(player_slug):
     media_ruolo_prior = MEDIA_RUOLO_GK_PRIOR
     if presence_rate is not None:
         media_ruolo_prior = max(0.0, 46.20 + 4.05 * presence_rate)
-    _grezzo_gk = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
-    _grezzo_gk_corretto = (
-        (n / (n + SHRINK_K_OUTLIER_GK)) * _grezzo_gk
-        + (SHRINK_K_OUTLIER_GK / (n + SHRINK_K_OUTLIER_GK)) * media_ruolo_prior
-    )
-    score_atteso = _grezzo_gk_corretto * fattore_casa_trasferta
+    # FUNZIONE CONDIVISA (31/07, audit): prima questa formula era scritta
+    # inline qui, duplicata rispetto a formazione_mls/predict/test_gk.py. I
+    # valori erano identici, ma nulla impediva che divergessero silenziosamente
+    # alla prossima modifica -- ed e' esattamente la classe di bug che ha
+    # generato l'audit. Ora K League chiama la stessa funzione di MLS, quindi
+    # anche il backtest di calibrazione puo' essere allineato alla produzione.
+    score_atteso = compute_score_atteso_gk(
+        scores, is_home_flags, granulari_values,
+        pos_decisive_values, neg_decisive_values,
+        target_is_home=next_is_home, presence_rate=presence_rate,
+        opponent_lambda_mult=_opp_lambda_mult)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo

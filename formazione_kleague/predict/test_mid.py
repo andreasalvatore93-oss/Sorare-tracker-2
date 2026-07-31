@@ -1174,6 +1174,108 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
     return results
 
 
+SHRINK_K_OUTLIER_MID = 5.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~2500 punti di test conferma guadagno pulito su entrambi i segmenti (-1.38% tot, -1.74%/-1.29%) -- il vecchio motivo dello scarto ("guadagno solo su n>=8") non regge piu' con questo volume di dati, stesso valore ora su TUTTE le leghe incluso MLS/Korea
+MEDIA_RUOLO_MID_PRIOR = 53.94
+
+
+def compute_score_atteso_mid(scores, is_home_flags, opponent_rankings,
+                             residual_values, granulari_values,
+                             pos_decisive_values, neg_decisive_values,
+                             offensive_values, passing_values, goals_conceded_values,
+                             target_is_home, target_opp_rank, p_gioca=1.0,
+                             half_life=None, trend_intensity=None,
+                             shrink_k=SHRINK_K_OUTLIER_MID,
+                             media_ruolo_prior=MEDIA_RUOLO_MID_PRIOR,
+                             use_stadio_d=True, presence_rate=None, opponent_lambda_mult=1.0,
+                             opponent_team_slugs=None, game_dates=None,
+                             target_opponent_team_slug=None, target_cutoff_dt=None, league='mls'):
+    """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` MID di PRODUZIONE,
+    da usare SIA in build_prediction SIA nel backtest walk-forward di
+    calibrazione (rigorous_backtest_prod_mid) -- cosi' le due non possono
+    piu' divergere. Gemella di compute_score_atteso_def/gk, stessa struttura:
+    shrinkage con SHRINK_K_OUTLIER_MID/MEDIA_RUOLO_MID_PRIOR, Stadio D su
+    Efficacia offensiva/Passaggio/Gol subiti condizionati per venue+avversario.
+
+    p_gioca accettato per simmetria di firma ma non usato (rimosso da
+    score_atteso il 28/07)."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    n = len(scores)
+    weights = exponential_weights(n, half_life)
+
+    media_granulari_pesata = weighted_mean(granulari_values, weights)
+    # opponent_lambda_mult (29/07, vedi opponent_strength.py): gol subiti dal
+    # prossimo avversario nelle ultime 10 partite. FIX 29/07: questa e' la
+    # VERA funzione chiamata da build_prediction per lo score_atteso reale
+    # (score_atteso = compute_score_atteso_mid(...)) -- un primo tentativo
+    # aveva modificato per errore una copia inline piu' sotto usata SOLO per
+    # il result dict diagnostico, senza alcun effetto sulla produzione reale.
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _s, _l = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    # Prior di ruolo DINAMICO (28/07, bug reale: Jack Skahan/David Vazquez,
+    # riserve vere con P(gioca) storico 19-26%, tirati dallo shrinkage verso
+    # la media di TUTTI i centrocampisti invece che verso un prior realistico
+    # per chi gioca cosi' poco. Misurato su dati reali, n=331, corr
+    # presenza/punteggio +0.53: chi gioca poco rende MENO anche quando gioca.
+    # presence_rate=None (calibrazione/backtest) ricade sul prior fisso,
+    # comportamento INVARIATO.
+    # Ricalibrato 30/07 (n=519, pool post-fix anyPlayers->activePlayers,
+    # decisione utente via popup): era 42.68 + 12.34 * presence_rate.
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 42.68 + 12.34 * presence_rate)
+    grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    grezzo_corretto = (
+        (n / (n + shrink_k)) * grezzo
+        + (shrink_k / (n + shrink_k)) * media_ruolo_prior
+    )
+    fattore_casa_trasferta = compute_split_factor(residual_values, is_home_flags, target_is_home)
+    score_atteso = grezzo_corretto * fattore_casa_trasferta
+
+    if not use_stadio_d:
+        return score_atteso
+    # SOSTITUITO (29/07, richiesta esplicita utente, bug reale: domesticLeagueRanking
+    # e' un attributo CORRENTE della squadra, non ancorato alla data della partita,
+    # vedi opponent_strength.py): se disponibili gli slug/date storici (passati
+    # da build_prediction), 'forte' si basa sui gol REALI fatti dall'avversario.
+    # Fallback al vecchio ranking SOLO se i nuovi parametri non sono passati
+    # (backtest/calibrazione esistenti, comportamento INVARIATO li').
+    if opponent_team_slugs is not None and game_dates is not None:
+        opponent_forte_flags = [
+            opponent_strength.opponent_is_strong(league, opp_slug, dt)
+            for opp_slug, dt in zip(opponent_team_slugs, game_dates)
+        ]
+        next_forte = opponent_strength.opponent_is_strong(
+            league, target_opponent_team_slug, target_cutoff_dt)
+    else:
+        valid_opp_ranks = [r for r in opponent_rankings if r is not None]
+        avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
+        opponent_forte_flags = [
+            (r < avg_opp_rank_hist) if (r is not None and avg_opp_rank_hist is not None) else None
+            for r in opponent_rankings
+        ]
+        next_forte = (target_opp_rank < avg_opp_rank_hist) if (
+            target_opp_rank is not None and avg_opp_rank_hist is not None) else None
+
+    def _delta_venue_avversario(values):
+        fallback = weighted_mean(values, weights)
+        cond_venue = media_condizionata(values, weights, is_home_flags, target_is_home, fallback)
+        cond_avv = media_condizionata(values, weights, opponent_forte_flags, next_forte, fallback)
+        return (cond_venue - fallback) + (cond_avv - fallback)
+
+    score_atteso += (
+        _delta_venue_avversario(offensive_values)
+        + _delta_venue_avversario(passing_values)
+        + _delta_venue_avversario(goals_conceded_values)
+    )
+    return score_atteso
+
+
 def build_prediction(player_slug):
     global _STRUCTURAL_INSUFFICIENCY
     _STRUCTURAL_INSUFFICIENCY = False
@@ -1602,12 +1704,28 @@ def build_prediction(player_slug):
     # prior fisso sopra, comportamento INVARIATO.
     if presence_rate is not None:
         MEDIA_RUOLO_MID_PRIOR = max(0.0, 42.68 + 12.34 * presence_rate)
-    _grezzo_mid = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
-    _grezzo_mid_corretto = (
-        (n / (n + SHRINK_K_OUTLIER_MID)) * _grezzo_mid
-        + (SHRINK_K_OUTLIER_MID / (n + SHRINK_K_OUTLIER_MID)) * MEDIA_RUOLO_MID_PRIOR
-    )
-    score_atteso = _grezzo_mid_corretto * fattore_casa_trasferta
+    # (il calcolo di _grezzo_mid/_grezzo_mid_corretto che stava qui e' stato
+    # rimosso il 31/07: era la duplicazione inline della formula, ora vive
+    # solo dentro compute_score_atteso_mid. Le due variabili non erano usate
+    # da nessun'altra parte -- verificato con grep prima di toglierle.)
+    # FUNZIONE CONDIVISA (31/07, audit): prima la formula era scritta inline
+    # qui, duplicata rispetto a formazione_mls/predict/test_mid.py. I valori
+    # erano identici, ma nulla impediva che divergessero silenziosamente alla
+    # prossima modifica -- ed e' esattamente la classe di bug che ha generato
+    # l'audit. La funzione include GIA' lo Stadio D (gli stessi sei delta
+    # venue/avversario calcolati poco piu' sotto per il report), quindi la
+    # vecchia riga `score_atteso += (delta_...)` e' stata rimossa: sommarli di
+    # nuovo li conterebbe due volte.
+    score_atteso = compute_score_atteso_mid(
+        scores, is_home_flags, opponent_rankings,
+        residual_values, granulari_values,
+        pos_decisive_values, neg_decisive_values,
+        offensive_values, passing_values, goals_conceded_values,
+        target_is_home=next_is_home, target_opp_rank=next_opp_rank,
+        presence_rate=presence_rate, opponent_lambda_mult=_opp_lambda_mult,
+        opponent_team_slugs=opponent_team_slugs_hist, game_dates=game_dates_hist,
+        target_opponent_team_slug=next_opponent_team_slug,
+        target_cutoff_dt=datetime.datetime.utcnow(), league='kleague')
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario,
     # DECISO CON L'UTENTE dopo diagnostica su 1228 partite MID in cache di
@@ -1658,9 +1776,10 @@ def build_prediction(player_slug):
     (media_gol_subiti_condizionata_venue, media_gol_subiti_condizionata_avversario,
      delta_gol_subiti_venue, delta_gol_subiti_avversario) = _condiziona_venue_avversario(goals_conceded_values)
 
-    score_atteso += (delta_offensivo_venue + delta_offensivo_avversario
-                                + delta_passaggio_venue + delta_passaggio_avversario
-                                + delta_gol_subiti_venue + delta_gol_subiti_avversario)
+    # RIMOSSA la somma dei delta (31/07, audit): compute_score_atteso_mid li
+    # applica gia' internamente. I delta qui sopra restano calcolati perche'
+    # servono al report diagnostico, ma NON vanno risommati -- sarebbe un
+    # doppio conteggio dello Stadio D.
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
     # comparativa su 180 casi reali di produzione): range di confidenza finale
