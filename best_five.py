@@ -844,7 +844,19 @@ def costruisci_formazione_vera(lega, count):
     # parametro riscritto qui: se domani la produzione cambia un flag per
     # MLS_IN_SEASON/KLEAGUE_IN_SEASON, Best Five lo eredita automaticamente.
     all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
+    generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
 
+    log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica, "
+        f"tipo={tipo}, stesso motore della produzione).")
+    return bff, generated, totale, lineup_blocks, lineup_html_blocks
+
+
+def _renderizza_risultati(bff, all_results, card_pool):
+    """Fattorizzato da costruisci_formazione_vera (31/07, riuso identico per
+    costruisci_formazione_contender): trasforma i risultati di
+    gg.generate_lineups_for_type in blocchi testo/HTML, STESSO rendering
+    (format_lineup/render_lineup_html, apply_xp_bonus=False) usato dalla
+    produzione in FASE 2 di build_formazione_globale.py."""
     lineup_blocks, lineup_html_blocks = [], []
     generated, totale = 0, 0
     for r in all_results:
@@ -858,11 +870,6 @@ def costruisci_formazione_vera(lega, count):
             check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
             avoid_captain_slugs=r['avoid_captain_slugs'])
         lineup_blocks.append(block_text)
-        # apply_xp_bonus=False (30/07, IDENTICO alla produzione, vedi FASE 2 di
-        # build_formazione_globale.py): il numero mostrato resta sempre lo
-        # score_atteso GREZZO, la selezione (gia' avvenuta sopra) puo' aver
-        # usato lo sort_score con bonus dove previsto -- qui e' comunque 0.0
-        # per ogni carta (CardPool sintetica senza breakdown power reale).
         lineup_html_blocks.append(bff.render_lineup_html(
             r['label'], r['idx'], r['formazione'], card_pool, l10_cap=r['l10_cap'],
             l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
@@ -870,9 +877,94 @@ def costruisci_formazione_vera(lega, count):
             avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=False))
         generated += 1
         totale += punti
+    return generated, totale, lineup_blocks, lineup_html_blocks
 
-    log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica, "
-        f"tipo={tipo}, stesso motore della produzione).")
+
+# --- "Contender" limitato a N leghe (31/07, richiesta esplicita utente) ----
+#
+# L'utente vuole Best Five per la competizione Sorare "Contender" (slug reale
+# confermato via query live: eligibleSo5Competitions='seasonal-contenders',
+# stesse regole di MLS/K League In Season: 5 titolari+2 riserve, min 4 carte
+# In Season, capitano +50%), ma limitata SOLO a 3 campionati gia' tracciati
+# (Austria, Croazia, 2.Bundesliga) invece che alle ~20 leghe reali che
+# Contender raggruppa su Sorare -- una pipeline completa (nuova eleggibilita'
+# trasversale nella discovery di produzione) resta backlog separato, vedi
+# project_backlog_slug_contender.
+#
+# Qui NON si duplica la logica MLS_IN_SEASON/KLEAGUE_IN_SEASON: si registra
+# un tipo 'CONTENDER_IN_SEASON' a runtime sulla PROPRIA istanza di 'gg'
+# (import dinamico, non quella di produzione -- zero rischio per
+# formazione_giornata.yml) e si passa da generate_lineups_for_type REALE con
+# lo stesso trattamento di MLS/K League: IN_SEASON_TYPES.add(...) fa si' che
+# in_season_multi/apply_positive_synergy=False si applichino automaticamente
+# (vedi il refactor di build_formazione_globale.py, IN_SEASON_TYPES).
+def _registra_tipo_in_season(gg, tipo, pool_league, label):
+    gg.FORMATION_SHAPES[tipo] = {'role_slots': ['GK', 'DEF', 'MID', 'FWD'],
+                                  'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': 1}
+    gg.POOL_LEAGUE_BY_TYPE[tipo] = pool_league
+    gg.LABELS[tipo] = label
+    gg.IN_SEASON_TYPES.add(tipo)
+    gg.STACK_GUARD_TYPES.add(tipo)
+    gg.CHECK_CAP260_TYPES.add(tipo)
+    gg.XP_BONUS_TYPES.add(tipo)
+    # gg.L10_CAP_BY_TYPE: NESSUNA voce per 'tipo' -- assenza = nessun cap
+    # obbligatorio, corretto per un tipo In Season (a differenza delle Arene).
+    # gg.VARIANCE_MODE_TYPES: NON aggiunto apposta -- stesso motivo per cui
+    # MLS_IN_SEASON/KLEAGUE_IN_SEASON non ci sono (variance_mode=False per
+    # le In Season, misurato irrilevante/rumoroso il 30-31/07).
+    gg.bff.CAPTAIN_BONUS_BY_TYPE[tipo] = 0.5
+    gg.bff.CAP260_L10_THRESHOLD_BY_TYPE[tipo] = 260.0
+
+
+def costruisci_formazione_contender(leghe, count):
+    """Best Five 'Contender' limitato alle leghe passate in 'leghe' (es.
+    ['austria','croazia','germania2']): pool COMBINATO delle migliori carte
+    globali di ciascuna, NESSUNA nuova query -- legge il consiglio_*.txt piu'
+    recente gia' prodotto dal run Best Five NORMALE di ciascuna lega
+    (formazione_<lega>/output/<lega>_<ruolo>_all/consiglio_*.txt, stessa
+    formula di produzione di quella lega). Richiede che ciascuna lega abbia
+    gia' un Best Five --run completato di recente per tutti e 4 i ruoli."""
+    gg = _import_gg()
+    bff = gg.bff
+    tipo = 'CONTENDER_IN_SEASON'
+    _registra_tipo_in_season(gg, tipo, 'contender', 'In Season Contender')
+
+    merged_role_data = {ROLE: [] for ROLE in gg.ROLES}
+    names = {}
+    for lega in leghe:
+        for ruolo, ROLE in (('gk', 'GK'), ('def', 'DEF'), ('mid', 'MID'), ('fwd', 'FWD')):
+            out_dir = output_dir_per_ruolo(lega, ruolo)
+            path = bff.latest_consiglio(out_dir)
+            if not path:
+                log(f"[{lega}/{ruolo}] Nessun consiglio_*.txt trovato in {out_dir} -- "
+                    f"esegui prima 'python best_five.py {lega} --run' per questa lega.")
+                continue
+            rows = bff.parse_consiglio(path)
+            for row in rows:
+                row['league'] = lega
+            merged_role_data[ROLE].extend(rows)
+            log(f"[{lega}/{ruolo}] {len(rows)} giocatori da {os.path.basename(path)}.")
+            # Nomi: preferenza al discovery_global (pool intero), fallback al
+            # discovery posseduti (stesso schema di costruisci_formazione_vera).
+            for names_dir in (f'{lega}_{ruolo}_discovery_global', f'{lega}_{ruolo}_discovery'):
+                names_path = os.path.join(REPO_ROOT, f'formazione_{lega}', 'output', names_dir, 'player_names.json')
+                if os.path.exists(names_path):
+                    with open(names_path, encoding='utf-8') as f:
+                        loaded = json.load(f)
+                    for slug, nome in loaded.items():
+                        names.setdefault(slug, nome)
+
+    mancanti = [r for r in gg.ROLES if not merged_role_data.get(r)]
+    if mancanti:
+        log(f"ATTENZIONE: ruoli senza candidati nel pool Contender combinato: {mancanti}.")
+
+    role_data = {'contender': merged_role_data}
+    pools = {'contender': {role: gg._NoFilterPool(role, 'contender', merged_role_data[role]) for role in gg.ROLES}}
+    card_pool = bff.CardPool({}, names=names)
+
+    all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
+    generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
+    log(f"Formazione Contender (leghe: {', '.join(leghe)}): {generated}/{count} generate.")
     return bff, generated, totale, lineup_blocks, lineup_html_blocks
 
 
@@ -1068,6 +1160,63 @@ def main():
         sys.exit(1)
 
     lega = args[0]
+
+    # Modalita' "contender" (31/07, richiesta esplicita utente): pool
+    # COMBINATO di piu' leghe gia' processate singolarmente con Best Five
+    # normale (--run su ciascuna), NESSUNA nuova query qui -- solo lettura
+    # dei consiglio_*.txt piu' recenti di ciascuna lega elencata in --leghe.
+    # Esce subito, non condivide il resto di main() (che serve alla lega
+    # singola).
+    if lega == 'contender':
+        if '--leghe' not in args:
+            log("ERRORE: 'contender' richiede --leghe lega1,lega2,... (es. austria,croazia,germania2).")
+            sys.exit(1)
+        idx = args.index('--leghe')
+        leghe = [s.strip() for s in args[idx + 1].split(',') if s.strip()]
+        n_backup = 2
+        if '--backups' in args:
+            idx_b = args.index('--backups')
+            n_backup = int(args[idx_b + 1])
+
+        bff, generated, totale, lineup_blocks, lineup_html_blocks = costruisci_formazione_contender(
+            leghe, 1 + n_backup)
+
+        out_dir = os.path.join(REPO_ROOT, 'formazione_contender', 'output', 'best_five')
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+        ts = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H%M%S')
+
+        report = (
+            "=" * 70 + "\n"
+            f"BEST FIVE — CONTENDER (limitato a: {', '.join(leghe)})\n"
+            f"Generato: {datetime.datetime.utcnow().isoformat()}Z\n"
+            f"{generated} formazione/i generata/e su {1 + n_backup} richieste, "
+            f"totale complessivo {totale} pt attesi.\n"
+            f"Pool: solo le leghe {', '.join(leghe)} (NON tutte le leghe reali di Contender su "
+            "Sorare, vedi backlog). Sinergie/anti-stack/captain calcolati come nel tool unificato.\n"
+            + "=" * 70 + "\n\n"
+            + "\n\n".join(lineup_blocks)
+        )
+        out_path = os.path.join(out_dir, f'best_five_contender_{ts}.txt')
+        with open(out_path, 'w', encoding='utf-8') as f:
+            f.write(report)
+
+        page_title = "Best Five — Contender (limitato)"
+        page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
+                         f"{generated}/{1 + n_backup} formazioni, pool limitato a {', '.join(leghe)} "
+                         "(NON tutte le leghe reali di Contender). Sinergie/anti-stack/captain "
+                         "come nel tool unificato.")
+        footer = "Script separato e READ-ONLY rispetto alla pipeline di produzione."
+        html_report = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer)
+        html_report = rendi_carte_cliccabili(html_report)
+        html_path = os.path.join(out_dir, f'best_five_contender_{ts}.html')
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html_report)
+
+        print("\n" + report)
+        log(f"Report salvato in: {out_path}")
+        log(f"Report HTML salvato in: {html_path}")
+        return
 
     # Modalita' a matrice (30/07, parallelizzazione stile formazione_giornata.yml):
     # tre job separati invece di un unico loop sequenziale -- vedi
