@@ -1348,7 +1348,121 @@ def _ottimizza_lineup_min_prezzo(shape, role_data, prezzi, max_classic, l10_cap=
             'l10_totale': l10_totale, 'l10_cap': l10_cap}
 
 
-def _render_cheapest(bff, card_pool, label, risultato):
+# --- Formazioni "ottimizzate valore" (31/07, richiesta esplicita utente) --
+#
+# Le 3 "cheapest" sopra minimizzano il prezzo puro -- a volte scartano un
+# giocatore quasi identico in prezzo ma con un punteggio molto piu' alto
+# (caso reale segnalato dall'utente: George Stanger 42pt/0.33EUR preferito a
+# Ryan Astley 51pt/0.50EUR, 9 punti in piu' per 0.17EUR). L'utente ha
+# chiesto un "compromesso statistico" invece di un moltiplicatore
+# arbitrario: nessuno storico di prezzi salvato per un vero backtest, quindi
+# la soglia si calcola sul pool REALE di ogni singola run (non un numero
+# scelto a mano) -- media di prezzo/punteggio su TUTTI i candidati
+# eleggibili di questa run (non solo quelli gia' scelti in una formazione,
+# richiesta esplicita), per ciascuna rarita' disponibile. Un candidato piu'
+# caro entra al posto di uno piu' economico SOLO se il costo marginale per
+# punto aggiuntivo e' <= questa media -- "un affare nella media o meglio"
+# del mercato di quella run, non una soglia fissa indovinata.
+def _baseline_costo_punto(role_data, prezzi):
+    """Media di prezzo/punteggio su tutti i candidati (in_season E classic)
+    con prezzo noto e punteggio > 0, in TUTTI i ruoli di role_data -- questa
+    e' la soglia auto-calcolata, non un numero deciso a mano."""
+    rapporti = []
+    for rows in role_data.values():
+        for row in rows:
+            if row.get('atteso', 0) <= 0:
+                continue
+            info = prezzi.get(row['slug']) or {}
+            for rarita in ('in_season', 'classic'):
+                prezzo = info.get(rarita)
+                if prezzo is not None:
+                    rapporti.append(prezzo / row['atteso'])
+    if not rapporti:
+        return None
+    return sum(rapporti) / len(rapporti)
+
+
+def _ottimizza_lineup_valore(shape, role_data, prezzi, max_classic, l10_cap, l10_map, baseline_costo_punto):
+    """Come _ottimizza_lineup_min_prezzo, ma l'obiettivo massimizzato per
+    ogni stato e' 'valore' = punteggio - prezzo/baseline_costo_punto invece
+    del prezzo minimo -- un candidato piu' caro vince solo se il punteggio
+    extra 'vale' il prezzo extra secondo la soglia media del pool reale
+    (vedi _baseline_costo_punto). Se baseline_costo_punto e' None (nessun
+    prezzo noto in tutto il pool) ritorna None -- non ha senso ottimizzare
+    un valore senza nessun dato di prezzo."""
+    if baseline_costo_punto is None or baseline_costo_punto <= 0:
+        return None
+    rarita_ammesse = ('in_season',) if max_classic == 0 else ('in_season', 'classic')
+    cap_units = int(round(l10_cap * _RES_L10)) if l10_cap is not None else None
+
+    def candidati(role):
+        return _candidati_prezzo_ruolo(role_data.get(role, []), prezzi, l10_map, rarita_ammesse)
+
+    def valore_di(row, prezzo):
+        return row['atteso'] - prezzo / baseline_costo_punto
+
+    # stato (l10_units_usati, n_classic_usati) -> (valore_tot, prezzo_tot, punteggio_tot, picks, slug_usati)
+    states = {(0, 0): (0.0, 0.0, 0, {}, frozenset())}
+    for role in ('GK', 'DEF', 'MID', 'FWD'):
+        cands = candidati(role)
+        if not cands:
+            return None
+        nuovi = {}
+        for (l10u, ncl), (val_tot, prezzo_tot, score_tot, picks, usati) in states.items():
+            for row, rarita, prezzo, l10 in cands:
+                if row['slug'] in usati:
+                    continue
+                nc = ncl + (1 if rarita == 'classic' else 0)
+                if max_classic is not None and nc > max_classic:
+                    continue
+                l10u2 = l10u + int(round(l10 * _RES_L10))
+                if cap_units is not None and l10u2 > cap_units:
+                    continue
+                v2 = val_tot + valore_di(row, prezzo)
+                key = (l10u2, nc)
+                cur = nuovi.get(key)
+                if cur is None or v2 > cur[0] + 1e-9:
+                    new_picks = dict(picks)
+                    new_picks[role] = (row, rarita, prezzo)
+                    nuovi[key] = (v2, prezzo_tot + prezzo, score_tot + row['atteso'], new_picks,
+                                  usati | {row['slug']})
+        if not nuovi:
+            return None
+        states = nuovi
+
+    extra_cands = []
+    for role in shape['extra_roles']:
+        extra_cands.extend((role, row, rarita, prezzo, l10)
+                            for row, rarita, prezzo, l10 in candidati(role))
+
+    migliore = None
+    for (l10u, ncl), (val_tot, prezzo_tot, score_tot, picks, usati) in states.items():
+        for role, row, rarita, prezzo, l10 in extra_cands:
+            if row['slug'] in usati:
+                continue
+            nc = ncl + (1 if rarita == 'classic' else 0)
+            if max_classic is not None and nc > max_classic:
+                continue
+            l10u2 = l10u + int(round(l10 * _RES_L10))
+            if cap_units is not None and l10u2 > cap_units:
+                continue
+            v2 = val_tot + valore_di(row, prezzo)
+            if migliore is None or v2 > migliore[0] + 1e-9:
+                risultato = dict(picks)
+                risultato['EXTRA'] = (role, row, rarita, prezzo)
+                migliore = (v2, prezzo_tot + prezzo, score_tot + row['atteso'], risultato)
+    if migliore is None:
+        return None
+    _, prezzo_tot, score_tot, picks = migliore
+    l10_totale = 0.0
+    for slot, entry in picks.items():
+        row = entry[1] if slot == 'EXTRA' else entry[0]
+        l10_totale += (l10_map or {}).get(row['slug']) or 0.0
+    return {'prezzo_totale': prezzo_tot, 'punteggio_totale': score_tot, 'picks': picks,
+            'l10_totale': l10_totale, 'l10_cap': l10_cap}
+
+
+def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
     """Testo + HTML per una formazione 'cheapest'. Il testo non riusa
     format_lineup (struttura 'picks' diversa da quella di bff.build_one_
     lineup) -- rendering minimale dedicato. L'HTML invece (31/07, richiesta
@@ -1357,15 +1471,15 @@ def _render_cheapest(bff, card_pool, label, risultato):
     classic, non sempre 'in_season' come per gli esclusi) dentro lo stesso
     wrapper '.mini-card' rimpicciolito di _blocco_top_esclusi."""
     if risultato is None:
-        testo = (f"--- Cheapest — {label} ---\n"
+        testo = (f"--- {titolo} — {label} ---\n"
                  "budget esiguo per generare la formazione (nessuna combinazione trovata "
                  "nel pool eleggibile, anche senza limite di prezzo).")
-        html = (f'<div class="esclusi-panel"><h3>Cheapest — {label}</h3>'
+        html = (f'<div class="esclusi-panel"><h3>{titolo} — {label}</h3>'
                 f'<p class="empty">Budget esiguo per generare la formazione.</p></div>')
         return testo, html
 
-    righe = [f"--- Cheapest — {label} ---"]
-    html_righe = [MINI_CARD_CSS, f'<div class="esclusi-panel"><h3>Cheapest — {label}</h3><div class="mini-card-strip">']
+    righe = [f"--- {titolo} — {label} ---"]
+    html_righe = [MINI_CARD_CSS, f'<div class="esclusi-panel"><h3>{titolo} — {label}</h3><div class="mini-card-strip">']
     for slot in ('GK', 'DEF', 'MID', 'FWD', 'EXTRA'):
         entry = risultato['picks'].get(slot)
         if not entry:
@@ -1394,15 +1508,26 @@ def _render_cheapest(bff, card_pool, label, risultato):
 
 
 def blocco_cheapest(bff, card_pool, role_data_dict, prezzi, l10_map):
-    """Genera le 3 varianti CHEAPEST_CONFIGS sullo stesso role_data_dict
-    (dict ROLE -> righe, gia' con prezzi attaccati da _attach_prezzi) e
-    ritorna (testo, html) concatenati. shape fissa GK/DEF/MID/FWD + 1 EXTRA
-    da DEF/MID/FWD -- stessa struttura di IN_SEASON/ARENA (5 slot totali)."""
+    """Genera le 3 varianti CHEAPEST_CONFIGS DUE volte sullo stesso
+    role_data_dict (dict ROLE -> righe, gia' con prezzi attaccati da
+    _attach_prezzi): prima il prezzo minimo assoluto (_ottimizza_lineup_
+    min_prezzo), poi la versione "ottimizzata valore" (_ottimizza_lineup_
+    valore, soglia auto-calcolata sul pool reale di questa run -- vedi
+    _baseline_costo_punto, richiesta esplicita utente: "compromesso
+    statistico" invece di un moltiplicatore arbitrario). Ritorna (testo,
+    html) concatenati, 6 formazioni totali. shape fissa GK/DEF/MID/FWD + 1
+    EXTRA da DEF/MID/FWD -- stessa struttura di IN_SEASON/ARENA."""
     shape = {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD']}
+    baseline = _baseline_costo_punto(role_data_dict, prezzi)
     testi, html_parti = [], []
     for label, max_classic, l10_cap in CHEAPEST_CONFIGS:
         risultato = _ottimizza_lineup_min_prezzo(shape, role_data_dict, prezzi, max_classic, l10_cap, l10_map)
-        t, h = _render_cheapest(bff, card_pool, label, risultato)
+        t, h = _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest')
+        testi.append(t)
+        html_parti.append(h)
+    for label, max_classic, l10_cap in CHEAPEST_CONFIGS:
+        risultato = _ottimizza_lineup_valore(shape, role_data_dict, prezzi, max_classic, l10_cap, l10_map, baseline)
+        t, h = _render_cheapest(bff, card_pool, label, risultato, titolo='Ottimizzata valore (prezzo/punteggio)')
         testi.append(t)
         html_parti.append(h)
     return "\n\n".join(testi), "".join(html_parti)
