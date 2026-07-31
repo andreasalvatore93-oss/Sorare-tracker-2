@@ -1307,8 +1307,11 @@ def _render_cheapest(label, risultato):
         tag = " [CLASSIC]" if rarita == 'classic' else ""
         righe.append(f"{etichetta_slot:<12} {row['slug']}: {row['atteso']} pt{tag} -- {prezzo:.2f}EUR")
         link = f'https://sorare.com/it/football/players/{row["slug"]}'
+        # Colore esplicito (31/07, stesso fix di _blocco_top_esclusi): il blu
+        # default del browser era illeggibile su sfondo scuro.
         html_righe.append(
-            f'<li><a href="{link}" target="_blank" rel="noopener">{row["slug"]}</a> '
+            f'<li><a href="{link}" target="_blank" rel="noopener" '
+            f'style="color:var(--gold);text-decoration:none">{row["slug"]}</a> '
             f'({etichetta_slot}): {row["atteso"]} pt{tag} -- {prezzo:.2f}EUR</li>')
     righe.append(f"TOTALE: {risultato['punteggio_totale']} pt -- {risultato['prezzo_totale']:.2f}EUR")
     html_righe.append(f"</ul><p><strong>TOTALE: {risultato['punteggio_totale']} pt -- "
@@ -1342,8 +1345,13 @@ def _annota_prezzi_testo(blocco_testo, prezzi):
     """Aggiunge ' | IS: X€ | CL: Y€' in coda a ogni riga giocatore di un
     blocco testuale gia' formattato da bff.format_lineup -- nessuna modifica
     a format_lineup stesso (condiviso con la produzione), solo un
-    post-processing di stringa qui in Best Five."""
+    post-processing di stringa qui in Best Five. Aggiunge ANCHE una riga con
+    il prezzo TOTALE (somma In Season) della formazione, subito prima della
+    riga 'TOTALE: N pt' gia' scritta da format_lineup (31/07, richiesta
+    esplicita utente)."""
     righe_nuove = []
+    totale_prezzo = 0.0
+    mancanti = 0
     for riga in blocco_testo.split("\n"):
         m = _SLUG_RIGA_FORMAZIONE_RE.match(riga)
         if m:
@@ -1352,9 +1360,18 @@ def _annota_prezzi_testo(blocco_testo, prezzi):
             if info is not None:
                 isp = info.get('in_season')
                 cl = info.get('classic')
+                if isp is not None:
+                    totale_prezzo += isp
+                else:
+                    mancanti += 1
                 isp_s = f"{isp:.2f}EUR" if isp is not None else "N/D"
                 cl_s = f"{cl:.2f}EUR" if cl is not None else "N/D"
                 riga = f"{riga} [IS: {isp_s} | CL: {cl_s}]"
+            else:
+                mancanti += 1
+        if riga.startswith("TOTALE:"):
+            nota = f" (+{mancanti} senza prezzo noto)" if mancanti else ""
+            righe_nuove.append(f"PREZZO TOTALE FORMAZIONE (In Season): {totale_prezzo:.2f}EUR{nota}")
         righe_nuove.append(riga)
     return "\n".join(righe_nuove)
 
@@ -1364,7 +1381,10 @@ def _annota_prezzi_html(html_blocco, prezzi):
     report (render_lineup_html di bff, condiviso con la produzione, non
     toccato), aggiunge una riga prezzo -- stesso pattern di
     rendi_carte_cliccabili (post-processing via script, non una modifica del
-    template)."""
+    template). Aggiunge ANCHE il prezzo TOTALE (somma In Season) di ogni
+    formazione, sommando i prezzi delle carte dello stesso .lineup-block
+    (31/07, richiesta esplicita utente: font prezzo per-carta troppo piccolo/
+    illeggibile, e totale formazione non visibile -- entrambi fix qui)."""
     payload = json.dumps(prezzi)
     script = f"""
 <script>
@@ -1377,9 +1397,27 @@ def _annota_prezzi_html(html_blocco, prezzi):
     var cl = info.classic != null ? info.classic.toFixed(2) + 'EUR' : 'N/D';
     var div = document.createElement('div');
     div.className = 'pcard-prezzo';
-    div.style.cssText = 'font-size:0.6rem;opacity:0.85;margin-top:2px';
+    div.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--gold);margin-top:4px;line-height:1.3';
     div.textContent = 'IS: ' + isp + ' | CL: ' + cl;
     card.querySelector('.pcard-body, .pcard').appendChild(div);
+  }});
+  document.querySelectorAll('.lineup-block').forEach(function (block) {{
+    var cards = block.querySelectorAll('.pcard[data-slug]');
+    if (!cards.length) return;
+    var totale = 0, mancanti = 0;
+    cards.forEach(function (card) {{
+      var info = prezzi[card.dataset.slug];
+      var isp = info ? info.in_season : null;
+      if (isp != null) {{ totale += isp; }} else {{ mancanti += 1; }}
+    }});
+    var meta = block.querySelector('.lineup-meta');
+    if (!meta) return;
+    var div = document.createElement('div');
+    div.className = 'lineup-prezzo-totale';
+    div.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--gold);margin-top:6px';
+    var nota = mancanti ? (' (+' + mancanti + ' senza prezzo noto)') : '';
+    div.textContent = 'Prezzo totale formazione (In Season): ' + totale.toFixed(2) + 'EUR' + nota;
+    meta.appendChild(div);
   }});
 }})();
 </script>
