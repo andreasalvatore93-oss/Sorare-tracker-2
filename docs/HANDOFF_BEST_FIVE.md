@@ -1,103 +1,176 @@
-# HANDOFF — Funzione "Best Five"
+# HANDOFF — Funzione "Best Five" / "Contender"
 
-Riscritto il 30/07/2026 sera (sessione "Best Five K League", seconda parte). La versione precedente
-di questo file descriveva un'architettura ormai sostituita (top-N per ruolo, un job sequenziale) —
-riscritto da zero per non essere fuorviante. Leggerlo per intero prima di agire.
+Riscritto il 31/07/2026 (sessione lunghissima, moltissimi cambi reali). La versione precedente
+(30/07 sera) descriveva un'architettura appena nata e mai confermata end-to-end — oggi è stata
+verificata su run reali, e sono stati trovati e corretti diversi bug reali che l'avrebbero resa
+silenziosamente sbagliata. Leggerlo per intero prima di agire, non fidarsi della memoria.
 
-## Cos'è "Best Five"
+## Cos'è "Best Five" oggi
 
-Per UNA lega scelta, genera la **formazione IN SEASON ottimale** (GK/DEF/MID/FWD/EXTRA, con
-sinergie/anti-stack/captain) scegliendo tra **TUTTE** le carte della lega, non solo quelle
-possedute dall'utente. Script separato e READ-ONLY rispetto alla pipeline di produzione
-(`formazione_giornata.yml`).
+Per UNA lega scelta, genera la **formazione ottimale** (GK/DEF/MID/FWD/EXTRA, con sinergie/anti-
+stack/captain — STESSA logica del tool unificato, mai duplicata) scegliendo tra **TUTTE** le carte
+della lega, non solo quelle possedute. Script separato e READ-ONLY rispetto alla pipeline di
+produzione (`formazione_giornata.yml`).
 
-**Non è più** un elenco "titolare + N backup per ruolo" calcolato con una logica propria — quello
-era il design della prima sessione (30/07 pomeriggio) ed è stato **sostituito**, su richiesta
-esplicita dell'utente, con la generazione di 1+N formazioni COMPLETE reali (vedi sotto).
+**Novità di oggi rispetto al 30/07**: oltre alla singola lega, esiste ora un **orchestratore
+"Contender"** (`best_five_contender.yml`) che genera Best Five per N leghe in parallelo e poi le
+UNISCE in un pool combinato — pensato per la competizione Sorare "Contender" (che raggruppa ~20
+campionati), ma usabile per QUALSIASI combinazione di leghe (l'utente lo usa anche per test
+misti tipo Scozia+Austria+MLS, tecnicamente non bloccato anche se semanticamente non è "vera"
+Contender).
 
-## Architettura attuale (5 job paralleli, `.github/workflows/best_five.yml`)
+## Bug reale trovato e corretto oggi: allineamento con la produzione
 
-1. **pool_shard**: legge il pool già filtrato per qualità (discovery_global), lo sharda in ≤20
-   gruppi. Nessuna query di rete.
-2. **prefiltro** (matrice, max-parallel 20): controlla le starterOdds (soglia configurabile, input
-   `starter_odds`) SOLO sul proprio shard.
-3. **prefiltro_merge**: unisce i sopravvissuti, li risharda in ≤20 gruppi per il predict.
-4. **predict** (matrice, max-parallel 20): un subprocess `TARGET_SLUG` per giocatore, per ogni
-   shard. Riusa `pipeline_artifacts.py` (stage/apply) per passare i file tra job via artifact.
-5. **report**: applica gli artifact, delega il ranking a `build_consiglio_<ruolo>.py` (lo stesso
-   script della produzione, zero logica duplicata), poi costruisce la **formazione vera**, salva
-   su main, notifica Telegram.
+`best_five.py` chiamava `bff.generate_lineups_for_type` di
+`formazione_mls/build_formazione_finale.py` — quel file segnala ESPLICITAMENTE in un commento
+(audit 31/07) che quella funzione **non gira mai in produzione**: usava `variance_mode` sempre
+attivo e un bonus sinergia In Season che la produzione ha disattivato dopo test A/B. Fix: ora si
+chiama DAVVERO `generatore_formazioni/build_formazione_globale.py` (lo stesso file di
+`formazione_giornata.yml`), importato dinamicamente. Verificato con un confronto reale (run 86)
+su MLS/K League: punteggi identici giocatore per giocatore quando lo stesso giocatore appare in
+entrambi i pool.
 
-Tempo misurato sull'ultimo run completo riuscito (K League, tutti e 4 i ruoli): circa 7 minuti,
-vicino ai ~5 minuti della pipeline di produzione.
+## Leghe con discovery_global pronta (Best Five utilizzabile)
 
-**Nota**: questa architettura a 5 job è passata per diversi bug reali durante lo sviluppo (redirect
-stdout che corrompeva GITHUB_OUTPUT, job senza `pip install requests curl_cffi`, precedenza sbagliata
-tra formato vecchio/nuovo dei risultati) — tutti fixati e committati. Se un run fallisce, controllare
-per primo se un job nuovo/modificato ha dimenticato lo step `pip install`.
+`LEGHE_SUPPORTATE` in `best_five.py`: **mls, kleague, germania, austria, croazia, germania2,
+scozia, portogallo, danimarca, argentina**. Ognuna richiede:
+1. `formazione_<lega>/discovery/<lega>_<ruolo>_discovery_global.py` (x4 ruoli) — club verificati
+   dal vivo via `verify_clubs.yml` prima di scrivere il codice, mai indovinati.
+2. `formazione_<lega>/consiglio/build_consiglio_<ruolo>.py` patchato con l'override
+   `CONSIGLIO_DISCOVERY_FILE` (altrimenti Best Five ignora silenziosamente il pool globale e
+   ripiega sui soli posseduti — bug reale trovato su Croazia il 31/07, vedi sotto).
 
-## Come genera la formazione vera (il cambio più grande di questa sessione)
+**Backlog aperto**: la patch `CONSIGLIO_DISCOVERY_FILE` non è ancora stata verificata/applicata
+alle restanti ~20 leghe minori (belgio, olanda, turchia, spagna, francia, scozia già fatta,
+brasile, resto_mondo, giappone, inghilterra, italia, polonia, cile, svizzera, grecia, ecc.) — task
+in coda (chip spawnato in sessione, `task_86d53e8a`).
 
-`costruisci_formazione_vera()` in `best_five.py` **non duplica nessuna logica di sinergia/anti-
-stack/captain**: importa dinamicamente `formazione_mls/build_formazione_finale.py` (stesso schema
-di `generatore_formazioni/build_formazione_globale.py`) e chiama DAVVERO `CardPool`,
-`generate_lineups_for_type('IN_SEASON', 1+n_backup, ...)`, `render_report_html`.
+**Norvegia**: MAI tracciata (nessuna cartella `formazione_norvegia`). Richiesta esplicita
+dell'utente di rimandarla — serve l'intera pipeline da zero (discovery posseduti + predict +
+consiglio + build_formazione_finale), non solo la discovery_global. Slug lega verosimile
+`eliteserien` (visto nello screenshot Contender), MAI verificato dal vivo.
 
-La differenza col tool unificato è **solo nella CardPool**: invece delle copie realmente possedute,
-si passa `CardPool({}, names=...)` — la classe stessa ripiega già su 1 copia IN_SEASON virtuale per
-ogni slug non presente nei counts, quindi ogni giocatore del pool globale risulta "posseduto" con 1
-copia, zero codice ad-hoc per simularlo. Stesso motivo per cui il bonus XP è naturalmente a zero
-(nessun `power` breakdown noto), coerente con la richiesta dell'utente di vedere lo score grezzo.
+## Bug reale trovato oggi: `build_consiglio_<ruolo>.py` ignorava Best Five
 
-Conseguenza pratica: dato che ogni giocatore ha solo 1 copia virtuale, generare `count > 1`
-formazioni produce automaticamente formazioni ALTERNATIVE con giocatori diversi (non può riusare
-chi è già stato schierato) — questo ha sostituito il vecchio concetto di "backup per ruolo": ora
-sono "formazioni di backup" complete.
+Causa del "pochi giocatori trovati" su Croazia (31/07): `DISCOVERY_FILE` in `build_consiglio_
+gk.py` (e def/mid/fwd) era hardcoded ai soli posseduti su TUTTE le leghe tranne mls/kleague/
+germania (le uniche patchate il 30/07). Risultato osservato: 7 GK e 15 FWD avevano superato il
+prefiltro starterOdds con dati concreti (es. 90%), ma il consiglio finale ne mostrava solo 1 e 2
+— guarda caso gli UNICI già posseduti dall'utente in quei ruoli. NON era un problema di timing
+delle starterOdds come inizialmente sospettato. Fix: propagata la stessa patch (già esistente su
+mls/kleague/germania dal 30/07) a austria/croazia/germania2/scozia/portogallo/danimarca/
+argentina.
 
-**Testato**: solo offline/in locale contro dati K League reali già su disco (mai un run GitHub
-Actions completo con QUESTA architettura confermato riuscito al momento della scrittura — l'ultimo
-run lanciato in questa sessione è ancora in corso). Verificare lo stato prima di fidarsi ciecamente.
+## Bug reale trovato oggi: cap L10 Arena rotto in Best Five
 
-## Altre feature aggiunte in questa sessione
+Su Scozia (prima lega con un'Arena dedicata VERA in produzione usata attraverso Best Five):
+`Formazione Arena Scozia #1: NON GENERATA` nonostante decine di candidati validi. Causa:
+`bff._pareto_frontier` (usata per il cap L10 260) ordina i candidati per L10 crescente e tiene
+solo chi migliora il punteggio — corretto quando l'L10 varia da carta a carta (produzione, carte
+reali possedute), ma la CardPool sintetica di Best Five non ha MAI l'L10 reale di un giocatore
+non posseduto (sempre 0.0 per tutti): con costi tutti identici la frontiera collassa a UN SOLO
+candidato per ruolo. Verificato con un test isolato (frontiera=1 con L10 tutti a 0, frontiera=4
+con L10 reali variabili).
 
-- **Report HTML**: layout a riga (stesso `render_report_html`/CSS della produzione, quindi
-  automaticamente coerente — niente più template custom di Best Five).
-- **Notifica Telegram**: stesso canale `BUNDLE_TELEGRAM_TOKEN`/`BUNDLE_TELEGRAM_CHAT_ID` (bundle/
-  formazioni/bot_profit), NON il canale del tracker prezzi. Link via raw.githack.com, come
-  `generatore_formazioni/formazione_telegram_notify.py`.
-- **Carte cliccabili**: ogni pcard del report apre `https://sorare.com/it/football/players/<slug>`
-  al click (script iniettato in post-processing, non tocca `build_formazione_finale.py` condiviso).
+Il cap 260 non era comunque mai stato un vincolo rispettato in Best Five (MLS/K League/Contender
+sono IN_SEASON, senza cap per design) — l'utente ha confermato che non è un requisito, solo un
+difetto di etichetta. Fix: cap disattivato di default per le Arene dentro Best Five. Aggiunto
+pero' un interruttore esplicito (`rispetta_cap_l10` nel workflow, `RISPETTA_CAP_L10` env) per chi
+vuole DAVVERO un'Arena legale: in quel caso si fetcha anche l'L10 reale di ogni candidato
+(query aggiuntiva, `fetch_l10_reale`/`fetch_l10_per_ruoli`) e si passa a CardPool, cosi' il cap
+torna a essere un vincolo vero.
 
-## Cosa NON è ancora attivo (rimandato dall'utente, "ci penseremo dopo")
+## Bug reale trovato oggi: crash su `websocket` mancante
 
-Due funzioni sono **scritte e pushate ma inerti** perché i file di cui hanno bisogno non esistono:
+`fetch_prezzi` (vedi sotto) importa `scanners/bot_profit.py`, che importa `websocket` a livello
+di modulo (usato solo per l'ascolto live, mai chiamato da Best Five). Il pacchetto non era
+installato negli step "report"/merge dei due workflow — `pip install websocket-client` aggiunto.
 
-- **Cap qualità prima delle starterOdds** (`BEST_FIVE_TOP_K_QUALITA`, default 40, input workflow
-  `top_k_qualita`): legge `player_quality.json` in ogni `*_discovery_global/`. Non esiste ancora.
-- **Nomi reali (displayName) sulle carte** invece dello slug: legge `player_names.json` in ogni
-  `*_discovery_global/`. Non esiste ancora. **Attenzione**: il tool unificato ha `player_names.json`
-  ma in una cartella DIVERSA (`*_discovery/`, non `*_discovery_global/`) e con copertura limitata
-  alle sole carte possedute (fonte: CARDS_QUERY) — inutile per il pool globale di Best Five, che ha
-  bisogno di nomi per giocatori mai posseduti. Serve una fonte diversa (TeamRoster, già cablata nel
-  codice di discovery_global, il campo `displayName` era già nella risposta e veniva scartato).
+## Nuovo: prezzo di mercato mostrato su ogni carta
 
-**Per attivare entrambe**: rilanciare `formazione_<lega>/discovery/<lega>_<ruolo>_discovery_global.py`
-per tutti e 4 i ruoli, per ciascuna lega supportata (kleague/mls/germania) — richiede query API,
-quindi va fatto su GitHub Actions con permesso esplicito dell'utente, non in locale (manca il
-cookie) e non di propria iniziativa. Nel frattempo entrambe le funzioni degradano in sicurezza
-(nessun cap, nomi = slug title-case) — nessun crash, nessuna esclusione silenziosa.
+Richiesta esplicita utente: mostrare il prezzo minimo In Season e Classic per ogni giocatore
+(formazioni + top esclusi), interrogato SOLO sui candidati già sopravvissuti al prefiltro
+starterOdds di quella run (non l'intero pool scoperto). Riusa il meccanismo di SCANSIONE di
+`scanners/bot_profit.py` (`fetch_all_live_offers`, throttling globale già tarato) — NON quello di
+`bots/bot_definitivo.py` (bot che ASCOLTA il mercato via websocket, con side-effect di blacklist,
+inadatto a una query puntuale).
 
-## Leghe supportate
+**Bug reale**: `LIVE_OFFERS_QUERY` con page size default (50) supera il limite di complessità
+GraphQL dell'account senza APIKEY (complessità osservata 1306 su un massimo di 500) — ogni fetch
+falliva con un errore GraphQL (mai un errore HTTP, quindi mai ritentato), risultato 100% prezzi
+N/D sul primo run reale. Fix: `bp.LIVE_OFFERS_PAGE_SIZE = 10` (SOLO sull'istanza importata da
+best_five.py, mai su bot_profit.py su disco), complessità stimata ~260, sotto soglia.
 
-`LEGHE_SUPPORTATE = ('mls', 'kleague', 'germania')` in `best_five.py` — richiede discovery globale
-completa per tutti e 4 i ruoli. Testato quasi esclusivamente su K League finora; MLS ha avuto un
-run fallito per timeout del vecchio prefiltro sequenziale (causa risolta con la parallelizzazione),
-non ancora riconfermato con un run completo pulito.
+**Cache 24h** (richiesta esplicita utente, "questo tool è solo di aiuto, non sono così fiscale
+sui prezzi"): `best_five_prezzi_cache.json`, file JSON condiviso (non per lega — indicizzato per
+slug giocatore) committato nel repo. TTL configurabile (`BEST_FIVE_PREZZI_CACHE_TTL_ORE`, default
+24h). Run ripetute a distanza di poco tempo (anche Contender vs standalone sulla stessa lega)
+condividono automaticamente la cache.
 
-## Prossimo passo consigliato
+## Nuovo: formazioni "Cheapest" e "Ottimizzata valore" (6 totali, dietro flag)
 
-1. Verificare l'esito dell'ultimo run lanciato (K League, tutti i ruoli, `starter_odds=0.80`) —
-   se riuscito, è la prima conferma end-to-end della nuova architettura a formazione vera.
-2. Se confermato, ripetere su MLS per validare anche lì.
-3. Quando richiesto dall'utente: rilanciare le 12 discovery_global (3 leghe × 4 ruoli) per attivare
-   cap qualità + nomi reali.
+`GENERA_CHEAPEST`/input workflow `genera_cheapest` (default **true**): oltre alle 3 formazioni
+principali (pure per punteggio, il prezzo NON le influenza mai), genera 6 formazioni aggiuntive
+in 3 configurazioni (`CHEAPEST_CONFIGS`):
+- A) 4 In Season + 1 Classic, nessun cap L10
+- B) 4 In Season + 1 Classic, cap L10 260
+- C) Nessun limite Classic (fino a 5), cap L10 260
+
+Per ciascuna, DUE varianti:
+1. **Cheapest** (`_ottimizza_lineup_min_prezzo`): prezzo TOTALE minimo assoluto, punteggio come
+   criterio di pareggio SOLO a prezzo identico.
+2. **Ottimizzata valore** (`_ottimizza_lineup_valore`): massimizza `punteggio - prezzo/soglia`.
+   La soglia (`_baseline_costo_punto`) NON è un moltiplicatore arbitrario — è la media di
+   prezzo/punteggio calcolata sull'INTERO pool eleggibile di quella run (non solo i già scelti),
+   quindi si auto-calibra su leghe/mercati diversi. Nata da un caso reale: la versione "cheapest
+   pura" preferiva un giocatore da 42pt/0.33€ a uno da 51pt/0.50€ (9 punti in più per 0.17€) — la
+   versione valore lo corregge.
+
+Entrambe implementate come knapsack ISOLATI (mai `bff.CardPool`/`build_one_lineup`, che
+ragionano per score non per prezzo) — zero rischio produzione. Mostrano anche L10 combinata (per
+verifica visiva del cap) e prezzo totale formazione.
+
+**Non ancora fatto** (dichiarato esplicitamente, non un bug): lo scambio Classic automatico nel
+motore VERO (le 3 formazioni principali) non esiste — la CardPool sintetica tratta sempre ogni
+carta come "1 copia in_season virtuale", mai classic. Le formazioni cheapest/valore lavorano
+DIRETTAMENTE sui prezzi, bypassando CardPool per questo.
+
+## Nuovo: carte reali (non righe di testo) per esclusi e cheapest
+
+Riusa `bff.render_card_html` (stessa funzione delle 3 formazioni principali) dentro un wrapper
+`.mini-card` scalato all'85% — non testo semplice come prima. Link cliccabile alla pagina Sorare
+del giocatore anche nella lista "top esclusi" (colore `--gold`, non il blu default illeggibile su
+sfondo scuro).
+
+## Bug NON di codice: race condition tra run concorrenti sulla stessa lega
+
+Se si lancia una run standalone (es. `best_five.yml` lega=scozia) e quasi contemporaneamente una
+run Contender che include la STESSA lega, l'orchestratore Contender lancia una PROPRIA pipeline
+completa per quella lega in parallelo — le due run scrivono sugli STESSI file
+(`formazione_<lega>/output/...`) e si scontrano. Risultato osservato: un report con "0 formazioni
+generate" e persino un giocatore di un'ALTRA lega "trapelato" nella lista esclusi. **Non lanciare
+mai una run singola-lega e una Contender che include la stessa lega nello stesso momento** —
+sfalsarle di qualche minuto o farle in sequenza.
+
+## Automazione: `best_five_contender.yml`
+
+Un solo `workflow_dispatch` fa tutto: lancia `best_five.yml` (ora richiamabile anche come
+`workflow_call` riusabile, non solo `workflow_dispatch`) una volta per lega in `leghe` (matrix
+parallela), poi fa da solo il merge (`python best_five.py contender --leghe ...`, nessuna query
+aggiuntiva — legge solo i `consiglio_*.txt` più freschi di ciascuna lega) e pubblica/notifica il
+risultato. Notifiche per-lega soppresse (`notify: false` sulle chiamate interne) — arriva solo
+UNA notifica, quella del merge finale.
+
+Per aggiungere una lega: 1) discovery_global + patch consiglio (vedi sopra), 2) aggiornare la
+descrizione dell'input `leghe`/`lega` nei due workflow (richiesta esplicita utente, per non
+sbagliare lo slug).
+
+## Prossimi passi consigliati
+
+1. Propagare la patch `CONSIGLIO_DISCOVERY_FILE` alle ~20 leghe minori restanti (chip già
+   spawnato).
+2. Norvegia: costruire l'intera pipeline da zero, quando richiesto.
+3. Consolidare i dati raccolti oggi (`consolida_dati_globali.py`) nel dataset di calibrazione, e
+   valutare ricalibrazioni sulle leghe dove manca (richiesta esplicita utente, backlog).
+4. Verificare se serve prevenire strutturalmente la race condition (es. lock/staging per-run
+   invece di scrivere direttamente nelle cartelle condivise) se capita spesso in pratica.
