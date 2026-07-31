@@ -5414,3 +5414,104 @@ nei 4 punti dove viveva il valore); TTL cache prezzi 24h → 5 giorni.
 7. **Sinergie Arena/All Stars** — In Season ha il modello Monte Carlo su dati reali, Arena/All Stars
    sono ancora sul vecchio "corr ×20".
 8. Minori: link Sorare che non distingue classic/in season; `MAX_HISTORY_DAYS=120` provvisorio.
+
+## 42. Sessione 31/07 (notte) — sinergie ricalibrate, trend GK smontato, due test nuovi in checklist
+
+Sessione di chiusura backlog. Due parametri di produzione cambiati, entrambi **misurati** e non
+scelti a occhio, ed entrambi partiti da un dubbio dell'utente.
+
+### 42.A — Sinergia same-team: scaling ×20 → ×12
+
+Il commento nel codice segnalava da giorni che il "modello decisionale dedicato" per dimensionare i
+bonus sinergia era **mai iniziato**: la tabella `SAME_TEAM_SYNERGY_BONUS_BY_PAIR` nasce da
+correlazioni reali, ma il moltiplicatore 20 che le trasforma in punti era scelto a naso.
+
+Costruito `formazione_mls/diagnostics/ab_arena_synergy_threshold.py`, stesso impianto già usato per
+le In Season: Monte Carlo su punteggi **reali**, compagni di squadra campionati dalla **stessa
+partita vera** (quindi la correlazione è quella osservata, non assunta), e soprattutto la metrica
+giusta — **P(superare la soglia)**, non il punteggio atteso. La sinergia serve ad alzare la
+varianza: il valore atteso è cieco proprio all'effetto per cui la tabella esiste.
+
+Esiti per tipo:
+- **ARENA_ALLSTARS_260/220 e Arene dedicate**: formazioni **identiche** con sinergia ON e OFF. Il
+  cap L10 obbligatorio vincola talmente la scelta che il bonus non sposta nulla. Riproduce in modo
+  indipendente un'annotazione già presente nel codice — niente da calibrare lì.
+- **ARENA_ALLSTARS_UNCAPPED** e **In Season**: già escluse in precedenza, misurate rispettivamente
+  dannosa e ininfluente.
+- **ALLSTARS**: unico caso con effetto **reale e nella direzione giusta**.
+
+Su All Stars, a soglie **fisse** (indispensabili: le soglie derivate dalla mediana cambiano con la
+configurazione e rendono le righe non confrontabili), ×12 domina ×20 su **entrambe** le metriche:
+
+| | pt attesi | 470 | 490 | 510 | 530 | 550 | 570 |
+|---|---|---|---|---|---|---|---|
+| ×20 (prima) | 426.2 | **−0.26** | +0.69 | +3.47 | +4.96 | +5.54 | +4.62 |
+| ×12 (ora) | **428.5** | +0.68 | +2.79 | +6.65 | +8.65 | **+8.98** | +6.55 |
+
+Con ×20 a soglia 470 la sinergia era perfino **controproducente**. Plateau ottimale fra ×10 e ×15
+(×10 e ×15 generano formazioni identiche), 12 è il centro. Applicato: GK-DEF 7→4, DEF-DEF 4→3,
+FWD-FWD 4→3, FWD-MID 3→2, gli altri 2→1. Verificato dopo la modifica che il generatore in
+configurazione di produzione riproduce esattamente i numeri di `SCALA=12`.
+
+**Limite noto**: 4 formazioni (cap duro ALLSTARS) su UNA giornata. Applicato subito per scelta
+esplicita dell'utente, con l'impegno di rimisurare sulle prossime giornate.
+
+### 42.B — TEST NUOVO IN CHECKLIST: il calo di forma predice qualcosa oltre al livello?
+
+Test **proposto dall'utente**: preso un giocatore in calo nel breve ma solido nel lungo
+(L5 < L10 < L40), la partita successiva va peggio o rimbalza?
+
+**Il disegno ingenuo non funziona** ed è la cosa più importante da ricordare di questo test:
+confrontare la partita successiva con L5 troverebbe **sempre** un rimbalzo, anche su dati
+completamente casuali — se L5 è basso lo è in parte per caso e risale per regressione verso la
+media. Sarebbe un artefatto, non un segnale.
+
+Disegno usato (`formazione_mls/diagnostics/analizza_trend_breve_vs_lungo.py`): walk-forward, medie
+calcolate solo sulle partite precedenti, e si misura il **residuo rispetto al livello di lungo
+periodo**, confrontando chi è in calo con chi è stabile. Così il livello del giocatore si annulla e
+resta solo l'effetto della forma. Finestra lunga 20 e non 40 perché i detail cache si fermano a ~40
+partite per giocatore e un L40 vero non lascerebbe nulla da predire.
+
+**Risultato su 4250 punti / 494 giocatori: l'ipotesi è smentita.** La forma in calo non predice
+nulla oltre al livello, su tutti e quattro i ruoli — differenza calo−stabile fra +0.23 e −1.36 pt,
+z fra −0.98 e +0.16, sempre compatibile con zero.
+
+**Risultato inatteso, l'opposto dell'ipotesi**: è la forma in **crescita** a portare segnale, e
+negativo. Chi arriva da una serie in miglioramento rende **meno** del proprio livello:
+
+| ruolo | calo | stabile | crescita |
+|---|---|---|---|
+| GK | −2.23 | −1.50 | **−6.19** (IC −11.15, −1.22) |
+| DEF | −0.40 | −0.63 | **−4.00** (IC −6.99, −1.01) |
+| MID | −1.66 | −0.30 | +2.26 |
+| FWD | −1.20 | −0.90 | **+4.74** (IC +0.44, +9.04) |
+
+Lo conferma il residuo rispetto a L10: per chi è in crescita L10 **sovrastima di 8-11 punti**, per
+chi è in calo **sottostima di 3-4**. In breve: la memoria corta fa comprare alto e vendere basso.
+
+### 42.C — Conseguenza diretta: `TREND_INTENSITY` GK 0.7 → 0.0
+
+Il risultato sopra ha fatto sospettare che il trend dei GK fosse tarato al contrario. Verificato sul
+grid search già su disco, e la conferma è **indipendente e monotona** — a parità di half_life e
+range il MAE peggiora regolarmente al crescere del trend. All'half_life di produzione (6.0):
+
+| trend | 0.0 | 0.2 | 0.3 | **0.7 (prima)** | 1.0 | 1.3 |
+|---|---|---|---|---|---|---|
+| MAE | **16.82** | 16.86 | 16.88 | **17.08** | 17.27 | 17.46 |
+
+Stesso andamento a hl=12. La **monotonia** è ciò che rende il segnale credibile: non è rumore che
+oscilla, è una direzione. Il valore 0.7 era "FISSATO (25/07)" senza misura a supporto, ed era il più
+alto dei quattro ruoli. Portato a 0.0 su tutte le 50 leghe: MAE atteso da 17.08 a 16.82 (−1.5%).
+def/mid/fwd invariati (def era già 0.0).
+
+### 42.D — Da rimisurare (aggiunte alla checklist)
+
+1. **Sinergia ×12 su più giornate** — il dato viene da 4 formazioni di una sola giornata. Comando:
+   `TIPI=ALLSTARS QUANTE=4 SCALA=12 SOGLIE="470,490,510,530,550,570" python formazione_mls/diagnostics/ab_arena_synergy_threshold.py`,
+   da confrontare con `SCALA=20`. Se smentito, tornare indietro sono 8 numeri.
+2. **Trend/forma su più dati** — i gruppi "crescita" sono piccoli (53-151 osservazioni). Rilanciare
+   `analizza_trend_breve_vs_lungo.py` quando i detail cache saranno più ricchi, e valutare se il
+   segnale negativo su GK/DEF regge e se conviene sfruttarlo attivamente (oggi si è solo tolto il
+   peso sbagliato, non si è aggiunto un peso opposto).
+3. **`SOGLIA_CALO`** è a 2 punti: vale la pena verificare che il risultato non dipenda da quella
+   scelta (il tool accetta la variabile d'ambiente).
