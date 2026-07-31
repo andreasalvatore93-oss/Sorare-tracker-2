@@ -392,9 +392,28 @@ def risolvi_fixture():
     non_concluse = [n for n in nodes if (n.get('endDate') or '') >= now_iso]
     if non_concluse:
         non_concluse.sort(key=lambda n: n.get('startDate') or '')
+        # FIX 31/07: prima si prendeva semplicemente la prima non conclusa,
+        # cioe' anche una giornata GIA' PARTITA (aasmState 'started'). Per una
+        # giornata live le formazioni non si possono piu' inserire, quindi il
+        # tool avrebbe prodotto proposte inutilizzabili -- e in silenzio.
+        # Emerso col cambio stagione del 31/07 (la giornata in corso e' passata
+        # da "96" a "1" e ha iniziato a giocarsi mentre lavoravamo): fino a
+        # quel momento le run capitavano sempre a giornata ancora aperta e il
+        # caso non si era mai presentato. Ora si preferisce una giornata
+        # 'opened' (accetta formazioni); se non ce n'e' nessuna si ripiega
+        # sulla prima non conclusa come prima, dicendolo nel log.
+        aperte = [n for n in non_concluse if n.get('aasmState') == 'opened']
+        if aperte:
+            scelta = aperte[0]
+            log(f"GAMEWEEK/FIXTURE_SLUG non impostati: risolta automaticamente la prossima "
+                f"giornata APERTA (gameweek {scelta.get('seasonGameWeek')}, "
+                f"{scelta.get('slug')}).")
+            return scelta
         scelta = non_concluse[0]
-        log(f"GAMEWEEK/FIXTURE_SLUG non impostati: risolta automaticamente la "
-            f"prossima giornata (gameweek {scelta.get('seasonGameWeek')}).")
+        log(f"GAMEWEEK/FIXTURE_SLUG non impostati: nessuna giornata 'opened' disponibile, "
+            f"uso la prima non conclusa (gameweek {scelta.get('seasonGameWeek')}, stato "
+            f"{scelta.get('aasmState')}) -- se e' gia' partita le formazioni potrebbero "
+            f"non essere piu' inseribili.")
         return scelta
     # Fallback estremo (nessuna delle 30 restituite e' ancora aperta/futura,
     # improbabile mafunziona -- possibile solo se so5Fixtures(first: 30)
