@@ -817,6 +817,99 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
 _slot_role = bff._slot_role  # canonico, usato per _apply_xp_bonus/altre logiche
 
 
+# --- Spunta "formazione gia' schierata" (31/07, richiesta esplicita utente:
+# "un quadratino che se cliccato si illumina, lo flaggo io dopo che schiero
+# manualmente su Sorare cosi' me lo ricordo") -------------------------------
+#
+# Iniettata IN CODA al report gia' costruito, non dentro render_lineup_html:
+# quel template e' condiviso (produzione + Best Five) e non va toccato per una
+# funzione che serve solo qui.
+#
+# La spunta si RICORDA fra le riaperture della stessa pagina: lo stato sta in
+# localStorage, con chiave derivata dal nome del file del report + il titolo
+# della formazione. Cosi' report diversi non si sovrascrivono a vicenda, e
+# riaprendo lo stesso file le formazioni gia' schierate risultano ancora
+# spuntate. Nota: localStorage e' per-browser e per-origine, quindi la spunta
+# NON segue il file se lo apri da un altro dispositivo -- e' un promemoria
+# personale, non un dato condiviso.
+FLAG_SCHIERATE_SNIPPET = r"""
+<style>
+  .schierata-flag {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    user-select: none; margin-left: 14px; vertical-align: middle;
+    font-size: 0.92rem; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--text); opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+  .schierata-flag:hover { opacity: 1; }
+  .schierata-box {
+    width: 22px; height: 22px; border-radius: 6px; flex: 0 0 auto;
+    border: 2px solid var(--gold); background: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; line-height: 1; color: transparent; font-weight: 800;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .schierata-flag[data-on="1"] { opacity: 1; }
+  .schierata-flag[data-on="1"] .schierata-box {
+    background: #2fbf6a; border-color: #2fbf6a; color: #06240f;
+    box-shadow: 0 0 0 4px rgba(47, 191, 106, 0.28);
+  }
+  .lineup-block[data-schierata="1"] { outline: 2px solid #2fbf6a; outline-offset: 3px; }
+</style>
+<script>
+(function () {
+  var CHIAVE = 'sorare_schierate::' + (location.pathname.split('/').pop() || 'report');
+  var stato = {};
+  try { stato = JSON.parse(localStorage.getItem(CHIAVE) || '{}'); } catch (e) { stato = {}; }
+
+  function salva() {
+    try { localStorage.setItem(CHIAVE, JSON.stringify(stato)); } catch (e) {}
+  }
+
+  document.querySelectorAll('.lineup-block').forEach(function (block, i) {
+    var titolo = block.querySelector('.lineup-title');
+    if (!titolo) return;
+    var id = (titolo.textContent || '').trim().replace(/\s+/g, ' ') || ('formazione-' + i);
+
+    var flag = document.createElement('span');
+    flag.className = 'schierata-flag';
+    flag.title = 'Segna questa formazione come gia schierata su Sorare';
+    var box = document.createElement('span');
+    box.className = 'schierata-box';
+    box.textContent = '✓';
+    var testo = document.createElement('span');
+    testo.textContent = 'Formazione gia schierata';
+    flag.appendChild(box);
+    flag.appendChild(testo);
+
+    function applica() {
+      var on = stato[id] ? '1' : '0';
+      flag.setAttribute('data-on', on);
+      block.setAttribute('data-schierata', on);
+    }
+    flag.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      stato[id] = !stato[id];
+      if (!stato[id]) { delete stato[id]; }
+      salva();
+      applica();
+    });
+    applica();
+    titolo.appendChild(flag);
+  });
+})();
+</script>
+"""
+
+
+def aggiungi_flag_schierate(html_report):
+    """Aggiunge a ogni formazione una spunta cliccabile "gia' schierata", con
+    memoria in localStorage -- vedi il commento sopra."""
+    if '</body>' in html_report:
+        return html_report.replace('</body>', FLAG_SCHIERATE_SNIPPET + '</body>')
+    return html_report + FLAG_SCHIERATE_SNIPPET
+
+
 def main():
     in_season_req = parse_league_qty(os.environ.get('IN_SEASON', 'mls:1,kleague:1'), 'in_season')
     arena_dedicata_req = parse_league_qty(os.environ.get('ARENA_DEDICATA', ''), 'arena_dedicata',
@@ -1220,6 +1313,7 @@ def main():
     if capienza_html:
         lineup_html_blocks.insert(0, capienza_html)
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)
+    html_text = aggiungi_flag_schierate(html_text)
     html_path = os.path.join(OUTPUT_DIR, f'generatore_formazioni{run_suffix}_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_text)
