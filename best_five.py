@@ -901,12 +901,62 @@ def _prezzi_minimi_slug(bp, eth_rate, player_slug):
             min(prezzi_classic) if prezzi_classic else None)
 
 
+# Cache prezzi (31/07, richiesta esplicita utente: "questo tool e' solo di
+# aiuto, non sono cosi' fiscale sui prezzi, alleggerisci le run di test") --
+# file JSON committato nel repo (stesso schema di makeoffer_cooldown.json/
+# autobuy_purchases.json), scaduto dopo 24h. In test ripetuti a distanza di
+# poco tempo (come oggi, piu' run sulla stessa lega) evita di rifare le
+# stesse query di mercato -- il prezzo reale non cambia cosi' spesso da
+# giustificarle ogni volta, e questo tool non decide acquisti in автономia.
+PREZZI_CACHE_PATH = os.path.join(REPO_ROOT, 'best_five_prezzi_cache.json')
+PREZZI_CACHE_TTL_ORE = float(os.environ.get('BEST_FIVE_PREZZI_CACHE_TTL_ORE', '24'))
+
+
+def _prezzi_cache_leggi():
+    if not os.path.exists(PREZZI_CACHE_PATH):
+        return {}
+    try:
+        with open(PREZZI_CACHE_PATH, encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _prezzi_cache_scrivi(cache):
+    with open(PREZZI_CACHE_PATH, 'w', encoding='utf-8') as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2, sort_keys=True)
+
+
 def fetch_prezzi(slugs):
     """Prezzo minimo in_season/classic per ciascuno slug in 'slugs' (deduplicati).
-    Ritorna {slug: {'in_season': float|None, 'classic': float|None}}. Import
+    Ritorna {slug: {'in_season': float|None, 'classic': float|None}}. Prima
+    controlla la cache su disco (PREZZI_CACHE_TTL_ORE, default 24h) -- solo
+    gli slug scaduti o mai visti fanno una query di rete vera. Import
     dinamico di bot_profit.py fatto qui (non a livello di modulo) per non
     pagare il costo di caricamento/pip curl_cffi quando questa funzione non
     viene mai chiamata (es. tutte le modalita' --matrice/--predict-shard)."""
+    cache = _prezzi_cache_leggi()
+    ora = datetime.datetime.utcnow()
+    prezzi = {}
+    da_interrogare = []
+    unici = sorted(set(slugs))
+    for slug in unici:
+        voce = cache.get(slug)
+        if voce is not None:
+            try:
+                eta_ore = (ora - datetime.datetime.fromisoformat(voce['ts'])).total_seconds() / 3600.0
+            except (KeyError, ValueError):
+                eta_ore = None
+            if eta_ore is not None and eta_ore <= PREZZI_CACHE_TTL_ORE:
+                prezzi[slug] = {'in_season': voce.get('in_season'), 'classic': voce.get('classic')}
+                continue
+        da_interrogare.append(slug)
+
+    if not da_interrogare:
+        log(f"[prezzi] {len(unici)} giocatori tutti in cache (< {PREZZI_CACHE_TTL_ORE:g}h), nessuna query.")
+        return prezzi
+
+    log(f"[prezzi] {len(unici) - len(da_interrogare)} da cache, {len(da_interrogare)} da interrogare dal vivo.")
     bp = _import_bot_profit()
     # FIX BUG REALE (31/07, run Scozia: TUTTI i prezzi N/D): LIVE_OFFERS_QUERY
     # a pagina 50 (default di bot_profit.py) supera il limite di complessita'
@@ -922,14 +972,14 @@ def fetch_prezzi(slugs):
     # minimo reale nella grande maggioranza dei casi.
     bp.LIVE_OFFERS_PAGE_SIZE = 10
     eth_rate = bp.get_eth_rate()
-    prezzi = {}
-    unici = sorted(set(slugs))
-    log(f"[prezzi] Interrogo il mercato per {len(unici)} giocatori (in_season+classic, un fetch ciascuno)...")
-    for idx, slug in enumerate(unici, 1):
+    ts_ora = ora.isoformat()
+    for idx, slug in enumerate(da_interrogare, 1):
         in_season, classic = _prezzi_minimi_slug(bp, eth_rate, slug)
         prezzi[slug] = {'in_season': in_season, 'classic': classic}
-        if idx % 20 == 0 or idx == len(unici):
-            log(f"[prezzi] [{idx}/{len(unici)}] fatto.")
+        cache[slug] = {'in_season': in_season, 'classic': classic, 'ts': ts_ora}
+        if idx % 20 == 0 or idx == len(da_interrogare):
+            log(f"[prezzi] [{idx}/{len(da_interrogare)}] fatto.")
+    _prezzi_cache_scrivi(cache)
     return prezzi
 
 
