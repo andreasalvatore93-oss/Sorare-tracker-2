@@ -1,0 +1,114 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-31T23:04:28.628887Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) german-parreno-boix: 50 pt attesi (39-74)
+   SQUADRA: deportivo-la-coruna-a-coruna | AVVERSARIO: elche-elche
+======================================================================
+
+######################################################################
+# GIOCATORE: german-parreno-boix
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: german-parreno-boix (squadra: deportivo-la-coruna-a-coruna)
+Generato: 2026-07-31T23:04:28.626184Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | GCF vs DEP | segunda-division-es | score=30.8 | peso=0.111
+  2025-08-24 | DEP vs BCF | segunda-division-es | score=70.4 | peso=0.125
+  2025-09-01 | LEG vs DEP | segunda-division-es | score=35.9 | peso=0.140
+  2025-09-06 | DEP vs RSG | segunda-division-es | score=75.7 | peso=0.157
+  2025-09-13 | MIR vs DEP | segunda-division-es | score=47.7 | peso=0.177
+  2025-09-19 | DEP vs HUE | segunda-division-es | score=66.4 | peso=0.198
+  2025-09-27 | EIB vs DEP | segunda-division-es | score=58.8 | peso=0.223
+  2025-10-04 | DEP vs UDA | segunda-division-es | score=37.9 | peso=0.250
+  2025-10-12 | MCF vs DEP | segunda-division-es | score=39.6 | peso=0.281
+  2025-10-19 | RAC vs DEP | segunda-division-es | score=51.8 | peso=0.315
+  2025-10-26 | DEP vs VLL | segunda-division-es | score=45.6 | peso=0.354
+  2025-11-02 | ZAR vs DEP | segunda-division-es | score=75.2 | peso=0.397
+  2025-11-08 | DEP vs CUL | segunda-division-es | score=77.8 | peso=0.445
+  2025-11-16 | COR vs DEP | segunda-division-es | score=56.1 | peso=0.500
+  2025-11-23 | DEP vs ADC | segunda-division-es | score=41.4 | peso=0.561
+  2025-11-29 | ALB vs DEP | segunda-division-es | score=74.6 | peso=0.630
+  2025-12-07 | DEP vs CAS | segunda-division-es | score=40.0 | peso=0.707
+  2025-12-13 | DEP vs RS2 | segunda-division-es | score=25.4 | peso=0.794
+  2025-12-20 | FCA vs DEP | segunda-division-es | score=40.0 | peso=0.891
+  2026-05-31 | DEP vs LPA | segunda-division-es | score=60.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 51.33
+  di cui Punteggio decisivo (level_score) medio: 43.94 | Punteggio complessivo (granulari) medio: 7.38 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 44.71 (delta +0.77 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.99, delta avversario +1.19 | Possesso condizionato per venue: delta +0.46 | Goalkeeping condizionato per venue: delta -2.54 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 16.08
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.6 - 74.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.49 (differenza: +2.58)
+Media score in casa: 54.06 | Media score fuori casa: 51.05
+Fattore casa/trasferta applicato: 1.010 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.7
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.116
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.010
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.006
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.991
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.001
+Tasso storico clean sheet (porta inviolata nei primi 60'): 30.0% (bonus atteso incorporato nella media pesata: ~7.5pt)
+Fattore trend (media ultime 5: 48.0 vs media ultime 10: 53.6): 1.000
+P(gioca): 47.62% (fonte: tasso di presenza storico (20/42))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T19:00
+Casa: Real Club Deportivo de La Coruña | Trasferta: Elche CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.5 (range 38.7 - 73.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.13
+Punteggio REALE ottenuto in quella partita: 60.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.0    58.8    +11.8    17.2        SI
+   7        7      50.8    37.9    -12.9    15.9        SI
+   8        8      47.5    39.6     -7.9    15.9        SI
+   9        9      46.9    51.8     +4.9    15.5        SI
+  10       10      50.2    45.6     -4.6    14.7        SI
+  11       11      47.1    75.2    +28.1    14.0        NO
+  12       12      50.3    77.8    +27.5    15.1        NO
+  13       13      48.4    56.1     +7.7    16.0        SI
+  14       14      51.5    41.4    -10.1    15.4        SI
+  15       15      48.6    74.6    +26.0    15.2        NO
+  16       16      51.3    40.0    -11.3    15.6        SI
+  17       17      50.8    25.4    -25.4    15.6        NO
+  18       18      49.4    40.0     -9.4    16.7        SI
+  19       19      49.7    60.0    +10.3    16.5        SI
+
+MAE (errore assoluto medio): 14.13
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
