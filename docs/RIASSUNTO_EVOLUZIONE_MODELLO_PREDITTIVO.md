@@ -5055,7 +5055,57 @@ quelle davvero non entrano nello score.
    inline duplicata (valori oggi identici, verificato). Blocca l'allineamento della calibrazione
    GK/MID fuori da MLS.
 
-### H. Lezione di metodo (vale più dei singoli fix)
+### H. Checklist maestra rifatta col dataset attuale (31/07 notte) — nessun parametro cambiato
+
+Rifatti in autonomia, su richiesta dell'utente prima di andare a dormire. **Esito: la
+produzione regge ovunque, zero parametri modificati.**
+
+| test | esito |
+|---|---|
+| `level_score` (tabella netto→level) | **100.00% esatta** su 21.558 partite reali |
+| `level_score` (ipotesi Poisson) | var/media 1.077 (pos) e 1.027 (neg) — confermata |
+| `level_score` (indipendenza pos/neg) | corr −0.038, trascurabile — assunzione valida |
+| `level_score` (calibrazione walk-forward) | bias **+0.35%** su 14.090 punti — praticamente nullo |
+| half_life/trend/range, tutti e 4 i ruoli, **su formula allineata** | produzione ottima o quasi in MAE ovunque (vedi tabella sotto) |
+| `SENSITIVITY_BY_ROLE` | GK 0.7 = ottimo esatto; DEF e MID entro lo 0.02% dell'ottimo — riconfermati |
+| `RANGE_MULTIPLIER` | copertura 67-69% su tutti e 4 i ruoli, centrata sul target |
+| prior dinamico da `presence_rate` | coefficienti identici a quelli in produzione |
+| base del fattore casa/trasferta (residui vs punteggi pieni) | equivalenti sotto lo 0.01% su 15.058 punti |
+| coerenza parametri fra le 27 leghe attive | pulita (solo `resto_mondo`, escluso dalla produzione) |
+| filtro finestra partite | corretto (le leghe azzerate hanno partite già giocate o oltre i 7 giorni) |
+
+Ricalibrazione su formula allineata, tutti e quattro:
+
+| ruolo | produzione | MAE | posizione | nota |
+|---|---|---|---|---|
+| GK | hl=6.0, tr=0.7, r=1.15 | 15.757 | 1ª su 288 | |
+| DEF | hl=20.0, tr=0.0, r=1.1 | 15.028 | 39ª su 252 | **MAE migliore in assoluto** |
+| MID | hl=25.0, tr=0.2, r=1.1 | 13.920 | 4ª su 252 | idem |
+| FWD | hl=25.0, tr=0.3, r=1.15 | 15.512 | 3ª su 252 | |
+
+**Osservazione metodologica per le calibrazioni future**: il grid search ordina per
+`composite = MAE + 0.3*|copertura−68|`. Ma `range_multiplier` non influenza la MAE, solo la
+copertura — mescolarli fa sì che un criterio puramente estetico (la larghezza del range
+mostrato, che non tocca né lo score né la selezione) possa scartare i parametri con la MAE
+migliore. È ciò che accade a DEF: 39ª per composite, 1ª per MAE. La scelta pulita è in due
+passi: half_life/trend per MAE, poi range_multiplier per centrare la copertura. Non applicato
+ora perché i valori di produzione coincidono già con l'ottimo di MAE.
+
+**Debito 1 chiuso per le leghe che contano**: MLS e K League (le uniche due dove si giocano le
+In Season) ora usano entrambe le funzioni condivise `compute_score_atteso_gk/_mid` e calibrano
+sulla formula vera. Le altre 25 restano con la formula inline: valori verificati identici oggi,
+beneficio zero immediato, e il refactor lì non sarebbe verificabile numericamente con lo stesso
+rigore. Verificato che il refactor K League lascia le predizioni **identiche** (455 punteggi GK
+confrontati prima/dopo, zero differenze).
+
+**Debito 2 chiuso**: le tre copie della costante di shrinkage venue in `test_gk.py` sono ora
+una sola (`venue_factor_gk` + `SPLIT_SHRINK_K_GK` a livello di modulo). Verificato su 3293
+predizioni reali che il refactor non cambia nulla.
+
+**Debito 3 chiuso dal test**: la differenza GK-vs-altri-ruoli sulla base del fattore venue non
+costa accuratezza, nessun cambio giustificato.
+
+### I. Lezione di metodo (vale più dei singoli fix)
 
 Prima di calibrare o attivare qualcosa, verificare EMPIRICAMENTE che il codice giri: azzerare la
 costante e controllare che l'output cambi. Il pattern
