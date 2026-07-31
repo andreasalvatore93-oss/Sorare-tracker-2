@@ -35,11 +35,13 @@ def leghe_tracciate():
 
     MLS non ha TARGET_LEAGUE_SLUG (la sua discovery e' storicamente diversa,
     filtra su 'mlspa' fra le competizioni attive), quindi va aggiunta a mano:
-    e' l'unica eccezione, verificata."""
+    e' l'unica eccezione. Lo slug e' 'mlspa' -- verificato sull'output reale
+    dell'audit del 31/07, dove le 255 carte MLS risultano sotto quel nome e
+    NON sotto 'major-league-soccer' (primo tentativo sbagliato)."""
     import glob as _glob
     import re as _re
     qui = os.path.dirname(os.path.abspath(__file__))
-    slugs = {'major-league-soccer'}
+    slugs = {'mlspa'}
     pattern = _re.compile(r"TARGET_LEAGUE_SLUG\s*=\s*'([a-z0-9_-]+)'")
     for path in _glob.glob(os.path.join(qui, 'formazione_*', 'discovery', '*_discovery.py')):
         try:
