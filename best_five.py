@@ -1507,16 +1507,26 @@ def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
     return "\n".join(righe), "".join(html_righe)
 
 
+# Soglie "valore" (31/07, richiesta esplicita utente dopo aver visto le 6
+# formazioni originali: "le cheapest ottimizzate sono le piu' utili, in
+# particolare quella solo classic"): NON piu' 3 config (A/B/C) con la
+# STESSA soglia -- solo la config preferita (nessun limite Classic, cap L10
+# 260), in 3 varianti che aumentano quanto l'algoritmo e' disposto a
+# spendere per punto (soglia normale/x2/x3 -- NON un tetto di spesa fisso,
+# solo meno avversione al prezzo: con una soglia piu' alta un candidato
+# piu' caro ma migliore diventa relativamente piu' conveniente in
+# 'punteggio - prezzo/soglia').
+VALORE_MOLTIPLICATORI = (1, 2, 3)
+_VALORE_CONFIG = ('Nessun limite Classic (fino a 5), cap L10 260', None, 260.0)
+
+
 def blocco_cheapest(bff, card_pool, role_data_dict, prezzi, l10_map):
-    """Genera le 3 varianti CHEAPEST_CONFIGS DUE volte sullo stesso
-    role_data_dict (dict ROLE -> righe, gia' con prezzi attaccati da
-    _attach_prezzi): prima il prezzo minimo assoluto (_ottimizza_lineup_
-    min_prezzo), poi la versione "ottimizzata valore" (_ottimizza_lineup_
-    valore, soglia auto-calcolata sul pool reale di questa run -- vedi
-    _baseline_costo_punto, richiesta esplicita utente: "compromesso
-    statistico" invece di un moltiplicatore arbitrario). Ritorna (testo,
-    html) concatenati, 6 formazioni totali. shape fissa GK/DEF/MID/FWD + 1
-    EXTRA da DEF/MID/FWD -- stessa struttura di IN_SEASON/ARENA."""
+    """Genera le 3 varianti CHEAPEST_CONFIGS (prezzo minimo assoluto,
+    _ottimizza_lineup_min_prezzo) PIU' 3 varianti "ottimizzata valore"
+    (_ottimizza_lineup_valore) sulla SOLA config preferita dall'utente
+    (nessun limite Classic, cap L10 260) a soglia x1/x2/x3 (vedi
+    VALORE_MOLTIPLICATORI) -- 6 formazioni totali. shape fissa GK/DEF/MID/
+    FWD + 1 EXTRA da DEF/MID/FWD -- stessa struttura di IN_SEASON/ARENA."""
     shape = {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD']}
     baseline = _baseline_costo_punto(role_data_dict, prezzi)
     testi, html_parti = [], []
@@ -1525,9 +1535,12 @@ def blocco_cheapest(bff, card_pool, role_data_dict, prezzi, l10_map):
         t, h = _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest')
         testi.append(t)
         html_parti.append(h)
-    for label, max_classic, l10_cap in CHEAPEST_CONFIGS:
-        risultato = _ottimizza_lineup_valore(shape, role_data_dict, prezzi, max_classic, l10_cap, l10_map, baseline)
-        t, h = _render_cheapest(bff, card_pool, label, risultato, titolo='Ottimizzata valore (prezzo/punteggio)')
+    label_v, max_classic_v, l10_cap_v = _VALORE_CONFIG
+    for moltiplicatore in VALORE_MOLTIPLICATORI:
+        soglia = baseline * moltiplicatore if baseline is not None else None
+        risultato = _ottimizza_lineup_valore(shape, role_data_dict, prezzi, max_classic_v, l10_cap_v, l10_map, soglia)
+        etichetta = f"{label_v} — soglia x{moltiplicatore}"
+        t, h = _render_cheapest(bff, card_pool, etichetta, risultato, titolo='Ottimizzata valore (prezzo/punteggio)')
         testi.append(t)
         html_parti.append(h)
     return "\n\n".join(testi), "".join(html_parti)
