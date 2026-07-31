@@ -908,6 +908,19 @@ def fetch_prezzi(slugs):
     pagare il costo di caricamento/pip curl_cffi quando questa funzione non
     viene mai chiamata (es. tutte le modalita' --matrice/--predict-shard)."""
     bp = _import_bot_profit()
+    # FIX BUG REALE (31/07, run Scozia: TUTTI i prezzi N/D): LIVE_OFFERS_QUERY
+    # a pagina 50 (default di bot_profit.py) supera il limite di complessita'
+    # GraphQL dell'account senza APIKEY (osservato: complessita' 1306 su un
+    # massimo di 500) -- ogni fetch falliva con errore GraphQL, mai un
+    #'errore HTTP' quindi non veniva nemmeno ritentato. Ridotta SOLO per
+    # questa istanza importata (non tocca bot_profit.py su disco ne' la sua
+    # produzione, che potrebbe girare con un account/APIKEY diverso): con
+    # n=10 la complessita' stimata scende a ~260, ben sotto soglia. Prezzo
+    # minimo resta corretto anche su un campione piu' piccolo di annunci --
+    # i candidati Best Five sono in genere giocatori poco posseduti, con
+    # mercati sottili dove i primi annunci restituiti coprono gia' il
+    # minimo reale nella grande maggioranza dei casi.
+    bp.LIVE_OFFERS_PAGE_SIZE = 10
     eth_rate = bp.get_eth_rate()
     prezzi = {}
     unici = sorted(set(slugs))
@@ -1140,8 +1153,13 @@ def _blocco_top_esclusi(role_data_per_ruolo, card_pool, n=TOP_N_ESCLUSI):
             # qui pero' un <a> diretto (nessuna carta .pcard da annotare via
             # script per questa lista testuale).
             link = f'https://sorare.com/it/football/players/{r["slug"]}'
+            # Colore esplicito (31/07, segnalato dall'utente: il blu di default
+            # del browser era troppo scuro/illeggibile su sfondo scuro) --
+            # stesso oro (--gold) gia' usato nel template condiviso per gli
+            # accenti, invece del blu link standard.
             html_parts.append(
-                f'<li><a href="{link}" target="_blank" rel="noopener">{r["slug"]}</a>: '
+                f'<li><a href="{link}" target="_blank" rel="noopener" '
+                f'style="color:var(--gold);text-decoration:none">{r["slug"]}</a>: '
                 f'{r.get("atteso")} pt (squadra={squadra}){prezzo}</li>')
         html_parts.append('</ol></div>')
     html_parts.append('</div>')
