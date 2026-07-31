@@ -27,6 +27,11 @@ name: Best Five
 #      (nessuna chiamata API), salva su main, notifica Telegram col link
 #      all'HTML.
 
+# workflow_call (31/07, backlog "Contender"): permette a un altro workflow
+# (best_five_contender.yml) di richiamare QUESTO stesso file una volta per
+# lega, in un job a matrice, invece di duplicarne la logica. Stessi identici
+# input di workflow_dispatch (necessario ripeterli qui: le due sezioni non
+# condividono la definizione).
 on:
   workflow_dispatch:
     inputs:
@@ -48,6 +53,28 @@ on:
         default: '0.70'
       top_k_qualita:
         description: 'Cap per qualita PRIMA delle starterOdds (top-K per ruolo secondo media L5/L10/L40). 0 = disattivato (pool intero)'
+        required: false
+        default: '40'
+  workflow_call:
+    inputs:
+      lega:
+        type: string
+        required: false
+        default: 'kleague'
+      roles:
+        type: string
+        required: false
+        default: 'gk,def,mid,fwd'
+      backups:
+        type: string
+        required: false
+        default: '2'
+      starter_odds:
+        type: string
+        required: false
+        default: '0.70'
+      top_k_qualita:
+        type: string
         required: false
         default: '40'
 
@@ -72,12 +99,12 @@ jobs:
       - id: matrice
         name: Shard del pool (gia' filtrato per qualita' in discovery)
         env:
-          BEST_FIVE_TOP_K_QUALITA: ${{ github.event.inputs.top_k_qualita || '40' }}
+          BEST_FIVE_TOP_K_QUALITA: ${{ inputs.top_k_qualita || '40' }}
         run: |
           set -u
-          ARGS="${{ github.event.inputs.lega || 'kleague' }} --matrice-pool"
-          if [ -n "${{ github.event.inputs.roles }}" ]; then
-            ARGS="$ARGS --roles ${{ github.event.inputs.roles }}"
+          ARGS="${{ inputs.lega || 'kleague' }} --matrice-pool"
+          if [ -n "${{ inputs.roles }}" ]; then
+            ARGS="$ARGS --roles ${{ inputs.roles }}"
           fi
           python best_five.py $ARGS
 
@@ -101,11 +128,11 @@ jobs:
       - name: starterOdds sul proprio shard
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          BEST_FIVE_MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds || '0.70' }}
+          BEST_FIVE_MIN_STARTER_ODDS: ${{ inputs.starter_odds || '0.70' }}
           PYTHONUNBUFFERED: "1"
         run: |
           mkdir -p _prefiltro_stage
-          python best_five.py "${{ github.event.inputs.lega || 'kleague' }}" \
+          python best_five.py "${{ inputs.lega || 'kleague' }}" \
             --prefiltra-shard "${{ matrix.gruppo.g }}" --out _prefiltro_stage/survivors.json
       - if: always()
         uses: actions/upload-artifact@v4
@@ -156,7 +183,7 @@ jobs:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
-        run: python best_five.py "${{ github.event.inputs.lega || 'kleague' }}" --predict-shard "${{ matrix.gruppo.g }}"
+        run: python best_five.py "${{ inputs.lega || 'kleague' }}" --predict-shard "${{ matrix.gruppo.g }}"
       - if: always()
         run: python pipeline_artifacts.py stage _artifact_stage
       - if: always()
@@ -198,9 +225,9 @@ jobs:
           PREFILTRO_GRUPPI: ${{ needs.prefiltro_merge.outputs.gruppi }}
         run: |
           set -u
-          ARGS="${{ github.event.inputs.lega || 'kleague' }} --backups ${{ github.event.inputs.backups || '2' }}"
-          if [ -n "${{ github.event.inputs.roles }}" ]; then
-            ARGS="$ARGS --roles ${{ github.event.inputs.roles }}"
+          ARGS="${{ inputs.lega || 'kleague' }} --backups ${{ inputs.backups || '2' }}"
+          if [ -n "${{ inputs.roles }}" ]; then
+            ARGS="$ARGS --roles ${{ inputs.roles }}"
           fi
           python best_five.py $ARGS
       - name: Salva risultati
@@ -239,5 +266,5 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
           GIT_REF: main
-          LEGA: ${{ github.event.inputs.lega || 'kleague' }}
+          LEGA: ${{ inputs.lega || 'kleague' }}
         run: python best_five_telegram_notify.py

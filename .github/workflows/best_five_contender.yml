@@ -1,0 +1,107 @@
+name: Best Five Contender (multi-lega)
+
+# Orchestratore per il backlog "Contender limitato a N leghe" (31/07,
+# richiesta esplicita utente: "questa cosa andrebbe automatizzata da sempre,
+# in futuro dovro' aggiungere un altro piccolo campionato"). Un solo
+# workflow_dispatch fa TUTTO:
+#   1) lancia best_five.yml (reusable, via workflow_call) UNA VOLTA PER LEGA
+#      elencata in 'leghe', in parallelo (stesso identico motore delle run
+#      singole gia' usate per MLS/K League/Austria/Croazia/2.Bundesliga --
+#      zero duplicazione, vedi 'workflow_call' in best_five.yml).
+#   2) a tutte finite, esegue il merge (python best_five.py contender
+#      --leghe ..., nessuna query aggiuntiva -- legge solo i consiglio_*.txt
+#      piu' freschi di ciascuna lega) e pubblica il report su
+#      formazione_contender/output/best_five/.
+#
+# Per aggiungere una lega a Contender in futuro: basta includerla nel default
+# di 'leghe' qui sotto (deve avere gia' discovery_global + un run Best Five
+# completato almeno una volta) -- nessun'altra modifica al workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      leghe:
+        description: 'Leghe che compongono il pool Contender, separate da virgola'
+        required: false
+        default: 'austria,croazia,germania2'
+      backups:
+        description: 'Numero di backup per ruolo (sia per le run singole sia per il merge)'
+        required: false
+        default: '2'
+      starter_odds:
+        description: 'Soglia starterOdds prefiltro (0-1), passata a ciascuna run singola'
+        required: false
+        default: '0.70'
+      top_k_qualita:
+        description: 'Cap per qualita PRIMA delle starterOdds, passato a ciascuna run singola'
+        required: false
+        default: '40'
+
+permissions:
+  contents: write
+
+jobs:
+  build_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      leghe_json: ${{ steps.set.outputs.leghe_json }}
+    steps:
+      - id: set
+        env:
+          LEGHE_RAW: ${{ inputs.leghe }}
+        run: |
+          python3 - <<'PYEOF' >> "$GITHUB_OUTPUT"
+          import json, os
+          leghe = [s.strip() for s in os.environ.get('LEGHE_RAW', '').split(',') if s.strip()]
+          print("leghe_json=" + json.dumps(leghe))
+          PYEOF
+
+  best_five_per_lega:
+    needs: build_matrix
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        lega: ${{ fromJson(needs.build_matrix.outputs.leghe_json) }}
+    uses: ./.github/workflows/best_five.yml
+    with:
+      lega: ${{ matrix.lega }}
+      roles: 'gk,def,mid,fwd'
+      backups: ${{ inputs.backups }}
+      starter_odds: ${{ inputs.starter_odds }}
+      top_k_qualita: ${{ inputs.top_k_qualita }}
+    secrets: inherit
+
+  merge_contender:
+    needs: best_five_per_lega
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      # NECESSARIO (stesso motivo di best_five.yml): best_five.py importa
+      # curl_cffi/requests a livello di modulo anche se questo step non fa
+      # nessuna chiamata di rete (solo lettura dei consiglio_*.txt gia' su disco).
+      - run: pip install requests curl_cffi
+      - name: Costruisci Best Five Contender (merge, nessuna query)
+        run: python best_five.py contender --leghe "${{ inputs.leghe }}" --backups "${{ inputs.backups }}"
+      - name: Salva risultati (retry su push)
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add formazione_contender/output/best_five
+          git diff --cached --quiet && exit 0
+          git commit -m "Best Five Contender: risultati run $(date -u '+%Y-%m-%d %H:%M UTC')"
+          until git pull --no-edit --no-rebase origin main && git push origin main; do
+            echo "push fallito, retry..."
+            sleep 5
+          done
+      - name: Notifica Telegram
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
+          GIT_REF: main
+          LEGA: contender
+        run: python best_five_telegram_notify.py
