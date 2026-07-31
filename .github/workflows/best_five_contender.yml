@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       leghe:
-        description: 'Leghe che compongono il pool Contender, separate da virgola'
+        description: 'Nomi cartella, separati da virgola, senza spazi. Valide oggi: austria, croazia, germania2 (esclusa se non gioca quella settimana)'
         required: false
         default: 'austria,croazia,germania2'
       backups:
