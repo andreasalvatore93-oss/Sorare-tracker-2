@@ -1433,6 +1433,29 @@ def run_grid_search_prod_def(scores, is_home_flags, opponent_rankings,
     return results
 
 
+def salva_grid_results(slug, result):
+    """Scrive <slug>_grid.json per il job 'aggregate' separato.
+
+    FUNZIONE UNICA (01/08): la chiamano sia il percorso normale sia quello di
+    sola calibrazione (nessuna partita futura). Prima era un blocco inline;
+    duplicarlo avrebbe significato due copie che possono divergere in
+    silenzio, l'errore gia' visto altrove nel progetto."""
+    grid_dir = os.path.join(OUTPUT_DIR, 'grid_search')
+    if not os.path.exists(grid_dir):
+        os.makedirs(grid_dir)
+    grid_export = [
+        {'label': r['label'], 'half_life': r['half_life'], 'range_multiplier': r['range_multiplier'],
+         'opponent_sensitivity': r['opponent_sensitivity'], 'trend_intensity': r['trend_intensity'],
+         'mae': r['mae'], 'pct_dentro_range': r['pct_dentro_range'],
+         'n_test': len(r.get('rows') or [])}
+        for r in (result.get('grid_results') or []) if r.get('mae') is not None
+    ]
+    grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
+    with open(grid_path, 'w', encoding='utf-8') as f:
+        json.dump(grid_export, f, ensure_ascii=False, indent=2)
+    return len(grid_export)
+
+
 def build_prediction(player_slug):
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games, live_team_slug = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
@@ -1720,6 +1743,27 @@ def build_prediction(player_slug):
 
     # --- Prossima partita: contesto target ---
     log("[FASE 4/4] Calcolo fattori e predizione finale sulla prossima partita target...")
+    # CALIBRAZIONE FUORI STAGIONE (01/08): il grid search e' un backtest
+    # sullo STORICO e non ha bisogno di una partita futura. Il controllo
+    # qui sotto protegge la PREDIZIONE, che senza avversario non si puo'
+    # calcolare; senza questo ramo, con i campionati fermi ogni giocatore
+    # usciva a mani vuote pur avendo storico completo (run italia/gk del
+    # 01/08: 34 job verdi, zero dati raccolti).
+    if CALIBRATION_MODE and not future_games:
+        presence_rate = len(usable) / total_considered if total_considered else 1.0
+        log(f"CALIBRATION_MODE senza partita futura: grid search ALLINEATO "
+            f"sullo storico ({len(GRID_SEARCH_COMBINATIONS_PROD)} combinazioni)...")
+        grid_results = run_grid_search_prod_def(
+            scores, is_home_flags, opponent_rankings,
+            residual_values, granulari_values,
+            pos_decisive_values, neg_decisive_values,
+            goals_conceded_values, passing_values, clean_sheet_values,
+            min_history=6,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist, league='belgio',
+            presence_rate=presence_rate)
+        return {'solo_calibrazione': True, 'grid_results': grid_results}
+
     if not future_games:
         log("[FASE 4/4] INTERROTTO: nessuna partita futura trovata (anyFutureGames vuoto), "
             "impossibile calcolare una predizione senza un target.")
@@ -2295,6 +2339,17 @@ def main():
             all_sections.append(f"\n{'#'*70}\n# {slug}: DATI INSUFFICIENTI (dopo {attempt} tentativi)\n{'#'*70}\n")
             continue
 
+        # Sola calibrazione (01/08): il giocatore ha storico ma nessuna partita
+        # futura (fuori stagione). C'e' un grid search da salvare e nessuna
+        # predizione da mettere a report.
+        if result.get('solo_calibrazione'):
+            n_comb = salva_grid_results(slug, result)
+            log(f"[{slug}] SOLO CALIBRAZIONE: {n_comb} combinazioni salvate "
+                f"(nessuna partita futura, grid search fatto sullo storico).")
+            summary_rows.append((slug, 'SOLO CALIBRAZIONE', None, None,
+                                 'nessuna partita futura'))
+            continue
+
         if result.get('excluded'):
             log(f"[{slug}] ESCLUSO: {result.get('exclusion_reason')}")
             summary_rows.append((slug, 'ESCLUSO', None, None, result.get('exclusion_reason', '')))
@@ -2321,19 +2376,7 @@ def main():
         # Salvataggio grid_results per QUESTO giocatore, su disco, per il job
         # 'aggregate' separato che calcolera' la combinazione vincente cross-player
         # (stessa strategia usata per gli attaccanti).
-        grid_dir = os.path.join(OUTPUT_DIR, 'grid_search')
-        if not os.path.exists(grid_dir):
-            os.makedirs(grid_dir)
-        grid_export = [
-            {'label': r['label'], 'half_life': r['half_life'], 'range_multiplier': r['range_multiplier'],
-             'opponent_sensitivity': r['opponent_sensitivity'], 'trend_intensity': r['trend_intensity'],
-             'mae': r['mae'], 'pct_dentro_range': r['pct_dentro_range'],
-             'n_test': len(r.get('rows') or [])}
-            for r in (result.get('grid_results') or []) if r.get('mae') is not None
-        ]
-        grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
-        with open(grid_path, 'w', encoding='utf-8') as f:
-            json.dump(grid_export, f, ensure_ascii=False, indent=2)
+        salva_grid_results(slug, result)
 
     # --- Riepilogo comparativo in cima al file ---
     # NUOVO (25/07): tiering ordinato per score atteso decrescente, con
