@@ -163,6 +163,9 @@ def fetch_next_match_starter_odds(slug):
 # su Sorare invece di formazioni generiche senza vincolo di livello.
 RISPETTA_CAP_L10 = os.environ.get('BEST_FIVE_RISPETTA_CAP_L10', '0').strip() not in ('0', 'false', 'no', '')
 
+# Pausa prima del secondo giro sugli L10 non letti (vedi fetch_l10_per_ruoli).
+L10_RETRY_PAUSA = float(os.environ.get('BEST_FIVE_L10_RETRY_PAUSA', '30'))
+
 L10_REALE_QUERY = """
 query L10Reale($slug: String!) {
   anyPlayer(slug: $slug) {
@@ -176,7 +179,23 @@ def fetch_l10_reale(slug):
     """L10 reale (media SO5 ultime 10 partite giocate) di un giocatore --
     stesso campo gia' usato in discovery_global per il filtro qualita', qui
     riletto per singolo slug (serve solo quando RISPETTA_CAP_L10 e' attivo).
-    None se il dato non e' disponibile (storico insufficiente)."""
+    Ritorna (valore, esito) con esito in 'ok' | 'assente' | 'errore':
+    - 'ok'      -> valore numerico affidabile
+    - 'assente' -> Sorare risponde ma il giocatore non ha storico (None vero)
+    - 'errore'  -> la query e' fallita (429 esauriti, HTTP 4xx/5xx, eccezione)
+
+    FIX BUG REALE (31/07, trovato dall'utente su una formazione MLS che
+    dichiarava "L10 combinata 79.0 / cap 260" per 5 giocatori, cioe' ~16 di
+    media, impossibile): prima questa funzione restituiva None SIA quando il
+    giocatore non ha storico SIA quando la query falliva -- e su HTTP >= 400
+    lo faceva pure in silenzio, senza un log. A valle un None diventa 0.0
+    (vedi _candidati_prezzo_ruolo), quindi i giocatori persi per rate limit
+    entravano nel conto come se avessero L10 zero: totale sottostimato e --
+    molto peggio -- vincolo del cap 260 di fatto disattivato, con formazioni
+    che su Sorare potrebbero sforare davvero. Verificato sul caso reale: dei
+    5 schierati solo Cleveland (36) e Sealy (43) erano stati letti, 36+43=79,
+    mentre Yamane (48) e Almiron (52) risultavano a zero per errore di
+    query."""
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if COOKIES:
         headers['Cookie'] = COOKIES
@@ -190,27 +209,61 @@ def fetch_l10_reale(slug):
                 backoff *= 2
                 continue
             if resp.status_code >= 400:
-                return None
+                log(f"[L10 reale] {slug}: HTTP {resp.status_code} -- dato NON letto "
+                    f"(non e' 'nessuno storico', e' un errore).")
+                return None, 'errore'
             data = resp.json()
             player = (data.get('data') or {}).get('anyPlayer') or {}
-            return player.get('lastTenPlayedAvgScore')
+            valore = player.get('lastTenPlayedAvgScore')
+            return valore, ('ok' if valore is not None else 'assente')
         except Exception as e:
             log(f"[L10 reale] {slug}: eccezione tentativo {attempt+1}/3: {e!r}")
             time.sleep(backoff)
             backoff *= 2
-    return None
+    return None, 'errore'
 
 
 def fetch_l10_per_ruoli(role_data_dict):
     """L10 reale per TUTTI gli slug in role_data_dict (dict ROLE -> righe),
-    ritorna {slug: l10_o_None}. Chiamata SOLO se RISPETTA_CAP_L10 e' attivo."""
+    ritorna {slug: l10_o_None}.
+
+    Chi fallisce per errore di query (non per assenza di storico) viene
+    RITENTATO in un secondo giro dopo una pausa -- stesso principio del
+    rate_limited_pool di bot_profit.py. Alla fine logga quanti restano
+    davvero ignoti, distinguendo "senza storico" da "non letti": la
+    differenza conta, perche' a valle un L10 ignoto vale 0 e quindi
+    ammorbidisce silenziosamente il cap (vedi fetch_l10_reale)."""
     slugs = sorted({r['slug'] for rows in role_data_dict.values() for r in rows})
-    log(f"[L10 reale] Interrogo {len(slugs)} giocatori (RISPETTA_CAP_L10 attivo)...")
+    log(f"[L10 reale] Interrogo {len(slugs)} giocatori...")
     l10_map = {}
+    falliti = []
     for idx, slug in enumerate(slugs, 1):
-        l10_map[slug] = fetch_l10_reale(slug)
+        valore, esito = fetch_l10_reale(slug)
+        l10_map[slug] = valore
+        if esito == 'errore':
+            falliti.append(slug)
         if idx % 20 == 0 or idx == len(slugs):
             log(f"[L10 reale] [{idx}/{len(slugs)}] fatto.")
+
+    if falliti:
+        log(f"[L10 reale] {len(falliti)} giocatori non letti al primo giro "
+            f"(errori/rate limit): secondo tentativo fra {L10_RETRY_PAUSA:g}s...")
+        time.sleep(L10_RETRY_PAUSA)
+        ancora = []
+        for slug in falliti:
+            valore, esito = fetch_l10_reale(slug)
+            l10_map[slug] = valore
+            if esito == 'errore':
+                ancora.append(slug)
+        falliti = ancora
+
+    senza_storico = sum(1 for s_, v in l10_map.items() if v is None and s_ not in falliti)
+    if falliti:
+        log(f"[L10 reale] ATTENZIONE: {len(falliti)} giocatori restano NON LETTI dopo il "
+            f"retry -- per loro l'L10 vale 0 nei conti, quindi il cap risulta piu' largo "
+            f"del reale. Esempi: {falliti[:5]}")
+    log(f"[L10 reale] Letti {len(slugs) - len(falliti) - senza_storico}/{len(slugs)}; "
+        f"{senza_storico} senza storico, {len(falliti)} non letti.")
     return l10_map
 
 
@@ -1771,11 +1824,15 @@ def _ottimizza_lineup_min_prezzo(shape, role_data, prezzi, max_classic, l10_cap=
     # totale degli L10, cosi' per sicurezza" -- il vincolo era gia' rispettato
     # internamente dal DP, qui lo si rende visibile per verifica).
     l10_totale = 0.0
+    l10_ignoti = 0
     for slot, entry in picks.items():
         row = entry[1] if slot == 'EXTRA' else entry[0]
-        l10_totale += (l10_map or {}).get(row['slug']) or 0.0
+        _l10 = (l10_map or {}).get(row['slug'])
+        if _l10 is None:
+            l10_ignoti += 1
+        l10_totale += _l10 or 0.0
     return {'prezzo_totale': prezzo_tot, 'punteggio_totale': score_tot, 'picks': picks,
-            'l10_totale': l10_totale, 'l10_cap': l10_cap}
+            'l10_totale': l10_totale, 'l10_cap': l10_cap, 'l10_ignoti': l10_ignoti}
 
 
 # --- Formazioni "ottimizzate valore" (31/07, richiesta esplicita utente) --
@@ -1885,11 +1942,15 @@ def _ottimizza_lineup_valore(shape, role_data, prezzi, max_classic, l10_cap, l10
         return None
     _, prezzo_tot, score_tot, picks = migliore
     l10_totale = 0.0
+    l10_ignoti = 0
     for slot, entry in picks.items():
         row = entry[1] if slot == 'EXTRA' else entry[0]
-        l10_totale += (l10_map or {}).get(row['slug']) or 0.0
+        _l10 = (l10_map or {}).get(row['slug'])
+        if _l10 is None:
+            l10_ignoti += 1
+        l10_totale += _l10 or 0.0
     return {'prezzo_totale': prezzo_tot, 'punteggio_totale': score_tot, 'picks': picks,
-            'l10_totale': l10_totale, 'l10_cap': l10_cap}
+            'l10_totale': l10_totale, 'l10_cap': l10_cap, 'l10_ignoti': l10_ignoti}
 
 
 def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
@@ -1929,6 +1990,13 @@ def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
             f'color:var(--gold);margin-top:4px">{prezzo:.2f}EUR</div></div>')
     l10_cap = risultato.get('l10_cap')
     l10_nota = f" / cap {l10_cap:.0f}" if l10_cap is not None else " (nessun cap)"
+    # Se per qualche schierato l'L10 non e' stato letto, il totale e' per forza
+    # SOTTOSTIMATO e il cap non e' verificabile: dirlo invece di far credere
+    # che sia rispettato (bug reale del 31/07, vedi fetch_l10_reale).
+    _ignoti = risultato.get('l10_ignoti') or 0
+    if _ignoti:
+        l10_nota += (f" -- ATTENZIONE: {_ignoti} giocatori senza L10 letto, contati come 0: "
+                     f"il totale reale e' piu' alto e il cap NON e' verificato")
     righe.append(f"TOTALE: {risultato['punteggio_totale']} pt -- {risultato['prezzo_totale']:.2f}EUR")
     righe.append(f"L10 combinata: {risultato['l10_totale']:.1f}{l10_nota}")
     html_righe.append(f"</div><p><strong>TOTALE: {risultato['punteggio_totale']} pt -- "
