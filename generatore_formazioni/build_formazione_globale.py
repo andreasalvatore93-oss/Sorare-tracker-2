@@ -410,6 +410,24 @@ _FINESTRA_ESPLICITA = None
 _FINESTRA_ESPLICITA_RISOLTA = False
 
 
+_CONSIGLIO_TS_RE = re.compile(r'consiglio_(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})(\d{2})\.txt$')
+
+
+def _ts_da_nome_consiglio(path):
+    """Data/ora di scrittura dal NOME del file consiglio_*.txt (mai
+    dall'mtime: git checkout in CI li riscrive tutti a 'adesso', rendendo
+    inutile qualunque controllo di freschezza)."""
+    if not path:
+        return None
+    m = _CONSIGLIO_TS_RE.search(os.path.basename(path))
+    if not m:
+        return None
+    try:
+        return datetime.datetime.fromisoformat(f"{m.group(1)}T{m.group(2)}:{m.group(3)}:{m.group(4)}")
+    except ValueError:
+        return None
+
+
 def _within_window(row, now=None):
     global _FINESTRA_ESPLICITA, _FINESTRA_ESPLICITA_RISOLTA
     if not _FINESTRA_ESPLICITA_RISOLTA:
@@ -430,18 +448,25 @@ def _within_window(row, now=None):
         # avere per puro caso un KICKOFF salvato che coincide con la finestra
         # attuale (visto su kodai-sano/olanda, 31/07 -- lega non ha nessuna
         # partita reale in questa giornata, il dato stantio combaciava per
-        # caso). Il file deve essere stato scritto non troppo prima
-        # dell'inizio della finestra stessa -- altrimenti non e' un dato
-        # verificato per QUESTA giornata.
-        mtime = row.get('_source_mtime')
-        if mtime is None:
+        # caso). Il file deve essere stato SCRITTO non troppo prima
+        # dell'inizio della finestra -- altrimenti non e' un dato verificato
+        # per QUESTA giornata.
+        #
+        # ATTENZIONE (31/07, secondo tentativo): la data di scrittura NON puo'
+        # venire dall'mtime del file -- git checkout in CI riscrive tutti gli
+        # mtime al momento del checkout, quindi in GitHub Actions ogni file
+        # sembrava appena creato e il controllo non filtrava NULLA (primo fix
+        # inefficace, i giocatori stantii ricomparivano). Si usa invece il
+        # timestamp nel NOME del file (consiglio_YYYY-MM-DD_HHMMSS.txt),
+        # scritto dal generatore e immune al checkout.
+        scritto = row.get('_source_ts')
+        if scritto is None:
             return not REQUIRE_KICKOFF
         try:
             inizio_dt = datetime.datetime.fromisoformat(inizio)
         except ValueError:
             return True
-        soglia = inizio_dt - datetime.timedelta(hours=24)
-        return datetime.datetime.utcfromtimestamp(mtime) >= soglia
+        return scritto >= inizio_dt - datetime.timedelta(hours=24)
 
     now = now or datetime.datetime.utcnow()
     try:
@@ -483,17 +508,18 @@ def load_league_role_data():
             # e' nemmeno schierabile) -- serve a _build_alt_chips per
             # filtrare le alternative alla lega/pool della formazione
             # bersaglio, non solo al ruolo.
-            # '_source_mtime' (31/07, fix bug reale kodai-sano/olanda: un
+            # '_source_ts' (31/07, fix bug reale kodai-sano/olanda: un
             # KICKOFF salvato giorni fa puo' cadere per puro caso dentro la
             # finestra della giornata esplicita ANCHE SE quella lega non ha
             # nessuna partita reale in questa giornata -- la lega
             # semplicemente non e' stata ri-scoperta oggi, il dato e' stantio
-            # e coincide per caso. Serve per scartare interi ruoli/leghe con
-            # dati non aggiornati, vedi _scarta_leghe_stantie).
-            mtime = os.path.getmtime(path) if path else None
+            # e coincide per caso. Vedi _within_window per l'uso.
+            # Dal NOME del file, non dall'mtime: git checkout in CI riscrive
+            # gli mtime e li rende tutti "adesso".
+            ts_file = _ts_da_nome_consiglio(path)
             for row in rows:
                 row['league'] = league
-                row['_source_mtime'] = mtime
+                row['_source_ts'] = ts_file
             counts, _ = bff.load_card_counts(DISCOVERY_DIRS[league][role])
             names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
