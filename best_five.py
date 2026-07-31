@@ -166,6 +166,56 @@ RISPETTA_CAP_L10 = os.environ.get('BEST_FIVE_RISPETTA_CAP_L10', '0').strip() not
 # Pausa prima del secondo giro sugli L10 non letti (vedi fetch_l10_per_ruoli).
 L10_RETRY_PAUSA = float(os.environ.get('BEST_FIVE_L10_RETRY_PAUSA', '30'))
 
+# Cache degli L10 (31/07): stesso schema/TTL della cache prezzi. L'L10 e' una
+# media sulle ultime 10 partite GIOCATE, quindi cambia solo quando il
+# giocatore scende in campo -- rifarla a ogni run era il vero costo dello step
+# report una volta che i prezzi erano in cache.
+L10_CACHE_PATH = os.path.join(REPO_ROOT, 'best_five_l10_cache.json')
+L10_CACHE_TTL_ORE = float(os.environ.get('BEST_FIVE_L10_CACHE_TTL_ORE', str(24 * 5)))
+
+
+def _l10_cache_leggi():
+    if not os.path.exists(L10_CACHE_PATH):
+        return {}
+    try:
+        with open(L10_CACHE_PATH, encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _l10_cache_scrivi(cache):
+    with open(L10_CACHE_PATH, 'w', encoding='utf-8') as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2, sort_keys=True)
+
+
+def _voce_l10_valida(voce, ora):
+    """Una voce di cache L10 vale finche' siamo nella STESSA giornata in cui
+    e' stata scritta (31/07, richiesta esplicita utente: "lega sempre cache
+    degli L10 anche alla fine gw, come prima, altrimenti e' un casino").
+
+    Motivo: l'L10 cambia quando il giocatore scende in campo, cioe' proprio
+    alla fine della giornata -- una scadenza a ore la prenderebbe sempre o
+    troppo presto o troppo tardi, mentre la giornata e' il confine esatto. Si
+    riusa la stessa finestra gia' risolta per le predizioni
+    (_finestra_giornata), quindi zero query in piu'. Se la giornata non e'
+    risolvibile si ricade sul TTL a ore."""
+    ts = voce.get('ts')
+    if not ts:
+        return False
+    finestra = _finestra_giornata()
+    if finestra:
+        inizio, _fine = finestra
+        # Scritta durante QUESTA giornata (cioe' non prima del suo inizio):
+        # ancora valida. Scritta prima, appartiene alla giornata precedente e
+        # nel frattempo si e' giocato: da rifare.
+        return ts[:19] >= inizio[:19]
+    try:
+        eta_ore = (ora - datetime.datetime.fromisoformat(ts)).total_seconds() / 3600.0
+    except ValueError:
+        return False
+    return eta_ore <= L10_CACHE_TTL_ORE
+
 L10_REALE_QUERY = """
 query L10Reale($slug: String!) {
   anyPlayer(slug: $slug) {
@@ -234,16 +284,51 @@ def fetch_l10_per_ruoli(role_data_dict):
     differenza conta, perche' a valle un L10 ignoto vale 0 e quindi
     ammorbidisce silenziosamente il cap (vedi fetch_l10_reale)."""
     slugs = sorted({r['slug'] for rows in role_data_dict.values() for r in rows})
-    log(f"[L10 reale] Interrogo {len(slugs)} giocatori...")
+
+    # CACHE + PARALLELISMO (31/07, osservazione dell'utente: "pagina prezzi
+    # comunque e' a 3 minuti anche se li ha gia'"). I prezzi erano davvero
+    # tutti in cache: il tempo se ne andava TUTTO qui, 233 query L10 in
+    # SEQUENZA e senza alcuna cache, ripetute identiche a ogni run. L'L10 e'
+    # una media sulle ultime 10 partite giocate: si muove solo quando il
+    # giocatore jscende in campo, quindi e' esattamente il tipo di dato da
+    # mettere in cache come i prezzi (stesso file-schema, stesso TTL).
+    cache = _l10_cache_leggi()
+    ora = datetime.datetime.utcnow()
     l10_map = {}
+    da_interrogare = []
+    for slug in slugs:
+        voce = cache.get(slug)
+        if voce is not None and _voce_l10_valida(voce, ora):
+            l10_map[slug] = voce.get('l10')
+            continue
+        da_interrogare.append(slug)
+
+    if not da_interrogare:
+        log(f"[L10 reale] {len(slugs)} giocatori tutti in cache (< {L10_CACHE_TTL_ORE:g}h), nessuna query.")
+        return l10_map
+
+    log(f"[L10 reale] {len(slugs) - len(da_interrogare)} da cache, "
+        f"{len(da_interrogare)} da interrogare dal vivo.")
+    ts_ora = ora.isoformat()
     falliti = []
-    for idx, slug in enumerate(slugs, 1):
-        valore, esito = fetch_l10_reale(slug)
-        l10_map[slug] = valore
-        if esito == 'errore':
-            falliti.append(slug)
-        if idx % 20 == 0 or idx == len(slugs):
-            log(f"[L10 reale] [{idx}/{len(slugs)}] fatto.")
+    fatti = 0
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=5, thread_name_prefix='l10') as executor:
+        futures = {executor.submit(fetch_l10_reale, slug): slug for slug in da_interrogare}
+        for future in concurrent.futures.as_completed(futures):
+            slug = futures[future]
+            valore, esito = future.result()
+            l10_map[slug] = valore
+            if esito == 'errore':
+                falliti.append(slug)
+            else:
+                cache[slug] = {'l10': valore, 'ts': ts_ora}
+            fatti += 1
+            if fatti % PREZZI_CACHE_CHUNK == 0:
+                _l10_cache_scrivi(cache)
+                log(f"[L10 reale] [{fatti}/{len(da_interrogare)}] fatto (cache salvata).")
+            elif fatti % 20 == 0 or fatti == len(da_interrogare):
+                log(f"[L10 reale] [{fatti}/{len(da_interrogare)}] fatto.")
 
     if falliti:
         log(f"[L10 reale] {len(falliti)} giocatori non letti al primo giro "
@@ -255,7 +340,10 @@ def fetch_l10_per_ruoli(role_data_dict):
             l10_map[slug] = valore
             if esito == 'errore':
                 ancora.append(slug)
+            else:
+                cache[slug] = {'l10': valore, 'ts': ts_ora}
         falliti = ancora
+    _l10_cache_scrivi(cache)
 
     senza_storico = sum(1 for s_, v in l10_map.items() if v is None and s_ not in falliti)
     if falliti:
@@ -2014,68 +2102,63 @@ def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
 # solo meno avversione al prezzo: con una soglia piu' alta un candidato
 # piu' caro ma migliore diventa relativamente piu' conveniente in
 # 'punteggio - prezzo/soglia').
-# --- "Cheapest fill 260" (31/07, richiesta esplicita utente) --------------
+# --- Formazioni economiche sotto cap L10 (31/07, richiesta esplicita utente)
 #
-# Idea: il cap L10 e' un BUDGET. Una formazione che ne usa 79 su 260 lo sta
-# sprecando -- l'L10 e' un proxy della qualita' della carta, quindi restare
-# molto sotto il cap significa quasi sempre schierare giocatori piu' deboli
-# del consentito. Qui si costruisce la formazione che AVVICINA il cap il piu'
-# possibile senza sforarlo, al prezzo combinato minimo.
+# Nate da un tentativo scartato: la prima versione ("fill 260") riempiva il cap
+# al prezzo minimo e produceva formazioni corrette ma inutilizzabili -- 319 pt
+# a 53 EUR, "una follia" (parole dell'utente). Il cap pieno da solo non e' un
+# obiettivo sensato: e' il PREZZO a dover guidare, con il cap come vincolo.
+# Sostituita da due criteri, entrambi con cap L10 rispettato:
 #
-# Vincolo DISTRIBUTIVO (richiesta esplicita: "non ha senso mettere un
-# giocatore con l10 di 80 e altri 4 con l10 di 30"): nessuno schierato puo'
-# superare FILL_QUOTA_MAX volte la quota media (cap/5). Con cap 260 la quota
-# e' 52 e il tetto per giocatore 52*1.6 = 83.2, quindi il caso "80 + quattro
-# da 30" non e' costruibile. E' un vincolo per-candidato, quindi entra nella
-# DP come semplice filtro senza complicarne lo stato.
+#   A) MINIMO EUR/PUNTO -- minimizza prezzo_totale / punteggio_totale. Premia
+#      chi rende molto per poco e scarta i "costosi ma forti" (es. 31 EUR per
+#      73 pt). Risposta diretta a "cheapest for projected score".
+#   B) PREZZO MINIMO PER RAGGIUNGERE UN TARGET -- la formazione piu' economica
+#      che arriva ad almeno TARGET_PUNTEGGIO punti attesi (default 300). Se il
+#      pool non ci arriva, lo dice invece di restituire un ripiego silenzioso.
 #
-# Criterio di scelta finale, in quest'ordine (l'utente: "cio' che conta e'
-# sempre il projected score"):
-#   1) punteggio atteso totale piu' alto
-#   2) a parita' di punteggio, prezzo piu' basso
-#   3) a parita' di entrambi, L10 usato piu' alto
-# Il "fill" non e' quindi un fine in se': e' il vincolo che apre l'accesso ai
-# giocatori forti, ma fra due formazioni si sceglie sempre quella che segna
-# di piu'. Chi ha L10 ignoto (non letto) e' ESCLUSO da questa formazione: qui
-# il cap e' il punto centrale, contarlo 0 falserebbe tutto (vedi il bug del
-# 31/07 in fetch_l10_reale).
+# Vincolo DISTRIBUTIVO condiviso (richiesta esplicita: "non ha senso mettere un
+# giocatore con l10 di 80 e altri 4 con l10 di 30"): nessuno schierato supera
+# FILL_QUOTA_MAX volte la quota media (cap/5). Con cap 260 la quota e' 52 e il
+# tetto 83.2, quindi quel caso non e' costruibile.
+#
+# Chi ha L10 ignoto e' ESCLUSO: qui il cap e' un vincolo vero, contarlo 0
+# falserebbe tutto (vedi il bug del 31/07 in fetch_l10_reale).
 FILL_QUOTA_MAX = float(os.environ.get('BEST_FIVE_FILL_QUOTA_MAX', '1.6'))
-FILL_SOGLIA_MIN = float(os.environ.get('BEST_FIVE_FILL_SOGLIA_MIN', '0.75'))
+TARGET_PUNTEGGIO = float(os.environ.get('BEST_FIVE_TARGET_PUNTEGGIO', '300'))
 
 
-def _ottimizza_lineup_fill_cap(shape, role_data, prezzi, max_classic, l10_cap, l10_map):
-    """Formazione che riempie il piu' possibile il cap L10 senza sforarlo,
-    al prezzo minimo, con distribuzione equilibrata -- vedi il commento sopra.
-    None se il cap non e' dato o se il pool non basta."""
+def _stati_sotto_cap(shape, role_data, prezzi, max_classic, l10_cap, l10_map):
+    """DP condivisa dai due criteri: esplora tutte le formazioni complete che
+    rispettano cap L10, max_classic e il vincolo distributivo. Ritorna la
+    lista di (punteggio, prezzo, l10_units, picks). None se il pool non basta."""
     if l10_cap is None or not l10_map:
         return None
     rarita_ammesse = ('in_season',) if max_classic == 0 else ('in_season', 'classic')
     cap_units = int(round(l10_cap * _RES_L10))
-    n_slot = len(shape['role_slots']) + 1  # 4 ruoli + EXTRA
-    quota_media = l10_cap / n_slot
-    tetto_giocatore = quota_media * FILL_QUOTA_MAX
+    n_slot = len(shape['role_slots']) + 1
+    tetto_giocatore = (l10_cap / n_slot) * FILL_QUOTA_MAX
 
     def candidati(role):
         out = []
         for row, rarita, prezzo, l10 in _candidati_prezzo_ruolo(
                 role_data.get(role, []), prezzi, l10_map, rarita_ammesse):
-            # L10 ignoto (0.0 perche' non letto o assente): escluso, qui il
-            # cap e' il cuore del calcolo e non si puo' tirare a indovinare.
-            if not l10 or l10 <= 0:
-                continue
-            if l10 > tetto_giocatore:
+            if not l10 or l10 <= 0 or l10 > tetto_giocatore:
                 continue
             out.append((row, rarita, prezzo, l10))
         return out
 
-    # stato (l10_units, n_classic) -> (punteggio_tot, prezzo_tot, picks, usati)
-    states = {(0, 0): (0, 0.0, {}, frozenset())}
+    # stato (l10_units, n_classic, punteggio) -> (prezzo_min, picks, usati).
+    # Il punteggio entra nella CHIAVE: serve a tenere, per ogni punteggio
+    # raggiungibile, il modo piu' economico di ottenerlo -- e' quello che
+    # permette a entrambi i criteri di lavorare sulla stessa frontiera.
+    states = {(0, 0, 0): (0.0, {}, frozenset())}
     for role in shape['role_slots']:
         cands = candidati(role)
         if not cands:
             return None
         nuovi = {}
-        for (l10u, ncl), (score_tot, prezzo_tot, picks, usati) in states.items():
+        for (l10u, ncl, score), (prezzo_tot, picks, usati) in states.items():
             for row, rarita, prezzo, l10 in cands:
                 if row['slug'] in usati:
                     continue
@@ -2085,14 +2168,13 @@ def _ottimizza_lineup_fill_cap(shape, role_data, prezzi, max_classic, l10_cap, l
                 l10u2 = l10u + int(round(l10 * _RES_L10))
                 if l10u2 > cap_units:
                     continue
-                key = (l10u2, nc)
-                cand = (score_tot + row['atteso'], prezzo_tot + prezzo)
+                key = (l10u2, nc, score + row['atteso'])
+                p2 = prezzo_tot + prezzo
                 cur = nuovi.get(key)
-                # per ogni stato si tiene il punteggio piu' alto, poi il prezzo piu' basso
-                if cur is None or cand[0] > cur[0] or (cand[0] == cur[0] and cand[1] < cur[1] - 1e-9):
-                    new_picks = dict(picks)
-                    new_picks[role] = (row, rarita, prezzo)
-                    nuovi[key] = (cand[0], cand[1], new_picks, usati | {row['slug']})
+                if cur is None or p2 < cur[0] - 1e-9:
+                    np_ = dict(picks)
+                    np_[role] = (row, rarita, prezzo)
+                    nuovi[key] = (p2, np_, usati | {row['slug']})
         if not nuovi:
             return None
         states = nuovi
@@ -2102,8 +2184,8 @@ def _ottimizza_lineup_fill_cap(shape, role_data, prezzi, max_classic, l10_cap, l
         extra_cands.extend((role, row, rarita, prezzo, l10)
                             for row, rarita, prezzo, l10 in candidati(role))
 
-    migliore = None  # (score, -prezzo, l10_units, picks)
-    for (l10u, ncl), (score_tot, prezzo_tot, picks, usati) in states.items():
+    complete = []
+    for (l10u, ncl, score), (prezzo_tot, picks, usati) in states.items():
         for role, row, rarita, prezzo, l10 in extra_cands:
             if row['slug'] in usati:
                 continue
@@ -2113,21 +2195,46 @@ def _ottimizza_lineup_fill_cap(shape, role_data, prezzi, max_classic, l10_cap, l
             l10u2 = l10u + int(round(l10 * _RES_L10))
             if l10u2 > cap_units:
                 continue
-            chiave = (score_tot + row['atteso'], -(prezzo_tot + prezzo), l10u2)
-            if migliore is None or chiave > migliore[0]:
-                risultato = dict(picks)
-                risultato['EXTRA'] = (role, row, rarita, prezzo)
-                migliore = (chiave, prezzo_tot + prezzo, score_tot + row['atteso'], l10u2, risultato)
-    if migliore is None:
+            finale = dict(picks)
+            finale['EXTRA'] = (role, row, rarita, prezzo)
+            complete.append((score + row['atteso'], prezzo_tot + prezzo, l10u2, finale))
+    return complete or None
+
+
+def _risultato_da(scelta, l10_cap):
+    score, prezzo, l10_units, picks = scelta
+    return {'prezzo_totale': prezzo, 'punteggio_totale': score, 'picks': picks,
+            'l10_totale': l10_units / _RES_L10, 'l10_cap': l10_cap, 'l10_ignoti': 0}
+
+
+def _ottimizza_lineup_euro_per_punto(shape, role_data, prezzi, max_classic, l10_cap, l10_map):
+    """Criterio A: minimo prezzo/punteggio, con cap L10 rispettato."""
+    complete = _stati_sotto_cap(shape, role_data, prezzi, max_classic, l10_cap, l10_map)
+    if not complete:
         return None
-    _, prezzo_tot, score_tot, l10_units, picks = migliore
-    l10_totale = l10_units / _RES_L10
-    if l10_totale < l10_cap * FILL_SOGLIA_MIN:
-        log(f"[fill {l10_cap:.0f}] ATTENZIONE: riempiti solo {l10_totale:.1f}/{l10_cap:.0f} "
-            f"({l10_totale / l10_cap:.0%}) -- pool troppo povero di carte con L10 alto "
-            f"e prezzo noto, oppure troppi L10 non letti.")
-    return {'prezzo_totale': prezzo_tot, 'punteggio_totale': score_tot, 'picks': picks,
-            'l10_totale': l10_totale, 'l10_cap': l10_cap, 'l10_ignoti': 0}
+    # A parita' di rapporto vince il punteggio piu' alto (l'utente: "cio' che
+    # conta e' sempre il projected score").
+    migliore = min(complete, key=lambda c: (c[1] / c[0] if c[0] > 0 else float('inf'), -c[0]))
+    return _risultato_da(migliore, l10_cap)
+
+
+def _ottimizza_lineup_target(shape, role_data, prezzi, max_classic, l10_cap, l10_map,
+                              target=None):
+    """Criterio B: formazione piu' economica che raggiunge almeno 'target'
+    punti attesi, con cap L10 rispettato. None se il target e' irraggiungibile
+    (il chiamante lo segnala, invece di mostrare un ripiego)."""
+    target = TARGET_PUNTEGGIO if target is None else target
+    complete = _stati_sotto_cap(shape, role_data, prezzi, max_classic, l10_cap, l10_map)
+    if not complete:
+        return None
+    ammesse = [c for c in complete if c[0] >= target]
+    if not ammesse:
+        massimo = max(c[0] for c in complete)
+        log(f"[target {target:.0f}] Nessuna formazione arriva a {target:.0f} pt sotto cap "
+            f"{l10_cap:.0f}: il massimo raggiungibile e' {massimo:.0f} pt.")
+        return None
+    migliore = min(ammesse, key=lambda c: (c[1], -c[0]))
+    return _risultato_da(migliore, l10_cap)
 
 
 VALORE_MOLTIPLICATORI = (1, 2, 3)
@@ -2158,12 +2265,21 @@ def blocco_cheapest(bff, card_pool, role_data_dict, prezzi, l10_map):
         testi.append(t)
         html_parti.append(h)
 
-    # "Cheapest fill 260" (31/07, richiesta esplicita utente): sfrutta il cap
-    # invece di lasciarlo inutilizzato -- vedi _ottimizza_lineup_fill_cap.
-    risultato_fill = _ottimizza_lineup_fill_cap(shape, role_data_dict, prezzi,
-                                                 max_classic_v, l10_cap_v, l10_map)
-    t, h = _render_cheapest(bff, card_pool, label_v, risultato_fill,
-                             titolo=f'Cheapest fill {l10_cap_v:.0f} (riempie il cap, prezzo minimo)')
+    # Due formazioni economiche sotto cap L10 (31/07, richiesta esplicita
+    # utente dopo aver scartato la versione "riempi il cap": produceva 319 pt
+    # a 53 EUR, corretta ma inutilizzabile). Vedi il commento sopra i due
+    # ottimizzatori.
+    ris_rapporto = _ottimizza_lineup_euro_per_punto(shape, role_data_dict, prezzi,
+                                                     max_classic_v, l10_cap_v, l10_map)
+    t, h = _render_cheapest(bff, card_pool, label_v, ris_rapporto,
+                             titolo=f'Miglior rapporto EUR/punto (cap {l10_cap_v:.0f})')
+    testi.append(t)
+    html_parti.append(h)
+
+    ris_target = _ottimizza_lineup_target(shape, role_data_dict, prezzi,
+                                           max_classic_v, l10_cap_v, l10_map)
+    t, h = _render_cheapest(bff, card_pool, label_v, ris_target,
+                             titolo=f'Piu economica da {TARGET_PUNTEGGIO:.0f}+ pt (cap {l10_cap_v:.0f})')
     testi.append(t)
     html_parti.append(h)
     return "\n\n".join(testi), "".join(html_parti)
@@ -2635,7 +2751,7 @@ RESTYLE_JS = """
     var t = (h3.textContent || '').trim();
     if (t.indexOf('Cheapest Under-23') === 0) return 'under23';
     if (t.indexOf('Ottimizzata valore') === 0) return 'valore';
-    if (t.indexOf('Cheapest fill') === 0) return 'valore';
+    if (t.indexOf('Miglior rapporto') === 0 || t.indexOf('Piu economica') === 0) return 'valore';
     if (t.indexOf('Cheapest') === 0) return 'cheapest';
     if (t.indexOf('Top') === 0) return 'esclusi';
     return null;
