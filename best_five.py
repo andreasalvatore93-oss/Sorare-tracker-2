@@ -1098,19 +1098,35 @@ def costruisci_formazione_vera(lega, count):
     generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
     lineup_blocks = [_annota_prezzi_testo(b, prezzi) for b in lineup_blocks]
 
-    testo_esclusi, html_esclusi = _blocco_top_esclusi(role_data_lega, card_pool)
+    testo_esclusi, html_esclusi = _blocco_top_esclusi(bff, card_pool, role_data_lega)
     lineup_blocks.append(testo_esclusi)
     lineup_html_blocks.append(html_esclusi)
 
     if GENERA_CHEAPEST:
         l10_map_cheapest = l10_map if RISPETTA_CAP_L10 else fetch_l10_per_ruoli(role_data_lega)
-        testo_cheap, html_cheap = blocco_cheapest(role_data_lega, prezzi, l10_map_cheapest)
+        testo_cheap, html_cheap = blocco_cheapest(bff, card_pool, role_data_lega, prezzi, l10_map_cheapest)
         lineup_blocks.append(testo_cheap)
         lineup_html_blocks.append(html_cheap)
 
     log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica, "
         f"tipo={tipo}, stesso motore della produzione).")
     return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi
+
+
+# Scale-down moderato (31/07, richiesta esplicita utente: "non troppo piu
+# piccoli" -- il primo tentativo con carte minuscole non andava bene) per
+# distinguere a colpo d'occhio le carte di esclusi/cheapest (info, non
+# formazioni vere) da quelle delle 3 formazioni principali, senza pero'
+# renderle illeggibili. Riusa DAVVERO .pcard (bff.render_card_html), solo
+# un wrapper scoped che applica scale() -- nessuna modifica al CSS
+# condiviso con la produzione. Idempotente se ripetuto piu' volte nella
+# stessa pagina (stesso selettore, stesse regole).
+MINI_CARD_CSS = """
+<style>
+.mini-card-strip { display: flex; flex-wrap: wrap; gap: 2px; margin: 6px 0 14px 0; }
+.mini-card { transform: scale(0.85); transform-origin: top left; margin: 0 -22px -22px 0; }
+</style>
+"""
 
 
 def _prezzo_str(row):
@@ -1126,42 +1142,37 @@ def _prezzo_str(row):
     return f" | IS: {isp_s} | CL: {cl_s}"
 
 
-def _blocco_top_esclusi(role_data_per_ruolo, card_pool, n=TOP_N_ESCLUSI):
+def _blocco_top_esclusi(bff, card_pool, role_data_per_ruolo, n=TOP_N_ESCLUSI):
     """Top N candidati per ruolo (per 'atteso') MAI schierati in nessuna
     delle formazioni gia' generate -- stesso concetto del pannello 'esclusi'
     di generatore_formazioni/build_formazione_globale.py (card_pool.used_
     slugs()), qui SOLO per i ruoli/leghe di questa run di Best Five, non per
-    l'intera pipeline di produzione. Ritorna (testo, html)."""
+    l'intera pipeline di produzione. Ritorna (testo, html).
+
+    HTML (31/07, richiesta esplicita utente: "mostrami la carta, non solo la
+    riga di testo"): riusa DAVVERO bff.render_card_html (STESSA funzione delle
+    carte principali, nessuna duplicazione) dentro un wrapper '.mini-card'
+    rimpicciolito via CSS scoped (vedi MINI_CARD_CSS) -- 'ctype' sempre
+    'in_season' qui: un escluso non ha una rarita' reale associata, e' solo
+    un candidato mai schierato, non un acquisto implicito."""
     used = card_pool.used_slugs()
     lines = ["", "=" * 70, f"TOP {n} ESCLUSI PER RUOLO (eleggibili per starterOdds, mai schierati)", "=" * 70]
-    html_parts = ['<div class="esclusi-panel"><h3>Top %d esclusi per ruolo</h3>' % n]
+    html_parts = [MINI_CARD_CSS, '<div class="esclusi-panel"><h3>Top %d esclusi per ruolo</h3>' % n]
     for ROLE in ('GK', 'DEF', 'MID', 'FWD'):
         rows = role_data_per_ruolo.get(ROLE, [])
         esclusi = sorted((r for r in rows if r['slug'] not in used),
                          key=lambda r: r.get('atteso', 0), reverse=True)[:n]
         lines.append(f"\n--- {ROLE} ---")
-        html_parts.append(f'<div class="esclusi-role"><strong>{ROLE}</strong><ol>')
+        html_parts.append(f'<div class="esclusi-role"><strong>{ROLE}</strong><div class="mini-card-strip">')
         if not esclusi:
             lines.append("  (nessuno)")
+            html_parts.append('<p class="empty">(nessuno)</p>')
         for i, r in enumerate(esclusi, 1):
             squadra = r.get('team_slug') or 'N/D'
             prezzo = _prezzo_str(r)
             lines.append(f"  {i}) {r['slug']}: {r.get('atteso')} pt (squadra={squadra}){prezzo}")
-            # Link cliccabile alla pagina Sorare del giocatore (31/07,
-            # richiesta esplicita utente: "anche se scritti come riga, non
-            # come carta") -- stesso pattern URL di rendi_carte_cliccabili,
-            # qui pero' un <a> diretto (nessuna carta .pcard da annotare via
-            # script per questa lista testuale).
-            link = f'https://sorare.com/it/football/players/{r["slug"]}'
-            # Colore esplicito (31/07, segnalato dall'utente: il blu di default
-            # del browser era troppo scuro/illeggibile su sfondo scuro) --
-            # stesso oro (--gold) gia' usato nel template condiviso per gli
-            # accenti, invece del blu link standard.
-            html_parts.append(
-                f'<li><a href="{link}" target="_blank" rel="noopener" '
-                f'style="color:var(--gold);text-decoration:none">{r["slug"]}</a>: '
-                f'{r.get("atteso")} pt (squadra={squadra}){prezzo}</li>')
-        html_parts.append('</ol></div>')
+            html_parts.append(f'<div class="mini-card">{bff.render_card_html(ROLE, r, "in_season", card_pool, False)}</div>')
+        html_parts.append('</div></div>')
     html_parts.append('</div>')
     return "\n".join(lines), "".join(html_parts)
 
@@ -1287,11 +1298,14 @@ def _ottimizza_lineup_min_prezzo(shape, role_data, prezzi, max_classic, l10_cap=
             'l10_totale': l10_totale, 'l10_cap': l10_cap}
 
 
-def _render_cheapest(label, risultato):
-    """Testo + HTML per una formazione 'cheapest' -- non riusa format_lineup/
-    render_lineup_html (quelle si aspettano formazione come lista di (slot,
-    row, ctype) prodotta da bff.build_one_lineup, qui la struttura 'picks'
-    e' diversa) -- rendering minimale dedicato."""
+def _render_cheapest(bff, card_pool, label, risultato):
+    """Testo + HTML per una formazione 'cheapest'. Il testo non riusa
+    format_lineup (struttura 'picks' diversa da quella di bff.build_one_
+    lineup) -- rendering minimale dedicato. L'HTML invece (31/07, richiesta
+    esplicita utente: "mostrami la carta") riusa DAVVERO bff.render_card_html
+    per ogni pick, con la rarita' VERA scelta dall'ottimizzatore (in_season/
+    classic, non sempre 'in_season' come per gli esclusi) dentro lo stesso
+    wrapper '.mini-card' rimpicciolito di _blocco_top_esclusi."""
     if risultato is None:
         testo = (f"--- Cheapest — {label} ---\n"
                  "budget esiguo per generare la formazione (nessuna combinazione trovata "
@@ -1301,7 +1315,7 @@ def _render_cheapest(label, risultato):
         return testo, html
 
     righe = [f"--- Cheapest — {label} ---"]
-    html_righe = [f'<div class="esclusi-panel"><h3>Cheapest — {label}</h3><ul>']
+    html_righe = [MINI_CARD_CSS, f'<div class="esclusi-panel"><h3>Cheapest — {label}</h3><div class="mini-card-strip">']
     for slot in ('GK', 'DEF', 'MID', 'FWD', 'EXTRA'):
         entry = risultato['picks'].get(slot)
         if not entry:
@@ -1314,24 +1328,22 @@ def _render_cheapest(label, risultato):
             etichetta_slot = slot
         tag = " [CLASSIC]" if rarita == 'classic' else ""
         righe.append(f"{etichetta_slot:<12} {row['slug']}: {row['atteso']} pt{tag} -- {prezzo:.2f}EUR")
-        link = f'https://sorare.com/it/football/players/{row["slug"]}'
-        # Colore esplicito (31/07, stesso fix di _blocco_top_esclusi): il blu
-        # default del browser era illeggibile su sfondo scuro.
+        card_html = bff.render_card_html(etichetta_slot, row, rarita, card_pool, False)
         html_righe.append(
-            f'<li><a href="{link}" target="_blank" rel="noopener" '
-            f'style="color:var(--gold);text-decoration:none">{row["slug"]}</a> '
-            f'({etichetta_slot}): {row["atteso"]} pt{tag} -- {prezzo:.2f}EUR</li>')
+            f'<div class="mini-card">{card_html}'
+            f'<div class="pcard-prezzo" style="font-size:0.78rem;font-weight:700;'
+            f'color:var(--gold);margin-top:4px">{prezzo:.2f}EUR</div></div>')
     l10_cap = risultato.get('l10_cap')
     l10_nota = f" / cap {l10_cap:.0f}" if l10_cap is not None else " (nessun cap)"
     righe.append(f"TOTALE: {risultato['punteggio_totale']} pt -- {risultato['prezzo_totale']:.2f}EUR")
     righe.append(f"L10 combinata: {risultato['l10_totale']:.1f}{l10_nota}")
-    html_righe.append(f"</ul><p><strong>TOTALE: {risultato['punteggio_totale']} pt -- "
+    html_righe.append(f"</div><p><strong>TOTALE: {risultato['punteggio_totale']} pt -- "
                        f"{risultato['prezzo_totale']:.2f}EUR</strong></p>"
                        f"<p>L10 combinata: {risultato['l10_totale']:.1f}{l10_nota}</p></div>")
     return "\n".join(righe), "".join(html_righe)
 
 
-def blocco_cheapest(role_data_dict, prezzi, l10_map):
+def blocco_cheapest(bff, card_pool, role_data_dict, prezzi, l10_map):
     """Genera le 3 varianti CHEAPEST_CONFIGS sullo stesso role_data_dict
     (dict ROLE -> righe, gia' con prezzi attaccati da _attach_prezzi) e
     ritorna (testo, html) concatenati. shape fissa GK/DEF/MID/FWD + 1 EXTRA
@@ -1340,7 +1352,7 @@ def blocco_cheapest(role_data_dict, prezzi, l10_map):
     testi, html_parti = [], []
     for label, max_classic, l10_cap in CHEAPEST_CONFIGS:
         risultato = _ottimizza_lineup_min_prezzo(shape, role_data_dict, prezzi, max_classic, l10_cap, l10_map)
-        t, h = _render_cheapest(label, risultato)
+        t, h = _render_cheapest(bff, card_pool, label, risultato)
         testi.append(t)
         html_parti.append(h)
     return "\n\n".join(testi), "".join(html_parti)
@@ -1556,13 +1568,13 @@ def costruisci_formazione_contender(leghe, count):
     generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
     lineup_blocks = [_annota_prezzi_testo(b, prezzi) for b in lineup_blocks]
 
-    testo_esclusi, html_esclusi = _blocco_top_esclusi(merged_role_data, card_pool)
+    testo_esclusi, html_esclusi = _blocco_top_esclusi(bff, card_pool, merged_role_data)
     lineup_blocks.append(testo_esclusi)
     lineup_html_blocks.append(html_esclusi)
 
     if GENERA_CHEAPEST:
         l10_map_cheapest = fetch_l10_per_ruoli(merged_role_data)
-        testo_cheap, html_cheap = blocco_cheapest(merged_role_data, prezzi, l10_map_cheapest)
+        testo_cheap, html_cheap = blocco_cheapest(bff, card_pool, merged_role_data, prezzi, l10_map_cheapest)
         lineup_blocks.append(testo_cheap)
         lineup_html_blocks.append(html_cheap)
 
