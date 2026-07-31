@@ -718,15 +718,38 @@ def formatta_report_html(lega, risultati, n_backup):
 # formazione con sinergie/combinazioni come fa il tool unificato, non un
 # elenco top-5 per ruolo") ---------------------------------------------
 #
-# Non duplica NULLA della logica di scoring/sinergia/anti-stack/captain: usa
-# DAVVERO CardPool/FORMATION_SHAPES/generate_lineups_for_type/render_report_
-# html di formazione_mls/build_formazione_finale.py (importato dinamicamente,
-# stesso schema di generatore_formazioni/build_formazione_globale.py) --
-# quelle funzioni sono lega-agnostiche (operano su role_data/card_pool
-# passati come argomenti), solo ROLES/DISCOVERY_DIRS/main() in fondo al file
-# sono specifici MLS e qui non li usiamo.
+# FIX 31/07 (audit di allineamento, richiesto dall'utente prima di fidarsi
+# dei risultati): questa funzione chiamava PRIMA bff.generate_lineups_for_type
+# di formazione_mls/build_formazione_finale.py -- che il file STESSO segnala
+# in un commento (righe ~1748) come "!!! NON USATA IN PRODUZIONE (accertato
+# 31/07, audit completo) !!!": tre parametri diversi da quelli reali per le
+# formazioni IN_SEASON --
+#   - variance_mode=True sempre (produzione: False per MLS/KLEAGUE_IN_SEASON,
+#     VARIANCE_MODE_TYPES le esclude esplicitamente)
+#   - apply_positive_synergy=True sulla prima formazione quando ne sono
+#     richieste 2+ (produzione: SEMPRE False per le In Season)
+#   - synergy_bonus_dict=IN_SEASON_SYNERGY_BONUS_BY_PAIR passato esplicito
+#     (produzione non lo passa MAI -- vedi commento IN_SEASON_SYNERGY_
+#     BONUS_BY_PAIR "NON USATA IN PRODUZIONE")
+# Risultato: Best Five poteva scegliere/ordinare i candidati in modo diverso
+# da quello che il tool unificato sceglierebbe DAVVERO con lo stesso pool.
 #
-# La differenza con la produzione e' TUTTA nella CardPool: invece delle
+# Ora si riusa DAVVERO l'orchestratore di produzione (generatore_formazioni/
+# build_formazione_globale.py, lo stesso file che gira in
+# formazione_giornata.yml) importato dinamicamente come modulo a se' --
+# stessa tecnica di importlib gia' usata li' per formazione_mls/build_
+# formazione_finale.py. Si chiama la SUA generate_lineups_for_type(tipo,
+# count, role_data, pools, card_pool) con tipo='MLS_IN_SEASON'/'KLEAGUE_
+# IN_SEASON' (leghe dedicate) o l'Arena dedicata della lega per le altre --
+# stessi nomi di tipo, stessi dizionari (L10_CAP_BY_TYPE, STACK_GUARD_TYPES,
+# VARIANCE_MODE_TYPES, CHECK_CAP260_TYPES, XP_BONUS_TYPES,
+# CAPTAIN_BONUS_BY_TYPE) che leggerebbe la pipeline reale. Il rendering
+# (format_lineup/render_lineup_html) usa lo STESSO'bff' interno al modulo
+# 'gg' (non un'istanza separata) perche' e' li' che generatore_formazioni/
+# build_formazione_globale.py registra CAPTAIN_BONUS_BY_TYPE['MLS_IN_SEASON']
+# ecc. (build_formazione_finale.py da solo conosce solo 'IN_SEASON').
+#
+# La differenza con la produzione resta SOLO nella CardPool: invece delle
 # copie REALMENTE possedute (da player_card_counts.json), si passa una
 # CardPool VUOTA (CardPool({}, names=...)) -- CardPool._total_for() ripiega
 # gia' da solo su 1 copia IN_SEASON virtuale per qualunque slug non
@@ -735,40 +758,55 @@ def formatta_report_html(lega, risultati, n_backup):
 # meccanismo per il bonus XP: power_bonus_fraction() ritorna 0.0 senza un
 # breakdown noto -- coerente con la richiesta precedente dell'utente di
 # vedere lo score GREZZO, senza bonus (vedi messaggio 30/07 alla sessione
-# "Riassunto evoluzione modello predittivo").
+# "Riassunto evoluzione modello predittivo"), e comunque IDENTICO a come la
+# produzione mostra il numero (apply_xp_bonus=False SOLO nel rendering,
+# vedi FASE 2 di build_formazione_globale.py).
 
-def _import_bff():
-    path = os.path.join(REPO_ROOT, 'formazione_mls', 'build_formazione_finale.py')
-    spec = importlib.util.spec_from_file_location('bff_best_five', path)
+def _import_gg():
+    path = os.path.join(REPO_ROOT, 'generatore_formazioni', 'build_formazione_globale.py')
+    spec = importlib.util.spec_from_file_location('gg_best_five', path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
+def _tipo_per_lega(gg, lega):
+    """Nome del tipo FORMATION_SHAPES di produzione per la lega scelta:
+    'MLS_IN_SEASON'/'KLEAGUE_IN_SEASON' per le due leghe dedicate (stessa
+    competizione In Season che gioca l'utente), l'Arena dedicata (cap L10
+    260 obbligatorio) per qualunque altra lega -- non esiste un tipo
+    'In Season' generico per le leghe non dedicate in produzione."""
+    if lega in gg.DEDICATED_LEAGUES:
+        return f'{lega.upper()}_IN_SEASON'
+    return gg.arena_type(lega)
+
+
 def costruisci_formazione_vera(lega, count):
-    """Genera fino a 'count' formazioni IN_SEASON (GK/DEF/MID/FWD/EXTRA, con
-    sinergie/anti-stack/captain -- IDENTICO al tool unificato) sul pool
-    GLOBALE della lega. Il conteggio 'count' fa le veci del vecchio
-    'n_backup': con la CardPool sintetica (1 copia virtuale a testa) la
-    2a/3a formazione non puo' riusare un giocatore gia' schierato nella
-    1a, quindi sono automaticamente alternative complete con giocatori
-    diversi -- lo stesso ruolo di "backup" di prima, ma a livello di
-    formazione intera invece che di singolo slot.
+    """Genera fino a 'count' formazioni (GK/DEF/MID/FWD/EXTRA, con
+    sinergie/anti-stack/captain -- IDENTICO al tool unificato, stessa
+    funzione di produzione richiamata qui) sul pool GLOBALE della lega. Il
+    conteggio 'count' fa le veci del vecchio 'n_backup': con la CardPool
+    sintetica (1 copia virtuale a testa) la 2a/3a formazione non puo'
+    riusare un giocatore gia' schierato nella 1a, quindi sono
+    automaticamente alternative complete con giocatori diversi -- lo
+    stesso ruolo di "backup" di prima, ma a livello di formazione intera
+    invece che di singolo slot.
 
     Richiede che i consiglio_*.txt esistano gia' per tutti e 4 i ruoli
     (li scrive esegui_consiglio, chiamato qui per ciascun ruolo)."""
-    bff = _import_bff()
+    gg = _import_gg()
+    bff = gg.bff  # STESSA istanza usata da produzione per registrare CAPTAIN_BONUS_BY_TYPE/CAP260 ecc.
 
-    role_data = {}
+    role_data_lega = {}
     for ruolo, ROLE in (('gk', 'GK'), ('def', 'DEF'), ('mid', 'MID'), ('fwd', 'FWD')):
         consiglio_path = esegui_consiglio(lega, ruolo)
         if consiglio_path and os.path.exists(consiglio_path):
-            role_data[ROLE] = bff.parse_consiglio(consiglio_path)
+            role_data_lega[ROLE] = bff.parse_consiglio(consiglio_path)
         else:
             log(f"[{ruolo}] Nessun consiglio disponibile, ruolo vuoto per la formazione vera.")
-            role_data[ROLE] = []
+            role_data_lega[ROLE] = []
 
-    mancanti = [r for r in bff.ROLES if not role_data.get(r)]
+    mancanti = [r for r in gg.ROLES if not role_data_lega.get(r)]
     if mancanti:
         log(f"ATTENZIONE: ruoli senza candidati: {mancanti} — la formazione potrebbe non essere generabile.")
 
@@ -794,10 +832,47 @@ def costruisci_formazione_vera(lega, count):
                 names.update(json.load(f))
 
     card_pool = bff.CardPool({}, names=names)
+
+    tipo = _tipo_per_lega(gg, lega)
+    role_data = {lega: role_data_lega}
+    pools = {lega: {role: gg._NoFilterPool(role, lega, role_data_lega[role]) for role in gg.ROLES}}
+
+    # Chiamata DAVVERO alla generate_lineups_for_type di produzione (stessa
+    # funzione che gira in formazione_giornata.yml) -- legge da soli i
+    # dizionari L10_CAP_BY_TYPE/STACK_GUARD_TYPES/VARIANCE_MODE_TYPES/
+    # CHECK_CAP260_TYPES/XP_BONUS_TYPES di 'gg' in base a 'tipo', nessun
+    # parametro riscritto qui: se domani la produzione cambia un flag per
+    # MLS_IN_SEASON/KLEAGUE_IN_SEASON, Best Five lo eredita automaticamente.
+    all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
+
     lineup_blocks, lineup_html_blocks = [], []
-    generated, totale = bff.generate_lineups_for_type(
-        'IN_SEASON', count, role_data, card_pool, lineup_blocks, lineup_html_blocks, print_output=False)
-    log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica).")
+    generated, totale = 0, 0
+    for r in all_results:
+        if 'error' in r:
+            lineup_blocks.append(r['error'])
+            lineup_html_blocks.append(f'<p class="error-block">{r["error"]}</p>')
+            continue
+        block_text, punti = bff.format_lineup(
+            r['label'], r['idx'], r['formazione'], card_pool, l10_cap=r['l10_cap'],
+            l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
+            check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
+            avoid_captain_slugs=r['avoid_captain_slugs'])
+        lineup_blocks.append(block_text)
+        # apply_xp_bonus=False (30/07, IDENTICO alla produzione, vedi FASE 2 di
+        # build_formazione_globale.py): il numero mostrato resta sempre lo
+        # score_atteso GREZZO, la selezione (gia' avvenuta sopra) puo' aver
+        # usato lo sort_score con bonus dove previsto -- qui e' comunque 0.0
+        # per ogni carta (CardPool sintetica senza breakdown power reale).
+        lineup_html_blocks.append(bff.render_lineup_html(
+            r['label'], r['idx'], r['formazione'], card_pool, l10_cap=r['l10_cap'],
+            l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
+            check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
+            avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=False))
+        generated += 1
+        totale += punti
+
+    log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica, "
+        f"tipo={tipo}, stesso motore della produzione).")
     return bff, generated, totale, lineup_blocks, lineup_html_blocks
 
 
