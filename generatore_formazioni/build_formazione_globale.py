@@ -41,6 +41,7 @@ import re
 import sys
 import copy
 import glob
+import json
 import datetime
 import importlib.util
 from collections import defaultdict
@@ -857,6 +858,141 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
 _slot_role = bff._slot_role  # canonico, usato per _apply_xp_bonus/altre logiche
 
 
+# --- Struttura a sezioni/tab (31/07, richiesta esplicita utente: la stessa
+# navigazione gia' presente in Best Five, ma con le categorie di questo tool)
+#
+# Le formazioni OPZIONALI stanno in una sezione propria a prescindere dal
+# tipo: sono "extra generate col pool residuo", quindi la distinzione utile
+# per l'utente e' proprio richiesta-vs-opzionale, non il campionato.
+SEZIONI_REPORT = (
+    ('in_season', 'In Season'),
+    ('arene_dedicate', 'Arene dedicate'),
+    ('arene_allstars', 'Arene All Stars'),
+    ('allstars', 'All Stars'),
+    ('under23', 'Under 23'),
+    ('opzionali', 'Opzionali'),
+)
+
+
+def _sezione_di(tipo, extra=False):
+    """Sezione di appartenenza di una formazione, dal suo tipo."""
+    if extra:
+        return 'opzionali'
+    if tipo in IN_SEASON_TYPES:
+        return 'in_season'
+    if tipo == 'ALLSTARS_U23':
+        return 'under23'
+    if tipo == 'ALLSTARS':
+        return 'allstars'
+    if tipo.startswith('ARENA_ALLSTARS'):
+        return 'arene_allstars'
+    if _is_arena_type(tipo):
+        return 'arene_dedicate'
+    return 'opzionali'
+
+
+TAB_SEZIONI_SNIPPET = r"""
+<style>
+  .bf-topbar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    margin: 0 0 20px 0; padding-top: 6px;
+  }
+  .bf-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .bf-tabs::-webkit-scrollbar { display: none; }
+  .bf-tab {
+    appearance: none; border: none; background: none; color: var(--muted);
+    font-size: 0.84rem; font-weight: 600; padding: 10px 16px 12px; cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit;
+    transition: color 0.15s ease;
+  }
+  .bf-tab:hover { color: var(--text); }
+  .bf-tab[aria-current="true"] { color: var(--text); border-bottom-color: var(--gold); }
+  .bf-tab .bf-count { color: var(--muted-2); font-weight: 700; margin-left: 5px; }
+</style>
+<script>
+(function () {
+  var SEZIONI = __SEZIONI__;
+  var blocchi = Array.prototype.slice.call(document.querySelectorAll('[data-sezione]'));
+  if (!blocchi.length) return;
+
+  var gruppi = {};
+  blocchi.forEach(function (b) {
+    var s = b.getAttribute('data-sezione');
+    (gruppi[s] = gruppi[s] || []).push(b);
+  });
+
+  var bar = document.createElement('div');
+  bar.className = 'bf-topbar';
+  var nav = document.createElement('nav');
+  nav.className = 'bf-tabs';
+  bar.appendChild(nav);
+
+  // Il separatore delle OPZIONALI e' un blocco a se' (non ha data-sezione):
+  // va mostrato solo quando quelle formazioni sono visibili.
+  var divisore = null;
+  document.querySelectorAll('div').forEach(function (d) {
+    if (!divisore && d.textContent.indexOf('Formazioni OPZIONALI (extra') === 0) { divisore = d; }
+  });
+
+  function mostra(vista, btn) {
+    Array.prototype.slice.call(nav.children).forEach(function (b) { b.removeAttribute('aria-current'); });
+    if (btn) btn.setAttribute('aria-current', 'true');
+    blocchi.forEach(function (b) {
+      var s = b.getAttribute('data-sezione');
+      b.style.display = (vista === 'tutto' || vista === s) ? '' : 'none';
+    });
+    if (divisore) {
+      divisore.style.display = (vista === 'tutto' || vista === 'opzionali') ? '' : 'none';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function tab(id, label, n) {
+    var b = document.createElement('button');
+    b.className = 'bf-tab';
+    b.type = 'button';
+    b.textContent = label;
+    if (n) {
+      var sp = document.createElement('span');
+      sp.className = 'bf-count';
+      sp.textContent = n;
+      b.appendChild(sp);
+    }
+    b.addEventListener('click', function () { mostra(id, b); });
+    nav.appendChild(b);
+    return b;
+  }
+
+  var primo = tab('tutto', 'Tutte', blocchi.length);
+  SEZIONI.forEach(function (s) {
+    if ((gruppi[s[0]] || []).length) { tab(s[0], s[1], gruppi[s[0]].length); }
+  });
+
+  var ancora = document.querySelector('p.subhead') || document.querySelector('h1');
+  if (ancora && ancora.parentNode) {
+    ancora.parentNode.insertBefore(bar, ancora.nextSibling);
+  } else {
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+  mostra('tutto', primo);
+})();
+</script>
+"""
+
+
+def aggiungi_tab_sezioni(html_report):
+    """Barra di tab per filtrare le formazioni per categoria -- "Tutte" mostra
+    tutto (default), le altre isolano una sola sezione. Additiva, iniettata in
+    coda: il template resta condiviso e invariato."""
+    snippet = TAB_SEZIONI_SNIPPET.replace('__SEZIONI__', json.dumps([list(s) for s in SEZIONI_REPORT]))
+    if '</body>' in html_report:
+        return html_report.replace('</body>', snippet + '</body>')
+    return html_report + snippet
+
+
 # --- Spunta "formazione gia' schierata" (31/07, richiesta esplicita utente:
 # "un quadratino che se cliccato si illumina, lo flaggo io dopo che schiero
 # manualmente su Sorare cosi' me lo ricordo") -------------------------------
@@ -1169,6 +1305,12 @@ def main():
                 )
                 _extra_divider_done = True
             lineup_html = f'<div style="font-size:0.85em;opacity:0.92">{lineup_html}</div>'
+        # Sezione di appartenenza (31/07, richiesta esplicita utente: struttura
+        # a colonne come in Best Five). Marcata QUI, lato server, dove il tipo
+        # e' noto con certezza -- molto piu' solido che farla indovinare al JS
+        # dal testo del titolo.
+        lineup_html = (f'<div data-sezione="{_sezione_di(r["tipo"], r.get("extra"))}">'
+                        f'{lineup_html}</div>')
         lineup_html_blocks.append(lineup_html)
 
     # Giocatori candidati (idonei per starter-odds + finestra giornata, vedi
@@ -1354,6 +1496,7 @@ def main():
         lineup_html_blocks.insert(0, capienza_html)
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)
     html_text = aggiungi_flag_schierate(html_text)
+    html_text = aggiungi_tab_sezioni(html_text)
     html_path = os.path.join(OUTPUT_DIR, f'generatore_formazioni{run_suffix}_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_text)

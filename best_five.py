@@ -2079,16 +2079,26 @@ def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
     per ogni pick, con la rarita' VERA scelta dall'ottimizzatore (in_season/
     classic, non sempre 'in_season' come per gli esclusi) dentro lo stesso
     wrapper '.mini-card' rimpicciolito di _blocco_top_esclusi."""
-    if risultato is None:
-        testo = (f"--- {titolo} — {label} ---\n"
-                 "budget esiguo per generare la formazione (nessuna combinazione trovata "
-                 "nel pool eleggibile, anche senza limite di prezzo).")
+    if risultato is None or risultato.get('impossibile'):
+        # Il motivo VERO, non un generico "budget esiguo" (31/07: l'utente ha
+        # visto quel messaggio su K League e ha pensato ci fosse un tetto di
+        # spesa, mentre la formazione non usciva perche' NESSUNA combinazione
+        # arrivava al punteggio richiesto -- causa completamente diversa).
+        if risultato and risultato.get('motivo'):
+            motivo = risultato['motivo']
+        else:
+            motivo = ("nessuna combinazione trovata nel pool eleggibile "
+                      "(candidati insufficienti per qualche ruolo, o prezzi/L10 non noti)")
+        testo = f"--- {titolo} — {label} ---\nNON GENERATA: {motivo}."
         html = (f'<div class="esclusi-panel"><h3>{titolo} — {label}</h3>'
-                f'<p class="empty">Budget esiguo per generare la formazione.</p></div>')
+                f'<p class="empty">Non generata: {motivo}.</p></div>')
         return testo, html
 
-    righe = [f"--- {titolo} — {label} ---"]
-    html_righe = [MINI_CARD_CSS, f'<div class="esclusi-panel"><h3>{titolo} — {label}</h3><div class="mini-card-strip">']
+    nota = risultato.get('nota')
+    suffisso = f" [{nota}]" if nota else ""
+    righe = [f"--- {titolo} — {label} ---{suffisso}"]
+    html_nota = (f'<p class="empty" style="margin:2px 0 8px">{nota}</p>' if nota else '')
+    html_righe = [MINI_CARD_CSS, f'<div class="esclusi-panel"><h3>{titolo} — {label}</h3>{html_nota}<div class="mini-card-strip">']
     for slot in ('GK', 'DEF', 'MID', 'FWD', 'EXTRA'):
         entry = risultato['picks'].get(slot)
         if not entry:
@@ -2259,10 +2269,21 @@ def _ottimizza_lineup_target(shape, role_data, prezzi, max_classic, l10_cap, l10
         return None
     ammesse = [c for c in complete if c[0] >= target]
     if not ammesse:
+        # RIPIEGO (31/07, richiesta esplicita utente: "se non arriva a 300
+        # fagli generare comunque quella con pr totale piu' alto on a
+        # budget"): invece di non mostrare nulla si prende il massimo
+        # punteggio raggiungibile, e fra le formazioni che lo raggiungono la
+        # piu' economica. Cosi' su una lega "corta" come K League -- che sotto
+        # cap 260 non arriva a 300 -- si vede comunque la proposta migliore
+        # possibile, con l'etichetta che dice chiaramente che il target non
+        # era raggiungibile.
         massimo = max(c[0] for c in complete)
-        log(f"[target {target:.0f}] Nessuna formazione arriva a {target:.0f} pt sotto cap "
-            f"{l10_cap:.0f}: il massimo raggiungibile e' {massimo:.0f} pt.")
-        return None
+        migliore = min((c for c in complete if c[0] == massimo), key=lambda c: c[1])
+        ris = _risultato_da(migliore, l10_cap)
+        ris['nota'] = (f"target {target:.0f} pt non raggiungibile sotto cap {l10_cap:.0f} "
+                       f"con questo pool: mostrata la migliore possibile ({massimo:.0f} pt)")
+        log(f"[target {target:.0f}] {ris['nota']}")
+        return ris
     migliore = min(ammesse, key=lambda c: (c[1], -c[0]))
     return _risultato_da(migliore, l10_cap)
 
