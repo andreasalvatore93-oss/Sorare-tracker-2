@@ -46,6 +46,7 @@ import json
 import glob
 import time
 import base64
+import shutil
 import subprocess
 import datetime
 import importlib.util
@@ -568,7 +569,25 @@ def esegui_consiglio(lega, ruolo):
     # Il path stampato e' relativo alla cwd del SUBPROCESS (REPO_ROOT), non
     # necessariamente alla cwd di QUESTO processo (es. nei test) -- risolto
     # esplicitamente per evitare un FileNotFoundError silenzioso.
-    return os.path.join(REPO_ROOT, m.group(1))
+    consiglio_path = os.path.join(REPO_ROOT, m.group(1))
+    return _isola_output_best_five(lega, ruolo, consiglio_path, slugs)
+
+
+def _isola_output_best_five(lega, ruolo, consiglio_path, slugs):
+    iso_dir = os.path.join(REPO_ROOT, f'formazione_{lega}', 'output', 'best_five', f'_raw_{ruolo}')
+    os.makedirs(iso_dir, exist_ok=True)
+    shared_dir = output_dir_per_ruolo(lega, ruolo)
+
+    dest_consiglio = consiglio_path
+    if consiglio_path and os.path.exists(consiglio_path):
+        dest_consiglio = os.path.join(iso_dir, os.path.basename(consiglio_path))
+        shutil.move(consiglio_path, dest_consiglio)
+
+    for slug in slugs:
+        for p in glob.glob(os.path.join(shared_dir, f'prediction_{slug}_*.txt')):
+            shutil.move(p, os.path.join(iso_dir, os.path.basename(p)))
+
+    return dest_consiglio
 
 
 def parse_consiglio_output(path):
