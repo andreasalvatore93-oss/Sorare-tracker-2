@@ -327,6 +327,52 @@ PREDIZIONI_MAX_ORE = float(os.environ.get('BEST_FIVE_PREDIZIONI_MAX_ORE', '72'))
 
 _DATA_PREDIZIONE_RE = re.compile(r'^Data:\s+(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\s*$', re.MULTILINE)
 
+# Finestra della GIORNATA corrente, risolta una volta sola per run.
+# 31/07 (osservazione dell'utente): "piu' che una finestra temporale bisognava
+# agganciarlo alla fine della gw, come abbiamo fatto per il generatore". Vero:
+# 'kickoff ancora futuro' + un tetto di ore e' un'approssimazione, mentre la
+# giornata ha un inizio e una fine ESATTI. Con l'aggancio alla fixture una
+# predizione vale se e solo se la partita che predice sta DENTRO questa
+# giornata -- una predizione per la giornata successiva non viene riusata per
+# quella corrente, e alla chiusura della giornata scade da sola senza che
+# nessuna soglia debba indovinare quando.
+# Nessun input GAMEWEEK qui (l'utente ha scelto di non aggiungerlo a Best
+# Five): risolvi_fixture() senza GAMEWEEK/FIXTURE_SLUG risolve da sola la
+# giornata in corso o la prossima, che e' esattamente quella per cui Best Five
+# sta lavorando. Una sola query per run.
+_FINESTRA_GW = [None]  # None = non ancora risolta; False = risoluzione fallita
+
+
+def _finestra_giornata():
+    """(inizio, fine) ISO della giornata corrente, o None se non risolvibile
+    (nessun cookie, rete assente, run locale di test) -- in quel caso si
+    ricade sulla regola 'kickoff ancora futuro' + tetto di ore."""
+    if _FINESTRA_GW[0] is not None:
+        return _FINESTRA_GW[0] or None
+    try:
+        spec = importlib.util.spec_from_file_location(
+            'discovery_fixture_best_five', os.path.join(REPO_ROOT, 'discovery_fixture.py'))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        fx = mod.risolvi_fixture()
+    except Exception as e:
+        log(f"[predizioni] finestra giornata non risolvibile ({e!r}) -- "
+            f"ricado su 'kickoff futuro' + tetto {PREDIZIONI_MAX_ORE:g}h.")
+        _FINESTRA_GW[0] = False
+        return None
+    if not fx:
+        _FINESTRA_GW[0] = False
+        return None
+    inizio = (fx.get('startDate') or '')[:19]
+    fine = (fx.get('endDate') or '')[:19]
+    if not inizio or not fine:
+        _FINESTRA_GW[0] = False
+        return None
+    log(f"[predizioni] giornata corrente: {fx.get('slug')} (gameweek "
+        f"{fx.get('seasonGameWeek')}) dal {inizio} al {fine} -- riuso ancorato a questa.")
+    _FINESTRA_GW[0] = (inizio, fine)
+    return _FINESTRA_GW[0]
+
 
 def _predizione_riutilizzabile(lega, ruolo, slug, adesso=None):
     """True se esiste gia' una predizione valida per la PROSSIMA partita di
@@ -342,16 +388,27 @@ def _predizione_riutilizzabile(lega, ruolo, slug, adesso=None):
     if not candidati:
         return False, None, None
     adesso = adesso or datetime.datetime.utcnow()
+    finestra = _finestra_giornata()
     for path in sorted(candidati, key=_timestamp_da_nome_file, reverse=True):
-        eta_ore = (adesso - _timestamp_da_nome_file(path)).total_seconds() / 3600.0
-        if eta_ore > PREDIZIONI_MAX_ORE:
-            continue
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 m = _DATA_PREDIZIONE_RE.search(f.read())
         except OSError:
             continue
         if not m:
+            continue
+        if finestra:
+            # Aggancio alla GIORNATA (preferito): vale se e solo se la partita
+            # predetta cade dentro la finestra reale della fixture corrente.
+            inizio, fine = finestra
+            ko19 = m.group(1) if len(m.group(1)) > 10 else m.group(1) + 'T00:00'
+            ko19 = ko19[:19]
+            if inizio[:16] <= ko19[:16] <= fine[:16]:
+                return True, m.group(1), path
+            continue
+        # Fallback (giornata non risolvibile): kickoff ancora futuro + tetto
+        # di eta' sul file.
+        if (adesso - _timestamp_da_nome_file(path)).total_seconds() / 3600.0 > PREDIZIONI_MAX_ORE:
             continue
         try:
             kickoff = datetime.datetime.fromisoformat(m.group(1))
@@ -1042,6 +1099,11 @@ PREZZI_CACHE_TTL_ORE = float(os.environ.get('BEST_FIVE_PREZZI_CACHE_TTL_ORE', st
 # la perdita a pochi giocatori.
 PREZZI_CACHE_CHUNK = int(os.environ.get('BEST_FIVE_PREZZI_CACHE_CHUNK', '25'))
 
+# Ondate di 429 dopo le quali il fetch prezzi si arrende (0 = mai). Vedi il
+# commento nel ciclo: ha senso solo perche' cache prezzi e predizioni ora si
+# accumulano fra run, quindi arrendersi presto non spreca il lavoro fatto.
+MAX_ONDATE_429 = int(os.environ.get('BEST_FIVE_MAX_ONDATE_429', '2'))
+
 
 def _prezzi_cache_leggi():
     if not os.path.exists(PREZZI_CACHE_PATH):
@@ -1177,6 +1239,27 @@ def fetch_prezzi(slugs):
                     f"(cache salvata, {len(cache)} voci totali).")
             elif fatti % 20 == 0 or fatti == len(da_interrogare):
                 log(f"[prezzi] [{fatti}/{len(da_interrogare)}] fatto.")
+
+            # RESA ANTICIPATA dopo N ondate di 429 (31/07, osservazione
+            # dell'utente: "con la cache delle predizioni le puoi far morire
+            # dopo un paio di 429 ormai"). Ha senso solo ORA che il lavoro si
+            # accumula: ogni ondata costa 45s di pausa globale e le successive
+            # arrivano sempre piu' fitte, quindi insistere sullo stesso run
+            # rende pochissimo. Meglio chiudere con quello che si e' preso --
+            # gia' salvato a chunk -- e lasciare che sia la run successiva a
+            # continuare da li', partendo con meta' pool gia' in cache. Il
+            # report esce comunque: i prezzi sono un'informazione accessoria,
+            # le formazioni si generano lo stesso (chi resta senza prezzo
+            # compare come 'N/D').
+            if MAX_ONDATE_429 > 0 and bp._pace_ondate[0] >= MAX_ONDATE_429:
+                for f in futures:
+                    f.cancel()
+                _prezzi_cache_scrivi(cache)
+                log(f"[prezzi] RESA ANTICIPATA dopo {bp._pace_ondate[0]} ondate di 429: "
+                    f"{fatti}/{len(da_interrogare)} presi e salvati in cache "
+                    f"({len(cache)} voci totali). Il resto lo prendera' la prossima run, "
+                    f"che ripartira' da qui invece che da zero.")
+                break
     _prezzi_cache_scrivi(cache)
     return prezzi
 
