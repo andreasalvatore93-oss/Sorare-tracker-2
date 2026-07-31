@@ -1276,7 +1276,15 @@ def _ottimizza_lineup_min_prezzo(shape, role_data, prezzi, max_classic, l10_cap=
     if migliore is None:
         return None
     prezzo_tot, score_tot, picks = migliore
-    return {'prezzo_totale': prezzo_tot, 'punteggio_totale': score_tot, 'picks': picks}
+    # L10 combinata REALE (31/07, richiesta esplicita utente: "stampa il
+    # totale degli L10, cosi' per sicurezza" -- il vincolo era gia' rispettato
+    # internamente dal DP, qui lo si rende visibile per verifica).
+    l10_totale = 0.0
+    for slot, entry in picks.items():
+        row = entry[1] if slot == 'EXTRA' else entry[0]
+        l10_totale += (l10_map or {}).get(row['slug']) or 0.0
+    return {'prezzo_totale': prezzo_tot, 'punteggio_totale': score_tot, 'picks': picks,
+            'l10_totale': l10_totale, 'l10_cap': l10_cap}
 
 
 def _render_cheapest(label, risultato):
@@ -1313,9 +1321,13 @@ def _render_cheapest(label, risultato):
             f'<li><a href="{link}" target="_blank" rel="noopener" '
             f'style="color:var(--gold);text-decoration:none">{row["slug"]}</a> '
             f'({etichetta_slot}): {row["atteso"]} pt{tag} -- {prezzo:.2f}EUR</li>')
+    l10_cap = risultato.get('l10_cap')
+    l10_nota = f" / cap {l10_cap:.0f}" if l10_cap is not None else " (nessun cap)"
     righe.append(f"TOTALE: {risultato['punteggio_totale']} pt -- {risultato['prezzo_totale']:.2f}EUR")
+    righe.append(f"L10 combinata: {risultato['l10_totale']:.1f}{l10_nota}")
     html_righe.append(f"</ul><p><strong>TOTALE: {risultato['punteggio_totale']} pt -- "
-                       f"{risultato['prezzo_totale']:.2f}EUR</strong></p></div>")
+                       f"{risultato['prezzo_totale']:.2f}EUR</strong></p>"
+                       f"<p>L10 combinata: {risultato['l10_totale']:.1f}{l10_nota}</p></div>")
     return "\n".join(righe), "".join(html_righe)
 
 
