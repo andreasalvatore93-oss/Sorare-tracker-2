@@ -934,6 +934,47 @@ def extract_level_score(detail):
 LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 LEVEL_SCORE_POISSON_K_MAX = 6
 
+# Shrinkage del fattore casa/trasferta del PORTIERE (ALZATO 5.0->20.0 il
+# 30/07 dopo il caso reale Turner/Sirois, validato con backtest walk-forward).
+# UNIFICATO a livello di modulo il 31/07 (audit): il valore era ripetuto in
+# due punti -- dentro compute_score_atteso_gk (quello che entra nello score) e
+# inline in build_prediction (quello mostrato nel report) -- e andavano tenuti
+# allineati a mano, tanto che il cambio del 30/07 richiese un replace_all. Se
+# fossero divergiti, il report avrebbe mostrato un fattore diverso da quello
+# davvero applicato al punteggio.
+SPLIT_SHRINK_K_GK = 20.0
+
+
+def venue_factor_gk(scores, is_home_flags, target_is_home, weights):
+    """Fattore casa/trasferta del portiere: rapporto fra la media dei punteggi
+    nel contesto della prossima partita e la media generale, tirato verso 1.0
+    proporzionalmente a quante partite ci sono in quel contesto (shrinkage,
+    vedi SPLIT_SHRINK_K_GK).
+
+    A differenza degli altri ruoli il portiere lo calcola sui punteggi PIENI e
+    non sui residui: verificato il 31/07 (formazione_mls/diagnostics/
+    test_venue_base_residui_vs_punteggi.py) che le due basi danno la stessa
+    MAE (differenze sotto lo 0.01% su 15.000 punti di test), quindi la
+    differenza fra i ruoli e' innocua e non vale un cambio di produzione.
+
+    FUNZIONE UNICA (31/07, audit): prima questa logica era duplicata in due
+    punti del file, con rischio di divergenza silenziosa fra il numero
+    applicato e quello mostrato."""
+    media_pesata = weighted_mean(scores, weights)
+    home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
+    away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
+    home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
+    away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
+    overall = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
+    if overall <= 0:
+        return 1.0
+    if target_is_home:
+        raw, n_bucket = home_avg / overall, len(home_scores)
+    else:
+        raw, n_bucket = away_avg / overall, len(away_scores)
+    shrink = n_bucket / (n_bucket + SPLIT_SHRINK_K_GK)
+    return 1.0 + shrink * (raw - 1.0)
+
 
 def netto_to_level(netto):
     k = max(-2, min(5, round(netto)))
@@ -1307,24 +1348,9 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
         + (shrink_k / (n + shrink_k)) * media_ruolo_prior
     )
 
-    home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
-    away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
-    media_pesata = weighted_mean(scores, weights)
-    home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
-    away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
-    overall_avg_for_factor = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
-
-    SPLIT_SHRINK_K_GK = 20.0  # ALZATO 5.0->20.0 (30/07, caso reale Turner/Sirois): validato con backtest walk-forward, migliora la MAE
-    fattore_casa_trasferta = 1.0
-    if overall_avg_for_factor > 0:
-        if target_is_home:
-            raw_fattore = home_avg / overall_avg_for_factor
-            n_bucket = len(home_scores)
-        else:
-            raw_fattore = away_avg / overall_avg_for_factor
-            n_bucket = len(away_scores)
-        shrink = n_bucket / (n_bucket + SPLIT_SHRINK_K_GK)
-        fattore_casa_trasferta = 1.0 + shrink * (raw_fattore - 1.0)
+    # Funzione condivisa con build_prediction (31/07, audit): prima la stessa
+    # logica era scritta due volte, qui e nel report.
+    fattore_casa_trasferta = venue_factor_gk(scores, is_home_flags, target_is_home, weights)
 
     return grezzo_corretto * fattore_casa_trasferta
 
@@ -1795,17 +1821,9 @@ def build_prediction(player_slug):
     # il fattore casa/trasferta con un rapporto grezzo home_avg/away_avg senza
     # alcuna cautela sul campione -- qui il fattore viene tirato verso il
     # neutro 1.0 proporzionalmente al numero di partite nel bucket usato.
-    SPLIT_SHRINK_K_GK = 20.0  # ALZATO 5.0->20.0 (30/07, caso reale Turner/Sirois): validato con backtest walk-forward, migliora la MAE
-    fattore_casa_trasferta = 1.0
-    if overall_avg_for_factor > 0:
-        if next_is_home:
-            _raw_fattore = home_avg / overall_avg_for_factor
-            _n_bucket = len(home_scores)
-        else:
-            _raw_fattore = away_avg / overall_avg_for_factor
-            _n_bucket = len(away_scores)
-        _shrink_gk = _n_bucket / (_n_bucket + SPLIT_SHRINK_K_GK)
-        fattore_casa_trasferta = 1.0 + _shrink_gk * (_raw_fattore - 1.0)
+    # STESSA funzione usata da compute_score_atteso_gk (31/07, audit): il
+    # fattore mostrato nel report non puo' piu' divergere da quello applicato.
+    fattore_casa_trasferta = venue_factor_gk(scores, is_home_flags, next_is_home, weights)
 
     # --- Fattori granulari SEPARATI (26/07: falli/efficacia offensiva/eventi
     # rari rimossi, pesavano 0.0% su 268 partite reali -- vedi
