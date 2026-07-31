@@ -1,0 +1,128 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-07-31T22:59:28.522951Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) nick-pope: 47 pt attesi (34-59)
+   SQUADRA: newcastle-united-newcastle-upon-tyne | AVVERSARIO: liverpool-liverpool
+======================================================================
+
+######################################################################
+# GIOCATORE: nick-pope
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: nick-pope (squadra: newcastle-united-newcastle-upon-tyne)
+Generato: 2026-07-31T22:59:28.519824Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | AST vs NEW | premier-league-gb-eng | score=84.0 | peso=0.050
+  2025-08-25 | NEW vs LIV | premier-league-gb-eng | score=25.1 | peso=0.056
+  2025-08-30 | LEE vs NEW | premier-league-gb-eng | score=66.0 | peso=0.062
+  2025-09-13 | NEW vs WOL | premier-league-gb-eng | score=79.1 | peso=0.070
+  2025-09-21 | BOR vs NEW | premier-league-gb-eng | score=75.6 | peso=0.079
+  2025-09-28 | NEW vs ARS | premier-league-gb-eng | score=86.7 | peso=0.088
+  2025-10-05 | NEW vs NOT | premier-league-gb-eng | score=76.1 | peso=0.099
+  2025-10-18 | BRI vs NEW | premier-league-gb-eng | score=47.2 | peso=0.111
+  2025-10-25 | NEW vs FUL | premier-league-gb-eng | score=43.2 | peso=0.125
+  2025-11-02 | WHU vs NEW | premier-league-gb-eng | score=40.6 | peso=0.140
+  2025-11-09 | BRE vs NEW | premier-league-gb-eng | score=47.6 | peso=0.157
+  2025-11-22 | NEW vs MCI | premier-league-gb-eng | score=44.6 | peso=0.177
+  2025-12-30 | BUR vs NEW | premier-league-gb-eng | score=31.6 | peso=0.198
+  2026-01-04 | NEW vs CRY | premier-league-gb-eng | score=68.4 | peso=0.223
+  2026-01-07 | NEW vs LEE | premier-league-gb-eng | score=28.7 | peso=0.250
+  2026-01-18 | WOL vs NEW | premier-league-gb-eng | score=76.3 | peso=0.281
+  2026-01-25 | NEW vs AST | premier-league-gb-eng | score=56.6 | peso=0.315
+  2026-01-31 | LIV vs NEW | premier-league-gb-eng | score=0.0 | peso=0.354
+  2026-02-07 | NEW vs BRE | premier-league-gb-eng | score=35.4 | peso=0.397
+  2026-02-10 | TOT vs NEW | premier-league-gb-eng | score=37.7 | peso=0.445
+  2026-02-21 | MCI vs NEW | premier-league-gb-eng | score=57.2 | peso=0.500
+  2026-02-28 | NEW vs EVE | premier-league-gb-eng | score=13.9 | peso=0.561
+  2026-04-25 | ARS vs NEW | premier-league-gb-eng | score=45.0 | peso=0.630
+  2026-05-02 | NEW vs BRI | premier-league-gb-eng | score=44.0 | peso=0.707
+  2026-05-10 | NOT vs NEW | premier-league-gb-eng | score=48.9 | peso=0.794
+  2026-05-17 | NEW vs WHU | premier-league-gb-eng | score=56.5 | peso=0.891
+  2026-05-24 | FUL vs NEW | premier-league-gb-eng | score=40.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 44.76
+  di cui Punteggio decisivo (level_score) medio: 35.31 | Punteggio complessivo (granulari) medio: 9.45 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 34.76 (delta -0.55 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.25, delta avversario -0.78 | Possesso condizionato per venue: delta -0.13 | Goalkeeping condizionato per venue: delta +0.46 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 17.30
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.6 - 57.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.47 (differenza: +2.83)
+Media score in casa: 50.64 | Media score fuori casa: 49.85
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.6
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.807
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.001
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.998
+Tasso storico clean sheet (porta inviolata nei primi 60'): 25.9% (bonus atteso incorporato nella media pesata: ~6.5pt)
+Fattore trend (media ultime 5: 46.9 vs media ultime 10: 37.9): 1.000
+P(gioca): 71.05% (fonte: tasso di presenza storico (27/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T15:30
+Casa: Newcastle United FC | Trasferta: Liverpool FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.9 (range 33.8 - 59.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.34
+Punteggio REALE ottenuto in quella partita: 40.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -5.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=4.0+trend_int=0.0+range=1.0x' (half_life=4.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 21 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.6    76.1    +24.5    18.9        NO
+   7        7      53.1    47.2     -5.9    16.7        SI
+   8        8      52.2    43.2     -9.0    18.2        SI
+   9        9      52.2    40.6    -11.6    19.0        SI
+  10       10      51.1    47.6     -3.5    19.1        SI
+  11       11      50.9    44.6     -6.3    17.8        SI
+  12       12      50.5    31.6    -18.9    16.7        NO
+  13       13      49.9    68.4    +18.5    17.4        NO
+  14       14      50.6    28.7    -21.9    17.3        NO
+  15       15      48.8    76.3    +27.5    18.3        NO
+  16       16      50.0    56.6     +6.6    19.5        SI
+  17       17      50.9     0.0    -50.9    17.8        NO
+  18       18      48.0    35.4    -12.6    26.0        SI
+  19       19      46.8    37.7     -9.1    24.0        SI
+  20       20      45.3    57.2    +11.9    22.0        SI
+  21       21      48.1    13.9    -34.2    20.9        NO
+  22       22      45.0    45.0     +0.0    22.3        SI
+  23       23      45.3    44.0     -1.3    20.5        SI
+  24       24      45.4    48.9     +3.5    18.8        SI
+  25       25      46.0    56.5    +10.5    17.4        SI
+  26       26      47.3    40.2     -7.1    16.8        SI
+
+MAE (errore assoluto medio): 14.07
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
