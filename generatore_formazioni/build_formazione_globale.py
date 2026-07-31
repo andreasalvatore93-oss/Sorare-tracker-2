@@ -423,7 +423,25 @@ def _within_window(row, now=None):
     if _FINESTRA_ESPLICITA:
         inizio, fine = _FINESTRA_ESPLICITA
         ko19 = ko[:19] if 'T' in ko else ko[:10] + 'T00:00:00'
-        return inizio <= ko19 <= fine
+        if not (inizio <= ko19 <= fine):
+            return False
+        # Non basta che il KICKOFF cada per data dentro la finestra: un file
+        # vecchio di giorni (lega mai ri-scoperta per QUESTA giornata) puo'
+        # avere per puro caso un KICKOFF salvato che coincide con la finestra
+        # attuale (visto su kodai-sano/olanda, 31/07 -- lega non ha nessuna
+        # partita reale in questa giornata, il dato stantio combaciava per
+        # caso). Il file deve essere stato scritto non troppo prima
+        # dell'inizio della finestra stessa -- altrimenti non e' un dato
+        # verificato per QUESTA giornata.
+        mtime = row.get('_source_mtime')
+        if mtime is None:
+            return not REQUIRE_KICKOFF
+        try:
+            inizio_dt = datetime.datetime.fromisoformat(inizio)
+        except ValueError:
+            return True
+        soglia = inizio_dt - datetime.timedelta(hours=24)
+        return datetime.datetime.utcfromtimestamp(mtime) >= soglia
 
     now = now or datetime.datetime.utcnow()
     try:
@@ -465,8 +483,17 @@ def load_league_role_data():
             # e' nemmeno schierabile) -- serve a _build_alt_chips per
             # filtrare le alternative alla lega/pool della formazione
             # bersaglio, non solo al ruolo.
+            # '_source_mtime' (31/07, fix bug reale kodai-sano/olanda: un
+            # KICKOFF salvato giorni fa puo' cadere per puro caso dentro la
+            # finestra della giornata esplicita ANCHE SE quella lega non ha
+            # nessuna partita reale in questa giornata -- la lega
+            # semplicemente non e' stata ri-scoperta oggi, il dato e' stantio
+            # e coincide per caso. Serve per scartare interi ruoli/leghe con
+            # dati non aggiornati, vedi _scarta_leghe_stantie).
+            mtime = os.path.getmtime(path) if path else None
             for row in rows:
                 row['league'] = league
+                row['_source_mtime'] = mtime
             counts, _ = bff.load_card_counts(DISCOVERY_DIRS[league][role])
             names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
