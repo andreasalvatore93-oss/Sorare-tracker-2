@@ -1307,8 +1307,10 @@ def rigorous_backtest_prod_mid(scores, is_home_flags, opponent_rankings,
         dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
         range_conf = dev_std * range_multiplier
         dentro_range = abs(reale - predetto) <= range_conf if range_conf > 0 else None
-        rows.append({'i': i, 'predetto': predetto, 'reale': reale,
-                     'errore': reale - predetto, 'dentro_range': dentro_range})
+        rows.append({'i': i, 'indice': i, 'partite_storico_usate': i,
+                     'predetto': predetto, 'reale': reale,
+                     'errore': reale - predetto, 'range_conf': range_conf,
+                     'dentro_range': dentro_range})
 
     if not rows:
         return {'rows': [], 'mae': None, 'pct_dentro_range': None, 'n_test': 0}
