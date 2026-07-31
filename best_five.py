@@ -937,6 +937,13 @@ PREZZI_CACHE_PATH = os.path.join(REPO_ROOT, 'best_five_prezzi_cache.json')
 # e' piu' che sufficiente.
 PREZZI_CACHE_TTL_ORE = float(os.environ.get('BEST_FIVE_PREZZI_CACHE_TTL_ORE', str(24 * 5)))
 
+# Ogni quanti giocatori riscrivere la cache su disco durante il fetch (vedi
+# il commento nel ciclo di fetch_prezzi): serve a non perdere tutto se il job
+# muore a meta'. 25 e' un compromesso -- abbastanza raro da non pesare (il
+# file e' piccolo e la scrittura e' locale), abbastanza frequente da limitare
+# la perdita a pochi giocatori.
+PREZZI_CACHE_CHUNK = int(os.environ.get('BEST_FIVE_PREZZI_CACHE_CHUNK', '25'))
+
 
 def _prezzi_cache_leggi():
     if not os.path.exists(PREZZI_CACHE_PATH):
@@ -1046,6 +1053,17 @@ def fetch_prezzi(slugs):
     def _worker(slug):
         return slug, _prezzi_minimi_slug(bp, eth_rate, slug)
 
+    # Scrittura A CHUNK della cache (31/07, richiesta esplicita utente: "metti
+    # dei chunk al registro prezzi, almeno accumula"). Prima la cache veniva
+    # scritta UNA SOLA VOLTA a fine ciclo: se il job veniva cancellato o andava
+    # in timeout a meta' -- cioe' esattamente quello che succedeva a MLS, che
+    # con 233 giocatori da interrogare non e' MAI riuscita a completare una run
+    # -- si perdeva TUTTO il lavoro fatto e la run successiva ripartiva da zero.
+    # Circolo chiuso: senza una run completa la cache non si popola, senza
+    # cache la run non completa. Scrivendo ogni CHUNK i prezzi si accumulano
+    # anche fra run fallite, e prima o poi la cache copre l'intero pool.
+    # La scrittura avviene nel thread principale (dentro as_completed), quindi
+    # non serve alcun lock.
     fatti = 0
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=5, thread_name_prefix='prezzi') as executor:
@@ -1055,7 +1073,11 @@ def fetch_prezzi(slugs):
             prezzi[slug] = {'in_season': in_season, 'classic': classic}
             cache[slug] = {'in_season': in_season, 'classic': classic, 'ts': ts_ora}
             fatti += 1
-            if fatti % 20 == 0 or fatti == len(da_interrogare):
+            if fatti % PREZZI_CACHE_CHUNK == 0:
+                _prezzi_cache_scrivi(cache)
+                log(f"[prezzi] [{fatti}/{len(da_interrogare)}] fatto "
+                    f"(cache salvata, {len(cache)} voci totali).")
+            elif fatti % 20 == 0 or fatti == len(da_interrogare):
                 log(f"[prezzi] [{fatti}/{len(da_interrogare)}] fatto.")
     _prezzi_cache_scrivi(cache)
     return prezzi
@@ -1186,7 +1208,10 @@ def fetch_eta(slugs):
             eta_map[slug] = eta
             cache[slug] = {'age': eta, 'ts': ts_ora}
             fatti += 1
-            if fatti % 20 == 0 or fatti == len(da_interrogare):
+            if fatti % PREZZI_CACHE_CHUNK == 0:
+                _eta_cache_scrivi(cache)
+                log(f"[eta] [{fatti}/{len(da_interrogare)}] fatto (cache salvata).")
+            elif fatti % 20 == 0 or fatti == len(da_interrogare):
                 log(f"[eta] [{fatti}/{len(da_interrogare)}] fatto.")
     _eta_cache_scrivi(cache)
     return eta_map
