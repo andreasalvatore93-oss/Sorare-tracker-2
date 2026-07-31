@@ -94,6 +94,11 @@ CAMPIONATI_NOTI = (
     # innocuo: load_players_for trova semplicemente 0 file e li salta.
     'turchia', 'francia', 'francia2', 'germania', 'germania2',
     'giappone', 'giappone100', 'italia', 'inghilterra', 'inghilterra2',
+    # 31/07: le leghe aggiunte dopo il 27/07, che ora hanno grid_search reali
+    # sul disco (danimarca 14, argentina 12, svizzera 6, polonia 3, grecia 2,
+    # cile 2) e restavano escluse dall'aggregazione globale solo perche' la
+    # lista era hardcoded e mai piu' aggiornata.
+    'danimarca', 'argentina', 'svizzera', 'grecia', 'polonia', 'cile',
 )  # estendere qui quando si aggiunge un nuovo campionato (27/07: aggiunti gli 8
 # campionati con infrastruttura di calibrazione allargata appena creata,
 # grid_search_calibrazione_<lega>.yml, pool limitato ai soli posseduti per
@@ -277,7 +282,7 @@ def main():
 
     print(f"\n{'#':>3} {'half_life':>9} {'range_x':>8} {'opp_sens':>9} {'trend_int':>10} "
           f"{'MAE medio':>10} {'copertura%':>11} {'n_gioc':>7} {'n_partite_w':>12}  etichetta")
-    for i, r in enumerate(results[:20], 1):
+    for i, r in enumerate(results[:int(os.environ.get("TOP_N", "20"))], 1):
         print(f"{i:>3} {r['half_life']:>9} {r['range_multiplier']:>8} "
               f"{r['opponent_sensitivity']:>9} {r['trend_intensity']:>10} "
               f"{r['mae_medio']:>10.2f} {r['copertura_media']:>10.1f}% {r['n_giocatori']:>7} "
