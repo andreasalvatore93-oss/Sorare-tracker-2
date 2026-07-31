@@ -5515,3 +5515,163 @@ def/mid/fwd invariati (def era già 0.0).
    peso sbagliato, non si è aggiunto un peso opposto).
 3. **`SOGLIA_CALO`** è a 2 punti: vale la pena verificare che il risultato non dipenda da quella
    scelta (il tool accetta la variabile d'ambiente).
+
+
+---
+
+## 43. Sessione 31/07 (tarda notte) — penalità cross-team rimisurate, Spagna coperta
+
+### 43.A — Il caso reale che ha aperto tutto
+
+L'utente ha trovato nelle formazioni generate due giocatori **avversari nella stessa partita**
+(Markanich, difensore del Minnesota, e Dreyer, attaccante del San Diego, in Minnesota-San Diego) e
+ha chiesto la cosa giusta: *«ma i test cosa ci dicevano sul tema? le sinergie negative erano spente
+perché i dati dicevano che conveniva ignorarle, o era un bug?»*
+
+**Era un bug**, e la risposta è documentata perché la distinzione conta: se fosse stata una scelta
+misurata non andava toccata. La penalità `CROSS_TEAM_PENALTY_BY_PAIR` stava dentro il gate
+`apply_positive_synergy`, spento sulle In Season per tutt'altro motivo (le formazioni "greedy"
+#2..N). L'unico A/B che l'aveva mai sfiorata (29/07) **non è una prova valida** per tre motivi:
+spegneva tre meccanismi insieme; è precedente alla coppia DEF-MID, nata il 30/07 quando il flag era
+già spento (quindi mai testata); e usava il **punteggio atteso**, cieco all'effetto per cui la
+penalità esiste — due giocatori anti-correlati riducono la *varianza* del totale, e con un bersaglio
+sopra la propria media meno varianza è un danno.
+
+Fix: la penalità cross-team ha ora un gate proprio (`apply_cross_team_penalty`), indipendente dalla
+sinergia positiva.
+
+### 43.B — Rimisurate TUTTE le coppie sullo stesso dataset
+
+`formazione_mls/diagnostics/misura_correlazione_cross_team.py`, su **7.271 partite ricostruite** dai
+detail cache (~97k coppie avversarie).
+
+**Novità di metodo, ed è la parte che rende il risultato credibile**: accanto alla correlazione fra
+avversari si misura una correlazione di **CONTROLLO**, sulle stesse coppie di ruoli ma fra giocatori
+che *non si sono affrontati*. Serve perché due punteggi qualsiasi non sono scorrelati per caso — i
+ruoli hanno medie e dispersioni diverse, e una correlazione grezza negativa può essere solo quello.
+Il controllo è uscito ≈0 ovunque: le correlazioni sotto sono effetto reale dello scontro diretto.
+
+| coppia | n coppie | corr. avversari | controllo | ×20 implicito | esito |
+|---|---|---|---|---|---|
+| DEF-MID | 22410 | −0.154 | +0.011 | 3.1 | conferma di **3** |
+| DEF-FWD | 15853 | −0.225 | +0.012 | 4.5 | conferma di **4** |
+| DEF-DEF | 13424 | −0.101 | −0.004 | 2.0 | **aggiunta (2)** |
+| FWD-MID | 12896 | −0.079 | +0.003 | 1.6 | **aggiunta (2)** |
+| MID-MID | 9592 | −0.103 | +0.001 | 2.1 | conferma di **2** |
+| DEF-GK | 7371 | −0.040 | +0.008 | 0.8 | esclusa, troppo debole |
+| GK-MID | 6106 | −0.145 | +0.013 | 2.9 | **aggiunta (3)** |
+| FWD-FWD | 4633 | −0.037 | −0.038 | 0.7 | **esclusa: nessun effetto** |
+| FWD-GK | 4340 | **−0.312** | −0.001 | 6.2 | **aggiunta (6)** |
+| GK-GK | 967 | +0.038 | +0.010 | — | esclusa, positiva |
+
+Tre letture:
+
+1. **Le tre penalità che c'erano sono confermate e ben tarate** (3 contro 3.1, 4 contro 4.5, 2 contro
+   2.1). La tabella era giusta, era solo inerte.
+2. **Mancava la coppia più anti-correlata di tutte**: attaccante contro il **portiere avversario**,
+   −0.31. Ha senso strutturale — l'attaccante segna quando fa gol, il portiere avversario segna
+   quando tiene la porta inviolata: sono opposti per costruzione. Fino a oggi il modello non li
+   scoraggiava affatto.
+3. **FWD-FWD va esclusa apposta**: la sua correlazione (−0.037) è *identica al proprio controllo*
+   (−0.038). Non c'è nessun effetto da scontro diretto, solo la distribuzione dei punteggi di ruolo.
+   È esattamente il caso che il controllo serviva a smascherare, e senza quella colonna sarebbe
+   entrata in tabella per errore.
+
+### 43.C — Perché Dreyer e Markanich restano schierati insieme anche dopo il fix
+
+Domanda dell'utente a fix applicato. La verifica sulla run #95: **5 formazioni su 12** hanno ancora
+una coppia avversaria. Non è un fix mancato — la penalità è un **tiebreak nell'ordine di scelta, non
+un divieto**. Dreyer vale 66, con la penalità DEF-FWD scende a 62, e alla quinta formazione il pool
+residuo non offre nulla entro 4 punti. Alzare il numero non è la strada: la correlazione dice 4.5,
+quindi 4 è già il valore giusto.
+
+**Decisione esplicita dell'utente: niente vincolo duro** («non voglio un vincolo duro, mi bastano i
+dati»). Il meccanismo per farlo esisterebbe (`strict_gk_anti_synergy`, oggi solo sul portiere) ma
+costerebbe caro proprio sulle formazioni #4-#6, quando il pool è ormai svuotato.
+
+### 43.D — Il limite onesto: il ×20 non è mai stato misurato
+
+Domanda dell'utente: *«quel 4 / 4,5 come lo abbiamo calcolato, a spanne o con dati?»* Risposta:
+**metà e metà**, e va scritto perché è facile scambiare la precisione apparente per accuratezza.
+
+- Le **correlazioni sono dato vero**, misurate e controllate.
+- Il **×20** che le converte in punti è una convenzione **scelta a occhio**, mai misurata.
+
+Quindi il **rapporto fra le coppie** è affidabile (è il rapporto fra due correlazioni misurate: FWD-GK
+pesa davvero ~1.4 volte DEF-FWD), il **livello assoluto** no. E c'è un indizio concreto che sia
+gonfiato: la stessa notte, la misura vera sulle sinergie *positive* — che usavano lo stesso ×20 dalla
+stessa convenzione — ha dato **×12** (§42.A). Se vale anche qui, DEF-FWD dovrebbe essere ~2.7 invece
+di 4.5 e tutta la tabella andrebbe ridotta di circa un terzo. In backlog.
+
+**Ostacolo pratico da sapere prima di riprovare**: l'A/B con la metrica giusta
+(`ab_cross_team_threshold.py`) è uscito **nullo** (±0.06 pp), non perché la penalità non serva ma
+perché con i dati di quella giornata le formazioni erano *identiche* con penalità accesa o spenta —
+non c'era segnale da cui tarare. Serve rigirarlo con più giornate accumulate.
+
+*(Nota su un bug del simulatore, già corretto ma da non rifare: raggruppare i giocatori per
+co-occorrenza storica **transitiva** fondeva tutti e cinque gli schierati in un blocco unico e poi
+pretendeva una data in cui avessero giocato tutti insieme — condizione quasi impossibile, che
+collassava la simulazione su una o due date e azzerava la varianza, totali fra 342 e 343 su 20.000
+estrazioni. Il raggruppamento corretto è quello della **partita imminente**, che per costruzione
+coinvolge al massimo due squadre.)*
+
+### 43.E — Spagna: discovery globale completata
+
+Quarta lega big5 coperta dopo la Germania. 20 club LaLiga verificati **dal vivo** sulla competizione
+`laliga-es` (non indovinati), file generati da `genera_discovery_global_spagna.py`, run completata:
+
+| ruolo | GK | DEF | MID | FWD |
+|---|---|---|---|---|
+| dopo filtro qualità | 29 | 113 | 107 | 91 |
+
+340 giocatori. Prima la Spagna vedeva solo chi era già in cache.
+
+### 43.F — K League, fonti predicted lineup (richiesta utente)
+
+Cercate fonti tipo RotoWire per incrociare le formazioni K League, che l'utente segnala come le più
+imprevedibili. Situazione peggiore dell'MLS:
+
+- **[SportsGambler](https://www.sportsgambler.com/lineups/football/south-korea-k-league-1/)** — unico
+  prodotto vero con predicted + confirmed XI sulla K League, raggiungibile (HTTP 200). I nomi però
+  compaiono solo vicino al calcio d'inizio.
+- **LeagueSpy** (leaguespy.com/leag/1034) — dichiara predicted lineup e infortuni, ma blocca le
+  richieste automatiche (403).
+- **Sofascore** — sarebbe la fonte migliore, blocca del tutto (403 anche sull'API).
+- Forebet, PredictZ, WinDrawWin, FootyStats — solo pronostici di **risultato**, non formazioni:
+  inutili per questo scopo.
+
+Da fare: estrarre gli XI da SportsGambler quando escono e incrociarli con le formazioni schierate; se
+il sito regge, automatizzarlo come controllo pre-run K League.
+
+### 43.G — Backlog aggiornato (stato a fine sessione 31/07)
+
+**Prossimo tema, da riprendere da qui:**
+
+1. **discovery_global per le big5 mancanti** — restano **Francia, Inghilterra, Italia, Belgio**
+   (Germania e Spagna fatte). Procedura rodata: verificare gli slug dei club dal vivo sulla
+   competizione, generare i 4 file per ruolo clonando il template, poi una run per popolare.
+   *L'utente vuole essere avvisato prima di ogni run GitHub Actions.*
+2. **Retest venue sulle nuove leghe** — ancora bloccato dal campione: Inghilterra 6 giocatori in
+   cache, Germania 9, Italia 11. Va rifatto dopo il punto 1, che è proprio ciò che riempie la cache.
+3. **Griglia di calibrazione disallineata** — le leghe piccole girano 72 combinazioni contro le 168
+   di MLS e le 504 di germania/kleague. È la causa a monte del collasso dell'aggregatore (aggirato
+   il 31/07 con `AGGREGATE_MIN_PLAYERS=25`, non risolto alla radice).
+
+**Da rimisurare quando ci sono più giornate:**
+
+4. **Scaling cross-team ×20** — mai misurato, probabile ×12 (§43.D).
+5. **Sinergia ×12** — confermare su più di una giornata (§42.D.1).
+6. **Segnale "crescita"** — gruppi ancora piccoli, 53-151 osservazioni (§42.D.2), e verificare la
+   sensibilità a `SOGLIA_CALO` (§42.D.3).
+7. **Sinergie: coppie avversarie nelle formazioni** — monitorare le prossime giornate ora che la
+   penalità è attiva e la tabella completa.
+
+**Secondari, fermi per scelta:**
+
+8. Velocità Best Five multi-lega (run a 5 leghe: 20-30 min) — da rimisurare ora che prezzi,
+   predizioni e L10 hanno tutti una cache.
+9. Circuit breaker propagato solo su mls/kleague (la matematica delle previsioni è comunque già
+   identica su tutte le leghe).
+10. `resto_mondo` con pipeline inerte e formula vecchia.
+11. Link Sorare che non distingue classic da in season.
+12. `MAX_HISTORY_DAYS=120` provvisorio — non toccare senza chiedere all'utente.
