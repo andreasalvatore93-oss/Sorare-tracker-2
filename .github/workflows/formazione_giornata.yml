@@ -441,6 +441,13 @@ jobs:
       - run: python pipeline_artifacts.py apply _artifacts
       - env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          # NUOVO (31/07, fix bug reale kyriani-sabbe): servono per risolvere
+          # ESATTAMENTE la stessa giornata gia' usata da discovery_fixture.py
+          # (vedi _risolvi_finestra_esplicita in build_formazione_globale.py)
+          # invece di un giorno-count approssimato -- se sono impostati, la
+          # finestra e' quella e basta, nessuna tolleranza.
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           IN_SEASON: ${{ github.event.inputs.in_season }}
           ARENA_DEDICATA: ${{ github.event.inputs.arena_dedicata }}
           ARENA_ALLSTARS_260: ${{ github.event.inputs.arena_allstars_260 }}
@@ -449,7 +456,6 @@ jobs:
           ALLSTARS: ${{ github.event.inputs.allstars }}
           ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}
           LIST_UNUSED_CANDIDATES: ${{ github.event.inputs.list_unused_candidates }}
-          MATCH_WINDOW_DAYS: '7'
           PYTHONUNBUFFERED: "1"
         run: python generatore_formazioni/build_formazione_globale.py
       - if: always()

@@ -357,25 +357,74 @@ def parse_league_qty(raw, field_name, valid_leagues=DEDICATED_LEAGUES):
     return result
 
 
-# --- FINESTRA GIORNATA (27/07) -------------------------------------------
+# --- FINESTRA GIORNATA (27/07, poi 31/07) --------------------------------
 # Senza questo filtro il generatore mescolava giocatori la cui partita target
 # era GIA' STATA GIOCATA con giocatori che giocano fra una settimana: entrambi
 # inutili per la formazione di domani. E i secondi non hanno ancora le starter
 # odds (escono a ~24-48h), quindi passavano indenni anche il filtro sulla
 # soglia -- che percio' sembrava non funzionare.
-# MATCH_WINDOW_DAYS = quanti giorni in avanti da ADESSO includere (default 2).
-# Un consiglio SENZA riga KICKOFF e' per definizione generato prima di questo
-# fix, quindi stale: viene SCARTATO. Meglio una formazione incompleta che una
-# piena di giocatori che non scendono in campo. Con MATCH_WINDOW_REQUIRE_KICKOFF=0
-# si torna al comportamento permissivo (utile solo per debug su dati vecchi).
+#
+# FIX 31/07 (bug reale: kyriani-sabbe, prossima partita 8 agosto, incluso in
+# formazione mentre la giornata corrente era GAMEWEEK esplicita 1-4 agosto --
+# consiglio stantio di una lega senza fixture in questa giornata, mai
+# rigenerato, ma comunque dentro "adesso+7 giorni"): quando l'utente imposta
+# GAMEWEEK o FIXTURE_SLUG esplicitamente, la finestra NON e' piu' una stima a
+# giorni fissi da 'adesso' -- si risolve la STESSA identica giornata via
+# discovery_fixture.risolvi_fixture() (stessa funzione, stessi env
+# GAMEWEEK/FIXTURE_SLUG gia' passati alla pipeline) e si tiene SOLO chi ha
+# kickoff dentro [inizio, fine] di QUELLA giornata. Il giorno-count
+# (MATCH_WINDOW_DAYS) resta solo come fallback per il caso "nessuna gameweek
+# esplicita" (auto-resolve in discovery_fixture.py), dove non c'e' una
+# finestra precisa da interrogare di nuovo qui.
 MATCH_WINDOW_DAYS = float(os.environ.get('MATCH_WINDOW_DAYS', '4'))
 REQUIRE_KICKOFF = os.environ.get('MATCH_WINDOW_REQUIRE_KICKOFF', '1').strip() not in ('0', 'false', 'no')
 
 
+def _risolvi_finestra_esplicita():
+    """(inizio, fine) ISO della giornata esplicita (GAMEWEEK/FIXTURE_SLUG),
+    o None se nessuna delle due e' impostata o la risoluzione fallisce --
+    in quel caso _within_window ricade sul giorno-count (auto-resolve)."""
+    if not os.environ.get('GAMEWEEK', '').strip() and not os.environ.get('FIXTURE_SLUG', '').strip():
+        return None
+    try:
+        discovery_fixture = _import_module('discovery_fixture_per_finestra', 'discovery_fixture.py')
+        fx = discovery_fixture.risolvi_fixture()
+    except Exception as e:
+        print(f"ATTENZIONE: impossibile risolvere la finestra esplicita ({e!r}), "
+              f"ricado sul giorno-count MATCH_WINDOW_DAYS.")
+        return None
+    if not fx:
+        print("ATTENZIONE: GAMEWEEK/FIXTURE_SLUG impostati ma non risolti -- "
+              "ricado sul giorno-count MATCH_WINDOW_DAYS.")
+        return None
+    inizio = (fx.get('startDate') or '')[:19]
+    fine = (fx.get('endDate') or '')[:19]
+    if not inizio or not fine:
+        return None
+    print(f"Finestra esplicita risolta: {fx.get('slug')} (gameweek {fx.get('seasonGameWeek')}) "
+          f"dal {inizio} al {fine} -- SOLO questa giornata, nessuna tolleranza a giorni.")
+    return inizio, fine
+
+
+_FINESTRA_ESPLICITA = None
+_FINESTRA_ESPLICITA_RISOLTA = False
+
+
 def _within_window(row, now=None):
+    global _FINESTRA_ESPLICITA, _FINESTRA_ESPLICITA_RISOLTA
+    if not _FINESTRA_ESPLICITA_RISOLTA:
+        _FINESTRA_ESPLICITA = _risolvi_finestra_esplicita()
+        _FINESTRA_ESPLICITA_RISOLTA = True
+
     ko = row.get('kickoff')
     if not ko:
         return not REQUIRE_KICKOFF
+
+    if _FINESTRA_ESPLICITA:
+        inizio, fine = _FINESTRA_ESPLICITA
+        ko19 = ko[:19] if 'T' in ko else ko[:10] + 'T00:00:00'
+        return inizio <= ko19 <= fine
+
     now = now or datetime.datetime.utcnow()
     try:
         dt = datetime.datetime.fromisoformat(ko[:16]) if 'T' in ko else             datetime.datetime.fromisoformat(ko[:10])
