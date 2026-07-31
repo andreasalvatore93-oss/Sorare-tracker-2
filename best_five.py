@@ -70,7 +70,7 @@ _http_session = curl_requests.Session(impersonate="chrome") if _HAS_CURL_CFFI el
 # filtrarlo PRIMA della predizione costosa non perde candidati che l'utente
 # avrebbe scelto comunque. Il pool su cui si applica e' gia' filtrato per
 # qualita' (media L5/L10/L40 >= 30) a monte, in discovery_global.
-MIN_STARTER_ODDS_PREFILTER = float(os.environ.get('BEST_FIVE_MIN_STARTER_ODDS', '0.70'))
+MIN_STARTER_ODDS_PREFILTER = float(os.environ.get('BEST_FIVE_MIN_STARTER_ODDS', '0.80'))
 
 # Top-N esclusi per ruolo (31/07, richiesta esplicita utente): oltre alle
 # formazioni intere generate, mostra sempre anche i migliori N candidati

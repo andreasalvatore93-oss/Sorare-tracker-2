@@ -50,7 +50,7 @@ on:
       starter_odds:
         description: 'Soglia starterOdds prefiltro (0-1), stesso significato di starter_odds_min in formazione_giornata.yml'
         required: false
-        default: '0.70'
+        default: '0.80'
       top_k_qualita:
         description: 'Cap per qualita PRIMA delle starterOdds (top-K per ruolo secondo media L5/L10/L40). 0 = disattivato (pool intero)'
         required: false
@@ -88,7 +88,7 @@ on:
       starter_odds:
         type: string
         required: false
-        default: '0.70'
+        default: '0.80'
       top_k_qualita:
         type: string
         required: false
@@ -160,7 +160,7 @@ jobs:
       - name: starterOdds sul proprio shard
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          BEST_FIVE_MIN_STARTER_ODDS: ${{ inputs.starter_odds || '0.70' }}
+          BEST_FIVE_MIN_STARTER_ODDS: ${{ inputs.starter_odds || '0.80' }}
           PYTHONUNBUFFERED: "1"
         run: |
           mkdir -p _prefiltro_stage
