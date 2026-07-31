@@ -5167,8 +5167,28 @@ sequenza, mai in parallelo sulla stessa lega.
 
 **Verificato con test reali in sequenza** (Scozia standalone → Croazia standalone → Croazia+Scozia
 mix → Scozia+Austria+Croazia+MLS+K League mix, ciascuno atteso fino a completamento): tutti
-riusciti, prezzi condivisi correttamente dalla cache tra run diverse sulla stessa lega.
+riusciti, prezzi condivisi correttamente dalla cache tra run diverse sulla stessa lega. L'ultima
+run mix a 5 leghe (Scozia+Austria+Croazia+MLS+K League, run id `30623848194`) impiega comodamente
+20-30+ minuti — normale per 5 leghe insieme, non un bug, ma da velocizzare (vedi backlog).
+
+**Ristrutturazione "Ottimizzata valore"** (commit `4b72563d31`): non più 3 configurazioni diverse
+x1 soglia, ma UNA sola configurazione (nessun limite Classic, cap L10 260 — quella più utile
+secondo l'utente) x3 soglie di tolleranza budget (baseline x1/x2/x3), a scelta esplicita
+dell'utente via AskUserQuestion. Non ancora verificato con una run reale (solo test sintetico:
+x1=279pt/13.71€, x2=303pt/24.86€, x3=312pt/35.20€, progressione coerente) — le soglie x2/x3
+compariranno nel report reale solo alla prossima run.
+
+**Restyling HTML (solo mockup, non ancora in produzione)**: proposta di restyling SOLO per i
+report Best Five (mai il template condiviso `formazione_giornata.yml`), in un Artifact
+(`best_five_restyle.html`, dati reali Croazia). Tema scuro/chiaro, card per ruolo, tab di
+navigazione: "Intero" mostra tutto scorrevole (comportamento di default), le altre tab
+(Formazioni/Esclusi/Cheapest/Ottimizzata valore) filtrano mostrando SOLO quella sezione. I chip
+della summary strip (link a singole formazioni) tornano prima su "Intero" poi scrollano
+all'ancora, dato che possono puntare a sezioni nascoste. Ancora da decidere con l'utente se/quando
+applicarlo davvero al codice di `best_five.py`.
 
 **Backlog aperto**: propagare il fix `CONSIGLIO_DISCOVERY_FILE` alle ~20 leghe minori restanti
 (chip spawnato in sessione), Norvegia da zero, consolidare i dati di calibrazione raccolti oggi
-(`consolida_dati_globali.py`) e valutare ricalibrazioni sulle leghe dove manca.
+(`consolida_dati_globali.py`) e valutare ricalibrazioni sulle leghe dove manca. Nuovo: velocizzare
+Best Five/Contender su run multi-lega (5 leghe insieme impiegano 20-30+ minuti), da affrontare in
+un'altra sessione — non urgente, il tool resta comunque utilizzabile.
