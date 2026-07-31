@@ -22,6 +22,36 @@ import turchia_gk_discovery as base  # noqa: E402  (riusa graphql_query/USER_SLU
 
 POSITIONS = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward']
 
+def leghe_tracciate():
+    """Slug delle domesticLeague gia' coperte da una pipeline, letti DAL REPO
+    (TARGET_LEAGUE_SLUG dei vari formazione_<lega>/discovery/*_discovery.py)
+    invece che da una lista scritta a mano.
+
+    FIX 31/07: la lista hardcoded era ferma al 27/07 e non conosceva le leghe
+    aggiunte dopo (danimarca, argentina, grecia, svizzera, ...), quindi
+    l'audit le segnalava come "NON TRACCIATA" -- esattamente il contrario di
+    cio' che serve a decidere quali pipeline creare. Derivandola dal repo si
+    aggiorna da sola ogni volta che si aggiunge una lega.
+
+    MLS non ha TARGET_LEAGUE_SLUG (la sua discovery e' storicamente diversa,
+    filtra su 'mlspa' fra le competizioni attive), quindi va aggiunta a mano:
+    e' l'unica eccezione, verificata."""
+    import glob as _glob
+    import re as _re
+    qui = os.path.dirname(os.path.abspath(__file__))
+    slugs = {'major-league-soccer'}
+    pattern = _re.compile(r"TARGET_LEAGUE_SLUG\s*=\s*'([a-z0-9_-]+)'")
+    for path in _glob.glob(os.path.join(qui, 'formazione_*', 'discovery', '*_discovery.py')):
+        try:
+            with open(path, encoding='utf-8') as fh:
+                m = pattern.search(fh.read())
+        except OSError:
+            continue
+        if m:
+            slugs.add(m.group(1))
+    return slugs
+
+
 QUERY = """
 query LeagueAudit($userSlug: String!, $page: Int!, $pageSize: Int!,
                   $advancedFilters: String, $refinements: [SearchRefinementInput!]) {
@@ -94,14 +124,7 @@ def main():
                 page += 1
                 time.sleep(0.3)
 
-    tracciate = {
-        'austrian-bundesliga', 'jupiler-pro-league', 'campeonato-brasileiro-serie-a',
-        '1-hnl', 'ligue-1-fr', 'ligue-2-fr', 'bundesliga-de', '2-bundesliga',
-        'j1-league', 'j1-100-year-vision-league', 'premier-league-gb-eng',
-        'football-league-championship', 'serie-a-it', 'k-league-1', 'major-league-soccer',
-        'eredivisie', 'primeira-liga-pt', 'premiership-gb-sct', 'laliga-es',
-        'spor-toto-super-lig',
-    }
+    tracciate = leghe_tracciate()
 
     righe = []
     for slug, ruoli in per_league.items():
