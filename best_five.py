@@ -929,7 +929,13 @@ def _prezzi_minimi_slug(bp, eth_rate, player_slug):
 # stesse query di mercato -- il prezzo reale non cambia cosi' spesso da
 # giustificarle ogni volta, e questo tool non decide acquisti in автономia.
 PREZZI_CACHE_PATH = os.path.join(REPO_ROOT, 'best_five_prezzi_cache.json')
-PREZZI_CACHE_TTL_ORE = float(os.environ.get('BEST_FIVE_PREZZI_CACHE_TTL_ORE', '24'))
+# TTL alzato 24h -> 5 giorni (31/07, richiesta esplicita utente): con le run
+# ripetute della stessa giornata il prezzo minimo non si muove abbastanza da
+# giustificare di riscaricarlo ogni giorno, e ogni miss costa richieste su un
+# rate limit gia' stretto (vedi le ondate di 429 su MLS). Questo tool aiuta a
+# scegliere la formazione, non decide acquisti: un prezzo di qualche giorno fa
+# e' piu' che sufficiente.
+PREZZI_CACHE_TTL_ORE = float(os.environ.get('BEST_FIVE_PREZZI_CACHE_TTL_ORE', str(24 * 5)))
 
 
 def _prezzi_cache_leggi():
@@ -991,6 +997,35 @@ def fetch_prezzi(slugs):
     # mercati sottili dove i primi annunci restituiti coprono gia' il
     # minimo reale nella grande maggioranza dei casi.
     bp.LIVE_OFFERS_PAGE_SIZE = 10
+
+    # FIX BUG REALE (31/07, run MLS standalone: "pieno di 429, non riesco a
+    # completare nemmeno una singola run"). Due cause distinte, entrambe qui:
+    #
+    # 1) IL PACER PARTE TROPPO VELOCE. bot_profit.py assume di iniziare col
+    #    secchio del rate limit PIENO, quindi parte a
+    #    GRAPHQL_MIN_INTERVAL_SECONDS_FAST (0.2s) e scende a SAFE (0.9s) solo
+    #    DOPO aver incassato il primo 429. Vero per bot_profit, che e' la
+    #    prima cosa che gira nel suo processo; FALSO per Best Five, che
+    #    arriva qui dopo discovery + starterOdds + predict, cioe' con
+    #    centinaia di richieste gia' spese sullo stesso account (e per giunta
+    #    fatte con 'requests' diretto, mai viste dal pacer). Risultato: la
+    #    prima raffica va a vuoto e ogni ondata costa 45s di pausa GLOBALE su
+    #    tutti i thread -- su MLS, che ha il pool piu' grande, le ondate si
+    #    accumulano fino a far scadere il job. Qui si parte direttamente al
+    #    ritmo SAFE, senza pagare la scoperta.
+    bp._pace_interval[0] = max(bp._pace_interval[0], bp.GRAPHQL_MIN_INTERVAL_SECONDS_SAFE)
+    bp._pace_floor[0] = max(bp._pace_floor[0], bp.GRAPHQL_MIN_INTERVAL_SECONDS_SAFE)
+
+    # 2) OGNI GIOCATORE COSTAVA FINO A 2 RICHIESTE. fetch_all_live_offers
+    #    pagina fino a LIVE_OFFERS_MAX_PAGES (2 di default): con page size
+    #    gia' ridotto a 10, la seconda pagina raddoppia il costo per i soli
+    #    giocatori con mercato liquido. Per il minimo di prezzo -- l'unica
+    #    cosa che serve a Best Five -- una pagina basta nella stragrande
+    #    maggioranza dei casi (stesso ragionamento gia' fatto per il page
+    #    size, vedi sopra). Dimezza le richieste sui giocatori piu' scambiati,
+    #    che sono esattamente quelli che facevano scattare le ondate.
+    bp.LIVE_OFFERS_MAX_PAGES = 1
+
     eth_rate = bp.get_eth_rate()
     ts_ora = ora.isoformat()
 
