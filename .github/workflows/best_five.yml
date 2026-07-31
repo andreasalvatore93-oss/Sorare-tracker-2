@@ -221,7 +221,12 @@ jobs:
     needs: [prefiltro_merge, predict]
     if: needs.prefiltro_merge.outputs.gruppi != '' && needs.prefiltro_merge.outputs.gruppi != '[]'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 31/07: alzato da 20 a 30 -- con piu' leghe in Contender le query prezzo
+    # di mercato (fetch_prezzi) prendono piu' 429/backoff se altre leghe
+    # interrogano l'API in contemporanea (vedi max-parallel ridotto in
+    # best_five_contender.yml), 20 min bastava appena e la run mista a 5
+    # leghe del 31/07 e' stata cancellata per questo.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -299,7 +304,24 @@ jobs:
             echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
             sleep $((RANDOM % 8 + 3))
             git fetch origin main
-            git merge --no-edit -X ours origin/main
+            if git merge --no-edit origin/main; then
+              continue
+            fi
+            # 31/07: conflitto vero (piu' leghe in parallelo scrivono la
+            # STESSA cache prezzi condivisa). Se il conflitto e' solo su
+            # best_five_prezzi_cache.json, unione a livello JSON (mai -X ours
+            # qui: scarterebbe silenziosamente i prezzi fetchati dall'altra
+            # lega, stesso tipo di bug gia' visto sui JSON di discovery).
+            CONFLITTI=$(git diff --name-only --diff-filter=U)
+            if [ "$CONFLITTI" = "best_five_prezzi_cache.json" ]; then
+              python3 merge_prezzi_cache.py best_five_prezzi_cache.json
+              git add best_five_prezzi_cache.json
+              git commit --no-edit
+            else
+              echo "Conflitto su file inattesi ($CONFLITTI), fallback -X ours."
+              git merge --abort
+              git merge --no-edit -X ours origin/main
+            fi
           done
           echo "Salvato correttamente."
       # Notifica DOPO il salvataggio (non "always()": un link a un HTML mai

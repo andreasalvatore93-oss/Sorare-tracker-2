@@ -64,7 +64,16 @@ jobs:
     needs: build_matrix
     strategy:
       fail-fast: false
-      max-parallel: 5
+      # 31/07: ridotto da 5 a 2 -- con tutte le leghe in parallelo, ognuna fa
+      # le SUE query di prezzo di mercato (fetch_prezzi) sull'API Sorare nello
+      # stesso momento, aumentando i 429/backoff e facendo scadere il timeout
+      # dello step 'report' (successo lentissimo, poi cancellato manualmente
+      # sulla run mista a 5 leghe). Con max-parallel basso: meno pressione
+      # simultanea sull'API, e le leghe del secondo batch beneficiano della
+      # cache prezzi gia' scritta (e committata) dal primo batch nella STESSA
+      # run -- prima non succedeva perche' i job paralleli partono tutti dallo
+      # stesso checkout iniziale e non si vedono a vicenda.
+      max-parallel: 2
       matrix:
         lega: ${{ fromJson(needs.build_matrix.outputs.leghe_json) }}
     uses: ./.github/workflows/best_five.yml
@@ -112,9 +121,31 @@ jobs:
           git add formazione_contender/output/best_five best_five_prezzi_cache.json 2>/dev/null || true
           git diff --cached --quiet && exit 0
           git commit -m "Best Five Contender: risultati run $(date -u '+%Y-%m-%d %H:%M UTC')"
-          until git pull --no-edit --no-rebase origin main && git push origin main; do
-            echo "push fallito, retry..."
-            sleep 5
+          attempt=0
+          until git push origin main; do
+            attempt=$((attempt + 1))
+            if [ $attempt -ge 5 ]; then
+              echo "Impossibile salvare dopo 5 tentativi, abbandono."
+              exit 1
+            fi
+            echo "Push fallito, ritento tra qualche secondo... (tentativo $attempt)"
+            sleep $((RANDOM % 8 + 3))
+            git fetch origin main
+            if git merge --no-edit origin/main; then
+              continue
+            fi
+            # Stesso motivo di best_five.yml: conflitto atteso solo sulla
+            # cache prezzi condivisa (mai -X ours, unione a livello JSON).
+            CONFLITTI=$(git diff --name-only --diff-filter=U)
+            if [ "$CONFLITTI" = "best_five_prezzi_cache.json" ]; then
+              python3 merge_prezzi_cache.py best_five_prezzi_cache.json
+              git add best_five_prezzi_cache.json
+              git commit --no-edit
+            else
+              echo "Conflitto su file inattesi ($CONFLITTI), fallback -X ours."
+              git merge --abort
+              git merge --no-edit -X ours origin/main
+            fi
           done
       - name: Notifica Telegram
         env:
