@@ -628,6 +628,15 @@ def main():
             entry = dict(copie_di.get(slug) or {'in_season': 1, 'classic': 0})
             if l10 is not None:
                 entry['l10'] = l10
+            # starterOdds PERSISTITE (31/07, richiesta esplicita utente): fin
+            # qui le odds servivano solo a filtrare e poi venivano buttate,
+            # quindi a valle nessuno sapeva PIU' se un candidato fosse un
+            # titolare all'80% o un dubbio al 70%. Servono al tie-break fra
+            # giocatori con punteggio quasi identico (vedi PREFERENZA_ODDS_*
+            # in build_formazione_globale.py). Nessuna query in piu': il dato
+            # e' gia' in mano qui, viene solo salvato.
+            if odds is not None:
+                entry['starter_odds'] = odds
             if u23_di.get(slug):
                 entry['u23'] = True
             if power_di.get(slug):

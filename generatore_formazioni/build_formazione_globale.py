@@ -521,6 +521,17 @@ def load_league_role_data():
                 row['league'] = league
                 row['_source_ts'] = ts_file
             counts, _ = bff.load_card_counts(DISCOVERY_DIRS[league][role])
+            # starterOdds sulle righe (31/07): il valore e' gia' dentro
+            # player_card_counts.json, scritto da discovery_fixture.py nella
+            # stessa entry di copie/L10 -- serve al tie-break fra candidati
+            # con punteggio quasi identico (vedi _chiave_ordinamento). Chi non
+            # ce l'ha (discovery vecchia, precedente a questo fix) resta senza
+            # e viene trattato come "odds ignote", quindi nessun bonus:
+            # comportamento invariato rispetto a prima.
+            for row in rows:
+                odds = (counts.get(row['slug']) or {}).get('starter_odds')
+                if odds is not None:
+                    row['starter_odds'] = odds
             names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
             role_data[league][role] = rows
@@ -563,6 +574,35 @@ def build_quality_pools(role_data):
     }
 
 
+# --- Preferenza per le starter odds alte (31/07, richiesta esplicita utente)
+#
+# Regola voluta: "se il bot deve scegliere tra due giocatori con project score
+# entro 2 punti di distanza, preferire quello con starter odds 0.80 anche se
+# l'altro ha un punteggio maggiore". Esempio dell'utente: Son 66 (0.70) contro
+# Zinckernagel 64 (0.80) -> vince Zinckernagel; ma se Zinckernagel avesse 63
+# (scarto 3) -> vince Son.
+#
+# Implementata come BONUS di PREFERENZA_ODDS_SCARTO punti al punteggio di
+# ordinamento, non come confronto a coppie: un "sono equivalenti entro 2
+# punti" non e' un ordinamento valido (A~B e B~C non implicano A~C, quindi il
+# risultato dipenderebbe dall'ordine di confronto). Col bonus invece la
+# regola vale sempre e in modo trasparente:
+#   Zinck 64 + 2 = 66 pari a Son 66 -> a parita' vince chi ha le odds piu'
+#   alte, quindi Zinck. Zinck 63 + 2 = 65 < 66 -> vince Son. Esattamente i due
+#   casi dell'esempio.
+# NON tocca il punteggio mostrato ne' i totali: agisce solo sull'ordine con
+# cui i candidati vengono considerati.
+PREFERENZA_ODDS_SOGLIA = float(os.environ.get('PREFERENZA_ODDS_SOGLIA', '0.80'))
+PREFERENZA_ODDS_SCARTO = float(os.environ.get('PREFERENZA_ODDS_SCARTO', '2'))
+
+
+def _chiave_ordinamento(row):
+    base = row.get('sort_score', row['atteso'])
+    odds = row.get('starter_odds') or 0.0
+    bonus = PREFERENZA_ODDS_SCARTO if odds >= PREFERENZA_ODDS_SOGLIA else 0.0
+    return (base + bonus, odds)
+
+
 def _sort_ordinamento(rows):
     # REVERTITO (30/07, stesso motivo di build_consiglio_def.py/build_
     # consiglio.py -- vedi RIASSUNTO sez. 0.D punto 30): il vecchio
@@ -571,7 +611,7 @@ def _sort_ordinamento(rows):
     # nonostante il fix a monte -- bug reale trovato in corsa. Ordina sempre
     # per 'sort_score' se presente (bonus XP per la selezione, vedi
     # _apply_xp_bonus), altrimenti per 'atteso' (il punteggio vero).
-    rows.sort(key=lambda r: r.get('sort_score', r['atteso']), reverse=True)
+    rows.sort(key=_chiave_ordinamento, reverse=True)
     return rows
 
 

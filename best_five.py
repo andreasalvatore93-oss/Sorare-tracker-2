@@ -433,7 +433,11 @@ def prefiltra_starter_odds(ruolo, slugs, soglia=MIN_STARTER_ODDS_PREFILTER):
         odds = fetch_next_match_starter_odds(slug)
         esito = f"{odds:.0%}" if odds is not None else "N/D"
         if odds is not None and odds >= soglia:
-            sopravvissuti.append(slug)
+            # (slug, odds): le odds servono a valle per il tie-break fra
+            # candidati con punteggio quasi identico (31/07, richiesta
+            # esplicita utente) -- prima venivano usate solo per filtrare e
+            # poi buttate via.
+            sopravvissuti.append((slug, odds))
             log(f"[{ruolo}] [{idx}/{len(slugs)}] {slug}: starterOdds={esito} -> TENUTO")
         else:
             log(f"[{ruolo}] [{idx}/{len(slugs)}] {slug}: starterOdds={esito} -> scartato (< {soglia:.0%})")
@@ -626,7 +630,7 @@ def run_prediction_pool_prefiltrato(lega, ruolo):
     sopravvissuti = prefiltra_starter_odds(ruolo, pool)
     log(f"[{ruolo}] Sopravvissuti al prefiltro: {len(sopravvissuti)}/{len(pool)}.")
 
-    for idx, slug in enumerate(sopravvissuti, 1):
+    for idx, (slug, _odds) in enumerate(sopravvissuti, 1):
         log(f"[{ruolo}] [{idx}/{len(sopravvissuti)}] Predizione per {slug}...")
         run_prediction_su_slug(lega, ruolo, slug)
         if idx < len(sopravvissuti):
@@ -768,6 +772,31 @@ CONSIGLIO_SCRIPTS = {
 CONSIGLIO_RIGA_RE = re.compile(r'^\d+\)\s+([\w\-]+):\s+(-?\d+)\s+pt\s+\((-?\d+)-(-?\d+)\)\s*$')
 
 _SLUG_DA_FILENAME_RE = re.compile(r'^prediction_(.+)_\d{4}-\d{2}-\d{2}_\d{6}\.txt$')
+
+
+def _odds_run_corrente():
+    """{slug: odds} dei sopravvissuti al prefiltro di QUESTO run (31/07,
+    richiesta esplicita utente): serve ad attaccare le starterOdds alle righe
+    del consiglio, cosi' il tie-break condiviso con la produzione
+    (_chiave_ordinamento in build_formazione_globale.py) puo' preferire un
+    titolare all'80% a uno al 70% quando i punteggi sono quasi pari. Vuoto in
+    uso locale/manuale, dove PREFILTRO_GRUPPI non e' impostata: in quel caso
+    nessun bonus e comportamento invariato."""
+    items = _sopravvissuti_run_corrente()
+    if not items:
+        return {}
+    return {it['slug']: it['odds'] for it in items if it.get('odds') is not None}
+
+
+def _attach_odds(role_data_dict, odds_map):
+    """Attacca 'starter_odds' a ogni riga per cui l'abbiamo."""
+    if not odds_map:
+        return
+    for rows in role_data_dict.values():
+        for r in rows:
+            odds = odds_map.get(r['slug'])
+            if odds is not None:
+                r['starter_odds'] = odds
 
 
 def _sopravvissuti_run_corrente():
@@ -1648,6 +1677,7 @@ def costruisci_formazione_vera(lega, count):
     if mancanti:
         log(f"ATTENZIONE: ruoli senza candidati: {mancanti} — la formazione potrebbe non essere generabile.")
 
+    _attach_odds(role_data_lega, _odds_run_corrente())
     prezzi = _attach_prezzi(role_data_lega)
     eta_map = _attach_eta(role_data_lega) if GENERA_UNDER23 else {}
 
@@ -2582,6 +2612,7 @@ def costruisci_formazione_contender(leghe, count):
     if mancanti:
         log(f"ATTENZIONE: ruoli senza candidati nel pool Contender combinato: {mancanti}.")
 
+    _attach_odds(merged_role_data, _odds_run_corrente())
     prezzi = _attach_prezzi(merged_role_data)
     eta_map = _attach_eta(merged_role_data) if GENERA_UNDER23 else {}
 
@@ -2918,7 +2949,7 @@ def raccogli_sopravvissuti(lega, ruoli):
         log(f"[{ruolo}] Prefiltro starterOdds >= {MIN_STARTER_ODDS_PREFILTER:.0%} sulla prossima partita...")
         survived = prefiltra_starter_odds(ruolo, pool)
         log(f"[{ruolo}] Sopravvissuti al prefiltro: {len(survived)}/{len(pool)}.")
-        sopravvissuti.extend({'ruolo': ruolo, 'slug': s} for s in survived)
+        sopravvissuti.extend({'ruolo': ruolo, 'slug': sl, 'odds': od} for sl, od in survived)
     return sopravvissuti
 
 
@@ -2997,7 +3028,7 @@ def cmd_prefiltra_shard(lega, payload_b64, out_path):
         log(f"[{ruolo}] Prefiltro starterOdds >= {MIN_STARTER_ODDS_PREFILTER:.0%} "
             f"su {len(slugs)} candidati di questo shard...")
         survived = prefiltra_starter_odds(ruolo, slugs)
-        sopravvissuti.extend({'ruolo': ruolo, 'slug': s} for s in survived)
+        sopravvissuti.extend({'ruolo': ruolo, 'slug': sl, 'odds': od} for sl, od in survived)
     os.makedirs(os.path.dirname(out_path) or '.', exist_ok=True)
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(sopravvissuti, f)
