@@ -5112,3 +5112,63 @@ costante e controllare che l'output cambi. Il pattern
 `formazione_mls/diagnostics/audit_costanti_vive.py` fa esattamente questo per tutte le costanti
 di tuning e va rilanciato dopo ogni sessione che ne aggiunge di nuove. Un controllo positivo è
 obbligatorio: se NESSUNA costante risulta viva, è rotto il test, non il codice.
+
+## 39. Sessione 31/07 (continua) — Best Five/Contender: allineamento, bug reali, prezzi, formazioni a valore
+
+Sessione lunghissima interamente dedicata al tool "Best Five"/"Contender". Dettaglio tecnico
+completo in `docs/HANDOFF_BEST_FIVE.md` (riscritto da zero oggi) — qui solo il riassunto dei punti
+principali per chi riprende da questo file.
+
+**Bug reale trovato e corretto — disallineamento con la produzione**: Best Five chiamava
+`bff.generate_lineups_for_type` di `formazione_mls/build_formazione_finale.py`, funzione che
+l'audit del 31/07 (sezione 38) segnala esplicitamente come "NON USATA IN PRODUZIONE" — usava
+`variance_mode` sempre attivo e un bonus sinergia In Season disattivato in produzione dopo test
+A/B. Fix: ora chiama davvero `generatore_formazioni/build_formazione_globale.py`. Verificato
+contro la run reale di produzione #86: punteggi identici giocatore per giocatore.
+
+**Leghe aggiunte** (discovery_global + fix `CONSIGLIO_DISCOVERY_FILE`): austria, croazia,
+germania2, scozia, portogallo, danimarca, argentina (oltre a mls/kleague/germania già pronte).
+Norvegia in backlog (mai tracciata, serve pipeline intera da zero). Bug reale trovato su Croazia:
+`build_consiglio_<ruolo>.py` ignorava silenziosamente il pool globale su tutte le leghe tranne
+mls/kleague/germania (patch del 30/07 mai propagata) — causa del "pochi giocatori trovati", non
+un problema di starterOdds come inizialmente sospettato.
+
+**Bug reale trovato su Scozia — cap L10 Arena rotto**: `bff._pareto_frontier` collassa a un solo
+candidato per ruolo quando l'L10 è sconosciuto/0.0 per tutti (sempre vero nella CardPool sintetica
+di Best Five). Il cap 260 non era comunque mai stato un vincolo reale in Best Five (MLS/K
+League/Contender sono IN_SEASON, senza cap per design) — ora disattivato di default, con un
+interruttore esplicito (`rispetta_cap_l10`) per chi vuole un'Arena davvero legale (fetcha l'L10
+reale, query aggiuntiva).
+
+**Feature "Contender"**: pool combinato di N leghe (`best_five.py contender --leghe ...`),
+automatizzato con `best_five_contender.yml` (orchestratore: lancia `best_five.yml` per ogni lega
+in parallelo, poi fa il merge da solo). Funziona tecnicamente con QUALSIASI combinazione di
+leghe, non solo quelle della vera Contender Sorare (~20 campionati, slug `seasonal-contenders`
+confermato via query live).
+
+**Feature prezzi di mercato**: `fetch_prezzi` riusa il meccanismo di scansione di
+`scanners/bot_profit.py` (non l'ascolto live di `bot_definitivo.py`). Bug reale: page size
+default (50) superava il limite di complessità GraphQL dell'account (1306 vs 500 max) — ridotto a
+10. Cache 24h su file condiviso (`best_five_prezzi_cache.json`, per slug non per lega) per non
+rifare le stesse query tra run ravvicinate — richiesta esplicita utente ("tool di aiuto, non così
+fiscale sui prezzi").
+
+**Formazioni Cheapest + Ottimizzata valore** (6 totali, dietro flag `genera_cheapest`, default
+true): 3 configurazioni (4in season+1classic senza/con cap 260, nessun limite classic con cap
+260) x2 varianti — prezzo minimo assoluto, e "valore" (massimizza punteggio - prezzo/soglia,
+soglia = media prezzo/punteggio calcolata sul pool REALE di quella run, non un moltiplicatore
+arbitrario — nata da un caso reale, Ryan Astley 51pt/0.50€ scartato a favore di uno più economico
+ma con 9 punti in meno). Entrambe knapsack isolati, mai `bff.CardPool`.
+
+**Bug di processo (non di codice) — race condition**: lanciare una run standalone e una Contender
+che include la stessa lega quasi in contemporanea le fa scrivere sugli stessi file e scontrarsi
+(report con "0 formazioni generate", dati di un'altra lega trapelati). Da allora: sempre in
+sequenza, mai in parallelo sulla stessa lega.
+
+**Verificato con test reali in sequenza** (Scozia standalone → Croazia standalone → Croazia+Scozia
+mix → Scozia+Austria+Croazia+MLS+K League mix, ciascuno atteso fino a completamento): tutti
+riusciti, prezzi condivisi correttamente dalla cache tra run diverse sulla stessa lega.
+
+**Backlog aperto**: propagare il fix `CONSIGLIO_DISCOVERY_FILE` alle ~20 leghe minori restanti
+(chip spawnato in sessione), Norvegia da zero, consolidare i dati di calibrazione raccolti oggi
+(`consolida_dati_globali.py`) e valutare ricalibrazioni sulle leghe dove manca.
