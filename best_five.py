@@ -162,9 +162,10 @@ ROLE_LABELS = {
     'fwd': 'ATTACCANTE',
 }
 
-# Leghe con discovery GLOBALE completa per tutti e 4 i ruoli (30/07).
+# Leghe con discovery GLOBALE completa per tutti e 4 i ruoli (aggiornato 31/07:
+# austria/croazia/germania2 per il backlog Contender, scozia lega a se').
 # Aggiornare quando altre leghe completano la discovery globale su tutti i ruoli.
-LEGHE_SUPPORTATE = ('mls', 'kleague', 'germania')
+LEGHE_SUPPORTATE = ('mls', 'kleague', 'germania', 'austria', 'croazia', 'germania2', 'scozia')
 
 RIGA_GIOCATORE_RE = re.compile(r'^\d+\)\s+([\w\-]+):\s+(-?\d+)\s+pt attesi \((-?\d+)-(-?\d+)\)\s*$')
 RIGA_ORDINAMENTO_RE = re.compile(r'^\s*ORDINAMENTO:\s*(-?\d+(?:\.\d+)?)\s*$')
