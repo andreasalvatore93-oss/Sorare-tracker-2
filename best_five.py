@@ -2014,6 +2014,122 @@ def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
 # solo meno avversione al prezzo: con una soglia piu' alta un candidato
 # piu' caro ma migliore diventa relativamente piu' conveniente in
 # 'punteggio - prezzo/soglia').
+# --- "Cheapest fill 260" (31/07, richiesta esplicita utente) --------------
+#
+# Idea: il cap L10 e' un BUDGET. Una formazione che ne usa 79 su 260 lo sta
+# sprecando -- l'L10 e' un proxy della qualita' della carta, quindi restare
+# molto sotto il cap significa quasi sempre schierare giocatori piu' deboli
+# del consentito. Qui si costruisce la formazione che AVVICINA il cap il piu'
+# possibile senza sforarlo, al prezzo combinato minimo.
+#
+# Vincolo DISTRIBUTIVO (richiesta esplicita: "non ha senso mettere un
+# giocatore con l10 di 80 e altri 4 con l10 di 30"): nessuno schierato puo'
+# superare FILL_QUOTA_MAX volte la quota media (cap/5). Con cap 260 la quota
+# e' 52 e il tetto per giocatore 52*1.6 = 83.2, quindi il caso "80 + quattro
+# da 30" non e' costruibile. E' un vincolo per-candidato, quindi entra nella
+# DP come semplice filtro senza complicarne lo stato.
+#
+# Criterio di scelta finale, in quest'ordine (l'utente: "cio' che conta e'
+# sempre il projected score"):
+#   1) punteggio atteso totale piu' alto
+#   2) a parita' di punteggio, prezzo piu' basso
+#   3) a parita' di entrambi, L10 usato piu' alto
+# Il "fill" non e' quindi un fine in se': e' il vincolo che apre l'accesso ai
+# giocatori forti, ma fra due formazioni si sceglie sempre quella che segna
+# di piu'. Chi ha L10 ignoto (non letto) e' ESCLUSO da questa formazione: qui
+# il cap e' il punto centrale, contarlo 0 falserebbe tutto (vedi il bug del
+# 31/07 in fetch_l10_reale).
+FILL_QUOTA_MAX = float(os.environ.get('BEST_FIVE_FILL_QUOTA_MAX', '1.6'))
+FILL_SOGLIA_MIN = float(os.environ.get('BEST_FIVE_FILL_SOGLIA_MIN', '0.75'))
+
+
+def _ottimizza_lineup_fill_cap(shape, role_data, prezzi, max_classic, l10_cap, l10_map):
+    """Formazione che riempie il piu' possibile il cap L10 senza sforarlo,
+    al prezzo minimo, con distribuzione equilibrata -- vedi il commento sopra.
+    None se il cap non e' dato o se il pool non basta."""
+    if l10_cap is None or not l10_map:
+        return None
+    rarita_ammesse = ('in_season',) if max_classic == 0 else ('in_season', 'classic')
+    cap_units = int(round(l10_cap * _RES_L10))
+    n_slot = len(shape['role_slots']) + 1  # 4 ruoli + EXTRA
+    quota_media = l10_cap / n_slot
+    tetto_giocatore = quota_media * FILL_QUOTA_MAX
+
+    def candidati(role):
+        out = []
+        for row, rarita, prezzo, l10 in _candidati_prezzo_ruolo(
+                role_data.get(role, []), prezzi, l10_map, rarita_ammesse):
+            # L10 ignoto (0.0 perche' non letto o assente): escluso, qui il
+            # cap e' il cuore del calcolo e non si puo' tirare a indovinare.
+            if not l10 or l10 <= 0:
+                continue
+            if l10 > tetto_giocatore:
+                continue
+            out.append((row, rarita, prezzo, l10))
+        return out
+
+    # stato (l10_units, n_classic) -> (punteggio_tot, prezzo_tot, picks, usati)
+    states = {(0, 0): (0, 0.0, {}, frozenset())}
+    for role in shape['role_slots']:
+        cands = candidati(role)
+        if not cands:
+            return None
+        nuovi = {}
+        for (l10u, ncl), (score_tot, prezzo_tot, picks, usati) in states.items():
+            for row, rarita, prezzo, l10 in cands:
+                if row['slug'] in usati:
+                    continue
+                nc = ncl + (1 if rarita == 'classic' else 0)
+                if max_classic is not None and nc > max_classic:
+                    continue
+                l10u2 = l10u + int(round(l10 * _RES_L10))
+                if l10u2 > cap_units:
+                    continue
+                key = (l10u2, nc)
+                cand = (score_tot + row['atteso'], prezzo_tot + prezzo)
+                cur = nuovi.get(key)
+                # per ogni stato si tiene il punteggio piu' alto, poi il prezzo piu' basso
+                if cur is None or cand[0] > cur[0] or (cand[0] == cur[0] and cand[1] < cur[1] - 1e-9):
+                    new_picks = dict(picks)
+                    new_picks[role] = (row, rarita, prezzo)
+                    nuovi[key] = (cand[0], cand[1], new_picks, usati | {row['slug']})
+        if not nuovi:
+            return None
+        states = nuovi
+
+    extra_cands = []
+    for role in shape['extra_roles']:
+        extra_cands.extend((role, row, rarita, prezzo, l10)
+                            for row, rarita, prezzo, l10 in candidati(role))
+
+    migliore = None  # (score, -prezzo, l10_units, picks)
+    for (l10u, ncl), (score_tot, prezzo_tot, picks, usati) in states.items():
+        for role, row, rarita, prezzo, l10 in extra_cands:
+            if row['slug'] in usati:
+                continue
+            nc = ncl + (1 if rarita == 'classic' else 0)
+            if max_classic is not None and nc > max_classic:
+                continue
+            l10u2 = l10u + int(round(l10 * _RES_L10))
+            if l10u2 > cap_units:
+                continue
+            chiave = (score_tot + row['atteso'], -(prezzo_tot + prezzo), l10u2)
+            if migliore is None or chiave > migliore[0]:
+                risultato = dict(picks)
+                risultato['EXTRA'] = (role, row, rarita, prezzo)
+                migliore = (chiave, prezzo_tot + prezzo, score_tot + row['atteso'], l10u2, risultato)
+    if migliore is None:
+        return None
+    _, prezzo_tot, score_tot, l10_units, picks = migliore
+    l10_totale = l10_units / _RES_L10
+    if l10_totale < l10_cap * FILL_SOGLIA_MIN:
+        log(f"[fill {l10_cap:.0f}] ATTENZIONE: riempiti solo {l10_totale:.1f}/{l10_cap:.0f} "
+            f"({l10_totale / l10_cap:.0%}) -- pool troppo povero di carte con L10 alto "
+            f"e prezzo noto, oppure troppi L10 non letti.")
+    return {'prezzo_totale': prezzo_tot, 'punteggio_totale': score_tot, 'picks': picks,
+            'l10_totale': l10_totale, 'l10_cap': l10_cap, 'l10_ignoti': 0}
+
+
 VALORE_MOLTIPLICATORI = (1, 2, 3)
 _VALORE_CONFIG = ('Nessun limite Classic (fino a 5), cap L10 260', None, 260.0)
 
@@ -2041,6 +2157,15 @@ def blocco_cheapest(bff, card_pool, role_data_dict, prezzi, l10_map):
         t, h = _render_cheapest(bff, card_pool, etichetta, risultato, titolo='Ottimizzata valore (prezzo/punteggio)')
         testi.append(t)
         html_parti.append(h)
+
+    # "Cheapest fill 260" (31/07, richiesta esplicita utente): sfrutta il cap
+    # invece di lasciarlo inutilizzato -- vedi _ottimizza_lineup_fill_cap.
+    risultato_fill = _ottimizza_lineup_fill_cap(shape, role_data_dict, prezzi,
+                                                 max_classic_v, l10_cap_v, l10_map)
+    t, h = _render_cheapest(bff, card_pool, label_v, risultato_fill,
+                             titolo=f'Cheapest fill {l10_cap_v:.0f} (riempie il cap, prezzo minimo)')
+    testi.append(t)
+    html_parti.append(h)
     return "\n\n".join(testi), "".join(html_parti)
 
 
@@ -2510,6 +2635,7 @@ RESTYLE_JS = """
     var t = (h3.textContent || '').trim();
     if (t.indexOf('Cheapest Under-23') === 0) return 'under23';
     if (t.indexOf('Ottimizzata valore') === 0) return 'valore';
+    if (t.indexOf('Cheapest fill') === 0) return 'valore';
     if (t.indexOf('Cheapest') === 0) return 'cheapest';
     if (t.indexOf('Top') === 0) return 'esclusi';
     return null;
