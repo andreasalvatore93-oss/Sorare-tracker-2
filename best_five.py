@@ -781,6 +781,97 @@ def _import_gg():
     return module
 
 
+# --- Prezzo minimo di mercato (31/07, richiesta esplicita utente) ----------
+#
+# Riusa il meccanismo di SCANSIONE di scanners/bot_profit.py (query
+# LIVE_OFFERS_QUERY su tokens.liveSingleSaleOffers, con throttling/backoff
+# globale gia' tarato -- vedi memoria project_bot_profit_429_varianza_causa_
+# ignota) -- NON quello di bots/bot_definitivo.py, che e' il bot che ASCOLTA
+# il mercato in tempo reale via websocket (side-effect di blacklist inclusi),
+# inadatto a una query puntuale come questa. Solo lettura, nessun effetto
+# collaterale (a differenza di bot_profit.py, qui non si aggiorna nessuna
+# blacklist/cache -- e' un semplice snapshot).
+#
+# Interrogato SOLO sui giocatori gia' sopravvissuti al prefiltro starterOdds
+# di QUESTA run (role_data_lega/merged_role_data), non sull'intero pool
+# scoperto -- stesso principio del prefiltro stesso, il costo resta bounded.
+def _import_bot_profit():
+    path = os.path.join(REPO_ROOT, 'scanners', 'bot_profit.py')
+    spec = importlib.util.spec_from_file_location('bot_profit_best_five', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _prezzi_minimi_slug(bp, eth_rate, player_slug):
+    """Ritorna (prezzo_minimo_in_season, prezzo_minimo_classic) in EUR per uno
+    slug, None per la rarita' senza annunci live -- entrambi calcolati dagli
+    STESSI nodi (un solo fetch), a differenza di bp.get_current_minimum che
+    ne restituisce uno solo in base alle regole di esclusione lega (qui
+    servono SEMPRE entrambi, per mostrarli affiancati)."""
+    nodes = bp.fetch_all_live_offers(player_slug)
+    prezzi_in_season, prezzi_classic = [], []
+    for node in nodes:
+        if node.get('status') != 'opened':
+            continue
+        if (node.get('receiverSide') or {}).get('anyCards'):
+            continue  # scambio carta-per-carta, non una vendita in denaro
+        cards = (node.get('senderSide') or {}).get('anyCards') or []
+        match = None
+        for c in cards:
+            if c.get('rarityTyped') != 'limited' or c.get('sport') != 'FOOTBALL':
+                continue
+            match = c
+            break
+        if not match:
+            continue
+        prezzo = bp.eur_price_from_amounts((node.get('receiverSide') or {}).get('amounts'), eth_rate)
+        if prezzo is None:
+            continue
+        if match.get('inSeasonEligible'):
+            prezzi_in_season.append(prezzo)
+        else:
+            prezzi_classic.append(prezzo)
+    return (min(prezzi_in_season) if prezzi_in_season else None,
+            min(prezzi_classic) if prezzi_classic else None)
+
+
+def fetch_prezzi(slugs):
+    """Prezzo minimo in_season/classic per ciascuno slug in 'slugs' (deduplicati).
+    Ritorna {slug: {'in_season': float|None, 'classic': float|None}}. Import
+    dinamico di bot_profit.py fatto qui (non a livello di modulo) per non
+    pagare il costo di caricamento/pip curl_cffi quando questa funzione non
+    viene mai chiamata (es. tutte le modalita' --matrice/--predict-shard)."""
+    bp = _import_bot_profit()
+    eth_rate = bp.get_eth_rate()
+    prezzi = {}
+    unici = sorted(set(slugs))
+    log(f"[prezzi] Interrogo il mercato per {len(unici)} giocatori (in_season+classic, un fetch ciascuno)...")
+    for idx, slug in enumerate(unici, 1):
+        in_season, classic = _prezzi_minimi_slug(bp, eth_rate, slug)
+        prezzi[slug] = {'in_season': in_season, 'classic': classic}
+        if idx % 20 == 0 or idx == len(unici):
+            log(f"[prezzi] [{idx}/{len(unici)}] fatto.")
+    return prezzi
+
+
+def _attach_prezzi(role_data_dict):
+    """Fetcha i prezzi per TUTTI gli slug presenti in role_data_dict (dict
+    ROLE -> lista di righe consiglio, gia' filtrate per starterOdds a monte)
+    e li attacca ad ogni riga come 'prezzo_in_season'/'prezzo_classic' --
+    cosi' sia le formazioni generate sia _blocco_top_esclusi possono
+    mostrarli senza rifetchare nulla. Ritorna anche il dict {slug: {...}}
+    grezzo, per l'annotazione HTML finale (vedi _annota_prezzi_html)."""
+    tutti_slug = [r['slug'] for rows in role_data_dict.values() for r in rows]
+    prezzi = fetch_prezzi(tutti_slug)
+    for rows in role_data_dict.values():
+        for r in rows:
+            info = prezzi.get(r['slug'], {})
+            r['prezzo_in_season'] = info.get('in_season')
+            r['prezzo_classic'] = info.get('classic')
+    return prezzi
+
+
 def _registra_tipo_arena(gg, lega):
     """FIX (31/07, bug reale: KeyError 'AUSTRIA_ARENA' su una lega che NON e'
     tra le ARENA_LEAGUES di produzione -- quella lista e' una tupla fissa di
@@ -850,6 +941,8 @@ def costruisci_formazione_vera(lega, count):
     if mancanti:
         log(f"ATTENZIONE: ruoli senza candidati: {mancanti} — la formazione potrebbe non essere generabile.")
 
+    prezzi = _attach_prezzi(role_data_lega)
+
     # displayName reale Sorare (30/07, richiesta esplicita utente: "il nome
     # sulle carte deve essere il display name non lo slug"). LIMITE NOTO:
     # player_names.json esiste solo nella discovery POSSEDUTI (scritto da
@@ -885,6 +978,7 @@ def costruisci_formazione_vera(lega, count):
     # MLS_IN_SEASON/KLEAGUE_IN_SEASON, Best Five lo eredita automaticamente.
     all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
     generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
+    lineup_blocks = [_annota_prezzi_testo(b, prezzi) for b in lineup_blocks]
 
     testo_esclusi, html_esclusi = _blocco_top_esclusi(role_data_lega, card_pool)
     lineup_blocks.append(testo_esclusi)
@@ -892,7 +986,20 @@ def costruisci_formazione_vera(lega, count):
 
     log(f"Formazione vera: {generated}/{count} generate (pool globale, CardPool sintetica, "
         f"tipo={tipo}, stesso motore della produzione).")
-    return bff, generated, totale, lineup_blocks, lineup_html_blocks
+    return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi
+
+
+def _prezzo_str(row):
+    """'IS: 12.50EUR | CL: 4.00EUR' -- 'N/D' per la rarita' senza annunci
+    live. row puo' non avere affatto i campi prezzo (fetch_prezzi non ancora
+    chiamata, es. in un contesto di test) -- in quel caso stringa vuota."""
+    if 'prezzo_in_season' not in row and 'prezzo_classic' not in row:
+        return ""
+    isp = row.get('prezzo_in_season')
+    cl = row.get('prezzo_classic')
+    isp_s = f"{isp:.2f}EUR" if isp is not None else "N/D"
+    cl_s = f"{cl:.2f}EUR" if cl is not None else "N/D"
+    return f" | IS: {isp_s} | CL: {cl_s}"
 
 
 def _blocco_top_esclusi(role_data_per_ruolo, card_pool, n=TOP_N_ESCLUSI):
@@ -914,11 +1021,70 @@ def _blocco_top_esclusi(role_data_per_ruolo, card_pool, n=TOP_N_ESCLUSI):
             lines.append("  (nessuno)")
         for i, r in enumerate(esclusi, 1):
             squadra = r.get('team_slug') or 'N/D'
-            lines.append(f"  {i}) {r['slug']}: {r.get('atteso')} pt (squadra={squadra})")
-            html_parts.append(f"<li>{r['slug']}: {r.get('atteso')} pt (squadra={squadra})</li>")
+            prezzo = _prezzo_str(r)
+            lines.append(f"  {i}) {r['slug']}: {r.get('atteso')} pt (squadra={squadra}){prezzo}")
+            html_parts.append(f"<li>{r['slug']}: {r.get('atteso')} pt (squadra={squadra}){prezzo}</li>")
         html_parts.append('</ol></div>')
     html_parts.append('</div>')
     return "\n".join(lines), "".join(html_parts)
+
+
+# NOTA: lo slot EXTRA e' etichettato "EXTRA (DEF)" (con parentesi, uno spazio
+# interno) -- il gruppo 1 usa '.*' GREEDY apposta cosi' cattura tutto lo slot
+# (qualunque sia la sua forma) fino all'ULTIMA occorrenza di "slug: N pt" sulla
+# riga, invece di fermarsi al primo spazio come farebbe un '\S+' non greedy.
+_SLUG_RIGA_FORMAZIONE_RE = re.compile(r'^(\S.*)\s([\w\-]+): (-?\d+) pt')
+
+
+def _annota_prezzi_testo(blocco_testo, prezzi):
+    """Aggiunge ' | IS: X€ | CL: Y€' in coda a ogni riga giocatore di un
+    blocco testuale gia' formattato da bff.format_lineup -- nessuna modifica
+    a format_lineup stesso (condiviso con la produzione), solo un
+    post-processing di stringa qui in Best Five."""
+    righe_nuove = []
+    for riga in blocco_testo.split("\n"):
+        m = _SLUG_RIGA_FORMAZIONE_RE.match(riga)
+        if m:
+            slug = m.group(2)
+            info = prezzi.get(slug)
+            if info is not None:
+                isp = info.get('in_season')
+                cl = info.get('classic')
+                isp_s = f"{isp:.2f}EUR" if isp is not None else "N/D"
+                cl_s = f"{cl:.2f}EUR" if cl is not None else "N/D"
+                riga = f"{riga} [IS: {isp_s} | CL: {cl_s}]"
+        righe_nuove.append(riga)
+    return "\n".join(righe_nuove)
+
+
+def _annota_prezzi_html(html_blocco, prezzi):
+    """Inietta un <script> che, per ogni .pcard[data-slug] gia' presente nel
+    report (render_lineup_html di bff, condiviso con la produzione, non
+    toccato), aggiunge una riga prezzo -- stesso pattern di
+    rendi_carte_cliccabili (post-processing via script, non una modifica del
+    template)."""
+    payload = json.dumps(prezzi)
+    script = f"""
+<script>
+(function() {{
+  var prezzi = {payload};
+  document.querySelectorAll('.pcard[data-slug]').forEach(function (card) {{
+    var info = prezzi[card.dataset.slug];
+    if (!info) return;
+    var isp = info.in_season != null ? info.in_season.toFixed(2) + 'EUR' : 'N/D';
+    var cl = info.classic != null ? info.classic.toFixed(2) + 'EUR' : 'N/D';
+    var div = document.createElement('div');
+    div.className = 'pcard-prezzo';
+    div.style.cssText = 'font-size:0.6rem;opacity:0.85;margin-top:2px';
+    div.textContent = 'IS: ' + isp + ' | CL: ' + cl;
+    card.querySelector('.pcard-body, .pcard').appendChild(div);
+  }});
+}})();
+</script>
+"""
+    if '</body>' in html_blocco:
+        return html_blocco.replace('</body>', script + '</body>')
+    return html_blocco + script
 
 
 def _renderizza_risultati(bff, all_results, card_pool):
@@ -1028,19 +1194,22 @@ def costruisci_formazione_contender(leghe, count):
     if mancanti:
         log(f"ATTENZIONE: ruoli senza candidati nel pool Contender combinato: {mancanti}.")
 
+    prezzi = _attach_prezzi(merged_role_data)
+
     role_data = {'contender': merged_role_data}
     pools = {'contender': {role: gg._NoFilterPool(role, 'contender', merged_role_data[role]) for role in gg.ROLES}}
     card_pool = bff.CardPool({}, names=names)
 
     all_results = gg.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
     generated, totale, lineup_blocks, lineup_html_blocks = _renderizza_risultati(bff, all_results, card_pool)
+    lineup_blocks = [_annota_prezzi_testo(b, prezzi) for b in lineup_blocks]
 
     testo_esclusi, html_esclusi = _blocco_top_esclusi(merged_role_data, card_pool)
     lineup_blocks.append(testo_esclusi)
     lineup_html_blocks.append(html_esclusi)
 
     log(f"Formazione Contender (leghe: {', '.join(leghe)}): {generated}/{count} generate.")
-    return bff, generated, totale, lineup_blocks, lineup_html_blocks
+    return bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi
 
 
 def rendi_carte_cliccabili(html_report):
@@ -1253,7 +1422,7 @@ def main():
             idx_b = args.index('--backups')
             n_backup = int(args[idx_b + 1])
 
-        bff, generated, totale, lineup_blocks, lineup_html_blocks = costruisci_formazione_contender(
+        bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi = costruisci_formazione_contender(
             leghe, 1 + n_backup)
 
         out_dir = os.path.join(REPO_ROOT, 'formazione_contender', 'output', 'best_five')
@@ -1284,6 +1453,7 @@ def main():
         footer = "Script separato e READ-ONLY rispetto alla pipeline di produzione."
         html_report = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer)
         html_report = rendi_carte_cliccabili(html_report)
+        html_report = _annota_prezzi_html(html_report, prezzi)
         html_path = os.path.join(out_dir, f'best_five_contender_{ts}.html')
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html_report)
@@ -1389,7 +1559,7 @@ def main():
     # sostituisce costruisci_best_five/formatta_report* come output
     # principale. count = 1 (titolare) + n_backup (formazioni alternative
     # complete, vedi costruisci_formazione_vera).
-    bff, generated, totale, lineup_blocks, lineup_html_blocks = costruisci_formazione_vera(
+    bff, generated, totale, lineup_blocks, lineup_html_blocks, prezzi = costruisci_formazione_vera(
         lega, 1 + n_backup)
 
     out_dir = os.path.join(REPO_ROOT, f'formazione_{lega}', 'output', 'best_five')
@@ -1420,6 +1590,7 @@ def main():
     footer = "Script separato e READ-ONLY rispetto alla pipeline di produzione."
     html_report = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer)
     html_report = rendi_carte_cliccabili(html_report)
+    html_report = _annota_prezzi_html(html_report, prezzi)
     html_path = os.path.join(out_dir, f'best_five_{ts}.html')
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_report)

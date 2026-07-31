@@ -89,7 +89,13 @@ jobs:
       # curl_cffi/requests a livello di modulo anche se questo step non fa
       # nessuna chiamata di rete (solo lettura dei consiglio_*.txt gia' su disco).
       - run: pip install requests curl_cffi
-      - name: Costruisci Best Five Contender (merge, nessuna query)
+      - name: Costruisci Best Five Contender (merge + query prezzo mercato)
+        env:
+          # NUOVO (31/07): il merge ora fetcha ANCHE il prezzo minimo di
+          # mercato in_season/classic per ogni giocatore mostrato -- vedi
+          # commento nello stesso punto di best_five.yml.
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
         run: python best_five.py contender --leghe "${{ inputs.leghe }}" --backups "${{ inputs.backups }}"
       - name: Salva risultati (retry su push)
         run: |

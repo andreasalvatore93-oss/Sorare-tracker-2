@@ -222,7 +222,7 @@ jobs:
           path: _artifacts
           pattern: bf-pred-*
       - run: python pipeline_artifacts.py apply _artifacts
-      - name: Costruisci report (nessuna chiamata API, solo parsing)
+      - name: Costruisci report (ora fa ANCHE query prezzo mercato, vedi sotto)
         env:
           # FIX BUG REALE (30/07, segnalato dall'utente): senza questo, la
           # formazione poteva includere giocatori sotto la soglia
@@ -231,6 +231,15 @@ jobs:
           # ricontrollare il prefiltro DI QUESTO run. Vedi
           # _sopravvissuti_run_corrente in best_five.py.
           PREFILTRO_GRUPPI: ${{ needs.prefiltro_merge.outputs.gruppi }}
+          # NUOVO (31/07, richiesta esplicita utente: prezzo minimo di mercato
+          # in_season/classic mostrato per ogni carta) -- questo step NON e'
+          # piu' "nessuna chiamata API": costruisci_formazione_vera/contender
+          # chiamano fetch_prezzi() per ogni giocatore mostrato (formazioni +
+          # top esclusi), che riusa il meccanismo di SCANSIONE (non ascolto)
+          # di scanners/bot_profit.py -- serve lo stesso cookie/csrf gia' usati
+          # per il predict.
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
         run: |
           set -u
           ARGS="${{ inputs.lega || 'kleague' }} --backups ${{ inputs.backups || '2' }}"
