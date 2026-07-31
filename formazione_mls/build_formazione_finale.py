@@ -411,10 +411,48 @@ def _match_key(row):
 # via popup). MID-MID oggi piu' debole (-0.082 vs -0.118) ma ancora negativa:
 # lasciata INVARIATA su richiesta esplicita dell'utente -- richiede conferma
 # esplicita prima di toccarla.
+# RI-MISURATO 31\07 su TUTTE le coppie insieme, stesso dataset (7.271 partite
+# ricostruite dai detail cache, 97k coppie avversarie) --
+# formazione_mls/diagnostics/misura_correlazione_cross_team.py.
+# Novita' di metodo: accanto alla correlazione fra AVVERSARI si misura una
+# correlazione di CONTROLLO fra le stesse coppie di ruoli ma su partite
+# DIVERSE. Serve perche' due punteggi qualsiasi non sono scorrelati per caso
+# (i ruoli hanno medie e dispersioni diverse): solo lo scarto fra le due
+# colonne e' effetto reale dello scontro diretto. Il controllo e' uscito ~0
+# ovunque, quindi le correlazioni negative qui sotto sono genuine.
+#
+#  coppia    n coppie   corr avversari   controllo   x20 implicito
+#  DEF-MID     22410       -0.1544         +0.0113        3.1
+#  DEF-FWD     15853       -0.2250         +0.0122        4.5
+#  DEF-DEF     13424       -0.1009         -0.0038        2.0
+#  FWD-MID     12896       -0.0788         +0.0031        1.6
+#  MID-MID      9592       -0.1030         +0.0008        2.1
+#  GK-MID       6106       -0.1448         +0.0128        2.9
+#  FWD-GK       4340       -0.3121         -0.0013        6.2
+#  DEF-GK       7371       -0.0403         +0.0079        0.8  (escluso)
+#  FWD-FWD      4633       -0.0373         -0.0383        0.7  (escluso)
+#  GK-GK         967       +0.0380         +0.0098         -   (escluso)
+#
+# Le tre penalita' che c'erano gia' sono CONFERMATE e ben tarate (3 contro
+# 3.1, 4 contro 4.5, 2 contro 2.1): la tabella era giusta, era solo inerte
+# per il bug del gate (vedi sotto _cross_team_penalty).
+# AGGIUNTE 31\07 le quattro coppie che mancavano, fra cui la piu' forte di
+# tutte: FWD contro il GK avversario (-0.31). Ha senso strutturale --
+# l'attaccante segna quando fa gol, il portiere avversario segna quando tiene
+# la porta inviolata: sono opposti per costruzione, e fino a oggi il modello
+# non li scoraggiava affatto.
+# ESCLUSE di proposito DEF-GK (troppo debole), GK-GK (correlazione positiva,
+# e comunque n=967) e soprattutto FWD-FWD: la sua correlazione (-0.037) e'
+# identica al proprio controllo (-0.038), cioe' non c'e' NESSUN effetto da
+# scontro diretto, solo la distribuzione dei punteggi di ruolo.
 CROSS_TEAM_PENALTY_BY_PAIR = {
-    frozenset(('DEF', 'FWD')): 4,   # -0.195 * 20 ~= 3.9 (30/07)
-    frozenset(('MID', 'MID')): 2,   # -0.118 * 20 ~= 2.4 (28/07, non riconfermato oggi)
-    frozenset(('DEF', 'MID')): 3,   # -0.131 * 20 ~= 2.6 (30/07, nuova)
+    frozenset(('FWD', 'GK')): 6,    # -0.312 * 20 ~= 6.2 (31/07, nuova - la piu' forte)
+    frozenset(('DEF', 'FWD')): 4,   # -0.225 * 20 ~= 4.5 (31/07, conferma di 4)
+    frozenset(('DEF', 'MID')): 3,   # -0.154 * 20 ~= 3.1 (31/07, conferma di 3)
+    frozenset(('GK', 'MID')): 3,    # -0.145 * 20 ~= 2.9 (31/07, nuova)
+    frozenset(('MID', 'MID')): 2,   # -0.103 * 20 ~= 2.1 (31/07, conferma di 2)
+    frozenset(('DEF', 'DEF')): 2,   # -0.101 * 20 ~= 2.0 (31/07, nuova)
+    frozenset(('FWD', 'MID')): 2,   # -0.079 * 20 ~= 1.6 (31/07, nuova)
 }
 
 
