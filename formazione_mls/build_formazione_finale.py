@@ -440,7 +440,8 @@ def _cross_team_penalty(role, row, chosen_roles_by_team):
 
 def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
                       variance_mode=False, apply_positive_synergy=True, used_matches=None,
-                      chosen_roles_by_team=None, synergy_bonus_dict=None):
+                      chosen_roles_by_team=None, synergy_bonus_dict=None,
+                      apply_cross_team_penalty=True):
     """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
     dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
@@ -471,6 +472,26 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
             adjusted -= ANTI_SYNERGY_PENALTY
         elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
             adjusted += POSITIVE_SYNERGY_BONUS
+    # PENALITA' CROSS-TEAM SCORPORATA dal gate (31/07, bug reale trovato
+    # dall'utente su una formazione In Season MLS reale: Markanich (DEF,
+    # Minnesota) schierato INSIEME a Dreyer e Tverskov (MID, San Diego), cioe'
+    # giocatori avversari nella STESSA partita -- se Minnesota tiene la porta
+    # inviolata il difensore segna e i due centrocampisti no, sono
+    # negativamente correlati per costruzione).
+    #
+    # Il commento sotto ad apply_positive_synergy in build_formazione_globale.py
+    # aveva gia' previsto questo caso: quel flag e' il gate UNICO di TRE
+    # meccanismi (nudge GK-DEF, penalita' cross-team, bonus same-team), e
+    # metterlo a False per le In Season -- scelta presa per i primi due -- ha
+    # spento in silenzio anche il terzo. Le penalita' cross-team calibrate il
+    # 30/07 erano quindi INERTI proprio sulle In Season.
+    #
+    # Misurato sul report reale run91: 7 formazioni su 34 contenevano coppie
+    # avversarie nella stessa partita, per 23 punti di penalita' mai applicata.
+    # Ora ha un gate PROPRIO, attivo di default: e' un vincolo di realta'
+    # (due carte che si annullano a vicenda), non una preferenza tattica come
+    # le sinergie positive.
+    if apply_cross_team_penalty:
         adjusted -= _cross_team_penalty(role, row, chosen_roles_by_team)
     # apply_positive_synergy nel gate (30/07): prima non serviva perche' In
     # Season aveva variance_mode sempre False -- ora che la sinergia same-team
@@ -489,7 +510,8 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
 
 def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
                            variance_mode=False, apply_positive_synergy=True, used_matches=None,
-                           chosen_roles_by_team=None, synergy_bonus_dict=None):
+                           chosen_roles_by_team=None, synergy_bonus_dict=None,
+                           apply_cross_team_penalty=True):
     """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
     anti-sinergia col portiere scelto (vedi synergy_sort_key), la sinergia
     da correlazione misurata (SOLO variance_mode) ed eventualmente per il
@@ -500,12 +522,14 @@ def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_count
     cambia nulla -- comportamento identico a prima."""
     if (not apply_stack_guard and not variance_mode
             and not (apply_positive_synergy and (gk_team_slug or gk_opponent_slug or chosen_roles_by_team))
+            and not (apply_cross_team_penalty and chosen_roles_by_team)
             and not used_matches):
         return rows
     return sorted(rows, key=lambda row: synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug,
                                                            team_counts, apply_stack_guard, variance_mode,
                                                            apply_positive_synergy, used_matches,
-                                                           chosen_roles_by_team, synergy_bonus_dict),
+                                                           chosen_roles_by_team, synergy_bonus_dict,
+                                                           apply_cross_team_penalty),
                   reverse=True)
 
 
