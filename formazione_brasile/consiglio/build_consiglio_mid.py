@@ -13,7 +13,12 @@ import glob
 import datetime
 
 OUTPUT_DIR = 'formazione_brasile/output/brasile_mid_all'
-DISCOVERY_FILE = os.path.join('formazione_brasile/output/brasile_mid_discovery', 'player_slugs.json')
+# CONSIGLIO_DISCOVERY_FILE (30/07, tema Best Five; propagato qui il 31/07):
+# override opzionale -- permette a best_five.py di puntare al pool GLOBALE
+# (i sopravvissuti al prefiltro, non i posseduti) senza duplicare qui la
+# logica di parsing/sort gia' scritta in questo file. Se non impostata,
+# comportamento INVARIATO (posseduti, come sempre).
+DISCOVERY_FILE = os.environ.get('CONSIGLIO_DISCOVERY_FILE') or os.path.join('formazione_brasile/output/brasile_mid_discovery', 'player_slugs.json')
 
 # Pattern della riga "N) slug: X pt attesi (low-high)" gia' scritta da
 # test_mid.py nel riepilogo di ciascun job (uno per giocatore, quindi
