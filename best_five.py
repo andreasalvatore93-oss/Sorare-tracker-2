@@ -770,15 +770,44 @@ def _import_gg():
     return module
 
 
+def _registra_tipo_arena(gg, lega):
+    """FIX (31/07, bug reale: KeyError 'AUSTRIA_ARENA' su una lega che NON e'
+    tra le ARENA_LEAGUES di produzione -- quella lista e' una tupla fissa di
+    slug scelti dall'utente per le leghe con Arena dedicata VERA su Sorare,
+    non tutte le leghe con una pipeline attiva. Per Best Five (che deve poter
+    generare un pool globale per QUALUNQUE lega con discovery_global, non
+    solo quelle gia' promosse ad Arena dedicata), se il tipo Arena non esiste
+    ancora lo registra qui a runtime con gli stessi identici parametri
+    standard di un'Arena dedicata (cap L10 260 obbligatorio, capitano +20%,
+    variance_mode attivo, nessun bonus XP/cap260/stack-guard -- stesso
+    trattamento di build_formazione_globale.py per ARENA_LEAGUES). Nessun
+    impatto su produzione: 'gg' qui e' sempre un'istanza importata a parte
+    (vedi _import_gg), mai quella del workflow reale."""
+    tipo = gg.arena_type(lega)
+    if tipo in gg.FORMATION_SHAPES:
+        return tipo  # gia' una vera Arena dedicata di produzione, nulla da fare
+    gg.FORMATION_SHAPES[tipo] = {'role_slots': ['GK', 'DEF', 'MID', 'FWD'],
+                                  'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None}
+    gg.POOL_LEAGUE_BY_TYPE[tipo] = lega
+    gg.LABELS[tipo] = f'Arena {lega.capitalize()} (cap 260)'
+    gg.L10_CAP_BY_TYPE[tipo] = 260.0
+    gg.VARIANCE_MODE_TYPES.add(tipo)
+    gg.bff.CAPTAIN_BONUS_BY_TYPE[tipo] = 0.2
+    return tipo
+
+
 def _tipo_per_lega(gg, lega):
     """Nome del tipo FORMATION_SHAPES di produzione per la lega scelta:
     'MLS_IN_SEASON'/'KLEAGUE_IN_SEASON' per le due leghe dedicate (stessa
     competizione In Season che gioca l'utente), l'Arena dedicata (cap L10
     260 obbligatorio) per qualunque altra lega -- non esiste un tipo
-    'In Season' generico per le leghe non dedicate in produzione."""
+    'In Season' generico per le leghe non dedicate in produzione. Se la lega
+    non ha ancora un'Arena dedicata VERA in produzione (es. Austria/
+    2.Bundesliga, usate qui solo come fonte dati per Contender), ne registra
+    una ad-hoc (vedi _registra_tipo_arena)."""
     if lega in gg.DEDICATED_LEAGUES:
         return f'{lega.upper()}_IN_SEASON'
-    return gg.arena_type(lega)
+    return _registra_tipo_arena(gg, lega)
 
 
 def costruisci_formazione_vera(lega, count):
