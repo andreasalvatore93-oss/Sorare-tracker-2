@@ -1391,8 +1391,8 @@ def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,
 #   cambia solo la copertura e quindi il composite score).
 def _build_grid_combinations_prod():
     combos = []
-    for hl in (9.0, 12.0):
-        for ti in (0.7, 1.0, 1.3):
+    for hl in (6.0, 9.0, 12.0, 15.0, 20.0, 25.0, 30.0):
+        for ti in (0.0, 0.2, 0.3, 0.7, 1.0, 1.3):
             # range_mult: griglia estesa VERSO IL BASSO (27/07). Con il backtest
             # allineato la copertura al vecchio minimo 1.2 era gia' 72% (sopra
             # l'ideale 68%): la griglia era troncata dal lato sbagliato. 1.1

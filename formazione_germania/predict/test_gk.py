@@ -1158,6 +1158,237 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 # non vincevano quasi mai. Ridotta da 48 a questa zona mirata PIU' la nuova
 # dimensione trend_intensity, per restare comunque a un numero di
 # combinazioni gestibile pur avendo aggiunto una variabile in piu'.
+# --- Percorso di calibrazione ALLINEATO ALLA PRODUZIONE (01/08) ---
+# Portato da formazione_mls/predict/test_gk.py (audit 31/07). Serve SOLO
+# alla calibrazione: build_prediction resta invariata, la produzione non
+# cambia di una virgola. Prima di questo blocco CALIBRATION_MODE girava
+# la vecchia run_grid_search, cioe' una formula distante il 7% di MAE da
+# quella che schiera davvero -- si calibrava un modello diverso.
+SPLIT_SHRINK_K_GK = 20.0
+SHRINK_K_OUTLIER_GK = 30.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~7500 punti di test conferma k=30 pulito su entrambi i segmenti n<8/n>=8 (-5.36%/-9.28%/-4.31%), il vecchio timore "overfitting al bordo griglia" non regge piu' con questo volume di dati -- stesso valore ora su TUTTE le leghe incluso MLS/Korea
+MEDIA_RUOLO_GK_PRIOR = 48.81
+
+
+def venue_factor_gk(scores, is_home_flags, target_is_home, weights):
+    """Fattore casa/trasferta del portiere: rapporto fra la media dei punteggi
+    nel contesto della prossima partita e la media generale, tirato verso 1.0
+    proporzionalmente a quante partite ci sono in quel contesto (shrinkage,
+    vedi SPLIT_SHRINK_K_GK).
+
+    A differenza degli altri ruoli il portiere lo calcola sui punteggi PIENI e
+    non sui residui: verificato il 31/07 (formazione_mls/diagnostics/
+    test_venue_base_residui_vs_punteggi.py) che le due basi danno la stessa
+    MAE (differenze sotto lo 0.01% su 15.000 punti di test), quindi la
+    differenza fra i ruoli e' innocua e non vale un cambio di produzione.
+
+    FUNZIONE UNICA (31/07, audit): prima questa logica era duplicata in due
+    punti del file, con rischio di divergenza silenziosa fra il numero
+    applicato e quello mostrato."""
+    media_pesata = weighted_mean(scores, weights)
+    home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
+    away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
+    home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
+    away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
+    overall = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
+    if overall <= 0:
+        return 1.0
+    if target_is_home:
+        raw, n_bucket = home_avg / overall, len(home_scores)
+    else:
+        raw, n_bucket = away_avg / overall, len(away_scores)
+    shrink = n_bucket / (n_bucket + SPLIT_SHRINK_K_GK)
+    return 1.0 + shrink * (raw - 1.0)
+
+def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
+                            pos_decisive_values, neg_decisive_values,
+                            target_is_home, p_gioca=1.0,
+                            half_life=None, trend_intensity=None,
+                            shrink_k=SHRINK_K_OUTLIER_GK,
+                            media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR,
+                            presence_rate=None, opponent_lambda_mult=1.0):
+    """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` GK di PRODUZIONE,
+    da usare SIA in build_prediction (predizione reale) SIA nel backtest
+    walk-forward di calibrazione (rigorous_backtest_prod_gk) -- cosi' le due
+    non possono piu' divergere (stesso principio gia' in produzione su
+    DEF/FWD, mancante per GK fino ad oggi: rigorous_backtest usava una
+    formula duplicata indipendente, quindi qualunque backtest/calibrazione
+    ignorava silenziosamente lo shrinkage aggiunto oggi).
+
+    p_gioca accettato per simmetria di firma con gli altri ruoli ma non
+    usato (rimosso da score_atteso il 28/07, vedi commento in build_prediction).
+    Nessun opponent_rankings/Stadio D: entrambi rimossi da score_atteso GK
+    (vedi commenti storici in build_prediction), quindi non servono qui.
+
+    opponent_lambda_mult (29/07, vedi opponent_strength.py): moltiplicatore
+    su lambda_pos_dec basato sui gol FATTI dal prossimo avversario nelle sue
+    ultime 10 partite (dato storico reale, non il domesticLeagueRanking
+    contaminato del vecchio fattore_forza_avversario). Default 1.0 (nessun
+    effetto) -- i chiamanti di backtest/calibrazione non lo passano, quindi
+    restano invariati."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    n = len(scores)
+    weights = exponential_weights(n, half_life)
+
+    media_granulari_pesata = weighted_mean(granulari_values, weights)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _s, _l = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+    # Prior di ruolo DINAMICO (28/07, bug reale trovato dall'utente: Jack
+    # Skahan, David Vazquez -- giocatori di riserva veri, P(gioca) storico
+    # 19-26%, non sfortunati con pochi dati -- venivano tirati dallo
+    # shrinkage verso la media di TUTTI i giocatori (dominata dai titolari),
+    # gonfiando artificialmente il punteggio di chi gioca poco PERCHE'
+    # strutturalmente debole. Misurato sui dati reali (n=115 portieri, corr
+    # presenza/punteggio +0.245): chi gioca poco rende MENO anche quando
+    # gioca, non solo per varianza campionaria. Prior = intercetta + pendenza
+    # * presenza storica (regressione reale), non piu' un numero fisso
+    # uguale per titolari e riserve. presence_rate=None (calibrazione/
+    # backtest, nessun concetto di "storico totale esaminato" disponibile)
+    # ricade sul prior fisso originale, comportamento INVARIATO.
+    # Ricalibrato 30/07 (n=146, pool post-fix anyPlayers->activePlayers,
+    # decisione utente via popup): era 46.20 + 4.05 * presence_rate.
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 46.20 + 4.05 * presence_rate)
+    grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    grezzo_corretto = (
+        (n / (n + shrink_k)) * grezzo
+        + (shrink_k / (n + shrink_k)) * media_ruolo_prior
+    )
+
+    # Funzione condivisa con build_prediction (31/07, audit): prima la stessa
+    # logica era scritta due volte, qui e nel report.
+    fattore_casa_trasferta = venue_factor_gk(scores, is_home_flags, target_is_home, weights)
+
+    return grezzo_corretto * fattore_casa_trasferta
+
+def rigorous_backtest_prod_gk(scores, is_home_flags, granulari_values,
+                              pos_decisive_values, neg_decisive_values,
+                              min_history=6, half_life=None, trend_intensity=None,
+                              range_multiplier=1.0,
+                              opponent_team_slugs_hist=None, game_dates_hist=None,
+                              presence_rate=None, league='germania'):
+    """Backtest walk-forward ALLINEATO ALLA PRODUZIONE per GK (28/07): ad ogni
+    partita richiama compute_score_atteso_gk() -- la STESSA funzione della
+    predizione reale -- sul solo storico precedente. Sostituisce, per gli usi
+    che richiedono coerenza con la produzione, il vecchio rigorous_backtest
+    (formula duplicata indipendente, non allineata dopo il fix shrinkage del
+    28/07). Stessa struttura di ritorno del vecchio rigorous_backtest.
+
+    opponent_team_slugs_hist/game_dates_hist/presence_rate (31/07, audit):
+    senza questi tre la funzione, pur dichiarandosi "allineata", restava
+    diversa dalla produzione -- niente opponent_lambda_mult e prior FISSO
+    invece di quello dinamico. Opzionali per retrocompatibilita' con i
+    chiamanti esistenti (diagnostici), ma il grid search di calibrazione li
+    passa sempre."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    rows = []
+    n = len(scores)
+    for i in range(min_history, n):
+        # opponent_lambda_mult calcolato con cutoff alla data della partita
+        # testata: walk-forward, nessun dato futuro (31/07, audit -- prima
+        # non veniva passato affatto e il backtest misurava una formula senza
+        # aggiustamento avversario, a differenza della produzione).
+        _mult = 1.0
+        if opponent_team_slugs_hist and game_dates_hist:
+            _opp, _dt = opponent_team_slugs_hist[i], game_dates_hist[i]
+            _mult = opponent_strength.opponent_lambda_multiplier(league, 'gk', _opp, _dt)
+            _mult *= opponent_strength.gk_def_pen_area_multiplier(league, _opp, _dt)
+        predetto = compute_score_atteso_gk(
+            scores[:i], is_home_flags[:i], granulari_values[:i],
+            pos_decisive_values[:i], neg_decisive_values[:i],
+            target_is_home=is_home_flags[i], p_gioca=1.0,
+            half_life=half_life, trend_intensity=trend_intensity,
+            presence_rate=presence_rate, opponent_lambda_mult=_mult)
+        reale = scores[i]
+        w = exponential_weights(i, half_life)
+        dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
+        range_conf = dev_std * range_multiplier
+        dentro_range = abs(reale - predetto) <= range_conf if range_conf > 0 else None
+        rows.append({'i': i, 'predetto': predetto, 'reale': reale,
+                     'errore': reale - predetto, 'dentro_range': dentro_range})
+
+    if not rows:
+        return {'rows': [], 'mae': None, 'pct_dentro_range': None, 'n_test': 0}
+    errori = [abs(r['errore']) for r in rows]
+    mae = sum(errori) / len(errori)
+    coperti = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
+    pct = (sum(1 for c in coperti if c) / len(coperti) * 100.0) if coperti else None
+    return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct, 'n_test': len(rows)}
+
+def _build_grid_combinations_prod():
+    """Griglia per il grid search ALLINEATO. Include SEMPRE i valori reali di
+    produzione (hl=6.0, ti=0.7, rm=1.15), altrimenti il vincitore non
+    sarebbe confrontabile con cio' che gira davvero -- errore gia' commesso
+    con la griglia vecchia e corretto il 30/07 per DEF."""
+    combos = []
+    for hl in (4.0, 6.0, 9.0, 12.0, 15.0, 20.0, 25.0, 30.0):
+        for ti in (0.0, 0.2, 0.3, 0.7, 1.0, 1.3):
+            for rm in (1.0, 1.1, 1.15, 1.2, 1.4):
+                combos.append((hl, ti, rm, f"hl={hl}+trend_int={ti}+range={rm}x"))
+    return combos
+
+GRID_SEARCH_COMBINATIONS_PROD = _build_grid_combinations_prod()
+
+
+def run_grid_search_prod_gk(scores, is_home_flags, granulari_values,
+                            pos_decisive_values, neg_decisive_values,
+                            min_history=6,
+                            opponent_team_slugs_hist=None, game_dates_hist=None,
+                            presence_rate=None, league='germania'):
+    """Grid search ALLINEATO per GK (31/07, audit): gira
+    rigorous_backtest_prod_gk -- che internamente chiama
+    compute_score_atteso_gk, la STESSA funzione della predizione reale --
+    invece della vecchia run_grid_search.
+
+    Perche' e' stato aggiunto: fino al 31/07 la calibrazione del portiere
+    girava su `rigorous_backtest`, cioe' media pesata x fattore casa x
+    fattore forza avversario x trend. Quella formula non ha il level_score
+    da tassi Poisson, non ha lo shrinkage verso il prior di ruolo, non ha
+    lo shrinkage venue e usa il fattore ranking avversario che dalla
+    produzione era stato RIMOSSO il 26/07 perche' peggiorava il MAE.
+    Misurata la distanza fra le due su 233 portieri/3293 partite: 16.970
+    contro 15.757 di MAE, il 7%. I parametri erano quindi scelti
+    ottimizzando un modello diverso da quello che schiera (per fortuna il
+    ricontrollo del 31/07 ha mostrato che i valori attuali restano i
+    migliori anche sulla formula giusta -- ma era un colpo di fortuna,
+    non un risultato).
+
+    Stesso composite score e stesso formato di ritorno del vecchio
+    run_grid_search, cosi' aggregate_grid_search.py resta compatibile
+    (le chiavi assenti sono esportate a None)."""
+    results = []
+    for half_life, trend_intensity, range_mult, label in GRID_SEARCH_COMBINATIONS_PROD:
+        bt = rigorous_backtest_prod_gk(
+            scores, is_home_flags, granulari_values,
+            pos_decisive_values, neg_decisive_values,
+            min_history=min_history, half_life=half_life,
+            trend_intensity=trend_intensity, range_multiplier=range_mult,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist,
+            presence_rate=presence_rate, league=league)
+        bt.update({'label': label, 'half_life': half_life,
+                   'range_multiplier': range_mult, 'trend_intensity': trend_intensity,
+                   'opponent_sensitivity': None})
+        if bt['mae'] is not None:
+            coverage_penalty = abs((bt['pct_dentro_range'] or 0) - 68.0) * 0.3
+            bt['composite_score'] = bt['mae'] + coverage_penalty
+        else:
+            bt['composite_score'] = float('inf')
+        results.append(bt)
+    results.sort(key=lambda r: r['composite_score'])
+    return results
+
+
 def _build_grid_combinations():
     # ALLARGATA (30/07): la griglia era ferma a [9.0, 12.0], residuo di una
     # versione precedente -- non includeva nemmeno i valori REALMENTE in
@@ -1409,6 +1640,8 @@ def build_prediction(player_slug):
     is_home_flags = []
     opponent_rankings = []
     own_rankings = []
+    opponent_team_slugs_hist = []  # (01/08) per il grid search allineato, vedi sotto
+    game_dates_hist = []
     possession_values = []
     passing_values = []
     goalkeeping_values = []
@@ -1430,6 +1663,18 @@ def build_prediction(player_slug):
         is_home_flags.append(is_home)
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
+        # Slug/data dell'avversario per ogni partita storica (01/08): senza
+        # questi il grid search ALLINEATO non potrebbe applicare
+        # opponent_lambda_mult e resterebbe a misurare una formula diversa
+        # da quella di produzione. Stesso pattern gia' in test_def.py.
+        _g_home, _g_away = game.get('homeTeam') or {}, game.get('awayTeam') or {}
+        if _g_home.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_away.get('slug'))
+        elif _g_away.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_home.get('slug'))
+        else:
+            opponent_team_slugs_hist.append(None)
+        game_dates_hist.append(_game_dt(node))
 
         possession_values.append(extract_group_score(detail, POSSESSION_STATS))
         passing_values.append(extract_group_score(detail, PASSING_STATS))
@@ -1744,12 +1989,16 @@ def build_prediction(player_slug):
         # Grid search allargato (25/07): riesegue tutte le combinazioni su
         # tutti i portieri MLS di qualita' (non solo i posseduti), per
         # ricalibrare i parametri su un campione molto piu' ampio.
-        log("CALIBRATION_MODE attivo: esecuzione grid search completo (72 combinazioni)...")
-        grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                                        possession_values=possession_values,
-                                        passing_values=passing_values,
-                                        goalkeeping_values=goalkeeping_values,
-                                        goals_conceded_values=goals_conceded_values)
+        # ALLINEATO (01/08): prima girava run_grid_search, cioe' la vecchia
+        # formula moltiplicativa, distante il 7% di MAE da quella reale.
+        log(f"CALIBRATION_MODE attivo: grid search ALLINEATO "
+            f"({len(GRID_SEARCH_COMBINATIONS_PROD)} combinazioni)...")
+        grid_results = run_grid_search_prod_gk(
+            scores, is_home_flags, granulari_values,
+            pos_decisive_values, neg_decisive_values, min_history=6,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist,
+            presence_rate=presence_rate, league='germania')
         rigorous_bt = grid_results[0] if grid_results else None
     else:
         log("Esecuzione backtest rigoroso sui parametri fissati...")
