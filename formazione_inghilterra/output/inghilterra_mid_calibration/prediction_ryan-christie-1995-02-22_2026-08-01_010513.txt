@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:05:13.959374Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ryan-christie-1995-02-22: 45 pt attesi (35-49)
+   SQUADRA: afc-bournemouth-bournemouth-dorset | AVVERSARIO: manchester-city-manchester
+======================================================================
+
+######################################################################
+# GIOCATORE: ryan-christie-1995-02-22
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ryan-christie-1995-02-22 (squadra: afc-bournemouth-bournemouth-dorset)
+Generato: 2026-08-01T01:05:13.957246Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-27 | LEE vs BOR | premier-league-gb-eng | score=29.9 | peso=0.824
+  2026-02-10 | EVE vs BOR | premier-league-gb-eng | score=35.9 | peso=0.847
+  2026-03-03 | BOR vs BRE | premier-league-gb-eng | score=45.6 | peso=0.871
+  2026-03-14 | BUR vs BOR | premier-league-gb-eng | score=49.5 | peso=0.895
+  2026-03-20 | BOR vs MUN | premier-league-gb-eng | score=77.6 | peso=0.920
+  2026-04-11 | ARS vs BOR | premier-league-gb-eng | score=35.8 | peso=0.946
+  2026-04-18 | NEW vs BOR | premier-league-gb-eng | score=44.3 | peso=0.973
+  2026-04-22 | BOR vs LEE | premier-league-gb-eng | score=43.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.48
+  di cui Punteggio decisivo (level_score) medio: 35.56 | Punteggio complessivo (granulari) medio: 9.92 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 33.17 (delta -2.39)
+  Efficacia offensiva condizionata: delta venue -0.43, delta avversario +0.48 | Passaggio condizionato: delta venue -0.52, delta avversario +0.47 | Gol subiti condizionato: delta venue +0.10, delta avversario +0.10 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.55
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.8 - 49.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.95 (differenza: +8.59)
+Media score in casa: 55.57 | Media score fuori casa: 39.08
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.6
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.703
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 21.05% (fonte: tasso di presenza storico (8/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T13:00
+Casa: Manchester City FC | Trasferta: AFC Bournemouth
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.0 (range 35.3 - 49.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.80
+Punteggio REALE ottenuto in quella partita: 43.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.6    44.3     -1.3    15.8        SI
+   7        7      47.4    43.5     -3.9    14.6        SI
+
+MAE (errore assoluto medio): 2.60
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
