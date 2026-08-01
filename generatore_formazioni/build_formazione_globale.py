@@ -344,6 +344,24 @@ def _stampa_verdetto_arene(all_results):
               "o Under 23, che non costano essenze.")
 
 
+def _atteso_con_capitano(r):
+    """Totale atteso di una formazione, col bonus capitano incluso.
+
+    Le soglie di pareggio vengono da punteggi REALIZZATI, che il bonus
+    capitano ce l'hanno gia' dentro (+20% in arena): confrontarle con la somma
+    dei soli 'atteso' grezzi sottostima ogni formazione di 12-15 punti.
+    """
+    atteso = sum(row['atteso'] for _, row, _ in r['formazione'])
+    try:
+        _slot, cap_row, _ct = bff.pick_captain(r['formazione'])
+        if cap_row is not None:
+            atteso += (CAPTAIN_BONUS_BY_TYPE.get(r['tipo'], 0.2)
+                       * cap_row.get('atteso', 0))
+    except Exception:
+        pass   # senza capitano si resta al totale grezzo, mai un errore
+    return atteso
+
+
 def _righe_verdetto(all_results):
     """(margine, tipo, atteso, soglia) per ogni arena generata, dalla migliore.
 
@@ -360,14 +378,7 @@ def _righe_verdetto(all_results):
         soglia = PAREGGIO_ARENA.get(r['tipo'])
         if soglia is None:
             continue
-        atteso = sum(row['atteso'] for _, row, _ in r['formazione'])
-        try:
-            _slot, cap_row, _ct = bff.pick_captain(r['formazione'])
-            if cap_row is not None:
-                atteso += (CAPTAIN_BONUS_BY_TYPE.get(r['tipo'], 0.2)
-                           * cap_row.get('atteso', 0))
-        except Exception:
-            pass   # senza capitano si resta al totale grezzo, mai un errore
+        atteso = _atteso_con_capitano(r)
         righe.append((atteso - soglia, r['tipo'], atteso, soglia))
     righe.sort(reverse=True)
     return righe
