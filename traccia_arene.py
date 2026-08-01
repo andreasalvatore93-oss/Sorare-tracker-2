@@ -29,6 +29,7 @@ import os
 import re
 import statistics
 import sys
+import time
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 OUT = 'dati_globali/arene_storico.json'
@@ -48,6 +49,15 @@ def _csrf_dal_cookie(cookie_string):
 
 CSRF = _csrf_dal_cookie(COOKIES) or os.environ.get('SORARE_CSRF', '')
 FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
+PAUSA = float(os.environ.get('PAUSA_SECONDI', '0.35'))
+_ultima = [0.0]
+
+
+def _pausa():
+    dt = time.time() - _ultima[0]
+    if dt < PAUSA:
+        time.sleep(PAUSA - dt)
+    _ultima[0] = time.time()
 
 try:
     from curl_cffi import requests as _rq
@@ -168,12 +178,22 @@ def graphql(query, variables):
         headers['Cookie'] = COOKIES
     if CSRF:
         headers['x-csrf-token'] = CSRF
-    r = _S.post(GRAPHQL_URL, json={'query': query, 'variables': variables},
-                headers=headers, timeout=60)
-    try:
-        return r.json()
-    except Exception:
-        return {'errors': [{'message': f'HTTP {r.status_code}'}]}
+    for tentativo in range(5):
+        _pausa()
+        r = _S.post(GRAPHQL_URL, json={'query': query, 'variables': variables},
+                    headers=headers, timeout=60)
+        if r.status_code == 429:
+            # ricostruire lo storico intero sono migliaia di richieste:
+            # senza attesa crescente Sorare chiude il rubinetto a meta' lavoro
+            attesa = min(2 ** tentativo * 3, 60)
+            print(f'    rate limit, aspetto {attesa}s')
+            time.sleep(attesa)
+            continue
+        try:
+            return r.json()
+        except Exception:
+            return {'errors': [{'message': f'HTTP {r.status_code}'}]}
+    return {'errors': [{'message': 'HTTP 429 dopo 5 tentativi'}]}
 
 
 def arene_della_giornata(fixture):
@@ -260,6 +280,10 @@ def main():
                         if (n.get('user') or {}).get('nickname', '').lower() == io), None)
             rank_premio, essenze = premi.get(slug, (None, 0))
             riga = {'fixture': fx, 'fine': fine, 'slug': slug, 'tipo': nome,
+                    # la mediana e' il numero che serve al consigliere
+                    # d'ingresso: e' il campo da battere in quella arena
+                    'mediana': statistics.median(punteggi),
+                    'primo': punteggi[0], 'terzo': punteggi[2],
                     'costo': costo, 'partecipanti': len(nodi),
                     'premio_essenze': essenze, 'rank_premiato': rank_premio,
                     'punteggi': punteggi,
