@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:08:18.314113Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) nicolas-jackson: 51 pt attesi (29-69)
+   ORDINAMENTO: 51.83
+   SQUADRA: chelsea-london | AVVERSARIO: fulham-london
+======================================================================
+
+######################################################################
+# GIOCATORE: nicolas-jackson
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: nicolas-jackson (squadra: chelsea-london)
+Generato: 2026-08-01T02:08:18.311672Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 60
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 24
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-10 | ? vs ? | wc-qualification-africa | score=70.0 | peso=0.590
+  2025-10-14 | ? vs ? | wc-qualification-africa | score=60.0 | peso=0.607
+  2025-10-18 | BAY vs BVB | bundesliga-de | score=39.6 | peso=0.624
+  2025-11-18 | ? vs ? | friendlies | score=70.0 | peso=0.642
+  2025-12-06 | VFB vs BAY | bundesliga-de | score=34.0 | peso=0.660
+  2025-12-23 | ? vs ? | africa-cup-of-nations | score=82.9 | peso=0.678
+  2025-12-27 | ? vs ? | africa-cup-of-nations | score=37.5 | peso=0.697
+  2026-01-14 | ? vs ? | africa-cup-of-nations | score=37.5 | peso=0.717
+  2026-01-18 | ? vs ? | africa-cup-of-nations | score=36.4 | peso=0.737
+  2026-01-28 | PSV vs BAY | uefa-champions-league | score=38.4 | peso=0.758
+  2026-03-06 | BAY vs BMG | bundesliga-de | score=86.6 | peso=0.779
+  2026-03-10 | ATA vs BAY | uefa-champions-league | score=74.3 | peso=0.801
+  2026-03-28 | ? vs ? | friendlies | score=69.1 | peso=0.824
+  2026-04-11 | STP vs BAY | bundesliga-de | score=83.7 | peso=0.847
+  2026-04-19 | BAY vs VFB | bundesliga-de | score=71.4 | peso=0.871
+  2026-04-25 | M05 vs BAY | bundesliga-de | score=63.7 | peso=0.895
+  2026-05-02 | BAY vs FCH | bundesliga-de | score=31.0 | peso=0.920
+  2026-05-09 | WOB vs BAY | bundesliga-de | score=44.3 | peso=0.946
+  2026-06-16 | ? vs ? | global-cup | score=23.2 | peso=0.973
+  2026-06-23 | ? vs ? | global-cup | score=68.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 55.94
+  di cui Punteggio decisivo (level_score) medio: 51.49 | Punteggio complessivo (granulari) medio: 4.45 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.56 (delta -0.56) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.95
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.0 - 74.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.88 (differenza: +2.07)
+Media score in casa: 57.15 | Media score fuori casa: 56.40
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.1
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.066
+Fattore falli (casa/trasferta, da dati reali): 1.006
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 46.2 vs media ultime 10: 61.6): 0.925
+P(gioca): 33.33% (fonte: tasso di presenza storico (20/60))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-24T19:00
+Casa: Fulham FC | Trasferta: Chelsea FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.8 (range 28.9 - 69.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.06
+Punteggio REALE ottenuto in quella partita: 68.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +13.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=1.0+range=1.2x' (half_life=6.0, range_mult=1.2, opp_sens=None, trend_int=1.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.6    37.5    -11.1    22.1        SI
+   7        7      47.5    37.5    -10.0    22.5        SI
+   8        8      46.5    36.4    -10.1    22.0        SI
+   9        9      45.1    38.4     -6.7    21.2        SI
+  10       10      45.9    86.6    +40.7    20.1        NO
+  11       11      49.8    74.3    +24.5    24.9        SI
+  12       12      53.5    69.1    +15.6    24.7        SI
+  13       13      54.1    83.7    +29.6    23.4        NO
+  14       14      59.1    71.4    +12.3    24.2        SI
+  15       15      58.0    63.7     +5.7    22.8        SI
+  16       16      60.3    31.0    -29.3    21.3        NO
+  17       17      54.9    44.3    -10.6    23.7        SI
+  18       18      54.2    23.2    -31.0    22.9        NO
+  19       19      50.9    68.8    +17.9    25.3        SI
+
+MAE (errore assoluto medio): 18.21
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
