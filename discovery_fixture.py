@@ -427,6 +427,32 @@ def risolvi_fixture():
     return scelta
 
 
+
+def _registra_odds(lega, role, counts, fixture):
+    """Storicizza le starterOdds della giornata, per poterne misurare la
+    calibrazione reale (01/08): oggi un 70% viene trattato uguale in ogni lega,
+    ma il fornitore e' terzo e puo' essere tarato male dove il mercato e'
+    piccolo. Zero query in piu': il dato e' gia' in `counts`."""
+    try:
+        righe = {slug: v.get('starter_odds') for slug, v in (counts or {}).items()
+                 if isinstance(v, dict) and v.get('starter_odds') is not None}
+        if not righe:
+            return
+        outdir = os.path.join('dati_globali', 'storico_odds')
+        os.makedirs(outdir, exist_ok=True)
+        path = os.path.join(outdir, f"{(fixture or {}).get('slug') or 'senza-fixture'}.json")
+        try:
+            with open(path, encoding='utf-8') as f:
+                dati = json.load(f) or {}
+        except Exception:
+            dati = {}
+        dati.setdefault(lega, {})[role] = righe
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(dati, f, ensure_ascii=False, indent=1)
+    except Exception:
+        pass
+
+
 def main():
     fx = risolvi_fixture()
     if not fx:
@@ -699,6 +725,7 @@ def main():
             with open(os.path.join(outdir, 'player_card_counts.json'), 'w', encoding='utf-8') as f:
                 json.dump(counts, f, ensure_ascii=False)
             scritti.setdefault(lega, {})[role] = sorted(slugs)
+            _registra_odds(lega, role, counts, fx)
 
     print("\n" + "=" * 78)
     print("LEGHE DA PROCESSARE PER QUESTA GIORNATA")
