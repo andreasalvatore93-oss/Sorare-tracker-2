@@ -239,7 +239,9 @@ def arene_della_giornata(fixture):
             slug = ((c.get('so5Leaderboard') or {}).get('slug')) or ''
             nome, costo = tipo_arena(slug)
             if nome:
-                out.append((slug, nome, costo))
+                # lo slug del contender identifica la FORMAZIONE schierata:
+                # serve per rileggerla e misurare quanto ci prende il modello
+                out.append((slug, nome, costo, c.get('slug')))
     return out, fx.get('endDate'), premi
 
 
@@ -287,7 +289,7 @@ def main():
     for fx in fixtures:
         arene, fine, premi = arene_della_giornata(fx)
         print(f'\n=== {fx} ({fine}) -- {len(arene)} arene')
-        for slug, nome, costo in arene:
+        for slug, nome, costo, _cs in arene:
             nodi = classifica(slug)
             if not nodi:
                 print(f'  {nome:10s} classifica vuota (serve il cookie)')

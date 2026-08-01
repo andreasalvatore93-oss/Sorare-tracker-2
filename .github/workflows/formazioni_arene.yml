@@ -1,0 +1,60 @@
+name: Formazioni arene (per misurare il modello)
+
+# Scarica le formazioni davvero schierate in ogni arena giocata. Servono per
+# rispondere alla domanda che decide tutto: agganciare il modello al
+# generatore migliora il ROI (+26% fatto a mano) o lo peggiora?
+#
+# Due passi: prima si riempiono gli slug delle formazioni rileggendo l'indice
+# delle giornate (serve il login), poi si scaricano le formazioni (dato
+# pubblico). Gira qui e non in locale per non mandare in 429 i bot di mercato.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pausa:
+        description: 'Secondi fra le richieste (alzala se prendi 429)'
+        required: false
+        default: '1.0'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  formazioni:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+
+      - name: Riempi gli slug delle formazioni
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          PAUSA_SECONDI: ${{ github.event.inputs.pausa }}
+          PYTHONUNBUFFERED: "1"
+        run: python aggiungi_contender_slug.py
+
+      - name: Scarica le formazioni
+        env:
+          PAUSA_SECONDI: ${{ github.event.inputs.pausa }}
+          PYTHONUNBUFFERED: "1"
+        run: python scarica_formazioni_arene.py
+
+      - name: Salva
+        if: always()
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f dati_globali/arene_storico.json dati_globali/arene_formazioni.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Arene: formazioni schierate scaricate"
+          until git pull --no-edit --no-rebase origin main && git push origin main; do
+            echo "push fallito, retry..."
+            sleep 5
+          done

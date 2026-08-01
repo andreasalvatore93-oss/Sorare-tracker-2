@@ -70,7 +70,7 @@ def main():
     for i, fx in enumerate(da_fare, 1):
         arene, fine, premi = t.arene_della_giornata(fx)
         nuove = 0
-        for slug, nome, costo in arene:
+        for slug, nome, costo, contender in arene:
             nodi = t.classifica(slug)
             if not nodi:
                 continue
@@ -80,6 +80,7 @@ def main():
             rank_premio, essenze = premi.get(slug, (None, 0))
             raccolta.append({
                 'fixture': fx, 'fine': fine, 'slug': slug, 'tipo': nome,
+                'contender_slug': contender,
                 'costo': costo, 'partecipanti': len(nodi),
                 'mediana': statistics.median(punteggi),
                 'primo': punteggi[0],
