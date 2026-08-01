@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:16:27.034021Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) dawid-kownacki: 48 pt attesi (34-77)
+   ORDINAMENTO: 47.63
+   SQUADRA: werder-bremen-bremen | AVVERSARIO: freiburg-freiburg-im-breisgau
+======================================================================
+
+######################################################################
+# GIOCATORE: dawid-kownacki
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: dawid-kownacki (squadra: werder-bremen-bremen)
+Generato: 2026-08-01T02:16:27.031558Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-01 | S04 vs BSC | 2-bundesliga | score=60.0 | peso=0.737
+  2025-08-10 | BSC vs KSC | 2-bundesliga | score=35.1 | peso=0.758
+  2025-09-13 | H96 vs BSC | 2-bundesliga | score=80.4 | peso=0.779
+  2025-09-20 | BSC vs SCP | 2-bundesliga | score=31.3 | peso=0.801
+  2025-12-07 | BSC vs FCM | 2-bundesliga | score=39.8 | peso=0.824
+  2026-02-01 | BSC vs SVD | 2-bundesliga | score=16.8 | peso=0.847
+  2026-03-01 | BSC vs FCN | 2-bundesliga | score=31.2 | peso=0.871
+  2026-03-08 | PRM vs BSC | 2-bundesliga | score=42.3 | peso=0.895
+  2026-03-14 | BSC vs BOC | 2-bundesliga | score=68.3 | peso=0.920
+  2026-03-22 | F95 vs BSC | 2-bundesliga | score=74.1 | peso=0.946
+  2026-04-04 | SGD vs BSC | 2-bundesliga | score=33.0 | peso=0.973
+  2026-04-11 | BSC vs FCK | 2-bundesliga | score=34.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.46
+  di cui Punteggio decisivo (level_score) medio: 43.20 | Punteggio complessivo (granulari) medio: 2.26 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 1.35 (delta -0.01) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.10
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.2 - 74.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.62 (differenza: +3.48)
+Media score in casa: 36.77 | Media score fuori casa: 57.96
+Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.8
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.937
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 50.5 vs media ultime 10: 45.2): 1.035
+P(gioca): 35.29% (fonte: tasso di presenza storico (12/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-30T13:30
+Casa: Sport-Club Freiburg | Trasferta: SV Werder Bremen
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.3 (range 34.1 - 77.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.59
+Punteggio REALE ottenuto in quella partita: 34.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.2    31.2    -16.0    20.8        SI
+   7        7      45.6    42.3     -3.3    19.6        SI
+   8        8      45.2    68.3    +23.1    18.2        NO
+   9        9      46.9    74.1    +27.2    19.2        NO
+  10       10      49.4    33.0    -16.4    20.3        SI
+  11       11      48.0    34.9    -13.1    19.8        SI
+
+MAE (errore assoluto medio): 16.50
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
