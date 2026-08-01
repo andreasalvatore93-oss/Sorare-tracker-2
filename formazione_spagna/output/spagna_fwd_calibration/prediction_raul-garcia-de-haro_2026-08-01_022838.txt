@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:28:38.013917Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) raul-garcia-de-haro: 48 pt attesi (41-52)
+   ORDINAMENTO: 47.94
+   SQUADRA: osasuna-pamplona-irunea | AVVERSARIO: celta-de-vigo-vigo
+======================================================================
+
+######################################################################
+# GIOCATORE: raul-garcia-de-haro
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: raul-garcia-de-haro (squadra: osasuna-pamplona-irunea)
+Generato: 2026-08-01T02:28:38.013724Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 30
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | OSA vs RAY | laliga-es | score=70.2 | peso=0.871
+  2025-09-28 | BET vs OSA | laliga-es | score=37.9 | peso=0.895
+  2025-11-03 | OVI vs OSA | laliga-es | score=51.1 | peso=0.920
+  2025-11-08 | SEV vs OSA | laliga-es | score=47.8 | peso=0.946
+  2025-11-22 | OSA vs RSO | laliga-es | score=39.9 | peso=0.973
+  2026-05-23 | GET vs OSA | laliga-es | score=41.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 47.67
+  di cui Punteggio decisivo (level_score) medio: 38.88 | Punteggio complessivo (granulari) medio: 8.79 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.26 (delta +0.19) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 10.69
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.9 - 51.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.62 (differenza: +6.06)
+Media score in casa: 55.05 | Media score fuori casa: 44.48
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.5
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.845
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 15.79% (fonte: tasso di presenza storico (6/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T19:30
+Casa: RC Celta | Trasferta: CA Osasuna
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.3 (range 40.5 - 51.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.10
+Punteggio REALE ottenuto in quella partita: 41.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
