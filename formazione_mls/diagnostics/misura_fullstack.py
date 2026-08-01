@@ -95,11 +95,22 @@ def main():
             squadre_viste[slug][ctx['away']] += 1
     club_di = {s: c.most_common(1)[0][0] for s, c in squadre_viste.items() if c}
 
-    gruppi = []   # (vantaggio_ranking, gol_subiti, [score,...]) per squadra-partita
+    # FORZA DELLA ROSA: punteggio medio storico dei giocatori di ogni squadra,
+    # su tutte le partite disponibili. Sostituisce la posizione in classifica,
+    # che alla prima giornata non esiste e nelle prime e' rumore su pochi
+    # risultati. Questa e' stabile e attraversa le stagioni.
+    punteggi_club = collections.defaultdict(list)
+    for chiave, giocatori in per_partita.items():
+        for slug, (score, _pos, _gc) in giocatori.items():
+            club = club_di.get(slug)
+            if club:
+                punteggi_club[club].append(score)
+    forza = {c: statistics.mean(v) for c, v in punteggi_club.items() if len(v) >= 30}
+
+    gruppi = []   # (vantaggio_forza, gol_subiti, [score,...]) per squadra-partita
     for chiave, giocatori in per_partita.items():
         ctx = contesto[chiave]
-        rh, ra = ctx['rank_home'], ctx['rank_away']
-        if rh is None or ra is None:
+        if ctx['home'] not in forza or ctx['away'] not in forza:
             continue
         per_team = collections.defaultdict(list)
         gc_team = {}
@@ -112,21 +123,23 @@ def main():
         for club, scores in per_team.items():
             if len(scores) < MIN_PER_SQUADRA:
                 continue
-            # ranking piu' BASSO = squadra migliore. vantaggio > 0 = favorita.
-            mio, avv = (rh, ra) if club == ctx['home'] else (ra, rh)
-            gruppi.append((avv - mio, gc_team.get(club, 0.0), scores))
+            avv_club = ctx['away'] if club == ctx['home'] else ctx['home']
+            gruppi.append((forza[club] - forza[avv_club], gc_team.get(club, 0.0), scores))
 
     print(f'squadra-partita utilizzabili (>= {MIN_PER_SQUADRA} giocatori): {len(gruppi)}')
     if not gruppi:
         return
 
     divari = sorted(g[0] for g in gruppi)
+    d10 = divari[len(divari) // 10]
     q1, q3 = divari[len(divari) // 4], divari[3 * len(divari) // 4]
+    d90 = divari[9 * len(divari) // 10]
     fasce = {
-        'SFAVORITA (vantaggio <= %d)' % q1: [g for g in gruppi if g[0] <= q1],
+        'SFAVORITA (forza %+.1f o meno)' % q1: [g for g in gruppi if g[0] <= q1],
         'equilibrio': [g for g in gruppi if q1 < g[0] < q3],
-        'FAVORITA (vantaggio >= %d)' % q3: [g for g in gruppi if g[0] >= q3],
-        'FAVORITA + clean sheet': [g for g in gruppi if g[0] >= q3 and g[1] == 0],
+        'FAVORITA (forza %+.1f o oltre)' % q3: [g for g in gruppi if g[0] >= q3],
+        'STRAFAVORITA (top 10%%, forza %+.1f o oltre)' % d90: [g for g in gruppi if g[0] >= d90],
+        'STRAFAVORITA + clean sheet': [g for g in gruppi if g[0] >= d90 and g[1] == 0],
     }
 
     for nome, gg in fasce.items():
