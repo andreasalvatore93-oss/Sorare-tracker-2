@@ -1320,7 +1320,8 @@ def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,
                                goals_conceded_values, passing_values, clean_sheet_values,
                                min_history=6, half_life=None, trend_intensity=None,
                                range_multiplier=1.0,
-                               opponent_team_slugs_hist=None, game_dates_hist=None, league='venezuela'):
+                               opponent_team_slugs_hist=None, game_dates_hist=None, league='venezuela',
+                               presence_rate=None):
     """Backtest walk-forward ALLINEATO ALLA PRODUZIONE (27/07): ad ogni partita
     richiama compute_score_atteso_def() -- la STESSA funzione della predizione reale --
     usando solo lo storico precedente, e confronta con lo score reale. Sostituisce il
@@ -1404,7 +1405,8 @@ def run_grid_search_prod_def(scores, is_home_flags, opponent_rankings,
                              pos_decisive_values, neg_decisive_values,
                              goals_conceded_values, passing_values, clean_sheet_values,
                              min_history=6,
-                             opponent_team_slugs_hist=None, game_dates_hist=None, league='venezuela'):
+                             opponent_team_slugs_hist=None, game_dates_hist=None, league='venezuela',
+                             presence_rate=None):
     """Grid search ALLINEATO: gira rigorous_backtest_prod_def (che internamente
     chiama compute_score_atteso_def, la STESSA funzione della predizione reale)
     su GRID_SEARCH_COMBINATIONS_PROD. Stesso composite score e stesso formato di
