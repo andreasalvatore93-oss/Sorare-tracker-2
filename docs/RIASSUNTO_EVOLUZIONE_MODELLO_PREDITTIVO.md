@@ -6351,15 +6351,27 @@ esplosivo. **Smentita.**
 Il piu' volatile e' peggio ovunque; il misto e' indistinguibile. La regola
 attuale resta.
 
-### 46.I — Cosa cambierei, in ordine di valore
+### 46.I — Cosa cambierei, e cosa il generatore gia' fa
 
-1. **Concentrare le carte In Season** invece di spalmarle: +73% di formazioni a
-   premio sul gradino 400 (~7 EUR a giornata).
-2. **Smettere di giocare le arene economiche** (costo 100 e Beginner): -12% e
-   -16% di ROI su 555 ingressi reali.
-3. **Selezionare per efficienza sotto cap**, non per punteggio assoluto.
-4. **Limitare il numero di arene** a quelle che restano sopra il campo (con 60
-   carte: tre).
+**VERIFICATO NEL CODICE prima di proporre** — due delle quattro idee erano gia'
+implementate, e una in modo migliore di come l'avevo pensata:
 
-Nessuna di queste tocca il modello predittivo. Sono tutte decisioni di
-schieramento e di portafoglio.
+- **Concentrare** e' gia' il comportamento: le formazioni si generano in
+  sequenza (`for idx in range(1, count + 1)`), ognuna prende il meglio di cio'
+  che resta. La misura di 46.F non chiede un cambio, **conferma** una scelta
+  gia' fatta.
+- **Selezionare per efficienza sotto cap** e' gia' superato:
+  `_optimize_capped_lineup` fa un **knapsack ESATTO** sui 5 slot, cioe' trova
+  il massimo vero sotto il cap, non l'approssimazione per rapporto
+  punti/L10 che avevo usato nel simulatore. Il mio "punti per unita' di L10"
+  descrive il problema, non una lacuna della produzione.
+
+**Resta da decidere (fuori dal codice, sono scelte dell'utente):**
+
+1. **Smettere di giocare le arene economiche** (costo 100 e Beginner): -12% e
+   -16% di ROI su 555 ingressi reali. E' la voce che vale di piu'.
+2. **Limitare il numero di arene** a quelle che restano sopra il campo (con 60
+   carte: tre; con 100: dodici).
+
+Nessuna di queste tocca il modello predittivo, e nessuna richiede codice nuovo:
+sono decisioni di portafoglio.
