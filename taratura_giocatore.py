@@ -95,8 +95,17 @@ def raccogli(cache, slugs, limite=None):
                 continue
             if (r.get('partite_storiche') or 0) < MIN_STORICO:
                 continue
-            squadra = ((nodo.get('anyGame') or {}).get('homeTeam') or {}).get('slug')
-            coppie.append((slug, data, squadra, r['atteso'], reale))
+            g = nodo.get('anyGame') or {}
+            # ATTENZIONE: per raggruppare i COMPAGNI serve la squadra del
+            # giocatore, non quella di casa. Usando homeTeam si mettevano
+            # insieme le due squadre della partita, e le correlazioni di
+            # compagni e avversari si annullavano a vicenda (usciva rho=0.002).
+            coppie.append({'slug': slug, 'data': data,
+                           'partita': g.get('id') or '',
+                           'squadra': r.get('squadra'),
+                           'competizione': (g.get('competition') or {}).get('slug'),
+                           'ruolo': ruolo, 'in_casa': r.get('in_casa'),
+                           'previsto': r['atteso'], 'reale': reale})
         if i % 50 == 0:
             print(f'  [{i}/{len(slugs)}] {len(coppie)} coppie', flush=True)
     return coppie
@@ -127,8 +136,14 @@ def main():
         print(f'Solo {len(coppie)} coppie: troppo poche.')
         return 1
 
-    X = [c[3] for c in coppie]
-    Y = [c[4] for c in coppie]
+    # le coppie si salvano SEMPRE: ricalcolarle costa mezz'ora, e servono a
+    # tutte le analisi successive (bias per ruolo, per lega, correlazioni)
+    with open('dati_globali/taratura_coppie.json', 'w', encoding='utf-8') as fh:
+        json.dump(coppie, fh, ensure_ascii=False)
+    print(f'  coppie salvate in dati_globali/taratura_coppie.json')
+
+    X = [c['previsto'] for c in coppie]
+    Y = [c['reale'] for c in coppie]
     a, b, sd = retta(X, Y)
     print(f'\n=== TARATURA DEL SINGOLO GIOCATORE ({len(coppie)} coppie)')
     print(f'  realizzato = {a:.2f} + {b:.3f} x previsto')
@@ -137,9 +152,10 @@ def main():
 
     # correlazione fra compagni: stessa squadra, stessa data
     per_partita = collections.defaultdict(list)
-    for slug, data, squadra, p, r in coppie:
-        if squadra:
-            per_partita[(squadra, data)].append(r - (a + b * p))
+    for c in coppie:
+        if c.get('squadra') and c.get('partita'):
+            per_partita[(c['partita'], c['squadra'])].append(
+                c['reale'] - (a + b * c['previsto']))
     coppie_res = []
     for v in per_partita.values():
         for i in range(len(v)):

@@ -226,4 +226,7 @@ def score_atteso(cache, slug, ruolo, fine_giornata):
     l10 = (sum(n.get('score') or 0.0 for n in ultimi) / len(ultimi)) if len(ultimi) >= 3 else None
 
     return {'atteso': atteso, 'l10': l10, 'partite_storiche': len(s['scores']),
-            'in_casa': casa, 'data_partita': cutoff}
+            'in_casa': casa, 'data_partita': cutoff,
+            # la squadra del giocatore, dedotta dallo storico: serve a
+            # raggruppare i COMPAGNI quando si misura la correlazione
+            'squadra': squadra}
