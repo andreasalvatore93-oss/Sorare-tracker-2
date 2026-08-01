@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:09:28.245733Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) omari-giraud-hutchinson: 50 pt attesi (39-63)
+   ORDINAMENTO: 48.80
+   SQUADRA: nottingham-forest-nottingham | AVVERSARIO: leeds-united-leeds-west-yorkshire
+======================================================================
+
+######################################################################
+# GIOCATORE: omari-giraud-hutchinson
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: omari-giraud-hutchinson (squadra: nottingham-forest-nottingham)
+Generato: 2026-08-01T02:09:28.243556Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 16
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-03 | WOL vs NOT | premier-league-gb-eng | score=67.4 | peso=0.678
+  2025-12-06 | EVE vs NOT | premier-league-gb-eng | score=16.1 | peso=0.697
+  2025-12-14 | NOT vs TOT | premier-league-gb-eng | score=59.4 | peso=0.717
+  2025-12-22 | FUL vs NOT | premier-league-gb-eng | score=37.6 | peso=0.737
+  2025-12-27 | NOT vs MCI | premier-league-gb-eng | score=68.9 | peso=0.758
+  2025-12-30 | NOT vs EVE | premier-league-gb-eng | score=55.2 | peso=0.779
+  2026-01-03 | AST vs NOT | premier-league-gb-eng | score=44.1 | peso=0.801
+  2026-02-11 | NOT vs WOL | premier-league-gb-eng | score=51.6 | peso=0.824
+  2026-02-22 | NOT vs LIV | premier-league-gb-eng | score=47.3 | peso=0.847
+  2026-03-22 | TOT vs NOT | premier-league-gb-eng | score=48.2 | peso=0.871
+  2026-04-12 | NOT vs AST | premier-league-gb-eng | score=40.4 | peso=0.895
+  2026-04-19 | NOT vs BUR | premier-league-gb-eng | score=64.1 | peso=0.920
+  2026-04-24 | SUN vs NOT | premier-league-gb-eng | score=48.2 | peso=0.946
+  2026-05-17 | MUN vs NOT | premier-league-gb-eng | score=49.1 | peso=0.973
+  2026-05-24 | NOT vs BOR | premier-league-gb-eng | score=63.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 50.97
+  di cui Punteggio decisivo (level_score) medio: 40.62 | Punteggio complessivo (granulari) medio: 10.35 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.46 (delta +0.48) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 12.52
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.4 - 64.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.79 (differenza: +3.73)
+Media score in casa: 56.29 | Media score fuori casa: 44.39
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.7
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.113
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore trend (media ultime 5: 53.0 vs media ultime 10: 51.2): 1.011
+P(gioca): 39.47% (fonte: tasso di presenza storico (15/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Nottingham Forest FC | Trasferta: Leeds United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.6 (range 39.1 - 62.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.88
+Punteggio REALE ottenuto in quella partita: 63.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +13.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.8    44.1     -5.7    18.4        SI
+   7        7      50.1    51.6     +1.5    17.1        SI
+   8        8      50.5    47.3     -3.2    15.9        SI
+   9        9      49.1    48.2     -0.9    14.9        SI
+  10       10      50.2    40.4     -9.8    14.1        SI
+  11       11      53.8    64.1    +10.3    13.7        SI
+  12       12      49.3    48.2     -1.1    13.8        SI
+  13       13      46.8    49.1     +2.3    13.1        SI
+  14       14      50.3    63.4    +13.1    12.6        NO
+
+MAE (errore assoluto medio): 5.34
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 88.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
