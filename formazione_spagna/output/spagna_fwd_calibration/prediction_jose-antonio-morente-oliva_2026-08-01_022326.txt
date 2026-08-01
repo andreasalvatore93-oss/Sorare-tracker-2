@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:23:26.117511Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jose-antonio-morente-oliva: 45 pt attesi (37-50)
+   ORDINAMENTO: 43.04
+   SQUADRA: elche-elche | AVVERSARIO: deportivo-la-coruna-a-coruna
+======================================================================
+
+######################################################################
+# GIOCATORE: jose-antonio-morente-oliva
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jose-antonio-morente-oliva (squadra: elche-elche)
+Generato: 2026-08-01T02:23:26.115543Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | GEN vs LEC | serie-a-it | score=34.6 | peso=0.607
+  2025-08-29 | LEC vs MIL | serie-a-it | score=41.8 | peso=0.624
+  2025-09-14 | ATA vs LEC | serie-a-it | score=51.5 | peso=0.642
+  2025-09-28 | LEC vs BOL | serie-a-it | score=37.9 | peso=0.660
+  2025-10-18 | LEC vs SAS | serie-a-it | score=40.4 | peso=0.678
+  2025-11-02 | FIO vs LEC | serie-a-it | score=38.2 | peso=0.697
+  2025-11-08 | LEC vs VER | serie-a-it | score=40.9 | peso=0.717
+  2025-11-23 | LAZ vs LEC | serie-a-it | score=37.3 | peso=0.737
+  2026-02-13 | ELC vs OSA | laliga-es | score=27.3 | peso=0.758
+  2026-02-20 | ATH vs ELC | laliga-es | score=41.4 | peso=0.779
+  2026-03-01 | ELC vs ESP | laliga-es | score=43.8 | peso=0.801
+  2026-03-21 | ELC vs MLL | laliga-es | score=71.8 | peso=0.824
+  2026-04-03 | RAY vs ELC | laliga-es | score=49.2 | peso=0.847
+  2026-04-11 | ELC vs VCF | laliga-es | score=44.2 | peso=0.871
+  2026-04-22 | ELC vs ATM | laliga-es | score=66.2 | peso=0.895
+  2026-05-03 | CEL vs ELC | laliga-es | score=45.7 | peso=0.920
+  2026-05-09 | ELC vs ALA | laliga-es | score=36.3 | peso=0.946
+  2026-05-17 | ELC vs GET | laliga-es | score=45.1 | peso=0.973
+  2026-05-23 | GIR vs ELC | laliga-es | score=33.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 43.80
+  di cui Punteggio decisivo (level_score) medio: 37.87 | Punteggio complessivo (granulari) medio: 5.93 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.36 (delta -0.09) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 10.61
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.3 - 49.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.85 (differenza: +2.76)
+Media score in casa: 47.81 | Media score fuori casa: 42.35
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.4
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.677
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore trend (media ultime 5: 45.3 vs media ultime 10: 47.7): 0.985
+P(gioca): 48.72% (fonte: tasso di presenza storico (19/39))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T19:00
+Casa: Real Club Deportivo de La Coruña | Trasferta: Elche CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.5 (range 37.0 - 49.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.57
+Punteggio REALE ottenuto in quella partita: 33.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.4x' (half_life=30.0, range_mult=1.4, opp_sens=None, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.2    40.9     -4.3     7.4        SI
+   7        7      44.9    37.3     -7.6     6.8        NO
+   8        8      43.0    27.3    -15.7     6.5        NO
+   9        9      42.7    41.4     -1.3     8.5        SI
+  10       10      42.3    43.8     +1.5     8.1        SI
+  11       11      42.7    71.8    +29.1     8.0        NO
+  12       12      45.1    49.2     +4.1    15.2        SI
+  13       13      45.4    44.2     -1.2    14.8        SI
+  14       14      45.2    66.2    +21.0    14.2        NO
+  15       15      46.6    45.7     -0.9    16.1        SI
+  16       16      46.4    36.3    -10.1    15.5        SI
+  17       17      46.3    45.1     -1.2    15.3        SI
+  18       18      45.9    33.1    -12.8    14.8        SI
+
+MAE (errore assoluto medio): 8.53
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
