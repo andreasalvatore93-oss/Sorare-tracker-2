@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T00:40:10.568556Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) fabian-ruiz-pena: 57 pt attesi (32-82)
+   SQUADRA: psg-paris | AVVERSARIO: rennes-rennes
+======================================================================
+
+######################################################################
+# GIOCATORE: fabian-ruiz-pena
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: fabian-ruiz-pena (squadra: psg-paris)
+Generato: 2026-08-01T00:40:10.566396Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-22 | OM vs PSG | ligue-1-fr | score=34.5 | peso=0.824
+  2025-11-09 | OL vs PSG | ligue-1-fr | score=32.9 | peso=0.847
+  2025-11-29 | ASM vs PSG | ligue-1-fr | score=36.0 | peso=0.871
+  2026-01-04 | PSG vs PAR | ligue-1-fr | score=89.9 | peso=0.895
+  2026-01-16 | PSG vs LIL | ligue-1-fr | score=74.4 | peso=0.920
+  2026-05-02 | PSG vs FCL | ligue-1-fr | score=60.3 | peso=0.946
+  2026-05-10 | PSG vs BRE | ligue-1-fr | score=54.5 | peso=0.973
+  2026-05-17 | PAR vs PSG | ligue-1-fr | score=84.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 59.29
+  di cui Punteggio decisivo (level_score) medio: 41.51 | Punteggio complessivo (granulari) medio: 17.77 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 41.28 (delta -0.23)
+  Efficacia offensiva condizionata: delta venue +0.29, delta avversario +0.00 | Passaggio condizionato: delta venue +2.48, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.44, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 21.25
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.5 - 84.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.30 (differenza: +2.95)
+Media score in casa: 69.78 | Media score fuori casa: 47.03
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.8
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.940
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 25.81% (fonte: tasso di presenza storico (8/31))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T18:45
+Casa: Paris Saint-Germain | Trasferta: Stade Rennais F.C.
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.1 (range 32.3 - 82.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.24
+Punteggio REALE ottenuto in quella partita: 84.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +29.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=15.0+trend_int=0.0+range=1.0x' (half_life=15.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      54.5    54.5     +0.0    21.8        SI
+   7        7      48.8    84.7    +35.9    19.9        NO
+
+MAE (errore assoluto medio): 17.96
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
