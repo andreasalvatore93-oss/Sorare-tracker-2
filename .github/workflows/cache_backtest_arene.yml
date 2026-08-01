@@ -10,10 +10,14 @@ name: Cache backtest arene
 on:
   workflow_dispatch:
     inputs:
-      max:
-        description: "Quanti giocatori al massimo (0 = tutti)"
+      blocco:
+        description: "Giocatori per blocco (si committa dopo ognuno)"
         required: false
-        default: "0"
+        default: "20"
+      blocchi:
+        description: "Quanti blocchi al massimo"
+        required: false
+        default: "8"
       pausa:
         description: "Secondi fra query (1.2 autenticato, 3.2 anonimo)"
         required: false
@@ -33,35 +37,37 @@ jobs:
         with: { python-version: "3.11" }
       - run: pip install requests curl_cffi
 
-      - name: Scarica lo storico dei giocatori mancanti
+      - name: Scarica a blocchi, salvando dopo ognuno
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
         run: |
-          python scarica_cache_backtest.py \
-            --max "${{ github.event.inputs.max }}" \
-            --pausa "${{ github.event.inputs.pausa }}"
-
-      - name: Salva la cache
-        if: always()
-        run: |
+          set -u
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add -f dati_globali/backtest_arene_cache
-          git diff --cached --quiet && exit 0
-          git commit -m "Backtest arene: cache giocatori mancanti"
-          # Retry LIMITATO: con un ciclo infinito, un 403 da permessi mancanti
-          # bloccava il job per ore senza che nessuno se ne accorgesse.
-          for tentativo in 1 2 3 4 5; do
-            git pull --no-edit --no-rebase origin main || true
-            if git push origin main; then exit 0; fi
-            echo "push fallito ($tentativo/5), riprovo..."
-            sleep 10
+          BLOCCO="${{ github.event.inputs.blocco }}"
+          QUANTI="${{ github.event.inputs.blocchi }}"
+          # Un blocco alla volta, con commit subito dopo: se il job muore o
+          # viene annullato si perde al massimo un blocco, non tutto il lavoro.
+          # (Prima il commit era solo alla fine, e un 403 sui permessi aveva
+          # gia' fatto buttare quaranta minuti di scaricamento.)
+          for i in $(seq 1 "$QUANTI"); do
+            echo "=== blocco $i/$QUANTI (${BLOCCO} giocatori) ==="
+            python scarica_cache_backtest.py --max "$BLOCCO"               --pausa "${{ github.event.inputs.pausa }}" || true
+            git add -f dati_globali/backtest_arene_cache
+            if git diff --cached --quiet; then
+              echo "niente di nuovo: finito."
+              break
+            fi
+            git commit -m "Backtest arene: cache giocatori mancanti (blocco $i)"
+            for t in 1 2 3 4 5; do
+              git pull --no-edit --no-rebase origin main || true
+              if git push origin main; then break; fi
+              echo "push fallito ($t/5)"; sleep 10
+            done
           done
-          echo "PUSH FALLITO: la cache resta nell'artifact allegato al run."
-          exit 1
 
       - name: Cache anche come artifact (rete di sicurezza)
         if: always()
