@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-07-30T12:19:31.729897Z
-Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+Generato: 2026-08-01T02:24:02.160804Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) oliver-burke: 46 pt attesi (30-72)
-   ORDINAMENTO: 46.97
+1) oliver-burke: 48 pt attesi (31-73)
+   ORDINAMENTO: 46.94
    SQUADRA: union-berlin-berlin | AVVERSARIO: eintracht-frankfurt-frankfurt-am-main
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: oliver-burke (squadra: union-berlin-berlin)
-Generato: 2026-07-30T12:19:31.724546Z
+Generato: 2026-08-01T02:24:02.158360Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -45,7 +45,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 46.48
-  di cui Punteggio decisivo (level_score) medio: 42.89 | Punteggio complessivo (granulari) medio: 3.58 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  di cui Punteggio decisivo (level_score) medio: 42.89 | Punteggio complessivo (granulari) medio: 3.58 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Passaggio condizionato per venue: 3.60 (delta -0.07) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
 Deviazione standard pesata: 17.28
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.7 - 71.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
@@ -55,8 +55,8 @@ Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 10.8
 Ranking prossimo avversario: 8
 Fattore forza avversario applicato: 0.904
-Fattore falli (casa/trasferta, da dati reali): 1.002
-Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.000
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
 Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
@@ -71,7 +71,7 @@ Competizione: bundesliga-de
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 46.5 (range 29.7 - 71.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 47.8 (range 31.0 - 73.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 45.20
@@ -80,30 +80,30 @@ Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/av
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DEL MODELLO (fissati, 25/07) ---
-half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
 Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
-Combinazione usata: 'hl=6.0+range=1.4x+opp_sens=29.0+trend_int=0.0' (half_life=6.0, range_mult=1.4, opp_sens=29.0, trend_int=0.0)
+Combinazione usata: 'hl=6.0+trend_int=1.3+range=1.1x' (half_life=6.0, range_mult=1.1, opp_sens=None, trend_int=1.3)
 Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      55.9    35.1    -20.8    26.4        SI
-   7        7      31.7    67.2    +35.5    24.2        NO
-   8        8      54.8    28.1    -26.7    25.7        NO
-   9        9      43.9    29.1    -14.8    25.4        SI
-  10       10      40.4    50.5    +10.1    24.4        SI
-  11       11      46.3    37.9     -8.4    23.0        SI
-  12       12      53.7    38.1    -15.6    21.4        SI
-  13       13      50.9    40.3    -10.6    19.9        SI
-  14       14      48.4    72.2    +23.8    18.5        NO
-  15       15      32.4    29.7     -2.7    22.6        SI
-  16       16      48.3    36.1    -12.2    22.4        SI
-  17       17      41.0    71.7    +30.7    21.2        NO
-  18       18      43.0    64.3    +21.3    24.0        SI
+   6        6      49.1    35.1    -14.0    20.7        SI
+   7        7      46.9    67.2    +20.3    19.0        NO
+   8        8      48.9    28.1    -20.8    20.2        NO
+   9        9      47.6    29.1    -18.5    19.9        SI
+  10       10      45.0    50.5     +5.5    19.2        SI
+  11       11      46.1    37.9     -8.2    18.0        SI
+  12       12      45.5    38.1     -7.4    16.8        SI
+  13       13      44.9    40.3     -4.6    15.6        SI
+  14       14      46.0    72.2    +26.2    14.5        NO
+  15       15      47.2    29.7    -17.5    17.8        SI
+  16       16      45.8    36.1     -9.7    17.6        SI
+  17       17      45.4    71.7    +26.3    16.6        NO
+  18       18      47.3    64.3    +17.0    18.8        SI
 
-MAE (errore assoluto medio): 17.93
+MAE (errore assoluto medio): 15.06
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
