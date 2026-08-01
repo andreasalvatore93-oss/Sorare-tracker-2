@@ -1848,6 +1848,39 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   }}
 }})();
 </script>
+<script>
+(function () {{
+  // Click sul nome del giocatore = nome negli appunti, da incollare nella
+  // ricerca di Sorare (01/08, richiesta utente: i nomi coreani sono difficili
+  // da riscrivere a mano).
+  function copia(testo, el) {{
+    var ok = function () {{
+      var vecchio = el.textContent;
+      el.textContent = 'copiato!';
+      setTimeout(function () {{ el.textContent = vecchio; }}, 800);
+    }};
+    if (navigator.clipboard && navigator.clipboard.writeText) {{
+      navigator.clipboard.writeText(testo).then(ok, function () {{}});
+    }} else {{
+      var ta = document.createElement('textarea');
+      ta.value = testo; document.body.appendChild(ta); ta.select();
+      try {{ document.execCommand('copy'); ok(); }} catch (e) {{}}
+      document.body.removeChild(ta);
+    }}
+  }}
+  document.addEventListener('click', function (ev) {{
+    var el = ev.target.closest('.pcard-name');
+    if (!el) return;
+    ev.preventDefault(); ev.stopPropagation();
+    var card = el.closest('[data-name]') || el.closest('[data-slug]');
+    var testo = (card && (card.dataset.name || card.dataset.slug)) || el.textContent;
+    copia(testo.trim(), el);
+  }}, true);
+  var st = document.createElement('style');
+  st.textContent = '.pcard-name{{cursor:copy}} .pcard-name:hover{{text-decoration:underline dotted}}';
+  document.head.appendChild(st);
+}})();
+</script>
 </body>
 </html>
 """
