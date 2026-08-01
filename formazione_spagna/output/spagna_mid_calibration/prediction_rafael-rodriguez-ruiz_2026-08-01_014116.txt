@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:41:16.805786Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) rafael-rodriguez-ruiz: 44 pt attesi (32-78)
+   SQUADRA: malaga-malaga | AVVERSARIO: atletico-madrid-madrid
+======================================================================
+
+######################################################################
+# GIOCATORE: rafael-rodriguez-ruiz
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rafael-rodriguez-ruiz (squadra: malaga-malaga)
+Generato: 2026-08-01T01:41:16.803496Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 46
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 30
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-06 | MCF vs GCF | segunda-division-es | score=21.1 | peso=0.737
+  2025-09-28 | BCF vs MCF | segunda-division-es | score=37.6 | peso=0.758
+  2025-10-05 | RAC vs MCF | segunda-division-es | score=40.3 | peso=0.779
+  2025-10-12 | MCF vs DEP | segunda-division-es | score=81.4 | peso=0.801
+  2025-10-19 | LEG vs MCF | segunda-division-es | score=34.2 | peso=0.824
+  2025-11-17 | CUL vs MCF | segunda-division-es | score=32.9 | peso=0.847
+  2026-03-28 | MCF vs LEG | segunda-division-es | score=29.6 | peso=0.871
+  2026-04-01 | FCA vs MCF | segunda-division-es | score=16.2 | peso=0.895
+  2026-04-19 | UDA vs MCF | segunda-division-es | score=35.9 | peso=0.920
+  2026-05-02 | EIB vs MCF | segunda-division-es | score=37.3 | peso=0.946
+  2026-05-16 | ADC vs MCF | segunda-division-es | score=75.2 | peso=0.973
+  2026-06-14 | MCF vs UDA | segunda-division-es | score=48.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 41.22
+  di cui Punteggio decisivo (level_score) medio: 41.00 | Punteggio complessivo (granulari) medio: 0.22 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 40.33 (delta -0.67)
+  Efficacia offensiva condizionata: delta venue -0.20, delta avversario +0.00 | Passaggio condizionato: delta venue -0.41, delta avversario +0.00 | Gol subiti condizionato: delta venue -0.48, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 18.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.6 - 75.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.13 (differenza: +4.50)
+Media score in casa: 45.08 | Media score fuori casa: 38.70
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.6
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.807
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.994
+Fattore trend (media ultime 5: 42.6 vs media ultime 10: 43.1): 0.997
+P(gioca): 26.09% (fonte: tasso di presenza storico (12/46))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-19T19:00
+Casa: Atlético de Madrid | Trasferta: Málaga CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.6 (range 32.0 - 77.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.47
+Punteggio REALE ottenuto in quella partita: 48.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +7.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.6    29.6    -16.0    18.9        SI
+   7        7      42.4    16.2    -26.2    17.6        NO
+   8        8      39.0    35.9     -3.1    18.3        SI
+   9        9      38.9    37.3     -1.6    16.7        SI
+  10       10      39.0    75.2    +36.2    15.3        NO
+  11       11      45.8    48.2     +2.4    20.0        SI
+
+MAE (errore assoluto medio): 14.26
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
