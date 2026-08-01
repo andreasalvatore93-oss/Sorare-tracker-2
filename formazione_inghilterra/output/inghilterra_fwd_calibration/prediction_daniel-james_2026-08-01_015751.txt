@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:57:51.105466Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) daniel-james: 43 pt attesi (38-45)
+   ORDINAMENTO: 37.46
+   SQUADRA: leeds-united-leeds-west-yorkshire | AVVERSARIO: nottingham-forest-nottingham
+======================================================================
+
+######################################################################
+# GIOCATORE: daniel-james
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: daniel-james (squadra: leeds-united-leeds-west-yorkshire)
+Generato: 2026-08-01T01:57:51.105259Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-18 | LEE vs EVE | premier-league-gb-eng | score=38.1 | peso=0.895
+  2025-08-23 | ARS vs LEE | premier-league-gb-eng | score=38.4 | peso=0.920
+  2025-08-30 | LEE vs NEW | premier-league-gb-eng | score=38.8 | peso=0.946
+  2026-05-11 | TOT vs LEE | premier-league-gb-eng | score=32.6 | peso=0.973
+  2026-05-17 | LEE vs BRI | premier-league-gb-eng | score=39.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 37.46
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 2.46 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 1.95 (delta -0.09) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 2.52
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.6 - 39.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 0.29 (differenza: +2.23)
+Media score in casa: 38.80 | Media score fuori casa: 35.50
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.2
+Ranking prossimo avversario: 16
+Fattore forza avversario applicato: 1.200
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 13.16% (fonte: tasso di presenza storico (5/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Nottingham Forest FC | Trasferta: Leeds United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.8 (range 37.9 - 44.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 36.92
+Punteggio REALE ottenuto in quella partita: 39.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +2.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
