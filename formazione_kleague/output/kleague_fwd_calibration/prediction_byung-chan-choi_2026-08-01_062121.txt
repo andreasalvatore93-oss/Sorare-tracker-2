@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-07-30T11:39:52.661421Z
-Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+Generato: 2026-08-01T06:21:21.710218Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) byung-chan-choi: 43 pt attesi (28-66)
-   ORDINAMENTO: 45.67
+1) byung-chan-choi: 46 pt attesi (31-68)
+   ORDINAMENTO: 44.30
    SQUADRA: gangwon-gangneung | AVVERSARIO: bucheon-1995-bucheon
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: byung-chan-choi (squadra: gangwon-gangneung)
-Generato: 2026-07-30T11:39:52.656514Z
+Generato: 2026-08-01T06:21:21.707841Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -37,20 +37,20 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 43.63
-  di cui Punteggio decisivo (level_score) medio: 40.09 | Punteggio complessivo (granulari) medio: 3.54 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  di cui Punteggio decisivo (level_score) medio: 40.09 | Punteggio complessivo (granulari) medio: 3.54 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Passaggio condizionato per venue: 3.10 (delta -0.39) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
 Deviazione standard pesata: 13.41
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.7 - 66.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.76 (differenza: +3.65)
 Media score in casa: 48.56 | Media score fuori casa: 39.62
-Fattore casa/trasferta applicato: 1.013 (CASA nella prossima partita)
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 5.4
 Ranking prossimo avversario: 11
 Fattore forza avversario applicato: 1.194
-Fattore falli (casa/trasferta, da dati reali): 0.993
-Fattore duelli (casa/trasferta, da dati reali): 0.997
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
 Fattore trend (media ultime 5: 46.6 vs media ultime 10: 40.7): 1.043
 P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
@@ -63,7 +63,7 @@ Competizione: k-league-1
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 43.4 (range 28.5 - 65.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 45.6 (range 30.7 - 68.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 43.99
@@ -72,22 +72,22 @@ Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/av
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DEL MODELLO (fissati, 25/07) ---
-half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
 Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
-Combinazione usata: 'hl=30.0+range=1.2x+opp_sens=29.0+trend_int=0.0' (half_life=30.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
 Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      37.7    66.0    +28.3    18.8        NO
-   7        7      38.2    40.8     +2.6    20.4        SI
-   8        8      36.9    38.0     +1.1    19.0        SI
-   9        9      47.4    47.5     +0.1    18.0        SI
-  10       10      42.9    40.5     -2.4    17.0        SI
+   6        6      46.0    66.0    +20.0    15.7        NO
+   7        7      45.7    40.8     -4.9    17.0        SI
+   8        8      46.0    38.0     -8.0    15.9        SI
+   9        9      45.5    47.5     +2.0    15.0        SI
+  10       10      46.0    40.5     -5.5    14.2        SI
 
-MAE (errore assoluto medio): 6.92
+MAE (errore assoluto medio): 8.09
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
