@@ -56,6 +56,29 @@ except ImportError:
     import requests as _rq
     _S = _rq.Session()
 
+def _versione_corrente():
+    """sorare-version e sorare-build cambiano ad ogni deploy del sito e nel
+    repo erano fissati a mano (fermi al 17/07). Li leggiamo dalla home, cosi'
+    non invecchiano: se la lettura fallisce restano i valori noti."""
+    import re as _re
+    ver = os.environ.get('SORARE_VERSION')
+    build = os.environ.get('SORARE_BUILD')
+    if ver and build:
+        return ver, build
+    try:
+        r = _S.get('https://sorare.com/', timeout=30)
+        html = r.text
+        v = _re.findall(r'(\d{14})', html)
+        b = _re.findall(r'([0-9a-f]{40})', html)
+        if v and b:
+            return v[0], b[0]
+    except Exception:
+        pass
+    return '20260717144535', '41952aef67694959421f5e001684878b72a52225'
+
+
+VERSIONE, BUILD = _versione_corrente()
+
 # L'argomento si chiama groupType, non type: con 'type' Sorare risponde
 # UNAUTHORIZED/timeout invece di segnalare l'errore di validazione, il che
 # manda fuori strada. Verificato in chiaro il 01/08 (la validazione GraphQL
@@ -130,9 +153,8 @@ def graphql(query, variables):
         'Referer': 'https://sorare.com/',
         'Accept-Language': 'it',
         'sorare-client': 'Web',
-        'sorare-version': os.environ.get('SORARE_VERSION', '20260717144535'),
-        'sorare-build': os.environ.get(
-            'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
+        'sorare-version': VERSIONE,
+        'sorare-build': BUILD,
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site',
@@ -208,6 +230,7 @@ def main():
     print(f'cookie: {len(COOKIES)} caratteri, {len(nomi)} voci -> {", ".join(nomi)}')
     print(f'csrf: {"presente" if CSRF else "ASSENTE"} | '
           f'device_fingerprint: {"presente" if FINGERPRINT else "ASSENTE"}')
+    print(f'sorare-version {VERSIONE} | build {BUILD[:12]}...')
     # La prova del nove: se currentUser e' null il cookie non autentica, per
     # quanto sia lungo. Il bot di mercato non se ne accorge perche' legge solo
     # dati pubblici (prezzi, offerte): non interroga mai un campo 'my*'.
