@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:20:45.550782Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) giuliano-simeone: 56 pt attesi (42-78)
+   ORDINAMENTO: 57.07
+   SQUADRA: atletico-madrid-madrid | AVVERSARIO: malaga-malaga
+======================================================================
+
+######################################################################
+# GIOCATORE: giuliano-simeone
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: giuliano-simeone (squadra: atletico-madrid-madrid)
+Generato: 2026-08-01T02:20:45.548440Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-27 | BET vs ATM | laliga-es | score=78.8 | peso=0.678
+  2025-11-01 | ATM vs SEV | laliga-es | score=65.6 | peso=0.697
+  2025-11-08 | ATM vs LEV | laliga-es | score=46.0 | peso=0.717
+  2025-12-02 | FCB vs ATM | laliga-es | score=38.8 | peso=0.737
+  2025-12-06 | ATH vs ATM | laliga-es | score=42.5 | peso=0.758
+  2025-12-13 | ATM vs VCF | laliga-es | score=31.3 | peso=0.779
+  2025-12-21 | GIR vs ATM | laliga-es | score=44.9 | peso=0.801
+  2026-01-04 | RSO vs ATM | laliga-es | score=78.6 | peso=0.824
+  2026-01-18 | ATM vs ALA | laliga-es | score=44.8 | peso=0.847
+  2026-01-25 | ATM vs MLL | laliga-es | score=43.0 | peso=0.871
+  2026-02-08 | ATM vs BET | laliga-es | score=42.7 | peso=0.895
+  2026-02-21 | ATM vs ESP | laliga-es | score=72.8 | peso=0.920
+  2026-03-22 | RMA vs ATM | laliga-es | score=100.0 | peso=0.946
+  2026-04-04 | ATM vs FCB | laliga-es | score=65.2 | peso=0.973
+  2026-04-25 | ATM vs ATH | laliga-es | score=46.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 56.49
+  di cui Punteggio decisivo (level_score) medio: 46.64 | Punteggio complessivo (granulari) medio: 9.85 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.72 (delta +0.18) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.05
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.5 - 78.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.29 (differenza: +4.76)
+Media score in casa: 50.84 | Media score fuori casa: 63.93
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.9
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.798
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore trend (media ultime 5: 65.4 vs media ultime 10: 57.0): 1.044
+P(gioca): 50.00% (fonte: tasso di presenza storico (15/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-19T19:00
+Casa: Atlético de Madrid | Trasferta: Málaga CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.6 (range 41.6 - 77.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.39
+Punteggio REALE ottenuto in quella partita: 46.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=1.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.5    44.9     -3.6    15.5        SI
+   7        7      47.7    78.6    +30.9    13.9        NO
+   8        8      51.6    44.8     -6.8    17.5        SI
+   9        9      51.1    43.0     -8.1    16.2        SI
+  10       10      48.7    42.7     -6.0    15.2        SI
+  11       11      50.8    72.8    +22.0    14.3        NO
+  12       12      49.7   100.0    +50.3    15.6        NO
+  13       13      57.3    65.2     +7.9    22.0        SI
+  14       14      58.1    46.2    -11.9    20.5        SI
+
+MAE (errore assoluto medio): 16.39
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
