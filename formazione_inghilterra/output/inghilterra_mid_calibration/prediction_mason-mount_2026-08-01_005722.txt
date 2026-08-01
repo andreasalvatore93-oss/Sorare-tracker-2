@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T00:57:22.502003Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) mason-mount: 48 pt attesi (35-65)
+   SQUADRA: manchester-united-manchester | AVVERSARIO: hull-city-hull
+======================================================================
+
+######################################################################
+# GIOCATORE: mason-mount
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mason-mount (squadra: manchester-united-manchester)
+Generato: 2026-08-01T00:57:22.499714Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | MUN vs ARS | premier-league-gb-eng | score=42.2 | peso=0.779
+  2025-08-24 | FUL vs MUN | premier-league-gb-eng | score=46.7 | peso=0.801
+  2025-10-04 | MUN vs SUN | premier-league-gb-eng | score=66.3 | peso=0.824
+  2025-10-19 | LIV vs MUN | premier-league-gb-eng | score=30.8 | peso=0.847
+  2025-11-30 | CRY vs MUN | premier-league-gb-eng | score=66.2 | peso=0.871
+  2025-12-08 | WOL vs MUN | premier-league-gb-eng | score=61.0 | peso=0.895
+  2025-12-15 | MUN vs BOR | premier-league-gb-eng | score=41.5 | peso=0.920
+  2025-12-21 | AST vs MUN | premier-league-gb-eng | score=36.9 | peso=0.946
+  2026-05-09 | SUN vs MUN | premier-league-gb-eng | score=42.5 | peso=0.973
+  2026-05-24 | BRI vs MUN | premier-league-gb-eng | score=59.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 49.41
+  di cui Punteggio decisivo (level_score) medio: 42.31 | Punteggio complessivo (granulari) medio: 7.10 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 42.11 (delta -0.20)
+  Efficacia offensiva condizionata: delta venue -0.25, delta avversario +0.00 | Passaggio condizionato: delta venue -0.35, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.27, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.13
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.9 - 66.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.38 (differenza: +1.75)
+Media score in casa: 50.00 | Media score fuori casa: 49.14
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.917
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore trend (media ultime 5: 48.4 vs media ultime 10: 49.4): 0.996
+P(gioca): 26.32% (fonte: tasso di presenza storico (10/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T11:30
+Casa: Hull City AFC | Trasferta: Manchester United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.7 (range 35.2 - 64.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.08
+Punteggio REALE ottenuto in quella partita: 59.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.1    41.5     -7.6    13.3        SI
+   7        7      47.7    36.9    -10.8    12.9        SI
+   8        8      46.8    42.5     -4.3    12.9        SI
+   9        9      46.5    59.9    +13.4    12.3        NO
+
+MAE (errore assoluto medio): 9.02
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
