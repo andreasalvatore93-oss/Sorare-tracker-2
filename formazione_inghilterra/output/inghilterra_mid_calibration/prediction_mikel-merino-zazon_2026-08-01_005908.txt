@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T00:59:08.448088Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) mikel-merino-zazon: 54 pt attesi (37-76)
+   SQUADRA: arsenal-london | AVVERSARIO: coventry-city-coventry
+======================================================================
+
+######################################################################
+# GIOCATORE: mikel-merino-zazon
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mikel-merino-zazon (squadra: arsenal-london)
+Generato: 2026-08-01T00:59:08.447861Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-08 | SUN vs ARS | premier-league-gb-eng | score=60.0 | peso=0.871
+  2025-11-23 | ARS vs TOT | premier-league-gb-eng | score=70.9 | peso=0.895
+  2025-11-30 | CHE vs ARS | premier-league-gb-eng | score=60.8 | peso=0.920
+  2025-12-03 | ARS vs BRE | premier-league-gb-eng | score=83.6 | peso=0.946
+  2025-12-27 | ARS vs BRI | premier-league-gb-eng | score=45.0 | peso=0.973
+  2025-12-30 | ARS vs AST | premier-league-gb-eng | score=51.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 61.77
+  di cui Punteggio decisivo (level_score) medio: 52.89 | Punteggio complessivo (granulari) medio: 8.88 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 51.40 (delta -1.48)
+  Efficacia offensiva condizionata: delta venue -0.27, delta avversario +0.00 | Passaggio condizionato: delta venue +0.72, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.28, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.70
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 45.0 - 83.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.88 (differenza: +5.82)
+Media score in casa: 62.80 | Media score fuori casa: 60.40
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.2
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.718
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 18.75% (fonte: tasso di presenza storico (6/32))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T19:00
+Casa: Arsenal FC | Trasferta: Coventry City FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.0 (range 37.2 - 75.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 63.96
+Punteggio REALE ottenuto in quella partita: 51.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
