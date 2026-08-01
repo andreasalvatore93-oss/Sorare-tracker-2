@@ -1,0 +1,80 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T03:24:57.639595Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) juan-sebastian-boselli-graf: 47 pt attesi (17-50)
+   ORDINAMENTO: 47.92
+   SQUADRA: getafe-getafe-madrid | AVVERSARIO: deportivo-alaves-vitoria-gasteiz
+======================================================================
+
+######################################################################
+# GIOCATORE: juan-sebastian-boselli-graf
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: juan-sebastian-boselli-graf (squadra: getafe-getafe-madrid)
+Generato: 2026-08-01T03:24:57.639390Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-15 | LIB vs RIV | conmebol-libertadores | score=77.8 | peso=0.841
+  2025-08-26 | LAN vs RIV | superliga-argentina-de-futbol | score=47.3 | peso=0.871
+  2025-09-21 | TUC vs RIV | superliga-argentina-de-futbol | score=17.8 | peso=0.901
+  2026-03-02 | RMA vs GET | laliga-es | score=47.8 | peso=0.933
+  2026-04-05 | GET vs ATH | laliga-es | score=47.5 | peso=0.966
+  2026-04-22 | RSO vs GET | laliga-es | score=51.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 48.03
+  di cui Punteggio decisivo (level_score) medio: 31.73 | Punteggio complessivo (granulari) medio: 16.30 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.37, delta avversario +0.37 | Passaggio condizionato: delta venue -0.99, delta avversario -0.99 | Clean sheet/disimpegni condizionato: delta venue +0.44, delta avversario +0.44 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.94
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 17.8 - 51.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 1.84 (differenza: +15.10)
+Media score in casa: 47.48 | Media score fuori casa: 49.71
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.207
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 16.22% (fonte: tasso di presenza storico (6/37))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:30
+Casa: D. Alavés | Trasferta: Getafe CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.8 (range 16.6 - 50.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 47.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.23
+Punteggio REALE ottenuto in quella partita: 51.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
