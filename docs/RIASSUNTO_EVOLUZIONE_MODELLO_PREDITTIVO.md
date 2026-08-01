@@ -5966,3 +5966,31 @@ misura invece di una speranza. Prima il GK e il MID venivano calibrati su una
 formula diversa da quella che schiera, il DEF su una griglia che non conteneva
 i suoi parametri, e la calibrazione DEF era **rotta su 48 leghe**. Le tre
 conferme sarebbero state prive di valore.
+
+### 44.J — Decisioni utente e backlog dopo il rientro (01/08 mattina)
+
+**Chiusi per decisione esplicita, non riaprire:**
+- **SportsGambler / `kleague_lineup_check.py`**: eliminato ("non serve"). Il file
+  e' stato rimosso dal repo. Il test titolari del 26/07 (12/15) resta a
+  verbale in §44.G come misura fatta una volta, non come strumento vivo.
+- **Link Sorare classic/in season**: "inutile", tolto dal backlog.
+- **Retest venue**: lo sta facendo un'altra sessione, non toccarlo da qui.
+
+**In corso**: ricalibrazione di **MLS e K League**. Erano rimaste sulla griglia
+a 504 combinazioni (GK/MID anche sulla vecchia formula pre-audit), quindi
+nell'analisi pooled di §44.I contribuivano **zero** su gk/mid/fwd: la conferma
+dei parametri valeva sulle big5 ma **non sulle due leghe In Season**, le uniche
+che si schierano davvero. 467 file in quarantena, 8 combinazioni lega/ruolo
+rilanciate (solo `mls/def` era gia' allineata, 174 file). Da rifare l'analisi
+pooled a fine run.
+
+**Resta aperto:**
+1. Scaling cross-team ×20 mai misurato (§43.D); sinergia ×12 su una sola
+   giornata (§42.D.1); segnale "crescita" su gruppi piccoli (§42.D.2).
+2. `resto_mondo` da rimuovere (verificato morto in §44.G).
+3. Squadra dedotta dalle ultime 5 partite invece che da `activeClub` (§44.G) —
+   reale ma raro, 0 casi su 157 controllati.
+4. 11 file di consiglio con contaminazione cross-lega residua da ripulire.
+5. `audit_costanti_vive.py` va in `KeyError` fuori stagione (solo diagnostico).
+6. Velocita' Best Five multi-lega; GK/MID inline sulle altre 42 leghe (scelta);
+   `MAX_HISTORY_DAYS=120` da non toccare senza l'utente.
