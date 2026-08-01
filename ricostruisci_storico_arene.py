@@ -51,13 +51,21 @@ def main():
     if os.path.exists(OUT):
         vecchio = json.load(open(OUT, encoding='utf-8'))
         raccolta = vecchio.get('arene') or []
-        fatte = {r['fixture'] for r in raccolta}
+        for r in raccolta:
+            # le righe salvate prima che esistesse il campo non ce l'hanno:
+            # la mediana si ricava dai punteggi, che ci sono sempre
+            if r.get('mediana') is None and r.get('punteggi'):
+                r['mediana'] = statistics.median(r['punteggi'])
+        # anche le giornate senza nessuna arena vanno segnate come viste, se no
+        # ad ogni rilancio si riscaricano tutte da capo (un'ora buttata)
+        fatte = set(vecchio.get('giornate_viste') or [])
+        fatte |= {r['fixture'] for r in raccolta}
 
     io = os.environ.get('NICKNAME', 'Crowss').strip().lower()
     slugs = giornate_concluse()
     da_fare = [s for s in slugs if s not in fatte]
     print(f'{len(slugs)} giornate concluse dal {DA} | '
-          f'{len(fatte)} gia\' in archivio | {len(da_fare)} da scaricare')
+          f'{len(fatte)} gia\' viste | {len(da_fare)} da scaricare')
 
     for i, fx in enumerate(da_fare, 1):
         arene, fine, premi = t.arene_della_giornata(fx)
@@ -82,13 +90,14 @@ def main():
                 'mio_score': mia.get('score') if mia else None})
             nuove += 1
         print(f'[{i}/{len(da_fare)}] {fx} -> {nuove} arene')
+        fatte.add(fx)
         # si salva ad ogni giornata: un'interruzione non butta via il lavoro
-        if nuove:
-            os.makedirs(os.path.dirname(OUT), exist_ok=True)
-            with open(OUT, 'w', encoding='utf-8') as f:
-                json.dump({'aggiornato': datetime.datetime.now(
-                    datetime.timezone.utc).isoformat(),
-                    'arene': raccolta}, f, ensure_ascii=False, indent=1)
+        os.makedirs(os.path.dirname(OUT), exist_ok=True)
+        with open(OUT, 'w', encoding='utf-8') as f:
+            json.dump({'aggiornato': datetime.datetime.now(
+                datetime.timezone.utc).isoformat(),
+                'giornate_viste': sorted(fatte),
+                'arene': raccolta}, f, ensure_ascii=False, indent=1)
 
     print(f'\n{len(raccolta)} arene in archivio')
     if not raccolta:
@@ -98,7 +107,9 @@ def main():
         per_tipo.setdefault(r['tipo'], []).append(r)
     print('\n=== MEDIANA DEL CAMPO PER TIPO (il numero da battere)')
     for tipo, v in sorted(per_tipo.items()):
-        med = [r['mediana'] for r in v]
+        med = [r['mediana'] for r in v if r.get('mediana') is not None]
+        if not med:
+            continue
         print(f'  {tipo:10s} {len(v):>4} arene | mediana tipica {statistics.median(med):6.1f} '
               f'| min {min(med):6.1f} | max {max(med):6.1f}')
 

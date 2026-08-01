@@ -136,18 +136,35 @@ query Classifica($slug: String!, $page: Int) {
 
 # Tipi di arena che ci interessano oggi (scelta esplicita dell'utente: cap 220
 # e le altre restano fuori per non accumulare troppa roba).
+# Costo d'ingresso noto solo per le arene che l'utente gioca abitualmente.
+# L'ordine conta: le chiavi piu' lunghe vanno provate per prime, altrimenti
+# 'arena_limited' cattura anche 'arena_limited_cap_220'.
 TIPI = {
     'arena_limited_beginner': ('Beginner', 100),
     'arena_limited_uncapped': ('Uncapped', 300),
     'arena_limited_cap_220': ('cap 220', 200),
-    'arena_limited': ('cap 260', 300),   # va testato per ultimo: e' un prefisso
+    'arena_limited': ('cap 260', 300),
 }
 
 
 def tipo_arena(slug):
-    for chiave, (nome, costo) in TIPI.items():
+    """Nome e costo di un'arena a partire dallo slug della sua classifica.
+
+    ATTENZIONE: prima qui si tornava (None, None) per gli slug non elencati, e
+    chi chiamava li scartava in silenzio. Cosi' sparivano tutte le arene rare e
+    super rare: intere giornate del 2025 risultavano '0 arene' pur avendone
+    fino a otto. Ora l'ultima parola e' allo slug: se contiene 'arena' e'
+    un'arena, con un nome ricavato dallo slug e costo ignoto (None).
+    """
+    for chiave in sorted(TIPI, key=len, reverse=True):
         if chiave in slug:
-            return nome, costo
+            return TIPI[chiave]
+    if 'arena' in slug:
+        coda = slug.rsplit('arena', 1)[1].strip('_-')
+        # lo slug finisce con l'UUID dell'arena: va tolto, se no ogni arena
+        # diventerebbe un tipo a se'
+        coda = coda.split('-')[0] if coda else ''
+        return ('arena ' + coda).strip(), None
     return None, None
 
 
@@ -292,7 +309,8 @@ def main():
             raccolta.append(riga)
             m = f"| tu {riga['mio_rank']}o con {riga['mio_score']:.1f}" if mia else ''
             if essenze:
-                m += f" | premio {essenze} essenze (netto {essenze - costo:+d})"
+                netto = f' (netto {essenze - costo:+d})' if costo else ''
+                m += f' | premio {essenze} essenze{netto}'
             print(f'  {nome:10s} {len(nodi):>2} partecipanti | 1o {punteggi[0]:6.1f} '
                   f'| 3o {punteggi[2]:6.1f} | mediana {statistics.median(punteggi):6.1f} {m}')
 
