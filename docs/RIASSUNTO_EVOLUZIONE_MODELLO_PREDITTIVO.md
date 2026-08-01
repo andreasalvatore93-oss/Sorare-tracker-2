@@ -6515,3 +6515,50 @@ NON entrare.** Distribuirli meglio non porta niente.
 - **Consigli d'acquisto**: punti per unità di L10 rapportati al prezzo. I pezzi
   ci sono già (prezzi da `bot_profit`, L10 dalla discovery); il pezzo nuovo è
   poter misurare quanto un giocatore avvicina alla soglia del terzo posto.
+
+### 47.H — I numeri finali, e il passo successivo: comprare carte da arena
+
+Archivio ricostruito e verificato: **673 ingressi, ROI +13.3%**, identico a
+SorareScore riga per riga (194/191/182/53/38/15, e 121.250 spese contro
+137.400 vinte).
+
+**Dove sta il valore, misurato:**
+
+| leva | tetto disponibile |
+|---|---|
+| allocazione fra formazioni | +2.4 punti percentuali (irraggiungibili) |
+| **decisione d'ingresso** | **+44.900 essenze** (da +9.800 a +54.700) |
+
+E la decisione d'ingresso **regge al rumore**: simulando la scelta con una
+previsione sbagliata di 60 punti a formazione — più della deviazione tipica —
+si porta a casa comunque il **53% del tetto, ~+23.000 essenze**. Il motivo è
+che la decisione è binaria: non serve indovinare il punteggio, basta ordinare
+meglio del caso. È questo che rende la strada promettente mentre l'allocazione
+non lo era.
+
+Soglie di pareggio sull'archivio corretto: **cap 260 a 282.9**, Beginner a
+281.9, Uncapped a 305.5. Il punteggio mediano dell'utente è **sotto il pareggio
+in tutti e tre i tipi** (269.7 / 264.8 / 280.9): il profitto viene tutto dalla
+metà buona delle formazioni, e la metà scarsa lo erode. Lì lavora il modello.
+
+**Il passo successivo, indicato dall'utente**: se non conviene schierare le
+carte che ha, allora vanno *comprate* quelle che rendono — e l'utente si accolla
+la spesa. Il criterio non è "il giocatore più forte" ma è determinato dalla
+matematica del cap:
+
+> per superare 282.9 con 5 carte sotto cap 260 servono **56.6 punti a giocatore
+> con 52 di L10 media**, cioè **1.09 punti per unità di L10**.
+
+Chi sta sopra quella riga è un acquisto sensato per le arene, chi sta sotto no,
+**indipendentemente da quanto sia forte in assoluto**. Esempio reale portato
+dall'utente: *Jack McGlynn*, proiezione 75 con L10 60 → rapporto **1.25**, e
+costa **2 euro** in classic.
+
+**Il tasso di cambio che manca.** Informazione nuova: ogni **1000 essenze**
+danno diritto a craftare una carta, e il valore del craft è pura fortuna — nel
+caso più frequente ~50 centesimi, nel migliore 400-500 euro. Finora abbiamo
+ottimizzato essenze **senza sapere quanto valgono in euro**: i +23.000 essenze
+di guadagno atteso sono 23 craft, che possono valere una dozzina di euro o
+qualche migliaio a seconda della coda. Va misurato — dai craft passati
+dell'utente o dai prezzi di mercato delle carte craftabili — prima di
+confrontare l'euro dell'In Season con l'essenza dell'arena.
