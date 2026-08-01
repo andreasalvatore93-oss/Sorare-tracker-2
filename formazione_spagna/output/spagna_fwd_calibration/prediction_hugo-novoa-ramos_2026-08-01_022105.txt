@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:21:05.886726Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) hugo-novoa-ramos: 46 pt attesi (37-54)
+   ORDINAMENTO: 44.79
+   SQUADRA: deportivo-alaves-vitoria-gasteiz | AVVERSARIO: getafe-getafe-madrid
+======================================================================
+
+######################################################################
+# GIOCATORE: hugo-novoa-ramos
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: hugo-novoa-ramos (squadra: deportivo-alaves-vitoria-gasteiz)
+Generato: 2026-08-01T02:21:05.884442Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-05 | ALB vs MIR | segunda-division-es | score=41.0 | peso=0.624
+  2025-09-13 | MIR vs DEP | segunda-division-es | score=37.3 | peso=0.642
+  2025-09-26 | MIR vs ZAR | segunda-division-es | score=45.3 | peso=0.660
+  2025-10-05 | VLL vs MIR | segunda-division-es | score=40.1 | peso=0.678
+  2025-10-11 | MIR vs LEG | segunda-division-es | score=34.6 | peso=0.697
+  2025-10-18 | ADC vs MIR | segunda-division-es | score=35.1 | peso=0.717
+  2025-10-25 | MIR vs RAC | segunda-division-es | score=45.1 | peso=0.737
+  2025-12-21 | MIR vs COR | segunda-division-es | score=64.1 | peso=0.758
+  2026-01-02 | EIB vs MIR | segunda-division-es | score=40.8 | peso=0.779
+  2026-01-10 | MIR vs UDA | segunda-division-es | score=41.7 | peso=0.801
+  2026-01-18 | MIR vs FCA | segunda-division-es | score=45.5 | peso=0.824
+  2026-02-21 | HUE vs MIR | segunda-division-es | score=40.4 | peso=0.847
+  2026-03-01 | MIR vs ADC | segunda-division-es | score=37.3 | peso=0.871
+  2026-03-07 | BCF vs MIR | segunda-division-es | score=43.0 | peso=0.895
+  2026-04-20 | DEP vs MIR | segunda-division-es | score=41.4 | peso=0.920
+  2026-04-26 | MIR vs CUL | segunda-division-es | score=52.5 | peso=0.946
+  2026-05-04 | UDA vs MIR | segunda-division-es | score=75.2 | peso=0.973
+  2026-05-31 | LEG vs MIR | segunda-division-es | score=33.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 44.53
+  di cui Punteggio decisivo (level_score) medio: 38.01 | Punteggio complessivo (granulari) medio: 6.52 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.80 (delta +0.23) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 10.77
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.1 - 52.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.95 (differenza: +3.82)
+Media score in casa: 44.82 | Media score fuori casa: 43.38
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.8
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.870
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 49.1 vs media ultime 10: 45.1): 1.026
+P(gioca): 42.86% (fonte: tasso di presenza storico (18/42))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:30
+Casa: D. Alavés | Trasferta: Getafe CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.2 (range 36.8 - 54.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.37
+Punteggio REALE ottenuto in quella partita: 33.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.1x' (half_life=30.0, range_mult=1.1, opp_sens=None, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.1    45.1     +1.0     4.1        SI
+   7        7      44.3    64.1    +19.8     4.5        NO
+   8        8      45.3    40.8     -4.5    10.1        SI
+   9        9      45.8    41.7     -4.1     9.5        SI
+  10       10      45.5    45.5     +0.0     8.9        SI
+  11       11      44.7    40.4     -4.3     8.5        SI
+  12       12      45.4    37.3     -8.1     8.2        SI
+  13       13      43.8    43.0     -0.8     8.0        SI
+  14       14      43.9    41.4     -2.5     7.6        SI
+  15       15      44.6    52.5     +7.9     7.3        NO
+  16       16      44.4    75.2    +30.8     7.7        NO
+  17       17      46.2    33.4    -12.8    11.7        NO
+
+MAE (errore assoluto medio): 8.06
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
