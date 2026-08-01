@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:59:22.779901Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) dwight-mcneil: 45 pt attesi (35-47)
+   ORDINAMENTO: 42.43
+   SQUADRA: everton-liverpool | AVVERSARIO: crystal-palace-london
+======================================================================
+
+######################################################################
+# GIOCATORE: dwight-mcneil
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: dwight-mcneil (squadra: everton-liverpool)
+Generato: 2026-08-01T01:59:22.778433Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-20 | EVE vs ARS | premier-league-gb-eng | score=33.4 | peso=0.737
+  2025-12-27 | BUR vs EVE | premier-league-gb-eng | score=43.2 | peso=0.758
+  2025-12-30 | NOT vs EVE | premier-league-gb-eng | score=64.9 | peso=0.779
+  2026-01-07 | EVE vs WOL | premier-league-gb-eng | score=41.4 | peso=0.801
+  2026-01-18 | AST vs EVE | premier-league-gb-eng | score=44.1 | peso=0.824
+  2026-02-28 | NEW vs EVE | premier-league-gb-eng | score=45.5 | peso=0.847
+  2026-03-03 | EVE vs BUR | premier-league-gb-eng | score=50.0 | peso=0.871
+  2026-03-14 | ARS vs EVE | premier-league-gb-eng | score=39.5 | peso=0.895
+  2026-03-21 | EVE vs CHE | premier-league-gb-eng | score=42.8 | peso=0.920
+  2026-04-11 | BRE vs EVE | premier-league-gb-eng | score=42.0 | peso=0.946
+  2026-04-19 | EVE vs LIV | premier-league-gb-eng | score=26.5 | peso=0.973
+  2026-04-25 | WHU vs EVE | premier-league-gb-eng | score=43.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 42.83
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 7.83 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.30 (delta +0.17) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 8.62
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.4 - 45.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 3.89 (differenza: +4.73)
+Media score in casa: 38.82 | Media score fuori casa: 46.11
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.2
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.132
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 38.9 vs media ultime 10: 44.0): 0.965
+P(gioca): 31.58% (fonte: tasso di presenza storico (12/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Everton FC | Trasferta: Crystal Palace FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.6 (range 35.2 - 47.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.75
+Punteggio REALE ottenuto in quella partita: 43.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.4    50.0     +0.6     8.9        SI
+   7        7      47.7    39.5     -8.2     8.2        NO
+   8        8      46.9    42.8     -4.1     7.9        SI
+   9        9      46.3    42.0     -4.3     7.3        SI
+  10       10      46.5    26.5    -20.0     6.7        NO
+  11       11      43.9    43.6     -0.3     8.9        SI
+
+MAE (errore assoluto medio): 6.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
