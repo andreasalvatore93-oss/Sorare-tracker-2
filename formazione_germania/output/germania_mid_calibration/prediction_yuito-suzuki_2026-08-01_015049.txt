@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:50:49.054761Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) yuito-suzuki: 50 pt attesi (27-74)
+   SQUADRA: freiburg-freiburg-im-breisgau | AVVERSARIO: werder-bremen-bremen
+======================================================================
+
+######################################################################
+# GIOCATORE: yuito-suzuki
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yuito-suzuki (squadra: freiburg-freiburg-im-breisgau)
+Generato: 2026-08-01T01:50:49.052486Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | SCF vs FCA | bundesliga-de | score=21.6 | peso=0.660
+  2025-08-31 | KOE vs SCF | bundesliga-de | score=24.1 | peso=0.678
+  2025-11-09 | SCF vs STP | bundesliga-de | score=60.0 | peso=0.697
+  2025-11-22 | BAY vs SCF | bundesliga-de | score=60.0 | peso=0.717
+  2025-11-30 | SCF vs M05 | bundesliga-de | score=70.5 | peso=0.737
+  2025-12-14 | SCF vs BVB | bundesliga-de | score=53.1 | peso=0.758
+  2025-12-20 | WOB vs SCF | bundesliga-de | score=22.8 | peso=0.779
+  2026-01-10 | SCF vs HSV | bundesliga-de | score=50.6 | peso=0.801
+  2026-01-25 | SCF vs KOE | bundesliga-de | score=78.2 | peso=0.824
+  2026-02-01 | VFB vs SCF | bundesliga-de | score=44.2 | peso=0.847
+  2026-02-22 | SCF vs BMG | bundesliga-de | score=34.7 | peso=0.871
+  2026-03-01 | SGE vs SCF | bundesliga-de | score=47.0 | peso=0.895
+  2026-03-07 | SCF vs B04 | bundesliga-de | score=72.9 | peso=0.920
+  2026-03-22 | STP vs SCF | bundesliga-de | score=35.8 | peso=0.946
+  2026-04-04 | SCF vs BAY | bundesliga-de | score=29.6 | peso=0.973
+  2026-05-03 | SCF vs WOB | bundesliga-de | score=38.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.44
+  di cui Punteggio decisivo (level_score) medio: 42.43 | Punteggio complessivo (granulari) medio: 4.00 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 43.91 (delta +1.47)
+  Efficacia offensiva condizionata: delta venue +0.68, delta avversario -0.69 | Passaggio condizionato: delta venue +0.75, delta avversario +0.59 | Gol subiti condizionato: delta venue +0.43, delta avversario +0.61 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 17.38
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 24.1 - 70.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.28 (differenza: +2.10)
+Media score in casa: 50.98 | Media score fuori casa: 38.98
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.1
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.168
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore trend (media ultime 5: 44.8 vs media ultime 10: 45.4): 0.997
+P(gioca): 47.06% (fonte: tasso di presenza storico (16/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-30T13:30
+Casa: Sport-Club Freiburg | Trasferta: SV Werder Bremen
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 27.4 - 73.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.08
+Punteggio REALE ottenuto in quella partita: 38.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=1.3+range=1.15x' (half_life=30.0, range_mult=1.15, opp_sens=None, trend_int=1.3)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.1    22.8    -23.3    21.2        NO
+   7        7      47.5    50.6     +3.1    22.3        SI
+   8        8      48.2    78.2    +30.0    20.9        NO
+   9        9      45.4    44.2     -1.2    23.1        SI
+  10       10      50.7    34.7    -16.0    21.8        SI
+  11       11      45.2    47.0     +1.8    21.3        SI
+  12       12      50.2    72.9    +22.7    20.3        NO
+  13       13      46.5    35.8    -10.7    21.1        SI
+  14       14      49.8    29.6    -20.2    20.6        SI
+  15       15      48.8    38.6    -10.2    20.7        SI
+
+MAE (errore assoluto medio): 13.92
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
