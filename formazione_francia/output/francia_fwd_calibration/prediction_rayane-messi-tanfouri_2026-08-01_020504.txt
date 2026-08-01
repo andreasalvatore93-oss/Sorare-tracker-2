@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:05:04.152682Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) rayane-messi-tanfouri: 50 pt attesi (27-89)
+   ORDINAMENTO: 53.54
+   SQUADRA: strasbourg-strasbourg | AVVERSARIO: olympique-marseille-marseille
+======================================================================
+
+######################################################################
+# GIOCATORE: rayane-messi-tanfouri
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rayane-messi-tanfouri (squadra: strasbourg-strasbourg)
+Generato: 2026-08-01T02:05:04.152481Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-19 | BOU vs PAU | ligue-2-fr | score=36.0 | peso=0.895
+  2025-09-23 | PAU vs LAV | ligue-2-fr | score=66.7 | peso=0.920
+  2025-10-24 | PAU vs DUN | ligue-2-fr | score=48.5 | peso=0.946
+  2025-11-03 | PAU vs TRO | ligue-2-fr | score=94.0 | peso=0.973
+  2025-11-08 | EAG vs PAU | ligue-2-fr | score=32.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 55.60
+  di cui Punteggio decisivo (level_score) medio: 45.00 | Punteggio complessivo (granulari) medio: 10.60 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.79 (delta -0.91) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 22.90
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.3 - 94.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.53 (differenza: +10.37)
+Media score in casa: 69.73 | Media score fuori casa: 34.15
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.6
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.807
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 21.74% (fonte: tasso di presenza storico (5/23))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T18:45
+Casa: Olympique de Marseille | Trasferta: RC Strasbourg Alsace
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.2 (range 26.9 - 88.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.84
+Punteggio REALE ottenuto in quella partita: 32.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -29.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
