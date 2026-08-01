@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:49:10.409260Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) tim-breithaupt: 47 pt attesi (40-49)
+   SQUADRA: augsburg-augsburg | AVVERSARIO: schalke-04-gelsenkirchen
+======================================================================
+
+######################################################################
+# GIOCATORE: tim-breithaupt
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tim-breithaupt (squadra: augsburg-augsburg)
+Generato: 2026-08-01T01:49:10.406915Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | PRM vs F95 | 2-bundesliga | score=43.8 | peso=0.697
+  2025-09-21 | F95 vs SVD | 2-bundesliga | score=47.3 | peso=0.717
+  2025-09-27 | BOC vs F95 | 2-bundesliga | score=48.3 | peso=0.737
+  2025-10-03 | F95 vs FCN | 2-bundesliga | score=43.8 | peso=0.758
+  2025-10-17 | F95 vs EBS | 2-bundesliga | score=47.4 | peso=0.779
+  2025-10-25 | BSC vs F95 | 2-bundesliga | score=57.2 | peso=0.801
+  2025-11-02 | F95 vs FCK | 2-bundesliga | score=41.8 | peso=0.824
+  2025-11-09 | KIE vs F95 | 2-bundesliga | score=47.4 | peso=0.847
+  2025-11-22 | F95 vs FCM | 2-bundesliga | score=39.5 | peso=0.871
+  2025-11-30 | SGD vs F95 | 2-bundesliga | score=35.3 | peso=0.895
+  2026-04-18 | FCM vs F95 | 2-bundesliga | score=43.2 | peso=0.920
+  2026-05-02 | S04 vs F95 | 2-bundesliga | score=39.9 | peso=0.946
+  2026-05-10 | F95 vs ELV | 2-bundesliga | score=71.2 | peso=0.973
+  2026-05-17 | SGF vs F95 | 2-bundesliga | score=47.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.85
+  di cui Punteggio decisivo (level_score) medio: 37.07 | Punteggio complessivo (granulari) medio: 9.78 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 38.63 (delta +1.57)
+  Efficacia offensiva condizionata: delta venue +0.01, delta avversario -0.09 | Passaggio condizionato: delta venue +0.16, delta avversario +0.09 | Gol subiti condizionato: delta venue +0.03, delta avversario -0.07 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 8.86
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.9 - 48.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.61 (differenza: +4.26)
+Media score in casa: 48.50 | Media score fuori casa: 45.36
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.9
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.695
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore trend (media ultime 5: 47.5 vs media ultime 10: 47.1): 1.002
+P(gioca): 43.75% (fonte: tasso di presenza storico (14/32))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-30T15:30
+Casa: FC Augsburg | Trasferta: FC Schalke 04
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.1 (range 40.2 - 48.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.76
+Punteggio REALE ottenuto in quella partita: 47.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +1.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.4x' (half_life=6.0, range_mult=1.4, opp_sens=None, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.3    41.8     -6.5     6.8        SI
+   7        7      48.0    47.4     -0.6     7.2        SI
+   8        8      47.0    39.5     -7.5     6.5        NO
+   9        9      47.5    35.3    -12.2     7.2        NO
+  10       10      45.9    43.2     -2.7     8.6        SI
+  11       11      45.5    39.9     -5.6     7.9        SI
+  12       12      44.2    71.2    +27.0     7.6        NO
+  13       13      46.7    47.8     +1.1    15.2        SI
+
+MAE (errore assoluto medio): 7.91
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
