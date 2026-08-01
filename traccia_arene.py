@@ -55,23 +55,30 @@ except ImportError:
     import requests as _rq
     _S = _rq.Session()
 
+# L'argomento si chiama groupType, non type: con 'type' Sorare risponde
+# UNAUTHORIZED/timeout invece di segnalare l'errore di validazione, il che
+# manda fuori strada. Verificato in chiaro il 01/08 (la validazione GraphQL
+# avviene PRIMA dell'autenticazione, quindi la forma della query si prova
+# senza cookie). myEligibleOrSo5Rewards e' una union: servono i frammenti.
 Q_INDICE = """
-query Indice($fixture: String!) {
+query Indice($fixture: String!, $groupType: So5LeaderboardGroupType!) {
   so5 {
     so5Fixture(slug: $fixture) {
       slug
       endDate
-      so5LeaderboardGroups(type: COMPETITION_WITH_ARENA) {
+      so5LeaderboardGroups(groupType: $groupType) {
         displayName
         mySo5LeaderboardContenders {
           slug
           so5Leaderboard { slug }
         }
         myEligibleOrSo5Rewards {
-          slug
-          rewardConfigs {
-            __typename
-            ... on CardShardRewardConfig { quantity }
+          ... on So5Reward {
+            slug
+            rewardConfigs {
+              __typename
+              ... on CardShardRewardConfig { quantity }
+            }
           }
         }
       }
@@ -142,7 +149,8 @@ def graphql(query, variables):
 
 def arene_della_giornata(fixture):
     """[(slug_classifica, tipo, costo)] delle arene giocate in quella giornata."""
-    d = graphql(Q_INDICE, {'fixture': fixture})
+    d = graphql(Q_INDICE, {'fixture': fixture,
+                           'groupType': 'COMPETITION_WITH_ARENA'})
     if d.get('errors'):
         print(f'  {fixture}: errore indice -> {json.dumps(d["errors"])[:160]}')
         return [], None, {}
@@ -189,8 +197,19 @@ def main():
     if not fixtures:
         print('Passare FIXTURES=<slug-giornata>[,<altro>]')
         sys.exit(1)
-    print(f'cookie: {"presente" if COOKIES else "ASSENTE"} '
-          f'({len(COOKIES)} caratteri) | csrf: {"presente" if CSRF else "ASSENTE"}')
+    nomi = [c.strip().split('=', 1)[0] for c in COOKIES.split(';') if '=' in c]
+    print(f'cookie: {len(COOKIES)} caratteri, {len(nomi)} voci -> {", ".join(nomi)}')
+    print(f'csrf: {"presente" if CSRF else "ASSENTE"}')
+    # La prova del nove: se currentUser e' null il cookie non autentica, per
+    # quanto sia lungo. Il bot di mercato non se ne accorge perche' legge solo
+    # dati pubblici (prezzi, offerte): non interroga mai un campo 'my*'.
+    chi = graphql('{ currentUser { nickname } }', {})
+    utente = ((chi.get('data') or {}).get('currentUser') or {}).get('nickname')
+    if not utente:
+        print('NON AUTENTICATO: currentUser torna null. Le classifiche arene '
+              'non sono pubbliche, quindi senza login qui non si ricava nulla.')
+        sys.exit(2)
+    print(f'autenticato come {utente}')
 
     io = os.environ.get('NICKNAME', '').strip().lower()
     raccolta = []
