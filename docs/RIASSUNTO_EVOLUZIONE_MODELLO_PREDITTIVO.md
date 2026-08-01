@@ -6375,3 +6375,143 @@ implementate, e una in modo migliore di come l'avevo pensata:
 
 Nessuna di queste tocca il modello predittivo, e nessuna richiede codice nuovo:
 sono decisioni di portafoglio.
+
+---
+
+## 47. Sessione 01/08 (notte) — le arene smettono di essere una stima: 673 ingressi veri, e quattro correzioni a me stesso
+
+La sezione 46 ragionava sulle arene con numeri presi da SorareScore e con
+simulazioni. Questa le sostituisce con dati misurati, scaricati dall'API di
+Sorare: **673 ingressi reali, con tutti e dieci i punteggi di ogni arena, i
+premi incassati e le formazioni schierate.**
+
+Il valore di questa sessione non sta nei numeri finali ma in quante conclusioni
+già scritte sono cadute quando i dati sono arrivati. Sono elencate tutte, con
+il perché.
+
+### 47.A — Il tracker: tre bug che davano risposte plausibili e sbagliate
+
+`traccia_arene.py` + `ricostruisci_storico_arene.py` scaricano, per ogni
+giornata, le arene giocate con la classifica completa. Ha richiesto di battere
+tre errori che NON si annunciavano come errori:
+
+1. **`groupType`, non `type`.** Con l'argomento sbagliato Sorare non risponde
+   "argomento invalido" ma `UNAUTHORIZED / timeout`, mandando a caccia di un
+   problema di credenziali che non esisteva. Trucco che resta utile: **la
+   validazione GraphQL avviene PRIMA dell'autenticazione**, quindi la forma di
+   una query si verifica in chiaro, senza cookie.
+2. **`so5RankingsPaginated` conta le pagine da ZERO.** Su un'arena da 10 c'è
+   una pagina sola: chiedendo `page=1` si chiede oltre la fine e torna una
+   lista vuota. Sembrava un problema di permessi.
+3. **Il filtro scartava in silenzio le arene rare e super rare.** Riconoscevo
+   solo gli slug `arena_limited*` e il resto veniva buttato senza dirlo:
+   intere giornate del 2025 risultavano "0 arene" pur avendone fino a otto.
+
+### 47.B — Il bug del doppio ruolo (segnalato dall'utente)
+
+Caso reale: **Lee Dong-kyung (Ulsan)** ha 1 carta classic da centrocampo e 2 in
+season da attacco, perché Sorare gli ha cambiato ruolo lasciando alle carte già
+emesse quello vecchio. `CardPool` fondeva i conteggi **per giocatore**, quindi
+credeva di avere 2 in season utilizzabili anche a centrocampo, e ci schierava
+una carta d'attacco come MID.
+
+Corretto: conteggi e consumi ora sono per `(slug, ruolo)`. Verificato sul caso
+reale — come MID resta solo la classic, come FWD solo le due in season.
+
+Trovato di conseguenza un secondo bug, mai capitato ma possibile: **nel
+knapsack mancava il controllo che un giocatore non occupi due slot della stessa
+formazione** (vietato da Sorare anche con carte di ruolo diverso). C'era solo
+sullo slot EXTRA.
+
+Non propagato alle 25 copie per lega: la pipeline reale importa `CardPool` e
+`build_one_lineup` da `formazione_mls`, quelle copie sono una versione vecchia
+e non girano.
+
+### 47.C — Fino a 3 formazioni nello stesso pool: la regola che spiegava tutto
+
+**Spiegata dall'utente**, e non deducibile dai dati: schierando le arene una di
+fila all'altra le proprie formazioni possono finire **nello stesso pool da 10**
+— si gioca contro se stessi, e si possono vincere anche tutti e tre i premi.
+
+Il codice assumeva una formazione per arena. Da quella sola assunzione uscivano
+due errori che si mascheravano a vicenda:
+
+- si prendeva la **prima** riga col proprio nickname, quindi due formazioni
+  nella stessa arena risultavano identiche e sembravano duplicati. **Ne ho
+  cancellate 75 che erano ingressi veri.**
+- il premio, tenuto per arena invece che per posizione, veniva contato due
+  volte su una formazione e perso su un'altra.
+
+Il segnale c'era ed era fortissimo: prima della "deduplica", **sei tipi di
+arena su sei combaciavano all'unità con SorareScore** (194, 191, 182, 53, 38,
+15). Sei coincidenze esatte non sono una coincidenza. L'ho notato e ho
+continuato lo stesso, perdendo un'ora su tre ipotesi tutte sbagliate (finestra
+temporale, classifiche saltate, gruppo GraphQL mancante).
+
+**Lezione operativa**: bastava chiedere all'utente se si può entrare due volte
+nella stessa arena.
+
+### 47.D — Quattro conclusioni mie, corrette dai dati
+
+| avevo detto | verità misurata |
+|---|---|
+| premi Beginner 500/**300**/150 | 500/**250**/150, ricavati dai dati |
+| il modello è ottimista di un quarto | era rumore: ±44 essenze a ingresso, scarto +0.6σ |
+| il Beginner è positivo, la vecchia raccomandazione cade | è negativo, la raccomandazione resta |
+| i 75 ingressi mancanti sono perdenti, ROI vero 13-20% | non mancavano, li avevo cancellati io |
+
+La prima e la terza sono state trovate misurando; la seconda perché non avevo
+messo l'incertezza sul dato reale; la quarta perché non avevo chiesto una
+regola di gioco.
+
+### 47.E — Il consigliere d'ingresso
+
+`consiglio_arena.py`. Risponde alla domanda giusta — *questa formazione ripaga
+l'ingresso?* — invece di confrontare campionati fra loro, confronto che
+l'utente ha giustamente respinto perché **inquinato da quante carte si hanno
+dove e da cosa ci si giocava**.
+
+Il campo non è più stimato: nove avversari pescati dalle arene reali,
+**tenendo insieme il gruppo di una stessa arena** (le arene non si somigliano,
+ce ne sono di uniformemente forti e di deboli; col calderone di punteggi
+sciolti l'errore raddoppiava). I premi si pescano fra quelli davvero visti,
+così le **arene gold** — circa il 5% degli ingressi secondo l'utente, misurato
+6.5% in cap 260 e 4.8% in Beginner, e presenti su **ogni** tipo di arena —
+entrano alla loro frequenza vera.
+
+Controprova che il campo è modellato bene: la quota di primi tre torna quasi
+esatta (cap 260 39.7% reale contro 40.9% simulato).
+
+### 47.F — Sull'allocazione non c'è margine (e la 46.F era ottimista)
+
+Misurato su dati veri con `analizza_allocazione_reale.py`: riordinando **col
+senno di poi** le stesse carte fra le stesse arene si passa da 212 a 225
+piazzamenti a premio su 548, cioè da 38.7% a 41.1%.
+
+**+2.4 punti percentuali, e sono un tetto irraggiungibile** perché presuppone di
+conoscere punteggi e soglie in anticipo. La sezione 46.F, in simulazione, dava
+il concentrare a +11 punti percentuali in arena: il margine reale è un quarto.
+
+Conseguenza pratica, e restringe il campo di lavoro: **se il modello deve
+migliorare il ROI può farlo solo scegliendo giocatori migliori o dicendo quando
+NON entrare.** Distribuirli meglio non porta niente.
+
+### 47.G — Cosa resta aperto
+
+- **La misura che decide tutto**: quanto ci prende la previsione. Ci sono le
+  formazioni storiche scaricate (giocatori, capitano, punteggio di ognuno).
+  L'utente è esplicito: con un ROI già positivo, **l'onere della prova sta dal
+  lato del modello**, che non deve peggiorarlo.
+- **Attenzione all'attribuzione**: le carte in season dell'anno scorso sono
+  diventate classic, quindi finiranno in arena e il ROI salirà **comunque**,
+  senza modello. Le due cose vanno tenute separate confrontando le scelte a
+  parità di mazzo.
+- **Idea dell'utente da misurare**: il rischio correlato (più giocatori della
+  stessa squadra) andrebbe **concentrato** in poche formazioni invece che
+  sparso, per non contaminarne tante quando la squadra va male. Nata dal caso
+  Gangwon 0-3, dove tre giocatori stackati hanno fatto 39, 38 e 29 su due
+  formazioni diverse. Il generatore oggi ragiona solo dentro la singola
+  formazione, mai sul portafoglio.
+- **Consigli d'acquisto**: punti per unità di L10 rapportati al prezzo. I pezzi
+  ci sono già (prezzi da `bot_profit`, L10 dalla discovery); il pezzo nuovo è
+  poter misurare quanto un giocatore avvicina alla soglia del terzo posto.
