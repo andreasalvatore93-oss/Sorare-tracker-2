@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-07-30T12:16:08.390023Z
-Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+Generato: 2026-08-01T06:27:21.870517Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) tiago-pereira-da-silva: 41 pt attesi (29-67)
-   ORDINAMENTO: 43.84
+1) tiago-pereira-da-silva: 45 pt attesi (33-71)
+   ORDINAMENTO: 42.64
    SQUADRA: jeonbuk-motors-jeonju | AVVERSARIO: seoul-seoul
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: tiago-pereira-da-silva (squadra: jeonbuk-motors-jeonju)
-Generato: 2026-07-30T12:16:08.384951Z
+Generato: 2026-08-01T06:27:21.868320Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -35,20 +35,20 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 44.81
-  di cui Punteggio decisivo (level_score) medio: 37.95 | Punteggio complessivo (granulari) medio: 6.86 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  di cui Punteggio decisivo (level_score) medio: 37.95 | Punteggio complessivo (granulari) medio: 6.86 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Passaggio condizionato per venue: 2.11 (delta -0.19) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
 Deviazione standard pesata: 16.81
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.6 - 71.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.76 (differenza: +5.05)
 Media score in casa: 31.30 | Media score fuori casa: 52.38
-Fattore casa/trasferta applicato: 0.985 (CASA nella prossima partita)
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 6.8
 Ranking prossimo avversario: 1
 Fattore forza avversario applicato: 0.801
-Fattore falli (casa/trasferta, da dati reali): 1.008
-Fattore duelli (casa/trasferta, da dati reali): 0.990
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.989
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
 Fattore trend: N/D (servono almeno 10 partite nella finestra)
 P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
@@ -61,7 +61,7 @@ Competizione: k-league-1
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 40.6 (range 29.4 - 67.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 44.7 (range 33.5 - 71.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 44.31
@@ -70,20 +70,20 @@ Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/av
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DEL MODELLO (fissati, 25/07) ---
-half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
 Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
-Combinazione usata: 'hl=6.0+range=1.2x+opp_sens=29.0+trend_int=0.0+granulari' (half_life=6.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
 Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      41.8    33.6     -8.2    23.6        SI
-   7        7      40.7    39.8     -0.9    21.9        SI
-   8        8      50.6    48.3     -2.3    19.8        SI
+   6        6      45.6    33.6    -12.0    19.7        SI
+   7        7      44.5    39.8     -4.7    18.2        SI
+   8        8      44.2    48.3     +4.1    16.5        SI
 
-MAE (errore assoluto medio): 3.80
+MAE (errore assoluto medio): 6.92
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
