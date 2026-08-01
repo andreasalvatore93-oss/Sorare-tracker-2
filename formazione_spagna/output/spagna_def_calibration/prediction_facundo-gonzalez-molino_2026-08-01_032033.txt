@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T03:20:33.123447Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) facundo-gonzalez-molino: 50 pt attesi (33-69)
+   ORDINAMENTO: 49.53
+   SQUADRA: racing-santander-santander | AVVERSARIO: villarreal-villarreal
+======================================================================
+
+######################################################################
+# GIOCATORE: facundo-gonzalez-molino
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: facundo-gonzalez-molino (squadra: racing-santander-santander)
+Generato: 2026-08-01T03:20:33.121403Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-27 | RAC vs FCA | segunda-division-es | score=56.9 | peso=0.500
+  2025-10-05 | RAC vs MCF | segunda-division-es | score=60.1 | peso=0.518
+  2025-10-12 | RSG vs RAC | segunda-division-es | score=69.9 | peso=0.536
+  2025-10-19 | RAC vs DEP | segunda-division-es | score=66.7 | peso=0.555
+  2025-10-25 | MIR vs RAC | segunda-division-es | score=59.4 | peso=0.574
+  2025-10-31 | RAC vs RS2 | segunda-division-es | score=37.5 | peso=0.595
+  2025-12-20 | HUE vs RAC | segunda-division-es | score=52.1 | peso=0.616
+  2026-01-03 | VLL vs RAC | segunda-division-es | score=36.7 | peso=0.637
+  2026-01-10 | RAC vs ZAR | segunda-division-es | score=29.3 | peso=0.660
+  2026-01-18 | RAC vs LPA | segunda-division-es | score=29.9 | peso=0.683
+  2026-01-25 | DEP vs RAC | segunda-division-es | score=68.3 | peso=0.707
+  2026-02-01 | GCF vs RAC | segunda-division-es | score=16.6 | peso=0.732
+  2026-02-09 | RAC vs MIR | segunda-division-es | score=45.6 | peso=0.758
+  2026-02-15 | EIB vs RAC | segunda-division-es | score=34.8 | peso=0.785
+  2026-02-22 | RAC vs BCF | segunda-division-es | score=67.9 | peso=0.812
+  2026-02-28 | CAS vs RAC | segunda-division-es | score=32.7 | peso=0.841
+  2026-03-08 | RAC vs COR | segunda-division-es | score=73.6 | peso=0.871
+  2026-03-14 | CUL vs RAC | segunda-division-es | score=55.4 | peso=0.901
+  2026-03-21 | RAC vs ALB | segunda-division-es | score=43.5 | peso=0.933
+  2026-03-29 | ZAR vs RAC | segunda-division-es | score=38.4 | peso=0.966
+  2026-04-01 | RAC vs RSG | segunda-division-es | score=61.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 49.02
+  di cui Punteggio decisivo (level_score) medio: 38.23 | Punteggio complessivo (granulari) medio: 10.78 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.16, delta avversario +0.00 | Passaggio condizionato: delta venue -0.10, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.81, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.88
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.7 - 67.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.66 (differenza: +2.22)
+Media score in casa: 52.06 | Media score fuori casa: 46.43
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.2
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.681
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 54.5 vs media ultime 10: 47.0): 1.000
+P(gioca): 51.22% (fonte: tasso di presenza storico (21/41))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T15:00
+Casa: Real Racing Club de Santander | Trasferta: Villarreal CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 33.5 - 68.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 49.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.12
+Punteggio REALE ottenuto in quella partita: 61.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +13.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=12.0+trend_int=0.0+range=1.4x' (half_life=12.0, range_mult=1.4, opp_sens=None, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      50.2    52.1     +1.9    15.2        SI
+   7        7      51.1    36.7    -14.4    14.2        NO
+   8        8      51.7    29.3    -22.4    16.5        NO
+   9        9      49.6    29.9    -19.8    19.4        NO
+  10       10      49.1    68.3    +19.2    20.5        SI
+  11       11      51.5    16.6    -34.9    21.4        NO
+  12       12      46.7    45.6     -1.1    25.0        SI
+  13       13      48.6    34.8    -13.8    23.7        SI
+  14       14      47.0    67.9    +20.9    23.0        SI
+  15       15      48.1    32.7    -15.4    23.8        SI
+  16       16      48.6    73.6    +25.0    23.4        NO
+  17       17      48.6    55.4     +6.7    24.9        SI
+  18       18      49.6    43.5     -6.1    24.0        SI
+  19       19      48.4    38.4    -10.0    23.0        SI
+  20       20      48.8    61.7    +13.0    22.4        SI
+
+MAE (errore assoluto medio): 14.97
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
