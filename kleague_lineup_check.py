@@ -117,16 +117,33 @@ def _stato_giocatore(riga, xi_per_squadra):
     return ('TITOLARE' if titolare else 'non in XI'), migliore
 
 
+MESI = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5,
+        'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10,
+        'November': 11, 'December': 12}
+
+
+def _data_fixture(testo, anno=2026):
+    m = re.search(r'(\d{1,2})\s+(\w+)', testo)
+    if not m or m.group(2) not in MESI:
+        return None
+    return datetime.date(anno, MESI[m.group(2)], int(m.group(1)))
+
+
 def modalita_futura(ruoli):
-    fx = fixtures()
-    futuri = [f for f in fx if f[3] is None]
+    """SOLO le partite ancora da giocare. Le passate hanno gia' un XI, ma
+    confrontarci i consigli di oggi non significa nulla: e' l'errore fatto
+    il 01/08 (risultati presi dalle giornate del 25-26 luglio)."""
+    oggi = datetime.date.today()
+    fx = [f for f in fixtures() if (_data_fixture(f[0]) or oggi) >= oggi]
     pronti = [f for f in fx if f[3] is not None]
-    print(f'{len(fx)} partite in pagina: {len(pronti)} con formazione, {len(futuri)} senza.')
+    print(f'{len(fx)} partite da giocare: {len(pronti)} con formazione pubblicata.')
     if not pronti:
-        print('Nessuna formazione pubblicata: riprovare piu' + chr(39) + ' vicino al calcio d\'inizio.')
+        print('Nessuna formazione ancora pubblicata per le partite future.')
+        print('Prossime: ' + ', '.join(f'{c} vs {f}' for _d, c, f, _i in fx[:4]))
+        print("Gli XI compaiono vicino al calcio d'inizio: riprovare piu' tardi.")
         return
     xi = {}
-    for _d, casa, fuori, mid in pronti[:6]:
+    for _d, casa, fuori, mid in pronti:
         f = formazione(mid)
         if f:
             xi.update(f['xi'])
