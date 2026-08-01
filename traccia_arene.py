@@ -207,7 +207,10 @@ def arene_della_giornata(fixture):
 
 
 def classifica(slug):
-    nodi, page = [], 1
+    # ATTENZIONE: so5RankingsPaginated indicizza le pagine da ZERO. Partendo
+    # da 1 su un'arena da 10 (una pagina sola) si chiede una pagina oltre la
+    # fine e torna vuota: sembra un problema di permessi, non lo e'.
+    nodi, page = [], 0
     while True:
         d = graphql(Q_CLASSIFICA, {'slug': slug, 'page': page})
         if d.get('errors'):
@@ -215,7 +218,7 @@ def classifica(slug):
         pag = ((((d.get('data') or {}).get('so5') or {}).get('so5Leaderboard') or {})
                .get('so5RankingsPaginated') or {})
         nodi.extend(pag.get('nodes') or [])
-        if page >= (pag.get('pages') or 1):
+        if page >= (pag.get('pages') or 1) - 1:
             break
         page += 1
     return nodi
