@@ -110,7 +110,10 @@ def main():
         win_counter[winner['label']] += 1
         n_valid_iterations += 1
         for key in param_sums:
-            param_sums[key] += winner[key]
+            # la griglia allineata non varia opponent_sensitivity: vale None e
+            # va saltata invece di far crollare tutto (01/08)
+            if winner.get(key) is not None:
+                param_sums[key] += winner[key]
         if 'granulari' in winner['label']:
             granulari_wins += 1
         for r in results:
