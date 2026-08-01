@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T00:59:18.618842Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) tochukwu-nadi: 45 pt attesi (33-60)
+   SQUADRA: olympique-marseille-marseille | AVVERSARIO: strasbourg-strasbourg
+======================================================================
+
+######################################################################
+# GIOCATORE: tochukwu-nadi
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tochukwu-nadi (squadra: olympique-marseille-marseille)
+Generato: 2026-08-01T00:59:18.617057Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 48
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-02 | WES vs ZWA | jupiler-pro-league | score=59.7 | peso=0.574
+  2025-08-10 | AND vs ZWA | jupiler-pro-league | score=46.1 | peso=0.590
+  2025-08-16 | ZWA vs CLU | jupiler-pro-league | score=58.4 | peso=0.607
+  2025-08-23 | ZWA vs STV | jupiler-pro-league | score=38.1 | peso=0.624
+  2025-08-31 | GNK vs ZWA | jupiler-pro-league | score=30.6 | peso=0.642
+  2025-09-27 | ZWA vs ANT | jupiler-pro-league | score=59.4 | peso=0.660
+  2025-10-04 | LAL vs ZWA | jupiler-pro-league | score=44.7 | peso=0.678
+  2025-10-19 | ZWA vs GNT | jupiler-pro-league | score=45.6 | peso=0.697
+  2025-10-26 | CER vs ZWA | jupiler-pro-league | score=43.5 | peso=0.717
+  2025-11-01 | ZWA vs USG | jupiler-pro-league | score=32.8 | peso=0.737
+  2025-11-07 | DEN vs ZWA | jupiler-pro-league | score=43.2 | peso=0.758
+  2025-12-07 | OHL vs ZWA | jupiler-pro-league | score=80.2 | peso=0.779
+  2025-12-13 | ZWA vs LAL | jupiler-pro-league | score=55.8 | peso=0.801
+  2026-01-31 | ZWA vs WES | jupiler-pro-league | score=46.5 | peso=0.824
+  2026-04-26 | OM vs NIC | ligue-1-fr | score=72.8 | peso=0.847
+  2026-05-02 | NAN vs OM | ligue-1-fr | score=24.8 | peso=0.871
+  2026-05-10 | HAC vs OM | ligue-1-fr | score=26.8 | peso=0.895
+  2026-05-17 | OM vs REN | ligue-1-fr | score=36.2 | peso=0.920
+  2026-05-26 | ? vs ? | friendlies | score=35.0 | peso=0.946
+  2026-05-30 | ? vs ? | friendlies | score=35.0 | peso=0.973
+  2026-06-10 | ? vs ? | friendlies | score=43.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 44.98
+  di cui Punteggio decisivo (level_score) medio: 36.44 | Punteggio complessivo (granulari) medio: 8.54 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 39.45 (delta +3.01)
+  Efficacia offensiva condizionata: delta venue -0.20, delta avversario -0.87 | Passaggio condizionato: delta venue +0.37, delta avversario -0.23 | Gol subiti condizionato: delta venue +0.72, delta avversario +0.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.26
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.8 - 59.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.61 (differenza: +2.65)
+Media score in casa: 54.50 | Media score fuori casa: 25.80
+Fattore casa/trasferta applicato: 1.006 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.2
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.819
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore trend (media ultime 5: 35.2 vs media ultime 10: 45.6): 0.954
+P(gioca): 43.75% (fonte: tasso di presenza storico (21/48))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T18:45
+Casa: Olympique de Marseille | Trasferta: RC Strasbourg Alsace
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.1 (range 32.9 - 59.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.11
+Punteggio REALE ottenuto in quella partita: 43.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.1    44.7     -3.4    11.8        SI
+   7        7      47.7    45.6     -2.1    10.6        SI
+   8        8      47.5    43.5     -4.0     9.6        SI
+   9        9      47.1    32.8    -14.3     8.9        NO
+  10       10      45.6    43.2     -2.4     9.6        SI
+  11       11      45.4    80.2    +34.8     8.8        NO
+  12       12      48.9    55.8     +6.9    15.1        SI
+  13       13      49.6    46.5     -3.1    14.2        SI
+  14       14      49.3    72.8    +23.5    13.2        NO
+  15       15      52.9    24.8    -28.1    14.6        NO
+  16       16      48.8    26.8    -22.0    16.6        NO
+  17       17      48.4    36.2    -12.2    17.2        SI
+  18       18      45.3    35.0    -10.3    16.4        SI
+  19       19      44.4    35.0     -9.4    15.7        SI
+  20       20      43.5    43.0     -0.5    15.0        SI
+
+MAE (errore assoluto medio): 11.80
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
