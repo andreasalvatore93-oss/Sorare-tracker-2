@@ -42,10 +42,15 @@ def _combo_da_env():
     return out
 
 
+RUOLO = os.environ.get('RUOLO', '').strip().lower()
+
+
 def carica():
-    """slug -> [(data, score)] ordinate, dai detail cache consolidati."""
+    """slug -> [(data, score)] ordinate, dai detail cache consolidati.
+    Con RUOLO=gk/def/mid/fwd tiene solo quel ruolo (la cartella lo dice)."""
     per_slug = collections.defaultdict(list)
-    for path in glob.glob('dati_globali/detail_cache/*/*/*_detail_cache.json'):
+    patt = f'dati_globali/detail_cache/*/{RUOLO}/*_detail_cache.json' if RUOLO         else 'dati_globali/detail_cache/*/*/*_detail_cache.json'
+    for path in glob.glob(patt):
         slug = os.path.basename(path).replace('_detail_cache.json', '')
         try:
             d = json.load(open(path, encoding='utf-8'))

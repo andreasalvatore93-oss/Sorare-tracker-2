@@ -158,10 +158,14 @@ def analyze_game(detailed_score):
 
 
 def main():
-    files = []
-    for tpl in LEAGUE_CACHE_TPL.values():
-        cache_dir = tpl.format(ruolo=RUOLO)
-        files.extend(glob.glob(os.path.join(cache_dir, '*_detail_cache.json')))
+    # Sorgente primaria (01/08): il consolidato dati_globali, che contiene tutte
+    # le leghe -- la mappa LEAGUE_CACHE_TPL qui sotto era ferma alle prime leghe
+    # e ignorava le big5. Se il consolidato manca, si ricade sulle cartelle note.
+    files = glob.glob(f'dati_globali/detail_cache/*/{RUOLO}/*_detail_cache.json')
+    if not files:
+        for tpl in LEAGUE_CACHE_TPL.values():
+            cache_dir = tpl.format(ruolo=RUOLO)
+            files.extend(glob.glob(os.path.join(cache_dir, '*_detail_cache.json')))
     if not files:
         print(f"Nessuna cache trovata per ruolo '{RUOLO}' in nessun campionato noto.")
         return
