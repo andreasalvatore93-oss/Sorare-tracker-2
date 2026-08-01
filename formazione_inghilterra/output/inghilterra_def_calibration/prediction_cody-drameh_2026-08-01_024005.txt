@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T02:40:05.625393Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) cody-drameh: 51 pt attesi (38-61)
+   ORDINAMENTO: 52.47
+   SQUADRA: hull-city-hull | AVVERSARIO: manchester-united-manchester
+======================================================================
+
+######################################################################
+# GIOCATORE: cody-drameh
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: cody-drameh (squadra: hull-city-hull)
+Generato: 2026-08-01T02:40:05.623564Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 49
+Escluse (DID_NOT_PLAY): 26
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | COV vs HUL | football-league-championship | score=60.9 | peso=0.637
+  2025-08-17 | HUL vs OXF | football-league-championship | score=43.3 | peso=0.660
+  2025-08-23 | HUL vs BBR | football-league-championship | score=37.8 | peso=0.683
+  2025-08-30 | BRC vs HUL | football-league-championship | score=44.3 | peso=0.707
+  2025-09-27 | WAT vs HUL | football-league-championship | score=60.0 | peso=0.732
+  2025-10-21 | HUL vs LEI | football-league-championship | score=60.1 | peso=0.758
+  2025-10-25 | HUL vs CHA | football-league-championship | score=55.7 | peso=0.785
+  2025-11-04 | DER vs HUL | football-league-championship | score=43.4 | peso=0.812
+  2026-03-03 | IPS vs HUL | football-league-championship | score=34.3 | peso=0.841
+  2026-03-07 | HUL vs MIL | football-league-championship | score=58.5 | peso=0.871
+  2026-03-10 | WRE vs HUL | football-league-championship | score=51.3 | peso=0.901
+  2026-03-21 | HUL vs SHW | football-league-championship | score=31.9 | peso=0.933
+  2026-04-03 | OXF vs HUL | football-league-championship | score=60.8 | peso=0.966
+  2026-04-06 | HUL vs COV | football-league-championship | score=64.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 50.68
+  di cui Punteggio decisivo (level_score) medio: 36.62 | Punteggio complessivo (granulari) medio: 14.06 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.08, delta avversario +0.00 | Passaggio condizionato: delta venue +1.32, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.69, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 10.87
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.8 - 60.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.33 (differenza: +1.54)
+Media score in casa: 50.25 | Media score fuori casa: 50.73
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.9
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.660
+Fattore falli (casa/trasferta, da dati reali): 1.006
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore trend (media ultime 5: 53.4 vs media ultime 10: 52.1): 1.000
+P(gioca): 28.57% (fonte: tasso di presenza storico (14/49))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T11:30
+Casa: Hull City AFC | Trasferta: Manchester United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.0 (range 38.1 - 61.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 52.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.35
+Punteggio REALE ottenuto in quella partita: 64.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.4x' (half_life=30.0, range_mult=1.4, opp_sens=None, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.2    55.7     +7.5    13.3        SI
+   7        7      48.4    43.4     -4.9    12.4        SI
+   8        8      47.9    34.3    -13.6    12.2        NO
+   9        9      48.8    58.5     +9.7    13.7        SI
+  10       10      47.5    51.3     +3.8    13.6        SI
+  11       11      49.9    31.9    -18.0    12.9        NO
+  12       12      46.8    60.8    +14.0    14.4        SI
+  13       13      49.4    64.4    +15.0    14.6        NO
+
+MAE (errore assoluto medio): 10.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
