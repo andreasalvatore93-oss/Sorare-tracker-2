@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T02:41:48.819729Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) eiram-cashin: 52 pt attesi (32-79)
+   ORDINAMENTO: 54.73
+   SQUADRA: brighton-hove-albion-brighton-east-sussex | AVVERSARIO: aston-villa-birmingham
+======================================================================
+
+######################################################################
+# GIOCATORE: eiram-cashin
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: eiram-cashin (squadra: brighton-hove-albion-brighton-east-sussex)
+Generato: 2026-08-01T02:41:48.817452Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 48
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-30 | BIR vs SHW | football-league-championship | score=33.4 | peso=0.555
+  2025-12-29 | BIR vs SOT | football-league-championship | score=56.3 | peso=0.574
+  2026-01-17 | IPS vs BBR | football-league-championship | score=49.3 | peso=0.595
+  2026-01-24 | BBR vs WAT | football-league-championship | score=90.3 | peso=0.616
+  2026-01-31 | BBR vs HUL | football-league-championship | score=32.4 | peso=0.637
+  2026-02-07 | NOR vs BBR | football-league-championship | score=26.0 | peso=0.660
+  2026-02-14 | QPR vs BBR | football-league-championship | score=63.9 | peso=0.683
+  2026-02-20 | BBR vs PNE | football-league-championship | score=94.7 | peso=0.707
+  2026-02-24 | BBR vs BRC | football-league-championship | score=50.7 | peso=0.732
+  2026-02-28 | DER vs BBR | football-league-championship | score=33.1 | peso=0.758
+  2026-03-07 | BBR vs POR | football-league-championship | score=37.2 | peso=0.785
+  2026-03-11 | OXF vs BBR | football-league-championship | score=84.2 | peso=0.812
+  2026-03-14 | MIL vs BBR | football-league-championship | score=50.3 | peso=0.841
+  2026-03-21 | BBR vs MID | football-league-championship | score=58.6 | peso=0.871
+  2026-04-11 | STO vs BBR | football-league-championship | score=80.3 | peso=0.901
+  2026-04-17 | BBR vs COV | football-league-championship | score=43.0 | peso=0.933
+  2026-04-22 | SHU vs BBR | football-league-championship | score=27.8 | peso=0.966
+  2026-05-02 | BBR vs LEI | football-league-championship | score=50.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 53.34
+  di cui Punteggio decisivo (level_score) medio: 37.14 | Punteggio complessivo (granulari) medio: 16.21 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.89, delta avversario +0.00 | Passaggio condizionato: delta venue -0.69, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +1.03, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 20.72
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.4 - 80.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.37 (differenza: +2.35)
+Media score in casa: 57.13 | Media score fuori casa: 51.87
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.5
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.741
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.007
+Fattore trend (media ultime 5: 52.0 vs media ultime 10: 51.5): 1.000
+P(gioca): 37.50% (fonte: tasso di presenza storico (18/48))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T13:00
+Casa: Brighton & Hove Albion FC | Trasferta: Aston Villa FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.4 (range 31.5 - 79.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 54.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.60
+Punteggio REALE ottenuto in quella partita: 50.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.7+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.7)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.4    63.9    +17.5    21.8        SI
+   7        7      50.7    94.7    +44.0    20.8        NO
+   8        8      54.2    50.7     -3.5    24.6        SI
+   9        9      48.7    33.1    -15.6    23.1        SI
+  10       10      52.6    37.2    -15.3    22.9        SI
+  11       11      47.0    84.2    +37.2    22.3        NO
+  12       12      50.1    50.3     +0.2    23.2        SI
+  13       13      52.1    58.6     +6.4    22.2        SI
+  14       14      51.0    80.3    +29.3    21.3        NO
+  15       15      56.2    43.0    -13.1    21.6        SI
+  16       16      52.2    27.8    -24.3    21.1        NO
+  17       17      51.5    50.1     -1.4    21.5        SI
+
+MAE (errore assoluto medio): 17.33
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
