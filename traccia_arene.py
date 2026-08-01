@@ -1,30 +1,37 @@
-"""Traccia gli ingressi in arena: costi, premi, piazzamenti, ROI.
+"""Storico completo delle arene: quali hai giocato, come sono andate, com'era il campo.
 
-Sostituisce SorareScore (che ha smesso di aggiornarsi) e serve soprattutto a
-TARARE il consigliere d'ingresso: per sapere se conviene pagare 300 essenze
-bisogna sapere quanto e' forte il campo, e l'unico modo onesto e' ricavarlo dai
-risultati veri.
+A COSA SERVE. Per decidere se conviene pagare l'ingresso di un'arena serve
+sapere quanto e' forte il campo. Finche' lo si simulava con le stesse carte
+dell'utente il vantaggio usciva zero per costruzione; con questi dati non si
+stima piu' niente, si misura. Sostituisce SorareScore, che ha smesso di
+aggiornarsi e di cui non si conosce nemmeno la data dell'ultimo aggiornamento.
 
-Perche' e' importante spezzare per periodo: il ROI complessivo mescola un anno
-intero, partito con pochissime carte. La taratura va fatta sugli ingressi
-RECENTI, altrimenti il campo risulta piu' forte di quanto sia oggi.
+QUERY (catturate dalle DevTools il 01/08 -- l'introspection su Sorare e'
+disabilitata, quindi i nomi dei campi vengono da li' e non sono indovinati):
 
-Richiede SORARE_COOKIE (e SORARE_CSRF): sono dati dell'account, non pubblici.
-Gira su GitHub Actions, dove i segreti ci sono.
+  1. ArenaBoardFixtureLineupsPageQuery(fixture, groupType, sport)
+     -> per ogni giornata, TUTTE le formazioni dell'utente con lo slug della
+        loro classifica. E' l'indice: da qui si ricavano le arene giocate.
+  2. so5Leaderboard(slug).so5RankingsPaginated(page)
+     -> la classifica completa: ranking, punteggio, avversari.
+  3. so5LeaderboardContender(slug).so5Leaderboard.rewardsConfig
+     -> premi per posizione e punteggio di chi occupa quella posizione.
 
-Uso:  python traccia_arene.py            # ultime 200 partecipazioni
-      LIMITE=500 python traccia_arene.py
+NOTA: le classifiche NON sono pubbliche. Senza cookie la query risponde ma
+torna vuota, quindi questo gira su GitHub Actions dove i segreti ci sono.
+
+Uso:  FIXTURES=football-24-28-jul-2026,football-17-21-jul-2026 python traccia_arene.py
 """
 import collections
 import datetime
 import json
 import os
+import re
+import statistics
 import sys
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
-LIMITE = int(os.environ.get('LIMITE', '200'))
 OUT = 'dati_globali/arene_storico.json'
-
 COOKIES = os.environ.get('SORARE_COOKIE', '')
 CSRF = os.environ.get('SORARE_CSRF', '')
 
@@ -35,18 +42,67 @@ except ImportError:
     import requests as _rq
     _S = _rq.Session()
 
+Q_INDICE = """
+query Indice($fixture: String!) {
+  so5 {
+    so5Fixture(slug: $fixture) {
+      slug
+      endDate
+      so5LeaderboardGroups(type: COMPETITION_WITH_ARENA) {
+        displayName
+        mySo5LeaderboardContenders {
+          slug
+          so5Leaderboard { slug }
+        }
+      }
+    }
+  }
+}
+"""
 
-def graphql(query, variables=None):
+Q_CLASSIFICA = """
+query Classifica($slug: String!, $page: Int) {
+  so5 {
+    so5Leaderboard(slug: $slug) {
+      so5RankingsPaginated(page: $page) {
+        pages
+        nodes { ranking score user { nickname } }
+      }
+    }
+  }
+}
+"""
+
+# Tipi di arena che ci interessano oggi (scelta esplicita dell'utente: cap 220
+# e le altre restano fuori per non accumulare troppa roba).
+TIPI = {
+    'arena_limited_beginner': ('Beginner', 100),
+    'arena_limited_uncapped': ('Uncapped', 300),
+    'arena_limited_cap_220': ('cap 220', 200),
+    'arena_limited': ('cap 260', 300),   # va testato per ultimo: e' un prefisso
+}
+
+
+def tipo_arena(slug):
+    for chiave, (nome, costo) in TIPI.items():
+        if chiave in slug:
+            return nome, costo
+    return None, None
+
+
+def graphql(query, variables):
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Cookie': COOKIES,
-        'x-csrf-token': CSRF,
         'Origin': 'https://sorare.com',
         'Referer': 'https://sorare.com/',
         'sorare-client': 'Web',
     }
-    r = _S.post(GRAPHQL_URL, json={'query': query, 'variables': variables or {}},
+    if COOKIES:
+        headers['Cookie'] = COOKIES
+    if CSRF:
+        headers['x-csrf-token'] = CSRF
+    r = _S.post(GRAPHQL_URL, json={'query': query, 'variables': variables},
                 headers=headers, timeout=60)
     try:
         return r.json()
@@ -54,80 +110,83 @@ def graphql(query, variables=None):
         return {'errors': [{'message': f'HTTP {r.status_code}'}]}
 
 
-# Le partecipazioni alle arene stanno sotto currentUser; la forma esatta va
-# verificata alla prima esecuzione (lo schema Sorare cambia spesso). Si prova
-# la query completa e, se il campo non esiste, si stampa l'errore invece di
-# fallire in silenzio -- e' il tipo di bug che ha gia' fatto perdere ore.
-Q = """
-query ArenaStorico($first: Int!, $after: String) {
-  currentUser {
-    nickname
-    arenaTicketsBalance: essenceBalance
-    so5 {
-      so5Lineups(first: $first, after: $after) {
-        nodes {
-          id
-          score
-          rank
-          so5Leaderboard {
-            slug
-            displayName
-            so5League { displayName }
-          }
-          so5Fixture { slug startDate }
-        }
-        pageInfo { hasNextPage endCursor }
-      }
-    }
-  }
-}
-"""
+def arene_della_giornata(fixture):
+    """[(slug_classifica, tipo, costo)] delle arene giocate in quella giornata."""
+    d = graphql(Q_INDICE, {'fixture': fixture})
+    if d.get('errors'):
+        print(f'  {fixture}: errore indice -> {json.dumps(d["errors"])[:160]}')
+        return [], None
+    fx = ((d.get('data') or {}).get('so5') or {}).get('so5Fixture') or {}
+    out = []
+    for g in fx.get('so5LeaderboardGroups') or []:
+        for c in g.get('mySo5LeaderboardContenders') or []:
+            slug = ((c.get('so5Leaderboard') or {}).get('slug')) or ''
+            nome, costo = tipo_arena(slug)
+            if nome:
+                out.append((slug, nome, costo))
+    return out, fx.get('endDate')
+
+
+def classifica(slug):
+    nodi, page = [], 1
+    while True:
+        d = graphql(Q_CLASSIFICA, {'slug': slug, 'page': page})
+        if d.get('errors'):
+            return nodi
+        pag = ((((d.get('data') or {}).get('so5') or {}).get('so5Leaderboard') or {})
+               .get('so5RankingsPaginated') or {})
+        nodi.extend(pag.get('nodes') or [])
+        if page >= (pag.get('pages') or 1):
+            break
+        page += 1
+    return nodi
 
 
 def main():
-    if not COOKIES:
-        print('SORARE_COOKIE mancante: questa query legge dati dell\'account, '
-              'non e\' pubblica. Lanciare su GitHub Actions.')
+    fixtures = [x.strip() for x in os.environ.get('FIXTURES', '').split(',') if x.strip()]
+    if not fixtures:
+        print('Passare FIXTURES=<slug-giornata>[,<altro>]')
         sys.exit(1)
+    if not COOKIES:
+        print('ATTENZIONE: senza SORARE_COOKIE le classifiche tornano vuote.')
 
-    nodi, after = [], None
-    while len(nodi) < LIMITE:
-        d = graphql(Q, {'first': min(50, LIMITE - len(nodi)), 'after': after})
-        if d.get('errors'):
-            print('ERRORE GraphQL:', json.dumps(d['errors'])[:400])
-            print('\nLo schema e\' cambiato: serve adattare la query. '
-                  'I campi disponibili si scoprono con una introspection.')
-            sys.exit(2)
-        cu = (d.get('data') or {}).get('currentUser') or {}
-        conn = ((cu.get('so5') or {}).get('so5Lineups') or {})
-        nuovi = conn.get('nodes') or []
-        if not nuovi:
-            break
-        nodi.extend(nuovi)
-        pi = conn.get('pageInfo') or {}
-        if not pi.get('hasNextPage'):
-            break
-        after = pi.get('endCursor')
+    io = os.environ.get('NICKNAME', '').strip().lower()
+    raccolta = []
+    for fx in fixtures:
+        arene, fine = arene_della_giornata(fx)
+        print(f'\n=== {fx} ({fine}) -- {len(arene)} arene')
+        for slug, nome, costo in arene:
+            nodi = classifica(slug)
+            if not nodi:
+                print(f'  {nome:10s} classifica vuota (serve il cookie)')
+                continue
+            punteggi = sorted((n['score'] for n in nodi), reverse=True)
+            mia = next((n for n in nodi
+                        if (n.get('user') or {}).get('nickname', '').lower() == io), None)
+            riga = {'fixture': fx, 'fine': fine, 'slug': slug, 'tipo': nome,
+                    'costo': costo, 'partecipanti': len(nodi),
+                    'punteggi': punteggi,
+                    'mio_rank': mia.get('ranking') if mia else None,
+                    'mio_score': mia.get('score') if mia else None}
+            raccolta.append(riga)
+            m = f"| tu {riga['mio_rank']}o con {riga['mio_score']:.1f}" if mia else ''
+            print(f'  {nome:10s} {len(nodi):>2} partecipanti | 1o {punteggi[0]:6.1f} '
+                  f'| 3o {punteggi[2]:6.1f} | mediana {statistics.median(punteggi):6.1f} {m}')
 
-    print(f'partecipazioni lette: {len(nodi)}')
-    per_tipo = collections.defaultdict(lambda: {'n': 0, 'somma_rank': 0})
-    for n in nodi:
-        lb = n.get('so5Leaderboard') or {}
-        tipo = lb.get('displayName') or lb.get('slug') or '?'
-        v = per_tipo[tipo]
-        v['n'] += 1
-        if n.get('rank'):
-            v['somma_rank'] += n['rank']
-
-    print(f'\n{"competizione":42s} {"n":>5} {"rank medio":>11}')
-    for tipo, v in sorted(per_tipo.items(), key=lambda x: -x[1]['n']):
-        rm = v['somma_rank'] / v['n'] if v['n'] else 0
-        print(f'{tipo[:42]:42s} {v["n"]:>5} {rm:>11.1f}')
-
+    if not raccolta:
+        return
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump({'aggiornato': datetime.datetime.utcnow().isoformat() + 'Z',
-                   'partecipazioni': nodi}, f, ensure_ascii=False, indent=1)
+                   'arene': raccolta}, f, ensure_ascii=False, indent=1)
+
+    print('\n=== CAMPO PER TIPO')
+    per_tipo = collections.defaultdict(list)
+    for r in raccolta:
+        per_tipo[r['tipo']].extend(r['punteggi'])
+    for tipo, v in sorted(per_tipo.items()):
+        print(f'  {tipo:10s} {len(v):>4} formazioni | media {statistics.mean(v):6.1f} '
+              f'| dev.std {statistics.pstdev(v):5.1f}')
     print(f'\nsalvato in {OUT}')
 
 

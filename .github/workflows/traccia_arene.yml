@@ -1,0 +1,57 @@
+name: Traccia arene (classifiche complete)
+
+# Legge le classifiche delle arene indicate e salva campo, tagli e avversari in
+# dati_globali/arene_classifiche.json. Serve a tarare il consigliere
+# d'ingresso: quanto e' forte il campo si misura, non si stima.
+#
+# Le classifiche NON sono pubbliche: senza cookie la query torna vuota, per
+# questo gira qui e non in locale.
+
+on:
+  workflow_dispatch:
+    inputs:
+      fixtures:
+        description: 'Giornate separate da virgola (es. football-24-28-jul-2026)'
+        required: true
+        type: string
+      nickname:
+        description: 'Il tuo nickname Sorare, per riconoscere la tua riga in classifica'
+        required: false
+        default: 'LEADER89'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  traccia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+
+      - name: Scarica le classifiche
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          printf '%s\n' "${{ github.event.inputs.slugs }}" | tr ',' '\n' | sed 's/^ *//;s/ *$//' > /tmp/slugs.txt
+          wc -l < /tmp/slugs.txt
+          SLUGS_FILE=/tmp/slugs.txt python traccia_arene.py
+
+      - name: Commit risultati
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add dati_globali/arene_storico.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Arene: classifiche complete scaricate"
+          until git pull --no-edit --no-rebase origin main && git push origin main; do
+            echo "push fallito, retry..."
+            sleep 5
+          done
