@@ -33,7 +33,20 @@ import sys
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 OUT = 'dati_globali/arene_storico.json'
 COOKIES = os.environ.get('SORARE_COOKIE', '')
-CSRF = os.environ.get('SORARE_CSRF', '')
+
+
+def _csrf_dal_cookie(cookie_string):
+    """Stessa logica di scanners/bot_profit.py: il token sta DENTRO il cookie,
+    la variabile d'ambiente e' solo un ripiego. Usare solo quest'ultima faceva
+    rispondere UNAUTHORIZED (01/08)."""
+    for pair in (cookie_string or '').split(';'):
+        pair = pair.strip()
+        if pair.startswith('csrftoken='):
+            return pair.split('=', 1)[1].strip()
+    return None
+
+
+CSRF = _csrf_dal_cookie(COOKIES) or os.environ.get('SORARE_CSRF', '')
 
 try:
     from curl_cffi import requests as _rq
@@ -176,8 +189,8 @@ def main():
     if not fixtures:
         print('Passare FIXTURES=<slug-giornata>[,<altro>]')
         sys.exit(1)
-    if not COOKIES:
-        print('ATTENZIONE: senza SORARE_COOKIE le classifiche tornano vuote.')
+    print(f'cookie: {"presente" if COOKIES else "ASSENTE"} '
+          f'({len(COOKIES)} caratteri) | csrf: {"presente" if CSRF else "ASSENTE"}')
 
     io = os.environ.get('NICKNAME', '').strip().lower()
     raccolta = []
