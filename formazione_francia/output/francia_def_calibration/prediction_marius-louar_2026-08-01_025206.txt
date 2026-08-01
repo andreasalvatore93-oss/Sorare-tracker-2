@@ -1,0 +1,80 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T02:52:06.936809Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) marius-louar: 46 pt attesi (30-69)
+   ORDINAMENTO: 43.32
+   SQUADRA: angers-sco-angers | AVVERSARIO: lille-villeneuve-d-ascq
+======================================================================
+
+######################################################################
+# GIOCATORE: marius-louar
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marius-louar (squadra: angers-sco-angers)
+Generato: 2026-08-01T02:52:06.936603Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 25
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-20 | RCL vs SCO | ligue-1-fr | score=37.3 | peso=0.841
+  2026-04-05 | SCO vs OL | ligue-1-fr | score=56.8 | peso=0.871
+  2026-04-11 | REN vs SCO | ligue-1-fr | score=26.6 | peso=0.901
+  2026-04-18 | SCO vs HAC | ligue-1-fr | score=34.1 | peso=0.933
+  2026-05-03 | AJA vs SCO | ligue-1-fr | score=65.8 | peso=0.966
+  2026-05-10 | SCO vs STR | ligue-1-fr | score=35.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 42.80
+  di cui Punteggio decisivo (level_score) medio: 31.73 | Punteggio complessivo (granulari) medio: 11.07 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.92, delta avversario -1.45 | Passaggio condizionato: delta venue -0.20, delta avversario +0.14 | Clean sheet/disimpegni condizionato: delta venue +0.56, delta avversario -0.70 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 13.90
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.6 - 65.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.08 (differenza: +4.82)
+Media score in casa: 42.23 | Media score fuori casa: 43.21
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.822
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 17.65% (fonte: tasso di presenza storico (6/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T13:00
+Casa: Angers SCO | Trasferta: LOSC Lille
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.1 (range 29.8 - 69.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 43.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.34
+Punteggio REALE ottenuto in quella partita: 35.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
