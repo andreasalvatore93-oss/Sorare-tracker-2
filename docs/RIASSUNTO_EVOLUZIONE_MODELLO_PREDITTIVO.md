@@ -5899,3 +5899,44 @@ percorso di sola calibrazione, la produzione non cambia.
 sia quello di §44.D producevano job tutti verdi e zero dati. Da qui in avanti,
 dopo ogni run di calibrazione va confrontato il **numero di file prodotti**
 con la dimensione del pool, non lo stato del workflow.
+
+### 44.I — Il verdetto: nessun parametro va cambiato, e stavolta lo sappiamo
+
+Calibrazione completata sulle 6 leghe con `discovery_global`. Confronto pooled
+fra i parametri di **produzione** e il vincitore della griglia
+(`analizza_calibrazione_pooled.py`):
+
+| ruolo | giocatori | produzione vs migliore | rank | fuori campione | verdetto |
+|---|---|---|---|---|---|
+| GK | 92 | +0.14% | 172/240 | 78% | lasciare |
+| DEF | 469 | **+0.03%** | **11/168** | 81% | lasciare |
+| MID | 300 | +0.01% | 6/210 | 50% | lasciare |
+| FWD | 371 | +0.06% | 41/210 | 81% | lasciare |
+
+**Tutti e quattro concordi.** I valori in produzione stanno entro lo 0.15% dal
+minimo ottenibile su griglie di 168-240 combinazioni, e nessuna differenza
+sopravvive al test fuori campione. Il DEF — dichiarato "non valutabile" il
+31/07 — risulta **11° su 168**, quasi ottimale.
+
+**Nota di metodo, ed è la parte che rende il verdetto affidabile.** La prima
+versione dell'analisi confrontava il vincitore con la produzione *sugli stessi
+dati* e dava il GK come candidato a cambio parametro (bootstrap 95.0%). È
+sbagliato: il vincitore è il minimo di centinaia di combinazioni calcolate su
+quei dati, quindi li batte quasi per costruzione (*winner's curse*). Sostituito
+con due misure oneste:
+
+- **stabilità**: quante volte quel vincitore resta vincitore su ricampionamenti
+  (59-81% a seconda del ruolo — cioè spesso non lo resta);
+- **fuori campione**: si sceglie il vincitore su un ricampionamento e lo si
+  valuta sui giocatori **esclusi**, che è ciò che accadrebbe applicandolo.
+
+Con la misura giusta il GK passa da 95.0% a 78%: il verdetto si ribalta. È lo
+stesso tranello già incontrato il 31/07 sul bootstrap del GK, e vale la pena
+ricordarlo perché la versione sbagliata è quella che viene naturale scrivere.
+
+**Cosa vale davvero questa sessione**: non un miglioramento del modello — non
+ce n'era da prendere — ma il fatto che da stanotte il "va bene così" è una
+misura invece di una speranza. Prima il GK e il MID venivano calibrati su una
+formula diversa da quella che schiera, il DEF su una griglia che non conteneva
+i suoi parametri, e la calibrazione DEF era **rotta su 48 leghe**. Le tre
+conferme sarebbero state prive di valore.
