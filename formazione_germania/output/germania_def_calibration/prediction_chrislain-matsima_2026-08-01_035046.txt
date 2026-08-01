@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T03:50:46.870406Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) chrislain-matsima: 49 pt attesi (32-70)
+   ORDINAMENTO: 48.51
+   SQUADRA: augsburg-augsburg | AVVERSARIO: schalke-04-gelsenkirchen
+======================================================================
+
+######################################################################
+# GIOCATORE: chrislain-matsima
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: chrislain-matsima (squadra: augsburg-augsburg)
+Generato: 2026-08-01T03:50:46.868269Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: bundesliga-de (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | SCF vs FCA | bundesliga-de | score=73.3 | peso=0.574
+  2025-08-30 | FCA vs BAY | bundesliga-de | score=31.3 | peso=0.595
+  2025-09-14 | STP vs FCA | bundesliga-de | score=48.8 | peso=0.616
+  2025-09-20 | FCA vs M05 | bundesliga-de | score=28.0 | peso=0.637
+  2025-09-27 | FCH vs FCA | bundesliga-de | score=41.2 | peso=0.660
+  2025-10-04 | FCA vs WOB | bundesliga-de | score=70.9 | peso=0.683
+  2025-10-18 | KOE vs FCA | bundesliga-de | score=70.3 | peso=0.707
+  2025-10-25 | FCA vs RBL | bundesliga-de | score=24.5 | peso=0.732
+  2025-10-31 | FCA vs BVB | bundesliga-de | score=65.3 | peso=0.758
+  2025-11-09 | VFB vs FCA | bundesliga-de | score=49.3 | peso=0.785
+  2025-11-22 | FCA vs HSV | bundesliga-de | score=89.5 | peso=0.812
+  2025-11-29 | TSG vs FCA | bundesliga-de | score=40.7 | peso=0.841
+  2025-12-06 | FCA vs B04 | bundesliga-de | score=61.7 | peso=0.871
+  2025-12-13 | SGE vs FCA | bundesliga-de | score=43.5 | peso=0.901
+  2026-05-02 | SVW vs FCA | bundesliga-de | score=38.5 | peso=0.933
+  2026-05-09 | FCA vs BMG | bundesliga-de | score=35.4 | peso=0.966
+  2026-05-16 | FCU vs FCA | bundesliga-de | score=32.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 49.15
+  di cui Punteggio decisivo (level_score) medio: 37.98 | Punteggio complessivo (granulari) medio: 11.17 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.12, delta avversario -0.74 | Passaggio condizionato: delta venue +0.48, delta avversario -0.63 | Clean sheet/disimpegni condizionato: delta venue +0.85, delta avversario -0.58 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.3 - 70.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.62 (differenza: +3.41)
+Media score in casa: 50.83 | Media score fuori casa: 48.66
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.706
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 42.3 vs media ultime 10: 48.1): 1.000
+P(gioca): 50.00% (fonte: tasso di presenza storico (17/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-30T15:30
+Casa: FC Augsburg | Trasferta: FC Schalke 04
+Competizione: bundesliga-de
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.7 (range 31.9 - 69.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 48.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.54
+Punteggio REALE ottenuto in quella partita: 32.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      50.1    70.3    +20.2    17.5        NO
+   7        7      49.0    24.5    -24.5    17.8        NO
+   8        8      46.3    65.3    +18.9    19.6        SI
+   9        9      51.9    49.3     -2.6    19.0        SI
+  10       10      48.6    89.5    +40.9    17.4        NO
+  11       11      51.7    40.7    -10.9    21.2        SI
+  12       12      52.3    61.7     +9.4    20.4        SI
+  13       13      49.8    43.5     -6.3    19.1        SI
+  14       14      49.5    38.5    -10.9    18.2        SI
+  15       15      51.7    35.4    -16.3    17.7        SI
+  16       16      47.9    32.3    -15.6    17.4        SI
+
+MAE (errore assoluto medio): 16.06
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 72.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
