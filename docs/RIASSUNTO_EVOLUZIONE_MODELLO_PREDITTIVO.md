@@ -6783,3 +6783,584 @@ Funzioni: `_righe_verdetto` (con capitano, vedi 48.D.1), `_etichetta_arena`,
   arriva alla discovery e alla build finale, non ai passaggi di predizione e
   consiglio. Chiedere una giornata futura produce "nessun giocatore ha una
   partita nella finestra richiesta".
+
+## 49. Sessione 01/08 (notte) — il backtest modello-contro-utente esiste, e il modello non vince dove pensavamo
+
+Il passo che la sezione 48.E indicava come "la misura che decide se agganciare
+il modello". Ora c'e', gira in locale in un minuto, e dice cose scomode.
+
+### 49.A — Come e' fatto
+
+Quattro file nuovi alla root:
+
+| file | cosa fa |
+|---|---|
+| `backtest_arene_cache.py` | indicizza le cache gia' su disco delle 27 leghe (game log + dettaglio granulare), unendo le copie dello stesso giocatore |
+| `backtest_arene_previsioni.py` | rigioca la previsione **di produzione** all'indietro: stesse `compute_score_atteso_*`, nessuna formula riscritta |
+| `backtest_arene.py` | costruisce le formazioni del modello dal pool della giornata e le confronta col realizzato |
+| `backtest_arene_economia.py` | il bilancio in essenze, simulando la classifica vera |
+
+Disegno concordato con l'utente: **a parita' di mazzo** (il pool di una giornata
+sono le carte che ha davvero schierato quel giorno), **a parita' di arene**
+(stesse arene, stesso numero e tipo), **allocazione libera** fra quelle arene,
+**cap L10 rispettato**, **capitano da entrambe le parti**, **walk-forward**
+stretto sulla data della partita.
+
+Verifiche del meccanismo, tutte passate:
+- la **ricostruzione dell'L10** dal game log e' giusta: le "cap 220" dell'utente
+  stanno a 219.9 di mediana e le "cap 260" a 258.1, cioe' appena sotto il cap
+- il **MAE per giocatore e' 16.44** su 2.375 casi, in linea col MAE noto del
+  modello (14.8 DEF, 16.8 GK): il backtest sta misurando il modello vero
+- l'**allocatore non fa mai peggio**: su tutte le giornate il suo totale
+  *atteso* e' >= a quello dell'utente
+- il **piazzamento ricostruito** dai 10 punteggi ritrova il `mio_rank` vero in
+  670 arene su 673, e i premi ricalcolati danno esattamente le 51.400 essenze
+  registrate
+
+### 49.B — Due trappole nuove, oltre a quelle gia' note
+
+**1. Le partite senza dettaglio granulare gonfiano la previsione.** Il 29%
+delle partite in cache non ha il `detailedScore`, e senza dettaglio
+`extract_level_score` torna **0.0** — la formula crede che l'INTERO punteggio
+sia "granulare" e spara previsioni 10-15 punti troppo alte (un GK con L10 55
+usciva a 64.7). In produzione non si vede perche' il dettaglio si scarica
+sempre. Nel backtest quelle partite vanno **escluse dalla finestra**, non
+valutate a zero. Vanno anche escluse dal denominatore del `presence_rate`: un
+buco di cache non e' un'assenza.
+
+**2. La paginazione del game log e' obbligatoria.** `first=100` in una sola
+query risponde *"complexity of 2932, which exceeds max complexity of 500"*.
+Va usata `fetch_game_scores`, che pagina a 10 per volta. Il tetto di
+complessita' **non si alza con il cookie**, solo con l'APIKEY.
+
+### 49.C — I risultati (campione parziale: 246 arene su 558, 44 giornate)
+
+**Prima direttrice — sceglie meglio?** Si', di pochissimo, dentro il rumore:
+
+| | punteggio medio |
+|---|---|
+| utente | 263.52 |
+| modello | 267.24 |
+| **differenza** | **+3.72 per arena** (IC95% −4.5 .. +11.4) |
+
+Il modello cambia 232 formazioni su 246 (non copia), fa meglio nel 53.7% delle
+arene e in 27 giornate su 44.
+
+**Ma il confronto che conta e' un altro**: una formazione presa **a caso**
+(legale, dallo stesso pool) fa **264.65**, cioe' quanto l'utente e solo 2.6
+punti meno del modello. Dentro un pool che l'utente ha gia' pre-selezionato,
+la scelta dei 5 e' quasi tutta rumore — la stessa conclusione a cui la sezione
+46 era arrivata sull'allocazione.
+
+**La correlazione previsto/realizzato da usare in 48.C e' +0.098**, misurata su
+formazioni **non selezionate**. Quelle del modello danno +0.054 e quelle
+dell'utente +0.157, ma **nessuna delle due e' confrontabile con quella
+tabella**: chi sceglie prende solo i previsti alti, la gamma si restringe e la
+correlazione si schiaccia per ragioni statistiche, non di modello. Con 0.098
+siamo **sotto il primo scalino** della tabella 48.C (che parte da 0.2 → +31%).
+
+**Seconda direttrice — sarebbe entrato?** Il verdetto 48.H applicato alle
+formazioni VERE dell'utente (non cambia le carte, dice solo entra/non entra):
+
+| | n | costo | premi | netto |
+|---|---|---|---|---|
+| dice ENTRA, hai vinto | 18 | 4.700 | 12.900 | **+8.200** |
+| dice ENTRA, hai perso | 28 | 6.400 | 0 | −6.400 |
+| dice NON entrare, hai vinto | 55 | 13.300 | 38.500 | **+25.200** |
+| dice NON entrare, hai perso | 145 | 33.800 | 0 | −33.800 |
+
+Seguendolo si sarebbero giocate 46 arene su 246 chiudendo a **+1.800** invece
+di −6.800. Ma il prezzo va guardato: **fa rinunciare a 55 arene vinte** per
+38.500 essenze di premi, per evitarne 145 perse. E' un filtro grezzo, non una
+selezione fine.
+
+In compenso, sulla **ridistribuzione** il modello guadagna +3.7 punti a
+formazione e perde **−2.350 essenze**: piu' punti non si sono tradotti in piu'
+premi.
+
+### 49.D — Un errore mio, e un caso reale che ne e' uscito
+
+Avevo confrontato i premi di **tutte** le 673 arene contro costi che mi ero
+inventato per le 206 senza `costo` in archivio, e ne era uscito che il totale
+della 48.A "non tornava". Sbagliato: `analizza_arene.py` esclude dal bilancio
+le arene di costo ignoto **da entrambi i lati**. Lanciato oggi da 98.400 spese
+/ 114.600 vinte / **+16.5%**, e le `arena division` non sono mai state dentro
+quel numero.
+
+Dal controllo e' pero' uscito un fatto vero, che non dipende da assunzioni:
+
+**L'`arena division` paga come la Beginner ma costa come la cap 260.**
+
+| tipo | premi 1o/2o/3o | ingresso | volte a premio |
+|---|---|---|---|
+| cap 260 | 1300 / 800 / 500 | 300 | ~31% |
+| **arena division** | **500 / 250 / 150** | **300** (indicato dall'utente) | **31.4%** |
+| Beginner | 500 / 250 / 150 | 100 | ~31% |
+
+Su 191 arena division il premio medio incassato per arena e' **92 essenze**
+contro le 300 che servirebbero per pareggiare. Il tasso di piazzamento a premio
+e' identico agli altri formati, quindi non si gioca peggio li': e' il
+montepremi a essere un terzo. **A parita' di formazione la Beginner domina
+l'arena division.** Da verificare col popup in gioco, perche' il costo 300 e'
+un'indicazione dell'utente e non un dato in archivio.
+
+### 49.E — Da fare, in ordine
+
+1. **Finire di riempire la cache.** 133 giocatori mancanti bloccano 312 arene
+   su 558 (bastano 5 carte su 5 conosciute). Il workflow
+   `cache_backtest_arene.yml` li scarica, ~83 query a testa, ~2 minuti a
+   giocatore autenticato. E' riprendibile: ricalcola ogni volta chi manca
+   ancora, quindi due run da `--max 70` si completano senza sprechi. Serve per
+   stringere l'IC, che oggi passa da zero.
+2. **Rileggere i risultati col campione pieno** prima di trarne conclusioni: a
+   246 arene la differenza in punti non e' distinguibile dal caso.
+3. **Il limite del disegno**, che resta: il pool sono le carte che l'utente ha
+   *gia' deciso* di schierare. Il backtest misura la scelta *dentro* le sue
+   scelte, e non puo' vedere il margine che verrebbe dallo scegliere fra
+   **tutte le carte possedute** — che e' probabilmente dove sta il guadagno
+   vero. Per farlo servirebbe il roster storico, che i dati attuali non hanno.
+4. **Verificare il costo dell'arena division** in gioco. Se e' davvero 300,
+   e' una raccomandazione immediata: non giocarle, giocare Beginner.
+
+---
+
+## 50. HANDOFF COMPLETO — SE NON CONOSCI IL PROGETTO, LEGGI SOLO QUESTA
+
+Autosufficiente. Non serve leggere le sezioni precedenti: quello che conta e'
+riportato qui. Scritta perche' una sessione parallela, non avendo seguito il
+lavoro, si e' persa.
+
+### 50.0 — In tre righe
+
+L'utente gioca a Sorare (fantacalcio con carte). Esiste gia' un modello che
+prevede i punteggi ed e' **al suo tetto**: non si migliora piu' la formula.
+Il valore ora sta nel decidere **quando NON schierare**, perche' le arene
+costano un ingresso e piu' della meta' non si ripaga. Abbiamo costruito
+l'archivio di 673 arene reali, misurato che la decisione d'ingresso vale
+**+44.900 essenze di tetto**, e stiamo verificando col backtest se il modello
+sa prendersene una parte.
+
+**La prossima azione concreta e' nel paragrafo 50.7. Si parte da li'.**
+
+
+---
+
+### 50.1 — Di cosa si tratta
+
+Sorare e' un fantacalcio con carte digitali. L'utente (nickname **Crowss**)
+schiera formazioni da 5 carte in competizioni che pagano **essenze** (valuta
+di gioco) o **euro veri**. Il progetto e' un modello che prevede il punteggio
+dei giocatori e costruisce le formazioni.
+
+Il modello predittivo e' considerato **al suo tetto**: le sessioni precedenti
+hanno esaurito i miglioramenti sulla formula (vedi sezione 45). Il valore ora
+sta **nello schieramento**: quali competizioni giocare, con quali carte, e
+soprattutto **quando NON giocare**.
+
+---
+
+### 50.2 — LE REGOLE DEL GIOCO (nessuna e' deducibile dai dati)
+
+Tutte date dall'utente. Sono il fondamento di ogni calcolo: sbagliarne una
+falsa tutto a valle.
+
+**ARENE.** Dieci partecipanti, si gioca contro altri nove manager, non contro
+il banco. Si paga un ingresso in essenze e i primi tre vincono.
+
+| tipo | ingresso | 1o | 2o | 3o |
+|---|---|---|---|---|
+| Beginner | 100 | 500 | 250 | 150 |
+| cap 220 | 200 | 1000 | 500 | 300 |
+| cap 260 (e dedicate a un campionato) | 300 | 1300 | 800 | 500 |
+| uncapped | 300 | 1300 | 800 | 500 |
+| elite (uncapped) | 800 | 4000 | 2000 | 1000 |
+
+- **Golden Arena**: ogni ingresso ha **5% di probabilita'** (dichiarato da
+  Sorare nella UI, misurato 6.5% in cap 260 e 4.8% in Beginner) di finire in
+  una versione che paga di piu' -- nell'elite 10000/4000/2000.
+- **Cap L10**: nelle arene "cap 260" la somma degli L10 delle 5 carte non puo'
+  superare 260 (L10 = media degli ultimi 10 punteggi della carta). Le uncapped
+  e le elite non hanno cap: e' li' che si schierano i fuoriclasse.
+- **Bonus**: nelle arene sono tutti a zero tranne il **capitano, +20%**.
+- Si possono giocare **5 carte classic** (nelle In Season no).
+- Sono **illimitate**: il tetto e' quante carte si hanno.
+- **Fino a 3 proprie formazioni possono finire nello stesso pool da 10**
+  (capita schierando in fretta): si gioca contro se stessi e si possono
+  vincere anche tutti e tre i premi.
+- Le arene **dedicate a un campionato** aprono e chiudono col campionato, e
+  non tutti i campionati ce l'hanno. Nei fine settimana ce ne sono molte, negli
+  infrasettimanali quasi solo All Star.
+
+**IN SEASON.** Gratis, massimo 6 formazioni, obbligo di **4 carte in season su
+5**. Due meccanismi contemporanei, con la stessa formazione:
+
+1. **Gradini**: 340 -> 500 essenze, 360 -> 1000 essenze, 400 -> 25 EUR,
+   420 -> 100 EUR, 460 -> 500 EUR. Se ne supera **uno per settimana**, e
+   superarlo di molto non paga di piu'. Fino a 5 formazioni possono inseguirlo.
+2. **Leaderboard**: **una sola** formazione puo' entrarci, contro ~3.000-5.800
+   manager (uno a testa). Paga fino al ~500esimo a scalare: 1o 1000$, 2o 500$,
+   3o 300$, 4o 200$, 5o 100$, 6-10 50$, 11-20 30$, 21-50 20$, 51-100 10$,
+   101-300 1000 essenze.
+
+Conseguenza importante: **superare il gradino PAGA**, tramite la classifica.
+La sezione 46 diceva il contrario e il ragionamento sulla varianza va rivisto.
+
+Euristica dell'utente, corretta per valore marginale: se il gradino da
+raggiungere e' basso, la formazione migliore va in **leaderboard**, perche' con
+5 tentativi il gradino lo si prende comunque.
+
+**ALL STARS da 7 e UNDER 23.** Gratis, nessun costo d'ingresso, pagano solo
+essenze, molto difficile vincere. Servono come destinazione delle carte che
+non superano il pareggio di un'arena: li' qualunque premio e' guadagno netto.
+
+**IL CICLO DELLE ESSENZE.** 1000 essenze = 1 craft. Il craft produce **solo
+carte IN SEASON, mai classic**. Il valore di cio' che esce e' fortuna: nel caso
+piu' frequente ~50 centesimi, nel migliore 400-500 euro. Le craftate sono
+rivendibili e utilizzabili.
+
+Quindi: **arene -> essenze -> craft -> carte in season -> competizioni in
+euro**. L'arena non e' un gioco a se' che paga in valuta minore, e'
+l'alimentatore del gioco che paga in euro. Misurare il ROI arene in sole
+essenze lo **sottostima**.
+
+Sorare contiene l'inflazione: di ogni giocatore esistono 1000 carte in season
+per stagione.
+
+**RUOLO DELLE CARTE.** Il ruolo e' una proprieta' della **carta**, non del
+giocatore: Sorare puo' cambiare ruolo a un giocatore lasciando alle carte gia'
+emesse quello vecchio (caso reale: Lee Dong-kyung ha 1 classic da centrocampo
+e 2 in season da attacco). Un giocatore non puo' stare due volte nella stessa
+formazione, nemmeno con carte di ruolo diverso.
+
+---
+
+### 50.3 — I DATI COSTRUITI
+
+| file | contenuto |
+|---|---|
+| `dati_globali/arene_storico.json` | **673 arene** giocate dall'utente, giugno 2025 - luglio 2026: tutti e 10 i punteggi di ogni arena, premi, mediana, terzo classificato, il suo piazzamento |
+| `dati_globali/arene_formazioni.json` | **593 formazioni** schierate: giocatore, carta, ruolo, capitano, punteggio di ognuno |
+| `dati_globali/backtest_arene_cache/` | storico dei giocatori che mancava per rigiocare le formazioni col modello |
+
+**Verificato due volte**: combacia riga per riga con SorareScore (194 cap 260 /
+191 arena division / 182 Beginner / 53 cap 220 / 38 Uncapped / 15 arena
+uncapped) e l'utente ha controllato su Sorare due giornate a campione,
+tornando al 100%.
+
+**ROI reale dell'utente: +13.3%** — 121.250 essenze spese, 137.400 vinte,
++16.150 netto. Va a premio nel **39.7%** dei casi contro il 30% di un manager
+medio. **Tutto fatto a mano**: il modello ha meno di una settimana, quindi
+nessuna di quelle 673 arene e' una sua scelta. La base di confronto e' pulita.
+
+Da tenere presente: l'anno scorso l'utente metteva in arena **gli scarti**,
+perche' le carte buone erano in season e andavano nelle competizioni in euro.
+Ora quelle carte sono diventate classic e finiranno in arena, quindi **il ROI
+salira' comunque, senza modello**. Il confronto a parita' di mazzo e' immune a
+questo effetto, il confronto "prima e dopo" no.
+
+---
+
+### 50.4 — GLI STRUMENTI
+
+**Raccolta dati**
+- `traccia_arene.py` — le arene di una giornata (serve login)
+- `ricostruisci_storico_arene.py` — le accumula su tutte le giornate, riprende
+  da dove si era fermato (`RIPROVA=1` per riesaminare quelle gia' viste)
+- `scarica_formazioni_arene.py`, `aggiungi_contender_slug.py` — le formazioni
+  schierate (dato **pubblico**, non serve cookie)
+- `scarica_cache_backtest.py` — lo storico dei giocatori che manca al backtest
+
+**Analisi**
+- `analizza_arene.py` — bilancio, soglia del terzo posto, cap 260 per ambito
+- `consiglio_arena.py` — soglie di pareggio; `--verifica` confronta il modello
+  col bilancio realmente incassato
+- `analizza_allocazione_reale.py` — il tetto dell'allocazione
+- `quanto_serve_precisione.py` — quanto vale la regola d'ingresso al variare
+  dell'errore di previsione
+
+**Backtest** (scritti nella sessione parallela, funzionanti)
+- `backtest_arene_previsioni.py` — rigioca la previsione di PRODUZIONE
+  all'indietro, walk-forward stretto sulla data della giornata
+- `backtest_arene_cache.py` — indicizza le cache delle 27 leghe
+- `backtest_arene.py` — costruisce le formazioni col modello, rispetta il cap
+  L10, confronta col realizzato. Entry point: `python backtest_arene.py --json
+  dati_globali/backtest_arene_dettaglio.json`
+- `backtest_arene_economia.py` — il bilancio in essenze, e i quattro quadranti
+  (entra/non entra x andato a premio/no)
+
+**Workflow**: `storico_arene.yml`, `formazioni_arene.yml`, `traccia_arene.yml`,
+`cache_backtest_arene.yml`, `diagnostica_storico_arene.yml`
+
+---
+
+### 50.5 — COSA E' STATO MISURATO
+
+**Dove sta il valore.**
+
+| leva | tetto disponibile |
+|---|---|
+| allocazione fra formazioni | +2.4 punti percentuali, e sono **irraggiungibili** |
+| **decisione d'ingresso** | **+44.900 essenze** (da +9.800 a +54.700) |
+
+Il tetto dell'allocazione e' misurato riordinando **col senno di poi** le
+stesse carte fra le stesse arene: si passa da 212 a 225 piazzamenti a premio su
+548. Corregge la sezione 46.F, che in simulazione dava il concentrare a +11
+punti percentuali.
+
+**Quanto deve essere bravo il modello**, in funzione della correlazione fra
+previsione e risultato:
+
+| correlazione | ROI arene |
+|---|---|
+| 0.5 | +63% |
+| 0.4 | +51% |
+| 0.3 | +40% |
+| 0.2 | +31% |
+| *com'e' andata a mano* | *+11.2%* |
+
+Il 50% di ROI dei manager esperti corrisponde a una correlazione di **0.4**. Il
+grosso del guadagno viene dal **non entrare**: gli ingressi scendono da 414 a
+~190 in tutti gli scenari.
+
+**Le soglie di pareggio.** ATTENZIONE, sono due cose diverse:
+
+| tipo | pareggio se il punteggio fosse CERTO | pareggio con l'incertezza vera | previsione grezza da chiedere |
+|---|---|---|---|
+| cap 260 | 282.9 | **259.6** | **268** |
+| Beginner | 281.9 | 259.0 | 267 |
+| uncapped | 305.5 | 283.4 | 311 |
+| cap 220 | 265.0 | — | — |
+| elite | 305.8 | — | — |
+
+Il generatore oggi usa **282.9**, che e' **sbagliato**: quella soglia vale se
+si conoscesse il punteggio. Con una previsione incerta (deviazione residua
+misurata: 50.5 punti) la formazione puo' finire molto sopra la sua media e il
+premio cresce piu' che proporzionalmente, quindi il pareggio scende. **Da
+correggere a ~268 quando il campione sara' completo.**
+
+Controprova di coerenza: il punteggio mediano realizzato dell'utente e' 263.5,
+appena sopra il pareggio corretto di 259.6 — ed e' esattamente per questo che
+il suo ROI e' leggermente positivo.
+
+**Il backtest, risultati preliminari su 246 arene su 673** (il resto e'
+bloccato dalla cache in scaricamento):
+
+- punteggio medio realizzato: allocazione casuale 261.1, **utente 263.5**,
+  **modello 267.2**. Il modello fa **+3.7 punti** a formazione e vince in 132
+  arene su 246 (54%).
+- **le previsioni sono schiacciate**: dispersione delle previsioni 9.2 punti
+  contro 46.7 dei risultati veri. Il modello dice a tutti "farai circa 275".
+- errore medio 39 punti a formazione (le scelte dell'utente: 41).
+- **le previsioni sono ottimiste di ~12 punti** in modo abbastanza costante.
+- **ma l'ordinamento funziona**: dividendo le previsioni in cinque gruppi, il
+  realizzato sale monotonicamente da 254.5 a 273.9. C'e' segnale, ed e'
+  l'ordinamento l'unica cosa che serve alla decisione d'ingresso.
+- ricalibrazione misurata: `realizzato ~ 110.0 + 0.558 x previsto`.
+
+Economia sulle stesse 246 arene:
+
+| | arene | speso | premi | netto | ROI |
+|---|---|---|---|---|---|
+| com'e' andata | 246 | 51.300 | 51.400 | +100 | +0.2% |
+| soglia 282.9 | 56 | 13.550 | 15.700 | +2.150 | +15.9% |
+| soglia ricalibrata 268 | 186 | 38.300 | 40.800 | +2.500 | +6.5% |
+
+Entrambe battono quello che ha fatto l'utente. La soglia alta rende di piu' per
+essenza spesa, quella ricalibrata rende di piu' in assoluto.
+
+---
+
+### 50.6 — LE TRAPPOLE (leggere prima di misurare qualunque cosa)
+
+**1. Il capitano.** I punteggi di classifica Sorare **includono gia'** il
+moltiplicatore: la somma dei 5 `so5Appearances` E' il totale di classifica, col
+capitano gia' moltiplicato (111.72 = 93.1 x 1.2, verificato su due formazioni).
+Il generatore invece somma gli `atteso` grezzi. Confrontarli sottostima ogni
+formazione di 12-15 punti. Avrebbe falsato il backtest in modo invisibile,
+facendo perdere il modello per costruzione.
+
+**2. Fino a 3 formazioni nello stesso pool.** Prendendo la PRIMA riga col
+nickname dell'utente le formazioni risultavano identiche: **75 ingressi veri
+cancellati come duplicati**. La chiave di identita' e' il `contender_slug`, mai
+`(giornata, arena)`.
+
+**3. Le pagine partono da ZERO.** `so5RankingsPaginated(page: 1)` su un'arena
+da 10 chiede oltre la fine e torna vuoto: sembra un problema di permessi.
+
+**4. `groupType`, non `type`.** Con l'argomento sbagliato Sorare risponde
+`UNAUTHORIZED/timeout` invece dell'errore di validazione. **La validazione
+GraphQL avviene PRIMA dell'autenticazione**: la forma di una query si prova in
+chiaro, senza cookie.
+
+**5. Rate limit e profondita'.** 20 query/min anonimo, 60 autenticato, 600 con
+API key (header `APIKEY`; richiesta inoltrata, risposta lenta, non contarci).
+Profondita' della query 7 anonimo, **12 autenticato**; complessita' 500 /
+30.000. `PAUSA=1.0` e' esattamente al limite dei 60: usare 1.2-1.5. Un 429 puo'
+costare 149 secondi.
+
+**6. I permessi dei workflow.** `cache_backtest_arene.yml` non aveva
+`permissions: contents: write`: il bot prendeva 403 sul push e il ciclo di
+retry, **infinito**, teneva il job appeso per ore senza segnalare niente.
+Quaranta minuti di scaricamento persi. Ora committa **a blocchi di 20**, con
+retry limitato e un artifact di scorta.
+
+**7. Console Windows.** E' cp1252 e va in errore stampando nomi con caratteri
+non latini: `backtest_arene.py` moriva in fase di stampa dopo aver fatto tutto
+il lavoro. Risolto forzando UTF-8 sullo stdout.
+
+---
+
+### 50.7 — DA DOVE RIPARTIRE, PASSO PER PASSO
+
+**PASSO 0 — capire a che punto e' la cache.**
+
+```
+git pull
+gh run list --workflow=cache_backtest_arene.yml --limit 3
+ls dati_globali/backtest_arene_cache/.game_log_cache | wc -l
+python scarica_cache_backtest.py --elenco | head -3
+```
+
+Servono lo storico di ~133 giocatori. Il workflow scarica a blocchi di 20 e
+committa dopo ognuno, quindi il conteggio dei file dice quanto e' stato fatto.
+Se si e' fermato prima della fine, si rilancia e riprende:
+
+```
+gh workflow run cache_backtest_arene.yml -f blocco=20 -f blocchi=8 -f pausa=1.5
+```
+
+Serve per passare da **246 formazioni ricostruibili a ~600**: basta che manchi
+un giocatore su cinque per perdere una formazione intera.
+
+**PASSO 1 — rifare il backtest sul campione completo.**
+
+```
+python backtest_arene.py --json dati_globali/backtest_arene_dettaglio.json
+```
+
+Ci mette diversi minuti. Stampa il confronto in punti, il bilancio in essenze
+e i quattro quadranti. Il JSON contiene una riga per arena con:
+`utente_atteso`, `utente_reale`, `modello_atteso`, `modello_reale`,
+`casuale_reale`, `premio`, `terzo`, `tipo`, `carte_utente`, `carte_modello`.
+
+**PASSO 2 — BLOCCO 1: solo la decisione d'ingresso.**
+
+Stessa arena, stesse identiche cinque carte dell'utente, nessuna
+ridistribuzione. L'unica variabile e' *entra o non entra*. Quattro casi da
+quantificare in essenze:
+
+| | l'utente e' andato a premio | l'utente e' rimasto fuori |
+|---|---|---|
+| **il modello sarebbe entrato** | quanto ha guadagnato | quanto e' costato |
+| **il modello NON sarebbe entrato** | **quanto si perde a dargli retta** | **quanto si risparmia** |
+
+Il codice esiste (`quadranti_verdetto` e `stampa_quadranti` in
+`backtest_arene_economia.py`). **Va rifatto con la soglia corretta**: non
+282.9 ma ~268 sulla previsione grezza (vedi 50.5, e il PASSO 4).
+
+**PASSO 3 — BLOCCO 2: ridistribuzione e quante arene giocare.**
+
+Il modello pesca da **tutte** le carte che l'utente ha schierato in quella
+giornata (se ha giocato 10 arene, sono 50 carte) e le ridistribuisce come
+vuole, rispettando il cap L10 e usando ogni carta una volta sola.
+
+La ridistribuzione c'e' gia' in `backtest_arene.py`. **Manca la curva**:
+ordinare le arene per valore atteso e tagliare a 10, 9, 8, 7... e vedere il
+bilancio per ogni taglio. Serve a rispondere alla domanda pratica di ogni
+giornata: *dove mi fermo?*
+
+Attenzione: le due soglie ottimizzano cose diverse. Una soglia alta massimizza
+il rendimento per essenza spesa, una piu' bassa massimizza le essenze totali.
+La curva le mostra entrambe e lascia scegliere.
+
+**PASSO 4 — ritarare la soglia e correggere il generatore.**
+
+Oggi `generatore_formazioni/build_formazione_globale.py` usa
+`PAREGGIO_ARENA = {'ARENA_ALLSTARS_260': 282.9, ...}`. **E' sbagliato.**
+
+282.9 e' il pareggio *se si conoscesse il punteggio*. La previsione e' incerta
+(deviazione residua misurata 50.5 punti) e il premio cresce piu' che
+proporzionalmente, quindi il pareggio vero e' piu' basso: **259.6 in punteggio
+realizzato, che sulla previsione grezza del modello diventa ~268** (la
+ricalibrazione misurata e' `realizzato = 110.0 + 0.558 x previsto`).
+
+Rifare quei numeri sul campione completo e aggiornare `PAREGGIO_ARENA` e
+`GUADAGNO_PER_PUNTO`. Poi rifare PASSO 2 e 3 con la soglia buona.
+
+**PASSO 5 — solo dopo, il mercato.** E' il punto focale per l'utente: quali
+carte comprare, con un budget, per andare in positivo schierandole in arena.
+Vedi 50.8 per il criterio e il pezzo che manca.
+
+### 50.8 — IL MERCATO (il punto focale per l'utente) E ALTRO IN CODA
+
+**Criterio d'acquisto per le arene.** Sotto un cap la valuta non e' il
+punteggio ma il **punteggio per unita' di L10**, perche' l'L10 e' il budget:
+cinque carte devono fare ~283 punti con 260 di L10 in tutto, cioe' **1.09
+punti per unita'**. Un giocatore da 45 punti con L10 30 (rapporto 1.50) vale
+piu' di uno da 55 con L10 60 (0.92) anche se in assoluto e' piu' debole -- e
+di solito costa molto meno. Esempio reale portato dall'utente: **Jack McGlynn,
+75 attesi con L10 60 (1.25), 2 euro in classic**.
+
+Nelle uncapped e nelle elite il cap non c'e', quindi li' vale il punteggio
+assoluto: sono le arene dove si schierano Yamal e simili.
+
+Le costanti sono gia' annotate in `best_five.py` (`PAREGGIO_ARENA_260`,
+`RAPPORTO_ARENA_MINIMO`), ma **prima di costruirci sopra va verificato che
+best_five sia allineato alla produzione attuale**: non e' toccato da un po', e
+in questo progetto i file gemelli disallineati hanno gia' causato bug veri.
+
+**Cosa manca per chiudere la catena**: il valore medio di un craft in euro.
+Non e' misurabile dallo storico dell'utente (ha venduto le migliori, il
+campione residuo sarebbe distorto verso il basso). Andra' stimato dai prezzi di
+mercato delle carte in season. Senza quel numero non si puo' confrontare l'euro
+dell'In Season con l'essenza dell'arena -- ma **non serve** per la decisione
+d'ingresso in arena, che e' essenze contro essenze.
+
+**Altro in coda**
+
+1. **Formazioni degli avversari**: sono pubbliche. Da ogni riga di classifica
+   si prende `so5Lineup { id }` e poi `node(id:)`, che aggira il limite di
+   profondita'. Autenticati bastano ~673 query, ~11 minuti: **6.730
+   formazioni**. Servono per misurare meglio il campo, per capire come sono
+   fatte quelle che vincono, e come base dei consigli d'acquisto.
+2. **Rischio correlato da concentrare** (idea dell'utente, dal caso Gangwon
+   0-3 dove tre giocatori della stessa squadra hanno fatto 39, 38 e 29): i
+   giocatori della stessa squadra andrebbero messi in POCHE formazioni invece
+   che sparsi, per non contaminarne tante. Il generatore oggi ragiona solo
+   dentro la singola formazione, mai sul portafoglio.
+3. **Proiezione live**: Sorare mostra un piazzamento previsto ma estrapola da
+   pochi giocatori ed e' inaffidabile. Noi prevediamo quelli che devono ancora
+   giocare: "punti gia' fatti + previsione dei rimanenti", con intervallo.
+4. **best_five**: prima di costruirci sopra va verificato che sia allineato
+   alla produzione attuale, non e' toccato da un po' (segnalato dall'utente).
+5. **Sparse checkout**: il repo ha 35.655 file e ogni job della matrice (68
+   predict in parallelo) li scarica tutti.
+6. **La pipeline genera solo per la giornata imminente**: `FIXTURE_SLUG` arriva
+   alla discovery e alla build finale, non ai passaggi di predizione e
+   consiglio. Chiedere una giornata futura da' "nessun giocatore ha una partita
+   nella finestra richiesta".
+
+---
+
+### 50.9 — COME LAVORARE CON L'UTENTE
+
+- **Ha ragione spesso, e va ascoltato.** In questa sessione ha trovato quattro
+  bug veri notando numeri che non tornavano col suo senso pratico: le "zero
+  arene fino a dicembre", i 75 ingressi cancellati per errore, le "14 arene
+  sembrano poche" (che ha scoperto la trappola del capitano), e il job appeso
+  sui permessi. Nessuno dei quattro si vedeva dal codice.
+- **Chiedere invece di dedurre.** Un'ora persa su tre ipotesi sbagliate sui
+  "75 ingressi mancanti" quando bastava chiedere se si puo' entrare due volte
+  nella stessa arena. Le regole di gioco non sono deducibili dai dati.
+- **Risposte brevi**, un tema alla volta, niente tabelle non richieste.
+- **Non dare per buoni i propri numeri.** In questa sessione ho dovuto
+  correggermi sei volte: premi Beginner, "ottimismo" del modello che era
+  rumore, Beginner dato positivo, i 75 ingressi, il margine minimo scelto a
+  occhio, la soglia applicata a previsioni incerte. Ogni volta e' saltato fuori
+  misurando, mai ragionando.
+- Il ROI attuale e' positivo: **l'onere della prova sta dal lato del modello**,
+  che non deve peggiorarlo.
+- La giornata **31/07-4/08 e' la prima schierata col modello**, ~25 arene alla
+  cieca. Quando chiude (4 agosto, 14:00 UTC) va scaricata e confrontata: e' il
+  primo riscontro sul campo. Su una giornata sola pesera' poco la bravura e
+  molto la fortuna, ma va guardata.
