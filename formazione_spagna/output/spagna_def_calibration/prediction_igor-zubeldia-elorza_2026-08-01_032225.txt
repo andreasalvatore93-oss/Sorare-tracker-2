@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T03:22:25.643148Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) igor-zubeldia-elorza: 47 pt attesi (34-64)
+   ORDINAMENTO: 43.82
+   SQUADRA: real-sociedad-donostia-san-sebastian | AVVERSARIO: real-betis-sevilla
+======================================================================
+
+######################################################################
+# GIOCATORE: igor-zubeldia-elorza
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: igor-zubeldia-elorza (squadra: real-sociedad-donostia-san-sebastian)
+Generato: 2026-08-01T03:22:25.641054Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | VCF vs RSO | laliga-es | score=55.2 | peso=0.483
+  2025-08-24 | RSO vs ESP | laliga-es | score=42.8 | peso=0.500
+  2025-08-30 | OVI vs RSO | laliga-es | score=34.1 | peso=0.518
+  2025-09-13 | RSO vs RMA | laliga-es | score=19.1 | peso=0.536
+  2025-09-19 | BET vs RSO | laliga-es | score=30.3 | peso=0.555
+  2025-09-24 | RSO vs MLL | laliga-es | score=41.3 | peso=0.574
+  2025-09-28 | FCB vs RSO | laliga-es | score=60.0 | peso=0.595
+  2025-10-05 | RSO vs RAY | laliga-es | score=50.4 | peso=0.616
+  2025-10-19 | CEL vs RSO | laliga-es | score=35.9 | peso=0.637
+  2025-10-24 | RSO vs SEV | laliga-es | score=45.6 | peso=0.660
+  2025-11-01 | RSO vs ATH | laliga-es | score=23.5 | peso=0.683
+  2025-11-07 | ELC vs RSO | laliga-es | score=60.4 | peso=0.707
+  2025-12-12 | RSO vs GIR | laliga-es | score=86.0 | peso=0.732
+  2025-12-20 | LEV vs RSO | laliga-es | score=39.4 | peso=0.758
+  2026-01-18 | RSO vs FCB | laliga-es | score=43.9 | peso=0.785
+  2026-02-01 | ATH vs RSO | laliga-es | score=46.6 | peso=0.812
+  2026-02-07 | RSO vs ELC | laliga-es | score=35.1 | peso=0.841
+  2026-02-14 | RMA vs RSO | laliga-es | score=37.0 | peso=0.871
+  2026-02-28 | MLL vs RSO | laliga-es | score=48.7 | peso=0.901
+  2026-03-15 | RSO vs OSA | laliga-es | score=15.6 | peso=0.933
+  2026-05-17 | RSO vs VCF | laliga-es | score=60.3 | peso=0.966
+  2026-05-23 | ESP vs RSO | laliga-es | score=29.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 42.65
+  di cui Punteggio decisivo (level_score) medio: 39.79 | Punteggio complessivo (granulari) medio: 2.86 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.24, delta avversario -0.22 | Passaggio condizionato: delta venue +0.31, delta avversario -0.63 | Clean sheet/disimpegni condizionato: delta venue +0.24, delta avversario +0.57 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.73
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.8 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.38 (differenza: +4.35)
+Media score in casa: 42.12 | Media score fuori casa: 43.39
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.796
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 38.3 vs media ultime 10: 44.2): 1.000
+P(gioca): 57.89% (fonte: tasso di presenza storico (22/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T19:00
+Casa: Real Betis | Trasferta: Real Sociedad
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.5 (range 33.7 - 63.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 43.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.53
+Punteggio REALE ottenuto in quella partita: 29.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -13.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.1x' (half_life=30.0, range_mult=1.1, opp_sens=None, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.6    60.0    +14.4    12.2        NO
+   7        7      48.0    50.4     +2.4    14.5        SI
+   8        8      46.1    35.9    -10.1    14.0        SI
+   9        9      47.2    45.6     -1.7    13.3        SI
+  10       10      46.8    23.5    -23.3    12.6        NO
+  11       11      45.8    60.4    +14.6    13.4        NO
+  12       12      46.1    86.0    +39.9    14.4        NO
+  13       13      48.0    39.4     -8.6    19.5        SI
+  14       14      45.3    43.9     -1.4    18.7        SI
+  15       15      48.5    46.6     -1.9    18.0        SI
+  16       16      47.3    35.1    -12.2    17.3        SI
+  17       17      46.0    37.0     -9.0    16.9        SI
+  18       18      44.4    48.7     +4.3    16.5        SI
+  19       19      45.4    15.6    -29.8    16.0        NO
+  20       20      43.7    60.3    +16.6    17.3        SI
+  21       21      45.5    29.8    -15.7    17.4        SI
+
+MAE (errore assoluto medio): 12.88
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
