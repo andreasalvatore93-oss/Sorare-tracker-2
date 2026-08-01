@@ -377,6 +377,44 @@ def _same_team_synergy_bonus(role, row, chosen_roles_by_team, bonus_dict=None):
 MATCH_REUSE_PENALTY = 6
 
 
+
+# --- Stack consentito sulle partite squilibrate (01/08) ---------------------
+# Misurato su 9058 partite ricostruite (misura_fullstack.py): con 5 giocatori
+# della stessa squadra la probabilita' di superare una soglia alta passa dal
+# 10% al 14.9%, e sulle STRAFAVORITE sale anche il punteggio medio. Il criterio
+# NON e' la classifica -- non esiste alla prima giornata ed e' rumore nelle
+# prime -- ma il divario di forza rosa, cioe' il punteggio medio storico dei
+# giocatori dei due club.
+SOGLIA_FORZA_STACK = float(os.environ.get('SOGLIA_FORZA_STACK', '6.0'))
+_FORZA_ROSA = None
+
+
+def _forza_rosa():
+    global _FORZA_ROSA
+    if _FORZA_ROSA is None:
+        _FORZA_ROSA = {}
+        for base in ('forza_rosa.json',
+                     os.path.join(os.path.dirname(__file__), '..', 'forza_rosa.json')):
+            try:
+                with open(base, encoding='utf-8') as f:
+                    _FORZA_ROSA = json.load(f) or {}
+                break
+            except Exception:
+                continue
+    return _FORZA_ROSA
+
+
+def stack_consentito(row):
+    """True se la squadra e' cosi' piu' forte dell'avversario da rendere lo
+    stack conveniente. Se manca il dato di una delle due, False: si resta al
+    comportamento di prima."""
+    f = _forza_rosa()
+    mio, avv = row.get('team_slug'), row.get('opponent_team_slug')
+    if not (mio and avv and mio in f and avv in f):
+        return False
+    return (f[mio] - f[avv]) >= SOGLIA_FORZA_STACK
+
+
 def _match_key(row):
     team = row.get('team_slug')
     opponent = row.get('opponent_team_slug')
@@ -539,7 +577,9 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     # PRIMA formazione in modo incoerente col resto.
     if variance_mode and team_slug and apply_positive_synergy:
         adjusted += _same_team_synergy_bonus(role, row, chosen_roles_by_team, synergy_bonus_dict)
-    if apply_stack_guard and team_slug and team_counts and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT:
+    if (apply_stack_guard and team_slug and team_counts
+            and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT
+            and not stack_consentito(row)):
         adjusted -= STACK_GUARD_PENALTY
     if used_matches and _match_key(row) in used_matches:
         adjusted -= MATCH_REUSE_PENALTY
