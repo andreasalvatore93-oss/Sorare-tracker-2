@@ -6698,6 +6698,31 @@ diventate classic, quindi finiranno in arena e il ROI salirà **comunque**,
 senza modello. Il confronto a parità di mazzo è immune a questo effetto, il
 confronto "prima e dopo" no.
 
+### 48.H — Il verdetto agganciato al generatore (fatto a fine sessione)
+
+`generatore_formazioni/build_formazione_globale.py` ora scrive accanto a OGNI
+formazione arena, nel log e nel report HTML, uno di tre verdetti:
+
+```
+SCHIERA -- guadagno atteso +931 essenze su 300 di ingresso
+MARGINALE -- solo +7 essenze attese su 300: meglio All Stars da 7 o Under 23
+LASCIA PERDERE -- -374 essenze attese (-13 punti sotto il pareggio 283)
+```
+
+**Il margine si esprime in essenze, non in punti**, perche' "+0.3 punti" non e'
+leggibile mentre "+7 essenze su 300 rischiate" lo e'. La conversione e'
+misurata: un punto sopra il pareggio vale **29 essenze in cap 260**, 22 in
+uncapped, 7 in Beginner (la curva e' ripida vicino alla soglia). Si entra
+quando il guadagno atteso vale almeno il **10% dell'ingresso**, cioe' circa un
+punto di margine in cap 260.
+
+Attenzione: un primo tentativo aveva fissato il margine minimo a 8 punti, a
+occhio. Era arbitrario e troppo severo -- scartava arene che rendono centinaia
+di essenze. Il numero va sempre ricavato dalla curva, non scelto.
+
+Funzioni: `_righe_verdetto` (con capitano, vedi 48.D.1), `_etichetta_arena`,
+`PAREGGIO_ARENA`, `GUADAGNO_PER_PUNTO`, `COSTO_INGRESSO`, `QUOTA_MINIMA`.
+
 ### 48.F — In coda, in ordine di valore
 
 1. **Formazioni degli avversari**: pubbliche. Da ogni riga di classifica si
