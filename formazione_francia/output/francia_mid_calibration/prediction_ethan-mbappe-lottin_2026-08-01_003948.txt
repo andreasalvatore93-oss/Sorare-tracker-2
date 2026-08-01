@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T00:39:48.149815Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ethan-mbappe-lottin: 43 pt attesi (26-68)
+   SQUADRA: lille-villeneuve-d-ascq | AVVERSARIO: angers-sco-angers
+======================================================================
+
+######################################################################
+# GIOCATORE: ethan-mbappe-lottin
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ethan-mbappe-lottin (squadra: lille-villeneuve-d-ascq)
+Generato: 2026-08-01T00:39:48.149647Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-05 | LIL vs OM | ligue-1-fr | score=69.7 | peso=0.920
+  2025-12-14 | AJA vs LIL | ligue-1-fr | score=50.9 | peso=0.946
+  2026-01-16 | PSG vs LIL | ligue-1-fr | score=27.3 | peso=0.973
+  2026-01-25 | LIL vs STR | ligue-1-fr | score=32.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 44.71
+  di cui Punteggio decisivo (level_score) medio: 40.99 | Punteggio complessivo (granulari) medio: 3.72 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 39.28 (delta -1.71)
+  Efficacia offensiva condizionata: delta venue -0.33, delta avversario +0.00 | Passaggio condizionato: delta venue -0.24, delta avversario +0.00 | Gol subiti condizionato: delta venue -0.12, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 16.52
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.3 - 69.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 51.25 | Media score fuori casa: 39.10
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.2
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.198
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 11.76% (fonte: tasso di presenza storico (4/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T13:00
+Casa: Angers SCO | Trasferta: LOSC Lille
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.4 (range 26.0 - 68.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.91
+Punteggio REALE ottenuto in quella partita: 32.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
