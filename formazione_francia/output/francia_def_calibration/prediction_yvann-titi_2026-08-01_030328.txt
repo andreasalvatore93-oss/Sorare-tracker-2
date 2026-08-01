@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T03:03:28.344608Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) yvann-titi: 53 pt attesi (31-64)
+   ORDINAMENTO: 55.97
+   SQUADRA: troyes-troyes | AVVERSARIO: paris-paris
+======================================================================
+
+######################################################################
+# GIOCATORE: yvann-titi
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yvann-titi (squadra: troyes-troyes)
+Generato: 2026-08-01T03:03:28.342678Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | TRO vs NAN | ligue-2-fr | score=100.0 | peso=0.616
+  2025-09-20 | TRO vs EAG | ligue-2-fr | score=58.2 | peso=0.637
+  2025-09-23 | RED vs TRO | ligue-2-fr | score=30.7 | peso=0.660
+  2025-09-26 | TRO vs ANN | ligue-2-fr | score=63.5 | peso=0.683
+  2025-10-03 | LEM vs TRO | ligue-2-fr | score=49.7 | peso=0.707
+  2025-10-17 | TRO vs SCB | ligue-2-fr | score=40.9 | peso=0.732
+  2025-10-24 | SR vs TRO | ligue-2-fr | score=39.4 | peso=0.758
+  2026-01-17 | TRO vs SR | ligue-2-fr | score=46.8 | peso=0.785
+  2026-01-24 | EAG vs TRO | ligue-2-fr | score=31.1 | peso=0.812
+  2026-02-07 | NAN vs TRO | ligue-2-fr | score=32.7 | peso=0.841
+  2026-02-16 | SCB vs TRO | ligue-2-fr | score=65.9 | peso=0.871
+  2026-04-18 | TRO vs BOU | ligue-2-fr | score=95.9 | peso=0.901
+  2026-04-25 | STE vs TRO | ligue-2-fr | score=38.7 | peso=0.933
+  2026-05-02 | TRO vs LAV | ligue-2-fr | score=63.8 | peso=0.966
+  2026-05-09 | GRE vs TRO | ligue-2-fr | score=65.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 54.92
+  di cui Punteggio decisivo (level_score) medio: 41.65 | Punteggio complessivo (granulari) medio: 13.27 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.77, delta avversario +0.00 | Passaggio condizionato: delta venue -0.70, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.98, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 20.53
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.7 - 65.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.80 (differenza: +2.73)
+Media score in casa: 67.02 | Media score fuori casa: 44.20
+Fattore casa/trasferta applicato: 1.009 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.3
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.023
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 65.9 vs media ultime 10: 52.1): 1.000
+P(gioca): 44.12% (fonte: tasso di presenza storico (15/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:45
+Casa: ESTAC Troyes | Trasferta: Paris FC
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.2 (range 30.9 - 64.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 56.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.97
+Punteggio REALE ottenuto in quella partita: 65.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=1.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=1.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.7    39.4     -9.3    20.0        SI
+   7        7      50.3    46.8     -3.5    18.9        SI
+   8        8      48.5    31.1    -17.4    17.2        NO
+   9        9      47.0    32.7    -14.3    17.4        SI
+  10       10      45.2    65.9    +20.7    16.8        NO
+  11       11      49.9    95.9    +45.9    17.2        NO
+  12       12      50.7    38.7    -12.0    23.1        SI
+  13       13      53.6    63.8    +10.2    22.2        SI
+  14       14      50.5    65.3    +14.8    21.0        SI
+
+MAE (errore assoluto medio): 16.47
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
