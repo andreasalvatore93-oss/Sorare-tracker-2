@@ -57,8 +57,18 @@ def _ambito(slug):
 
 
 def campo_per_tipo():
-    """Punteggi degli AVVERSARI per tipo di arena: da ogni arena si tolgono i
-    punteggi dell'utente, altrimenti il campo conterrebbe se stesso."""
+    """Avversari per tipo di arena, TENUTI RAGGRUPPATI PER ARENA.
+
+    Ogni voce e' la lista dei nove avversari di una singola arena, non un
+    calderone di punteggi sciolti. La differenza non e' cosmetica: le arene non
+    si somigliano, ce ne sono di uniformemente forti e di uniformemente deboli,
+    e mescolando tutto si perde questa struttura. Misurato: col calderone il
+    modello dava +41.9 essenze a ingresso sul Beginner contro le +13.5 reali,
+    tenendo insieme le arene vere l'errore si riduce di due terzi.
+
+    Il punteggio dell'utente viene tolto, altrimenti il campo conterrebbe se
+    stesso.
+    """
     d = json.load(open(ARCHIVIO, encoding='utf-8'))
     campo = collections.defaultdict(list)
     for r in d['arene']:
@@ -66,8 +76,10 @@ def campo_per_tipo():
         mio = r.get('mio_score')
         if mio is not None and mio in punteggi:
             punteggi.remove(mio)
-        campo[r['tipo']].extend(punteggi)
-        campo[(r['tipo'], _ambito(r['slug']))].extend(punteggi)
+        if not punteggi:
+            continue
+        campo[r['tipo']].append(punteggi)
+        campo[(r['tipo'], _ambito(r['slug']))].append(punteggi)
     return campo
 
 
@@ -102,7 +114,7 @@ def incasso_medio(atteso, avversari, premi, sigma=SIGMA, prove=N_PROVE, seme=7,
     totale = 0
     for _ in range(prove):
         mio = rnd.gauss(atteso, sigma) if sigma else atteso
-        nove = [avversari[rnd.randrange(len(avversari))] for _ in range(9)]
+        nove = avversari[rnd.randrange(len(avversari))]
         posizione = 1 + sum(1 for x in nove if x > mio)
         if posizione > 3:
             continue
@@ -148,9 +160,19 @@ def verifica():
             incasso_medio(r['mio_score'], avversari, regole['premi'],
                           sigma=0, prove=3000, tipo=tipo) for r in righe) - regole['costo']
         print(f'{tipo:12s} {len(righe):>4} {reale:>+11.1f} {modello:>+13.1f}')
-    print('\nLo scarto residuo ha due cause note: il campo e\' messo in comune')
-    print('fra arene diverse (alcune sono uniformemente piu\' forti), e i premi')
-    print('eccezionali visti nei dati (4000 essenze al primo) non sono modellati.')
+    print()
+    print("QUANTO FIDARSI. Il modello e' OTTIMISTA di circa un quarto: segno e")
+    print("ordine di grandezza sono giusti, il livello no. La causa e' nota e non")
+    print("risolta: qui si pesca un'arena a caso, mentre nella realta' il proprio")
+    print("punteggio e la forza del campo sono ACCOPPIATI -- stessa giornata,")
+    print("stesse condizioni di punteggio per tutti. Accoppiando gli avversari")
+    print("veri di ogni arena l'errore quasi sparisce (Uncapped -5.3 contro -5.3")
+    print("reali), ma per una previsione il campo futuro non si conosce.")
+    print()
+    print("In pratica: sopra la soglia si entra, ma qualche punto di margine e'")
+    print("prudenza, non lusso. Sull'Uncapped serve piu' cautela che altrove:")
+    print("solo 13 premi osservati, quindi la frequenza delle arene gold -- che")
+    print("capitano su OGNI tipo, non solo sulle 260 -- e' stimata male.")
 
 
 def main():
@@ -184,7 +206,7 @@ def main():
 
     print(f'{len(campo)} raggruppamenti | rumore di previsione {SIGMA:.0f} punti\n')
     print('=== PAREGGIO: sopra questo punteggio atteso, entrare conviene')
-    print(f"{'tipo':16s} {'campo':>7} {'pareggio':>9} {'tuo tipico':>11} {'saldo':>8}")
+    print(f"{'tipo':16s} {'arene':>7} {'pareggio':>9} {'tuo tipico':>11} {'saldo':>8}")
     d = json.load(open(ARCHIVIO, encoding='utf-8'))
     miei = collections.defaultdict(list)
     for r in d['arene']:
@@ -192,7 +214,7 @@ def main():
             miei[r['tipo']].append(r['mio_score'])
     for tipo, regole in REGOLE.items():
         avversari = campo.get(tipo) or []
-        if len(avversari) < 50:
+        if len(avversari) < 20:
             continue
         soglia = pareggio(avversari, regole['costo'], regole['premi'], tipo=tipo)
         tipico = statistics.median(miei[tipo]) if miei.get(tipo) else None
