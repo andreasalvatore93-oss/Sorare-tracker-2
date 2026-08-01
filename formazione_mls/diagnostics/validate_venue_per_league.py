@@ -140,7 +140,10 @@ def main():
             risultati.append((league, n_players, n_on, mae_on, mae_off, pct))
 
         risultati.sort(key=lambda r: -r[2])
-        print(f"{'Lega':<20} {'giocatori':>9} {'punti test':>10} {'MAE ON':>8} {'MAE OFF':>8} {'venue aiuta':>12}")
+        print(f"{'Lega':<20} {'giocatori':>9} {'punti test':>10} {'MAE ON':>8} {'MAE OFF':>8} {'var. MAE':>12}")
+        # La colonna e' la VARIAZIONE di MAE dovuta al venue: negativa = il
+        # venue riduce l'errore, cioe' aiuta. L'etichetta diceva "venue aiuta"
+        # su un numero che ha il segno opposto (corretto 01/08).
         for league, n_players, n_on, mae_on, mae_off, pct in risultati:
             verdict = f"{-pct:+.2f}%" if pct != 0 else "0.00%"
             flag = " <-- PEGGIORA" if pct < 0 else ""
