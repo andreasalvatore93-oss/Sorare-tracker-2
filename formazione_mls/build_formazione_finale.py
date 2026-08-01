@@ -809,8 +809,21 @@ class CardPool:
         self._total = {}
         self._l10 = {}
         self._power = {}
+        # Il ruolo e' una proprieta' della CARTA, non del giocatore: Sorare puo'
+        # cambiare ruolo a un giocatore lasciando alle carte gia' emesse quello
+        # vecchio. Caso reale (Lee Dong-kyung, Ulsan): 1 classic da centrocampo
+        # e 2 in season da attacco. Fondendo i conteggi col solo slug il pool
+        # credeva di avere 2 in season utilizzabili anche a centrocampo, e ci
+        # schierava una carta d'attacco come MID. Qui si tiene il dettaglio per
+        # (slug, ruolo); _total resta la somma, per i punti che non sanno il
+        # ruolo e a cui il totale basta.
+        self._per_role = {}
+        self._used_per_role = {}
         for role, counts in counts_by_role.items():
             for slug, breakdown in counts.items():
+                self._per_role[(slug, role)] = {
+                    'in_season': breakdown.get('in_season', 0),
+                    'classic': breakdown.get('classic', 0)}
                 cur = self._total.setdefault(slug, {'in_season': 0, 'classic': 0})
                 cur['in_season'] = max(cur['in_season'], breakdown.get('in_season', 0))
                 cur['classic'] = max(cur['classic'], breakdown.get('classic', 0))
@@ -834,19 +847,29 @@ class CardPool:
     def _used_for(self, slug):
         return self._used.get(slug, {'in_season': 0, 'classic': 0})
 
-    def remaining_in_season(self, slug):
+    def remaining_in_season(self, slug, role=None):
+        if role is not None and (slug, role) in self._per_role:
+            return (self._per_role[(slug, role)]['in_season']
+                    - self._used_per_role.get((slug, role), {}).get('in_season', 0))
         return self._total_for(slug)['in_season'] - self._used_for(slug)['in_season']
 
-    def remaining_classic(self, slug):
+    def remaining_classic(self, slug, role=None):
+        if role is not None and (slug, role) in self._per_role:
+            return (self._per_role[(slug, role)]['classic']
+                    - self._used_per_role.get((slug, role), {}).get('classic', 0))
         return self._total_for(slug)['classic'] - self._used_for(slug)['classic']
 
     def copies_owned(self, slug):
         t = self._total_for(slug)
         return t['in_season'] + t['classic']
 
-    def use(self, slug, card_type):
+    def use(self, slug, card_type, role=None):
         u = self._used.setdefault(slug, {'in_season': 0, 'classic': 0})
         u[card_type] += 1
+        if role is not None:
+            ur = self._used_per_role.setdefault((slug, role),
+                                                {'in_season': 0, 'classic': 0})
+            ur[card_type] += 1
 
     def l10(self, slug):
         """L10 (media ultime 10 partite giocate) nota per slug, o None se
@@ -886,7 +909,7 @@ def _min_available_l10(rows, used_slugs, card_pool):
     return min(vals) if vals else 0.0
 
 
-def _pareto_frontier(rows, card_pool):
+def _pareto_frontier(rows, card_pool, role=None):
     """Candidati disponibili (almeno una copia posseduta) ordinati per L10
     crescente, tenendo solo quelli che migliorano il punteggio rispetto a
     TUTTI i candidati piu' economici gia' inclusi (frontiera di Pareto: mai
@@ -894,7 +917,8 @@ def _pareto_frontier(rows, card_pool):
     uno gia' disponibile). Riduce drasticamente lo spazio di ricerca del
     knapsack sotto senza perdere nessuna soluzione ottima possibile."""
     avail = [(row, card_pool.l10(row['slug']) or 0.0) for row in rows
-             if card_pool.remaining_in_season(row['slug']) > 0 or card_pool.remaining_classic(row['slug']) > 0]
+             if card_pool.remaining_in_season(row['slug'], role) > 0
+             or card_pool.remaining_classic(row['slug'], role) > 0]
     avail.sort(key=lambda x: x[1])
     frontier = []
     best = float('-inf')
@@ -928,7 +952,7 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
 
     frontiers = {}
     for role in ('GK', 'DEF', 'MID', 'FWD'):
-        f = _pareto_frontier(role_data[role], card_pool)
+        f = _pareto_frontier(role_data[role], card_pool, role)
         if not f:
             return None, None
         frontiers[role] = f
@@ -937,7 +961,13 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
     for role in ('GK', 'DEF', 'MID', 'FWD'):
         new_states = {}
         for used, (score, picks) in states.items():
+            # un giocatore non puo' stare due volte nella stessa formazione,
+            # nemmeno con carte di ruolo diverso (regola Sorare). Qui mancava:
+            # il controllo c'era solo sullo slot EXTRA.
+            gia_scelti = {r['slug'] for r in picks.values()}
             for row, l10 in frontiers[role]:
+                if row['slug'] in gia_scelti:
+                    continue
                 cost = int(round(l10 * RES))
                 nb = used + cost
                 if nb > budget_units:
@@ -954,7 +984,7 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
 
     extra_candidates = []
     for role in shape['extra_roles']:
-        for row, l10 in _pareto_frontier(role_data[role], card_pool):
+        for row, l10 in _pareto_frontier(role_data[role], card_pool, role):
             extra_candidates.append((role, row, l10))
     extra_candidates.sort(key=lambda x: -x[1]['atteso'])
 
@@ -986,15 +1016,15 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
     return result, best_used
 
 
-def _consume_pick(card_pool, slug):
+def _consume_pick(card_pool, slug, role=None):
     """Consuma una copia dello slug scelto dal knapsack: preferisce IN_SEASON
     se disponibile (stesso ordine di preferenza del vecchio greedy 'pick'),
     altrimenti CLASSIC -- valido solo dove max_classic e' None (unico caso in
     cui il knapsack e' applicabile, vedi build_one_lineup)."""
-    if card_pool.remaining_in_season(slug) > 0:
-        card_pool.use(slug, 'in_season')
+    if card_pool.remaining_in_season(slug, role) > 0:
+        card_pool.use(slug, 'in_season', role)
         return 'in_season'
-    card_pool.use(slug, 'classic')
+    card_pool.use(slug, 'classic', role)
     return 'classic'
 
 
@@ -1069,10 +1099,10 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         picks = []
         for role in role_slots:
             row = result[role]
-            ctype = _consume_pick(card_pool, row['slug'])
+            ctype = _consume_pick(card_pool, row['slug'], role)
             picks.append((role, row, ctype))
         extra_role, extra_row = result['EXTRA']
-        extra_ctype = _consume_pick(card_pool, extra_row['slug'])
+        extra_ctype = _consume_pick(card_pool, extra_row['slug'], extra_role)
         picks.append((f'EXTRA ({extra_role})', extra_row, extra_ctype))
         return picks, None, True, False
 
@@ -1097,8 +1127,19 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         team_counts = {}
         gains = {}
         picks = []
+        # con quale ruolo e' stata scelta ogni carta: serve a consumare la
+        # copia giusta, visto che le copie dipendono dal ruolo della carta
+        ruolo_scelto = {}
 
-        def pick(pool_rows, role_slot_l10_check, reserve=0.0, slot_label=None):
+        def pick(pool_rows, role_slot_l10_check, reserve=0.0, slot_label=None,
+                 role_by_slug=None):
+            # role_by_slug: da quale pool di ruolo arriva ogni riga. Serve perche'
+            # le copie disponibili dipendono dal ruolo della carta, non solo dal
+            # giocatore (vedi CardPool). Per lo slot EXTRA le righe vengono da
+            # ruoli diversi, quindi e' una mappa e non un ruolo solo.
+            def _ruolo(slug):
+                return (role_by_slug or {}).get(slug)
+
             candidates = [r for r in pool_rows if r['slug'] not in used_this_lineup]
             if l10_cap is not None and role_slot_l10_check:
                 budget_residuo = l10_cap - l10_used[0] - reserve
@@ -1108,9 +1149,9 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
             best_in_season = best_classic = None
             for row in candidates:
                 slug = row['slug']
-                if best_in_season is None and card_pool.remaining_in_season(slug) > 0:
+                if best_in_season is None and card_pool.remaining_in_season(slug, _ruolo(slug)) > 0:
                     best_in_season = row
-                if best_classic is None and card_pool.remaining_classic(slug) > 0:
+                if best_classic is None and card_pool.remaining_classic(slug, _ruolo(slug)) > 0:
                     best_classic = row
                 if best_in_season is not None and (best_classic is not None or not measure_gains):
                     break
@@ -1151,9 +1192,9 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
             if slot_allows_classic:
                 for row in candidates:
                     slug = row['slug']
-                    if card_pool.remaining_in_season(slug) > 0:
+                    if card_pool.remaining_in_season(slug, _ruolo(slug)) > 0:
                         return row, 'in_season'
-                    if (max_classic is None or classic_budget_used[0] < max_classic) and card_pool.remaining_classic(slug) > 0:
+                    if (max_classic is None or classic_budget_used[0] < max_classic) and card_pool.remaining_classic(slug, _ruolo(slug)) > 0:
                         return row, 'classic'
                 return None, None
             else:
@@ -1190,7 +1231,8 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                     gk_candidates = synergy_adjusted_rows(role, gk_candidates, None, None, used_matches=used_matches,
                                                            apply_positive_synergy=apply_positive_synergy,
                                                            chosen_roles_by_team=chosen_roles_by_team)
-                row, ctype = pick(gk_candidates, l10_cap is not None, reserve, slot_label=slot_label)
+                row, ctype = pick(gk_candidates, l10_cap is not None, reserve, slot_label=slot_label,
+                                  role_by_slug={r['slug']: 'GK' for r in gk_candidates})
             else:
                 pool_rows = role_data[role]
                 if strict_gk_anti_synergy and role in ('MID', 'FWD') and gk_opponent_slug:
@@ -1199,7 +1241,8 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                                                     team_counts, apply_stack_guard, variance_mode,
                                                     apply_positive_synergy, used_matches, chosen_roles_by_team,
                                                     synergy_bonus_dict)
-                row, ctype = pick(candidates, l10_cap is not None, reserve, slot_label=slot_label)
+                row, ctype = pick(candidates, l10_cap is not None, reserve, slot_label=slot_label,
+                                  role_by_slug={r['slug']: role for r in candidates})
 
             if row is None:
                 reason = ("vincolo di schieramento (portiere vs avversario) + copie esaurite o consiglio vuoto"
@@ -1212,6 +1255,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
             if l10_cap is not None:
                 l10_used[0] += card_pool.l10(row['slug']) or 0.0
             picks.append((slot_label, row, ctype))
+            ruolo_scelto[row['slug']] = role
 
             row_team_slug = row.get('team_slug')
             if row_team_slug:
@@ -1243,7 +1287,8 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
 
         extra_rows = [row for _role, row in combined]
         extra_role_by_slug = {row['slug']: role for role, row in combined}
-        extra_row, extra_type = pick(extra_rows, l10_cap is not None, 0.0, slot_label='EXTRA')
+        extra_row, extra_type = pick(extra_rows, l10_cap is not None, 0.0, slot_label='EXTRA',
+                                     role_by_slug=extra_role_by_slug)
 
         if extra_row is None:
             reason = "vincolo di schieramento (portiere vs avversario) + copie esaurite" if strict_gk_anti_synergy else "copie esaurite"
@@ -1251,6 +1296,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
 
         extra_role = extra_role_by_slug[extra_row['slug']]
         picks.append((f'EXTRA ({extra_role})', extra_row, extra_type))
+        ruolo_scelto[extra_row['slug']] = extra_role
 
         extra_team_slug = extra_row.get('team_slug')
         if extra_team_slug:
@@ -1258,7 +1304,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
 
         if not measure_gains:
             for _slot, row, ctype in picks:
-                card_pool.use(row['slug'], ctype)
+                card_pool.use(row['slug'], ctype, ruolo_scelto.get(row['slug']))
 
         stack_bonus_perso = apply_stack_guard and any(c >= 3 for c in team_counts.values())
         return picks, None, l10_cap_rispettato[0], stack_bonus_perso, gains
