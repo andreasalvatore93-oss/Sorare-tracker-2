@@ -1,0 +1,127 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T03:45:29.772981Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) siad-gourville: 56 pt attesi (47-68)
+   ORDINAMENTO: 57.23
+   SQUADRA: la-louviere-la-louviere | AVVERSARIO: anderlecht-bruxelles-brussel
+======================================================================
+
+######################################################################
+# GIOCATORE: siad-gourville
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: siad-gourville (squadra: la-louviere-la-louviere)
+Generato: 2026-08-01T03:45:29.771634Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-15 | NAN vs BOU | ligue-2-fr | score=56.0 | peso=0.435
+  2025-08-23 | BOU vs STE | ligue-2-fr | score=39.6 | peso=0.451
+  2025-08-29 | ROD vs BOU | ligue-2-fr | score=44.1 | peso=0.467
+  2025-09-12 | BOU vs LAV | ligue-2-fr | score=64.5 | peso=0.483
+  2025-09-16 | BOU vs SCB | ligue-2-fr | score=48.0 | peso=0.500
+  2025-09-19 | BOU vs PAU | ligue-2-fr | score=30.9 | peso=0.518
+  2025-10-28 | BOU vs SR | ligue-2-fr | score=35.0 | peso=0.536
+  2025-10-31 | ANN vs BOU | ligue-2-fr | score=44.9 | peso=0.555
+  2025-11-07 | DUN vs BOU | ligue-2-fr | score=21.2 | peso=0.574
+  2025-12-05 | CLE vs BOU | ligue-2-fr | score=52.5 | peso=0.595
+  2025-12-15 | BOU vs TRO | ligue-2-fr | score=39.8 | peso=0.616
+  2026-01-03 | EAG vs BOU | ligue-2-fr | score=58.5 | peso=0.637
+  2026-01-16 | BOU vs MON | ligue-2-fr | score=49.9 | peso=0.660
+  2026-01-24 | RED vs BOU | ligue-2-fr | score=82.4 | peso=0.683
+  2026-01-31 | STE vs BOU | ligue-2-fr | score=90.0 | peso=0.707
+  2026-02-06 | BOU vs ROD | ligue-2-fr | score=65.7 | peso=0.732
+  2026-02-13 | PAU vs BOU | ligue-2-fr | score=49.9 | peso=0.758
+  2026-02-20 | BOU vs CLE | ligue-2-fr | score=55.5 | peso=0.785
+  2026-02-27 | GRE vs BOU | ligue-2-fr | score=50.3 | peso=0.812
+  2026-04-04 | SR vs BOU | ligue-2-fr | score=54.9 | peso=0.841
+  2026-04-11 | BOU vs LEM | ligue-2-fr | score=69.7 | peso=0.871
+  2026-04-18 | TRO vs BOU | ligue-2-fr | score=46.7 | peso=0.901
+  2026-04-27 | BOU vs DUN | ligue-2-fr | score=55.1 | peso=0.933
+  2026-05-02 | BOU vs ANN | ligue-2-fr | score=49.6 | peso=0.966
+  2026-05-09 | LAV vs BOU | ligue-2-fr | score=51.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 53.23
+  di cui Punteggio decisivo (level_score) medio: 38.12 | Punteggio complessivo (granulari) medio: 15.11 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.60, delta avversario +0.00 | Passaggio condizionato: delta venue +0.30, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.17, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.07
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.1 - 65.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.76 (differenza: +3.31)
+Media score in casa: 50.28 | Media score fuori casa: 54.06
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.851
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 54.5 vs media ultime 10: 54.9): 1.000
+P(gioca): 73.53% (fonte: tasso di presenza storico (25/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T16:30
+Casa: RSC Anderlecht | Trasferta: RAAL La Louvière
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.8 (range 46.6 - 68.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 57.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.34
+Punteggio REALE ottenuto in quella partita: 51.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.2+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.2)
+Partite testate: 19 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.8    35.0    -14.7    11.0        NO
+   7        7      50.6    44.9     -5.7    11.0        SI
+   8        8      50.5    21.2    -29.3    10.2        NO
+   9        9      48.7    52.5     +3.8    12.4        SI
+  10       10      46.8    39.8     -7.0    12.1        SI
+  11       11      48.5    58.5    +10.0    11.5        SI
+  12       12      47.5    49.9     +2.4    11.9        SI
+  13       13      48.2    82.4    +34.3    11.4        NO
+  14       14      50.9    90.0    +39.1    15.1        NO
+  15       15      51.1    65.7    +14.6    18.3        SI
+  16       16      53.7    49.9     -3.7    18.0        SI
+  17       17      51.0    55.5     +4.5    17.4        SI
+  18       18      53.4    50.3     -3.1    16.8        SI
+  19       19      53.5    54.9     +1.4    16.3        SI
+  20       20      49.2    69.7    +20.5    15.8        NO
+  21       21      54.2    46.7     -7.5    15.8        SI
+  22       22      50.5    55.1     +4.6    15.5        SI
+  23       23      50.0    49.6     -0.4    15.0        SI
+  24       24      54.8    51.4     -3.3    14.6        SI
+
+MAE (errore assoluto medio): 11.05
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 73.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
