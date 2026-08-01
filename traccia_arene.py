@@ -68,8 +68,8 @@ def _versione_corrente():
     try:
         r = _S.get('https://sorare.com/', timeout=30)
         html = r.text
-        v = _re.findall(r'(\d{14})', html)
-        b = _re.findall(r'([0-9a-f]{40})', html)
+        v = _re.findall(r'(?<![0-9])(\d{14})(?![0-9])', html)
+        b = _re.findall(r'(?<![0-9a-f])([0-9a-f]{40})(?![0-9a-f])', html)
         if v and b:
             return v[0], b[0]
     except Exception:
