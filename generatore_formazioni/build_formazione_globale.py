@@ -328,19 +328,9 @@ def _stampa_verdetto_arene(all_results):
     Non tocca la generazione, dice solo quali schierare. La scelta di quante
     arene giocare resta all'utente: qui c'e' il numero su cui deciderla.
     """
-    righe = []
-    for r in all_results:
-        if 'error' in r:
-            continue
-        soglia = PAREGGIO_ARENA.get(r['tipo'])
-        if soglia is None:
-            continue
-        atteso = sum(row['atteso'] for _, row, _ in r['formazione'])
-        righe.append((atteso - soglia, r['tipo'], atteso, soglia))
+    righe = _righe_verdetto(all_results)
     if not righe:
         return
-
-    righe.sort(reverse=True)
     conviene = sum(1 for m, _t, _a, _s in righe if m >= 0)
     print(f"\n=== CONVIENE PAGARE L'INGRESSO? ({conviene} su {len(righe)} arene)")
     print("Soglie misurate su 673 arene reali: sotto, l'ingresso costa piu' di")
@@ -352,6 +342,53 @@ def _stampa_verdetto_arene(all_results):
     if conviene < len(righe):
         print(f"  -> le {len(righe) - conviene} sotto soglia: meglio All Stars da 7 "
               "o Under 23, che non costano essenze.")
+
+
+def _righe_verdetto(all_results):
+    """(margine, tipo, atteso, soglia) per ogni arena generata, dalla migliore."""
+    righe = []
+    for r in all_results:
+        if 'error' in r:
+            continue
+        soglia = PAREGGIO_ARENA.get(r['tipo'])
+        if soglia is None:
+            continue
+        atteso = sum(row['atteso'] for _, row, _ in r['formazione'])
+        righe.append((atteso - soglia, r['tipo'], atteso, soglia))
+    righe.sort(reverse=True)
+    return righe
+
+
+def _verdetto_arene_html(all_results):
+    """Lo stesso verdetto del log, ma dentro il report: e' li' che si guarda."""
+    righe = _righe_verdetto(all_results)
+    if not righe:
+        return ''
+    conviene = sum(1 for m, _t, _a, _s in righe if m >= 0)
+    voci = []
+    for margine, tipo, atteso, soglia in righe:
+        ok = margine >= 0
+        voci.append(
+            f'<tr class="{"ok" if ok else "no"}">'
+            f'<td>{LABELS.get(tipo, tipo)}</td>'
+            f'<td style="text-align:right">{atteso:.0f}</td>'
+            f'<td style="text-align:right">{soglia:.1f}</td>'
+            f'<td style="text-align:right">{margine:+.1f}</td>'
+            f'<td><b>{"SCHIERA" if ok else "LASCIA PERDERE"}</b></td></tr>')
+    return (
+        '<div class="lineup-block verdetto-arene">'
+        '<style>.verdetto-arene table{border-collapse:collapse;width:100%;font-size:.85rem}'
+        '.verdetto-arene td{padding:3px 8px;border-bottom:1px solid #2a2a2a}'
+        '.verdetto-arene tr.ok td{color:#7bd88f}'
+        '.verdetto-arene tr.no td{color:#8a8a8a}</style>'
+        f'<h2>Conviene pagare l\'ingresso? — {conviene} su {len(righe)} arene</h2>'
+        '<p>Soglie misurate su 673 arene reali: sotto quella riga l\'ingresso '
+        'costa piu\' di quanto renda, e le carte valgono di piu\' in una '
+        'competizione senza costo (All Stars da 7, Under 23).</p>'
+        '<table><tr><td><b>arena</b></td><td style="text-align:right"><b>atteso</b></td>'
+        '<td style="text-align:right"><b>pareggio</b></td>'
+        '<td style="text-align:right"><b>margine</b></td><td><b>verdetto</b></td></tr>'
+        + ''.join(voci) + '</table></div>')
 
 
 def verdetto_arena(tipo, atteso):
@@ -1557,6 +1594,9 @@ def main():
                      ", ".join(f"{r}: {esclusi_per_ruolo[r]}" for r in ROLES) + ")")
     footer_html = (f"Fusione {len(LEAGUES)} campionati. Max 1 carta CLASSIC solo per In Season. "
                     f"Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.")
+    verdetto_html = _verdetto_arene_html(all_results)
+    if verdetto_html:
+        lineup_html_blocks.insert(0, verdetto_html)
     if capienza_html:
         lineup_html_blocks.insert(0, capienza_html)
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)
