@@ -67,6 +67,15 @@ COMPOSIZIONI = (
 )
 
 
+# La console Windows e' cp1252 e va in errore sui nomi con caratteri
+# non latini-1 (es. Swiderski): senza questo il backtest muore in fase
+# di stampa, dopo aver fatto tutto il lavoro.
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
+
 # --------------------------------------------------------------------------
 # Dati
 # --------------------------------------------------------------------------
