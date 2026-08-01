@@ -5840,6 +5840,15 @@ Campione minuscolo (15 casi sul taglio che conta), ma il FWD è il ruolo più
 debole in entrambe le letture. Tool: `kleague_lineup_check.py` (`--retro`
 per la verifica a posteriori, `--top=N` per il taglio).
 
+**Errore commesso il 01/08 e corretto** (segnalato dall'utente: "le partite non
+sono iniziate e tu stai prendendo dati a caso"): la modalità futura del tool
+prendeva le prime partite CON formazione, che sono le più recenti **già
+giocate**. I consigli della giornata del 1-2 agosto venivano confrontati con
+gli XI del 25-26 luglio, producendo un finto "87% di titolari" (10/10 GK, 9/9
+MID, 10/12 DEF, 5/8 FWD) che è stato ritirato. Ora il tool filtra per data e,
+se nessuna formazione è ancora uscita, lo dichiara invece di rispondere lo
+stesso. Resta valido solo il retrospettivo del 26/07, che la data la filtrava.
+
 Trappola metodologica trovata strada facendo: unendo le partite di più giornate
 per nome squadra, di ogni squadra resta l'XI dell'**ultima** partita e il
 confronto non è più con la giornata giusta. Il tool ora filtra per data.
