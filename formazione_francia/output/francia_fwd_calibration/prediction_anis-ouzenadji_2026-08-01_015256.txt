@@ -1,0 +1,74 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:52:56.647082Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) anis-ouzenadji: 55 pt attesi (38-65)
+   ORDINAMENTO: 64.45
+   SQUADRA: troyes-troyes | AVVERSARIO: paris-paris
+======================================================================
+
+######################################################################
+# GIOCATORE: anis-ouzenadji
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: anis-ouzenadji (squadra: troyes-troyes)
+Generato: 2026-08-01T01:52:56.646831Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-31 | TRO vs LEM | ligue-2-fr | score=48.9 | peso=0.920
+  2026-02-07 | NAN vs TRO | ligue-2-fr | score=76.6 | peso=0.946
+  2026-03-16 | ANN vs TRO | ligue-2-fr | score=71.0 | peso=0.973
+  2026-05-09 | GRE vs TRO | ligue-2-fr | score=67.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 66.20
+  di cui Punteggio decisivo (level_score) medio: 47.50 | Punteggio complessivo (granulari) medio: 18.70 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.79 (delta -0.32) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 10.23
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 48.9 - 76.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 48.90 | Media score fuori casa: 71.73
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.8
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.078
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 11.76% (fonte: tasso di presenza storico (4/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:45
+Casa: ESTAC Troyes | Trasferta: Paris FC
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.1 (range 37.8 - 65.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 65.70
+Punteggio REALE ottenuto in quella partita: 67.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +1.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
