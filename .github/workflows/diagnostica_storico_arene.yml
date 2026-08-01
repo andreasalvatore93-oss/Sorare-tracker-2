@@ -1,0 +1,25 @@
+name: Diagnostica storico arene
+
+# Perche' prima del 2026 non risulta nessuna arena giocata? Sola lettura,
+# nessun commit: si puo' lanciare mentre gira la ricostruzione.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - name: Confronta il 2025 col 2026
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          PYTHONUNBUFFERED: "1"
+        run: python diagnostica_storico_arene.py
