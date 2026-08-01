@@ -1,9 +1,9 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-07-30T12:04:11.756761Z
-Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+Generato: 2026-08-01T01:30:53.302218Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) felix-kalu-nmecha: 50 pt attesi (34-66)
+1) felix-kalu-nmecha: 50 pt attesi (34-67)
    SQUADRA: borussia-dortmund-dortmund | AVVERSARIO: hamburger-sv-hamburg
 ======================================================================
 
@@ -13,7 +13,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: felix-kalu-nmecha (squadra: borussia-dortmund-dortmund)
-Generato: 2026-07-30T12:04:11.753225Z
+Generato: 2026-08-01T01:30:53.300367Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -50,7 +50,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 49.56
-  di cui Punteggio decisivo (level_score) medio: 36.83 | Punteggio complessivo (granulari) medio: 12.73 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  di cui Punteggio decisivo (level_score) medio: 36.83 | Punteggio complessivo (granulari) medio: 12.73 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per venue: 36.67 (delta -0.16)
   Efficacia offensiva condizionata: delta venue -0.14, delta avversario -0.95 | Passaggio condizionato: delta venue +0.62, delta avversario +0.69 | Gol subiti condizionato: delta venue -0.02, delta avversario +0.21 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 16.62
@@ -61,12 +61,12 @@ Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 10.2
 Ranking prossimo avversario: 13
 Fattore forza avversario applicato: 1.098
-Fattore falli (casa/trasferta, da dati reali): 0.995
-Fattore duelli (casa/trasferta, da dati reali): 0.996
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
-Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
 Fattore gol subiti (goals_conceded, con cap): 1.000
 Fattore trend (media ultime 5: 44.6 vs media ultime 10: 45.8): 0.995
 P(gioca): 73.53% (fonte: tasso di presenza storico (25/34))
@@ -79,7 +79,7 @@ Competizione: bundesliga-de
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 49.9 (range 34.0 - 66.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 50.4 (range 34.4 - 66.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 49.70
@@ -88,36 +88,36 @@ Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/av
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
-half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
 Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
-Combinazione usata: 'hl=30.0+range=1.4x+opp_sens=29.0+trend_int=1.0' (half_life=30.0, range_mult=1.4, opp_sens=29.0, trend_int=1.0)
+Combinazione usata: 'hl=30.0+trend_int=1.3+range=1.4x' (half_life=30.0, range_mult=1.4, opp_sens=None, trend_int=1.3)
 Partite testate: 19 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      43.0    43.0     +0.0    13.7        SI
-   7        7      35.7    36.5     +0.8    12.6        SI
-   8        8      38.6    49.0    +10.4    12.4        SI
-   9        9      38.3    67.1    +28.8    11.8        NO
-  10       10      45.3    45.0     -0.3    15.0        SI
-  11       11      57.1    77.1    +20.0    14.3        NO
-  12       12      54.9    74.3    +19.4    18.4        NO
-  13       13      75.8    94.4    +18.6    20.2        SI
-  14       14      87.2    30.7    -56.5    25.4        NO
-  15       15      63.5    41.3    -22.2    26.0        SI
-  16       16      75.0    56.0    -19.0    25.5        SI
-  17       17      65.4    59.8     -5.6    24.6        SI
-  18       18      49.8    47.7     -2.1    23.9        SI
-  19       19      31.2    30.0     -1.2    23.2        SI
-  20       20      29.9    61.1    +31.2    23.7        NO
-  21       21      52.9    54.4     +1.5    23.2        SI
-  22       22      46.8    40.8     -6.0    22.6        SI
-  23       23      52.0    19.6    -32.4    22.2        NO
-  24       24      54.5    47.1     -7.4    23.8        SI
+   6        6      47.6    43.0     -4.6    13.7        SI
+   7        7      48.3    36.5    -11.8    12.6        SI
+   8        8      46.5    49.0     +2.5    12.4        SI
+   9        9      47.0    67.1    +20.1    11.8        NO
+  10       10      47.2    45.0     -2.2    15.0        SI
+  11       11      49.4    77.1    +27.7    14.3        NO
+  12       12      51.2    74.3    +23.1    18.4        NO
+  13       13      53.9    94.4    +40.5    20.2        NO
+  14       14      57.0    30.7    -26.3    25.4        NO
+  15       15      53.9    41.3    -12.6    26.0        SI
+  16       16      54.7    56.0     +1.3    25.5        SI
+  17       17      51.4    59.8     +8.4    24.6        SI
+  18       18      52.4    47.7     -4.7    23.9        SI
+  19       19      50.0    30.0    -20.0    23.2        SI
+  20       20      49.9    61.1    +11.2    23.7        SI
+  21       21      50.2    54.4     +4.2    23.2        SI
+  22       22      53.1    40.8    -12.3    22.6        SI
+  23       23      50.0    19.6    -30.4    22.2        NO
+  24       24      48.5    47.1     -1.4    23.8        SI
 
-MAE (errore assoluto medio): 14.90
+MAE (errore assoluto medio): 13.97
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.4%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
