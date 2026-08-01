@@ -38,6 +38,7 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           FIXTURE: ${{ github.event.inputs.fixtures }}
           PYTHONUNBUFFERED: "1"
         run: python diagnostica_auth_sorare.py || true
@@ -46,6 +47,7 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
         run: |
           FIXTURES="${{ github.event.inputs.fixtures }}" \

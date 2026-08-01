@@ -47,6 +47,7 @@ def _csrf_dal_cookie(cookie_string):
 
 
 CSRF = _csrf_dal_cookie(COOKIES) or os.environ.get('SORARE_CSRF', '')
+FINGERPRINT = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
 
 try:
     from curl_cffi import requests as _rq
@@ -134,7 +135,13 @@ def graphql(query, variables):
             'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
     }
+    # Sorare lega la sessione al dispositivo: senza questo header il cookie e'
+    # ben formato ma currentUser torna null. E' lo stesso segreto che usano i
+    # bot che comprano davvero (autobuy, makeoffer), che infatti autenticano.
+    if FINGERPRINT:
+        headers['device_fingerprint'] = FINGERPRINT
     if COOKIES:
         headers['Cookie'] = COOKIES
     if CSRF:
@@ -199,7 +206,8 @@ def main():
         sys.exit(1)
     nomi = [c.strip().split('=', 1)[0] for c in COOKIES.split(';') if '=' in c]
     print(f'cookie: {len(COOKIES)} caratteri, {len(nomi)} voci -> {", ".join(nomi)}')
-    print(f'csrf: {"presente" if CSRF else "ASSENTE"}')
+    print(f'csrf: {"presente" if CSRF else "ASSENTE"} | '
+          f'device_fingerprint: {"presente" if FINGERPRINT else "ASSENTE"}')
     # La prova del nove: se currentUser e' null il cookie non autentica, per
     # quanto sia lungo. Il bot di mercato non se ne accorge perche' legge solo
     # dati pubblici (prezzi, offerte): non interroga mai un campo 'my*'.
