@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:52:53.928247Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) adil-ali-mohamed-bourabaa: 47 pt attesi (32-63)
+   ORDINAMENTO: 44.12
+   SQUADRA: le-mans-le-mans | AVVERSARIO: brest-brest
+======================================================================
+
+######################################################################
+# GIOCATORE: adil-ali-mohamed-bourabaa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: adil-ali-mohamed-bourabaa (squadra: le-mans-le-mans)
+Generato: 2026-08-01T01:52:53.927968Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 13
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-14 | MON vs LEM | ligue-2-fr | score=44.1 | peso=0.895
+  2026-02-23 | LEM vs EAG | ligue-2-fr | score=41.2 | peso=0.920
+  2026-02-28 | RED vs LEM | ligue-2-fr | score=29.6 | peso=0.946
+  2026-04-17 | LEM vs CLE | ligue-2-fr | score=60.8 | peso=0.973
+  2026-04-25 | GRE vs LEM | ligue-2-fr | score=45.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 44.26
+  di cui Punteggio decisivo (level_score) medio: 40.14 | Punteggio complessivo (granulari) medio: 4.12 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.51 (delta -0.36) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 10.05
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.6 - 60.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 1.63 (differenza: +8.43)
+Media score in casa: 51.00 | Media score fuori casa: 39.57
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.6
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.083
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 38.46% (fonte: tasso di presenza storico (5/13))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:45
+Casa: Le Mans FC | Trasferta: Stade Brestois 29
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.8 (range 32.1 - 63.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.06
+Punteggio REALE ottenuto in quella partita: 45.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:53:09.948944Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) alvaro-daniel-rodriguez-munoz: 49 pt attesi (33-69)
+   ORDINAMENTO: 49.73
+   SQUADRA: afc-bournemouth-bournemouth-dorset | AVVERSARIO: manchester-city-manchester
+======================================================================
+
+######################################################################
+# GIOCATORE: alvaro-daniel-rodriguez-munoz
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: alvaro-daniel-rodriguez-munoz (squadra: afc-bournemouth-bournemouth-dorset)
+Generato: 2026-08-01T01:53:09.946849Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-18 | ELC vs BET | laliga-es | score=33.6 | peso=0.529
+  2025-08-23 | ATM vs ELC | laliga-es | score=60.0 | peso=0.543
+  2025-08-29 | ELC vs LEV | laliga-es | score=71.7 | peso=0.559
+  2025-09-25 | OSA vs ELC | laliga-es | score=41.1 | peso=0.574
+  2025-10-05 | ALA vs ELC | laliga-es | score=41.2 | peso=0.590
+  2025-11-07 | ELC vs RSO | laliga-es | score=66.2 | peso=0.607
+  2025-11-28 | GET vs ELC | laliga-es | score=52.2 | peso=0.624
+  2025-12-21 | ELC vs RAY | laliga-es | score=90.9 | peso=0.642
+  2026-01-03 | ELC vs VIL | laliga-es | score=44.4 | peso=0.660
+  2026-01-10 | VCF vs ELC | laliga-es | score=46.6 | peso=0.678
+  2026-01-19 | ELC vs SEV | laliga-es | score=28.1 | peso=0.697
+  2026-01-23 | LEV vs ELC | laliga-es | score=64.9 | peso=0.717
+  2026-01-31 | ELC vs FCB | laliga-es | score=75.6 | peso=0.737
+  2026-02-07 | RSO vs ELC | laliga-es | score=38.2 | peso=0.758
+  2026-02-13 | ELC vs OSA | laliga-es | score=38.4 | peso=0.779
+  2026-02-20 | ATH vs ELC | laliga-es | score=40.7 | peso=0.801
+  2026-03-08 | VIL vs ELC | laliga-es | score=35.8 | peso=0.824
+  2026-03-21 | ELC vs MLL | laliga-es | score=28.7 | peso=0.847
+  2026-04-03 | RAY vs ELC | laliga-es | score=38.0 | peso=0.871
+  2026-04-26 | OVI vs ELC | laliga-es | score=67.4 | peso=0.895
+  2026-05-03 | CEL vs ELC | laliga-es | score=41.0 | peso=0.920
+  2026-05-09 | ELC vs ALA | laliga-es | score=70.1 | peso=0.946
+  2026-05-17 | ELC vs GET | laliga-es | score=28.5 | peso=0.973
+  2026-05-23 | GIR vs ELC | laliga-es | score=68.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 50.13
+  di cui Punteggio decisivo (level_score) medio: 44.29 | Punteggio complessivo (granulari) medio: 5.84 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.07 (delta -0.77) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.20
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.6 - 70.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.29 (differenza: +1.90)
+Media score in casa: 52.38 | Media score fuori casa: 48.87
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.7
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.700
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 55.0 vs media ultime 10: 45.7): 1.061
+P(gioca): 63.16% (fonte: tasso di presenza storico (24/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T13:00
+Casa: Manchester City FC | Trasferta: AFC Bournemouth
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.3 (range 32.7 - 69.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.05
+Punteggio REALE ottenuto in quella partita: 68.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +19.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=1.3+range=1.2x' (half_life=30.0, range_mult=1.2, opp_sens=None, trend_int=1.3)
+Partite testate: 18 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      50.9    52.2     +1.3    17.1        SI
+   7        7      51.6    90.9    +39.3    15.7        NO
+   8        8      56.0    44.4    -11.6    21.5        SI
+   9        9      54.6    46.6     -8.0    20.8        SI
+  10       10      56.0    28.1    -27.9    20.0        NO
+  11       11      53.4    64.9    +11.5    21.3        SI
+  12       12      53.9    75.6    +21.7    20.7        NO
+  13       13      54.5    38.2    -16.3    21.2        SI
+  14       14      53.7    38.4    -15.3    21.1        SI
+  15       15      50.7    40.7    -10.0    20.8        SI
+  16       16      50.0    35.8    -14.2    20.4        SI
+  17       17      50.9    28.7    -22.2    20.3        NO
+  18       18      48.4    38.0    -10.4    20.7        SI
+  19       19      47.9    67.4    +19.5    20.3        SI
+  20       20      48.8    41.0     -7.8    20.4        SI
+  21       21      49.6    70.1    +20.5    19.9        NO
+  22       22      50.7    28.5    -22.2    20.2        NO
+  23       23      49.7    68.2    +18.5    20.5        SI
+
+MAE (errore assoluto medio): 16.57
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
