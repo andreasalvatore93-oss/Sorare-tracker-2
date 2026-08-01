@@ -6039,3 +6039,162 @@ stata eseguita (interrotta su richiesta dell'utente); l'ostacolo noto resta
 quello del 31/07: con i dati di una sola giornata le formazioni escono
 identiche con penalita' accesa o spenta, quindi non c'e' segnale da cui
 tarare. Va rigirato con piu' giornate accumulate.
+
+---
+
+## 45. Sessione 01/08 (giorno) — checklist maestra rifatta su 65k partite, e il modello smette di essere il posto dove si migliora
+
+Sessione con un cambio di baricentro: la checklist e' stata rifatta per intero
+sul campione piu' grande mai avuto, **non ha prodotto quasi nulla**, e tutto il
+valore e' arrivato invece dalla **logica di schieramento**. E' un risultato in
+se: il modello predittivo ha smesso di essere il posto dove si guadagna.
+
+### 45.A — Il criterio di decisione, cambiato su indicazione dell'utente
+
+Due indicazioni che hanno riscritto il metodo:
+
+1. *«non esistono miglioramenti trascurabili»* — se trenta miglioramenti da
+   0.1% vengono scartati uno a uno perche' piccoli, si buttano tre punti
+   percentuali. Da scartare solo cio' che ha danni maggiori dei benefici.
+2. *«preferisco sbagliare piu' spesso un target basso e non mancare quello
+   alto»* — i premi sono asimmetrici: mancare un premio piccolo costa poco,
+   mancare quello grosso costa tutto. **Il bersaglio e' sempre la coda alta**,
+   mai la mediana.
+
+Il primo punto pero' si scontra con un fatto statistico: a 0.05% di differenza,
+il "migliore" e' quasi sempre il vincitore scelto sugli stessi dati su cui lo
+si misura. Applicarne trenta cosi' non da' +3%, da' un modello tarato sul
+passato. Risolto non scartando ma **alzando l'asticella della prova**: nuovo
+strumento `verifica_fuori_campione.py` — si sceglie su meta' giocatori a caso,
+si misura sull'altra meta', 500 volte. Sotto il 95% non e' dimostrato.
+
+### 45.B — Checklist maestra: 197 run, un solo cambio
+
+Rifatti tutti i test della sezione 0 su **65.299 partite / 3.763 giocatori**
+(erano 8.082 quando la checklist e' nata, 23.211 all'ultima ripetizione del
+30/07). 197 esecuzioni, 192 riuscite.
+
+**Esito: un solo parametro cambiato in tutto il modello** — DEF `half_life`
+20 -> 30, promosso al 98% fuori campione su 831 difensori (MAE 14.8000 contro
+14.8024, -0.016%; sulla selezione dei 5 e' neutro, 283.0 contro 282.9).
+Applicato perche' piccolo ma reale.
+
+Tutto il resto **confermato**, spesso in modo netto:
+
+| test | esito su 65k partite |
+|---|---|
+| regola netto -> level_score | **7226/7226 esatte, 100%** |
+| shrink_k per ruolo | migliore = produzione su tutti e 4 (GK 30, DEF 15, MID 5, FWD 5) |
+| range_multiplier | copertura 68.4%, esattamente il target |
+| leave-one-league-out | delta MAE fra +0.02 e -0.01: generalizza |
+| decomposizione level_score | -0.03%, sotto il rumore (come quando fu scartata) |
+| correlazioni same/cross-team | riconfermate su 30.077 coppie |
+
+**Bocciati dopo verifica fuori campione** (in-sample sembravano guadagni):
+GK half_life 6->12 (69%), MID half_life 25->30 (45%), FWD trend 0.3->0.0 (75%),
+shrink_k a due livelli per storico (68.5%). Quest'ultimo era un'idea nuova,
+nata dall'osservazione che il k migliore dipende da quante partite ha il
+giocatore: misurata e smentita.
+
+### 45.C — I granulari: pesare non vuol dire essere prevedibile
+
+`inspect_granular_weights` leggeva da una lista di leghe ferma alle prime e
+ignorava le big5; corretto, ora usa il consolidato. Pesi reali sul movimento
+di punteggio:
+
+| ruolo | level_score | gruppo granulare piu' pesante |
+|---|---|---|
+| GK | 56.3% | Goalkeeping 21.4% |
+| DEF | 40.1% | **Duelli 23.5%** |
+| MID | 49.3% | **Duelli 17.9%** |
+| FWD | 63.3% | **Duelli 16.9%** |
+
+I Duelli sono il gruppo piu' pesante per tre ruoli su quattro e **non sono
+condizionati** da Stadio D (che usa efficacia offensiva, passaggio, gol
+subiti). Sembrava un buco evidente. Testato: **non lo e'** — il loro scarto
+dalla media personale non dipende dall'avversario (z = +0.81 DEF, +2.16 MID,
+-0.11 FWD). Il Passaggio invece ha segnale su tutti e tre (z da -3.2 a -5.2)
+ed e' gia' in produzione: la scelta del 26/07 regge con dati otto volte piu'
+grandi.
+
+**La lezione**: quanto una categoria pesa sul punteggio e quanto e' prevedibile
+sono due cose diverse. Solo la seconda serve a un modello.
+
+### 45.D — Dove il valore c'era davvero: la logica di schieramento
+
+**Il difetto strutturale**: `apply_positive_synergy` e' un interruttore UNICO
+per TRE meccanismi (nudge GK-DEF, penalita' cross-team, bonus same-team), ed e'
+spento sulle In Season per una ragione che riguarda **solo il primo**. Gli
+altri due erano quindi inerti proprio dove servono. La penalita' cross-team era
+gia' stata liberata il 31/07; oggi gli altri due.
+
+**Nuovo: il blocco difensivo GK+DEF.** La correlazione same-team GK-DEF e'
++0.341, la piu' forte di tutte — condividono la porta inviolata. Quantificato:
+**se il portiere fa piu' di 55, il suo difensore fa in media 60.6; se il
+portiere fa male, 47.5.** Tredici punti di differenza sullo stesso giocatore, a
+seconda di come e' andata la squadra.
+
+Misurato quanto punteggio atteso conviene sacrificare per accoppiarli, con una
+distinzione rivelatasi decisiva — **coppie isolate contro formazioni da 5**:
+
+| | top 25% | top 10% | top 5% |
+|---|---|---|---|
+| coppie isolate | 5.5 pt | 7.0 pt | 8.0 pt |
+| **dentro una formazione da 5** | **3.5 pt** | **5.0 pt** | **5.0 pt** |
+
+Gli altri tre slot smorzano la correlazione e **dimezzano l'effetto**: misurare
+la coppia da sola avrebbe portato a un bonus quasi doppio del giusto. Adottato
+5. Con DUE difensori della stessa squadra del portiere l'effetto cresce ancora
+(top 10%: 14.9% contro 11.8%), quindi il bonus resta pieno anche sul secondo.
+
+Altre coppie same-team, stesso metodo: DEF+DEF 4.0 pt, MID+MID e MID+FWD
+2.5 pt — coerenti con la tabella esistente, che resta invariata.
+
+**Nota onesta**: in mediana la regola DANNEGGIA (51.0% contro 50.0%). E' un
+costo accettato consapevolmente, per la scelta di 45.A.2. L'utente ha portato
+un controesempio reale (portiere e difensore NY schierati separati avrebbero
+reso di piu' ieri): e' esattamente l'85% dei casi in cui la scommessa non paga;
+il test dice che paga 1.5 volte tanto nel restante 15%.
+
+### 45.E — Varianza: misurata, e scartata due volte
+
+A parita' di punteggio atteso conviene preferire chi oscilla di piu'? La
+dispersione passata predice quella futura solo debolmente (corr +0.217 su 1622
+giocatori). Usarla nella scelta non migliora: peso 0.25 -> -0.33 pt (bootstrap
+33.8%), peso 0.5 neutro, peso 1.0 peggiora la media.
+
+Un primo taglio sembrava mostrare un guadagno sopra il +20% dal punteggio
+atteso (13.1% contro 10.3%). **Ritirato**: misurando la soglia per bene i
+numeri saltano avanti e indietro (a +10% vince un peso, a +15% l'altro, a +20%
+il primo) e sopra il +20% si parla di 6 giornate su 252. Era rumore.
+
+### 45.F — Il banco di prova nuovo: selezione invece di MAE
+
+`valuta_selezione.py`: invece dell'errore sul singolo giocatore, prende i TOP-5
+previsti di ogni giornata e somma il punteggio REALE. Su 277 giornate i vecchi
+parametri (hl=12, trend=0.7) sono nettamente i peggiori — P(soglia alta) 5.1%
+contro 12.6% — quindi i cambi di questi giorni erano giusti anche qui.
+
+Un indizio emerso li' (GK half_life 6 ultimo fra i valori attuali) si e'
+rivelato **un artefatto del banco semplificato**: rifatto con la formula vera di
+produzione il vantaggio sparisce (+0.2 pt, bootstrap 51.1%). Il banco ordina le
+combinazioni, non da' valori assoluti.
+
+### 45.G — Allineamento: 50 leghe su 50
+
+Verificato a tappeto su `half_life`, `trend`, `range_multiplier`,
+`opponent_sensitivity`, tutti gli `shrink_k` e `MAX_HISTORY_DAYS`: **nessun
+disallineamento**. L'unica fuori era `resto_mondo` (trend vecchi 0.7/0.7/1.0),
+allineata anche lei benche' la sua pipeline non giri mai.
+
+### 45.H — Backlog
+
+1. **Sinergia x12** — confermabile solo con piu' giornate (42.D.1).
+2. **Debito strutturale**: GK/MID hanno la formula inline in `build_prediction`
+   su 42 leghe (solo 8 usano la funzione condivisa). Non da' punti, ma e' la
+   radice di ogni bug trovato il 31/07 e oggi.
+3. Fermi per scelta: `resto_mondo` (verificato morto, non rimosso su richiesta
+   utente), link Sorare classic/in season (inutile), retest venue (chiuso da
+   un'altra sessione senza risultati), SportsGambler (eliminato su richiesta —
+   la feature "clicca il nome e lo copi" nel report nasce invece dall'avversione
+   dichiarata dell'utente per i nomi coreani, tutti troppo simili).
