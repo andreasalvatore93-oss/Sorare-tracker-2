@@ -345,7 +345,14 @@ def _stampa_verdetto_arene(all_results):
 
 
 def _righe_verdetto(all_results):
-    """(margine, tipo, atteso, soglia) per ogni arena generata, dalla migliore."""
+    """(margine, tipo, atteso, soglia) per ogni arena generata, dalla migliore.
+
+    ATTENZIONE al capitano. La soglia viene da punteggi REALIZZATI, che il
+    bonus capitano ce l'hanno gia' dentro (+20% in arena). Sommare qui i soli
+    'atteso' grezzi confronterebbe due misure diverse e sottostimerebbe ogni
+    formazione di 12-15 punti, scartandone parecchie che invece convengono.
+    Errore trovato dall'utente il 01/08.
+    """
     righe = []
     for r in all_results:
         if 'error' in r:
@@ -354,6 +361,13 @@ def _righe_verdetto(all_results):
         if soglia is None:
             continue
         atteso = sum(row['atteso'] for _, row, _ in r['formazione'])
+        try:
+            _slot, cap_row, _ct = bff.pick_captain(r['formazione'])
+            if cap_row is not None:
+                atteso += (CAPTAIN_BONUS_BY_TYPE.get(r['tipo'], 0.2)
+                           * cap_row.get('atteso', 0))
+        except Exception:
+            pass   # senza capitano si resta al totale grezzo, mai un errore
         righe.append((atteso - soglia, r['tipo'], atteso, soglia))
     righe.sort(reverse=True)
     return righe
