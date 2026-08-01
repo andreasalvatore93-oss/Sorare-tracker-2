@@ -54,6 +54,13 @@ query Indice($fixture: String!) {
           slug
           so5Leaderboard { slug }
         }
+        myEligibleOrSo5Rewards {
+          slug
+          rewardConfigs {
+            __typename
+            ... on CardShardRewardConfig { quantity }
+          }
+        }
       }
     }
   }
@@ -115,16 +122,28 @@ def arene_della_giornata(fixture):
     d = graphql(Q_INDICE, {'fixture': fixture})
     if d.get('errors'):
         print(f'  {fixture}: errore indice -> {json.dumps(d["errors"])[:160]}')
-        return [], None
+        return [], None, {}
     fx = ((d.get('data') or {}).get('so5') or {}).get('so5Fixture') or {}
-    out = []
+    out, premi = [], {}
     for g in fx.get('so5LeaderboardGroups') or []:
+        # I premi effettivamente presi: lo slug e' <classifica>-rank-<N> e la
+        # quantita' e' in frammenti, che per Sorare SONO le essenze (chiarito
+        # dall'utente il 01/08).
+        for r in g.get('myEligibleOrSo5Rewards') or []:
+            m = re.match(r'(.+)-rank-(\d+)', r.get('slug') or '')
+            if not m:
+                continue
+            q = 0
+            for rc in r.get('rewardConfigs') or []:
+                q += rc.get('quantity') or 0
+            if q:
+                premi[m.group(1)] = (int(m.group(2)), q)
         for c in g.get('mySo5LeaderboardContenders') or []:
             slug = ((c.get('so5Leaderboard') or {}).get('slug')) or ''
             nome, costo = tipo_arena(slug)
             if nome:
                 out.append((slug, nome, costo))
-    return out, fx.get('endDate')
+    return out, fx.get('endDate'), premi
 
 
 def classifica(slug):
@@ -153,7 +172,7 @@ def main():
     io = os.environ.get('NICKNAME', '').strip().lower()
     raccolta = []
     for fx in fixtures:
-        arene, fine = arene_della_giornata(fx)
+        arene, fine, premi = arene_della_giornata(fx)
         print(f'\n=== {fx} ({fine}) -- {len(arene)} arene')
         for slug, nome, costo in arene:
             nodi = classifica(slug)
@@ -163,13 +182,17 @@ def main():
             punteggi = sorted((n['score'] for n in nodi), reverse=True)
             mia = next((n for n in nodi
                         if (n.get('user') or {}).get('nickname', '').lower() == io), None)
+            rank_premio, essenze = premi.get(slug, (None, 0))
             riga = {'fixture': fx, 'fine': fine, 'slug': slug, 'tipo': nome,
                     'costo': costo, 'partecipanti': len(nodi),
+                    'premio_essenze': essenze, 'rank_premiato': rank_premio,
                     'punteggi': punteggi,
                     'mio_rank': mia.get('ranking') if mia else None,
                     'mio_score': mia.get('score') if mia else None}
             raccolta.append(riga)
             m = f"| tu {riga['mio_rank']}o con {riga['mio_score']:.1f}" if mia else ''
+            if essenze:
+                m += f" | premio {essenze} essenze (netto {essenze - costo:+d})"
             print(f'  {nome:10s} {len(nodi):>2} partecipanti | 1o {punteggi[0]:6.1f} '
                   f'| 3o {punteggi[2]:6.1f} | mediana {statistics.median(punteggi):6.1f} {m}')
 
