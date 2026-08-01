@@ -6031,16 +6031,11 @@ Corretta anche un'etichetta sbagliata nello strumento: la colonna si chiamava
 "venue aiuta" ma stampava la variazione di MAE col segno opposto (un -0.10%
 significa che il venue **riduce** l'errore). Ora si chiama "var. MAE".
 
-**Cross-team x20 (backlog #4): strumento pronto, misura NON fatta.** Scritto
-`formazione_mls/diagnostics/ab_crossteam_threshold.py`, che porta alla
-penalita' cross-team lo stesso metodo che il 31/07 ha portato la sinergia
-same-team da x20 a x12: Monte Carlo su punteggi reali e probabilita' di
-superare la soglia invece del punteggio atteso. Unica differenza obbligata
-rispetto allo studio sulla sinergia — il campionamento raggruppa per
-**partita** (le due squadre che si sono affrontate in una data reale) e non
-per squadra: campionando per squadra la correlazione negativa fra avversari
-andrebbe persa e il test misurerebbe zero per costruzione. Smoke test
-superato; la run completa e' stata interrotta su richiesta dell'utente prima
-di produrre numeri leggibili (le soglie All Stars erano tarate troppo in
-basso e saturavano al 100%). **Nessun numero da questo strumento e' ancora
-utilizzabile.**
+**Cross-team x20 (backlog #4): resta aperto, e lo strumento c'era gia'.**
+Ho scritto un secondo tool (`ab_crossteam_threshold.py`) senza accorgermi che
+`ab_cross_team_threshold.py` esisteva dal 31/07 e fa la stessa cosa, incluso
+il campionamento per partita. Il duplicato e' stato rimosso. La misura non e'
+stata eseguita (interrotta su richiesta dell'utente); l'ostacolo noto resta
+quello del 31/07: con i dati di una sola giornata le formazioni escono
+identiche con penalita' accesa o spenta, quindi non c'e' segnale da cui
+tarare. Va rigirato con piu' giornate accumulate.
