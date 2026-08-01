@@ -44,6 +44,7 @@ import itertools
 
 import backtest_arene_cache as C
 import backtest_arene_previsioni as P
+import backtest_arene_economia
 
 MOLTIPLICATORE_CAPITANO = 1.2
 
@@ -443,6 +444,12 @@ def main():
     args = ap.parse_args()
     confronti, saltate, giornate = esegui()
     rapporto(confronti, saltate, giornate)
+    arene_storico = carica('dati_globali/arene_storico.json')['arene']
+    ris, dettaglio = backtest_arene_economia.bilancio(confronti, arene_storico)
+    backtest_arene_economia.stampa_quadranti(
+        backtest_arene_economia.quadranti_verdetto(confronti, arene_storico))
+    backtest_arene_economia.stampa(ris, dettaglio)
+    backtest_arene_economia.mostra_ridistribuzioni(confronti, dettaglio)
     if args.json:
         with io.open(args.json, 'w', encoding='utf-8') as fh:
             json.dump(confronti, fh, ensure_ascii=False, indent=1)
