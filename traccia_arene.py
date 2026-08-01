@@ -234,7 +234,12 @@ def arene_della_giornata(fixture):
             for rc in r.get('rewardConfigs') or []:
                 q += rc.get('quantity') or 0
             if q:
-                premi[m.group(1)] = (int(m.group(2)), q)
+                # LISTA, non valore singolo: nella stessa arena si possono
+                # avere fino a 3 formazioni (capita schierando in fretta:
+                # finiscono nello stesso pool da 10), quindi i premi vinti
+                # possono essere piu' d'uno. Tenendone uno solo se ne perdeva
+                # uno e lo si duplicava sull'altra formazione.
+                premi.setdefault(m.group(1), []).append((int(m.group(2)), q))
         for c in g.get('mySo5LeaderboardContenders') or []:
             slug = ((c.get('so5Leaderboard') or {}).get('slug')) or ''
             nome, costo = tipo_arena(slug)

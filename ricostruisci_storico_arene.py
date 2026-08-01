@@ -10,6 +10,7 @@ puo' interrompere e rilanciare senza perdere nulla.
 
 Uso:  DA=2025-08-01 python ricostruisci_storico_arene.py
 """
+import collections
 import datetime
 import json
 import os
@@ -47,7 +48,7 @@ def giornate_concluse():
 
 
 def _senza_duplicati(raccolta):
-    """Una sola riga per (giornata, arena): quella e' l'identita' di un ingresso.
+    """Una sola riga per FORMAZIONE schierata: quella e' l'identita' di un ingresso.
 
     Va applicata anche in SCRITTURA, non solo in lettura: ripassando giornate
     gia' note (RIPROVA) si riaggiunge tutto, e deduplicando solo all'avvio
@@ -55,10 +56,10 @@ def _senza_duplicati(raccolta):
     """
     uniche = {}
     for r in raccolta:
-        k = (r['fixture'], r['slug'])
-        if k not in uniche or (r.get('contender_slug')
-                               and not uniche[k].get('contender_slug')):
-            uniche[k] = r
+        # chiave = la FORMAZIONE, non l'arena: nella stessa arena si puo'
+        # entrare fino a 3 volte, e sono ingressi distinti che pagano 3 volte
+        k = r.get('contender_slug') or (r['fixture'], r['slug'], r.get('mio_rank'))
+        uniche[k] = r
     return list(uniche.values())
 
 
@@ -100,6 +101,15 @@ def main():
         arene, fine, premi = t.arene_della_giornata(fx)
         nuove = 0
         saltate = []
+        # Nella stessa arena si possono avere fino a 3 formazioni: schierando
+        # in fretta finiscono nello stesso pool da 10, e in pratica si gioca
+        # contro se stessi (si possono anche vincere tutti e tre i premi).
+        # Quindi per ogni classifica si tiene il conto di quale delle proprie
+        # formazioni si sta trattando: prendendo sempre la PRIMA riga col
+        # proprio nickname le formazioni risultavano identiche e sembravano
+        # duplicati (75 ingressi veri cancellati per errore), e il premio
+        # veniva contato su entrambe.
+        quante_viste = collections.Counter()
         for slug, nome, costo, contender in arene:
             nodi = t.classifica(slug)
             if not nodi:
@@ -112,9 +122,19 @@ def main():
                 saltate.append(slug)
                 continue
             punteggi = sorted((n['score'] for n in nodi), reverse=True)
-            mia = next((n for n in nodi
-                        if (n.get('user') or {}).get('nickname', '').lower() == io), None)
-            rank_premio, essenze = premi.get(slug, (None, 0))
+            mie = sorted((n for n in nodi
+                          if (n.get('user') or {}).get('nickname', '').lower() == io),
+                         key=lambda n: n.get('ranking') or 99)
+            k = quante_viste[slug]
+            quante_viste[slug] += 1
+            mia = mie[k] if k < len(mie) else None
+            # il premio si assegna alla riga che l'ha vinto, per posizione
+            rank_premio, essenze = None, 0
+            if mia is not None:
+                for rk, q in premi.get(slug, []):
+                    if rk == mia.get('ranking'):
+                        rank_premio, essenze = rk, q
+                        break
             raccolta.append({
                 'fixture': fx, 'fine': fine, 'slug': slug, 'tipo': nome,
                 'contender_slug': contender,
