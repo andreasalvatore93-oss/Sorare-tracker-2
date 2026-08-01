@@ -34,6 +34,14 @@ jobs:
         with: { python-version: "3.11" }
       - run: pip install requests curl_cffi
 
+      - name: Diagnostica autenticazione
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          FIXTURE: ${{ github.event.inputs.fixtures }}
+          PYTHONUNBUFFERED: "1"
+        run: python diagnostica_auth_sorare.py || true
+
       - name: Scarica le classifiche
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
