@@ -596,7 +596,13 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     # 2a formazione in poi" delle altre sinergie (vedi docstring sopra),
     # altrimenti le In Season multiple userebbero la sinergia solo per la
     # PRIMA formazione in modo incoerente col resto.
-    if variance_mode and team_slug and apply_positive_synergy:
+    # GATE PROPRIO (01/08), stesso motivo della penalita' cross-team e del
+    # blocco GK+DEF: apply_positive_synergy spegne TRE meccanismi insieme ed e'
+    # spento sulle In Season per una ragione che riguarda solo il primo, quindi
+    # la sinergia same-team era inerte proprio dove serve. Misurata dentro
+    # formazioni da 5, top 10%: DEF+DEF 11.5% vs 10.0% (vale 4 pt), MID+MID e
+    # MID+FWD 10.9%/10.8% (2.5 pt). Valori coerenti con la tabella, che resta.
+    if variance_mode and team_slug:
         adjusted += _same_team_synergy_bonus(role, row, chosen_roles_by_team, synergy_bonus_dict)
     if (apply_stack_guard and team_slug and team_counts
             and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT
