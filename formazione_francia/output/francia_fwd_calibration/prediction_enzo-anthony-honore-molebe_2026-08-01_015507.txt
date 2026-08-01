@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:55:07.294411Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) enzo-anthony-honore-molebe: 45 pt attesi (34-63)
+   ORDINAMENTO: 41.20
+   SQUADRA: montpellier-montpellier | AVVERSARIO: N/D
+======================================================================
+
+######################################################################
+# GIOCATORE: enzo-anthony-honore-molebe
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: enzo-anthony-honore-molebe (squadra: montpellier-montpellier)
+Generato: 2026-08-01T01:55:07.294229Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 26
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-04 | MON vs TRO | ligue-2-fr | score=36.0 | peso=0.895
+  2026-04-10 | ANN vs MON | ligue-2-fr | score=38.7 | peso=0.920
+  2026-04-17 | MON vs GRE | ligue-2-fr | score=60.0 | peso=0.946
+  2026-04-24 | AMI vs MON | ligue-2-fr | score=43.0 | peso=0.973
+  2026-05-09 | RED vs MON | ligue-2-fr | score=30.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 41.62
+  di cui Punteggio decisivo (level_score) medio: 40.00 | Punteggio complessivo (granulari) medio: 1.62 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 1.62 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 10.06
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.6 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 2.90 (differenza: +7.16)
+Media score in casa: 48.00 | Media score fuori casa: 37.43
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 12.20% (fonte: tasso di presenza storico (5/41))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-11T19:00
+Casa: Olympique Lyonnais | Trasferta: AC Sparta Praha
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.6 (range 33.6 - 63.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.57
+Punteggio REALE ottenuto in quella partita: 30.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
