@@ -5994,3 +5994,53 @@ pooled a fine run.
 5. `audit_costanti_vive.py` va in `KeyError` fuori stagione (solo diagnostico).
 6. Velocita' Best Five multi-lega; GK/MID inline sulle altre 42 leghe (scelta);
    `MAX_HISTORY_DAYS=120` da non toccare senza l'utente.
+
+### 44.J — Retest venue sulle big5: il fattore casa/trasferta non fa nulla
+
+Backlog #1 del 31/07, rimasto aperto per mesi con la stessa motivazione
+("campione troppo piccolo": le big5 avevano 6-36 giocatori in cache). Dopo la
+calibrazione di stanotte i detail cache sono pieni — Italia 379 file,
+Inghilterra 388, Francia 309 — e la domanda si puo' finalmente porre.
+
+Strumento: `validate_venue_per_league.py`, walk-forward con la formula di
+produzione importata dai moduli veri, MAE con `compute_split_factor` ON
+contro OFF, breakdown per lega.
+
+| lega | DEF (giocatori) | MAE ON | MAE OFF | var. MAE |
+|---|---|---|---|---|
+| italia | 124 | 14.797 | 14.812 | -0.10% |
+| inghilterra | 116 | 14.951 | 14.962 | -0.07% |
+| francia | 100 | 15.583 | 15.587 | -0.03% |
+| spagna | 129 | 15.003 | 15.013 | -0.07% |
+| germania | 145 | 16.252 | 16.258 | -0.04% |
+| mls | 241 | 15.140 | 15.148 | -0.05% |
+
+Sugli altri ruoli, stesse leghe: GK e MID entro +/-0.11%, FWD entro +/-0.26%
+e con **segno incoerente** (su Italia, Spagna, Francia e Germania il venue
+risulta leggermente peggiorativo per il FWD, sul Belgio migliorativo dello
+0.26%). Le variazioni piu' vistose — giappone100 -0.89% GK, francia2 -1.07%
+FWD, danimarca +0.46% FWD — stanno tutte su 20-136 punti test: rumore.
+
+**Verdetto: nessuna azione.** L'effetto e' <= 0.1% di MAE su tutte le leghe
+con campione vero e cambia segno fra ruoli e campionati. Non vale ne'
+rimuovere il fattore (non costa nulla) ne' differenziarlo per lega, che era
+l'ipotesi che aveva aperto il backlog. Il punto chiude con una misura, non
+con l'ennesimo rinvio.
+
+Corretta anche un'etichetta sbagliata nello strumento: la colonna si chiamava
+"venue aiuta" ma stampava la variazione di MAE col segno opposto (un -0.10%
+significa che il venue **riduce** l'errore). Ora si chiama "var. MAE".
+
+**Cross-team x20 (backlog #4): strumento pronto, misura NON fatta.** Scritto
+`formazione_mls/diagnostics/ab_crossteam_threshold.py`, che porta alla
+penalita' cross-team lo stesso metodo che il 31/07 ha portato la sinergia
+same-team da x20 a x12: Monte Carlo su punteggi reali e probabilita' di
+superare la soglia invece del punteggio atteso. Unica differenza obbligata
+rispetto allo studio sulla sinergia — il campionamento raggruppa per
+**partita** (le due squadre che si sono affrontate in una data reale) e non
+per squadra: campionando per squadra la correlazione negativa fra avversari
+andrebbe persa e il test misurerebbe zero per costruzione. Smoke test
+superato; la run completa e' stata interrotta su richiesta dell'utente prima
+di produrre numeri leggibili (le soglie All Stars erano tarate troppo in
+basso e saturavano al 100%). **Nessun numero da questo strumento e' ancora
+utilizzabile.**
