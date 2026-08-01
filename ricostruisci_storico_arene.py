@@ -46,6 +46,22 @@ def giornate_concluse():
     return [x['slug'] for x in fuori]
 
 
+def _senza_duplicati(raccolta):
+    """Una sola riga per (giornata, arena): quella e' l'identita' di un ingresso.
+
+    Va applicata anche in SCRITTURA, non solo in lettura: ripassando giornate
+    gia' note (RIPROVA) si riaggiunge tutto, e deduplicando solo all'avvio
+    l'archivio raddoppia (598 -> 1271).
+    """
+    uniche = {}
+    for r in raccolta:
+        k = (r['fixture'], r['slug'])
+        if k not in uniche or (r.get('contender_slug')
+                               and not uniche[k].get('contender_slug')):
+            uniche[k] = r
+    return list(uniche.values())
+
+
 def main():
     fatte, raccolta = set(), []
     if os.path.exists(OUT):
@@ -69,12 +85,10 @@ def main():
         # archivio due volte, e i duplicati gonfiano i totali (75 righe su 673
         # la prima volta). Una sola riga per (giornata, arena): quella e'
         # l'identita' vera di un ingresso.
-        uniche = {}
-        for r in raccolta:
-            uniche[(r['fixture'], r['slug'])] = r
-        if len(uniche) != len(raccolta):
-            print(f'rimossi {len(raccolta) - len(uniche)} duplicati')
-        raccolta = list(uniche.values())
+        prima = len(raccolta)
+        raccolta = _senza_duplicati(raccolta)
+        if len(raccolta) != prima:
+            print(f'rimossi {prima - len(raccolta)} duplicati')
 
     io = os.environ.get('NICKNAME', 'Crowss').strip().lower()
     slugs = giornate_concluse()
@@ -125,7 +139,7 @@ def main():
             json.dump({'aggiornato': datetime.datetime.now(
                 datetime.timezone.utc).isoformat(),
                 'giornate_viste': sorted(fatte),
-                'arene': raccolta}, f, ensure_ascii=False, indent=1)
+                'arene': _senza_duplicati(raccolta)}, f, ensure_ascii=False, indent=1)
 
     print(f'\n{len(raccolta)} arene in archivio')
     if not raccolta:
