@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:15:44.525503Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ander-barrenetxea-muguruza: 48 pt attesi (38-57)
+   ORDINAMENTO: 48.25
+   SQUADRA: real-sociedad-donostia-san-sebastian | AVVERSARIO: real-betis-sevilla
+======================================================================
+
+######################################################################
+# GIOCATORE: ander-barrenetxea-muguruza
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ander-barrenetxea-muguruza (squadra: real-sociedad-donostia-san-sebastian)
+Generato: 2026-08-01T02:15:44.523150Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | VCF vs RSO | laliga-es | score=46.3 | peso=0.678
+  2025-08-24 | RSO vs ESP | laliga-es | score=79.2 | peso=0.697
+  2025-08-30 | OVI vs RSO | laliga-es | score=52.8 | peso=0.717
+  2025-09-13 | RSO vs RMA | laliga-es | score=59.0 | peso=0.737
+  2025-09-24 | RSO vs MLL | laliga-es | score=76.4 | peso=0.758
+  2025-09-28 | FCB vs RSO | laliga-es | score=60.0 | peso=0.779
+  2025-10-05 | RSO vs RAY | laliga-es | score=50.7 | peso=0.801
+  2025-10-19 | CEL vs RSO | laliga-es | score=35.4 | peso=0.824
+  2025-10-24 | RSO vs SEV | laliga-es | score=41.4 | peso=0.847
+  2026-03-07 | ATM vs RSO | laliga-es | score=40.5 | peso=0.871
+  2026-03-15 | RSO vs OSA | laliga-es | score=53.9 | peso=0.895
+  2026-03-20 | VIL vs RSO | laliga-es | score=54.7 | peso=0.920
+  2026-04-04 | RSO vs LEV | laliga-es | score=48.4 | peso=0.946
+  2026-05-04 | SEV vs RSO | laliga-es | score=27.5 | peso=0.973
+  2026-05-09 | RSO vs BET | laliga-es | score=43.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 50.43
+  di cui Punteggio decisivo (level_score) medio: 39.49 | Punteggio complessivo (granulari) medio: 10.94 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 7.28 (delta -0.83) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.17
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.5 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.96 (differenza: +3.21)
+Media score in casa: 56.59 | Media score fuori casa: 45.31
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.837
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore trend (media ultime 5: 45.6 vs media ultime 10: 45.6): 1.000
+P(gioca): 39.47% (fonte: tasso di presenza storico (15/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T19:00
+Casa: Real Betis | Trasferta: Real Sociedad
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.9 (range 37.9 - 57.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.02
+Punteggio REALE ottenuto in quella partita: 43.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.5    50.7     -5.8    11.2        SI
+   7        7      54.7    35.4    -19.3    11.2        NO
+   8        8      54.1    41.4    -12.7    14.0        SI
+   9        9      49.2    40.5     -8.7    13.9        SI
+  10       10      49.5    53.9     +4.4    13.6        SI
+  11       11      50.4    54.7     +4.3    12.5        SI
+  12       12      51.9    48.4     -3.5    11.6        SI
+  13       13      56.4    27.5    -28.9    10.9        NO
+  14       14      48.5    43.7     -4.8    13.1        SI
+
+MAE (errore assoluto medio): 10.27
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
