@@ -5868,3 +5868,34 @@ lo **scarica già** senza persisterlo — stesso schema del fix starterOdds del
 MLS e K League, **0 discrepanze**. Il bug morde solo in finestra mercato. Fix
 preparato ma NON applicato: tocca cosa si schiera, e la consegna era di
 preparare e non applicare.
+
+### 44.H — Il bug peggiore: la calibrazione DEF era rotta su 48 leghe
+
+Emerso perché le run `spagna/def`, `francia/def` e `inghilterra/def` sono
+finite **"success" con zero file prodotti**. Nel log:
+
+```
+TypeError: run_grid_search_prod_def() got an unexpected keyword argument 'presence_rate'
+```
+
+I **corpi** di `rigorous_backtest_prod_def` e `run_grid_search_prod_def`
+passavano già `presence_rate`, ma le **firme** non lo dichiaravano: una
+propagazione passata aveva aggiornato le chiamate e non le definizioni. Ogni
+giocatore usciva in eccezione, che lo script cattura per-giocatore e scrive in
+un `ERRORE_<slug>.txt` — quindi il processo termina con exit 0 e la run appare
+**verde**. Il tipo di guasto peggiore: quello che non si lamenta.
+
+Verificato in modo sistematico: **DEF rotto su 48 leghe su 50** (l'unica sana
+era MLS, K League inclusa fra le rotte). GK, MID e FWD non hanno il problema.
+
+Questo spiega da solo perché i dati DEF fossero ovunque scarsi o vecchi, e si
+somma alla griglia disallineata di §44.B: il DEF non era "non valutabile" per
+un motivo, ma per due indipendenti.
+
+Fix: due righe per file, `presence_rate=None` aggiunto alle due firme. È
+percorso di sola calibrazione, la produzione non cambia.
+
+**Lezione di metodo**: "run verde" non vuol dire "run riuscita". Sia questo bug
+sia quello di §44.D producevano job tutti verdi e zero dati. Da qui in avanti,
+dopo ogni run di calibrazione va confrontato il **numero di file prodotti**
+con la dimensione del pool, non lo stato del workflow.
