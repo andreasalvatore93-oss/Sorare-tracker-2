@@ -305,6 +305,69 @@ def _is_arena_type(tipo):
     return tipo in ('ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED') \
         or tipo in {arena_type(lg) for lg in ARENA_LEAGUES}
 
+
+# Punteggio atteso oltre il quale l'ingresso si ripaga, misurato su 673 arene
+# reali (consiglio_arena.py). Sotto questa riga si pagano piu' essenze di
+# quante se ne incassino, e le carte rendono di piu' in una competizione senza
+# costo d'ingresso (All Stars da 7, Under 23).
+#
+# Il valore dipende dal campo, non dall'utente: e' il punteggio al quale
+# l'incasso medio -- calcolato pescando i nove avversari da arene vere e i
+# premi da quelli davvero visti, arene gold incluse -- uguaglia il costo.
+PAREGGIO_ARENA = {
+    'ARENA_ALLSTARS_260': 282.9,
+    'ARENA_ALLSTARS_220': 265.0,
+    'ARENA_ALLSTARS_UNCAPPED': 305.5,
+}
+PAREGGIO_ARENA.update({arena_type(lg): 282.9 for lg in ARENA_LEAGUES})
+
+
+def _stampa_verdetto_arene(all_results):
+    """Per ogni arena generata: conviene pagare l'ingresso con questa formazione?
+
+    Non tocca la generazione, dice solo quali schierare. La scelta di quante
+    arene giocare resta all'utente: qui c'e' il numero su cui deciderla.
+    """
+    righe = []
+    for r in all_results:
+        if 'error' in r:
+            continue
+        soglia = PAREGGIO_ARENA.get(r['tipo'])
+        if soglia is None:
+            continue
+        atteso = sum(row['atteso'] for _, row, _ in r['formazione'])
+        righe.append((atteso - soglia, r['tipo'], atteso, soglia))
+    if not righe:
+        return
+
+    righe.sort(reverse=True)
+    conviene = sum(1 for m, _t, _a, _s in righe if m >= 0)
+    print(f"\n=== CONVIENE PAGARE L'INGRESSO? ({conviene} su {len(righe)} arene)")
+    print("Soglie misurate su 673 arene reali: sotto, l'ingresso costa piu' di")
+    print("quanto renda, e le carte valgono di piu' in una competizione gratuita.")
+    for margine, tipo, atteso, soglia in righe:
+        esito = 'SCHIERA' if margine >= 0 else 'LASCIA PERDERE'
+        print(f"  {LABELS.get(tipo, tipo):34s} atteso {atteso:6.1f} | "
+              f"pareggio {soglia:5.1f} | {margine:+6.1f} -> {esito}")
+    if conviene < len(righe):
+        print(f"  -> le {len(righe) - conviene} sotto soglia: meglio All Stars da 7 "
+              "o Under 23, che non costano essenze.")
+
+
+def verdetto_arena(tipo, atteso):
+    """(soglia, conviene) per una formazione arena, o (None, None) se non lo e'.
+
+    Misurato: applicare questa regola sullo storico dell'utente avrebbe portato
+    il saldo da +9.800 a +54.700 essenze. Regge anche a previsioni scarse --
+    con 60 punti di errore a formazione ne resta comunque il 53% -- perche' la
+    decisione e' binaria: non serve indovinare il punteggio, basta ordinare
+    meglio del caso.
+    """
+    soglia = PAREGGIO_ARENA.get(tipo)
+    if soglia is None:
+        return None, None
+    return soglia, atteso >= soglia
+
 # Flag Sorare u23Eligible per slug (28/07, richiesta esplicita utente: vive
 # sulla CARTA non sul giocatore, ma e' un flag di gioco -- non un calcolo
 # nostro su birthDay/eta', che l'utente ha esplicitamente scartato come
@@ -1265,6 +1328,8 @@ def main():
     print(f"\nFormazioni generate: {total_generated}/{num_totale}")
     if total_generated > 1:
         print(f"TOTALE COMPLESSIVO: {grand_total} pt")
+
+    _stampa_verdetto_arene(all_results)
 
     # FASE 2: rendering (28/07: pannello alternative/drag&drop RIMOSSO su
     # richiesta esplicita utente -- non serviva piu', bastano le formazioni).
