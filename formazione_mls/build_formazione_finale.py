@@ -174,6 +174,14 @@ FORMATION_SHAPES = {
 # ci sono alternative valide (richiesta esplicita dell'utente).
 ANTI_SYNERGY_PENALTY = 10_000  # abbastanza grande da finire sempre in fondo alla classifica di scelta
 POSITIVE_SYNERGY_BONUS = 3  # piccolo nudge, non ribalta differenze di punteggio importanti
+# Quanto punteggio atteso conviene sacrificare per accoppiare GK e DEF della
+# stessa squadra. Misurato DENTRO formazioni complete da 5 (non su coppie
+# isolate: gli altri tre slot smorzano la correlazione e dimezzano l'effetto):
+# 3.5 pt per il top 25%, 5 per il top 10% e per il top 5%.
+GK_DEF_PAIR_BONUS = float(os.environ.get('GK_DEF_PAIR_BONUS', '5'))
+# Secondo difensore della stessa squadra del portiere: l'effetto cresce
+# (top 10%: 14.9% con due contro 11.8% con uno), quindi il bonus resta pieno.
+GK_DEF_PAIR_BONUS_2 = float(os.environ.get('GK_DEF_PAIR_BONUS_2', '5'))
 
 # Bonus anti-stack Sorare (26/07, scoperto dall'utente per In Season, CONFERMATO
 # valido anche per All Stars il 26/07 sera -- stessa soglia, non scalata a 7
@@ -546,8 +554,21 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     if apply_positive_synergy:
         if role in ('MID', 'FWD') and gk_opponent_slug and team_slug == gk_opponent_slug:
             adjusted -= ANTI_SYNERGY_PENALTY
-        elif role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
-            adjusted += POSITIVE_SYNERGY_BONUS
+    # BLOCCO DIFENSIVO GK+DEF con gate PROPRIO (01/08). Prima stava dentro
+    # apply_positive_synergy, spento sulle In Season: era percio' inerte
+    # proprio dove serve. La correlazione same-team GK-DEF e' +0.341, la piu'
+    # forte di tutte (condividono la porta inviolata): quando il portiere fa
+    # piu' di 55, il suo difensore fa in media 60.6 contro 47.5 -- tredici
+    # punti di differenza sullo stesso giocatore.
+    # Misurato DENTRO formazioni da 5 (le coppie isolate sovrastimano):
+    #   GK+1DEF  top10% 11.8% vs 10.0%  -> vale 5 pt di sacrificio
+    #   GK+2DEF  top10% 14.9% vs 10.0%  -> l'effetto cresce, non satura
+    # In mediana danneggia, ma il bersaglio e' sempre la coda alta per scelta
+    # esplicita dell'utente: un premio basso mancato costa poco, quello alto
+    # costa tutto.
+    if role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
+        gia_presi = (chosen_roles_by_team or {}).get(gk_team_slug, {}).get('DEF', 0)
+        adjusted += GK_DEF_PAIR_BONUS if gia_presi == 0 else GK_DEF_PAIR_BONUS_2
     # PENALITA' CROSS-TEAM SCORPORATA dal gate (31/07, bug reale trovato
     # dall'utente su una formazione In Season MLS reale: Markanich (DEF,
     # Minnesota) schierato INSIEME a Dreyer e Tverskov (MID, San Diego), cioe'

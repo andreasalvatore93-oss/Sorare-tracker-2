@@ -62,39 +62,49 @@ def carica():
 
 def main():
     dati = carica()
-    coppie = [(v['gk'][0][1], v['def'][0][1])
-              for v in dati.values() if v.get('gk') and v.get('def')]
-    if len(coppie) < 100:
-        print(f'coppie utilizzabili: {len(coppie)} -- troppo poche')
+    coppie, gk_soli, altri = [], [], []
+    for v in dati.values():
+        if v.get('gk') and v.get('def'):
+            coppie.append((v['gk'][0][1], v['def'][0][1]))
+        if v.get('gk'):
+            gk_soli.append(v['gk'][0][1])
+        for r in ('def',):
+            for _s, sc in v.get(r, []):
+                altri.append(sc)
+    if len(coppie) < 100 or len(altri) < 100:
+        print('dati insufficienti')
         return
-    gk_tutti = [g for g, _d in coppie]
-    def_tutti = [d for _g, d in coppie]
-    print(f'coppie GK+DEF stessa squadra: {len(coppie)}')
-    print(f'  media GK {statistics.mean(gk_tutti):.1f} | media DEF {statistics.mean(def_tutti):.1f}')
+    print(f'coppie GK+DEF stessa squadra: {len(coppie)} | GK {len(gk_soli)} | DEF {len(altri)}')
 
     random.seed(11)
-    insieme = [g + d for g, d in (random.choice(coppie) for _ in range(N_TRIALS))]
-    separati = [random.choice(gk_tutti) + random.choice(def_tutti) for _ in range(N_TRIALS)]
+    # Formazione da 5: GK + DEF + 3 altri. Nella variante ACCOPPIATA il GK e il
+    # primo DEF vengono dalla STESSA squadra-partita; negli altri casi tutti da
+    # partite diverse. Gli altri 3 slot sono identici fra le due varianti, cosi'
+    # l'unica differenza e' l'accoppiamento.
+    acc, sep = [], []
+    for _ in range(N_TRIALS):
+        resto = sum(random.choice(altri) for _ in range(3))
+        g, d = random.choice(coppie)
+        acc.append(g + d + resto)
+        sep.append(random.choice(gk_soli) + random.choice(altri) + resto)
 
-    m_i, m_s = statistics.mean(insieme), statistics.mean(separati)
-    sd_i, sd_s = statistics.pstdev(insieme), statistics.pstdev(separati)
-    print(f'\n  accoppiati  media {m_i:6.1f}  dev.std {sd_i:5.1f}')
-    print(f'  separati    media {m_s:6.1f}  dev.std {sd_s:5.1f}')
+    m_a, m_s = statistics.mean(acc), statistics.mean(sep)
+    print(f'\n  accoppiati  media {m_a:6.1f}  dev.std {statistics.pstdev(acc):5.1f}')
+    print(f'  separati    media {m_s:6.1f}  dev.std {statistics.pstdev(sep):5.1f}')
 
-    rif = sorted(separati)
+    rif = sorted(sep)
     print()
     for q in (0.5, 0.75, 0.9, 0.95):
         soglia = rif[int(q * len(rif)) - 1]
-        pi = sum(1 for x in insieme if x > soglia) / len(insieme) * 100
-        ps = sum(1 for x in separati if x > soglia) / len(separati) * 100
-        # quanto punteggio atteso si puo' sacrificare restando in pari
+        pa = sum(1 for x in acc if x > soglia) / len(acc) * 100
+        ps = sum(1 for x in sep if x > soglia) / len(sep) * 100
         margine = 0.0
         while margine < 20:
-            p = sum(1 for x in insieme if x - margine > soglia) / len(insieme) * 100
+            p = sum(1 for x in acc if x - margine > soglia) / len(acc) * 100
             if p < ps:
                 break
             margine += 0.5
-        print(f'  soglia {soglia:6.1f} (top {100-q*100:.0f}%): accoppiati {pi:5.1f}% '
+        print(f'  soglia {soglia:6.1f} (top {100-q*100:.0f}%): accoppiati {pa:5.1f}% '
               f'vs separati {ps:5.1f}%   sacrificio sostenibile {margine:.1f} pt')
 
 
