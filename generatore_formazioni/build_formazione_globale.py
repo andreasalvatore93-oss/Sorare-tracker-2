@@ -315,12 +315,12 @@ def _is_arena_type(tipo):
 # l'incasso medio -- calcolato pescando i nove avversari da arene vere e i
 # premi da quelli davvero visti, arene gold incluse -- uguaglia il costo.
 PAREGGIO_ARENA = {
-    'ARENA_ALLSTARS_260': 282.9,
-    'ARENA_ALLSTARS_220': 265.0,
-    'ARENA_ALLSTARS_UNCAPPED': 305.5,
+    'ARENA_ALLSTARS_260': 274.1,
+    'ARENA_ALLSTARS_220': 245.7,
+    'ARENA_ALLSTARS_UNCAPPED': 306.5,
+    'ARENA_ALLSTARS_ELITE': 380.5,
 }
-PAREGGIO_ARENA.update({arena_type(lg): 282.9 for lg in ARENA_LEAGUES})
-
+PAREGGIO_ARENA.update({arena_type(lg): 274.1 for lg in ARENA_LEAGUES})
 
 def _stampa_verdetto_arene(all_results):
     """Per ogni arena generata: conviene pagare l'ingresso con questa formazione?
@@ -425,10 +425,10 @@ def _verdetto_arene_html(all_results):
 # probabilita' di finire nei primi tre. In cap 260 un solo punto vale 29
 # essenze, quindi anche un margine di mezzo punto NON e' zero (vale 14).
 GUADAGNO_PER_PUNTO = {
-    'ARENA_ALLSTARS_260': 29.0, 'ARENA_ALLSTARS_220': 20.0,
-    'ARENA_ALLSTARS_UNCAPPED': 22.0, 'ARENA_ALLSTARS_ELITE': 55.0,
+    'ARENA_ALLSTARS_260': 5.1, 'ARENA_ALLSTARS_220': 5.2,
+    'ARENA_ALLSTARS_UNCAPPED': 5.1, 'ARENA_ALLSTARS_ELITE': 7.1,
 }
-GUADAGNO_PER_PUNTO.update({arena_type(lg): 29.0 for lg in ARENA_LEAGUES})
+GUADAGNO_PER_PUNTO.update({arena_type(lg): 5.1 for lg in ARENA_LEAGUES})
 
 COSTO_INGRESSO = {
     'ARENA_ALLSTARS_260': 300, 'ARENA_ALLSTARS_220': 200,
