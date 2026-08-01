@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
-Generato: 2026-07-30T12:12:48.813830Z
-Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+Generato: 2026-08-01T07:20:47.770843Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) facundo-daniel-torres-perez: 55 pt attesi (37-72)
-   ORDINAMENTO: 59.20
+1) facundo-daniel-torres-perez: 56 pt attesi (38-73)
+   ORDINAMENTO: 57.78
    SQUADRA: austin-austin-texas | AVVERSARIO: colorado-rapids-denver-colorado
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: facundo-daniel-torres-perez (squadra: austin-austin-texas)
-Generato: 2026-07-30T12:12:48.808284Z
+Generato: 2026-08-01T07:20:47.768399Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -50,21 +50,21 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 60.68
   Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=23): 59.44 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
-  di cui Punteggio decisivo (level_score) medio: 44.92 | Punteggio complessivo (granulari) medio: 15.77 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  di cui Punteggio decisivo (level_score) medio: 44.92 | Punteggio complessivo (granulari) medio: 15.77 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Passaggio condizionato per venue: 8.52 (delta -0.05) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
 Deviazione standard pesata: 14.91
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.6 - 77.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.81 (differenza: +1.10)
 Media score in casa: 59.07 | Media score fuori casa: 58.55
-Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 7.8
 Ranking prossimo avversario: 13
 Fattore forza avversario applicato: 1.181
-Fattore falli (casa/trasferta, da dati reali): 0.987
-Fattore duelli (casa/trasferta, da dati reali): 0.998
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.991
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
 Fattore trend (media ultime 5: 50.0 vs media ultime 10: 58.1): 0.958
 P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
@@ -76,8 +76,8 @@ Competizione: mlspa
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 55.0 (range 36.9 - 71.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 59.2
+Score atteso: 56.4 (range 38.3 - 73.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 57.8
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 61.51
@@ -86,34 +86,34 @@ Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/av
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DEL MODELLO (fissati, 25/07) ---
-half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.3
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
 Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
-Combinazione usata: 'hl=15.0+range=1.2x+opp_sens=29.0+trend_int=0.0' (half_life=15.0, range_mult=1.2, opp_sens=29.0, trend_int=0.0)
+Combinazione usata: 'hl=9.0+trend_int=1.3+range=1.0x' (half_life=9.0, range_mult=1.0, opp_sens=None, trend_int=1.3)
 Partite testate: 17 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      68.4    68.0     -0.4    20.1        SI
-   7        7      68.3    74.6     +6.3    18.4        SI
-   8        8      69.6    58.5    -11.1    17.2        SI
-   9        9      60.8    40.4    -20.4    16.6        NO
-  10       10      55.0    76.3    +21.3    18.9        NO
-  11       11      54.2    56.6     +2.4    18.4        SI
-  12       12      75.2    53.9    -21.3    17.7        NO
-  13       13      75.0    83.7     +8.7    17.3        SI
-  14       14      55.5    37.7    -17.8    17.9        SI
-  15       15      58.0    77.5    +19.5    19.6        SI
-  16       16      64.2    60.9     -3.3    19.3        SI
-  17       17      68.9    70.8     +1.9    18.5        SI
-  18       18      75.9    48.7    -27.2    17.9        NO
-  19       19      79.0    40.2    -38.8    17.9        NO
-  20       20      59.5    63.5     +4.0    18.7        SI
-  21       21      61.2    50.4    -10.8    18.1        SI
-  22       22      54.7    47.3     -7.4    17.8        SI
+   6        6      58.8    68.0     +9.2    16.6        SI
+   7        7      58.8    74.6    +15.8    15.1        NO
+   8        8      63.2    58.5     -4.7    14.0        SI
+   9        9      63.2    40.4    -22.8    13.5        NO
+  10       10      62.9    76.3    +13.4    15.7        SI
+  11       11      54.8    56.6     +1.8    15.2        SI
+  12       12      60.8    53.9     -6.9    14.5        SI
+  13       13      59.3    83.7    +24.4    14.1        NO
+  14       14      56.8    37.7    -19.1    14.8        NO
+  15       15      61.8    77.5    +15.7    16.4        SI
+  16       16      60.6    60.9     +0.3    16.2        SI
+  17       17      60.0    70.8    +10.8    15.4        SI
+  18       18      57.7    48.7     -9.0    14.7        SI
+  19       19      61.3    40.2    -21.1    14.8        NO
+  20       20      54.4    63.5     +9.1    15.5        SI
+  21       21      57.7    50.4     -7.3    14.8        SI
+  22       22      56.3    47.3     -9.0    14.5        SI
 
-MAE (errore assoluto medio): 13.09
+MAE (errore assoluto medio): 11.80
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.6%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
