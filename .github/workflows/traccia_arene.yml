@@ -40,9 +40,9 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
         run: |
-          printf '%s\n' "${{ github.event.inputs.slugs }}" | tr ',' '\n' | sed 's/^ *//;s/ *$//' > /tmp/slugs.txt
-          wc -l < /tmp/slugs.txt
-          SLUGS_FILE=/tmp/slugs.txt python traccia_arene.py
+          FIXTURES="${{ github.event.inputs.fixtures }}" \
+          NICKNAME="${{ github.event.inputs.nickname }}" \
+          python traccia_arene.py
 
       - name: Commit risultati
         run: |
