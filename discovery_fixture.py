@@ -476,6 +476,7 @@ def main():
         visti = set()
         u23_di = {}
         power_di = {}
+        club_di = {}  # slug -> club attuale (activeClub), vedi sotto
         # Copie reali possedute per slug (28/07 sera, bug reale trovato
         # dall'utente: prima si assumeva SEMPRE 1 copia in_season a
         # prescindere, quindi un giocatore con 2+ copie (es. Messi, comprato
@@ -535,6 +536,12 @@ def main():
                     continue
                 visti.add((p['slug'], (club.get('domesticLeague') or {}).get('slug'),
                            p.get('displayName') or ''))
+                # Club ATTUALE secondo Sorare (01/08). Dato gia' in mano qui,
+                # nessuna query in piu'. A valle la squadra viene dedotta dalle
+                # ultime partite giocate, che sbaglia su chi si e' appena
+                # trasferito e non ha ancora esordito.
+                if club.get('slug'):
+                    club_di[p['slug']] = club['slug']
                 if h.get('inSeasonEligible'):
                     copie_di[p['slug']]['in_season'] += 1
                 else:
@@ -660,6 +667,8 @@ def main():
                 entry['u23'] = True
             if power_di.get(slug):
                 entry['power'] = power_di[slug]
+            if club_di.get(slug):
+                entry['club'] = club_di[slug]
             counts_per_lega_ruolo[dirname][role][slug] = entry
 
     log(f"\nGiocatori eleggibili esaminati: {tot_carte} | esclusi: "
