@@ -52,6 +52,8 @@ import importlib  # noqa: E402
 
 N_TRIALS = int(os.environ.get('N_TRIALS', '100000'))
 QUANTE = int(os.environ.get('QUANTE', '6'))
+_s = os.environ.get('SCALA')
+SCALA = float(_s) if _s else None
 CAPTAIN_BONUS = 0.5
 random.seed(20260731)
 
@@ -112,6 +114,12 @@ def genera(tipo, penalita_attiva):
     if not penalita_attiva:
         # Esattamente com'era prima del fix: penalita' inerte.
         b._cross_team_penalty = lambda role, row, chosen: 0
+    elif SCALA is not None:
+        # SCALA=N riscala la tabella come se la convenzione fosse xN invece di
+        # x20 (01/08): serve a misurare il moltiplicatore, mai verificato.
+        _orig = b._cross_team_penalty
+        _f = SCALA / 20.0
+        b._cross_team_penalty = lambda role, row, chosen: _orig(role, row, chosen) * _f
 
     role_data, role_counts, names = g.load_league_role_data()
     role_data = g.filter_by_window(role_data)
