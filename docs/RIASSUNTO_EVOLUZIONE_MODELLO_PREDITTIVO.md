@@ -5806,5 +5806,65 @@ Chiusi: #1 (discovery_global big5), #3 (griglia disallineata).
    urgente: senza discovery_global lì non c'è campione da calibrare.
 4. Scaling cross-team ×20 mai misurato (§43.D); sinergia ×12 da confermare su
    più giornate (§42.D.1); segnale "crescita" su gruppi ancora piccoli.
-5. Velocità Best Five multi-lega; circuit breaker su mls/kleague soltanto;
-   `resto_mondo` inerte; link Sorare classic/in season; `MAX_HISTORY_DAYS=120`.
+5. Velocità Best Five multi-lega; `resto_mondo` inerte; link Sorare
+   classic/in season; `MAX_HISTORY_DAYS=120`.
+
+**Chiuso in extremis**: il circuit breaker CloudFront non era piu' un
+backlog — segnalato dall'utente e verificato: c'e' su **50 leghe su 50** e
+tutti e 4 i ruoli, cablato (marker per lega+ruolo). Era rimasto in lista
+per inerzia.
+
+### 44.G — Lavoro in attesa della calibrazione (notte 01/08)
+
+**`resto_mondo` è morto, confermato.** 0 giocatori in tutte e 4 le discovery
+(ferme al 27/07), nessuna lega ci punta in `LEAGUE_DIR`, non compare in nessun
+workflow, e le uniche referenze esterne sono 3 diagnostici MLS che lo
+**escludono**. Non è solo inerte: riceve tutte le propagazioni di massa e
+gonfia i conteggi "50 leghe". Nessuna modifica fatta (richiesta utente: solo
+verifica); da proporre la rimozione.
+
+**SportsGambler K League: automatizzabile, con un vincolo.** Le formazioni non
+sono nell'HTML, arrivano da `/lineups/lineups-load2.php?id=N` con gli id presi
+dalla pagina indice. Vincolo: **le partite future non hanno id** finché la
+formazione non esce, quindi il controllo va lanciato vicino al calcio d'inizio.
+Le passate hanno l'XI confermato, ed è quello che rende possibile la cosa più
+utile — un **test nuovo**: quante volte i consigliati sono davvero partiti
+titolari. Sulla giornata del 26/07 (4 partite, 8 squadre):
+
+| | GK | DEF | MID | FWD | totale |
+|---|---|---|---|---|---|
+| primi 5 per ruolo | 3/3 | 3/4 | 4/4 | 2/4 | **12/15 (80%)** |
+| tutti i consigliati | 8/11 | 21/34 | 14/19 | 10/22 | 53/86 (62%) |
+
+Campione minuscolo (15 casi sul taglio che conta), ma il FWD è il ruolo più
+debole in entrambe le letture. Tool: `kleague_lineup_check.py` (`--retro`
+per la verifica a posteriori, `--top=N` per il taglio).
+
+Trappola metodologica trovata strada facendo: unendo le partite di più giornate
+per nome squadra, di ogni squadra resta l'XI dell'**ultima** partita e il
+confronto non è più con la giornata giusta. Il tool ora filtra per data.
+
+**Contaminazione cross-lega: 11 file residui.** Scansione di tutti i 3.348
+`consiglio_*.txt`: file di austria (3), croazia (5) e kleague (4 -- con dentro
+squadre MLS) contengono giocatori di altre leghe. Tutti **antecedenti** al fix
+delle 14:42 del 31/07 (`75feb317f7`), quindi residui e non un bug vivo; nessuno
+è il file più recente della sua cartella, quindi la produzione non li legge. Ma
+la pulizia del 31/07 aveva concluso "solo scozia/gk risultava inquinato": era
+incompleta.
+
+**Bug reale ma raro — la squadra del giocatore è dedotta dalle partite, non da
+Sorare.** Il consiglio polonia/fwd del 28/07 dava Sayyadmanesh a Westerlo e
+Walemark a Heerenveen. Verificato in diretta sull'API: sono entrambi al **Lech
+Poznań**, e la discovery aveva ragione a metterli in Polonia — sbagliava il
+consiglio. Causa: `player_team_slug` esce dalla maggioranza delle **ultime 5
+partite giocate**, quindi un giocatore appena trasferito che non ha ancora
+esordito resta attribuito al club vecchio, con casa/trasferta, avversario e
+sinergie calcolati sulla squadra sbagliata (in quel file infatti
+`AVVERSARIO: N/D`).
+
+Sorare espone `activeClub.slug`, che è il dato giusto, e `discovery_fixture.py`
+lo **scarica già** senza persisterlo — stesso schema del fix starterOdds del
+31/07, zero query in più. **Misurata l'incidenza oggi**: su 157 consigliati di
+MLS e K League, **0 discrepanze**. Il bug morde solo in finestra mercato. Fix
+preparato ma NON applicato: tocca cosa si schiera, e la consegna era di
+preparare e non applicare.
