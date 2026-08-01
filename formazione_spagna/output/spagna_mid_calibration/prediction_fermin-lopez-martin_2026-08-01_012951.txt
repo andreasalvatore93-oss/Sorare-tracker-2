@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:29:51.445331Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) fermin-lopez-martin: 55 pt attesi (33-91)
+   SQUADRA: barcelona-barcelona | AVVERSARIO: elche-elche
+======================================================================
+
+######################################################################
+# GIOCATORE: fermin-lopez-martin
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: fermin-lopez-martin (squadra: barcelona-barcelona)
+Generato: 2026-08-01T01:29:51.442988Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | FCB vs VCF | laliga-es | score=100.0 | peso=0.660
+  2025-10-26 | RMA vs FCB | laliga-es | score=63.8 | peso=0.678
+  2025-11-02 | FCB vs ELC | laliga-es | score=77.1 | peso=0.697
+  2025-11-09 | CEL vs FCB | laliga-es | score=51.3 | peso=0.717
+  2025-11-22 | FCB vs ATH | laliga-es | score=75.8 | peso=0.737
+  2025-12-21 | VIL vs FCB | laliga-es | score=50.2 | peso=0.758
+  2026-01-18 | RSO vs FCB | laliga-es | score=38.9 | peso=0.779
+  2026-01-31 | ELC vs FCB | laliga-es | score=45.8 | peso=0.801
+  2026-02-07 | FCB vs MLL | laliga-es | score=100.0 | peso=0.824
+  2026-02-16 | GIR vs FCB | laliga-es | score=35.6 | peso=0.847
+  2026-02-28 | FCB vs VIL | laliga-es | score=97.4 | peso=0.871
+  2026-03-22 | FCB vs RAY | laliga-es | score=40.6 | peso=0.895
+  2026-04-11 | FCB vs ESP | laliga-es | score=51.7 | peso=0.920
+  2026-04-25 | GET vs FCB | laliga-es | score=67.4 | peso=0.946
+  2026-05-02 | OSA vs FCB | laliga-es | score=65.4 | peso=0.973
+  2026-05-10 | FCB vs RMA | laliga-es | score=37.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 61.60
+  di cui Punteggio decisivo (level_score) medio: 48.88 | Punteggio complessivo (granulari) medio: 12.72 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 46.49 (delta -2.40)
+  Efficacia offensiva condizionata: delta venue -0.50, delta avversario +0.11 | Passaggio condizionato: delta venue -0.31, delta avversario -0.38 | Gol subiti condizionato: delta venue -0.51, delta avversario +0.19 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 21.52
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.9 - 97.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.75 (differenza: +1.77)
+Media score in casa: 72.55 | Media score fuori casa: 52.30
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.179
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 0.992
+Fattore trend (media ultime 5: 52.6 vs media ultime 10: 58.1): 0.981
+P(gioca): 42.11% (fonte: tasso di presenza storico (16/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T19:30
+Casa: Elche CF | Trasferta: FC Barcelona
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.4 (range 32.7 - 91.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 63.57
+Punteggio REALE ottenuto in quella partita: 37.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -25.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=9.0+trend_int=0.0+range=1.1x' (half_life=9.0, range_mult=1.1, opp_sens=None, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.4    38.9    -18.5    18.3        NO
+   7        7      55.5    45.8     -9.7    20.7        SI
+   8        8      56.7   100.0    +43.3    20.2        NO
+   9        9      57.0    35.6    -21.4    24.3        SI
+  10       10      60.4    97.4    +37.0    25.3        NO
+  11       11      65.0    40.6    -24.4    27.0        SI
+  12       12      62.0    51.7    -10.3    27.0        SI
+  13       13      56.2    67.4    +11.2    25.7        SI
+  14       14      56.4    65.4     +9.0    24.3        SI
+  15       15      60.7    37.8    -22.9    22.9        SI
+
+MAE (errore assoluto medio): 20.78
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
