@@ -1,7 +1,7 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-07-30T12:41:33.167355Z
-Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+Generato: 2026-08-01T01:47:34.568178Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 1) ritsu-doan: 43 pt attesi (31-58)
    SQUADRA: eintracht-frankfurt-frankfurt-am-main | AVVERSARIO: union-berlin-berlin
@@ -13,7 +13,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: ritsu-doan (squadra: eintracht-frankfurt-frankfurt-am-main)
-Generato: 2026-07-30T12:41:33.161841Z
+Generato: 2026-08-01T01:47:34.565588Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -53,24 +53,24 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 45.02
-  di cui Punteggio decisivo (level_score) medio: 40.40 | Punteggio complessivo (granulari) medio: 4.63 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  di cui Punteggio decisivo (level_score) medio: 40.40 | Punteggio complessivo (granulari) medio: 4.63 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per venue: 42.06 (delta +1.66)
   Efficacia offensiva condizionata: delta venue -0.76, delta avversario -0.21 | Passaggio condizionato: delta venue -1.04, delta avversario -0.73 | Gol subiti condizionato: delta venue -0.41, delta avversario -0.27 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 16.30
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.7 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.03 (differenza: +2.27)
 Media score in casa: 47.16 | Media score fuori casa: 45.74
-Fattore casa/trasferta applicato: 1.009 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 1.005 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 9.3
 Ranking prossimo avversario: 11
 Fattore forza avversario applicato: 1.059
-Fattore falli (casa/trasferta, da dati reali): 0.995
-Fattore duelli (casa/trasferta, da dati reali): 0.990
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.984
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.993
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
 Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
-Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore gol subiti (goals_conceded, con cap): 0.997
 Fattore trend (media ultime 5: 38.4 vs media ultime 10: 39.4): 0.995
 P(gioca): 82.35% (fonte: tasso di presenza storico (28/34))
 
@@ -82,7 +82,7 @@ Competizione: bundesliga-de
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 43.3 (range 31.0 - 58.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 43.4 (range 31.1 - 58.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 45.45
@@ -91,40 +91,40 @@ Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/av
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
-half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
 Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
-Combinazione usata: 'hl=6.0+range=1.2x+opp_sens=20.0+trend_int=0.3+granulari' (half_life=6.0, range_mult=1.2, opp_sens=20.0, trend_int=0.3)
+Combinazione usata: 'hl=6.0+trend_int=0.2+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.2)
 Partite testate: 22 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      50.6    36.8    -13.8    31.4        SI
-   7        7      73.0    39.4    -33.6    29.2        NO
-   8        8      67.4    42.8    -24.6    26.9        SI
-   9        9      45.7    85.8    +40.1    24.6        NO
-  10       10      60.7    60.0     -0.7    28.3        SI
-  11       11      69.2    50.6    -18.6    26.2        SI
-  12       12      33.2    29.2     -4.0    24.3        SI
-  13       13      49.3    65.2    +15.9    24.7        SI
-  14       14      60.4    30.8    -29.6    23.8        NO
-  15       15      29.5    39.1     +9.6    23.8        SI
-  16       16      32.0    60.0    +28.0    22.6        NO
-  17       17      59.2    36.0    -23.2    21.6        NO
-  18       18      36.7    37.9     +1.2    21.0        SI
-  19       19      37.4    41.2     +3.8    20.0        SI
-  20       20      47.5    35.5    -12.0    18.9        SI
-  21       21      51.8    58.9     +7.1    18.2        SI
-  22       22      25.2    28.2     +3.0    17.9        SI
-  23       23      62.9    42.0    -20.9    18.3        NO
-  24       24      43.2    39.1     -4.1    17.2        SI
-  25       25      54.9    41.0    -13.9    16.3        SI
-  26       26      25.4    32.7     +7.3    15.4        SI
-  27       27      31.2    37.0     +5.8    15.0        SI
+   6        6      56.4    36.8    -19.6    26.2        SI
+   7        7      52.2    39.4    -12.8    24.3        SI
+   8        8      52.7    42.8     -9.9    22.4        SI
+   9        9      49.4    85.8    +36.4    20.5        NO
+  10       10      54.3    60.0     +5.7    23.5        SI
+  11       11      54.5    50.6     -3.9    21.8        SI
+  12       12      54.4    29.2    -25.2    20.2        NO
+  13       13      54.3    65.2    +10.9    20.6        SI
+  14       14      50.8    30.8    -20.0    19.8        NO
+  15       15      52.1    39.1    -13.0    19.8        SI
+  16       16      48.0    60.0    +12.0    18.8        SI
+  17       17      48.3    36.0    -12.3    18.0        SI
+  18       18      50.2    37.9    -12.3    17.5        SI
+  19       19      49.1    41.2     -7.9    16.7        SI
+  20       20      45.8    35.5    -10.3    15.7        SI
+  21       21      47.7    58.9    +11.2    15.2        SI
+  22       22      46.7    28.2    -18.5    15.0        NO
+  23       23      49.0    42.0     -7.0    15.2        SI
+  24       24      43.8    39.1     -4.7    14.3        SI
+  25       25      47.4    41.0     -6.4    13.6        SI
+  26       26      43.8    32.7    -11.1    12.8        SI
+  27       27      48.0    37.0    -11.0    12.5        SI
 
-MAE (errore assoluto medio): 14.59
-% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 72.7%
+MAE (errore assoluto medio): 12.82
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 81.8%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
 
