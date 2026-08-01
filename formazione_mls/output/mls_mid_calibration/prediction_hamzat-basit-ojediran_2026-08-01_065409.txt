@@ -1,9 +1,9 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-07-30T12:20:39.382823Z
-Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
+Generato: 2026-08-01T06:54:09.936863Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) hamzat-basit-ojediran: 44 pt attesi (38-54)
+1) hamzat-basit-ojediran: 46 pt attesi (40-56)
    SQUADRA: colorado-rapids-denver-colorado | AVVERSARIO: austin-austin-texas
 ======================================================================
 
@@ -13,7 +13,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.4, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: hamzat-basit-ojediran (squadra: colorado-rapids-denver-colorado)
-Generato: 2026-07-30T12:20:39.377898Z
+Generato: 2026-08-01T06:54:09.934606Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -36,24 +36,24 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 44.52
-  di cui Punteggio decisivo (level_score) medio: 36.97 | Punteggio complessivo (granulari) medio: 7.55 (Stadio A, solo diagnostico -- non applicato a score_atteso)
+  di cui Punteggio decisivo (level_score) medio: 36.97 | Punteggio complessivo (granulari) medio: 7.55 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per venue: 38.47 (delta +1.50)
   Efficacia offensiva condizionata: delta venue +0.13, delta avversario +0.12 | Passaggio condizionato: delta venue -0.67, delta avversario -0.63 | Gol subiti condizionato: delta venue +0.54, delta avversario +0.38 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 11.99
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.4 - 54.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.84 (differenza: +5.15)
 Media score in casa: 47.02 | Media score fuori casa: 43.63
-Fattore casa/trasferta applicato: 1.014 (CASA nella prossima partita)
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 6.8
 Ranking prossimo avversario: 14
 Fattore forza avversario applicato: 1.248
-Fattore falli (casa/trasferta, da dati reali): 0.991
-Fattore duelli (casa/trasferta, da dati reali): 0.997
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.986
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.986
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
-Fattore gol subiti (goals_conceded, con cap): 1.013
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 1.005
 Fattore trend (media ultime 5: 41.4 vs media ultime 10: 42.2): 0.996
 P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
@@ -65,7 +65,7 @@ Competizione: mlspa
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 44.3 (range 38.2 - 54.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 45.7 (range 39.6 - 55.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 45.16
@@ -74,23 +74,23 @@ Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/av
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
-half_life=25.0, range_mult=1.4, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
 Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
-Combinazione usata: 'hl=12.0+range=1.2x+opp_sens=29.0+trend_int=1.3+granulari' (half_life=12.0, range_mult=1.2, opp_sens=29.0, trend_int=1.3)
+Combinazione usata: 'hl=12.0+trend_int=1.3+range=1.0x' (half_life=12.0, range_mult=1.0, opp_sens=None, trend_int=1.3)
 Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      35.9    22.0    -13.9    13.8        NO
-   7        7      39.5    52.2    +12.7    16.9        SI
-   8        8      45.7    39.1     -6.6    16.1        SI
-   9        9      39.3    54.6    +15.3    15.0        NO
-  10       10      47.6    39.0     -8.6    14.7        SI
+   6        6      46.4    22.0    -24.4    11.5        NO
+   7        7      44.6    52.2     +7.6    14.1        SI
+   8        8      45.4    39.1     -6.3    13.4        SI
+   9        9      44.1    54.6    +10.5    12.5        SI
+  10       10      43.7    39.0     -4.7    12.3        SI
 
-MAE (errore assoluto medio): 11.42
-% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+MAE (errore assoluto medio): 10.70
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
 
