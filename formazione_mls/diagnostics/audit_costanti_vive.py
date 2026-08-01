@@ -90,7 +90,12 @@ def firma(tipo, count, leghe):
     """Genera e ritorna una firma confrontabile: per ogni formazione, gli
     slug per slot piu' il capitano scelto."""
     role_data, merged, names = carica(leghe)
-    pools = g.build_quality_pools(role_data)
+    # Costruzione difensiva (01/08): g.build_quality_pools itera su g.LEAGUES e
+    # va in KeyError se role_data non ha quella lega -- succede fuori stagione e
+    # quando ONLY_LEAGUES restringe il set. Qui si parte da role_data.
+    pools = {lg: {ruolo: g._NoFilterPool(ruolo, lg, roles.get(ruolo, []))
+                  for ruolo in g.ROLES}
+             for lg, roles in role_data.items()}
     card_pool = g.bff.CardPool(merged, names=names)
     risultati = g.generate_lineups_for_type(tipo, count, role_data, pools, card_pool)
     out = []
