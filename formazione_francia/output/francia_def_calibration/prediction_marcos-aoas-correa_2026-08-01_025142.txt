@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T02:51:42.596574Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) marcos-aoas-correa: 54 pt attesi (39-69)
+   ORDINAMENTO: 59.54
+   SQUADRA: psg-paris | AVVERSARIO: rennes-rennes
+======================================================================
+
+######################################################################
+# GIOCATORE: marcos-aoas-correa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marcos-aoas-correa (squadra: psg-paris)
+Generato: 2026-08-01T02:51:42.594810Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-22 | OM vs PSG | ligue-1-fr | score=43.2 | peso=0.732
+  2025-10-29 | FCL vs PSG | ligue-1-fr | score=66.9 | peso=0.758
+  2025-11-29 | ASM vs PSG | ligue-1-fr | score=60.9 | peso=0.785
+  2025-12-06 | PSG vs REN | ligue-1-fr | score=53.6 | peso=0.812
+  2026-01-16 | PSG vs LIL | ligue-1-fr | score=49.8 | peso=0.841
+  2026-02-01 | STR vs PSG | ligue-1-fr | score=24.0 | peso=0.871
+  2026-02-08 | PSG vs OM | ligue-1-fr | score=81.2 | peso=0.901
+  2026-04-22 | PSG vs NAN | ligue-1-fr | score=68.5 | peso=0.933
+  2026-05-10 | PSG vs BRE | ligue-1-fr | score=71.3 | peso=0.966
+  2026-05-17 | PAR vs PSG | ligue-1-fr | score=41.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 56.25
+  di cui Punteggio decisivo (level_score) medio: 31.27 | Punteggio complessivo (granulari) medio: 24.98 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.20, delta avversario +0.00 | Passaggio condizionato: delta venue -0.65, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +2.26, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.42
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.3 - 71.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.12 (differenza: +5.30)
+Media score in casa: 64.89 | Media score fuori casa: 47.26
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.921
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 1.009
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.010
+Fattore trend (media ultime 5: 57.3 vs media ultime 10: 56.1): 1.000
+P(gioca): 32.26% (fonte: tasso di presenza storico (10/31))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T18:45
+Casa: Paris Saint-Germain | Trasferta: Stade Rennais F.C.
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.4 (range 39.5 - 69.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 59.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.22
+Punteggio REALE ottenuto in quella partita: 41.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.1x' (half_life=6.0, range_mult=1.1, opp_sens=None, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.4    81.2    +31.8    15.9        NO
+   7        7      51.4    68.5    +17.1    20.3        SI
+   8        8      52.9    71.3    +18.4    19.3        SI
+   9        9      49.2    41.3     -7.9    18.6        SI
+
+MAE (errore assoluto medio): 18.79
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
