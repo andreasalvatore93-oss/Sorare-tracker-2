@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T00:39:42.198669Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) david-ozoh: 45 pt attesi (36-55)
+   SQUADRA: crystal-palace-london | AVVERSARIO: everton-liverpool
+======================================================================
+
+######################################################################
+# GIOCATORE: david-ozoh
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: david-ozoh (squadra: crystal-palace-london)
+Generato: 2026-08-01T00:39:42.196726Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 46
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | DER vs COV | football-league-championship | score=27.3 | peso=0.574
+  2025-08-22 | DER vs BRC | football-league-championship | score=42.9 | peso=0.590
+  2025-10-04 | DER vs SOT | football-league-championship | score=51.6 | peso=0.607
+  2025-10-18 | OXF vs DER | football-league-championship | score=35.4 | peso=0.624
+  2025-10-21 | DER vs NOR | football-league-championship | score=67.1 | peso=0.642
+  2025-10-25 | DER vs QPR | football-league-championship | score=49.1 | peso=0.660
+  2025-11-01 | SHU vs DER | football-league-championship | score=40.6 | peso=0.678
+  2025-11-04 | DER vs HUL | football-league-championship | score=36.9 | peso=0.697
+  2026-01-17 | PNE vs DER | football-league-championship | score=54.7 | peso=0.717
+  2026-01-23 | DER vs WBA | football-league-championship | score=45.8 | peso=0.737
+  2026-01-30 | BRC vs DER | football-league-championship | score=55.6 | peso=0.758
+  2026-02-07 | DER vs IPS | football-league-championship | score=36.8 | peso=0.779
+  2026-02-14 | DER vs SWA | football-league-championship | score=40.3 | peso=0.801
+  2026-02-21 | WAT vs DER | football-league-championship | score=42.3 | peso=0.824
+  2026-02-24 | HUL vs DER | football-league-championship | score=40.7 | peso=0.847
+  2026-04-03 | COV vs DER | football-league-championship | score=60.6 | peso=0.871
+  2026-04-06 | DER vs STO | football-league-championship | score=54.4 | peso=0.895
+  2026-04-11 | SOT vs DER | football-league-championship | score=34.4 | peso=0.920
+  2026-04-18 | DER vs OXF | football-league-championship | score=41.6 | peso=0.946
+  2026-04-21 | NOR vs DER | football-league-championship | score=65.5 | peso=0.973
+  2026-05-02 | DER vs SHU | football-league-championship | score=42.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.29
+  di cui Punteggio decisivo (level_score) medio: 37.50 | Punteggio complessivo (granulari) medio: 8.79 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 38.06 (delta +0.56)
+  Efficacia offensiva condizionata: delta venue -0.01, delta avversario +0.00 | Passaggio condizionato: delta venue -0.61, delta avversario +0.00 | Gol subiti condizionato: delta venue -0.40, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 10.23
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.8 - 55.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.98 (differenza: +1.25)
+Media score in casa: 44.68 | Media score fuori casa: 47.76
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.0
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.071
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.009
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore trend (media ultime 5: 47.7 vs media ultime 10: 45.9): 1.008
+P(gioca): 45.65% (fonte: tasso di presenza storico (21/46))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Everton FC | Trasferta: Crystal Palace FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.5 (range 36.0 - 54.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.54
+Punteggio REALE ottenuto in quella partita: 42.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.2    40.6     -5.6    12.6        SI
+   7        7      47.0    36.9    -10.1    11.8        SI
+   8        8      44.6    54.7    +10.1    11.3        SI
+   9        9      46.7    45.8     -0.9    11.1        SI
+  10       10      45.6    55.6    +10.0    10.5        SI
+  11       11      47.3    36.8    -10.5    10.4        NO
+  12       12      46.5    40.3     -6.2    10.3        SI
+  13       13      45.7    42.3     -3.4    10.0        SI
+  14       14      45.6    40.7     -4.9     9.6        SI
+  15       15      44.9    60.6    +15.7     9.3        NO
+  16       16      47.0    54.4     +7.4     9.9        SI
+  17       17      45.8    34.4    -11.4     9.8        NO
+  18       18      47.1    41.6     -5.5     9.9        SI
+  19       19      44.5    65.5    +21.0     9.6        NO
+  20       20      47.8    42.4     -5.4    10.5        SI
+
+MAE (errore assoluto medio): 8.55
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 73.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
