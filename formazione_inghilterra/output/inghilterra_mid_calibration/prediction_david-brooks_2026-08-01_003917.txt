@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T00:39:17.057693Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) david-brooks: 43 pt attesi (29-68)
+   SQUADRA: afc-bournemouth-bournemouth-dorset | AVVERSARIO: manchester-city-manchester
+======================================================================
+
+######################################################################
+# GIOCATORE: david-brooks
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: david-brooks (squadra: afc-bournemouth-bournemouth-dorset)
+Generato: 2026-08-01T00:39:17.055375Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 19
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-15 | LIV vs BOR | premier-league-gb-eng | score=63.7 | peso=0.737
+  2025-08-23 | BOR vs WOL | premier-league-gb-eng | score=41.9 | peso=0.758
+  2025-08-30 | TOT vs BOR | premier-league-gb-eng | score=65.7 | peso=0.779
+  2025-09-13 | BOR vs BRI | premier-league-gb-eng | score=26.8 | peso=0.801
+  2025-09-21 | BOR vs NEW | premier-league-gb-eng | score=35.6 | peso=0.824
+  2025-10-03 | BOR vs FUL | premier-league-gb-eng | score=37.3 | peso=0.847
+  2025-11-02 | MCI vs BOR | premier-league-gb-eng | score=41.4 | peso=0.871
+  2025-11-22 | BOR vs WHU | premier-league-gb-eng | score=35.6 | peso=0.895
+  2025-12-20 | BOR vs BUR | premier-league-gb-eng | score=23.0 | peso=0.920
+  2025-12-30 | CHE vs BOR | premier-league-gb-eng | score=70.7 | peso=0.946
+  2026-01-03 | BOR vs ARS | premier-league-gb-eng | score=28.9 | peso=0.973
+  2026-04-22 | BOR vs LEE | premier-league-gb-eng | score=30.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 41.20
+  di cui Punteggio decisivo (level_score) medio: 39.07 | Punteggio complessivo (granulari) medio: 2.14 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 42.87 (delta +3.80)
+  Efficacia offensiva condizionata: delta venue +1.79, delta avversario -0.63 | Passaggio condizionato: delta venue +0.53, delta avversario -0.17 | Gol subiti condizionato: delta venue -0.62, delta avversario +0.37 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.46
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.8 - 65.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.52 (differenza: +2.94)
+Media score in casa: 32.40 | Media score fuori casa: 60.38
+Fattore casa/trasferta applicato: 1.008 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.4
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.675
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore trend (media ultime 5: 37.7 vs media ultime 10: 39.5): 0.991
+P(gioca): 31.58% (fonte: tasso di presenza storico (12/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T13:00
+Casa: Manchester City FC | Trasferta: AFC Bournemouth
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.5 (range 29.1 - 68.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.39
+Punteggio REALE ottenuto in quella partita: 30.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.7+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.7)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.6    41.4     -5.2    14.0        SI
+   7        7      44.1    35.6     -8.5    12.5        SI
+   8        8      43.1    23.0    -20.1    11.7        NO
+   9        9      42.5    70.7    +28.2    12.8        NO
+  10       10      42.7    28.9    -13.8    16.6        SI
+  11       11      41.1    30.1    -11.0    16.2        SI
+
+MAE (errore assoluto medio): 14.47
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
