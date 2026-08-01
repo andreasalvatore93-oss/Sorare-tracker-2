@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:54:27.443732Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) anthony-lenin-valencia-bajana: 51 pt attesi (36-69)
+   ORDINAMENTO: 50.12
+   SQUADRA: antwerp-deurne | AVVERSARIO: waasland-beveren-beveren-waas
+======================================================================
+
+######################################################################
+# GIOCATORE: anthony-lenin-valencia-bajana
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: anthony-lenin-valencia-bajana (squadra: antwerp-deurne)
+Generato: 2026-08-01T01:54:27.441362Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-21 | USG vs ANT | jupiler-pro-league | score=62.4 | peso=0.737
+  2026-02-28 | ANT vs STV | jupiler-pro-league | score=67.7 | peso=0.758
+  2026-03-06 | LAL vs ANT | jupiler-pro-league | score=37.5 | peso=0.779
+  2026-03-15 | ANT vs STA | jupiler-pro-league | score=66.0 | peso=0.801
+  2026-03-22 | OHL vs ANT | jupiler-pro-league | score=46.6 | peso=0.824
+  2026-04-03 | ANT vs GNK | jupiler-pro-league | score=38.5 | peso=0.847
+  2026-04-10 | CHA vs ANT | jupiler-pro-league | score=34.8 | peso=0.871
+  2026-04-18 | ANT vs OHL | jupiler-pro-league | score=38.3 | peso=0.895
+  2026-04-21 | STA vs ANT | jupiler-pro-league | score=88.4 | peso=0.920
+  2026-04-25 | WES vs ANT | jupiler-pro-league | score=38.2 | peso=0.946
+  2026-05-03 | ANT vs STA | jupiler-pro-league | score=51.7 | peso=0.973
+  2026-05-10 | ANT vs CHA | jupiler-pro-league | score=25.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 49.11
+  di cui Punteggio decisivo (level_score) medio: 41.73 | Punteggio complessivo (granulari) medio: 7.39 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 6.91 (delta +0.88) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.59
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.8 - 67.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.98 (differenza: +5.61)
+Media score in casa: 47.97 | Media score fuori casa: 51.32
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.8
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 48.4 vs media ultime 10: 46.6): 1.012
+P(gioca): 30.77% (fonte: tasso di presenza storico (12/39))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T17:15
+Casa: Royal Antwerp FC | Trasferta: Waasland-Beveren
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.8 (range 36.5 - 69.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.63
+Punteggio REALE ottenuto in quella partita: 25.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -26.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.4x' (half_life=30.0, range_mult=1.4, opp_sens=None, trend_int=0.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      50.8    34.8    -16.0    17.8        SI
+   7        7      48.9    38.3    -10.6    18.7        SI
+   8        8      47.6    88.4    +40.8    18.3        NO
+   9        9      49.9    38.2    -11.7    25.0        SI
+  10       10      51.1    51.7     +0.6    24.5        SI
+  11       11      51.4    25.6    -25.8    23.3        NO
+
+MAE (errore assoluto medio): 17.57
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
