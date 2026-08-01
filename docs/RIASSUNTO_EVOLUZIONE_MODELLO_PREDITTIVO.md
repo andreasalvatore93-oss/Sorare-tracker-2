@@ -5906,12 +5906,29 @@ Calibrazione completata sulle 6 leghe con `discovery_global`. Confronto pooled
 fra i parametri di **produzione** e il vincitore della griglia
 (`analizza_calibrazione_pooled.py`):
 
-| ruolo | giocatori | produzione vs migliore | rank | fuori campione | verdetto |
-|---|---|---|---|---|---|
-| GK | 92 | +0.14% | 172/240 | 78% | lasciare |
-| DEF | 469 | **+0.03%** | **11/168** | 81% | lasciare |
-| MID | 300 | +0.01% | 6/210 | 50% | lasciare |
-| FWD | 371 | +0.06% | 41/210 | 81% | lasciare |
+Dati finali: **1.876 giocatori calibrati su 2.016** (93% del pool).
+
+| ruolo | giocatori | prod vs migliore | rank | stabilita | fuori campione | verdetto |
+|---|---|---|---|---|---|---|
+| GK | 119 | +0.06% | 92/240 | 49% | 50.2% | lasciare |
+| DEF | 758 | +0.02% | 11/168 | 97% | 96.5% | lasciare (vedi sotto) |
+| MID | 534 | +0.00% | 6/210 | 43% | 20.8% | lasciare |
+| FWD | 371 | +0.06% | 41/210 | 81% | 86.5% | lasciare |
+
+**Il DEF merita una spiegazione.** Con 758 difensori il test supera la soglia
+di significativita' (fuori campione 96.5%), ma la differenza vale **+0.02%**:
+il campione e' abbastanza grande da distinguere due numeri praticamente
+identici. Significativo non vuol dire importante.
+
+E il vincitore non va inseguito comunque: e' `half_life=30, range=1.0`, cioe'
+**entrambi al bordo della griglia**. Per il DEF era gia' documentato (sez. 35)
+che l'half_life non ha un minimo interno — la curva scende in modo monotono e
+converge asintoticamente, quindi vince sempre il valore piu' alto disponibile,
+qualunque sia. Non e' un ottimo, e' un bordo. Il `range_multiplier` per giunta
+e' cosmetico: non entra in `score_atteso`, cambia solo l'intervallo mostrato.
+
+Raccomandazione: **nessun cambio, DEF incluso**. Preparato e non applicato,
+come da consegna dell'utente.
 
 **Tutti e quattro concordi.** I valori in produzione stanno entro lo 0.15% dal
 minimo ottenibile su griglie di 168-240 combinazioni, e nessuna differenza
