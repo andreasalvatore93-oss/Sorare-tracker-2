@@ -98,12 +98,22 @@ def tipo_arena(slug):
 
 
 def graphql(query, variables):
+    # Stessi header di scanners/bot_profit.py: con i soli Content-Type/Cookie
+    # Sorare risponde UNAUTHORIZED (01/08).
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                       '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'),
         'Origin': 'https://sorare.com',
         'Referer': 'https://sorare.com/',
+        'Accept-Language': 'it',
         'sorare-client': 'Web',
+        'sorare-version': os.environ.get('SORARE_VERSION', '20260717144535'),
+        'sorare-build': os.environ.get(
+            'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
     }
     if COOKIES:
         headers['Cookie'] = COOKIES
