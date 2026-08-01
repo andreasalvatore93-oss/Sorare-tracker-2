@@ -1,0 +1,87 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T01:53:29.114360Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) adama-bojang: 46 pt attesi (38-63)
+   ORDINAMENTO: 42.41
+   SQUADRA: sporting-charleroi-charleroi | AVVERSARIO: oh-leuven-heverlee
+======================================================================
+
+######################################################################
+# GIOCATORE: adama-bojang
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: adama-bojang (squadra: sporting-charleroi-charleroi)
+Generato: 2026-08-01T01:53:29.112270Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 21
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-11 | AMI vs SR | ligue-2-fr | score=36.0 | peso=0.847
+  2025-08-16 | SR vs EAG | ligue-2-fr | score=65.0 | peso=0.871
+  2025-09-09 | ? vs ? | wc-qualification-africa | score=35.0 | peso=0.895
+  2026-01-03 | SR vs ANN | ligue-2-fr | score=60.0 | peso=0.920
+  2026-01-17 | TRO vs SR | ligue-2-fr | score=22.7 | peso=0.946
+  2026-02-14 | GRE vs SR | ligue-2-fr | score=45.8 | peso=0.973
+  2026-03-31 | ? vs ? | friendlies | score=35.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 42.57
+  di cui Punteggio decisivo (level_score) medio: 38.57 | Punteggio complessivo (granulari) medio: 4.00 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.96 (delta +0.68) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.90
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.69 (differenza: +4.21)
+Media score in casa: 62.50 | Media score fuori casa: 34.83
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.076
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 18.42% (fonte: tasso di presenza storico (7/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T14:00
+Casa: Royal Charleroi S.C. | Trasferta: Oud-Heverlee Leuven
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.8 (range 38.2 - 63.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.96
+Punteggio REALE ottenuto in quella partita: 35.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.0+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.6    35.0    -10.6    14.6        SI
+
+MAE (errore assoluto medio): 10.62
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
