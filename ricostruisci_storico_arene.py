@@ -60,6 +60,16 @@ def main():
         # ad ogni rilancio si riscaricano tutte da capo (un'ora buttata)
         fatte = set(vecchio.get('giornate_viste') or [])
         fatte |= {r['fixture'] for r in raccolta}
+        # Ricostruendo in piu' riprese la stessa giornata puo' finire in
+        # archivio due volte, e i duplicati gonfiano i totali (75 righe su 673
+        # la prima volta). Una sola riga per (giornata, arena): quella e'
+        # l'identita' vera di un ingresso.
+        uniche = {}
+        for r in raccolta:
+            uniche[(r['fixture'], r['slug'])] = r
+        if len(uniche) != len(raccolta):
+            print(f'rimossi {len(raccolta) - len(uniche)} duplicati')
+        raccolta = list(uniche.values())
 
     io = os.environ.get('NICKNAME', 'Crowss').strip().lower()
     slugs = giornate_concluse()
