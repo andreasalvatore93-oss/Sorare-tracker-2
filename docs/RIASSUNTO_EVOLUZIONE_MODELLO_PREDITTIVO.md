@@ -6198,3 +6198,168 @@ allineata anche lei benche' la sua pipeline non giri mai.
    un'altra sessione senza risultati), SportsGambler (eliminato su richiesta —
    la feature "clicca il nome e lo copi" nel report nasce invece dall'avversione
    dichiarata dell'utente per i nomi coreani, tutti troppo simili).
+
+---
+
+## 46. Sessione 01/08 (sera) — l'economia dello schieramento: quanto valgono le carte, dove mandarle, quante arene giocare
+
+Dopo la sezione 45 (il modello e' al tetto, il valore e' nello schieramento),
+questa sezione fa il passo successivo: smettere di ragionare in punti e
+ragionare in **essenze ed euro**. E' la prima volta che il progetto guarda i
+premi invece che il punteggio.
+
+### 46.A — Le regole del gioco, messe a verbale
+
+Fornite dall'utente, non deducibili dal codice:
+
+**IN SEASON** — gratis, max 6 formazioni da 5, obbligo di **4 carte in season
+su 5**. Scala a gradini che si sale **UNO alla volta**, e superarlo non vale
+nulla in piu':
+
+| gradino | premio |
+|---|---|
+| 340 | 500 essenze |
+| 360 | 1000 essenze |
+| 400 | **25 EUR** |
+| 420 | **100 EUR** |
+| 460 | **500 EUR** |
+
+Se giochi per 400 e fai 460, prendi comunque 25 EUR.
+
+**ARENA** — 10 partecipanti, si gioca contro altri 9 manager (non contro il
+banco). Costo 300 essenze (cap 260) o 200 (cap 220). Premi ai primi tre:
+1300/900/500. Illimitate: il tetto e' quante carte hai. Ammette 5 classic.
+Esiste anche la **uncapped**: stesso costo e stessi premi della 260, ma senza
+limite di L10.
+
+**ALL STARS** — gratis, formazioni da 7, max 4. Classifica su ~20.000
+partecipanti, soglia di premio variabile settimana per settimana. Per scelta
+esplicita dell'utente e' l'ultima priorita' e non e' stata analizzata a fondo.
+
+### 46.B — L'arena e' un gioco a somma negativa: serve un vantaggio
+
+Con 10 partecipanti e 2700 essenze di premi contro 3000 di ingressi, il banco
+trattiene il 10%. **Da giocatore medio l'arena vale -30 essenze a ingresso.**
+
+Il pareggio arriva a **+5 punti sopra il campo** (media di mercato 259 pt ->
+264 attesi). Sopra, cresce in fretta: +20 pt valgono +153 essenze a ingresso,
++40 pt ne valgono +368.
+
+### 46.C — I dati reali dell'utente: 673 ingressi fatti a mano
+
+Portati dall'utente (sito SorareScore), stagione scorsa, **tutti schierati
+manualmente**: e' la linea di partenza che il modello deve battere.
+
+| | ingressi | ROI |
+|---|---|---|
+| **totale** | **673** | **+13.32%** (+16.150 essenze) |
+| cap 220 | 53 | **+60.4%** |
+| costo 250 | 15 | +41.3% |
+| cap 260 | 179 | **+21.4%** (+11.500, il grosso del profitto) |
+| uncapped | 38 | **-8.8%** |
+| Beginner | 182 | **-16.5%** |
+| costo 100 | 373 | **-12.3%** |
+
+**Le arene economiche fanno perdere soldi**, e non e' sfortuna: sono i due
+campioni piu' grandi (373 e 182 ingressi).
+
+Top 3 nel **34.92%** dei casi contro il 30% di un giocatore medio: da qui si
+ricava il **vantaggio implicito, +6.7 punti sul campo**. Piccolo — ed e'
+esattamente perche' il margine e' sottile che le arene con premi bassi rispetto
+al costo vanno in perdita.
+
+**Quanto vale migliorare**: ogni 5 punti di vantaggio in piu' valgono **+13.5
+punti di ROI**. Sui suoi 673 ingressi sarebbero stati **+16.400 essenze**, cioe'
+il doppio del guadagno netto realizzato.
+
+### 46.D — Sotto il cap la valuta cambia: punti per unita' di L10
+
+Trovato costruendo il simulatore: prendendo i giocatori **migliori in assoluto**
+sotto il cap 260 non si compone **nemmeno una formazione** (verificato: 0 su 60
+carte). Cinque titolari da 55-66 di L10 sforano subito i 260.
+
+Sotto un cap la selezione va fatta per **punteggio per unita' di L10**, non per
+punteggio. E' una regola diversa da quella del resto del progetto, e spiega
+perche' l'utente non puo' semplicemente "mandare i migliori in arena".
+
+### 46.E — Quante arene schierare
+
+Le carte buone finiscono: la prima arena la riempi con le migliori, la decima
+con gli scarti, e a un certo punto ogni ingresso brucia essenze. Tarato sul
+vantaggio reale (+6.7 pt):
+
+| carte disponibili | arene profittevoli |
+|---|---|
+| 30 | 1 |
+| 60 | 3 |
+| 100 | 12 |
+
+Cresce piu' che proporzionalmente: con poche carte solo la prima formazione sta
+sopra il campo.
+
+### 46.F — In Season: concentrare, sempre
+
+Ogni formazione insegue lo stesso gradino e porta premio per conto suo, quindi
+si massimizza la SOMMA delle probabilita'. Confronto fra concentrare i migliori
+in poche formazioni e spalmare su sei equivalenti, a parita' di carte:
+
+| gradino | concentrata | distribuita |
+|---|---|---|
+| 340 | 2.32 | 2.26 |
+| 360 | 1.66 | 1.43 |
+| **400** | **0.69** | **0.40** |
+| 420 | 0.42 | 0.18 |
+| 460 | 0.11 | 0.02 |
+
+(formazioni a premio per giornata, su 6)
+
+**Concentrare vince su tutti i gradini**, e il vantaggio e' massimo proprio sul
+400: +73%. Col premio da 25 EUR sono ~7 EUR a giornata dalla sola allocazione.
+Il motivo: sotto la soglia, P(superare) cresce in modo **convesso** col
+punteggio atteso, quindi poche formazioni alte battono sei mediocri.
+
+Stesso risultato in arena (misura_allocazione_formazioni.py): concentrare batte
+distribuire di +11 punti percentuali con 4 formazioni, +39 con 20.
+
+### 46.G — La varianza dipende da dove sei rispetto al gradino
+
+Conseguenza diretta del fatto che superare non paga: **sotto il gradino la
+varianza aiuta, sopra danneggia**. Il punto di svolta e' esattamente il target.
+
+Caso reale dell'utente (K League, atteso 363, gradino 400):
+
+- P(fare 400) = **20.5%**
+- portando la dispersione da 45 a 58, sale al **26.4%**
+- **1 punto di dispersione vale 0.80 punti di punteggio atteso**
+
+Quest'ultimo numero giustifica a posteriori il blocco GK+DEF della sezione 45:
+sacrificare 5 punti attesi per accoppiarli conviene finche' compra almeno 6
+punti di dispersione.
+
+### 46.H — Capitano: nessun cambio
+
+Il capitano prende +50% (In Season) o +20% (Arena), quindi moltiplica anche la
+sua varianza. Ipotesi: col bersaglio sulla coda alta conviene il piu'
+esplosivo. **Smentita.**
+
+| strategia | mediana | top 25% | top 10% |
+|---|---|---|---|
+| atteso piu' alto (attuale) | 50.0% | 25.0% | 10.0% |
+| piu' volatile | 47.7% | 24.1% | 9.7% |
+| misto | 50.0% | 25.2% | 10.2% |
+
+Il piu' volatile e' peggio ovunque; il misto e' indistinguibile. La regola
+attuale resta.
+
+### 46.I — Cosa cambierei, in ordine di valore
+
+1. **Concentrare le carte In Season** invece di spalmarle: +73% di formazioni a
+   premio sul gradino 400 (~7 EUR a giornata).
+2. **Smettere di giocare le arene economiche** (costo 100 e Beginner): -12% e
+   -16% di ROI su 555 ingressi reali.
+3. **Selezionare per efficienza sotto cap**, non per punteggio assoluto.
+4. **Limitare il numero di arene** a quelle che restano sopra il campo (con 60
+   carte: tre).
+
+Nessuna di queste tocca il modello predittivo. Sono tutte decisioni di
+schieramento e di portafoglio.
