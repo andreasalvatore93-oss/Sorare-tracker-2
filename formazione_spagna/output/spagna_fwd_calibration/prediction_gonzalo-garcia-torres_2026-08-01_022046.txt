@@ -1,0 +1,89 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T02:20:46.424267Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) gonzalo-garcia-torres: 52 pt attesi (31-69)
+   ORDINAMENTO: 55.06
+   SQUADRA: real-madrid-madrid | AVVERSARIO: espanyol-barcelona
+======================================================================
+
+######################################################################
+# GIOCATORE: gonzalo-garcia-torres
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gonzalo-garcia-torres (squadra: real-madrid-madrid)
+Generato: 2026-08-01T02:20:46.422077Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 22
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | RMA vs ESP | laliga-es | score=38.2 | peso=0.824
+  2026-01-04 | RMA vs BET | laliga-es | score=86.7 | peso=0.847
+  2026-02-08 | VCF vs RMA | laliga-es | score=33.5 | peso=0.871
+  2026-02-14 | RMA vs RSO | laliga-es | score=65.6 | peso=0.895
+  2026-03-02 | RMA vs GET | laliga-es | score=52.5 | peso=0.920
+  2026-05-10 | FCB vs RMA | laliga-es | score=28.9 | peso=0.946
+  2026-05-14 | RMA vs OVI | laliga-es | score=71.5 | peso=0.973
+  2026-05-23 | RMA vs ATH | laliga-es | score=62.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 55.09
+  di cui Punteggio decisivo (level_score) medio: 50.09 | Punteggio complessivo (granulari) medio: 4.99 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.61 (delta -0.49) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.77
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.5 - 71.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.95 (differenza: +4.82)
+Media score in casa: 62.88 | Media score fuori casa: 31.20
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.056
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 21.05% (fonte: tasso di presenza storico (8/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T19:30
+Casa: RCD Espanyol de Barcelona | Trasferta: Real Madrid
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.1 (range 30.5 - 68.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.86
+Punteggio REALE ottenuto in quella partita: 62.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+trend_int=0.0+range=1.0x' (half_life=25.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.4    71.5    +20.1    20.1        NO
+   7        7      53.6    62.8     +9.2    19.9        SI
+
+MAE (errore assoluto medio): 14.66
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
