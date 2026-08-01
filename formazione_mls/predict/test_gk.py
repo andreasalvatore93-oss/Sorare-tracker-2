@@ -1504,6 +1504,28 @@ def salva_grid_results(slug, result):
     return len(grid_export)
 
 
+
+_CLUB_NOTI = None
+
+
+def club_da_sorare(player_slug):
+    """Club ATTUALE secondo Sorare (activeClub), persistito dalla discovery.
+    La squadra dedotta dalle ultime partite sbaglia su chi si e' appena
+    trasferito e non ha ancora esordito. None -> resta la deduzione."""
+    global _CLUB_NOTI
+    if _CLUB_NOTI is None:
+        _CLUB_NOTI = {}
+        path = os.path.join(os.path.dirname(DISCOVERY_FILE), 'player_card_counts.json')
+        try:
+            with open(path, encoding='utf-8') as f:
+                for slug, voce in (json.load(f) or {}).items():
+                    if isinstance(voce, dict) and voce.get('club'):
+                        _CLUB_NOTI[slug] = voce['club']
+        except Exception:
+            pass
+    return _CLUB_NOTI.get(player_slug)
+
+
 def build_prediction(player_slug):
     global _STRUCTURAL_INSUFFICIENCY
     _STRUCTURAL_INSUFFICIENCY = False
@@ -1702,6 +1724,11 @@ def build_prediction(player_slug):
                 team_counts[t] = team_counts.get(t, 0) + 1
     if team_counts:
         player_team_slug = max(team_counts, key=team_counts.get)
+    _club_sorare = club_da_sorare(player_slug)
+    if _club_sorare and _club_sorare != player_team_slug:
+        log(f"[squadra] dedotta dalle partite: {player_team_slug} -> "
+            f"corretta con activeClub Sorare: {_club_sorare}")
+        player_team_slug = _club_sorare
 
     # Costruisce la serie di score utilizzabili + contesto casa/trasferta + ranking avversario
     scores = []
