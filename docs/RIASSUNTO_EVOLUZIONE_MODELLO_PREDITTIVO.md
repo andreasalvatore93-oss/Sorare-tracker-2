@@ -7364,3 +7364,266 @@ d'ingresso in arena, che e' essenze contro essenze.
   cieca. Quando chiude (4 agosto, 14:00 UTC) va scaricata e confrontata: e' il
   primo riscontro sul campo. Su una giornata sola pesera' poco la bravura e
   molto la fortuna, ma va guardata.
+
+---
+
+## 51. IL CRAFT E L'ECONOMIA DELLE ESSENZE — spiegato da zero
+
+Scritta dopo che l'utente ha fatto **un craft in diretta** mostrando ogni
+passaggio (01/08, ha speso 1000 essenze apposta per la dimostrazione). Prima di
+quella dimostrazione ci eravamo fatti un'idea sbagliata su piu' punti.
+
+Serve a chi non sa niente di Sorare: qui c'e' tutto il meccanismo, i numeri
+osservati, e le regole operative che ne derivano.
+
+---
+
+### 51.1 — Cos'e' un'essenza e da dove viene
+
+Le **essenze** sono la valuta di gioco di Sorare. Non si comprano con denaro:
+si vincono giocando. Servono a due cose:
+
+1. **pagare l'ingresso delle arene** (100-800 a seconda del tipo)
+2. **craftare carte nuove** (1000 essenze = 1 craft)
+
+Non scadono. A fine stagione c'e' una conversione punitiva (~5000 essenze
+vecchie -> ~1000 nuove, cioe' **-80%**), pensata per impedire che qualcuno ne
+accumuli un milione e crafti tutto a inizio stagione. **In pratica nessuno la
+subisce**: si spendono prima. L'utente l'anno scorso e' arrivato al giorno
+prima della conversione con 25.000 essenze e ha fatto 20 craft di fila senza
+nemmeno guardare il valore delle carte.
+
+---
+
+### 51.2 — LE ESSENZE SONO DIVISE PER COMPETIZIONE (la scoperta principale)
+
+Non sono tutte uguali. Ogni essenza porta con se' la competizione in cui e'
+stata vinta, e questo determina **da quale bacino di giocatori pescherai**:
+
+| dove le vinci | che essenze sono | cosa pescano |
+|---|---|---|
+| In Season K League | K League | solo giocatori K League |
+| In Season MLS | MLS | solo giocatori MLS |
+| **QUALSIASI arena** (comprese le dedicate a un campionato) | **All Star** | **giocatori di TUTTI i campionati** |
+
+La schermata "Essence" mostra il mix in cassa, per esempio 43.29% All Star
+(1368), 31.08% K League (982), 25.63% MLS (810). **Non si sceglie da quale
+gruppo attingere**: il prossimo craft segue quelle proporzioni.
+
+**Conseguenza importante e controintuitiva: le essenze vinte in arena sono
+strutturalmente le migliori.** Sono le uniche che possono pescare un Haaland o
+uno Yamal. Quelle vinte nelle In Season di lega sono confinate a quella lega.
+Questo alza il valore delle arene rispetto a qualunque stima che tratti le
+essenze come fungibili.
+
+---
+
+### 51.3 — MA il bacino e' limitato ai campionati IN STAGIONE
+
+Col craft si producono **solo carte in season, mai classic**. Quindi la fetta
+"All Star" pesca **solo dai campionati che in quel momento hanno una stagione
+aperta**.
+
+Esempio reale, 1 agosto 2026: l'utente aveva il 43% di essenze All Star, ma in
+quel momento le uniche leghe in stagione erano MLS e Corea. La fetta All Star
+era **All Star solo di facciata**: pescava le stesse carte delle altre due.
+Una settimana dopo, con Portogallo, Olanda e Belgio ripartiti, lo stesso
+identico craft avrebbe pescato molto meglio.
+
+> **Regola operativa: il valore di un'essenza dipende da QUANDO la spendi.**
+> Non scadono dentro la stagione, quindi conviene accumulare e craftare quando
+> sono in stagione piu' campionati possibile, e soprattutto quelli forti.
+
+E' anche la ragione per cui, come dice l'utente, "a inizio stagione le essenze
+valgono di piu'": il bacino e' largo e le carte coniate sono ancora poche.
+
+---
+
+### 51.4 — Come si svolge un craft, passo per passo
+
+1. Si preme "Tira una carta" e si spendono **1000 essenze**.
+2. Sorare mostra **dieci carte coperte** e un timer di **10 minuti**.
+3. **Solo a questo punto** si scopre che tipo di sorteggio e' capitato. Quindi
+   non si puo' decidere se valga la pena spendere in indizi *prima* di pagare.
+4. Si sceglie **una** delle dieci, alla cieca (tieni premuto per confermare).
+5. La carta si rivela, **e Sorare mostra anche le altre nove** che c'erano nel
+   pool.
+6. Entro i 10 minuti si puo' **riciclare** la carta per **200 essenze**.
+
+**I cinque tipi di sorteggio e le loro probabilita':**
+
+| tipo | quanto e' frequente | Star/Icon | Key | Roster | Reserve |
+|---|---|---|---|---|---|
+| Standard | 60% | 0.5% | 3.5% | 50% | 46% |
+| Full Roster | 15% | 0.5% | 4% | 95.5% | 0% |
+| Special Key | 10% | 1% | 1 carta garantita | 50% | 45% |
+| Special Star | 10% | 1 carta garantita | 4% | 50% | 46% |
+| Full Key | 5% | 1% | 99% | 0% | 0% |
+
+Nei due "Special" **una delle dieci carte e' garantita di quella fascia, ma non
+si sa quale**: pescando a caso la si prende 1 volta su 10.
+
+**Le quattro fasce**, con i prezzi indicativi dati dall'utente (carte Limited):
+
+| fascia | cos'e' | prezzo |
+|---|---|---|
+| Reserve | non gioca, o non ha mai esordito | 0.50 - 2 EUR |
+| Roster | titolare con voto discreto | 2 - 15 EUR |
+| Key | carta top, non un fenomeno | 15 - 50 EUR |
+| Star / Icon | fuoriclasse (es. Son, Haaland) | 30 - 100+ EUR |
+
+---
+
+### 51.5 — Gli indizi
+
+Restringono il campo prima di scegliere. Si pagano con **gettoni** (che si
+vincono giocando, o che Sorare regala) **oppure in essenze**:
+
+| indizio | cosa fa | costo in gettoni | costo in essenze |
+|---|---|---|---|
+| Nazionalita' | rivela la nazionalita' della carta | 10 | 500 |
+| League | rivela il campionato | 10 | 1000 |
+| Best 5 | toglie dal pool le 5 carte peggiori | — | 1000 |
+| Tier piu' alto | dice qual e' la fascia migliore presente, senza dire quale carta sia | 10 | 300 |
+
+**Come li usa l'utente**: combinandoli per identificare la carta. Cosi' ha
+preso il suo Son — indizi "sudcoreano" e "MLS" in un sorteggio Star: quanti
+sudcoreani di fascia Star ci sono in MLS? Uno solo. Stesso ragionamento con
+"norvegese" e "Premier League": sarebbe Haaland.
+
+**Misurato: pagati in essenze NON convengono quasi mai**, e il motivo e'
+strutturale — il costo e' nella stessa valuta del premio, quindi un indizio da
+1000 essenze va confrontato col craft a cui rinunci.
+
+In un sorteggio Standard, con le fasce al centro:
+
+| strategia | valore atteso |
+|---|---|
+| pesca cieca | **6.32 EUR** |
+| tier a 300, poi Best 5 solo se c'e' Key o Star | 4.31 EUR |
+| Best 5 sempre (1000) | 3.81 EUR |
+
+Best 5 aggiunge davvero valore (+3.84 EUR, da 6.27 a 10.11) ma costa 1000
+essenze, cioe' **piu' di quanto aggiunge**.
+
+**Coi gettoni invece convengono sempre**, perche' sono gratuiti e non hanno
+altro impiego. Vanno conservati per i **sorteggi speciali**, dove c'e' una
+Star garantita da 30-100 EUR e restringere il campo vale molto di piu'.
+
+Avvertenza dell'utente, corretta: sapere che c'e' una Star **non dice quale**.
+Serve una catena di indizi, e la catena completa (tier 300 + nazionalita' 500 +
+league 1000 + best 5 1000 = **2800 essenze**) non da' comunque la certezza.
+
+---
+
+### 51.6 — Il burn, e la regola che ne deriva
+
+Entro 10 minuti si ricicla la carta per **200 essenze**. La carta sparisce
+dalla galleria.
+
+Questo da' al craft un **pavimento del 20%**: qualunque cosa esca, il costo
+reale di un craft andato male e' **800 essenze**, non 1000.
+
+> **Regola: brucia se la carta vale meno di un quinto di un craft.**
+> Con 1000 essenze a ~3 EUR, il confine sta a **0.60 EUR**.
+
+Siccome la fascia Reserve va da 0.50 a 2 EUR e vale il **36%** dei craft, buona
+parte delle Reserve vanno bruciate senza pensarci.
+
+**Caso reale visto in diretta**: sorteggio Standard, pool di dieci carte tutte
+Reserve/Roster (nessuna Key, nessuna Star — coerente col 96% della tabella).
+L'utente ha pescato **Micah Burton** (MLS, 19 anni, punteggio 39). Prezzo di
+mercato verificato: **0.50 EUR**, con tre inserzioni a 0.50-0.51. Il burn rende
+200 essenze (~0.60 EUR): **ha bruciato, ed era la scelta giusta**.
+
+---
+
+### 51.7 — Quanto valgono 1000 essenze
+
+Due strade indipendenti danno lo stesso ordine di grandezza:
+
+| metodo | valore di 1000 essenze |
+|---|---|
+| calcolo dalle probabilita', fasce al **minimo** | 3.06 EUR |
+| **offerta di Sorare stessa** (~3 dollari) | ~2.80 EUR |
+| calcolo dalle probabilita', fasce al **centro** | 8.92 EUR |
+| calcolo dalle probabilita', fasce al **massimo** | 14.77 EUR |
+
+Pescando alla cieca, mediando su tutti i tipi di sorteggio, esce: Reserve
+36.1%, Roster 53.3%, Key 9.1%, Star 1.5%.
+
+**Numero di lavoro adottato: 3 EUR per 1000 essenze**, prudente e con due
+conferme. **Ma e' una stima debole**: dipende interamente dalle fasce di
+prezzo, che sono a memoria dell'utente. L'unico prezzo verificato (Burton, 0.50)
+cadeva esattamente sul minimo della fascia Reserve.
+
+**Da fare**: tarare le quattro fasce sui prezzi di mercato reali, interrogando
+l'API sui prezzi delle Limited in season. Con quello il tasso di cambio smette
+di essere una stima.
+
+Avvertenza sull'offerta di Sorare: **non e' un prezzo di mercato**. Loro
+offrono essenze *invece* del denaro vinto, quindi hanno interesse a offrirne
+poche. Che coincida col nostro calcolo prudente non e' una conferma
+indipendente quanto sembra, perche' anche il nostro usa i minimi.
+
+Nota dell'utente: le offerte in essenze sono piu' generose a inizio stagione,
+quando le essenze valgono di piu'.
+
+---
+
+### 51.8 — Il ciclo completo, e perche' conta per le arene
+
+```
+arene  ->  essenze All Star  ->  craft (solo carte IN SEASON)
+                                      |
+                    il giorno dopo la stagione diventano CLASSIC
+                                      |
+                                 altre arene
+```
+
+Le carte craftate a **fine stagione** diventano classic subito dopo: inutili in
+In Season (che richiede 4 carte in season su 5), **perfette per le arene** (che
+accettano 5 classic). Quindi craftare a fine stagione senza guardare i prezzi
+non e' sciatteria: produce esattamente il carburante giusto.
+
+**Il sistema si autoalimenta**, con una sola perdita strutturale: il **rake
+delle arene**. Dieci manager pagano 3000 essenze, i premi ne restituiscono
+2600 (1300+800+500): **400 bruciate, il 13.3%**. Per Sorare non e' solo
+profitto, e' controllo dell'inflazione — sono essenze che non diventeranno
+carte.
+
+> **Quindi l'obiettivo strategico e' preciso: portare l'edge in arena sopra il
+> 13.3%.** Sotto quella riga il motore si consuma, sopra cresce da solo.
+> Il ROI storico dell'utente e' +13.3%: esattamente in pareggio col rake.
+
+**Il vincolo non e' il numero di arene** (sono illimitate: in una giornata se
+ne possono giocare 1 o 10.000), **ma il numero di carte**. Ogni formazione ne
+consuma cinque e ogni carta si usa una volta. Con 200 euro di classic a ~2 euro
+l'una si fanno un centinaio di carte, cioe' una ventina di formazioni a
+giornata.
+
+E le prime formazioni si riempiono coi migliori, le ultime con gli avanzi:
+**la ventesima e' molto peggio della prima** e a un certo punto scende sotto il
+pareggio. Quindi la domanda vera e': *quante arene si reggono restando sopra
+soglia?* — che e' esattamente la curva del BLOCCO 2 del backtest (sezione 50.7).
+
+**Da calcolare quando il backtest e' pronto**: dato un budget in euro, quante
+arene sopra soglia sostiene a giornata e quante essenze produce in una
+stagione. E' il business case dell'utente, e a quel punto e' aritmetica.
+
+---
+
+### 51.9 — Il contesto competitivo
+
+Esistono manager-bot su scala industriale: **Satonio possiede ~365.000 carte**,
+per un valore stimato nell'ordine del milione di euro. Con quel mazzo si
+riempiono ~73.000 formazioni a giornata: a quella scala non serve scegliere
+bene, basta esserci, ed e' puro volume.
+
+Conseguenza metodologica importante: **quei bot sono gia' dentro il campo che
+abbiamo misurato**. I 673 pool da 10 dell'archivio li contengono, quindi le
+soglie di pareggio calcolate sono gia' al netto della loro presenza. Non e' un
+fattore da aggiungere dopo.
+
+L'utente gioca la partita opposta — poche carte, edge alto — che e' l'unica
+praticabile senza capitale enorme, e la sola in cui il modello serve davvero.
