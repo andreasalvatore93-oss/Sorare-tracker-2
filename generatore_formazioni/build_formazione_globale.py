@@ -405,6 +405,55 @@ def _verdetto_arene_html(all_results):
         + ''.join(voci) + '</table></div>')
 
 
+# Sotto questo margine l'ingresso e' in pareggio ma non rende: 300 essenze
+# immobilizzate per un guadagno atteso quasi nullo. Le stesse carte in una
+# competizione senza costo (All Stars da 7, Under 23) rendono di piu', perche'
+# li' qualunque premio e' guadagno netto.
+# Quanto rende ogni punto sopra il pareggio, misurato su 673 arene reali: la
+# curva e' ripida vicino alla soglia, perche' pochi punti spostano molto la
+# probabilita' di finire nei primi tre. In cap 260 un solo punto vale 29
+# essenze, quindi anche un margine di mezzo punto NON e' zero (vale 14).
+GUADAGNO_PER_PUNTO = {
+    'ARENA_ALLSTARS_260': 29.0, 'ARENA_ALLSTARS_220': 20.0,
+    'ARENA_ALLSTARS_UNCAPPED': 22.0, 'ARENA_ALLSTARS_ELITE': 55.0,
+}
+GUADAGNO_PER_PUNTO.update({arena_type(lg): 29.0 for lg in ARENA_LEAGUES})
+
+COSTO_INGRESSO = {
+    'ARENA_ALLSTARS_260': 300, 'ARENA_ALLSTARS_220': 200,
+    'ARENA_ALLSTARS_UNCAPPED': 300, 'ARENA_ALLSTARS_ELITE': 800,
+}
+COSTO_INGRESSO.update({arena_type(lg): 300 for lg in ARENA_LEAGUES})
+
+# Si entra se il guadagno atteso vale almeno il 10% di quello che si rischia.
+# Sotto quella riga si immobilizzano essenze per quasi niente, e le stesse
+# carte in una competizione gratuita rendono di piu' -- li' qualunque premio e'
+# guadagno netto.
+QUOTA_MINIMA = 0.10
+
+
+def _etichetta_arena(tipo, atteso):
+    """(testo, colore) da mostrare accanto alla formazione.
+
+    Il margine si esprime in ESSENZE, non in punti: '+0.3 punti' non dice
+    niente a chi legge, '+9 essenze attese' dice tutto.
+    """
+    soglia = PAREGGIO_ARENA.get(tipo)
+    if soglia is None:
+        return None, None
+    margine = atteso - soglia
+    guadagno = margine * GUADAGNO_PER_PUNTO.get(tipo, 29.0)
+    costo = COSTO_INGRESSO.get(tipo, 300)
+    if guadagno >= costo * QUOTA_MINIMA:
+        return (f'SCHIERA -- guadagno atteso +{guadagno:.0f} essenze '
+                f'su {costo} di ingresso'), '#7bd88f'
+    if guadagno >= 0:
+        return (f'MARGINALE -- solo +{guadagno:.0f} essenze attese su {costo} '
+                f'di ingresso: meglio All Stars da 7 o Under 23'), '#e0b341'
+    return (f'LASCIA PERDERE -- {guadagno:.0f} essenze attese '
+            f'({margine:+.0f} punti sotto il pareggio {soglia:.0f})'), '#c96b6b'
+
+
 def verdetto_arena(tipo, atteso):
     """(soglia, conviene) per una formazione arena, o (None, None) se non lo e'.
 
@@ -1404,6 +1453,11 @@ def main():
             l10_cap_rispettato=r['l10_ok'], stack_bonus_perso=r['stack_perso'],
             check_cap260=r['check_cap260'], tipo=r['tipo'], apply_stack_guard=r['stack_guard'],
             avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=False)
+        _et, _col = _etichetta_arena(r['tipo'], _atteso_con_capitano(r))
+        if _et:
+            lineup_html += (f'<div style="margin:-6px 0 14px 0;padding:6px 10px;'
+                            f'border-left:3px solid {_col};background:rgba(255,255,255,.03);'
+                            f'font-size:.85rem;color:{_col}"><b>{_et}</b></div>')
         # Formazioni OPZIONALI (30/07): separatore ben visibile la prima
         # volta che se ne incontra una, poi ogni blocco un po' piu' piccolo
         # (font-size ridotto) per distinguerle a colpo d'occhio da quelle
