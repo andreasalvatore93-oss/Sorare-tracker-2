@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-01T06:56:45.454468Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) james-david-rodriguez-rubio: 65 pt attesi (42-90)
+   SQUADRA: minnesota-united-minneapolis-saint-paul-minnesota | AVVERSARIO: san-diego-san-diego
+======================================================================
+
+######################################################################
+# GIOCATORE: james-david-rodriguez-rubio
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: james-david-rodriguez-rubio (squadra: minnesota-united-minneapolis-saint-paul-minnesota)
+Generato: 2026-08-01T06:56:45.452219Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 51
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-01 | NYC vs LEO | leagues-cup-mls | score=44.7 | peso=0.543
+  2025-08-05 | CLB vs LEO | leagues-cup-mls | score=41.4 | peso=0.559
+  2025-08-30 | LEO vs QUE | liga-mx | score=36.9 | peso=0.574
+  2025-09-04 | ? vs ? | wc-qualification-south-america | score=87.5 | peso=0.590
+  2025-09-09 | ? vs ? | wc-qualification-south-america | score=87.7 | peso=0.607
+  2025-09-24 | LEO vs MAZ | liga-mx | score=100.0 | peso=0.624
+  2025-09-27 | JUA vs LEO | liga-mx | score=51.7 | peso=0.642
+  2025-10-05 | LEO vs TOL | liga-mx | score=71.6 | peso=0.660
+  2025-10-12 | ? vs ? | friendlies | score=100.0 | peso=0.678
+  2025-10-18 | SAN vs LEO | liga-mx | score=65.5 | peso=0.697
+  2025-10-23 | ATS vs LEO | liga-mx | score=40.1 | peso=0.717
+  2025-11-02 | AME vs LEO | liga-mx | score=39.4 | peso=0.737
+  2025-11-09 | LEO vs PUE | liga-mx | score=72.2 | peso=0.758
+  2025-11-16 | ? vs ? | friendlies | score=62.0 | peso=0.779
+  2025-11-19 | ? vs ? | friendlies | score=100.0 | peso=0.801
+  2026-03-26 | ? vs ? | friendlies | score=53.4 | peso=0.824
+  2026-03-29 | ? vs ? | friendlies | score=42.1 | peso=0.847
+  2026-04-25 | MIN vs LAFC | mlspa | score=64.5 | peso=0.871
+  2026-05-14 | MIN vs RAP | mlspa | score=60.0 | peso=0.895
+  2026-06-07 | ? vs ? | friendlies | score=75.8 | peso=0.920
+  2026-06-18 | ? vs ? | global-cup | score=40.1 | peso=0.946
+  2026-06-27 | ? vs ? | global-cup | score=70.1 | peso=0.973
+  2026-07-07 | ? vs ? | global-cup | score=44.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 62.64
+  di cui Punteggio decisivo (level_score) medio: 44.28 | Punteggio complessivo (granulari) medio: 18.36 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 41.63 (delta -2.65)
+  Efficacia offensiva condizionata: delta venue +1.33, delta avversario +0.08 | Passaggio condizionato: delta venue +0.73, delta avversario -0.13 | Gol subiti condizionato: delta venue +0.09, delta avversario +0.05 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 20.06
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.1 - 87.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.81 (differenza: +1.24)
+Media score in casa: 62.25 | Media score fuori casa: 62.64
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.5
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.155
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore trend (media ultime 5: 58.0 vs media ultime 10: 61.2): 0.990
+P(gioca): 45.10% (fonte: tasso di presenza storico (23/51))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T00:30
+Casa: Minnesota United | Trasferta: San Diego FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 65.0 (range 42.4 - 89.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 63.79
+Punteggio REALE ottenuto in quella partita: 44.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.2 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+trend_int=0.7+range=1.0x' (half_life=6.0, range_mult=1.0, opp_sens=None, trend_int=0.7)
+Partite testate: 17 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      61.0    51.7     -9.3    25.9        SI
+   7        7      60.0    71.6    +11.6    24.4        SI
+   8        8      60.4   100.0    +39.6    22.2        NO
+   9        9      64.4    65.5     +1.1    23.5        SI
+  10       10      67.3    40.1    -27.2    21.7        NO
+  11       11      62.5    39.4    -23.1    23.1        NO
+  12       12      59.1    72.2    +13.1    23.5        SI
+  13       13      59.3    62.0     +2.7    22.0        SI
+  14       14      59.0   100.0    +41.0    20.5        NO
+  15       15      62.0    53.4     -8.6    22.6        SI
+  16       16      62.9    42.1    -20.8    21.7        SI
+  17       17      61.6    64.5     +2.9    21.9        SI
+  18       18      67.2    60.0     -7.2    20.5        SI
+  19       19      62.8    75.8    +13.0    19.2        SI
+  20       20      61.9    40.1    -21.8    18.5        NO
+  21       21      58.2    70.1    +11.9    19.1        SI
+  22       22      60.6    44.0    -16.6    18.1        SI
+
+MAE (errore assoluto medio): 15.97
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
