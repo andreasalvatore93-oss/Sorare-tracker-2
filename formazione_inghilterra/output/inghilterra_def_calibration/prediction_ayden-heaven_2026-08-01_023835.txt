@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-01T02:38:35.798176Z
+Parametri fissi per tutti: half_life=20.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ayden-heaven: 51 pt attesi (32-70)
+   ORDINAMENTO: 55.46
+   SQUADRA: manchester-united-manchester | AVVERSARIO: hull-city-hull
+======================================================================
+
+######################################################################
+# GIOCATORE: ayden-heaven
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ayden-heaven (squadra: manchester-united-manchester)
+Generato: 2026-08-01T02:38:35.796239Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-08 | WOL vs MUN | premier-league-gb-eng | score=52.7 | peso=0.732
+  2025-12-15 | MUN vs BOR | premier-league-gb-eng | score=36.4 | peso=0.758
+  2025-12-21 | AST vs MUN | premier-league-gb-eng | score=74.4 | peso=0.785
+  2025-12-26 | MUN vs NEW | premier-league-gb-eng | score=55.7 | peso=0.812
+  2025-12-30 | MUN vs WOL | premier-league-gb-eng | score=53.5 | peso=0.841
+  2026-01-04 | LEE vs MUN | premier-league-gb-eng | score=54.0 | peso=0.871
+  2026-01-07 | BUR vs MUN | premier-league-gb-eng | score=19.2 | peso=0.901
+  2026-04-18 | CHE vs MUN | premier-league-gb-eng | score=87.3 | peso=0.933
+  2026-04-27 | MUN vs BRE | premier-league-gb-eng | score=66.8 | peso=0.966
+  2026-05-03 | MUN vs LIV | premier-league-gb-eng | score=51.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 20.0 partite): 55.44
+  di cui Punteggio decisivo (level_score) medio: 40.71 | Punteggio complessivo (granulari) medio: 14.73 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.61, delta avversario +0.00 | Passaggio condizionato: delta venue +0.02, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.06, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.17
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.4 - 74.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.21 (differenza: +7.96)
+Media score in casa: 52.81 | Media score fuori casa: 57.51
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.9
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.797
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 55.8 vs media ultime 10: 55.2): 1.000
+P(gioca): 26.32% (fonte: tasso di presenza storico (10/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T11:30
+Casa: Hull City AFC | Trasferta: Manchester United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.1 (range 32.0 - 70.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 55.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.93
+Punteggio REALE ottenuto in quella partita: 51.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=20.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+trend_int=0.0+range=1.0x' (half_life=30.0, range_mult=1.0, opp_sens=None, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.6    19.2    -29.5    10.9        NO
+   7        7      47.0    87.3    +40.3    16.2        NO
+   8        8      49.9    66.8    +16.9    19.9        SI
+   9        9      52.0    51.7     -0.3    19.1        SI
+
+MAE (errore assoluto medio): 21.74
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
