@@ -24,6 +24,11 @@ on:
         required: false
         default: '1.0'
         type: string
+      riprova:
+        description: 'Riesamina anche le giornate gia' viste (per recuperare arene perse)'
+        required: false
+        default: ''
+        type: string
       nickname:
         description: 'Nickname Sorare, per riconoscere la tua riga in classifica'
         required: false
@@ -52,6 +57,7 @@ jobs:
           DA: ${{ github.event.inputs.da }}
           PAUSA_SECONDI: ${{ github.event.inputs.pausa }}
           NICKNAME: ${{ github.event.inputs.nickname }}
+          RIPROVA: ${{ github.event.inputs.riprova }}
           PYTHONUNBUFFERED: "1"
         run: python ricostruisci_storico_arene.py
 

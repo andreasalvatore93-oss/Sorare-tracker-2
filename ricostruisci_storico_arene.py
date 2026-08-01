@@ -60,6 +60,11 @@ def main():
         # ad ogni rilancio si riscaricano tutte da capo (un'ora buttata)
         fatte = set(vecchio.get('giornate_viste') or [])
         fatte |= {r['fixture'] for r in raccolta}
+        if os.environ.get('RIPROVA'):
+            # ripassa tutte le giornate: serve dopo aver corretto un bug che
+            # faceva perdere arene, altrimenti restano perse per sempre
+            fatte = set()
+            print('RIPROVA: riesamino anche le giornate gia\' viste')
         # Ricostruendo in piu' riprese la stessa giornata puo' finire in
         # archivio due volte, e i duplicati gonfiano i totali (75 righe su 673
         # la prima volta). Una sola riga per (giornata, arena): quella e'
@@ -80,9 +85,17 @@ def main():
     for i, fx in enumerate(da_fare, 1):
         arene, fine, premi = t.arene_della_giornata(fx)
         nuove = 0
+        saltate = []
         for slug, nome, costo, contender in arene:
             nodi = t.classifica(slug)
             if not nodi:
+                # Classifica vuota: quasi sempre un errore momentaneo o un rate
+                # limit, non un'arena inesistente. Prima si saltava in silenzio
+                # e sparivano dall'archivio: 75 ingressi su 673, quasi tutti
+                # perdenti, che da soli gonfiavano il ROI di dieci punti.
+                nodi = t.classifica(slug)
+            if not nodi:
+                saltate.append(slug)
                 continue
             punteggi = sorted((n['score'] for n in nodi), reverse=True)
             mia = next((n for n in nodi
@@ -100,8 +113,12 @@ def main():
                 'mio_rank': mia.get('ranking') if mia else None,
                 'mio_score': mia.get('score') if mia else None})
             nuove += 1
-        print(f'[{i}/{len(da_fare)}] {fx} -> {nuove} arene')
-        fatte.add(fx)
+        avviso = f' | SALTATE {len(saltate)}' if saltate else ''
+        print(f'[{i}/{len(da_fare)}] {fx} -> {nuove} arene{avviso}')
+        # una giornata con arene saltate NON si segna come vista, cosi' al
+        # rilancio si riprova invece di perderle per sempre
+        if not saltate:
+            fatte.add(fx)
         # si salva ad ogni giornata: un'interruzione non butta via il lavoro
         os.makedirs(os.path.dirname(OUT), exist_ok=True)
         with open(OUT, 'w', encoding='utf-8') as f:
