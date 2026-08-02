@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-02T17:13:35.351194Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) leandro-leonel-brey: 52 pt attesi (27-74)
+   SQUADRA: boca-juniors-capital-federal-ciudad-de-buenos-aires | AVVERSARIO: newell-s-old-boys-rosario-santa-fe
+======================================================================
+
+######################################################################
+# GIOCATORE: leandro-leonel-brey
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: leandro-leonel-brey (squadra: boca-juniors-capital-federal-ciudad-de-buenos-aires)
+Generato: 2026-08-02T17:13:35.350715Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 26
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | ROS vs BOC | superliga-argentina-de-futbol | score=41.3 | peso=0.561
+  2026-04-02 | CAT vs BOC | superliga-argentina-de-futbol | score=66.3 | peso=0.630
+  2026-04-19 | RIV vs BOC | superliga-argentina-de-futbol | score=60.5 | peso=0.707
+  2026-04-23 | DYJ vs BOC | superliga-argentina-de-futbol | score=70.9 | peso=0.794
+  2026-05-02 | CSE vs BOC | superliga-argentina-de-futbol | score=40.5 | peso=0.891
+  2026-05-09 | BOC vs HUR | superliga-argentina-de-futbol | score=24.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 49.00
+  di cui Punteggio decisivo (level_score) medio: 44.17 | Punteggio complessivo (granulari) medio: 4.83 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 42.11 (delta -2.07 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +1.42, delta avversario -1.01 | Possesso condizionato per venue: delta -0.40 | Goalkeeping condizionato per venue: delta +1.34 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 17.23
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 24.5 - 70.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.38 (differenza: +5.85)
+Media score in casa: 24.50 | Media score fuori casa: 55.90
+Fattore casa/trasferta applicato: 1.078 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.3
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 0.920
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.998
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.003
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.004
+Tasso storico clean sheet (porta inviolata nei primi 60'): 50.0% (bonus atteso incorporato nella media pesata: ~12.5pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T20:00
+Casa: Newell's Old Boys | Trasferta: CA Boca Juniors
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.7 (range 27.2 - 73.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.84
+Punteggio REALE ottenuto in quella partita: 24.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -31.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

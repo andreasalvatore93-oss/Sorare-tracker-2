@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-02T17:15:08.536184Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jader-rafael-obrian-arias: 48 pt attesi (32-67)
+   ORDINAMENTO: 48.18
+   SQUADRA: santa-fe-bogota-d-c | AVVERSARIO: once-caldas-manizales
+======================================================================
+
+######################################################################
+# GIOCATORE: jader-rafael-obrian-arias
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jader-rafael-obrian-arias (squadra: santa-fe-bogota-d-c)
+Generato: 2026-08-02T17:15:08.535841Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 19
+Competizione partita target: primera-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-07 | SKC vs ATX | mlspa | score=43.6 | peso=0.871
+  2025-09-14 | DAL vs ATX | mlspa | score=50.5 | peso=0.895
+  2025-09-28 | RSL vs ATX | mlspa | score=38.2 | peso=0.920
+  2025-10-19 | SJ vs ATX | mlspa | score=60.0 | peso=0.946
+  2026-07-24 | SFE vs CRC | conmebol-sudamericana | score=32.9 | peso=0.973
+  2026-07-31 | CRC vs SFE | conmebol-sudamericana | score=67.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 48.99
+  di cui Punteggio decisivo (level_score) medio: 43.68 | Punteggio complessivo (granulari) medio: 5.31 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.48 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 12.27
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.9 - 67.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.25 (differenza: +4.02)
+Media score in casa: 48.99 | Media score fuori casa: 48.08
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.2
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.991
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-03T01:00
+Casa: Independiente Santa Fe SA | Trasferta: Once Caldas SA
+Competizione: primera-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.3 (range 32.3 - 66.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.97
+Punteggio REALE ottenuto in quella partita: 67.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +22.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

@@ -1,0 +1,123 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-02T17:03:57.116918Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) facundo-daniel-torres-perez: 57 pt attesi (39-76)
+   ORDINAMENTO: 58.72
+   SQUADRA: austin-austin-texas | AVVERSARIO: tijuana-tijuana
+======================================================================
+
+######################################################################
+# GIOCATORE: facundo-daniel-torres-perez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: facundo-daniel-torres-perez (squadra: austin-austin-texas)
+Generato: 2026-08-02T17:03:57.114922Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 54
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 19
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | BOT vs PAL | campeonato-brasileiro-serie-a | score=42.6 | peso=0.529
+  2025-09-13 | PAL vs INT | campeonato-brasileiro-serie-a | score=81.0 | peso=0.543
+  2025-09-21 | PAL vs FOR | campeonato-brasileiro-serie-a | score=86.5 | peso=0.559
+  2025-10-13 | ? vs ? | friendlies | score=68.9 | peso=0.574
+  2025-11-02 | JUV vs PAL | campeonato-brasileiro-serie-a | score=48.2 | peso=0.590
+  2025-11-26 | GRE vs PAL | campeonato-brasileiro-serie-a | score=81.5 | peso=0.607
+  2025-12-07 | CEA vs PAL | campeonato-brasileiro-serie-a | score=68.0 | peso=0.624
+  2026-02-22 | ATX vs MIN | mlspa | score=74.6 | peso=0.642
+  2026-03-01 | ATX vs DC | mlspa | score=58.5 | peso=0.660
+  2026-03-08 | CLT vs ATX | mlspa | score=40.4 | peso=0.678
+  2026-03-15 | RSL vs ATX | mlspa | score=76.3 | peso=0.697
+  2026-03-22 | ATX vs LAFC | mlspa | score=56.6 | peso=0.717
+  2026-04-11 | ATX vs LA | mlspa | score=53.9 | peso=0.737
+  2026-04-18 | TOR vs ATX | mlspa | score=83.7 | peso=0.758
+  2026-04-23 | SJ vs ATX | mlspa | score=37.7 | peso=0.779
+  2026-04-26 | ATX vs HOU | mlspa | score=77.5 | peso=0.801
+  2026-05-03 | ATX vs STL | mlspa | score=60.9 | peso=0.824
+  2026-05-10 | MIN vs ATX | mlspa | score=70.8 | peso=0.847
+  2026-05-14 | SD vs ATX | mlspa | score=48.7 | peso=0.871
+  2026-05-17 | ATX vs SKC | mlspa | score=40.2 | peso=0.895
+  2026-05-23 | STL vs ATX | mlspa | score=63.5 | peso=0.920
+  2026-07-23 | ATX vs SEA | mlspa | score=50.4 | peso=0.946
+  2026-07-26 | HOU vs ATX | mlspa | score=47.3 | peso=0.973
+  2026-08-02 | RAP vs ATX | mlspa | score=36.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 59.29
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=24): 58.34 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 44.36 | Punteggio complessivo (granulari) medio: 14.93 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 9.10 (delta +0.94) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.56
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.4 - 77.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.36 (differenza: +1.20)
+Media score in casa: 59.07 | Media score fuori casa: 56.04
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.751
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore trend (media ultime 5: 47.5 vs media ultime 10: 53.3): 0.967
+P(gioca): 44.44% (fonte: tasso di presenza storico (24/54))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-07T01:00
+Casa: Austin FC | Trasferta: Club Tijuana Xoloitzcuintles de Caliente
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.4 (range 38.5 - 75.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 58.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.68
+Punteggio REALE ottenuto in quella partita: 36.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -24.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.15x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3)
+Partite testate: 18 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      68.3    68.0     -0.3    19.4        SI
+   7        7      68.2    74.6     +6.4    17.8        SI
+   8        8      66.7    58.5     -8.2    16.7        SI
+   9        9      62.0    40.4    -21.6    16.2        NO
+  10       10      55.8    76.3    +20.5    18.2        NO
+  11       11      51.8    56.6     +4.8    17.7        SI
+  12       12      75.9    53.9    -22.0    17.1        NO
+  13       13      71.2    83.7    +12.5    16.7        SI
+  14       14      53.3    37.7    -15.6    17.2        SI
+  15       15      55.7    77.5    +21.8    18.7        NO
+  16       16      64.6    60.9     -3.7    18.5        SI
+  17       17      69.8    70.8     +1.0    17.8        SI
+  18       18      77.7    48.7    -29.0    17.3        NO
+  19       19      79.9    40.2    -39.7    17.3        NO
+  20       20      57.8    63.5     +5.7    18.0        SI
+  21       21      63.3    50.4    -12.9    17.4        SI
+  22       22      50.6    47.3     -3.3    17.2        SI
+  23       23      63.1    36.0    -27.1    17.1        NO
+
+MAE (errore assoluto medio): 14.23
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 61.1%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
