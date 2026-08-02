@@ -959,6 +959,73 @@ def build_one_lineup_with_growth(shape, pool_league, role_data, pools, card_pool
             return None, error, l10_ok, stack_perso
 
 
+def _istantanea_pool(card_pool):
+    """Copia dello stato consumato, per poter provare una formazione e disfarla."""
+    import copy
+    return (copy.deepcopy(card_pool._used),
+            copy.deepcopy(getattr(card_pool, '_used_per_role', {})))
+
+
+def _ripristina_pool(card_pool, stato):
+    card_pool._used, usati_ruolo = stato[0], stato[1]
+    if hasattr(card_pool, '_used_per_role'):
+        card_pool._used_per_role = usati_ruolo
+
+
+def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool):
+    """Genera arene scegliendo DA SOLO tipo e numero, per essenze attese.
+
+    Il generatore classico e' avido sui PUNTI: costruisce la formazione col
+    punteggio piu' alto, tipo per tipo, nell'ordine che gli si da'. Il difetto
+    e' che non sa quanto vale un punto -- mette una carta con L10 alto in una
+    cap 260, dove divora budget, invece che in una uncapped dove non ne
+    consuma affatto.
+
+    Qui l'avidita' e' sulle ESSENZE: a ogni passo si prova a costruire la
+    prossima formazione in OGNI tipo disponibile, si calcola quanto rende, e si
+    tiene solo la migliore. Ci si ferma quando la migliore possibile non rende
+    piu' niente.
+
+    Conseguenze volute:
+      - il mix si decide da solo e cambia con il mazzo del giorno, invece di
+        essere deciso a mano tipo per tipo
+      - nessun tipo va disattivato: quelli che non convengono semplicemente
+        non vengono scelti. Le uncapped, per esempio, oggi non arrivano mai a
+        soglia, ma torneranno utili quando arriveranno campionati con
+        giocatori di L10 alto, che li' non consumano budget.
+    """
+    scelte = []
+    for _ in range(max(0, massimo)):
+        migliore = None
+        for tipo in tipi:
+            soglia = PAREGGIO_ARENA.get(tipo)
+            if soglia is None:
+                continue
+            stato = _istantanea_pool(card_pool)
+            try:
+                prova = generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
+            except Exception:
+                prova = []
+            _ripristina_pool(card_pool, stato)
+            valide = [r for r in prova if 'error' not in r]
+            if not valide:
+                continue
+            atteso = _atteso_con_capitano(valide[0])
+            resa = (atteso - soglia) * GUADAGNO_PER_PUNTO.get(tipo, 7.5)
+            if migliore is None or resa > migliore[0]:
+                migliore = (resa, tipo, atteso)
+        if migliore is None or migliore[0] <= 0:
+            break
+        _resa, tipo, atteso = migliore
+        vera = generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
+        for r in vera:
+            if 'error' not in r:
+                scelte.append(r)
+        print(f"  arena efficiente #{len(scelte)}: {LABELS.get(tipo, tipo)} "
+              f"-- atteso {atteso:.1f}, resa {_resa:.0f} essenze")
+    return scelte
+
+
 def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
     """FASE 1 (28/07, refactor per il pannello alternative): genera e CONSUMA
     il card_pool, ma non renderizza piu' l'HTML qui -- lo si fa in una
@@ -1417,6 +1484,19 @@ def main():
     all_results = []
     for tipo in PRIORITY_ORDER:
         all_results.extend(generate_lineups_for_type(tipo, counts[tipo], role_data, pools, card_pool))
+
+    # ARENE EFFICIENTI (02/08): invece di dire quante di ogni tipo, si dice
+    # quante al massimo e il bot sceglie da solo tipo e numero, massimizzando
+    # le essenze attese. Gira DOPO le richieste esplicite, quindi il pool che
+    # trova e' quello residuo -- e le In Season restano intoccate.
+    _n_eff = int(os.environ.get('ARENE_EFFICIENTI', '0') or 0)
+    if _n_eff > 0:
+        _tipi = [t for t in PRIORITY_ORDER if _is_arena_type(t)]
+        print(f"\n=== ARENE EFFICIENTI: fino a {_n_eff}, tipo scelto dal bot")
+        print("Nessun tipo e' disattivato: quelli che non rendono non vengono")
+        print("scelti, e torneranno appena il mazzo li rendera' convenienti.")
+        all_results.extend(genera_arene_efficienti(_tipi, _n_eff, role_data,
+                                                   pools, card_pool))
 
     # FASE 1b: formazioni OPZIONALI extra (30/07, richiesta esplicita
     # utente -- sostituisce il vecchio "sondaggio" che si limitava a CONTARE

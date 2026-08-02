@@ -52,6 +52,10 @@ on:
         description: 'Arene dedicate per lega (es. mls:1,belgio:1). Slug validi: mls, kleague, belgio, olanda (=Eredivisie), turchia, portogallo, spagna, germania, francia (=Ligue 1), croazia, scozia'
         required: false
         default: ''
+      arene_efficienti:
+        description: 'Quante arene al massimo, con tipo scelto dal bot per resa in essenze (0 = off)'
+        required: false
+        default: '0'
       list_unused_candidates:
         description: 'Stampa nel log i candidati eleggibili mai schierati (debug, 0/1)'
         required: false
@@ -117,6 +121,7 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          ARENE_EFFICIENTI: ${{ github.event.inputs.arene_efficienti }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           CFG: ${{ matrix.gruppo.cfg }}
           IDX: ${{ strategy.job-index }}
@@ -448,6 +453,7 @@ jobs:
           # finestra e' quella e basta, nessuna tolleranza.
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          ARENE_EFFICIENTI: ${{ github.event.inputs.arene_efficienti }}
           IN_SEASON: ${{ github.event.inputs.in_season }}
           ARENA_DEDICATA: ${{ github.event.inputs.arena_dedicata }}
           ARENA_ALLSTARS_260: ${{ github.event.inputs.arena_allstars_260 }}
