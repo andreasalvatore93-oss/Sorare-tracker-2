@@ -1,0 +1,125 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-02T17:29:45.389872Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) petar-musa: 57 pt attesi (37-67)
+   ORDINAMENTO: 57.78
+   SQUADRA: dallas-frisco-texas | AVVERSARIO: queretaro-queretaro
+======================================================================
+
+######################################################################
+# GIOCATORE: petar-musa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: petar-musa (squadra: dallas-frisco-texas)
+Generato: 2026-08-02T17:29:45.388141Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | DAL vs POR | mlspa | score=66.1 | peso=0.514
+  2025-09-07 | STL vs DAL | mlspa | score=67.9 | peso=0.529
+  2025-09-14 | DAL vs ATX | mlspa | score=62.7 | peso=0.543
+  2025-09-21 | DAL vs RAP | mlspa | score=69.9 | peso=0.559
+  2025-09-28 | POR vs DAL | mlspa | score=78.3 | peso=0.574
+  2025-10-04 | DAL vs LA | mlspa | score=66.4 | peso=0.590
+  2025-10-12 | LA vs DAL | mlspa | score=40.1 | peso=0.607
+  2025-10-26 | VAN vs DAL | mlspa | score=49.4 | peso=0.624
+  2025-11-02 | DAL vs VAN | mlspa | score=60.0 | peso=0.642
+  2025-11-14 | ? vs ? | wc-qualification-europe | score=65.9 | peso=0.660
+  2026-02-22 | DAL vs TOR | mlspa | score=73.7 | peso=0.678
+  2026-03-01 | DAL vs NSH | mlspa | score=38.6 | peso=0.697
+  2026-03-08 | LAFC vs DAL | mlspa | score=44.6 | peso=0.717
+  2026-03-15 | DAL vs SD | mlspa | score=100.0 | peso=0.737
+  2026-04-04 | DC vs DAL | mlspa | score=69.5 | peso=0.758
+  2026-04-12 | DAL vs STL | mlspa | score=67.3 | peso=0.779
+  2026-04-19 | DAL vs LA | mlspa | score=70.2 | peso=0.801
+  2026-04-23 | DAL vs MIN | mlspa | score=39.8 | peso=0.824
+  2026-05-02 | RBNY vs DAL | mlspa | score=67.2 | peso=0.847
+  2026-05-10 | DAL vs RSL | mlspa | score=64.8 | peso=0.871
+  2026-05-14 | DAL vs VAN | mlspa | score=60.0 | peso=0.895
+  2026-05-17 | SJ vs DAL | mlspa | score=60.0 | peso=0.920
+  2026-06-17 | ? vs ? | global-cup | score=61.0 | peso=0.946
+  2026-07-26 | SD vs DAL | mlspa | score=46.4 | peso=0.973
+  2026-08-02 | LA vs DAL | mlspa | score=28.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 59.86
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=25): 58.84 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 54.17 | Punteggio complessivo (granulari) medio: 5.68 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.55 (delta +0.45) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.21
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.1 - 69.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.13 (differenza: +4.07)
+Media score in casa: 64.58 | Media score fuori casa: 55.18
+Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.9
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.934
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore trend (media ultime 5: 51.2 vs media ultime 10: 56.5): 0.972
+P(gioca): 60.98% (fonte: tasso di presenza storico (25/41))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-06T00:30
+Casa: FC Dallas | Trasferta: Querétaro FC
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.9 (range 37.1 - 66.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 57.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.68
+Punteggio REALE ottenuto in quella partita: 28.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -33.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.15x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3)
+Partite testate: 19 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      74.2    40.1    -34.1     5.7        NO
+   7        7      43.9    49.4     +5.5    13.0        SI
+   8        8      44.4    60.0    +15.6    13.4        NO
+   9        9      62.6    65.9     +3.3    12.6        SI
+  10       10      67.7    73.7     +6.0    11.9        SI
+  11       11      45.3    38.6     -6.7    12.0        SI
+  12       12      48.7    44.6     -4.1    14.2        SI
+  13       13      69.6   100.0    +30.4    14.6        NO
+  14       14      66.9    69.5     +2.6    19.0        SI
+  15       15      62.6    67.3     +4.7    18.4        SI
+  16       16      73.7    70.2     -3.5    17.7        SI
+  17       17      70.1    39.8    -30.3    17.1        NO
+  18       18      64.8    67.2     +2.4    18.0        SI
+  19       19      55.2    64.8     +9.6    17.5        SI
+  20       20      46.9    60.0    +13.1    16.9        SI
+  21       21      52.9    60.0     +7.1    16.4        SI
+  22       22      61.5    61.0     -0.5    15.9        SI
+  23       23      74.2    46.4    -27.8    15.4        NO
+  24       24      70.8    28.4    -42.4    15.6        NO
+
+MAE (errore assoluto medio): 13.13
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
