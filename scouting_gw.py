@@ -1,5 +1,5 @@
 """
-scouting_gw.py -- il pool di una giornata FUTURA, prima che escano le odds.
+scouting_gw.py -- i candidati all'acquisto di una giornata FUTURA.
 
 Perche' esiste
 --------------
@@ -8,27 +8,26 @@ starter odds, che Sorare pubblica solo a 24-48h dal calcio d'inizio. Per
 COMPRARE serve l'opposto: sapere con giorni di anticipo chi scendera' in campo
 nella prossima giornata, includendo carte che l'utente non ha.
 
-L'aggancio e' la fixture. `so5Fixture(slug).anyGames` elenca tutte le partite
-della giornata CON le squadre, ed e' interrogabile appena la giornata esiste --
-anche mentre quella precedente e' ancora in corso, che e' esattamente il caso
-in cui serve. Chi non gioca in uno di quei club non e' un candidato, punto: e'
-un filtro esatto, non una stima, e costa UNA query.
+Due percorsi, stesso JSON in uscita
+-----------------------------------
+1. `searchPlayers` (DEFAULT, ~12 query, 7 secondi). E' la query dietro la
+   pagina "Scouting" di Sorare: filtra per giornata e per stato del giocatore,
+   e porta gia' L5/L10/L40, presenze, infortuni, proiezione, carte possedute e
+   prezzo minimo. Vedi il blocco di commento sopra SEARCH_QUERY per le due
+   trappole (alias sui nomi dei campi, filtri solo via `refinements`) e per il
+   confronto misurato fra il suo filtro e il nostro.
 
-Da li' i roster: `club(slug).activePlayers` e' pubblico (verificato senza
-cookie il 02/08) e torna posizione e `activeClub` di ogni tesserato. Una query
-per club, tipicamente una pagina sola.
-
-Cosa NON fa
------------
-Nessuna query per giocatore: niente qualita' (L5/L10/L40), niente minuti
-giocati, niente prezzi. Quelle costano una chiamata a testa e su ~2.500
-candidati sono insostenibili -- vanno fatte DOPO, sui sopravvissuti alla
-scrematura. Qui si costruisce solo l'insieme di partenza.
+2. `--roster`: il percorso lento di controllo. Fixture -> `anyGames` -> una
+   query per club (~75) -> ~2.400 giocatori, poi `--screen` per la scrematura
+   "2 delle ultime 3 partite con 60+ minuti", 1 query a giocatore. Serve a
+   verificare il primo, non a sostituirlo: la sua uscita contiene anche
+   giocatori senza carte sul mercato, che per un tool di acquisti sono rumore.
 
 Uso
 ---
     python scouting_gw.py --gameweek 2
-    python scouting_gw.py --fixture football-4-7-aug-2026 --json out.json
+    python scouting_gw.py --fixture football-4-7-aug-2026 --screen
+    python scouting_gw.py --roster --gameweek 2 --screen
 
 Output: un JSON con, per ogni giocatore, ruolo, club, avversario, data e la
 cartella `formazione_<lega>` a cui appartiene (o None se la lega non ha
@@ -45,6 +44,10 @@ import datetime
 import concurrent.futures
 import importlib.util
 from collections import defaultdict
+
+if hasattr(sys.stdout, 'buffer'):  # console Windows in cp1252: i nomi non
+    import io as _io      # latini farebbero morire lo script IN STAMPA, dopo
+    sys.stdout = _io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -228,6 +231,242 @@ def costruisci_pool(gameweek=None, fixture_slug=None):
 
     return {
         'fixture': {k: fx.get(k) for k in ('slug', 'seasonGameWeek', 'aasmState', 'startDate', 'endDate')},
+        'club_in_campo': len(avversario),
+        'partite': n_partite,
+        'giocatori': giocatori,
+        'leghe_senza_pipeline': {k: sorted(v) for k, v in leghe_senza_pipeline.items()},
+    }
+
+
+# --- IL PERCORSO VELOCE: searchPlayers -------------------------------------
+#
+# E' la query dietro la pagina "Scouting" di Sorare, e fa in ~12 chiamate quello
+# che sopra ne costa ~2.400: filtra per giornata, porta L5/L10/L40, presenze,
+# infortuni, proiezione, carte possedute, prezzo minimo e -- quando esistono --
+# le starter odds. Il pool dei roster resta come controllo (--roster), non
+# perche' serva: vedi la misura sotto.
+#
+# Due trappole costate un'ora il 02/08, entrambe invisibili dal payload del
+# browser:
+#
+#   1. i nomi che si leggono nella RISPOSTA sono ALIAS. `lastTenPlayedSo5-
+#      AverageScore` non esiste su Player: il campo vero e'
+#      `averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)`. L'errore
+#      GraphQL suggerisce `lastFortySo5Appearances` e manda fuori strada.
+#   2. `rarity` e `inSeason` NON sono argomenti di searchPlayers. Tutto passa
+#      dai `refinements`, compresi rarita' e prezzi (`floor_prices.*`).
+#
+# E un limite da conoscere: il VALORE del floor non e' richiedibile (non esiste
+# un campo `floorPrices` sull'oggetto), si puo' solo FILTRARE. Il prezzo che
+# torna e' `lowestPriceAnyCard`, cioe' la carta piu' economica di QUALUNQUE
+# rarita' e stagione, a volte quotata in USD/GBP/ETH invece che in euro.
+#
+# Perche' il filtro e' quello di Sorare e non il nostro (misurato su GW2):
+#
+#     nostro pool (roster dei 74 club)      2357
+#     nostri idonei (2-su-3 a 60')           890
+#     pool searchPlayers                    1147
+#     playing_status starter+regular         557
+#
+# Dei nostri 890 idonei solo 527 esistono nel pool di searchPlayers: gli altri
+# 363 non sono nell'indice del mercato, cioe' NON SONO ACQUISTABILI (il caso
+# limite e' Vikingur Reykjavik, 1 carta in vendita su 31 giocatori). Sulla base
+# comune i due filtri concordano su 478; 49 passano solo il nostro, 79 solo
+# quello di Sorare. Scelta dell'utente: filtra Sorare, il nostro 2-su-3 resta
+# come dato di controllo da calcolare a parte sui sopravvissuti.
+SEARCH_QUERY = """
+query ScoutingGiornata($page: Int!, $pageSize: Int!,
+                       $refinements: [SearchRefinementInput!], $advancedFilters: String) {
+  searchPlayers(query: "", page: $page, pageSize: $pageSize,
+                refinements: $refinements, advancedFilters: $advancedFilters) {
+    nbHits
+    nbPages
+    commonPlayerHits {
+      anyPlayer {
+        slug
+        displayName
+        anyPositions
+        activeClub { slug ... on Club { domesticLeague { slug } } }
+        activeInjuries { id }
+        l5:  averageScore(type: LAST_FIVE_SO5_AVERAGE_SCORE)
+        l10: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+        l40: averageScore(type: LAST_FORTY_SO5_AVERAGE_SCORE)
+        lastFiveSo5Appearances
+        lastFifteenSo5Appearances
+        lastFortySo5Appearances
+        ... on Player { age ownedCardsCount nextClassicFixtureProjectedScore }
+        lowestPriceAnyCard {
+          rarityTyped
+          liveSingleSaleOffer {
+            receiverSide { amounts { eurCents usdCents gbpCents wei referenceCurrency } }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+# Le starter odds NON si prendono da qui, ed e' una cosa da sapere prima di
+# riprovarci: `anyGameStats(last: N)` restituisce solo partite GIA' GIOCATE, e
+# la giornata target e' futura per definizione (verificato il 02/08: chiedendo
+# fino a 8 righe, la piu' recente e' sempre la giornata precedente). Nel payload
+# del browser la riga della giornata futura compare perche' la loro query usa il
+# contesto "scoped" sulla fixture, che da fuori non e' esprimibile.
+#
+# Restano quelle che la pipeline gia' usa:
+# discovery_fixture.odds_e_l10_singola / best_five, `footballPlayingStatusOdds
+# { starterOddsBasisPoints reliability }`, una query a giocatore -- sostenibile
+# proprio perche' arriva DOPO questo filtro, su qualche centinaio di nomi.
+
+# Gli stati che Sorare considera "gioca". `not_playing`, `substitute` e
+# `super_substitute` restano fuori dal filtro ma il campo NON viene chiesto per
+# giocatore: e' gia' il refinement a selezionarli.
+STATI_TITOLARE = tuple(
+    s.strip() for s in os.environ.get('SCOUTING_STATI', 'starter,regular').split(',') if s.strip())
+
+PAGINA_SEARCH = int(os.environ.get('SCOUTING_PAGINA_SEARCH', '50'))
+
+
+def _refinements(fixture_slug, stati=STATI_TITOLARE, solo_in_vendita=True):
+    ref = [{"field": "playing_next", "operator": "EQUAL",
+            "values": [{"stringValue": fixture_slug}]}]
+    if stati:
+        ref.append({"field": "player.playing_status", "operator": "EQUAL",
+                    "values": [{"stringValue": s} for s in stati]})
+    if solo_in_vendita:
+        # Toglie chi non ha NESSUNA limited in vendita: su GW2 sono 28
+        # giocatori, che per un tool di acquisti sono rumore puro.
+        ref.append({"field": "floor_prices.all_seasons.limited",
+                    "operator": "GREATER_THAN_OR_EQUAL",
+                    "values": [{"integerValue": 1}]})
+    return ref
+
+
+def _prezzo(player):
+    """(centesimi, valuta) della carta piu' economica, o (None, None).
+
+    Non e' necessariamente una classic limited: e' la piu' economica di
+    qualunque rarita' e stagione. Va trattato come ordine di grandezza per
+    ordinare i candidati, non come il prezzo da pagare."""
+    card = player.get('lowestPriceAnyCard') or {}
+    amounts = (((card.get('liveSingleSaleOffer') or {}).get('receiverSide') or {})
+               .get('amounts')) or {}
+    for chiave, valuta in (('eurCents', 'EUR'), ('usdCents', 'USD'), ('gbpCents', 'GBP')):
+        if amounts.get(chiave) is not None:
+            return amounts[chiave], valuta
+    if amounts.get('wei') is not None:
+        return amounts['wei'], 'WEI'
+    return None, None
+
+
+def pool_da_search(gameweek=None, fixture_slug=None,
+                   stati=STATI_TITOLARE, solo_in_vendita=True):
+    """Il pool della giornata via searchPlayers: ~12 query invece di ~2.400.
+
+    Stesso schema di uscita di costruisci_pool -- chi legge il JSON non deve
+    sapere da quale dei due percorsi arriva -- con in piu' i campi che
+    searchPlayers regala: L5/L40, presenze, infortuni, proiezione Sorare, carte
+    possedute, prezzo minimo e starter odds quando esistono."""
+    fx = risolvi_giornata(gameweek, fixture_slug)
+    if not fx:
+        return None
+    slug_fx = fx.get('slug')
+    log(f"Giornata: {slug_fx} (gameweek {fx.get('seasonGameWeek')}, "
+        f"stato {fx.get('aasmState')}, {fx.get('startDate')} -> {fx.get('endDate')})")
+
+    # La fixture serve comunque, per l'avversario: searchPlayers da' la partita
+    # del giocatore, ma non tutte le partite della giornata.
+    avversario, n_partite = partite_della_giornata(slug_fx)
+    log(f"Partite: {n_partite} | club in campo: {len(avversario)}")
+
+    ref = _refinements(slug_fx, stati, solo_in_vendita)
+    log(f"Filtri: playing_next={slug_fx}"
+        + (f", playing_status={'/'.join(stati)}" if stati else ", nessun filtro di stato")
+        + (", solo con limited in vendita" if solo_in_vendita else ""))
+
+    query = SEARCH_QUERY
+    # Il client di bot_profit, non quello di discovery_global: misurato il
+    # 02/08, con quest'ultimo la stessa identica query passa alla pagina 1 e
+    # viene poi respinta con "depth 8 / complexity 1404" da tutte le successive,
+    # mentre con bot_profit passa sempre. Il tetto e' sull'header, non sulla
+    # forma della query -- e come effetto collaterale si eredita il throttle.
+    client = _client_ritmato()
+
+    def _chiedi(variabili):
+        if client is not None:
+            return client.graphql_query(query, variabili) or {}
+        return _gql.graphql_query(query, variabili,
+                                  operation_name="ScoutingGiornata") or {}
+
+    giocatori, visti = [], set()
+    leghe_senza_pipeline = defaultdict(set)
+    pagina, pagine_totali, nb_hits = 1, 1, None
+    while pagina <= pagine_totali:
+        d = _chiedi({"page": pagina, "pageSize": PAGINA_SEARCH,
+                     "advancedFilters": "sport:football", "refinements": ref})
+        if d.get('errors') or not d.get('data'):
+            log(f"ERRORE alla pagina {pagina}: {str(d.get('errors'))[:200]}")
+            return None
+        res = (d.get('data') or {}).get('searchPlayers') or {}
+        if nb_hits is None:
+            nb_hits = res.get('nbHits')
+            pagine_totali = res.get('nbPages') or 1
+            log(f"searchPlayers: {nb_hits} giocatori su {pagine_totali} pagine da {PAGINA_SEARCH}")
+        for hit in res.get('commonPlayerHits') or []:
+            p = hit.get('anyPlayer') or {}
+            slug = p.get('slug')
+            if not slug or slug in visti:
+                continue
+            visti.add(slug)
+            ruoli = [ROLE_BY_POSITION[x] for x in (p.get('anyPositions') or [])
+                     if x in ROLE_BY_POSITION]
+            if not ruoli:
+                # Allenatori e ruoli non giocanti: searchPlayers li restituisce
+                # (caso reale Rafael Marquez, anyPositions ['Coach']).
+                continue
+            club = (p.get('activeClub') or {}).get('slug')
+            lega = ((p.get('activeClub') or {}).get('domesticLeague') or {}).get('slug')
+            cartella = _df.LEAGUE_DIR.get(lega)
+            if lega and not cartella:
+                leghe_senza_pipeline[lega].add(club)
+            opp, data = avversario.get(club, (None, None))
+            centesimi, valuta = _prezzo(p)
+            giocatori.append({
+                'slug': slug, 'nome': p.get('displayName'), 'ruoli': ruoli,
+                'club': club, 'avversario': opp, 'data': data,
+                'lega': lega, 'cartella': cartella,
+                'l5': p.get('l5'), 'l10': p.get('l10'), 'l40': p.get('l40'),
+                'presenze_5': p.get('lastFiveSo5Appearances'),
+                'presenze_15': p.get('lastFifteenSo5Appearances'),
+                'presenze_40': p.get('lastFortySo5Appearances'),
+                'eta': p.get('age'),
+                'carte_mie': p.get('ownedCardsCount'),
+                'infortunato': bool(p.get('activeInjuries')),
+                'proiezione_sorare': p.get('nextClassicFixtureProjectedScore'),
+                'prezzo_minimo': centesimi, 'prezzo_valuta': valuta,
+                'prezzo_rarita': (p.get('lowestPriceAnyCard') or {}).get('rarityTyped'),
+            })
+        pagina += 1
+        time.sleep(PAUSA)
+
+    per_ruolo = defaultdict(int)
+    for g in giocatori:
+        for r in g['ruoli']:
+            per_ruolo[r] += 1
+    log(f"POOL: {len(giocatori)} giocatori "
+        f"(GK {per_ruolo['GK']}, DEF {per_ruolo['DEF']}, MID {per_ruolo['MID']}, FWD {per_ruolo['FWD']})")
+    if leghe_senza_pipeline:
+        for lega, clubs in sorted(leghe_senza_pipeline.items()):
+            log(f"ATTENZIONE: lega '{lega}' senza cartella formazione_* "
+                f"({len(clubs)} club) -- i suoi giocatori restano nel pool ma non "
+                f"avranno punteggio atteso finche' non si aggiunge la voce in "
+                f"LEAGUE_DIR di discovery_fixture.py.")
+
+    return {
+        'fixture': {k: fx.get(k) for k in ('slug', 'seasonGameWeek', 'aasmState', 'startDate', 'endDate')},
+        'sorgente': 'searchPlayers',
+        'filtri': {'stati': list(stati), 'solo_in_vendita': solo_in_vendita},
         'club_in_campo': len(avversario),
         'partite': n_partite,
         'giocatori': giocatori,
@@ -460,6 +699,37 @@ def unisci(cartella):
     return unito
 
 
+def stampa_candidati(pool, limite=None):
+    """I candidati del percorso searchPlayers, ordinati per L10 dentro il ruolo.
+
+    Se e' stata fatta anche la scrematura nostra, la colonna 'min' mostra i
+    minuti delle ultime partite: e' un controllo, non un filtro -- chi non la
+    passa resta in elenco, marcato."""
+    righe_tutte = pool['giocatori']
+    scremati = any('idoneo' in g for g in righe_tutte)
+    for ruolo in ('GK', 'DEF', 'MID', 'FWD'):
+        righe = [g for g in righe_tutte if ruolo in g['ruoli']]
+        righe.sort(key=lambda g: -(g.get('l10') or 0))
+        print(f"\n=== {ruolo} -- {len(righe)} candidati")
+        for g in (righe[:limite] if limite else righe):
+            prezzo = ('--' if g.get('prezzo_minimo') is None
+                      else f"{g['prezzo_minimo'] / 100:.2f}{g.get('prezzo_valuta') or ''}"
+                      if g.get('prezzo_valuta') != 'WEI' else 'ETH')
+            proiezione = ('--' if not g.get('proiezione_sorare')
+                          else f"{g['proiezione_sorare']:.0f}")
+            nota = ''
+            if g.get('infortunato'):
+                nota += ' INFORTUNATO'
+            if scremati and g.get('idoneo') is False:
+                nota += ' [non 2su3]'
+            if g.get('carte_mie'):
+                nota += f" [ne ho {g['carte_mie']}]"
+            print(f"  {(g.get('nome') or g['slug'])[:24]:<24} L10 {(g.get('l10') or 0):>5.1f}  "
+                  f"proj {proiezione:>3}  {prezzo:>9}  {(g.get('club') or '')[:22]:<22} "
+                  f"vs {(g.get('avversario') or '')[:20]:<20} {(g.get('data') or '')[:10]}"
+                  f"  [{g.get('cartella')}]{nota}")
+
+
 def stampa_idonei(pool, limite=None):
     """L'elenco dei candidati, ordinato per L10 dentro ciascun ruolo."""
     idonei = [g for g in pool['giocatori'] if g.get('idoneo')]
@@ -485,6 +755,13 @@ def main():
                     help="salta la costruzione e screma un pool gia' scritto (per lo sharding)")
     ap.add_argument('--unisci', default=None,
                     help="cartella con le quote scremate da rimettere insieme")
+    ap.add_argument('--roster', action='store_true',
+                    help="percorso lento di controllo: pool dai roster dei club "
+                         "(~75 query) invece di searchPlayers (~12)")
+    ap.add_argument('--tutti-gli-stati', action='store_true',
+                    help="non filtrare per playing_status (pool completo della giornata)")
+    ap.add_argument('--anche-non-in-vendita', action='store_true',
+                    help="tieni anche chi non ha nessuna limited in vendita")
     args = ap.parse_args()
 
     if args.unisci:
@@ -499,15 +776,31 @@ def main():
             f"(giornata {pool['fixture']['slug']})")
         pool['giocatori'] = _shard(pool['giocatori'])
         screma(pool['giocatori'])
-    else:
+    elif args.roster:
         pool = costruisci_pool(args.gameweek, args.fixture)
         if not pool:
             return 1
         if args.screen:
             pool['giocatori'] = _shard(pool['giocatori'])
             screma(pool['giocatori'])
+    else:
+        pool = pool_da_search(
+            args.gameweek, args.fixture,
+            stati=() if args.tutti_gli_stati else STATI_TITOLARE,
+            solo_in_vendita=not args.anche_non_in_vendita)
+        if not pool:
+            return 1
+        if args.screen:
+            # Qui la scrematura non filtra: e' il controllo sui candidati che
+            # Sorare ha gia' selezionato, e costa 1 query a testa su qualche
+            # centinaio di giocatori invece che su 2.400.
+            screma(pool['giocatori'])
+            passa = sum(1 for g in pool['giocatori'] if g.get('idoneo'))
+            log(f"CONTROLLO 2-su-3: {passa}/{len(pool['giocatori'])} confermati "
+                f"(chi non passa resta in elenco, marcato)")
+        stampa_candidati(pool)
 
-    if pool['giocatori'] and 'idoneo' in pool['giocatori'][0]:
+    if pool['giocatori'] and 'idoneo' in pool['giocatori'][0] and pool.get('sorgente') != 'searchPlayers':
         idonei = [g for g in pool['giocatori'] if g.get('idoneo')]
         ignoti = [g for g in pool['giocatori'] if g.get('idoneo') is None]
         per_ruolo = defaultdict(int)

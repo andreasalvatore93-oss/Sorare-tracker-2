@@ -9,9 +9,15 @@ name: Scouting giornata (pool senza odds)
 # precedente e' ancora in corso. Chi non gioca in uno di quei club non e' un
 # candidato: filtro esatto, una query.
 #
-# Tre fasi:
-#   pool     1 query fixture + 1 per club (~75, mezzo minuto)
-#   scrematura  1 query a giocatore, un job solo col throttle di bot_profit
+# Il percorso vivo e' searchPlayers, la query dietro la pagina Scouting di
+# Sorare: ~12 chiamate paginate, 7 secondi, e porta gia' L5/L10/L40, presenze,
+# infortuni, proiezione, carte possedute e prezzo minimo. Il vecchio percorso
+# (roster club per club, ~75 query, poi 1 query a giocatore su ~2.400) resta in
+# scouting_gw.py dietro --roster come controllo, ma non gira qui.
+#
+# Il controllo "2 su 3 partite con 60+ minuti" (input `screma`) NON filtra:
+# marca i candidati che Sorare ha gia' selezionato. Costa 1 query a testa su
+# qualche centinaio di nomi, un paio di minuti.
 #
 # La giornata si passa come numero (2, 3, ...) o come slug esatto, che ha la
 # precedenza. Entrambi vuoti = prossima giornata aperta.
@@ -30,65 +36,23 @@ on:
         default: ''
         type: string
       screma:
-        description: 'Scremare con le ultime partite giocate (1 query a giocatore)'
+        description: 'Controllo 2-su-3 sulle ultime partite (1 query a giocatore, non filtra)'
         required: false
-        default: true
+        default: false
         type: boolean
   workflow_call:
     inputs:
       gameweek: { required: false, default: '', type: string }
       fixture: { required: false, default: '', type: string }
-      screma: { required: false, default: true, type: boolean }
+      screma: { required: false, default: false, type: boolean }
 
 permissions:
   contents: write
 
 jobs:
-  pool:
+  candidati:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: requirements-formazione.txt
-      - run: pip install requests curl_cffi
-
-      - name: Costruisci il pool della giornata
-        env:
-          # I roster dei club sono pubblici (verificato senza cookie il
-          # 02/08), ma il cookie alza il tetto di rate limit da 20 a 60
-          # richieste al minuto: si passa comunque.
-          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          PYTHONUNBUFFERED: "1"
-        run: |
-          ARGS=""
-          if [ -n "${{ inputs.fixture }}" ]; then
-            ARGS="--fixture ${{ inputs.fixture }}"
-          elif [ -n "${{ inputs.gameweek }}" ]; then
-            ARGS="--gameweek ${{ inputs.gameweek }}"
-          fi
-          python scouting_gw.py $ARGS
-
-      # Artifact e non commit: il pool pesa mezzo mega a giornata e si rigenera
-      # in 30 secondi. Ogni file nell'albero lo paga il checkout di OGNI job
-      # (la sessione del 30/07 ha guadagnato 10 secondi a job togliendo
-      # dall'albero file rigenerabili).
-      - uses: actions/upload-artifact@v4
-        with:
-          name: scouting-pool
-          path: dati_globali/scouting_*.json
-          retention-days: 14
-          if-no-files-found: error
-
-  scrematura:
-    needs: pool
-    if: ${{ inputs.screma }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -98,29 +62,35 @@ jobs:
           cache: "pip"
           cache-dependency-path: requirements-formazione.txt
       - run: pip install requests curl_cffi websocket-client
-      - uses: actions/download-artifact@v4
-        with: { name: scouting-pool, path: pool }
 
-      # UN SOLO job, non una matrice. Misurato il 02/08: 8 job paralleli con
-      # pausa fissa hanno preso un 429 a testa nel giro di un minuto. Il tetto
-      # di Sorare e' sull'ACCOUNT (~60 richieste/minuto autenticato), non sul
-      # job, quindi spalmare su piu' runner non alza il tetto: lo sfonda prima.
-      # Il ritmo lo governa il throttle condiviso di bot_profit (barriera
-      # globale sui 429, ritmo adattivo, ripresa graduale), con pochi thread
-      # dentro lo stesso processo: 301 giocatori/minuto misurati, zero 429.
-      - name: Screma il pool
+      # Il cookie serve: senza, searchPlayers viene respinta dai limiti di
+      # complessita' dopo la prima pagina (misurato il 02/08). Il ritmo lo
+      # governa il throttle condiviso di scanners/bot_profit.py -- barriera
+      # globale sui 429, ritmo adattivo -- lo stesso che ha portato la
+      # scrematura da "otto job, otto 429" a 301 giocatori/minuto senza errori.
+      - name: Candidati della giornata
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
         run: |
-          POOL=$(ls pool/scouting_*.json | head -1)
-          python scouting_gw.py --da-pool "$POOL" --json dati_globali/scouting_idonei.json
+          ARGS=""
+          if [ -n "${{ inputs.fixture }}" ]; then
+            ARGS="--fixture ${{ inputs.fixture }}"
+          elif [ -n "${{ inputs.gameweek }}" ]; then
+            ARGS="--gameweek ${{ inputs.gameweek }}"
+          fi
+          if [ "${{ inputs.screma }}" = "true" ]; then
+            ARGS="$ARGS --screen"
+          fi
+          python scouting_gw.py $ARGS
 
+      # Artifact e non commit: si rigenera in sette secondi, e ogni file
+      # nell'albero lo paga il checkout di OGNI job della pipeline.
       - uses: actions/upload-artifact@v4
         with:
-          name: scouting-idonei
-          path: dati_globali/scouting_idonei.json
+          name: scouting-candidati
+          path: dati_globali/scouting_*.json
           retention-days: 30
           if-no-files-found: error
