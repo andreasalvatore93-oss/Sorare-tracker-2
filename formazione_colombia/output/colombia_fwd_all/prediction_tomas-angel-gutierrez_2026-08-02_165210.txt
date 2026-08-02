@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-02T16:52:10.202510Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) tomas-angel-gutierrez: 52 pt attesi (35-73)
+   ORDINAMENTO: 53.08
+   SQUADRA: america-de-cali-santiago-de-cali | AVVERSARIO: boyaca-chico-tunja
+======================================================================
+
+######################################################################
+# GIOCATORE: tomas-angel-gutierrez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tomas-angel-gutierrez (squadra: america-de-cali-santiago-de-cali)
+Generato: 2026-08-02T16:52:10.201990Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: primera-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-06 | MAZ vs SD | leagues-cup-mls | score=39.8 | peso=0.758
+  2026-04-02 | AME vs BUC | primera-a | score=35.6 | peso=0.779
+  2026-04-05 | CUC vs AME | primera-a | score=36.7 | peso=0.801
+  2026-04-10 | MAC vs AME | conmebol-sudamericana | score=72.2 | peso=0.824
+  2026-04-16 | AME vs ALA | conmebol-sudamericana | score=76.4 | peso=0.847
+  2026-04-23 | FOR vs AME | primera-a | score=67.0 | peso=0.871
+  2026-05-07 | ALA vs AME | conmebol-sudamericana | score=72.5 | peso=0.895
+  2026-05-10 | AME vs SFE | primera-a | score=39.2 | peso=0.920
+  2026-05-20 | AME vs TIG | conmebol-sudamericana | score=74.8 | peso=0.946
+  2026-05-29 | AME vs MAC | conmebol-sudamericana | score=45.2 | peso=0.973
+  2026-07-26 | EQU vs AME | primera-a | score=36.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 54.33
+  di cui Punteggio decisivo (level_score) medio: 46.40 | Punteggio complessivo (granulari) medio: 7.93 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.77 (delta +0.34) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.7 - 74.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.22 (differenza: +0.81)
+Media score in casa: 54.24 | Media score fuori casa: 57.04
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.9
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.141
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore trend (media ultime 5: 53.7 vs media ultime 10: 55.6): 0.990
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-02T22:45
+Casa: Sociedad Anónima Deportiva América SA | Trasferta: Deportivo Boyacá Chicó FC SA
+Competizione: primera-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.2 (range 34.6 - 72.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.37
+Punteggio REALE ottenuto in quella partita: 36.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.15x+opp_sens=29.0+trend_int=0.3 (FISSATA)' (half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.5    72.5    +23.0    20.1        NO
+   7        7      69.2    39.2    -30.0    19.8        NO
+   8        8      49.0    74.8    +25.8    19.9        NO
+   9        9      44.3    45.2     +0.9    20.0        SI
+  10       10      53.4    36.8    -16.6    19.4        SI
+
+MAE (errore assoluto medio): 19.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 40.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
