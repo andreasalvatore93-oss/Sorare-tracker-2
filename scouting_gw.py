@@ -959,17 +959,29 @@ def _atteso_dai_consigli(pool):
     per_slug = {}
     cartelle = {g.get('cartella') for g in pool['giocatori'] if g.get('cartella')}
     for cartella in sorted(cartelle):
-        for path in glob.glob(os.path.join(REPO_ROOT, f"formazione_{cartella}",
-                                           'output', '**', 'consiglio*.txt'), recursive=True):
+        trovati = glob.glob(os.path.join(REPO_ROOT, f"formazione_{cartella}",
+                                         'output', '**', 'consiglio*.txt'), recursive=True)
+        # UN file per cartella, il piu' recente. Quelle directory conservano
+        # decine di consigli di giornate passate (in argentina ce ne sono del
+        # 27/07): leggerli tutti mescolerebbe run diverse, e l'ultimo letto
+        # vincerebbe per ordine alfabetico invece che per data.
+        ultimo_per_dir = {}
+        for path in trovati:
+            d = os.path.dirname(path)
+            if d not in ultimo_per_dir or os.path.getmtime(path) > os.path.getmtime(ultimo_per_dir[d]):
+                ultimo_per_dir[d] = path
+        for path in ultimo_per_dir.values():
             try:
                 with open(path, encoding='utf-8') as f:
                     testo = f.read()
             except OSError:
                 continue
-            # Le righe di consiglio hanno forma "slug ... atteso=NN.N": si
-            # prende quello che c'e', senza reimplementare il parser (che vive
-            # in build_formazione_finale ed e' la fonte unica).
-            for m in re.finditer(r'^([a-z0-9\-]+).*?atteso[=: ]\s*([0-9]+(?:\.[0-9]+)?)',
+            # Formato reale di una riga di consiglio (verificato il 02/08):
+            #     1) nicolas-hernan-otamendi: 36 pt (13-44)
+            # Il "pt" e' il punteggio atteso gia' calibrato. La prima versione
+            # cercava "atteso=NN" e non matchava nulla: colonna sempre vuota,
+            # senza un errore che lo dicesse.
+            for m in re.finditer(r'^\s*\d+\)\s*([a-z0-9\-]+):\s*([0-9]+(?:\.[0-9]+)?)\s*pt',
                                  testo, re.M):
                 per_slug[m.group(1)] = float(m.group(2))
     return per_slug
