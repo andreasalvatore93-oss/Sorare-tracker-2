@@ -1,0 +1,105 @@
+name: Ricostruisci manager
+
+# Le partecipazioni e le formazioni di UN manager, su tutte le competizioni.
+# Vedi ricostruisci_manager.py: pubblico tranne l'indice delle partecipazioni,
+# che richiede il cookie. In locale il 429 e' pesante e uccide il processo
+# senza log; su Actions gira a blocchi (vedi max_giornate) con commit dopo
+# ognuno, cosi' un crash o un timeout perde al massimo un blocco.
+
+on:
+  workflow_dispatch:
+    inputs:
+      manager:
+        description: "Slug del manager (es. forever-young)"
+        required: true
+        default: "forever-young"
+      dalle_mie_arene:
+        description: "Usa le giornate dell'archivio arene dell'utente (si/no)"
+        required: false
+        default: "si"
+      giornate:
+        description: "Slug di giornate separati da virgola (usato solo se dalle_mie_arene=no)"
+        required: false
+        default: ""
+      solo_arene:
+        description: "Scarica solo le formazioni di arena, salta In Season e resto (si/no)"
+        required: false
+        default: "no"
+      pausa:
+        description: "Secondi fra query"
+        required: false
+        default: "1.0"
+      max_giornate:
+        description: "Giornate NUOVE per blocco (si committa dopo ognuno, cosi' un timeout perde al massimo un blocco). 0 = tutte in un colpo solo, sconsigliato: niente commit se il job scade prima della fine."
+        required: false
+        default: "5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ricostruisci-manager-${{ github.event.inputs.manager }}
+  cancel-in-progress: false
+
+jobs:
+  ricostruisci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+
+      - name: Scarica, salvando dopo ogni giornata
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          MANAGER_PAUSA: ${{ github.event.inputs.pausa }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -u
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+
+          ARGS="${{ github.event.inputs.manager }}"
+          if [ "${{ github.event.inputs.dalle_mie_arene }}" = "si" ]; then
+            ARGS="$ARGS --dalle-mie-arene"
+          elif [ -n "${{ github.event.inputs.giornate }}" ]; then
+            ARGS="$ARGS --giornate ${{ github.event.inputs.giornate }}"
+          fi
+          if [ "${{ github.event.inputs.solo_arene }}" = "si" ]; then
+            ARGS="$ARGS --solo-arene"
+          fi
+          if [ "${{ github.event.inputs.max_giornate }}" != "0" ]; then
+            ARGS="$ARGS --max-giornate ${{ github.event.inputs.max_giornate }}"
+          fi
+
+          # ricostruisci_manager.py gia' riprende da dove si era fermato
+          # leggendo il json esistente: qui basta rilanciarlo e committare
+          # ogni volta che ha scritto qualcosa di nuovo, in un ciclo che
+          # si ferma da solo quando non c'e' piu' niente da aggiungere.
+          DEST="dati_globali/manager_${{ github.event.inputs.manager }}.json"
+          for tentativo in $(seq 1 50); do
+            echo "=== tentativo $tentativo ==="
+            python ricostruisci_manager.py $ARGS || true
+            git add -f "$DEST"
+            if git diff --cached --quiet; then
+              echo "niente di nuovo: o e' finito o e' bloccato senza cookie."
+              break
+            fi
+            git commit -m "Ricostruzione manager ${{ github.event.inputs.manager }} (tentativo $tentativo)"
+            for t in 1 2 3 4 5; do
+              git pull --no-edit --no-rebase origin main || true
+              if git push origin main; then break; fi
+              echo "push fallito ($t/5)"; sleep 10
+            done
+          done
+
+      - name: Salva anche come artifact (rete di sicurezza)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-${{ github.event.inputs.manager }}
+          path: dati_globali/manager_${{ github.event.inputs.manager }}.json
+          if-no-files-found: warn

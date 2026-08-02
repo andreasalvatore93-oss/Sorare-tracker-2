@@ -193,13 +193,18 @@ def tipo_arena(slug_leaderboard):
 
 
 def partecipazioni(manager, fixture):
-    """Tutte le partecipazioni del manager in quella giornata. Paginata."""
+    """Tutte le partecipazioni del manager in quella giornata. Paginata.
+
+    Torna (righe, ok). `ok` False vuol dire che l'indice non e' arrivato
+    intero -- 429 esauriti, o una pagina persa a meta' paginazione. Chi
+    chiama NON deve salvare quella giornata: salvarla la marcherebbe "fatta"
+    per sempre con dentro meta' dato o zero, e il buco non si vedrebbe piu'."""
     fuori, after = [], None
     for _pagina in range(20):
         d = graphql(INDICE_QUERY, {'fixture': fixture, 'manager': manager, 'after': after})
         if d.get('errors'):
             log(f"  ERRORE indice {fixture}: {str(d['errors'])[:160]}")
-            return fuori
+            return fuori, False
         fx = ((d.get('data') or {}).get('so5') or {}).get('so5Fixture') or {}
         conn = ((fx.get('userFixtureResults') or {}).get('so5LeaderboardContenders')) or {}
         for n in conn.get('nodes') or []:
@@ -214,7 +219,7 @@ def partecipazioni(manager, fixture):
         if not info.get('hasNextPage'):
             break
         after = info.get('endCursor')
-    return fuori
+    return fuori, True
 
 
 def formazione(contender_slug):
@@ -356,21 +361,37 @@ def main():
     else:
         log("Serve --giornate o --dalle-mie-arene.")
         return 1
-    if args.max_giornate:
-        giornate = giornate[:args.max_giornate]
     if not COOKIE:
-        log("ATTENZIONE: SORARE_COOKIE assente -- l'elenco delle partecipazioni "
-            "non e' pubblico e tornera' vuoto.")
+        # meglio fermarsi che girare a vuoto: senza cookie l'indice torna vuoto
+        # SENZA errore, e ogni giornata verrebbe salvata a zero righe e marcata
+        # "fatta" -- l'archivio resterebbe vuoto per sempre senza dirlo.
+        log("SORARE_COOKIE assente: l'elenco delle partecipazioni non e' pubblico "
+            "e tornerebbe vuoto. Mi fermo. Usa il workflow GitHub 'Ricostruisci "
+            "manager', che ha il segreto.")
+        return 1
 
     dest = args.json or os.path.join(REPO_ROOT, 'dati_globali', f'manager_{args.manager}.json')
     dati = carica(dest)
     dati['manager'] = args.manager
 
+    # il taglio va fatto DOPO aver scartato le giornate gia' fatte, non prima:
+    # altrimenti --max-giornate prende sempre le stesse prime N della lista
+    # grezza e un ciclo esterno che lo richiama non avanza mai (bug trovato
+    # scrivendo il workflow GitHub: serviva per committare a piccoli blocchi).
+    if args.max_giornate:
+        gia_fatte = dati.get('giornate') or {}
+        nuove = [g for g in giornate if g not in gia_fatte]
+        giornate = [g for g in giornate if g in gia_fatte] + nuove[:args.max_giornate]
+
     for i, giornata in enumerate(giornate, 1):
         if giornata in (dati.get('giornate') or {}):
             log(f"[{i}/{len(giornate)}] {giornata}: gia' fatta, salto.")
             continue
-        righe = partecipazioni(args.manager, giornata)
+        righe, ok = partecipazioni(args.manager, giornata)
+        if not ok:
+            log(f"[{i}/{len(giornate)}] {giornata}: indice incompleto, NON salvo "
+                "(si riprova al prossimo giro).")
+            continue
         arene = [r for r in righe if r.get('tipo_arena')
                  and r['tipo_arena'] not in TIPI_ARENA_ESCLUSI]
         log(f"[{i}/{len(giornate)}] {giornata}: {len(righe)} partecipazioni, "
