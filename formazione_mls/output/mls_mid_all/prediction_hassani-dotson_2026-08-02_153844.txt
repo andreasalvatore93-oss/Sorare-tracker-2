@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-01T19:17:44.531082Z
+Generato: 2026-08-02T15:38:44.687140Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) hassani-dotson: 50 pt attesi (38-67)
-   SQUADRA: seattle-sounders-renton-washington | AVVERSARIO: portland-timbers-portland-oregon
+1) hassani-dotson: 49 pt attesi (37-67)
+   SQUADRA: seattle-sounders-renton-washington | AVVERSARIO: toluca-toluca-de-lerdo
 ======================================================================
 
 ######################################################################
@@ -13,14 +13,14 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: hassani-dotson (squadra: seattle-sounders-renton-washington)
-Generato: 2026-08-01T19:17:44.529108Z
+Generato: 2026-08-02T15:38:44.670062Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 29
-Escluse (DID_NOT_PLAY): 9
-Escluse (minutaggio < 60', subentri): 12
-Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-03-01 | RSL vs SEA | mlspa | score=34.0 | peso=0.824
   2026-03-08 | STL vs SEA | mlspa | score=39.8 | peso=0.847
@@ -35,15 +35,15 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 Media pesata esponenziale (half-life 25.0 partite): 51.90
   di cui Punteggio decisivo (level_score) medio: 38.25 | Punteggio complessivo (granulari) medio: 13.65 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per venue: 36.63 (delta -1.63)
-  Efficacia offensiva condizionata: delta venue -0.06, delta avversario +0.29 | Passaggio condizionato: delta venue -1.54, delta avversario +1.07 | Gol subiti condizionato: delta venue +0.56, delta avversario -0.85 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+  Efficacia offensiva condizionata: delta venue -0.06, delta avversario -0.05 | Passaggio condizionato: delta venue -1.54, delta avversario +0.43 | Gol subiti condizionato: delta venue +0.56, delta avversario -0.16 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 15.93
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.8 - 69.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.29 (differenza: +6.64)
 Media score in casa: 67.23 | Media score fuori casa: 42.28
 Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 8.5
-Ranking prossimo avversario: 10
-Fattore forza avversario applicato: 1.052
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.159
 Fattore falli (casa/trasferta, da dati reali): 0.996
 Fattore duelli (casa/trasferta, da dati reali): 0.997
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
@@ -52,17 +52,17 @@ Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
 Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
 Fattore gol subiti (goals_conceded, con cap): 1.004
 Fattore trend: N/D (servono almeno 10 partite nella finestra)
-P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+P(gioca): 22.22% (fonte: tasso di presenza storico (8/36))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-02T02:45
-Casa: Portland Timbers | Trasferta: Seattle Sounders FC
-Competizione: mlspa
+Data: 2026-08-06T02:00
+Casa: Deportivo Toluca FC | Trasferta: Seattle Sounders FC
+Competizione: leagues-cup-mls
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 49.8 (range 37.7 - 67.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 48.8 (range 36.7 - 66.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 52.76
@@ -81,9 +81,9 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
 
  idx  storico  predetto   reale   errore   range  in_range
    6        6      66.7    45.1    -21.6    19.9        NO
-   7        7      62.9    46.5    -16.4    18.7        SI
+   7        7      61.2    46.5    -14.7    18.7        SI
 
-MAE (errore assoluto medio): 19.04
+MAE (errore assoluto medio): 18.15
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
