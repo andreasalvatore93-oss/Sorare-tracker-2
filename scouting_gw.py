@@ -1104,7 +1104,18 @@ TIPI_ARENA = ('ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPP
 
 # Quante arene al massimo provare a comporre. Non e' un obiettivo: il motore si
 # ferma da solo quando la prossima non renderebbe piu' essenze.
-MAX_ARENE = int(os.environ.get('SCOUTING_MAX_ARENE', '5'))
+# Tetto pratico, non un obiettivo: il motore si ferma da solo quando la
+# prossima arena non renderebbe piu' essenze. 20 e' lo stesso tetto per tipo
+# che usa il generatore (HARD_CAP_BY_TYPE).
+MAX_ARENE = int(os.environ.get('SCOUTING_MAX_ARENE', '20'))
+
+# Scegliere le arene per ESSENZE PER EURO invece che per essenze: e' la
+# domanda di chi compra. Acceso di default qui, inesistente nel generatore.
+PER_EURO = os.environ.get('SCOUTING_ARENE_PER_EURO', '1').strip() not in ('0', 'false', 'no', '')
+
+# Quanto si assume che costi una carta di cui non conosciamo il prezzo. Alto
+# apposta: e' l'unico modo di non far vincere le formazioni piene di incognite.
+PREZZO_IGNOTO = float(os.environ.get('SCOUTING_PREZZO_IGNOTO', '25'))
 
 
 def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
@@ -1173,6 +1184,7 @@ def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
                      for r in righe}
               for ROLE, righe in merged.items()}
     card_pool = bff.CardPool(counts)
+    prezzi_per_slug = {g['slug']: g.get('prezzo_eur') for g in pool['giocatori']}
 
     # genera_arene_efficienti, non un ciclo di generate_lineups_for_type per
     # tipo: e' la funzione che la produzione usa dal 02/08 (sez. 53). Sceglie
@@ -1184,6 +1196,11 @@ def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
     #
     # Qui conta doppio: un pool di ACQUISTI ha senso solo se si vede in quale
     # arena quelle carte renderebbero, e con che margine sopra il pareggio.
+    if PER_EURO:
+        risultati = _arene_per_euro(gg, list(tipi), massimo, role_data, pools,
+                                    card_pool, prezzi_per_slug)
+        return _confeziona(gg, bf, bff, risultati, card_pool, pool)
+
     if not hasattr(gg, 'genera_arene_efficienti'):
         log("ATTENZIONE: genera_arene_efficienti non disponibile in questo "
             "generatore -- sezione arene saltata invece di usare un motore "
@@ -1201,9 +1218,78 @@ def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
     # Servono i blocchi HTML, non solo il testo: sono le stesse card del
     # generatore (.pcard con data-slug), e su quelle best_five sa gia'
     # annotare prezzo per carta e totale di formazione.
-    _gen, _tot, blocchi, blocchi_html = bf._renderizza_risultati(bff, risultati, card_pool)
-    prezzi_per_slug = {g['slug']: g.get('prezzo_eur') for g in pool['giocatori']}
+    return _confeziona(gg, bf, bff, risultati, card_pool, pool)
 
+
+# L'ottimizzatore per EURO vive SOLO qui, e non nel generatore: li' le carte
+# l'utente le possiede gia', il prezzo non esiste come vincolo e aggiungerlo
+# sarebbe un peso inutile su un motore condiviso con la produzione.
+#
+# La differenza rispetto a `genera_arene_efficienti`: quella e' avida sulle
+# ESSENZE, quindi prende volentieri una carta da 30 EUR per due punti in piu'.
+# Qui l'avidita' e' sulle ESSENZE PER EURO, che e' la domanda di chi deve
+# COMPRARE -- e sui dati del 02/08 la differenza si vedeva a occhio: la prima
+# formazione rendeva 240 essenze costando 6.87 EUR, la terza 173 costandone
+# 41.67.
+#
+# Il resto e' identico e riusa le primitive del generatore: stessa
+# generate_lineups_for_type, stesse istantanee del pool per provare un tipo e
+# disfare la prova, stesse soglie di pareggio e guadagno per punto.
+def _arene_per_euro(gg, tipi, massimo, role_data, pools, card_pool, prezzi_per_slug):
+    scelte = []
+    for _ in range(max(0, massimo)):
+        migliore = None
+        for tipo in tipi:
+            soglia = getattr(gg, 'PAREGGIO_ARENA', {}).get(tipo)
+            if soglia is None:
+                continue
+            stato = gg._istantanea_pool(card_pool)
+            try:
+                prova = gg.generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
+            except Exception:
+                prova = []
+            gg._ripristina_pool(card_pool, stato)
+            valide = [r for r in prova if 'error' not in r]
+            if not valide:
+                continue
+            atteso = gg._atteso_con_capitano(valide[0])
+            essenze = (atteso - soglia) * getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 7.5)
+            if essenze <= 0:
+                continue
+            costo = 0.0
+            for _slot, riga, _c in valide[0].get('formazione') or []:
+                prezzo = prezzi_per_slug.get(riga.get('slug'))
+                # Prezzo ignoto: si assume che costi, e parecchio. Trattarlo
+                # come gratis farebbe vincere le formazioni piene di carte di
+                # cui non sappiamo niente.
+                costo += PREZZO_IGNOTO if prezzo is None else prezzo
+            # +1 EUR al denominatore: senza, una formazione di sole carte
+            # gia' possedute (costo 0) avrebbe resa infinita e vincerebbe
+            # sempre, a prescindere da quanto rende davvero.
+            resa = essenze / (costo + 1.0)
+            if migliore is None or resa > migliore[0]:
+                migliore = (resa, tipo, atteso, essenze, costo)
+        if migliore is None:
+            break
+        resa, tipo, atteso, essenze, costo = migliore
+        vera = gg.generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
+        for r in vera:
+            if 'error' not in r:
+                scelte.append(r)
+        log(f"  arena #{len(scelte)} per euro: {getattr(gg,'LABELS',{}).get(tipo,tipo)} "
+            f"-- atteso {atteso:.1f}, {essenze:.0f} essenze, {costo:.2f} EUR "
+            f"-> {resa:.0f} essenze/EUR")
+    return scelte
+
+
+def _confeziona(gg, bf, bff, risultati, card_pool, pool):
+    """Dai risultati grezzi del motore ai conti pronti per il report."""
+    if not risultati:
+        log("Nessuna arena conviene con questi candidati: nessuna formazione "
+            "arriva sopra la propria soglia di pareggio.")
+        return []
+    prezzi_per_slug = {g['slug']: g.get('prezzo_eur') for g in pool['giocatori']}
+    _gen, _tot, blocchi, blocchi_html = bf._renderizza_risultati(bff, risultati, card_pool)
     formazioni = []
     for risultato, blocco, blocco_html in zip(risultati, blocchi, blocchi_html):
         conto = _conto_arena(gg, risultato, prezzi_per_slug)
@@ -1299,7 +1385,55 @@ una classic limited). Proj = proiezione di Sorare. L10 = media ultime 10 giocate
 Atteso = il nostro modello, gia' calibrato su scala reale.</div>
 """
 
-_HTML_CODA = "</body></html>"
+# Ordinamento cliccando l'intestazione. Nessuna libreria: si riordinano i <tr>
+# gia' presenti. I numeri si leggono dal testo ripulito da tutto quello che
+# numero non e' (euro, percentuali, segni, spazi unificatori), cosi' "+148",
+# "12.94 EUR" e "80%" si confrontano come numeri e non come stringhe -- con
+# l'ordinamento alfabetico "9" verrebbe dopo "80".
+_HTML_ORDINAMENTO = """
+<script>
+(function () {
+  var tab = document.getElementById('candidati');
+  if (!tab) return;
+  var intestazioni = tab.querySelectorAll('tr:first-child th');
+  intestazioni.forEach(function (th, colonna) {
+    th.style.cursor = 'pointer';
+    th.title = (th.title ? th.title + ' -- ' : '') + 'clicca per ordinare';
+    th.addEventListener('click', function () {
+      var righe = Array.prototype.slice.call(tab.querySelectorAll('tr')).slice(1);
+      var discendente = th.dataset.ordine !== 'desc';
+      intestazioni.forEach(function (altra) {
+        delete altra.dataset.ordine;
+        altra.textContent = altra.textContent.replace(/ [\\u25b2\\u25bc]$/, '');
+      });
+      th.dataset.ordine = discendente ? 'desc' : 'asc';
+      th.textContent = th.textContent + (discendente ? ' \\u25bc' : ' \\u25b2');
+      var numero = function (cella) {
+        var t = (cella.textContent || '').replace(/\\u00a0/g, ' ')
+                 .replace(/[^0-9,.\\-+]/g, '').replace(',', '.');
+        var v = parseFloat(t);
+        return isNaN(v) ? null : v;
+      };
+      righe.sort(function (a, b) {
+        var ca = a.cells[colonna], cb = b.cells[colonna];
+        if (!ca || !cb) return 0;
+        var na = numero(ca), nb = numero(cb);
+        // Le celle senza valore stanno SEMPRE in fondo, in entrambi i versi:
+        // altrimenti ordinando per prezzo crescente vincerebbero le carte di
+        // cui non sappiamo il prezzo.
+        if (na === null && nb === null) return 0;
+        if (na === null) return 1;
+        if (nb === null) return -1;
+        return discendente ? nb - na : na - nb;
+      });
+      righe.forEach(function (r) { tab.appendChild(r); });
+    });
+  });
+})();
+</script>
+"""
+
+_HTML_CODA = _HTML_ORDINAMENTO + "</body></html>"
 
 
 def _atteso_dai_consigli(pool):
@@ -1453,8 +1587,13 @@ def scrivi_html(pool, dest, formazioni=()):
     }
     scremati = any('idoneo' in g for g in pool['giocatori'])
     pezzi = [testa]
-    for ruolo in ('GK', 'DEF', 'MID', 'FWD'):
-        righe = [g for g in pool['giocatori'] if ruolo in g['ruoli']]
+    # Una tabella SOLA, non una per ruolo (richiesta dell'utente 02/08): il
+    # ruolo diventa una colonna, e l'ordinamento si fa cliccando le
+    # intestazioni. Cosi' si confrontano fra loro anche giocatori di ruoli
+    # diversi -- che e' la domanda vera quando si compra: "con dieci euro,
+    # cosa mi conviene prendere?".
+    for ruolo in ('TUTTI',):
+        righe = list(pool['giocatori'])
         if not righe:
             continue
         # L'ordine e' per EFFICIENZA sotto cap (atteso diviso L10), non per
@@ -1470,8 +1609,11 @@ def scrivi_html(pool, dest, formazioni=()):
             return (1, -_efficienza_attesa(g), -(g.get('l10') or 0))
 
         righe.sort(key=_chiave)
-        pezzi.append(f"<h2>{ruolo} &mdash; {len(righe)} candidati</h2><div class='wrap'><table>"
-                     "<tr><th>Giocatore</th><th>Atteso</th><th title='Atteso diviso L10: "
+        pezzi.append(f"<h2>{len(righe)} candidati</h2>"
+                     "<div class='meta'>Clicca un'intestazione per ordinare: "
+                     "primo clic decrescente, secondo crescente.</div>"
+                     "<div class='wrap'><table id='candidati'>"
+                     "<tr><th>Giocatore</th><th>Ruolo</th><th>Atteso</th><th title='Atteso diviso L10: "
                      "sotto cap 260 serve almeno 1.017'>Att/L10</th>"
                      "<th title='Essenze guadagnate a giornata rispetto a uno slot "
                      "medio da 51.8 punti (7.65 essenze per punto)'>Ess/GW</th>"
@@ -1534,6 +1676,7 @@ def scrivi_html(pool, dest, formazioni=()):
                 # senza cercare a mano.
                 f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
                 f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
+                f"<td>{'/'.join(g['ruoli'])}</td>"
                 f"<td class='n'>{num(atteso, '%.1f')}</td>"
                 f"<td class='n'>{eff_txt}</td>"
                 f"<td class='n'>{ess_txt}</td>"
