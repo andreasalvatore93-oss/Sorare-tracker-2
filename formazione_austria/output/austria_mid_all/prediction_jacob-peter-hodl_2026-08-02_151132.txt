@@ -1,6 +1,6 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-01T17:20:09.960497Z
+Generato: 2026-08-02T15:11:32.173993Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 1) jacob-peter-hodl: 42 pt attesi (29-60)
@@ -13,13 +13,13 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: jacob-peter-hodl (squadra: sturm-graz-graz)
-Generato: 2026-08-01T17:20:09.959452Z
+Generato: 2026-08-02T15:11:32.172975Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 45
+Partite considerate: 44
 Escluse (DID_NOT_PLAY): 5
-Escluse (minutaggio < 60', subentri): 20
+Escluse (minutaggio < 60', subentri): 19
 Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2025-09-14 | STU vs FAK | austrian-bundesliga | score=37.7 | peso=0.590
@@ -53,9 +53,9 @@ Deviazione standard pesata: 18.03
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.89 (differenza: +5.14)
 Media score in casa: 47.54 | Media score fuori casa: 33.99
 Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 5.5
+Ranking medio avversari affrontati (storico): 5.8
 Ranking prossimo avversario: 2
-Fattore forza avversario applicato: 0.878
+Fattore forza avversario applicato: 0.869
 Fattore falli (casa/trasferta, da dati reali): 0.995
 Fattore duelli (casa/trasferta, da dati reali): 0.993
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
@@ -64,7 +64,7 @@ Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
 Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
 Fattore gol subiti (goals_conceded, con cap): 0.992
 Fattore trend (media ultime 5: 52.7 vs media ultime 10: 42.3): 1.049
-P(gioca): 44.44% (fonte: tasso di presenza storico (20/45))
+P(gioca): 45.45% (fonte: tasso di presenza storico (20/44))
 
 --- PROSSIMA PARTITA ---
 Data: 2026-08-05T18:00
@@ -74,7 +74,7 @@ Competizione: uefa-champions-league
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 41.6 (range 28.6 - 60.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 41.7 (range 28.6 - 60.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 42.17
@@ -104,10 +104,10 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   15       15      34.9    60.0    +25.1    15.4        NO
   16       16      37.4    50.9    +13.5    16.3        SI
   17       17      34.4    88.3    +53.9    16.1        NO
-  18       18      45.9    36.2     -9.7    20.8        SI
-  19       19      39.1    28.2    -10.9    20.1        SI
+  18       18      51.9    36.2    -15.7    20.8        SI
+  19       19      40.3    28.2    -12.1    20.1        SI
 
-MAE (errore assoluto medio): 15.30
+MAE (errore assoluto medio): 15.81
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 64.3%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
