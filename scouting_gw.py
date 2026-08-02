@@ -327,6 +327,12 @@ STATI_TITOLARE = tuple(
 
 PAGINA_SEARCH = int(os.environ.get('SCOUTING_PAGINA_SEARCH', '50'))
 
+# Il rapporto minimo punti/L10 sotto cap 260, misurato su 673 arene reali: sotto
+# questa riga la carta non paga il posto che occupa nel cap. Vive qui perche' il
+# report lo usa per colorare la colonna Att/L10 -- se cambia in produzione, va
+# cambiato anche qui (e nella tabella dei numeri di riferimento).
+SOGLIA_PUNTI_PER_L10 = float(os.environ.get('SCOUTING_SOGLIA_L10', '1.017'))
+
 
 def _refinements(fixture_slug, stati=STATI_TITOLARE, solo_in_vendita=True):
     ref = [{"field": "playing_next", "operator": "EQUAL",
@@ -769,6 +775,97 @@ def stampa_candidati(pool, limite=None):
                   f"  [{g.get('cartella')}]{nota}")
 
 
+# --- IL CAMPIONE -----------------------------------------------------------
+#
+# Prendere i migliori N per L10 e' l'errore che sembra ovvio e non lo e'.
+# Sotto un cap la valuta NON e' il punteggio, e' il punteggio PER UNITA' DI L10
+# (soglia misurata: 1.017 sotto cap 260, sez. dei numeri di riferimento). I top
+# per L10 sono esattamente le carte che saturano il cap -- Messi, L10 88, si
+# mangia un terzo di un cap 260 da solo. Chi riempie bene un cap 220/260 e'
+# l'opposto: L10 basso e atteso alto. Ordinando per L10 quei candidati non
+# entrano mai nel campione, per costruzione.
+#
+# Il problema e' che l'atteso lo sappiamo solo DOPO il predict, e il predict
+# gira solo sul campione: circolarita'. Si rompe con un proxy calcolabile
+# PRIMA, senza una query in piu':
+#
+#   - L5 sopra L10        chi rende sopra la propria media recente sta salendo,
+#                         ed e' il caso in cui il modello supera l'L10;
+#   - proiezione Sorare   una stima indipendente dalla nostra, gia' in tabella;
+#   - L10 basso           sotto cap serve anche gente economica, punto.
+#
+# E si campiona a FASCE di L10 invece che a soglia unica: quattro fasce per
+# quartili calcolati sul ruolo (misurati sul pool GW2: Q1 44, mediana 48, Q3 53
+# -- una distribuzione stretta, dove bande fisse a occhio sarebbero sbagliate),
+# N/4 per fascia. Cosi' il campione copre per costruzione sia i costosi per le
+# arene uncapped sia gli economici per i cap, e non dipende da una sola metrica
+# rumorosa: ordinare solo per efficienza premierebbe chi ha L10 minuscolo e una
+# partita fortunata.
+def _efficienza_attesa(g):
+    """Quanto ci si aspetta che renda per unita' di L10, PRIMA del predict.
+
+    Il numeratore e' la stima piu' ottimista fra quelle disponibili: e' un
+    criterio di ORDINAMENTO dentro una fascia, non una previsione -- la
+    previsione la fa il modello, dopo."""
+    l10 = g.get('l10') or 0
+    if l10 <= 0:
+        return 0.0
+    stima = max(l10, g.get('l5') or 0, g.get('proiezione_sorare') or 0)
+    return stima / l10
+
+
+def campiona(giocatori, per_ruolo, a_fasce=True):
+    """Il campione da mandare al predict: per_ruolo candidati per ruolo.
+
+    Con a_fasce (default) sono divisi in quattro fasce di L10 per quartili del
+    ruolo, ordinati per efficienza attesa dentro ciascuna. Un giocatore con due
+    ruoli entra se e' scelto in almeno uno."""
+    tenuti = set()
+    for ruolo in ('GK', 'DEF', 'MID', 'FWD'):
+        righe = [g for g in giocatori if ruolo in g['ruoli'] and (g.get('l10') or 0) > 0]
+        if not righe:
+            continue
+        if not a_fasce or len(righe) < 8:
+            for g in sorted(righe, key=lambda x: -(x.get('l10') or 0))[:per_ruolo]:
+                tenuti.add(g['slug'])
+            continue
+        valori = sorted(g['l10'] for g in righe)
+        # Quartili a mano: nessuna dipendenza da statistics per un calcolo che
+        # deve solo dividere in quattro gruppi di dimensione simile.
+        tagli = [valori[int(len(valori) * q)] for q in (0.25, 0.50, 0.75)]
+
+        def fascia(g):
+            l10 = g['l10']
+            return sum(1 for t in tagli if l10 >= t)
+
+        quota_base, resto = divmod(per_ruolo, 4)
+        scelti_ruolo = []
+        for f in range(4):
+            # Il resto va alle fasce ALTE: a parita' di tutto, un punto in piu'
+            # vale piu' di uno sconto sul cap in un'arena uncapped.
+            quota = quota_base + (1 if f >= 4 - resto else 0)
+            if not quota:
+                continue
+            in_fascia = sorted((g for g in righe if fascia(g) == f),
+                               key=lambda g: (-_efficienza_attesa(g), -(g.get('l10') or 0)))
+            scelti_ruolo.extend(in_fascia[:quota])
+        # Se una fascia era piu' vuota della sua quota, si completa con i
+        # migliori rimasti invece di consegnare meno candidati del richiesto.
+        if len(scelti_ruolo) < per_ruolo:
+            gia = {g['slug'] for g in scelti_ruolo}
+            avanzi = sorted((g for g in righe if g['slug'] not in gia),
+                            key=lambda g: (-_efficienza_attesa(g), -(g.get('l10') or 0)))
+            scelti_ruolo.extend(avanzi[:per_ruolo - len(scelti_ruolo)])
+        tenuti.update(g['slug'] for g in scelti_ruolo)
+        log(f"  {ruolo}: fasce L10 <{tagli[0]:.0f} / {tagli[0]:.0f}-{tagli[1]:.0f} / "
+            f"{tagli[1]:.0f}-{tagli[2]:.0f} / >{tagli[2]:.0f}")
+
+    scelti = [g for g in giocatori if g['slug'] in tenuti]
+    log(f"Campione: {per_ruolo} per ruolo "
+        f"({'a fasce di L10' if a_fasce else 'i migliori per L10'}) -> {len(scelti)} candidati")
+    return scelti
+
+
 # --- IL PONTE VERSO I PREDICT ---------------------------------------------
 #
 # I predict NON vanno modificati: ognuno legge la sua lista da
@@ -894,9 +991,24 @@ def scrivi_html(pool, dest):
         righe = [g for g in pool['giocatori'] if ruolo in g['ruoli']]
         if not righe:
             continue
-        righe.sort(key=lambda g: -(attesi.get(g['slug']) or g.get('l10') or 0))
+        # L'ordine e' per EFFICIENZA sotto cap (atteso diviso L10), non per
+        # atteso assoluto: sotto un cap si comprano punti per unita' di L10, e
+        # ordinare per atteso rimetterebbe in cima proprio le carte che il
+        # cap non lascia schierare insieme. Chi non ha ancora l'atteso scende
+        # in fondo, ordinato per il proxy.
+        def _chiave(g):
+            atteso = attesi.get(g['slug'])
+            l10 = g.get('l10') or 0
+            if atteso and l10 > 0:
+                return (0, -(atteso / l10), -atteso)
+            return (1, -_efficienza_attesa(g), -(g.get('l10') or 0))
+
+        righe.sort(key=_chiave)
         pezzi.append(f"<h2>{ruolo} &mdash; {len(righe)} candidati</h2><div class='wrap'><table>"
-                     "<tr><th>Giocatore</th><th>Atteso</th><th>L10</th><th>L5</th><th>L40</th>"
+                     "<tr><th>Giocatore</th><th>Atteso</th><th title='Atteso diviso L10: "
+                     "sotto cap 260 serve almeno 1.017'>Att/L10</th>"
+                     "<th title='Euro spesi per punto atteso'>&euro;/pt</th>"
+                     "<th>L10</th><th>L5</th><th>L40</th>"
                      "<th>Pres.15</th><th>Proj</th><th>Prezzo</th><th>Club</th><th>Avversario</th>"
                      "<th>Quando</th><th>Lega</th><th>Note</th></tr>")
         for g in righe:
@@ -915,6 +1027,16 @@ def scrivi_html(pool, dest):
 
             lega_txt = (g.get('cartella')
                         or "<span class='warn'>senza pipeline</span>")
+            # Efficienza sotto cap: colorata sulla soglia misurata del cap 260.
+            # Sopra 1.017 la carta "paga" il posto che occupa, sotto no.
+            eff_txt = '&mdash;'
+            l10_g = g.get('l10') or 0
+            if atteso and l10_g > 0:
+                eff = atteso / l10_g
+                classe = 'mia' if eff >= SOGLIA_PUNTI_PER_L10 else 'warn'
+                eff_txt = f"<span class='{classe}'>{eff:.2f}</span>"
+            euro_pt = ('&mdash;' if not (atteso and g.get('prezzo_eur'))
+                       else '%.2f' % (g['prezzo_eur'] / atteso))
 
             def num(v, fmt='%.0f'):
                 return '&mdash;' if v in (None, '') else fmt % v
@@ -927,6 +1049,8 @@ def scrivi_html(pool, dest):
                 f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
                 f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
                 f"<td class='n'>{num(atteso, '%.1f')}</td>"
+                f"<td class='n'>{eff_txt}</td>"
+                f"<td class='n'>{euro_pt}</td>"
                 f"<td class='n'>{num(g.get('l10'))}</td>"
                 f"<td class='n'>{num(g.get('l5'))}</td>"
                 f"<td class='n'>{num(g.get('l40'))}</td>"
@@ -985,7 +1109,10 @@ def main():
     ap.add_argument('--lega', default=None,
                     help="tieni solo queste cartelle lega, separate da virgola (es. mls,messico)")
     ap.add_argument('--per-ruolo', type=int, default=None,
-                    help="campione: al massimo N candidati per ruolo (i migliori per L10)")
+                    help="campione: N candidati per ruolo, divisi in quattro fasce di L10")
+    ap.add_argument('--solo-l10', action='store_true',
+                    help="campione vecchio stile: i migliori N per L10 e basta "
+                         "(satura i cap, tenuto solo per confronto)")
     ap.add_argument('--scrivi-discovery', action='store_true',
                     help="scrive player_slugs.json per lega/ruolo, cosi' i predict "
                          "girano sui candidati SOVRASCRIVENDO la discovery di produzione")
@@ -1026,15 +1153,8 @@ def main():
             pool['giocatori'] = [g for g in pool['giocatori'] if g.get('cartella') in leghe]
             log(f"Filtro lega {sorted(leghe)}: {len(pool['giocatori'])}/{prima} candidati")
         if args.per_ruolo:
-            # Campione: i migliori per L10 dentro OGNI ruolo. Un giocatore con
-            # due ruoli entra se e' fra i migliori in almeno uno.
-            tenuti = set()
-            for ruolo in ('GK', 'DEF', 'MID', 'FWD'):
-                righe = sorted((g for g in pool['giocatori'] if ruolo in g['ruoli']),
-                               key=lambda g: -(g.get('l10') or 0))[:args.per_ruolo]
-                tenuti.update(g['slug'] for g in righe)
-            pool['giocatori'] = [g for g in pool['giocatori'] if g['slug'] in tenuti]
-            log(f"Campione: max {args.per_ruolo} per ruolo -> {len(pool['giocatori'])} candidati")
+            pool['giocatori'] = campiona(pool['giocatori'], args.per_ruolo,
+                                         a_fasce=not args.solo_l10)
         if args.screen:
             # Qui la scrematura non filtra: e' il controllo sui candidati che
             # Sorare ha gia' selezionato, e costa 1 query a testa su qualche
