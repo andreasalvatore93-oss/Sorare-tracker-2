@@ -327,6 +327,53 @@ STATI_TITOLARE = tuple(
 
 PAGINA_SEARCH = int(os.environ.get('SCOUTING_PAGINA_SEARCH', '50'))
 
+# --- L'ECONOMIA DELL'ACQUISTO ---------------------------------------------
+#
+# Una carta si schiera UNA volta per giornata in arena (regola di gioco, non
+# stima): niente moltiplicatore per il numero di arene, il ritorno e' per GW.
+#
+# Il campo di un'arena vale ~259 punti su 5 carte, quindi uno slot medio vale
+# ~51.8 punti; il gradiente misurato dice che +20 punti sopra il campo valgono
+# +153 essenze a ingresso, cioe' ~7.65 essenze per punto (sez. 46.B).
+#
+# Da qui l'unico rapporto che regge: EURO PER ESSENZA-AL-TURNO, cioe'
+# prezzo / essenze guadagnate a giornata. Il valore in euro dell'essenza NON
+# serve per sceglere fra candidati -- e' un fattore comune a tutti, moltiplica
+# tutto per lo stesso numero e non cambia l'ordine. Serve solo a decidere se
+# comprare in assoluto, e quella resta una valutazione manuale dell'utente.
+#
+# Il tasso serve percio' a una cosa sola, le "GW di rientro", e va dichiarato:
+# il riassunto stima 1000 essenze fra 0.50 e 15 EUR a seconda di come le spendi
+# (craft, burn, indizi), con 3 EUR come numero di lavoro. Qui il default e' 2,
+# scelta dell'utente come valore MINIMO prudente: se sbaglia, sbaglia dicendo
+# che una carta rende meno di quanto rendera'.
+#
+# Il rientro si calcola sul PREZZO PIENO, che e' il caso pessimo: le classic si
+# rivendono, e una stima seria del deprezzamento non e' possibile (Yamal da 187
+# in season a ~120 classic; per una carta di Liga MX non si sa nemmeno quante
+# giornate Sorare coprira'). Meglio una soglia prudente di una stima finta.
+PUNTI_SLOT_MEDIO = float(os.environ.get('SCOUTING_PUNTI_SLOT', '51.8'))
+ESSENZE_PER_PUNTO = float(os.environ.get('SCOUTING_ESSENZE_PUNTO', '7.65'))
+EURO_PER_1000_ESSENZE = float(os.environ.get('SCOUTING_EURO_1000_ESSENZE', '2'))
+
+
+def _economia(atteso, prezzo_eur):
+    """(essenze a giornata, euro per essenza-al-turno, GW di rientro).
+
+    Ognuno None quando non calcolabile, mai zero al posto di 'non lo so'."""
+    if not atteso:
+        return None, None, None
+    essenze_gw = (atteso - PUNTI_SLOT_MEDIO) * ESSENZE_PER_PUNTO
+    if prezzo_eur is None or essenze_gw <= 0:
+        # Sotto la media di slot la carta non guadagna essenze: un "euro per
+        # essenza" li' sarebbe un numero senza senso, e le GW di rientro
+        # sarebbero infinite. Si mostra il vantaggio negativo e basta.
+        return essenze_gw, None, None
+    euro_per_essenza_gw = prezzo_eur / essenze_gw
+    euro_a_giornata = essenze_gw / 1000.0 * EURO_PER_1000_ESSENZE
+    return essenze_gw, euro_per_essenza_gw, prezzo_eur / euro_a_giornata
+
+
 # Il rapporto minimo punti/L10 sotto cap 260, misurato su 673 arene reali: sotto
 # questa riga la carta non paga il posto che occupa nel cap. Vive qui perche' il
 # report lo usa per colorare la colonna Att/L10 -- se cambia in produzione, va
@@ -1019,7 +1066,13 @@ def scrivi_html(pool, dest):
         pezzi.append(f"<h2>{ruolo} &mdash; {len(righe)} candidati</h2><div class='wrap'><table>"
                      "<tr><th>Giocatore</th><th>Atteso</th><th title='Atteso diviso L10: "
                      "sotto cap 260 serve almeno 1.017'>Att/L10</th>"
-                     "<th title='Euro spesi per punto atteso'>&euro;/pt</th>"
+                     "<th title='Essenze guadagnate a giornata rispetto a uno slot "
+                     "medio da 51.8 punti (7.65 essenze per punto)'>Ess/GW</th>"
+                     "<th title='Prezzo diviso essenze a giornata. NON dipende dal "
+                     "valore in euro dell&apos;essenza: serve a ordinare i candidati'>"
+                     "&euro;/EssGW</th>"
+                     f"<th title='Giornate perche&apos; il vantaggio ripaghi il prezzo "
+                     f"PIENO, a {EURO_PER_1000_ESSENZE:.2f} EUR per 1000 essenze'>GW rientro</th>"
                      "<th>L10</th><th>L5</th><th>L40</th>"
                      "<th>Pres.15</th><th>Proj</th><th>Prezzo</th><th>Club</th><th>Avversario</th>"
                      "<th>Quando</th><th>Lega</th><th>Note</th></tr>")
@@ -1047,8 +1100,17 @@ def scrivi_html(pool, dest):
                 eff = atteso / l10_g
                 classe = 'mia' if eff >= SOGLIA_PUNTI_PER_L10 else 'warn'
                 eff_txt = f"<span class='{classe}'>{eff:.2f}</span>"
-            euro_pt = ('&mdash;' if not (atteso and g.get('prezzo_eur'))
-                       else '%.2f' % (g['prezzo_eur'] / atteso))
+            essenze_gw, euro_ess, rientro = _economia(atteso, g.get('prezzo_eur'))
+            if essenze_gw is None:
+                ess_txt = '&mdash;'
+            elif essenze_gw <= 0:
+                # Sotto uno slot medio: la carta non aggiunge essenze. Va
+                # scritto, non lasciato in bianco -- e' un'informazione.
+                ess_txt = "<span class='ko'>%+.0f</span>" % essenze_gw
+            else:
+                ess_txt = "<span class='mia'>+%.0f</span>" % essenze_gw
+            euro_ess_txt = '&mdash;' if euro_ess is None else '%.3f' % euro_ess
+            rientro_txt = '&mdash;' if rientro is None else '%.0f' % rientro
 
             def num(v, fmt='%.0f'):
                 return '&mdash;' if v in (None, '') else fmt % v
@@ -1062,7 +1124,9 @@ def scrivi_html(pool, dest):
                 f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
                 f"<td class='n'>{num(atteso, '%.1f')}</td>"
                 f"<td class='n'>{eff_txt}</td>"
-                f"<td class='n'>{euro_pt}</td>"
+                f"<td class='n'>{ess_txt}</td>"
+                f"<td class='n'>{euro_ess_txt}</td>"
+                f"<td class='n'>{rientro_txt}</td>"
                 f"<td class='n'>{num(g.get('l10'))}</td>"
                 f"<td class='n'>{num(g.get('l5'))}</td>"
                 f"<td class='n'>{num(g.get('l40'))}</td>"
