@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-02T00:32:57.118043Z
+Generato: 2026-08-02T15:36:47.445741Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) daniel-de-sousa-brito: 47 pt attesi (34-53)
-   SQUADRA: dallas-frisco-texas | AVVERSARIO: la-galaxy-los-angeles-california
+1) daniel-de-sousa-brito: 47 pt attesi (35-53)
+   SQUADRA: dallas-frisco-texas | AVVERSARIO: queretaro-queretaro
 ======================================================================
 
 ######################################################################
@@ -13,14 +13,14 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: daniel-de-sousa-brito (squadra: dallas-frisco-texas)
-Generato: 2026-08-02T00:32:57.117068Z
+Generato: 2026-08-02T15:36:47.444495Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 26
-Escluse (DID_NOT_PLAY): 1
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 2
 Escluse (minutaggio < 60', subentri): 1
-Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2025-08-10 | SJ vs VAN | mlspa | score=40.8 | peso=0.070
   2025-08-17 | SJ vs SD | mlspa | score=23.2 | peso=0.079
@@ -51,33 +51,33 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 Media pesata esponenziale (half-life 6.0 partite): 43.71
   di cui Punteggio decisivo (level_score) medio: 38.67 | Punteggio complessivo (granulari) medio: 5.03 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per forza prossimo avversario: 38.06 (delta -0.61 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
-  Gol subiti condizionato: delta venue -1.31, delta avversario -0.40 | Possesso condizionato per venue: delta +0.19 | Goalkeeping condizionato per venue: delta +0.32 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+  Gol subiti condizionato: delta venue +0.00, delta avversario -0.40 | Possesso condizionato per venue: delta +0.00 | Goalkeeping condizionato per venue: delta +0.00 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
 Deviazione standard pesata: 15.18
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.5 - 49.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.72 (differenza: +2.46)
 Media score in casa: 43.71 | Media score fuori casa: 38.15
-Fattore casa/trasferta applicato: 0.988 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 6.0
-Ranking prossimo avversario: 11
-Fattore forza avversario applicato: 1.172
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.000
 NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
-Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.001
-Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.001
-Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.002
-Fattore gol subiti (goals_conceded, con cap, non applicato): 0.996
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
 Tasso storico clean sheet (porta inviolata nei primi 60'): 25.0% (bonus atteso incorporato nella media pesata: ~6.2pt)
 Fattore trend (media ultime 5: 39.8 vs media ultime 10: 38.5): 1.000
-P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+P(gioca): 88.89% (fonte: tasso di presenza storico (24/27))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-02T02:30
-Casa: LA Galaxy | Trasferta: FC Dallas
-Competizione: mlspa
+Data: 2026-08-06T00:30
+Casa: FC Dallas | Trasferta: Querétaro FC
+Competizione: leagues-cup-mls
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 46.6 (range 34.4 - 52.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 47.0 (range 34.8 - 53.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 45.00
