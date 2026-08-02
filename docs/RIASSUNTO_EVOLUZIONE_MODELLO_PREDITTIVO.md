@@ -8063,3 +8063,80 @@ per una formazione da arena, ammortizzata su una stagione".
    andrebbero messi in poche formazioni invece che sparsi. Il generatore
    ragiona solo dentro la singola formazione, mai sul portafoglio.
 7. **Sparse checkout**: 35.655 file scaricati da ogni job della matrice.
+
+---
+
+## 54. Sessione 02/08 (pomeriggio) — scouting della giornata futura, e la query giusta era quella di Sorare
+
+Obiettivo della sessione: preparare gli **acquisti**, cioè trovare candidati per la
+giornata *successiva* mentre quella in corso non è ancora finita, prima che
+escano le starter odds (Sorare le pubblica a 24-48h dal kickoff: troppo tardi
+per comprare con calma).
+
+### Cosa è stato costruito
+
+- **`scouting_gw.py`** — pool di una giornata futura: `so5Fixture(slug).anyGames`
+  dà partite e squadre di GW2 anche mentre GW1 è in corso (1 query), poi
+  `club(slug).activePlayers` per ogni club (~75 query, 26 secondi) → **2357
+  giocatori**. Scrematura "almeno 2 delle ultime 3 partite con 60+ minuti",
+  1 query a giocatore.
+- **`.github/workflows/scouting_gw.yml`** — con input `gameweek`/`fixture`/`screma`.
+- **3 leghe clonate** (Perù, Cipro, Islanda): erano le uniche di GW2 senza
+  pipeline. Ora nessuna lega del pool è scoperta.
+- **best_five allineato alla produzione**: le righe dei consigli passano per
+  `gg.calibra_riga`, non più su scala grezza. Rimosso un `calibra()` locale mai
+  chiamato.
+
+### Il 429 e il tetto sull'account
+
+La prima scrematura girava su 8 job paralleli: **tutti e otto hanno preso un 429
+nel giro di un minuto**. Il tetto di Sorare è sull'ACCOUNT (~60 richieste/minuto
+autenticato), non sul job — parallelizzare i runner non alza il tetto, lo sfonda
+prima. Sostituito con **un job solo** che usa il throttle di
+`scanners/bot_profit.py` (barriera globale sui 429, ritmo adattivo): **301
+giocatori/minuto, zero 429**.
+
+### La scoperta vera: `searchPlayers`
+
+La pagina Scouting di Sorare filtra per giornata. La sua query è persisted
+(`operationId`), ma è ricostruibile. Due trappole risolte:
+
+- i nomi nella risposta sono **alias**: il campo vero è
+  `averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)`, non
+  `lastTenPlayedSo5AverageScore` (che non esiste su `Player`);
+- `rarity` e `inSeason` **non sono argomenti**: tutto passa da `refinements`
+  (`playing_next`, `player.playing_status`, `floor_prices.*`).
+
+Una query paginata sostituisce roster + scrematura + prezzi, e porta già L5/L10/L40,
+presenze, infortuni, proiezione Sorare, carte possedute e prezzo minimo.
+
+### Il confronto, misurato su GW2
+
+| | giocatori |
+|---|---|
+| nostro pool (roster dei 74 club) | 2357 |
+| nostri idonei (2-su-3 a 60') | 890 |
+| pool `searchPlayers` | 1147 |
+| `playing_status` starter+regular | **557** |
+
+Dei nostri 890 idonei solo **527 esistono nel pool Sorare**: gli altri 363 non
+sono nell'indice del mercato, cioè **non sono acquistabili** (stesso fenomeno del
+Víkingur Reykjavík, 1 carta in vendita su 31 giocatori). Sulla base comune: 478
+passano entrambi i filtri, 49 solo il nostro, 79 solo quello di Sorare.
+
+**Decisione dell'utente**: filtro primario = `player.playing_status` di Sorare
+(più realistico, ~12 query invece di 2357); il nostro 2-su-3 resta come **dato
+di controllo** in output, non come filtro.
+
+### Aperto
+
+- riscrivere `scouting_gw.py` sul percorso `searchPlayers` (deciso, non ancora fatto);
+- il **valore** del floor price non è richiedibile come campo (`floorPrices` non
+  esiste sull'oggetto): si può solo *filtrare* con `floor_prices.all_seasons.limited`.
+  Il prezzo esatto arriva da `lowestPriceAnyCard`, che però è la carta più
+  economica di qualunque rarità/stagione e a volte quotata in USD/GBP/ETH;
+- le **odds** di GW2 sono uscite durante la sessione: `searchPlayers` le
+  restituisce nella stessa query (`anyGameStats { footballPlayingStatusOdds }`),
+  quindi da GW3 in poi sono gratis quando ci sono, con `playing_status` come
+  fallback per chi non le ha ancora;
+- step 3 mai iniziato: la **soglia prezzo** (centesimi per essenza di guadagno atteso).

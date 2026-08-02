@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Best Five — Contender (limitato)</title>
+<style>
+  :root {
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530; --stripe: #232d3a;
+    --text: #edf1f6; --muted: #8a93a6; --muted-2: #5f6879; --gold: #f4c542;
+    --border: rgba(255,255,255,0.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4; --stripe: #e3e6ec;
+      --text: #1a2029; --muted: #5b6474; --muted-2: #8a93a6; --border: rgba(20,25,35,0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 32px 64px; max-width: 1180px; margin: 0 auto;
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .subhead { color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }
+  .lineup-row { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 40px; }
+  .lineup-row .lineup-block { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
+  .alt-panel {
+    flex: 0 0 200px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; align-self: stretch;
+  }
+  .alt-panel-title {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 10px; line-height: 1.4;
+  }
+  .alt-list { display: flex; flex-direction: column; gap: 10px; }
+  .alt-chip { display: flex; align-items: center; gap: 8px; cursor: grab; border-radius: 8px; padding: 2px; }
+  .alt-chip[draggable="true"]:active { cursor: grabbing; }
+  .pcard[draggable="true"] { cursor: grab; }
+  .pcard[draggable="true"]:active { cursor: grabbing; }
+  .pcard.drop-target, .alt-chip.drop-target {
+    outline: 2px dashed var(--gold); outline-offset: 2px;
+  }
+  .alt-circle {
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700; color: var(--muted);
+  }
+  .alt-name { font-size: 0.72rem; font-weight: 600; line-height: 1.2; }
+  .alt-score { font-size: 0.64rem; color: var(--muted); }
+  .lineup-block { margin-bottom: 40px; }
+  .lineup-meta { margin-bottom: 12px; }
+  .lineup-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .lineup-title span { color: var(--text); }
+  .card-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .pcard {
+    position: relative; flex: 0 0 104px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .pcard-stripe { height: 4px; width: 100%; }
+  .pcard-body { padding: 8px 6px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .pcard-role {
+    position: absolute; top: 6px; left: 6px; font-size: 0.52rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 16%, transparent);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .pcard-captain {
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); color: #241c00; font-size: 0.58rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+  }
+  .pcard-avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.72rem; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
+    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 8px;
+  }
+  .pcard-name { font-size: 0.62rem; font-weight: 650; line-height: 1.2; min-height: 1.6em; display: flex; align-items: center; }
+  .pcard-score { font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }
+  .pcard-range { font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pcard-l10 { font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+  .pcard-match { font-size: 0.62rem; color: var(--text); opacity: 0.85; line-height: 1.3; text-align: center; }
+  .pcard-tags { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }
+  .tag { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }
+  .tag-classic { background: rgba(240,168,59,0.16); color: #f0a83b; }
+  .tag-copies { background: var(--stripe); color: var(--muted); }
+  .tag-xpbonus { background: rgba(76,175,80,0.16); color: #4caf50; }
+  .lineup-total {
+    margin-top: 12px; display: inline-flex; align-items: center; gap: 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap;
+    max-width: 100%;
+  }
+  .lineup-total .figure { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .lineup-total .figure.with-captain { color: var(--gold); }
+  .lineup-total .label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }
+  .lineup-total .divider { width: 1px; height: 30px; background: var(--border); }
+  .lineup-total .captain-note { font-size: 0.74rem; color: var(--muted); }
+  .lineup-total .captain-note b { color: var(--gold); font-weight: 700; }
+  .error-block { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }
+</style>
+</head>
+<body>
+<h1>Best Five — Contender (limitato)</h1>
+<p class="subhead">Generato 31/07/2026 08:09Z — 3/3 formazioni, pool limitato a austria, croazia (NON tutte le leghe reali di Contender). Sinergie/anti-stack/captain come nel tool unificato.</p>
+<div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">In Season Contender <span>#1</span></div></div><div class="card-strip"><div class="pcard" draggable="true" style="--role-color:#8b7cf6" data-slug="nikolas-polster" data-role="GK" data-score="53" data-xp-frac="0.0" data-name="Nikolas Polster" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;NP&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Nikolas Polster&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;53&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;36–78 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Wolfsberger Ac Wolfsberg vs Austria Wien Wien&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><div class="pcard-avatar">NP</div><div class="pcard-name">Nikolas Polster</div><div class="pcard-score">53</div><div class="pcard-range">36–78 pt</div><div class="pcard-match">Wolfsberger Ac Wolfsberg vs Austria Wien Wien</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#3aa1e8" data-slug="andres-andrade-cedeno" data-role="DEF" data-score="58" data-xp-frac="0.0" data-name="Andres Andrade" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;AA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Andres Andrade&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;58&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41–75 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Lask Linz vs Grazer Ak Graz&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><div class="pcard-avatar">AA</div><div class="pcard-name">Andres Andrade</div><div class="pcard-score">58</div><div class="pcard-range">41–75 pt</div><div class="pcard-match">Lask Linz vs Grazer Ak Graz</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="tiago-filipe-oliveira-dantas" data-role="MID" data-score="63" data-xp-frac="0.0" data-name="Tiago Dantas" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;TF&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Tiago Dantas&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;63&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;47–84 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Rijeka Rijeka vs Rudes Zagreb&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><div class="pcard-body"><div class="pcard-avatar">TF</div><div class="pcard-name">Tiago Dantas</div><div class="pcard-score">63</div><div class="pcard-range">47–84 pt</div><div class="pcard-match">Rijeka Rijeka vs Rudes Zagreb</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#ef5b5b" data-slug="drena-beljo-dijon" data-role="FWD" data-score="65" data-xp-frac="0.0" data-name="Dion Beljo" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;DB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Dion Beljo&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;65&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;36–82 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Dinamo Zagreb Zagreb vs Slaven Koprivnica Koprivnica&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><span class="pcard-captain">C</span><div class="pcard-body"><div class="pcard-avatar">DB</div><div class="pcard-name">Dion Beljo</div><div class="pcard-score">65</div><div class="pcard-range">36–82 pt</div><div class="pcard-match">Dinamo Zagreb Zagreb vs Slaven Koprivnica Koprivnica</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="fabian-wilfinger" data-role="MID" data-score="62" data-xp-frac="0.0" data-name="Fabian Wilfinger" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;FW&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Fabian Wilfinger&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;62&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;44–83 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Hartberg Hartberg vs Salzburg Wals Siezenheim&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><div class="pcard-avatar">FW</div><div class="pcard-name">Fabian Wilfinger</div><div class="pcard-score">62</div><div class="pcard-range">44–83 pt</div><div class="pcard-match">Hartberg Hartberg vs Salzburg Wals Siezenheim</div><div class="pcard-tags"></div></div></div></div><div class="lineup-total" data-captain-pct="0.5"><div><span class="label">Totale</span><span class="figure">301 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">333 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Dion Beljo</b> <span class="cap-bonus">(+32 pt, +50%)</span></div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note">Cap 260: L10 0.0 / 260 (+4% bonus formazione attivo)</div></div></div>
+<div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">In Season Contender <span>#2</span></div></div><div class="card-strip"><div class="pcard" draggable="true" style="--role-color:#8b7cf6" data-slug="niklas-hedl" data-role="GK" data-score="52" data-xp-frac="0.0" data-name="Niklas Hedl" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;NH&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Niklas Hedl&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;52&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;37–76 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Rapid Wien Wien vs Rheindorf Altach Altach&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><div class="pcard-avatar">NH</div><div class="pcard-name">Niklas Hedl</div><div class="pcard-score">52</div><div class="pcard-range">37–76 pt</div><div class="pcard-match">Rapid Wien Wien vs Rheindorf Altach Altach</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#3aa1e8" data-slug="serge-philippe-raux-yao" data-role="DEF" data-score="57" data-xp-frac="0.0" data-name="Serge-Philippe Raux-Yao" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;SP&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Serge-Philippe Raux-Yao&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;57&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;38–86 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Rapid Wien Wien vs Rheindorf Altach Altach&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><div class="pcard-avatar">SP</div><div class="pcard-name">Serge-Philippe Raux-Yao</div><div class="pcard-score">57</div><div class="pcard-range">38–86 pt</div><div class="pcard-match">Rapid Wien Wien vs Rheindorf Altach Altach</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="luka-stojkovic" data-role="MID" data-score="62" data-xp-frac="0.0" data-name="Luka Stojković" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;LS&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Luka Stojković&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;62&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;33–95 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Dinamo Zagreb Zagreb vs Slaven Koprivnica Koprivnica&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><span class="pcard-captain">C</span><div class="pcard-body"><div class="pcard-avatar">LS</div><div class="pcard-name">Luka Stojković</div><div class="pcard-score">62</div><div class="pcard-range">33–95 pt</div><div class="pcard-match">Dinamo Zagreb Zagreb vs Slaven Koprivnica Koprivnica</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#ef5b5b" data-slug="johannes-eggestein" data-role="FWD" data-score="57" data-xp-frac="0.0" data-name="Johannes Eggestein" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;JE&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Johannes Eggestein&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;57&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;43–75 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Austria Wien Wien vs Wolfsberger Ac Wolfsberg&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><div class="pcard-avatar">JE</div><div class="pcard-name">Johannes Eggestein</div><div class="pcard-score">57</div><div class="pcard-range">43–75 pt</div><div class="pcard-match">Austria Wien Wien vs Wolfsberger Ac Wolfsberg</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="miha-zajc" data-role="MID" data-score="62" data-xp-frac="0.0" data-name="Miha Zajc" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;MZ&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Miha Zajc&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;62&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39–80 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Dinamo Zagreb Zagreb vs Slaven Koprivnica Koprivnica&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><div class="pcard-avatar">MZ</div><div class="pcard-name">Miha Zajc</div><div class="pcard-score">62</div><div class="pcard-range">39–80 pt</div><div class="pcard-match">Dinamo Zagreb Zagreb vs Slaven Koprivnica Koprivnica</div><div class="pcard-tags"></div></div></div></div><div class="lineup-total" data-captain-pct="0.5"><div><span class="label">Totale</span><span class="figure">290 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">321 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Luka Stojković</b> <span class="cap-bonus">(+31 pt, +50%)</span></div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note">Cap 260: L10 0.0 / 260 (+4% bonus formazione attivo)</div></div></div>
+<div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">In Season Contender <span>#3</span></div></div><div class="card-strip"><div class="pcard" draggable="true" style="--role-color:#8b7cf6" data-slug="davor-matijas" data-role="GK" data-score="52" data-xp-frac="0.0" data-name="Davor Matijaš" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;DM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Davor Matijaš&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;52&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;30–79 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Gorica Velika Gorica vs Osijek Osijek&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><div class="pcard-avatar">DM</div><div class="pcard-name">Davor Matijaš</div><div class="pcard-score">52</div><div class="pcard-range">30–79 pt</div><div class="pcard-match">Gorica Velika Gorica vs Osijek Osijek</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#3aa1e8" data-slug="dario-maresic" data-role="DEF" data-score="57" data-xp-frac="0.0" data-name="Dario Maresic" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;DM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Dario Maresic&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;57&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;46–72 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Hajduk Split Split vs Varazdin Varazdin&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><div class="pcard-avatar">DM</div><div class="pcard-name">Dario Maresic</div><div class="pcard-score">57</div><div class="pcard-range">46–72 pt</div><div class="pcard-match">Hajduk Split Split vs Varazdin Varazdin</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="matthias-seidl" data-role="MID" data-score="61" data-xp-frac="0.0" data-name="Matthias Seidl" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;MS&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Matthias Seidl&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;61&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39–74 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Rapid Wien Wien vs Rheindorf Altach Altach&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><span class="pcard-captain">C</span><div class="pcard-body"><div class="pcard-avatar">MS</div><div class="pcard-name">Matthias Seidl</div><div class="pcard-score">61</div><div class="pcard-range">39–74 pt</div><div class="pcard-match">Rapid Wien Wien vs Rheindorf Altach Altach</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#ef5b5b" data-slug="tonni-adamsen" data-role="FWD" data-score="60" data-xp-frac="0.0" data-name="Tonni Adamsen" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;TA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Tonni Adamsen&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;60&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41–79 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Rapid Wien Wien vs Rheindorf Altach Altach&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><div class="pcard-avatar">TA</div><div class="pcard-name">Tonni Adamsen</div><div class="pcard-score">60</div><div class="pcard-range">41–79 pt</div><div class="pcard-match">Rapid Wien Wien vs Rheindorf Altach Altach</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="josip-misic-1994-06-28" data-role="MID" data-score="58" data-xp-frac="0.0" data-name="Josip Mišić" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;JM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Josip Mišić&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;58&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41–78 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Dinamo Zagreb Zagreb vs Slaven Koprivnica Koprivnica&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><div class="pcard-avatar">JM</div><div class="pcard-name">Josip Mišić</div><div class="pcard-score">58</div><div class="pcard-range">41–78 pt</div><div class="pcard-match">Dinamo Zagreb Zagreb vs Slaven Koprivnica Koprivnica</div><div class="pcard-tags"></div></div></div></div><div class="lineup-total" data-captain-pct="0.5"><div><span class="label">Totale</span><span class="figure">288 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">318 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Matthias Seidl</b> <span class="cap-bonus">(+30 pt, +50%)</span></div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note">Cap 260: L10 0.0 / 260 (+4% bonus formazione attivo)</div></div></div>
+<footer>Script separato e READ-ONLY rispetto alla pipeline di produzione.</footer>
+<script>
+// Drag&drop (28/07, richiesta esplicita utente): scambia un giocatore fra
+// una pcard schierata e un'alternativa (o un'altra pcard), stesso ruolo.
+// Puro swap di HTML/attributi gia' pronti lato server (data-body) -- NESSUN
+// ricalcolo di formula, NESSUNA persistenza (un refresh della pagina
+// riporta tutto allo stato generato). Limite noto: le note L10/cap/anti-stack
+// sotto ogni formazione restano quelle calcolate al momento della run, non
+// si aggiornano con lo scambio (solo totale e bonus capitano lo fanno).
+(function () {
+  var dragEl = null;
+
+  function isDraggable(el) {
+    return el && (el.classList.contains('pcard') || el.classList.contains('alt-chip'))
+      && el.getAttribute('draggable') === 'true';
+  }
+
+  document.addEventListener('dragstart', function (e) {
+    var el = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!el) return;
+    dragEl = el;
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', 'x'); } catch (err) {}
+  });
+
+  document.addEventListener('dragover', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+  });
+
+  document.addEventListener('dragenter', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (dragEl && target && target !== dragEl && target.dataset.role === dragEl.dataset.role) {
+      target.classList.add('drop-target');
+    }
+  });
+
+  document.addEventListener('dragleave', function (e) {
+    var target = e.target.closest('.pcard, .alt-chip');
+    if (target) target.classList.remove('drop-target');
+  });
+
+  document.addEventListener('dragend', function () {
+    document.querySelectorAll('.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
+    dragEl = null;
+  });
+
+  document.addEventListener('drop', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+    target.classList.remove('drop-target');
+    swapPlayers(dragEl, target);
+    dragEl = null;
+  });
+
+  function initials(name) {
+    return (name || '').split(' ').filter(Boolean).slice(0, 2)
+      .map(function (w) { return w[0].toUpperCase(); }).join('') || '??';
+  }
+
+  function refresh(el) {
+    if (el.classList.contains('pcard')) {
+      var body = el.querySelector('.pcard-body');
+      if (body) body.innerHTML = el.dataset.body;
+    } else {
+      var circle = el.querySelector('.alt-circle');
+      var name = el.querySelector('.alt-name');
+      var score = el.querySelector('.alt-score');
+      if (circle) circle.textContent = initials(el.dataset.name);
+      if (name) name.textContent = el.dataset.name;
+      if (score) score.textContent = el.dataset.score + ' pt · ' + el.dataset.role;
+    }
+  }
+
+  function swapPlayers(a, b) {
+    ['slug', 'score', 'name', 'body', 'xpFrac'].forEach(function (k) {
+      var tmp = a.dataset[k];
+      a.dataset[k] = b.dataset[k];
+      b.dataset[k] = tmp;
+    });
+    refresh(a);
+    refresh(b);
+    [a, b].forEach(function (el) {
+      var block = el.closest('.lineup-block');
+      if (block) recomputeTotal(block);
+    });
+  }
+
+  function recomputeTotal(block) {
+    var total = 0;
+    block.querySelectorAll('.pcard').forEach(function (c) { total += parseFloat(c.dataset.score) || 0; });
+    var totalEl = block.querySelector('.lineup-total');
+    if (!totalEl) return;
+    var figure = totalEl.querySelector('.figure:not(.with-captain)');
+    if (figure) figure.textContent = Math.round(total) + ' pt';
+    var capBadge = block.querySelector('.pcard-captain');
+    var capPct = parseFloat(totalEl.dataset.captainPct || '0.5');
+    var bonus = 0, capName = '';
+    if (capBadge) {
+      var capCard = capBadge.closest('.pcard');
+      // FIX 28/07 sera: data-score include GIA' il bonus xp/collezione/
+      // stagione (se applicabile) -- calcolare il +50% capitano su quel
+      // valore gonfiato lo applica in cascata invece che addizionato
+      // (stesso bug fixato lato Python in render_lineup_html). Si riporta
+      // al valore raw dividendo per (1+xpFrac) prima di applicare capPct.
+      var capScore = parseFloat(capCard.dataset.score) || 0;
+      var xpFrac = parseFloat(capCard.dataset.xpFrac) || 0;
+      var capRaw = xpFrac ? capScore / (1 + xpFrac) : capScore;
+      bonus = Math.round(capRaw * capPct);
+      capName = capCard.dataset.name || '';
+    }
+    var withCap = totalEl.querySelector('.figure.with-captain');
+    if (withCap) withCap.textContent = Math.round(total + bonus) + ' pt';
+    var capNameEl = totalEl.querySelector('.cap-name');
+    if (capNameEl && capName) capNameEl.textContent = capName;
+    var capBonusEl = totalEl.querySelector('.cap-bonus');
+    if (capBonusEl) capBonusEl.textContent = '(+' + bonus + ' pt, +' + Math.round(capPct * 100) + '%)';
+  }
+})();
+</script>
+
+<script>
+document.querySelectorAll('.pcard[data-slug]').forEach(function (card) {
+  card.style.cursor = 'pointer';
+  card.title = 'Apri su Sorare';
+  card.addEventListener('click', function () {
+    window.open('https://sorare.com/it/football/players/' + card.dataset.slug, '_blank', 'noopener');
+  });
+});
+</script>
+</body>
+</html>
