@@ -1364,6 +1364,56 @@ def _atteso_dai_consigli(pool):
     return per_slug
 
 
+def _script_delle_carte(bf):
+    """Gli <script> del template del generatore.
+
+    Servono, e non sono un di piu': il markup di una .pcard tiene il contenuto
+    in `data-body` HTML-escapato, ed e' UNO SCRIPT a disegnarlo. Copiando il
+    solo <style> le carte restano vuote e il testo si impila in colonna --
+    successo il 02/08: markup identico a quello del generatore, CSS corretto,
+    e a schermo una sfilza di righe illeggibili."""
+    try:
+        template = bf._import_gg().bff.HTML_REPORT_TEMPLATE
+        script = ''.join(re.findall(r'<script>.*?</script>', template, re.S))
+        return script.replace('{{', '{').replace('}}', '}')
+    except Exception:
+        return ''
+
+
+def _prezzi_sulle_carte(prezzi_per_slug):
+    """Prezzo su ogni carta e totale della formazione, in euro.
+
+    Non si riusa `best_five._annota_prezzi_html` perche' quello somma i prezzi
+    IN SEASON, e qui le carte sono tutte CLASSIC: il totale usciva sempre 0
+    (segnalato dall'utente il 02/08)."""
+    payload = json.dumps({k: v for k, v in prezzi_per_slug.items() if v is not None})
+    return """
+<script>
+(function () {
+  var prezzi = %s;
+  document.querySelectorAll('.lineup-block').forEach(function (blocco) {
+    var totale = 0, noti = 0, mancanti = 0;
+    blocco.querySelectorAll('.pcard[data-slug]').forEach(function (card) {
+      var p = prezzi[card.dataset.slug];
+      var riga = document.createElement('div');
+      riga.style.cssText = 'text-align:center;font-size:11px;padding:2px 0;font-weight:600';
+      if (p == null) { riga.textContent = 'prezzo n/d'; riga.style.color = '#8fa199'; mancanti++; }
+      else { riga.textContent = p.toFixed(2) + ' EUR'; riga.style.color = '#7ee787'; totale += p; noti++; }
+      card.appendChild(riga);
+    });
+    if (noti) {
+      var tot = document.createElement('div');
+      tot.style.cssText = 'margin:6px 0 2px;font-size:13px;font-weight:700;color:#e8b84b';
+      tot.textContent = 'Costo formazione: ' + totale.toFixed(2) + ' EUR'
+                      + (mancanti ? ' (+' + mancanti + ' senza prezzo)' : '');
+      blocco.appendChild(tot);
+    }
+  });
+})();
+</script>
+""" % payload
+
+
 def _css_delle_carte(bf):
     """Il foglio di stile delle .pcard, preso dal template del generatore.
 
@@ -1578,9 +1628,11 @@ def scrivi_html(pool, dest, formazioni=()):
         try:
             bf = _import('scouting_best_five_html', 'best_five.py')
             documento = documento.replace('</head>', _css_delle_carte(bf) + '</head>')
-            prezzi_carte = {g['slug']: {'classic': g.get('prezzo_eur'), 'in_season': None}
-                            for g in pool['giocatori'] if g.get('prezzo_eur') is not None}
-            documento = bf._annota_prezzi_html(documento, prezzi_carte)
+            prezzi_carte = {g['slug']: g.get('prezzo_eur') for g in pool['giocatori']}
+            # Prima lo script che DISEGNA le carte, poi quello che ci appende i
+            # prezzi: l'ordine conta, il secondo lavora sul risultato del primo.
+            documento = documento.replace(
+                '</body>', _script_delle_carte(bf) + _prezzi_sulle_carte(prezzi_carte) + '</body>')
             documento = bf.rendi_carte_cliccabili(documento)
         except Exception as e:
             log(f"ATTENZIONE: stile/prezzi delle card non applicati ({e}); "
