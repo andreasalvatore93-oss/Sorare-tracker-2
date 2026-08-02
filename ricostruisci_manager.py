@@ -160,7 +160,7 @@ def graphql(query, variables, con_cookie=True):
     intestazioni = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
     if con_cookie and COOKIE:
         intestazioni['Cookie'] = COOKIE
-    for tentativo in range(5):
+    for tentativo in range(8):
         time.sleep(PAUSA)
         try:
             r = _S.post(GRAPHQL_URL, json={'query': query, 'variables': variables},
@@ -170,7 +170,18 @@ def graphql(query, variables, con_cookie=True):
             time.sleep(3 * (tentativo + 1))
             continue
         if r.status_code == 429:
-            attesa = min(2 ** tentativo * 3, 60)
+            # Da casa il budget ANONIMO e' gia' esaurito da altri (misurato il
+            # 02/08: stessa query, senza cookie 429 con retry-after 67, con
+            # cookie 200). Le formazioni sono pubbliche e le chiedevamo apposta
+            # senza cookie per non consumare il budget dell'account: se pero'
+            # l'anonimo e' chiuso, meglio pagare col cookie che non scaricare.
+            if 'Cookie' not in intestazioni and COOKIE:
+                log("  429 da anonimo: passo al cookie per questa richiesta")
+                intestazioni['Cookie'] = COOKIE
+                continue
+            # Sorare dice lui quanto aspettare: indovinarlo a potenze di 2
+            # significa o ripartire troppo presto o dormire per niente.
+            attesa = min(int(r.headers.get('retry-after') or 0) or 2 ** tentativo * 3, 90)
             log(f"  rate limit, aspetto {attesa}s")
             time.sleep(attesa)
             continue
