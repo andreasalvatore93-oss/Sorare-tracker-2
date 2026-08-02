@@ -737,6 +737,34 @@ def weighted_mean(values, weights):
     return sum(v * w for v, w in zip(values, weights)) / total_w
 
 
+
+def mask_weights(weights, detail_ok_flags):
+    """Pesi con le partite SENZA detailedScore azzerate (03/08, bug reale).
+
+    Quando il dettaglio granulare di una partita non e' disponibile,
+    extract_level_score() ritorna 0.0 -- che non vuol dire "livello zero", vuol
+    dire "non lo so". Il codice pero' lo trattava come un valore vero, quindi
+    'granulare = score - level_score' diventava il PUNTEGGIO INTERO della
+    partita, e sopra ci veniva comunque riaggiunto il livello base 35 stimato
+    da expected_level_from_rates(0, 0). Errore sempre nello stesso verso, cioe'
+    sovrastima pura.
+
+    Misurato sulle cache reali (mls+italia, 4 ruoli): il 3.3% delle partite
+    dentro la finestra usata e' senza dettaglio, e questo colpiva 221
+    giocatori con una sovrastima mediana di +2.2 punti, +5.8 al p90, +19.6 nel
+    caso peggiore.
+
+    Soluzione: la partita resta nello storico per tutto cio' che si legge dal
+    game log (punteggio, casa/trasferta, avversario, data), ma pesa zero in
+    tutto cio' che richiede il detailedScore. Se NESSUNA partita ha il
+    dettaglio si ricade sui pesi pieni: meglio la vecchia stima imprecisa che
+    una divisione per zero."""
+    if not detail_ok_flags:
+        return list(weights)
+    masked = [w if ok else 0.0 for w, ok in zip(weights, detail_ok_flags)]
+    return masked if sum(masked) > 0 else list(weights)
+
+
 def weighted_stddev(values, weights, mean):
     total_w = sum(weights)
     if total_w == 0:
@@ -959,19 +987,35 @@ def venue_factor_gk(scores, is_home_flags, target_is_home, weights):
 
     FUNZIONE UNICA (31/07, audit): prima questa logica era duplicata in due
     punti del file, con rischio di divergenza silenziosa fra il numero
-    applicato e quello mostrato."""
-    media_pesata = weighted_mean(scores, weights)
-    home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
-    away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
-    home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
-    away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
-    overall = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
-    if overall <= 0:
+    applicato e quello mostrato.
+
+    FIX (03/08), tre difetti nello stesso punto:
+
+    1. CONDIZIONE IGNOTA. 'if target_is_home: ... else: ...' mandava sul
+       bucket TRASFERTA anche quando target_is_home era None, cioe' quando la
+       squadra del portiere non e' riconosciuta nella partita target: un
+       'trasferta' dato per buono senza saperlo. Ora torna 1.0.
+    2. MEDIE PIATTE. home_avg/away_avg erano medie semplici, mentre il
+       portiere ha half_life 6 su una finestra di 30 partite: il fattore dava
+       lo stesso peso a una partita di un anno fa e a quella di domenica,
+       e poi moltiplicava una media pesata. Ora sono pesate come il resto.
+    3. BASELINE. 'overall = (home_avg + away_avg) / 2' e' il punto di mezzo
+       fra i due bucket, non la media del giocatore: un portiere con 20
+       partite in casa e 3 fuori veniva confrontato con un riferimento
+       'meta' trasferta' che i suoi dati non sostengono. Ora il riferimento
+       e' la media pesata vera.
+    """
+    if target_is_home is None:
         return 1.0
-    if target_is_home:
-        raw, n_bucket = home_avg / overall, len(home_scores)
-    else:
-        raw, n_bucket = away_avg / overall, len(away_scores)
+    media_pesata = weighted_mean(scores, weights)
+    if media_pesata <= 0:
+        return 1.0
+    ctx = [(s, w) for s, w, h in zip(scores, weights, is_home_flags)
+           if h is not None and bool(h) == bool(target_is_home)]
+    if not ctx:
+        return 1.0
+    context_avg = weighted_mean([s for s, _ in ctx], [w for _, w in ctx])
+    raw, n_bucket = context_avg / media_pesata, len(ctx)
     shrink = n_bucket / (n_bucket + SPLIT_SHRINK_K_GK)
     return 1.0 + shrink * (raw - 1.0)
 
@@ -1022,25 +1066,45 @@ def expected_level_from_rates(lambda_pos, lambda_neg):
     return expected
 
 
-def compute_split_factor(values, is_home_flags, target_is_home):
+def compute_split_factor(values, is_home_flags, target_is_home, weights=None):
     """Dato un elenco di valori granulari (uno per partita, gia' sommati per un
     gruppo di stat) e i relativi flag casa/trasferta, calcola il fattore
     casa/trasferta per QUEL gruppo, con la stessa logica del fattore principale:
     media_contesto_target / media_generale. Fattore neutro (1.0) se non ci sono
-    abbastanza dati in un contesto o se la media generale e' zero/negativa."""
-    home_vals = [v for v, h in zip(values, is_home_flags) if h is True]
-    away_vals = [v for v, h in zip(values, is_home_flags) if h is False]
-    all_vals = values
+    abbastanza dati in un contesto o se la media generale e' zero/negativa.
 
-    if not all_vals:
+    FIX 1 (03/08, condizione ignota): 'context_avg = home_avg if
+    target_is_home else away_avg' mandava sul bucket TRASFERTA anche quando
+    target_is_home era None, cioe' quando la squadra del giocatore non e'
+    riconosciuta nella partita target -- un'ipotesi silenziosa, non una
+    misura. Sulle cache reali il venue non e' riconosciuto nel 9.0% delle
+    partite storiche (5.955 esaminate). Ora la condizione ignota da' 1.0,
+    coerente con media_condizionata() che gia' faceva la cosa giusta.
+
+    FIX 2 (03/08, pesi): le medie erano PIATTE, mentre tutto il resto del
+    modello e' a decadimento esponenziale. Il fattore casa/trasferta dava
+    quindi lo stesso peso a una partita di dodici mesi fa e a quella di
+    domenica scorsa, e poi moltiplicava una media pesata. Ora usa gli stessi
+    pesi del resto della formula; passando i pesi mascherati (mask_weights)
+    esclude anche le partite senza dettaglio granulare."""
+    if not values:
+        return 1.0
+    if target_is_home is None:
         return 1.0
 
-    overall_avg = sum(all_vals) / len(all_vals)
-    home_avg = sum(home_vals) / len(home_vals) if home_vals else overall_avg
-    away_avg = sum(away_vals) / len(away_vals) if away_vals else overall_avg
+    if weights is None:
+        weights = [1.0] * len(values)
+    total_w = sum(weights)
+    if total_w <= 0:
+        return 1.0
 
-    context_avg = home_avg if target_is_home else away_avg
-    context_vals = home_vals if target_is_home else away_vals
+    overall_avg = weighted_mean(values, weights)
+    context_pairs = [(v, w) for v, w, h in zip(values, weights, is_home_flags)
+                     if h is not None and bool(h) == bool(target_is_home)]
+    context_vals = [v for v, _ in context_pairs]
+    if not context_vals:
+        return 1.0
+    context_avg = weighted_mean(context_vals, [w for _, w in context_pairs])
 
     # FIX (25/07, audit logica): il delta viene normalizzato per la deviazione
     # standard STORICA del gruppo stesso, invece di una scala fissa "1%/punto"
@@ -1052,7 +1116,7 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     # sistematicamente (es. un difensore con molti piu' falli in trasferta)
     # ottiene un fattore che si muove davvero, il rumore statistico attorno
     # alla media resta vicino a 1.0.
-    variance = sum((v - overall_avg) ** 2 for v in all_vals) / len(all_vals)
+    variance = sum(w * (v - overall_avg) ** 2 for v, w in zip(values, weights)) / total_w
     std_dev = variance ** 0.5
     delta = context_avg - overall_avg
     delta_normalizzato = (delta / std_dev) if std_dev > 0 else 0.0
@@ -1071,36 +1135,60 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     return max(0.7, min(1.3, fattore))  # limitato per evitare correzioni estreme
 
 
-def compute_trend_factor(scores, short_window=5, long_window=10, trend_intensity=1.0):
-    """Confronta la media delle ultime 'short_window' partite con la media delle
-    ultime 'long_window' partite (stesso pool gia' filtrato per competizione e
-    minutaggio) per rilevare un trend di forma (in crescita o in calo). Ritorna
-    un fattore moltiplicativo centrato su 1.0: se le partite piu' recenti hanno
-    una media piu' alta della finestra piu' ampia, il fattore e' > 1 (forma in
-    crescita), viceversa < 1. Scala conservativa e limitata (max +-20%), per non
-    lasciare che poche partite recenti dominino la predizione.
+def compute_trend_factor(scores, short_window=5, long_window=10, trend_intensity=1.0,
+                          weights=None):
+    """Confronta la media delle ultime 'short_window' partite con quella delle
+    'short_window' partite PRECEDENTI (stesso pool gia' filtrato per
+    competizione e minutaggio) per rilevare un trend di forma. Ritorna un
+    fattore moltiplicativo centrato su 1.0: se le partite piu' recenti rendono
+    piu' di quelle di prima il fattore e' > 1 (forma in crescita), viceversa
+    < 1. Scala conservativa e limitata (max +-20%), per non lasciare che poche
+    partite recenti dominino la predizione.
     Richiede almeno 'long_window' partite; ritorna 1.0 (neutro) altrimenti.
+
+    FIX (03/08, finestre sovrapposte): il confronto era ultime 5 contro
+    ultime 10, ma le 5 sono DENTRO le 10 -- il numeratore era un
+    sottoinsieme del denominatore, quindi il rapporto risultava
+    strutturalmente compresso (circa la meta' del segnale vero: con
+    a = ultime 5 e b = 5 precedenti, si misurava (a-b)/(a+b) invece di
+    (a-b)/b). Un giocatore passato da 40 a 60 di media dava 1.20 invece di
+    1.50. Non stupisce che la taratura avesse spinto TREND_INTENSITY a 0.0
+    su GK e DEF: lo stimatore era rotto, e l'intensita' ottima di uno
+    stimatore rotto e' zero. Ora le due finestre sono disgiunte.
+
+    FIX (03/08, pesi): le due medie erano piatte, sopra una media principale
+    gia' pesata esponenzialmente. Ora accettano gli stessi pesi del resto
+    della formula (e, se mascherati, escludono le partite senza dettaglio).
 
     NUOVO (25/07): trend_intensity scala il DELTA (ratio - 1.0) prima del
     clamp finale, per rendere il trend parametrizzabile nel grid search
     invece di un comportamento fisso — es. trend_intensity=0.7 attenua il
-    trend, 1.3 lo amplifica, 1.0 = comportamento originale invariato."""
+    trend, 1.3 lo amplifica."""
     if len(scores) < long_window:
         return 1.0, None, None
 
     recent_short = scores[-short_window:]
-    recent_long = scores[-long_window:]
+    precedenti = scores[-long_window:-short_window]
+    if not precedenti:
+        return 1.0, None, None
 
-    avg_short = sum(recent_short) / len(recent_short)
-    avg_long = sum(recent_long) / len(recent_long)
+    if weights is not None and len(weights) == len(scores):
+        w_short = weights[-short_window:]
+        w_prec = weights[-long_window:-short_window]
+    else:
+        w_short = [1.0] * len(recent_short)
+        w_prec = [1.0] * len(precedenti)
 
-    if avg_long == 0:
-        return 1.0, avg_short, avg_long
+    avg_short = weighted_mean(recent_short, w_short)
+    avg_prec = weighted_mean(precedenti, w_prec)
 
-    ratio = avg_short / avg_long
+    if avg_prec == 0:
+        return 1.0, avg_short, avg_prec
+
+    ratio = avg_short / avg_prec
     scaled_ratio = 1.0 + (ratio - 1.0) * trend_intensity
     fattore = max(0.8, min(1.2, scaled_ratio))
-    return fattore, avg_short, avg_long
+    return fattore, avg_short, avg_prec
 
 
 def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
@@ -1292,7 +1380,8 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
                             half_life=None, trend_intensity=None,
                             shrink_k=SHRINK_K_OUTLIER_GK,
                             media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR,
-                            presence_rate=None, opponent_lambda_mult=1.0):
+                            presence_rate=None, opponent_lambda_mult=1.0,
+                            detail_ok_flags=None, pen_area_delta=0.0):
     """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` GK di PRODUZIONE,
     da usare SIA in build_prediction (predizione reale) SIA nel backtest
     walk-forward di calibrazione (rigorous_backtest_prod_gk) -- cosi' le due
@@ -1320,12 +1409,18 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     n = len(scores)
     weights = exponential_weights(n, half_life)
 
-    media_granulari_pesata = weighted_mean(granulari_values, weights)
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights) * opponent_lambda_mult
-    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    # Pesi per tutto cio' che viene dal detailedScore: le partite senza
+    # dettaglio pesano zero invece di entrare con level_score=0 (03/08, vedi
+    # mask_weights).
+    weights_det = mask_weights(weights, detail_ok_flags)
+
+    media_granulari_pesata = weighted_mean(granulari_values, weights_det)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights_det) * opponent_lambda_mult
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights_det)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _s, _l = compute_trend_factor(
-        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity)
+        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity,
+        weights=weights_det)
     # Prior di ruolo DINAMICO (28/07, bug reale trovato dall'utente: Jack
     # Skahan, David Vazquez -- giocatori di riserva veri, P(gioca) storico
     # 19-26%, non sfortunati con pochi dati -- venivano tirati dallo
@@ -1342,7 +1437,11 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     # decisione utente via popup): era 46.20 + 4.05 * presence_rate.
     if presence_rate is not None:
         media_ruolo_prior = max(0.0, 46.20 + 4.05 * presence_rate)
-    grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
+    # pen_area_delta (03/08): delta ADDITIVO sul granulare, non piu' un
+    # moltiplicatore su lambda_pos -- vedi
+    # opponent_strength.gk_def_pen_area_granular_delta per il perche'
+    # (componente sbagliata E segno sbagliato).
+    grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare + pen_area_delta
     grezzo_corretto = (
         (n / (n + shrink_k)) * grezzo
         + (shrink_k / (n + shrink_k)) * media_ruolo_prior
@@ -1360,7 +1459,8 @@ def rigorous_backtest_prod_gk(scores, is_home_flags, granulari_values,
                               min_history=6, half_life=None, trend_intensity=None,
                               range_multiplier=1.0,
                               opponent_team_slugs_hist=None, game_dates_hist=None,
-                              presence_rate=None, league='mls'):
+                              presence_rate=None, league='mls',
+                              detail_ok_flags=None, goalkeeping_values=None):
     """Backtest walk-forward ALLINEATO ALLA PRODUZIONE per GK (28/07): ad ogni
     partita richiama compute_score_atteso_gk() -- la STESSA funzione della
     predizione reale -- sul solo storico precedente. Sostituisce, per gli usi
@@ -1387,16 +1487,27 @@ def rigorous_backtest_prod_gk(scores, is_home_flags, granulari_values,
         # non veniva passato affatto e il backtest misurava una formula senza
         # aggiustamento avversario, a differenza della produzione).
         _mult = 1.0
+        _pen_delta = 0.0
         if opponent_team_slugs_hist and game_dates_hist:
             _opp, _dt = opponent_team_slugs_hist[i], game_dates_hist[i]
             _mult = opponent_strength.opponent_lambda_multiplier(league, 'gk', _opp, _dt)
-            _mult *= opponent_strength.gk_def_pen_area_multiplier(league, _opp, _dt)
+            # (03/08) Era un secondo moltiplicatore su lambda_pos; ora e' un
+            # delta additivo sul granulare, come in produzione -- altrimenti il
+            # backtest tornerebbe a misurare una formula diversa da quella che
+            # schiera, l'errore gia' visto e chiuso il 31/07.
+            if goalkeeping_values is not None:
+                _w = mask_weights(exponential_weights(i, half_life),
+                                  detail_ok_flags[:i] if detail_ok_flags else None)
+                _pen_delta = opponent_strength.gk_def_pen_area_granular_delta(
+                    league, _opp, _dt, weighted_mean(goalkeeping_values[:i], _w))
         predetto = compute_score_atteso_gk(
             scores[:i], is_home_flags[:i], granulari_values[:i],
             pos_decisive_values[:i], neg_decisive_values[:i],
             target_is_home=is_home_flags[i], p_gioca=1.0,
             half_life=half_life, trend_intensity=trend_intensity,
-            presence_rate=presence_rate, opponent_lambda_mult=_mult)
+            presence_rate=presence_rate, opponent_lambda_mult=_mult,
+            detail_ok_flags=detail_ok_flags[:i] if detail_ok_flags else None,
+            pen_area_delta=_pen_delta)
         reale = scores[i]
         w = exponential_weights(i, half_life)
         dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
@@ -1436,7 +1547,8 @@ def run_grid_search_prod_gk(scores, is_home_flags, granulari_values,
                             pos_decisive_values, neg_decisive_values,
                             min_history=6,
                             opponent_team_slugs_hist=None, game_dates_hist=None,
-                            presence_rate=None, league='mls'):
+                            presence_rate=None, league='mls',
+                            detail_ok_flags=None, goalkeeping_values=None):
     """Grid search ALLINEATO per GK (31/07, audit): gira
     rigorous_backtest_prod_gk -- che internamente chiama
     compute_score_atteso_gk, la STESSA funzione della predizione reale --
@@ -1467,7 +1579,8 @@ def run_grid_search_prod_gk(scores, is_home_flags, granulari_values,
             trend_intensity=trend_intensity, range_multiplier=range_mult,
             opponent_team_slugs_hist=opponent_team_slugs_hist,
             game_dates_hist=game_dates_hist,
-            presence_rate=presence_rate, league=league)
+            presence_rate=presence_rate, league=league,
+            detail_ok_flags=detail_ok_flags, goalkeeping_values=goalkeeping_values)
         bt.update({'label': label, 'half_life': half_life,
                    'range_multiplier': range_mult, 'trend_intensity': trend_intensity,
                    'opponent_sensitivity': None})
@@ -1746,10 +1859,15 @@ def build_prediction(player_slug):
     granulari_values = []  # NUOVO (26/07, Stadio A): resto del punteggio (= score - level_score)
     pos_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi POSITIVE_DECISIVE_STAT per partita
     neg_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi NEGATIVE_DECISIVE_STAT per partita
+    detail_ok_flags = []  # NUOVO (03/08): la partita ha davvero il detailedScore? Vedi mask_weights
 
     for node, detail in zip(usable, details):
         game_score = node.get('score', 0.0)
         scores.append(game_score)
+        # Il dettaglio c'e' davvero? (03/08) Se manca, tutti i valori derivati
+        # sotto sono segnaposto e la partita dovra' pesare zero -- vedi
+        # mask_weights per il perche' trattarli come dati veri sovrastimava.
+        detail_ok_flags.append(bool(detail and detail.get('detailedScore')))
         game = node['anyGame']
         own_rank, opp_rank, is_home = team_ranking_from_game(game, player_team_slug)
         # fallback: se il ranking non e' nel game log base, prova dal dettaglio granulare
@@ -1792,6 +1910,16 @@ def build_prediction(player_slug):
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
 
+    # Pesi per le grandezze che vengono dal detailedScore (03/08, vedi
+    # mask_weights). 'weights' resta quello pieno per punteggio/range, che dal
+    # dettaglio non dipendono.
+    weights_det = mask_weights(weights, detail_ok_flags)
+    _n_senza_dettaglio = sum(1 for ok in detail_ok_flags if not ok)
+    if _n_senza_dettaglio:
+        log(f"[FASE 4/4] {_n_senza_dettaglio}/{n} partite senza detailedScore: "
+            f"escluse (peso 0) da level_score/granulare/eventi decisivi, "
+            f"restano nel punteggio e nel contesto casa/trasferta.")
+
     media_pesata = weighted_mean(scores, weights)
     dev_std_pesata = weighted_stddev(scores, weights, media_pesata)
     dev_std_trimmed = trimmed_weighted_stddev(scores, weights)
@@ -1803,8 +1931,8 @@ def build_prediction(player_slug):
     # scomposizione additiva score=level_score+granulari verificata su dati
     # reali) -- eventuali scarti sono dovuti al floor (level_score>=60 puo'
     # rendere la scomposizione per-partita non lineare, la media resta valida).
-    media_level_score_pesata = weighted_mean(level_score_values, weights)
-    media_granulari_pesata = weighted_mean(granulari_values, weights)
+    media_level_score_pesata = weighted_mean(level_score_values, weights_det)
+    media_granulari_pesata = weighted_mean(granulari_values, weights_det)
 
     # --- Stadio B (26/07, tema level_score): range di confidenza a
     # percentili pesati sullo storico REALE, in alternativa a media+deviazione
@@ -1838,7 +1966,8 @@ def build_prediction(player_slug):
             pos_decisive_values, neg_decisive_values, min_history=6,
             opponent_team_slugs_hist=opponent_team_slugs_hist,
             game_dates_hist=game_dates_hist,
-            presence_rate=presence_rate, league='mls')
+            presence_rate=presence_rate, league='mls',
+            detail_ok_flags=detail_ok_flags, goalkeeping_values=goalkeeping_values)
         return {'solo_calibrazione': True, 'grid_results': grid_results}
 
     if not future_games:
@@ -1902,7 +2031,7 @@ def build_prediction(player_slug):
     # del detailedScore delle 14 partite (non stime).
     fattore_possesso = compute_split_factor(possession_values, is_home_flags, next_is_home)
     fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home)
-    fattore_goalkeeping = compute_split_factor(goalkeeping_values, is_home_flags, next_is_home)
+    fattore_goalkeeping = compute_split_factor(goalkeeping_values, is_home_flags, next_is_home, weights_det)
     fattore_gol_subiti = compute_split_factor(goals_conceded_values, is_home_flags, next_is_home)
 
     # --- Bonus clean sheet (25/07, gestione SPECIALE per il portiere) ---
@@ -1954,7 +2083,8 @@ def build_prediction(player_slug):
 
     # --- Fattore trend (ultime 5 vs ultime 10, stesso pool gia' filtrato) ---
     fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(
-        scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
+        scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY,
+        weights=weights)
 
     # FIX (25/07): i fattori granulari NON entrano piu' nello score_atteso di
     # produzione. La calibrazione che ha fissato i parametri sopra (grid
@@ -1983,8 +2113,8 @@ def build_prediction(player_slug):
     # diagnostico/di visualizzazione nell'output.
     # --- level_score ATTESO da tasso di eventi (27/07 notte, sezione 22):
     # vedi test_def.py per la spiegazione estesa. Rivalidato su 6 campionati: -0.87% MAE.
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights)
-    lambda_neg_dec = weighted_mean(neg_decisive_values, weights)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights_det)
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights_det)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
         granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
@@ -2000,19 +2130,38 @@ def build_prediction(player_slug):
     # restano calcolate qui solo per il result dict diagnostico/di
     # visualizzazione -- lo stesso identico calcolo avviene dentro la funzione
     # condivisa per lo score_atteso vero e proprio.
+    _next_game_dt = None
+    try:
+        _next_game_dt = datetime.datetime.fromisoformat(
+            (next_game.get('date') or '').replace('Z', '+00:00')).replace(tzinfo=None)
+    except (ValueError, AttributeError):
+        _next_game_dt = None
+    _opp_cutoff = _next_game_dt or datetime.datetime.utcnow()
     _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
-        'mls', 'gk', next_opponent_team_slug, datetime.datetime.utcnow())
+        'mls', 'gk', next_opponent_team_slug, _opp_cutoff)
     # Bonus AGGIUNTIVO (29/07, si affianca al bonus goalkeeping esistente,
     # non lo sostituisce -- vedi opponent_strength.gk_def_pen_area_multiplier):
     # isola le pen_area_entries dei SOLI difensori avversari (da corner/palle
     # inattive), separato dal segnale FWD+MID gia' in produzione. Validato
     # -0.13% MAE (formazione_mls/diagnostics/validate_cross_role_combos.py,
     # gruppo gk_vs_def_only).
-    _opp_lambda_mult *= opponent_strength.gk_def_pen_area_multiplier(
-        'mls', next_opponent_team_slug, datetime.datetime.utcnow())
+    # RISCRITTO (03/08): era '_opp_lambda_mult *= gk_def_pen_area_multiplier(...)',
+    # cioe' un moltiplicatore su lambda_pos. Due errori sovrapposti (vedi
+    # opponent_strength.gk_def_pen_area_granular_delta per la storia completa):
+    # la validazione misurava un delta ADDITIVO sul granulare di parate, non un
+    # moltiplicatore sul tasso di eventi decisivi; e il segno era rovesciato,
+    # perche' lambda_pos del portiere e' dominato da clean_sheet_60 (piu'
+    # pressione avversaria = MENO clean sheet, non piu'). Ora e' additivo sul
+    # granulare e col segno giusto, mentre il rischio sul clean sheet resta a
+    # opponent_lambda_multiplier, che ha gia' SIGN_BY_ROLE['gk'] = -1.
+    _gk_pen_area_delta = opponent_strength.gk_def_pen_area_granular_delta(
+        'mls', next_opponent_team_slug, _opp_cutoff,
+        weighted_mean(goalkeeping_values, weights_det))
     score_atteso = compute_score_atteso_gk(
         scores, is_home_flags, granulari_values, pos_decisive_values, neg_decisive_values,
-        target_is_home=next_is_home, presence_rate=presence_rate, opponent_lambda_mult=_opp_lambda_mult)
+        target_is_home=next_is_home, presence_rate=presence_rate,
+        opponent_lambda_mult=_opp_lambda_mult, detail_ok_flags=detail_ok_flags,
+        pen_area_delta=_gk_pen_area_delta)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo
@@ -2036,22 +2185,22 @@ def build_prediction(player_slug):
     next_forte = (next_opp_rank < avg_opp_rank_hist) if (
         next_opp_rank is not None and avg_opp_rank_hist is not None) else None
     media_level_score_condizionata = media_condizionata(
-        level_score_values, weights, opponent_forte_flags, next_forte, media_level_score_pesata)
+        level_score_values, weights_det, opponent_forte_flags, next_forte, media_level_score_pesata)
     delta_condizionamento_avversario = media_level_score_condizionata - media_level_score_pesata
 
     media_gol_subiti_condizionata_venue = media_condizionata(
-        goals_conceded_values, weights, is_home_flags, next_is_home, weighted_mean(goals_conceded_values, weights))
+        goals_conceded_values, weights_det, is_home_flags, next_is_home, weighted_mean(goals_conceded_values, weights_det))
     media_gol_subiti_condizionata_avversario = media_condizionata(
-        goals_conceded_values, weights, opponent_forte_flags, next_forte, weighted_mean(goals_conceded_values, weights))
+        goals_conceded_values, weights_det, opponent_forte_flags, next_forte, weighted_mean(goals_conceded_values, weights_det))
     media_possesso_condizionata_venue = media_condizionata(
-        possession_values, weights, is_home_flags, next_is_home, weighted_mean(possession_values, weights))
+        possession_values, weights_det, is_home_flags, next_is_home, weighted_mean(possession_values, weights_det))
     media_goalkeeping_condizionata_venue = media_condizionata(
-        goalkeeping_values, weights, is_home_flags, next_is_home, weighted_mean(goalkeeping_values, weights))
+        goalkeeping_values, weights_det, is_home_flags, next_is_home, weighted_mean(goalkeeping_values, weights_det))
 
-    delta_gol_subiti_venue = media_gol_subiti_condizionata_venue - weighted_mean(goals_conceded_values, weights)
-    delta_gol_subiti_avversario = media_gol_subiti_condizionata_avversario - weighted_mean(goals_conceded_values, weights)
-    delta_possesso_venue = media_possesso_condizionata_venue - weighted_mean(possession_values, weights)
-    delta_goalkeeping_venue = media_goalkeeping_condizionata_venue - weighted_mean(goalkeeping_values, weights)
+    delta_gol_subiti_venue = media_gol_subiti_condizionata_venue - weighted_mean(goals_conceded_values, weights_det)
+    delta_gol_subiti_avversario = media_gol_subiti_condizionata_avversario - weighted_mean(goals_conceded_values, weights_det)
+    delta_possesso_venue = media_possesso_condizionata_venue - weighted_mean(possession_values, weights_det)
+    delta_goalkeeping_venue = media_goalkeeping_condizionata_venue - weighted_mean(goalkeeping_values, weights_det)
     # NOTA: nessuno dei delta sopra viene piu' sommato a score_atteso (vedi motivazione).
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
@@ -2101,7 +2250,8 @@ def build_prediction(player_slug):
             pos_decisive_values, neg_decisive_values, min_history=6,
             opponent_team_slugs_hist=opponent_team_slugs_hist,
             game_dates_hist=game_dates_hist,
-            presence_rate=presence_rate, league='mls')
+            presence_rate=presence_rate, league='mls',
+            detail_ok_flags=detail_ok_flags, goalkeeping_values=goalkeeping_values)
         rigorous_bt = grid_results[0] if grid_results else None
     else:
         log("Esecuzione backtest rigoroso sui parametri fissati...")
@@ -2157,6 +2307,8 @@ def build_prediction(player_slug):
         'next_opponent_team_slug': next_opponent_team_slug,
         'next_is_home': next_is_home,
         'fattore_forza_avversario': fattore_forza_avversario,
+        'opp_lambda_mult': _opp_lambda_mult,
+        'gk_pen_area_delta': _gk_pen_area_delta,
         'fattore_possesso': fattore_possesso,
         'fattore_passaggio': fattore_passaggio,
         'fattore_goalkeeping': fattore_goalkeeping,
@@ -2237,7 +2389,18 @@ def format_output(result):
     opp_rank_hist_str = f"{result['avg_opp_rank_hist']:.1f}" if result['avg_opp_rank_hist'] else "N/D"
     lines.append(f"Ranking medio avversari affrontati (storico): {opp_rank_hist_str}")
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
-    lines.append(f"Fattore forza avversario applicato: {result['fattore_forza_avversario']:.3f}")
+    # AVV_FACTOR (03/08, fix output ingannevole): questa riga e' quella che
+    # build_consiglio.py porta fino al report come 'AVV_FACTOR', cioe' l'unico
+    # numero sull'avversario che arriva sotto gli occhi. Mostrava
+    # 'fattore_forza_avversario', costruito su domesticLeagueRanking, che pero'
+    # e' documentato come contaminato e RIMOSSO da score_atteso il 26/07: il
+    # report esibiva come 'applicato' un fattore che non veniva applicato, e
+    # nascondeva quello vero. Ora mostra il moltiplicatore davvero in uso.
+    lines.append(f"Fattore forza avversario applicato: {result['opp_lambda_mult']:.3f} "
+                 f"(gol fatti reali dell'avversario, ultime 10; delta granulare "
+                 f"parate {result['gk_pen_area_delta']:+.2f} pt)")
+    lines.append(f"Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): "
+                 f"{result['fattore_forza_avversario']:.3f}")
     lines.append("NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello "
                  "score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). "
                  "Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 "
@@ -2250,7 +2413,7 @@ def format_output(result):
                  f"(bonus atteso incorporato nella media pesata: ~{result['bonus_clean_sheet_atteso']:.1f}pt)")
     if result['trend_avg_short'] is not None:
         lines.append(f"Fattore trend (media ultime 5: {result['trend_avg_short']:.1f} vs "
-                     f"media ultime 10: {result['trend_avg_long']:.1f}): {result['fattore_trend']:.3f}")
+                     f"media 5 PRECEDENTI: {result['trend_avg_long']:.1f}): {result['fattore_trend']:.3f}")
     else:
         lines.append("Fattore trend: N/D (servono almeno 10 partite nella finestra)")
     lines.append(f"P(gioca): {result['p_gioca']:.2%} (fonte: {result['p_source']})")

@@ -150,11 +150,14 @@ def _build_series_for_league(league):
     cache GK+DEF+MID gia' su disco (produzione '_all'). Cachato in memoria
     per la durata del processo (chiamato una volta per giocatore/run, non
     per partita). Media/std per la normalizzazione NON sono qui -- vedi
-    GLOBAL_MEAN_CONCEDED/GLOBAL_STD_CONCEDED (fisse, dal backtest)."""
+    GLOBAL_MEAN_CONCEDED/GLOBAL_STD_CONCEDED (fisse, dal backtest).
+
+    league=None (03/08): serie GLOBALE, tutte le leghe insieme -- vedi
+    _series_for_lookup per il perche'."""
     if league in _CACHE:
         return _CACHE[league]
 
-    _disk = _load_disk_cache('series', league)
+    _disk = _load_disk_cache('series', league or '_globale')
     if _disk is not None:
         result = (_series_from_json(_disk['conceded']), _series_from_json(_disk['scored']))
         _CACHE[league] = result
@@ -163,11 +166,14 @@ def _build_series_for_league(league):
     seen = set()
     conceded = defaultdict(list)
     scored = defaultdict(list)
-    patterns = [
-        f'formazione_{league}/output/{league}_gk_all/.cache',
-        f'formazione_{league}/output/{league}_def_all/.cache',
-        f'formazione_{league}/output/{league}_mid_all/.cache',
-    ]
+    if league is None:
+        patterns = [f'formazione_*/output/*_{r}_all/.cache' for r in ('gk', 'def', 'mid')]
+    else:
+        patterns = [
+            f'formazione_{league}/output/{league}_gk_all/.cache',
+            f'formazione_{league}/output/{league}_def_all/.cache',
+            f'formazione_{league}/output/{league}_mid_all/.cache',
+        ]
     for cache_dir in patterns:
         for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
             try:
@@ -214,9 +220,63 @@ def _build_series_for_league(league):
 
     result = (conceded, scored)
     _CACHE[league] = result
-    _save_disk_cache('series', league, {'conceded': _series_to_json(conceded),
-                                         'scored': _series_to_json(scored)})
+    _save_disk_cache('series', league or '_globale',
+                     {'conceded': _series_to_json(conceded),
+                      'scored': _series_to_json(scored)})
     return result
+
+
+# Numero minimo di partite storiche dell'avversario perche' l'aggiustamento
+# venga applicato. Sotto questa soglia: nessun aggiustamento (fallback sicuro).
+MIN_PARTITE_AVVERSARIO = 3
+
+
+def _serie_avversario(league, opponent_team_slug, sign, cutoff_dt):
+    """Storico dell'avversario, con RIPIEGO GLOBALE (03/08, bug reale).
+
+    Le serie erano indicizzate per lega e costruite scansionando SOLO
+    'formazione_<lega>/output/...', quindi un avversario di un'altra lega non
+    esisteva e l'aggiustamento non veniva applicato. Non e' un caso di
+    scuola: le partite MLS di questi giorni sono di Leagues Cup contro
+    squadre di Liga MX, i cui dati stanno in formazione_messico e non
+    venivano mai letti. Dentro lo stesso pool alcuni giocatori ricevevano
+    l'aggiustamento e altri no -- che sporca la CLASSIFICA (quello che serve
+    per scegliere chi schierare) piu' di quanto sposti la MAE.
+
+    Ora: prima la lega del giocatore (comportamento invariato quando il dato
+    c'e'), poi la serie globale su tutte le leghe. La scansione globale costa
+    ~1.3s una volta per run (1247 file di cache, 22k partite) ed e' su disco
+    temporaneo come le altre."""
+    conceded, scored = _build_series_for_league(league)
+    serie = (scored if sign < 0 else conceded).get(opponent_team_slug, [])
+    past = [v for dt, v in serie if dt < cutoff_dt]
+    if len(past) >= MIN_PARTITE_AVVERSARIO:
+        return past
+    conceded_g, scored_g = _build_series_for_league(None)
+    serie_g = (scored_g if sign < 0 else conceded_g).get(opponent_team_slug, [])
+    past_g = [v for dt, v in serie_g if dt < cutoff_dt]
+    return past_g if len(past_g) > len(past) else past
+
+
+def _peso_campione(n, n_games):
+    """Quanto fidarsi di una media calcolata su n partite invece che su
+    n_games (03/08, fix logico).
+
+    Prima la media dell'avversario veniva normalizzata con GLOBAL_STD_CONCEDED
+    e usata tale e quale, che si fosse calcolata su 3 partite o su 10: una
+    squadra con 3 partite in cache riceveva la stessa correzione piena di una
+    con 10, pur essendo la sua media molto piu' rumorosa. Ora il peso cresce
+    col campione e vale 1.0 a campione pieno -- quindi a n_games partite il
+    comportamento e' IDENTICO a prima (le sensibilita' validate restano
+    valide), e viene attenuato solo dove il dato e' effettivamente sottile.
+
+    NOTA (perche' non si divide per l'errore standard): dividere per
+    GLOBAL_STD/sqrt(n) sarebbe la statistica di significativita', non
+    l'ampiezza dell'effetto, e cambierebbe la scala di ~3x invalidando tutte
+    le sensibilita' gia' validate per ruolo."""
+    if n <= 0 or n_games <= 0:
+        return 0.0
+    return min(1.0, n / float(n_games))
 
 
 def opponent_lambda_multiplier(league, role, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DEFAULT):
@@ -234,16 +294,13 @@ def opponent_lambda_multiplier(league, role, opponent_team_slug, cutoff_dt, n_ga
     if sens <= 0:
         return 1.0
 
-    conceded, scored = _build_series_for_league(league)
-    series = scored if sign < 0 else conceded
-    series_opp = series.get(opponent_team_slug, [])
-    past = [gc for dt, gc in series_opp if dt < cutoff_dt]
-    if len(past) < 3:
+    past = _serie_avversario(league, opponent_team_slug, sign, cutoff_dt)
+    if len(past) < MIN_PARTITE_AVVERSARIO:
         return 1.0
     past = past[-n_games:]
     avg_val = sum(past) / len(past)
     z = (avg_val - GLOBAL_MEAN_CONCEDED) / GLOBAL_STD_CONCEDED
-    z_signed = sign * z
+    z_signed = sign * z * _peso_campione(len(past), n_games)
     return max(0.0, 1 + sens * z_signed)
 
 
@@ -264,15 +321,19 @@ _DEF_POSS_CACHE = {}
 
 
 def _build_def_poss_lost_series(league):
+    """league=None -> serie GLOBALE su tutte le leghe (03/08), stesso ripiego
+    di _serie_avversario: l'avversario di coppa non sta nella cartella della
+    lega del giocatore."""
     if league in _DEF_POSS_CACHE:
         return _DEF_POSS_CACHE[league]
-    _disk = _load_disk_cache('poss_lost', league)
+    _disk = _load_disk_cache('poss_lost', league or '_globale')
     if _disk is not None:
         series = _series_from_json(_disk)
         _DEF_POSS_CACHE[league] = series
         return series
     per_team_date = defaultdict(list)
-    cache_dir = f'formazione_{league}/output/{league}_def_all/.cache'
+    cache_dir = ('formazione_*/output/*_def_all/.cache' if league is None
+                 else f'formazione_{league}/output/{league}_def_all/.cache')
     for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
         try:
             with open(fpath, encoding='utf-8') as f:
@@ -307,36 +368,73 @@ def _build_def_poss_lost_series(league):
     for t in series:
         series[t].sort(key=lambda x: x[0])
     _DEF_POSS_CACHE[league] = series
-    _save_disk_cache('poss_lost', league, _series_to_json(series))
+    _save_disk_cache('poss_lost', league or '_globale', _series_to_json(series))
     return series
+
+
+def _serie_squadra_con_ripiego(costruttore, league, team_slug, cutoff_dt):
+    """Storico di squadra con ripiego sulla serie globale -- stessa logica di
+    _serie_avversario, per le serie costruite dai soli difensori."""
+    serie = costruttore(league).get(team_slug, [])
+    past = [v for dt, v in serie if dt < cutoff_dt]
+    if len(past) >= MIN_PARTITE_AVVERSARIO:
+        return past
+    serie_g = costruttore(None).get(team_slug, [])
+    past_g = [v for dt, v in serie_g if dt < cutoff_dt]
+    return past_g if len(past_g) > len(past) else past
+
+
+# Tetto al delta offensivo FWD (03/08, fix logico). Senza tetto il delta e'
+# proporzionale al granulare offensivo del giocatore stesso: misurato sulle
+# cache reali andava da -9.0 a +14.8 punti, per un aggiustamento validato a
+# -0.38% di MAE. Un contributo di quella scala non e' una correzione, e' una
+# seconda previsione. +-3 punti e' l'ordine di grandezza coerente con gli
+# altri aggiustamenti additivi del modello (Stadio D).
+FWD_OFFENSE_DELTA_CAP = 3.0
 
 
 def fwd_offense_granular_delta(league, opponent_team_slug, cutoff_dt, own_offensive_hist, n_games=N_GAMES_DEFAULT):
     """Delta ADDITIVO (non moltiplicativo) da sommare al grezzo dello
     score_atteso FWD -- vedi commento sopra FWD_OFFENSIVE_STATS. Ritorna 0.0
-    se il dato non e' disponibile (fallback sicuro)."""
-    if not opponent_team_slug or cutoff_dt is None or not own_offensive_hist:
+    se il dato non e' disponibile (fallback sicuro).
+
+    FIX (03/08): era 'abs(own_offensive_hist)'. Con il valore assoluto, un
+    attaccante col granulare offensivo NEGATIVO (il ~3% del pool: media
+    pesata fino a -0.68) riceveva la correzione con lo stesso segno di uno
+    positivo, cioe' un bonus proporzionale a quanto e' scarso. Ora si usa il
+    valore con segno: se il giocatore non produce in fase offensiva, un
+    avversario che perde palla in difesa non gli regala niente.
+    Aggiunto anche il tetto FWD_OFFENSE_DELTA_CAP e il peso per campione."""
+    if not opponent_team_slug or cutoff_dt is None or own_offensive_hist is None:
         return 0.0
-    series = _build_def_poss_lost_series(league)
-    series_opp = series.get(opponent_team_slug, [])
-    past = [v for dt, v in series_opp if dt < cutoff_dt]
-    if len(past) < 3:
+    past = _serie_squadra_con_ripiego(_build_def_poss_lost_series, league,
+                                      opponent_team_slug, cutoff_dt)
+    if len(past) < MIN_PARTITE_AVVERSARIO:
         return 0.0
     past = past[-n_games:]
     avg_val = sum(past) / len(past)
     z = (avg_val - GLOBAL_MEAN_DEF_POSS_LOST) / GLOBAL_STD_DEF_POSS_LOST
-    return FWD_OFFENSE_SENSITIVITY * z * abs(own_offensive_hist) * 0.3
+    delta = (FWD_OFFENSE_SENSITIVITY * z * own_offensive_hist * 0.3
+             * _peso_campione(len(past), n_games))
+    return max(-FWD_OFFENSE_DELTA_CAP, min(FWD_OFFENSE_DELTA_CAP, delta))
 
 
 GLOBAL_MEAN_DEF_PEN_AREA = 1.9428
 GLOBAL_STD_DEF_PEN_AREA = 2.2335
 GK_PEN_AREA_SENSITIVITY = 0.5
+# Tetto al delta, stesso ordine di grandezza di FWD_OFFENSE_DELTA_CAP: il
+# granulare GOALKEEPING vale in mediana 13.7 punti a partita (misurato su 4
+# leghe), quindi senza tetto 0.5*z*13.7*0.3 arriverebbe a +-4 punti.
+GK_PEN_AREA_DELTA_CAP = 3.0
 
 _DEF_PEN_AREA_CACHE = {}
 
 
 def _build_def_pen_area_series(league):
-    """Ricostruisce, per squadra, le pen_area_entries medie a partita dei
+    """league=None -> serie GLOBALE su tutte le leghe (03/08), vedi
+    _serie_avversario.
+
+    Ricostruisce, per squadra, le pen_area_entries medie a partita dei
     SOLI DIFENSORI (isolato da FWD+MID gia' usati dal bonus goalkeeping
     esistente -- validato con formazione_mls/diagnostics/
     validate_cross_role_combos.py, gruppo gk_vs_def_only, -0.13% MAE:
@@ -344,13 +442,14 @@ def _build_def_pen_area_series(league):
     espongono di piu' il portiere)."""
     if league in _DEF_PEN_AREA_CACHE:
         return _DEF_PEN_AREA_CACHE[league]
-    _disk = _load_disk_cache('pen_area', league)
+    _disk = _load_disk_cache('pen_area', league or '_globale')
     if _disk is not None:
         series = _series_from_json(_disk)
         _DEF_PEN_AREA_CACHE[league] = series
         return series
     per_team_date = defaultdict(list)
-    cache_dir = f'formazione_{league}/output/{league}_def_all/.cache'
+    cache_dir = ('formazione_*/output/*_def_all/.cache' if league is None
+                 else f'formazione_{league}/output/{league}_def_all/.cache')
     for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
         try:
             with open(fpath, encoding='utf-8') as f:
@@ -385,26 +484,59 @@ def _build_def_pen_area_series(league):
     for t in series:
         series[t].sort(key=lambda x: x[0])
     _DEF_PEN_AREA_CACHE[league] = series
-    _save_disk_cache('pen_area', league, _series_to_json(series))
+    _save_disk_cache('pen_area', league or '_globale', _series_to_json(series))
     return series
 
 
-def gk_def_pen_area_multiplier(league, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DEFAULT):
-    """Moltiplicatore aggiuntivo (si affianca a opponent_lambda_multiplier
-    GK esistente, non lo sostituisce) da applicare a lambda_pos del
-    portiere, basato solo sulle pen_area_entries dei DIFENSORI avversari.
-    1.0 (nessun effetto) se il dato non e' disponibile."""
-    if not opponent_team_slug or cutoff_dt is None:
-        return 1.0
-    series = _build_def_pen_area_series(league)
-    series_opp = series.get(opponent_team_slug, [])
-    past = [v for dt, v in series_opp if dt < cutoff_dt]
-    if len(past) < 3:
-        return 1.0
+def gk_def_pen_area_granular_delta(league, opponent_team_slug, cutoff_dt,
+                                   own_goalkeeping_hist, n_games=N_GAMES_DEFAULT):
+    """Delta ADDITIVO sul granulare del portiere, in base alle
+    pen_area_entries dei DIFENSORI avversari: chi sale spesso in area su
+    corner e palle inattive costringe il portiere a piu' interventi, quindi
+    piu' punti nella categoria GOALKEEPING (parate, uscite, respinte).
+    0.0 se il dato non e' disponibile (fallback sicuro).
+
+    RISCRITTO (03/08). Prima era 'gk_def_pen_area_multiplier', un
+    moltiplicatore '1 + 0.5*z' applicato a lambda_pos del portiere. Erano
+    due errori sovrapposti:
+
+    1. COMPONENTE SBAGLIATA. La validazione che lo giustificava (-0.13% MAE,
+       validate_cross_role_combos.py, gruppo gk_vs_def_only) misurava un
+       delta ADDITIVO sul granulare GOALKEEPING del portiere
+       ('sens * z * own_hist * 0.3', dove own_hist e' il granulare di parate
+       del portiere stesso). In produzione era finito invece a moltiplicare
+       lambda_pos, che e' tutta un'altra cosa: il tasso di eventi decisivi.
+       Misurata una cosa, applicata un'altra.
+
+    2. SEGNO. lambda_pos del portiere e' dominato da clean_sheet_60
+       (verificato sui detailedScore reali: le POSITIVE_DECISIVE_STAT del GK
+       sono clean_sheet_60, penalty_save, clearance_off_line, goals,
+       goal_assist). Piu' l'avversario arriva in area, MENO clean sheet: il
+       moltiplicatore '1 + 0.5*z' alzava lambda_pos proprio quando andava
+       abbassato, contro il proprio commento ("espongono di piu' il
+       portiere") e contro il gemello SIGN_BY_ROLE['gk'] = -1, costruito
+       sullo stesso concetto e moltiplicato nello stesso punto. La griglia
+       di sensibilita' della validazione era [0.0 ... 2.0], solo non
+       negativa: il segno non era mai stato messo alla prova.
+       Effetto misurato sulle cache reali prima del fix: moltiplicatore da
+       0.63 a 1.57 su lambda_pos, cioe' +-35-57% nel verso sbagliato.
+
+    Ora la forma e' quella validata: additiva, sul granulare, segno positivo
+    (piu' pressione avversaria -> piu' lavoro per il portiere -> piu' punti
+    di parata), mentre il rischio sul clean sheet resta gestito dove gli
+    compete, da opponent_lambda_multiplier con SIGN_BY_ROLE['gk'] = -1."""
+    if not opponent_team_slug or cutoff_dt is None or own_goalkeeping_hist is None:
+        return 0.0
+    past = _serie_squadra_con_ripiego(_build_def_pen_area_series, league,
+                                      opponent_team_slug, cutoff_dt)
+    if len(past) < MIN_PARTITE_AVVERSARIO:
+        return 0.0
     past = past[-n_games:]
     avg_val = sum(past) / len(past)
     z = (avg_val - GLOBAL_MEAN_DEF_PEN_AREA) / GLOBAL_STD_DEF_PEN_AREA
-    return max(0.0, 1 + GK_PEN_AREA_SENSITIVITY * z)
+    delta = (GK_PEN_AREA_SENSITIVITY * z * own_goalkeeping_hist * 0.3
+             * _peso_campione(len(past), n_games))
+    return max(-GK_PEN_AREA_DELTA_CAP, min(GK_PEN_AREA_DELTA_CAP, delta))
 
 
 def opponent_is_strong(league, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DEFAULT):
@@ -422,10 +554,8 @@ def opponent_is_strong(league, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DE
     media_condizionata tratta i punti None come non classificabili)."""
     if not opponent_team_slug or cutoff_dt is None:
         return None
-    _, scored = _build_series_for_league(league)
-    series_opp = scored.get(opponent_team_slug, [])
-    past = [gc for dt, gc in series_opp if dt < cutoff_dt]
-    if len(past) < 3:
+    past = _serie_avversario(league, opponent_team_slug, -1, cutoff_dt)
+    if len(past) < MIN_PARTITE_AVVERSARIO:
         return None
     past = past[-n_games:]
     avg_val = sum(past) / len(past)

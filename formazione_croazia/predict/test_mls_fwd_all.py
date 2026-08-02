@@ -108,7 +108,7 @@ HALF_LIFE_GAMES = 25.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_
 RANGE_MULTIPLIER = 1.15  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py, FWD). Solo cosmetico -- non tocca score_atteso/selezione.
 OPPONENT_SENSITIVITY = 29.0  # FISSATO (25/07): idem
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
-TREND_INTENSITY = 0.3  # AGGIORNATO (29/07, esteso a tutte le leghe): backtest walk-forward post-retuning half_life, MAE -0.73% (validato MLS/Korea), stesso valore ora applicato a tutte le leghe -- vedi backlog 'produzione solo MLS/Korea'
+TREND_INTENSITY = 0.15  # DIMEZZATO 0.3 -> 0.15 (03/08) INSIEME al fix delle finestre sovrapposte in compute_trend_factor: lo stimatore ora misura ultime 5 contro le 5 PRECEDENTI invece che ultime 5 contro ultime 10, e con finestre disgiunte la stessa forma produce un delta circa doppio (con a=ultime5 e b=precedenti5, (a-b)/b invece di (a-b)/(a+b)). Dimezzare l'intensita' lascia la MAGNITUDINE del trend dov'era mentre il SEGNALE diventa quello giusto: il fix non introduce da solo un cambio di comportamento non tarato. DA RITARARE con un grid search dedicato dopo il fix delle partite senza dettaglio (mask_weights), che oggi inquina proprio questa misura. Storia del valore precedente sotto.  # AGGIORNATO (29/07, esteso a tutte le leghe): backtest walk-forward post-retuning half_life, MAE -0.73% (validato MLS/Korea), stesso valore ora applicato a tutte le leghe -- vedi backlog 'produzione solo MLS/Korea'
 SHRINK_K_OUTLIER_FWD = 5.0  # NUOVO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~1700 punti di test, MAE -0.49% (era MLS-only con k=6.0, escluso altrove -- la vecchia nota 'peggiora fuori MLS' non e' risultata riproducibile col volume di dati attuale, vedi RIASSUNTO sez.29). Segnale comunque il piu' debole dei 4 ruoli.
 MEDIA_RUOLO_FWD_PRIOR = 53.74  # media grezza pool 25 leghe (solo diagnostico, la produzione usa il prior dinamico da presence_rate sotto)
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
@@ -669,6 +669,34 @@ def weighted_mean(values, weights):
     return sum(v * w for v, w in zip(values, weights)) / total_w
 
 
+
+def mask_weights(weights, detail_ok_flags):
+    """Pesi con le partite SENZA detailedScore azzerate (03/08, bug reale).
+
+    Quando il dettaglio granulare di una partita non e' disponibile,
+    extract_level_score() ritorna 0.0 -- che non vuol dire "livello zero", vuol
+    dire "non lo so". Il codice pero' lo trattava come un valore vero, quindi
+    'granulare = score - level_score' diventava il PUNTEGGIO INTERO della
+    partita, e sopra ci veniva comunque riaggiunto il livello base 35 stimato
+    da expected_level_from_rates(0, 0). Errore sempre nello stesso verso, cioe'
+    sovrastima pura.
+
+    Misurato sulle cache reali (mls+italia, 4 ruoli): il 3.3% delle partite
+    dentro la finestra usata e' senza dettaglio, e questo colpiva 221
+    giocatori con una sovrastima mediana di +2.2 punti, +5.8 al p90, +19.6 nel
+    caso peggiore.
+
+    Soluzione: la partita resta nello storico per tutto cio' che si legge dal
+    game log (punteggio, casa/trasferta, avversario, data), ma pesa zero in
+    tutto cio' che richiede il detailedScore. Se NESSUNA partita ha il
+    dettaglio si ricade sui pesi pieni: meglio la vecchia stima imprecisa che
+    una divisione per zero."""
+    if not detail_ok_flags:
+        return list(weights)
+    masked = [w if ok else 0.0 for w, ok in zip(weights, detail_ok_flags)]
+    return masked if sum(masked) > 0 else list(weights)
+
+
 def weighted_stddev(values, weights, mean):
     total_w = sum(weights)
     if total_w == 0:
@@ -881,25 +909,45 @@ def expected_level_from_rates(lambda_pos, lambda_neg):
     return expected
 
 
-def compute_split_factor(values, is_home_flags, target_is_home):
+def compute_split_factor(values, is_home_flags, target_is_home, weights=None):
     """Dato un elenco di valori granulari (uno per partita, gia' sommati per un
     gruppo di stat) e i relativi flag casa/trasferta, calcola il fattore
     casa/trasferta per QUEL gruppo, con la stessa logica del fattore principale:
     media_contesto_target / media_generale. Fattore neutro (1.0) se non ci sono
-    abbastanza dati in un contesto o se la media generale e' zero/negativa."""
-    home_vals = [v for v, h in zip(values, is_home_flags) if h is True]
-    away_vals = [v for v, h in zip(values, is_home_flags) if h is False]
-    all_vals = values
+    abbastanza dati in un contesto o se la media generale e' zero/negativa.
 
-    if not all_vals:
+    FIX 1 (03/08, condizione ignota): 'context_avg = home_avg if
+    target_is_home else away_avg' mandava sul bucket TRASFERTA anche quando
+    target_is_home era None, cioe' quando la squadra del giocatore non e'
+    riconosciuta nella partita target -- un'ipotesi silenziosa, non una
+    misura. Sulle cache reali il venue non e' riconosciuto nel 9.0% delle
+    partite storiche (5.955 esaminate). Ora la condizione ignota da' 1.0,
+    coerente con media_condizionata() che gia' faceva la cosa giusta.
+
+    FIX 2 (03/08, pesi): le medie erano PIATTE, mentre tutto il resto del
+    modello e' a decadimento esponenziale. Il fattore casa/trasferta dava
+    quindi lo stesso peso a una partita di dodici mesi fa e a quella di
+    domenica scorsa, e poi moltiplicava una media pesata. Ora usa gli stessi
+    pesi del resto della formula; passando i pesi mascherati (mask_weights)
+    esclude anche le partite senza dettaglio granulare."""
+    if not values:
+        return 1.0
+    if target_is_home is None:
         return 1.0
 
-    overall_avg = sum(all_vals) / len(all_vals)
-    home_avg = sum(home_vals) / len(home_vals) if home_vals else overall_avg
-    away_avg = sum(away_vals) / len(away_vals) if away_vals else overall_avg
+    if weights is None:
+        weights = [1.0] * len(values)
+    total_w = sum(weights)
+    if total_w <= 0:
+        return 1.0
 
-    context_avg = home_avg if target_is_home else away_avg
-    context_vals = home_vals if target_is_home else away_vals
+    overall_avg = weighted_mean(values, weights)
+    context_pairs = [(v, w) for v, w, h in zip(values, weights, is_home_flags)
+                     if h is not None and bool(h) == bool(target_is_home)]
+    context_vals = [v for v, _ in context_pairs]
+    if not context_vals:
+        return 1.0
+    context_avg = weighted_mean(context_vals, [w for _, w in context_pairs])
 
     # FIX (25/07, audit logica): il delta viene normalizzato per la deviazione
     # standard STORICA del gruppo stesso, invece di una scala fissa "1%/punto"
@@ -911,7 +959,7 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     # sistematicamente (es. un difensore con molti piu' falli in trasferta)
     # ottiene un fattore che si muove davvero, il rumore statistico attorno
     # alla media resta vicino a 1.0.
-    variance = sum((v - overall_avg) ** 2 for v in all_vals) / len(all_vals)
+    variance = sum(w * (v - overall_avg) ** 2 for v, w in zip(values, weights)) / total_w
     std_dev = variance ** 0.5
     delta = context_avg - overall_avg
     delta_normalizzato = (delta / std_dev) if std_dev > 0 else 0.0
@@ -930,36 +978,60 @@ def compute_split_factor(values, is_home_flags, target_is_home):
     return max(0.7, min(1.3, fattore))  # limitato per evitare correzioni estreme
 
 
-def compute_trend_factor(scores, short_window=5, long_window=10, trend_intensity=1.0):
-    """Confronta la media delle ultime 'short_window' partite con la media delle
-    ultime 'long_window' partite (stesso pool gia' filtrato per competizione e
-    minutaggio) per rilevare un trend di forma (in crescita o in calo). Ritorna
-    un fattore moltiplicativo centrato su 1.0: se le partite piu' recenti hanno
-    una media piu' alta della finestra piu' ampia, il fattore e' > 1 (forma in
-    crescita), viceversa < 1. Scala conservativa e limitata (max +-20%), per non
-    lasciare che poche partite recenti dominino la predizione.
+def compute_trend_factor(scores, short_window=5, long_window=10, trend_intensity=1.0,
+                          weights=None):
+    """Confronta la media delle ultime 'short_window' partite con quella delle
+    'short_window' partite PRECEDENTI (stesso pool gia' filtrato per
+    competizione e minutaggio) per rilevare un trend di forma. Ritorna un
+    fattore moltiplicativo centrato su 1.0: se le partite piu' recenti rendono
+    piu' di quelle di prima il fattore e' > 1 (forma in crescita), viceversa
+    < 1. Scala conservativa e limitata (max +-20%), per non lasciare che poche
+    partite recenti dominino la predizione.
     Richiede almeno 'long_window' partite; ritorna 1.0 (neutro) altrimenti.
+
+    FIX (03/08, finestre sovrapposte): il confronto era ultime 5 contro
+    ultime 10, ma le 5 sono DENTRO le 10 -- il numeratore era un
+    sottoinsieme del denominatore, quindi il rapporto risultava
+    strutturalmente compresso (circa la meta' del segnale vero: con
+    a = ultime 5 e b = 5 precedenti, si misurava (a-b)/(a+b) invece di
+    (a-b)/b). Un giocatore passato da 40 a 60 di media dava 1.20 invece di
+    1.50. Non stupisce che la taratura avesse spinto TREND_INTENSITY a 0.0
+    su GK e DEF: lo stimatore era rotto, e l'intensita' ottima di uno
+    stimatore rotto e' zero. Ora le due finestre sono disgiunte.
+
+    FIX (03/08, pesi): le due medie erano piatte, sopra una media principale
+    gia' pesata esponenzialmente. Ora accettano gli stessi pesi del resto
+    della formula (e, se mascherati, escludono le partite senza dettaglio).
 
     NUOVO (25/07): trend_intensity scala il DELTA (ratio - 1.0) prima del
     clamp finale, per rendere il trend parametrizzabile nel grid search
     invece di un comportamento fisso — es. trend_intensity=0.7 attenua il
-    trend, 1.3 lo amplifica, 1.0 = comportamento originale invariato."""
+    trend, 1.3 lo amplifica."""
     if len(scores) < long_window:
         return 1.0, None, None
 
     recent_short = scores[-short_window:]
-    recent_long = scores[-long_window:]
+    precedenti = scores[-long_window:-short_window]
+    if not precedenti:
+        return 1.0, None, None
 
-    avg_short = sum(recent_short) / len(recent_short)
-    avg_long = sum(recent_long) / len(recent_long)
+    if weights is not None and len(weights) == len(scores):
+        w_short = weights[-short_window:]
+        w_prec = weights[-long_window:-short_window]
+    else:
+        w_short = [1.0] * len(recent_short)
+        w_prec = [1.0] * len(precedenti)
 
-    if avg_long == 0:
-        return 1.0, avg_short, avg_long
+    avg_short = weighted_mean(recent_short, w_short)
+    avg_prec = weighted_mean(precedenti, w_prec)
 
-    ratio = avg_short / avg_long
+    if avg_prec == 0:
+        return 1.0, avg_short, avg_prec
+
+    ratio = avg_short / avg_prec
     scaled_ratio = 1.0 + (ratio - 1.0) * trend_intensity
     fattore = max(0.8, min(1.2, scaled_ratio))
-    return fattore, avg_short, avg_long
+    return fattore, avg_short, avg_prec
 
 
 def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
