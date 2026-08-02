@@ -155,7 +155,12 @@ jobs:
       # scrivere: per un giocatore gia' posseduto la cache del generatore e'
       # gia' in repo, e il predict la trova da solo perche' legge dalla stessa
       # cartella. Nessun doppio lavoro.
+      # always(): la cache vale piu' del report. Se il job viene interrotto, va
+      # in timeout o un predict fa saltare tutto, questi 30-40 minuti di
+      # assorbimento a ritroso NON devono andare persi -- si ripagherebbero
+      # daccapo alla run dopo. Senza questa riga il passo non gira proprio.
       - name: 4. Commit di report e cache
+        if: always()
         run: |
           git config user.name  "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
@@ -172,12 +177,14 @@ jobs:
           git push origin main
 
       - name: 5. Telegram
+        if: success()
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python scouting_telegram_notify.py
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: scouting-candidati
           path: |
