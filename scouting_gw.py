@@ -1034,7 +1034,54 @@ def scrivi_discovery(pool, leghe=None, limite_per_ruolo=None):
         for cartella, ruolo, quanti in scritti:
             f.write(f"{cartella}\t{RUOLO_DIR[ruolo]}\t{quanti}\n")
     log(f"Indice per i predict: {os.path.relpath(indice, REPO_ROOT)}")
+
+    _scrivi_lavori(per_gruppo, limite_per_ruolo)
     return scritti
+
+
+# Chi ha GIA' una previsione per QUESTA giornata non va ripredetto: non serve
+# nemmeno il refresh leggero, perche' la previsione e' per definizione legata
+# alla partita, e se la partita e' la stessa il numero non cambia.
+#
+# La regola non la scriviamo qui: e' `best_five._predizione_riutilizzabile`,
+# che aggancia la validita' alla FINESTRA DELLA FIXTURE invece che a un tetto
+# di ore -- una previsione vale se e solo se la partita che predice cade dentro
+# la giornata corrente, quindi scade da sola quando la giornata chiude, senza
+# che nessuna soglia debba indovinare quando.
+def _predizioni_gia_fatte(coppie):
+    """(da_fare, gia_fatte) sulla lista di (lega, ruolo_dir, slug)."""
+    try:
+        bf = _import('scouting_best_five_pred', 'best_five.py')
+    except Exception as e:
+        log(f"ATTENZIONE: riuso predizioni non disponibile ({e}), le rifaccio tutte.")
+        return list(coppie), []
+    da_fare, gia = [], []
+    for lega, ruolo, slug in coppie:
+        try:
+            riusabile, _kickoff, _path = bf._predizione_riutilizzabile(lega, ruolo, slug)
+        except Exception:
+            riusabile = False
+        (gia if riusabile else da_fare).append((lega, ruolo, slug))
+    return da_fare, gia
+
+
+def _scrivi_lavori(per_gruppo, limite_per_ruolo):
+    """L'elenco `lega|ruolo|slug` dei predict che servono DAVVERO.
+
+    Lo legge il workflow per costruire la matrice: chi ha gia' la previsione
+    di questa giornata non genera nemmeno il job."""
+    coppie = []
+    for (cartella, ruolo), slugs in sorted(per_gruppo.items()):
+        for slug in (slugs[:limite_per_ruolo] if limite_per_ruolo else slugs):
+            coppie.append((cartella, RUOLO_DIR[ruolo], slug))
+    da_fare, gia = _predizioni_gia_fatte(coppie)
+    dest = os.path.join(REPO_ROOT, 'dati_globali', 'scouting_lavori.txt')
+    with open(dest, 'w', encoding='utf-8') as f:
+        for lega, ruolo, slug in da_fare:
+            f.write(f"{lega}|{ruolo}|{slug}\n")
+    log(f"Predict da fare: {len(da_fare)}/{len(coppie)} "
+        f"({len(gia)} hanno gia' la previsione di questa giornata, saltati).")
+    return da_fare
 
 
 # --- LE FORMAZIONI IPOTETICHE ---------------------------------------------
