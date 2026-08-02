@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-02T15:21:54.928966Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ryan-mmaee-nwambeben-kabir: 46 pt attesi (34-83)
+   ORDINAMENTO: 41.73
+   SQUADRA: atlas-guadalajara | AVVERSARIO: columbus-crew-columbus-ohio
+======================================================================
+
+######################################################################
+# GIOCATORE: ryan-mmaee-nwambeben-kabir
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ryan-mmaee-nwambeben-kabir (squadra: atlas-guadalajara)
+Generato: 2026-08-02T15:21:54.928299Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 13
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-02 | OMO vs M05 | uefa-europa-conference-league | score=34.1 | peso=0.871
+  2026-02-19 | OMO vs RIJ | uefa-europa-conference-league | score=41.5 | peso=0.895
+  2026-02-26 | RIJ vs OMO | uefa-europa-conference-league | score=79.1 | peso=0.920
+  2026-07-18 | LEO vs ATS | liga-mx | score=31.2 | peso=0.946
+  2026-07-26 | SAN vs ATS | liga-mx | score=29.8 | peso=0.973
+  2026-08-02 | ATS vs MON | liga-mx | score=37.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 42.01
+  di cui Punteggio decisivo (level_score) medio: 39.10 | Punteggio complessivo (granulari) medio: 2.90 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.79 (delta +0.56) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.89
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.8 - 79.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 3.80 (differenza: +13.08)
+Media score in casa: 37.30 | Media score fuori casa: 30.50
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.3
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 0.989
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 46.15% (fonte: tasso di presenza storico (6/13))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-04T23:45
+Casa: Columbus Crew | Trasferta: Atlas FC de Guadalajara
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.2 (range 34.0 - 83.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.03
+Punteggio REALE ottenuto in quella partita: 37.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -5.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=25.0, range_mult=1.15, opp_sens=29.0, trend_int=0.3
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
