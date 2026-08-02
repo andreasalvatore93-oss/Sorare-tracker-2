@@ -7908,3 +7908,158 @@ calibra) e usa 274.1. E' documentato nel file per non creare confusione.
 4. **La correlazione fra AVVERSARI** nella stessa partita non e' misurata:
    spiegherebbe i 3.7 punti di divario fra l'errore calcolato (45.7) e quello
    osservato (49.4).
+
+---
+
+## 53. Arene efficienti — il bot sceglie da solo tipo e numero
+
+Coda della sessione 02/08. La sezione 52 ha tarato le soglie; questa cambia
+**come** il generatore decide cosa costruire.
+
+---
+
+### 53.1 — Il problema
+
+Il generatore era avido sui **punti**: costruiva la formazione col punteggio
+piu' alto, tipo per tipo, nell'ordine e nei numeri dati a mano dall'utente
+("6 cap 260, 3 cap 220, 3 uncapped..."). Due difetti:
+
+**Non sa quanto vale un punto.** Mette una carta con L10 alto in una cap 260,
+dove divora budget, invece che in una uncapped dove non ne consuma affatto.
+
+**Il mix lo decide l'utente**, a mano, senza sapere quale sia il migliore per
+il mazzo di quel giorno.
+
+Misurato sul mazzo del 02/08, 43 formazioni con le stesse carte:
+
+| mix | essenze attese |
+|---|---|
+| 25 cap 260 + 10 cap 220 + 8 uncapped | 4.506 |
+| 33 cap 260 + 10 cap 220 | 4.687 |
+| 25 cap 260 + 18 cap 220 | 5.031 |
+| 20 cap 220 (per prime) + 23 cap 260 | 5.234 |
+
+**+728 essenze, il 16%, solo cambiando il mix.** E le 8 uncapped rendevano
+**zero**: nessuna arrivava alla loro soglia di 288.2, mentre consumavano 40
+carte.
+
+---
+
+### 53.2 — La soluzione: avidita' sulle essenze
+
+`genera_arene_efficienti()`: a ogni passo prova a costruire la prossima
+formazione in **ogni** tipo disponibile, calcola quanto rende in essenze, e
+tiene solo la migliore. Si ferma quando la migliore possibile non rende piu'
+niente.
+
+Serve una istantanea del pool consumato (`_istantanea_pool` /
+`_ripristina_pool`) per provare un tipo e disfare la prova.
+
+**Risultato sul mazzo del 02/08, 45 arene:**
+
+| configurazione | essenze |
+|---|---|
+| mix a mano di partenza | 4.506 |
+| miglior mix trovato a mano | 5.234 |
+| **scelta automatica** | **5.400** (29 cap 220 + 16 cap 260) |
+
+Batte anche il miglior mix trovato provando a mano. **+20% sulla partenza.**
+
+**Nessun tipo viene disattivato**, che era la richiesta esplicita dell'utente:
+le uncapped vengono provate a ogni passo e scartate perche' oggi restano sotto
+soglia (279.6 contro 288.2), ma verranno scelte da sole quando arriveranno i
+campionati europei con L10 alti — dove non consumano budget e diventano il
+posto giusto per i campioni.
+
+**Uso**: input `arene_efficienti=N` nel workflow (0 = spento). Sostituisce i
+conteggi per tipo: si dice quante al massimo, non quante di ognuna.
+
+**Costo**: lento, perche' a ogni passo prova tutti i tipi e poi ricostruisce
+quello scelto (45 arene = ~230 generazioni). Su Actions e' accettabile; se
+diventasse un problema si possono provare i tipi solo ogni N passi.
+
+---
+
+### 53.3 — Due dubbi dell'utente, misurati
+
+**"Fra le formazioni scartate non c'e' una combinazione sopra soglia?"**
+(`diagnostica_arene_perse.py`)
+
+Con 70 cap 260 richieste: 40 sopra soglia, 30 sotto. La migliore combinazione
+possibile fra i 150 giocatori scartati fa **264.1 punti contro una soglia di
+264.4**: manca per tre decimi. Quindi l'avido non stava perdendo niente — ma il
+margine e' cosi' sottile che su un altro mazzo puo' cadere dall'altra parte.
+
+Nota: quella combinazione usa **258.0 di L10 su 260**. Il cap e' saturo, ed e'
+il budget mancante a impedire di prendere di meglio: sotto cap conta
+l'efficienza, non la forza.
+
+**"Ricombinando quelle sopra soglia non si ottiene di piu'?"**
+(`ottimizza_portafoglio_arene.py`)
+
+Ricerca locale con scambi fra formazioni, anche di tipi diversi: **+1.6%**
+appena. Non sacrifica mai una formazione per rinforzarne un'altra, perche'
+sotto soglia una formazione vale zero e il salto e' troppo caro.
+
+Conferma un argomento teorico: il premio e' **convesso** nel margine, quindi
+conviene la massima disuguaglianza — ed e' esattamente quello che l'avido
+produce spontaneamente. **Il guadagno non era negli scambi, era nel mix.**
+
+---
+
+### 53.4 — Ordine di priorita' cambiato
+
+Le Under 23 stavano **davanti** a tutte le arene. Spostate dopo, su richiesta
+dell'utente: sono gratuite e difficili da vincere, mentre le arene producono
+essenze misurabili.
+
+> In Season -> arene (dedicate, poi All Stars) -> Under 23 -> All Stars
+
+---
+
+### 53.5 — IL PROSSIMO PASSO: i prezzi
+
+E' l'unico pezzo mancante per chiudere l'obiettivo dell'utente, che e'
+**comprare carte apposta per le arene**.
+
+Tutti gli altri numeri ci sono:
+
+- **rapporto minimo 1.017** punti (calibrati) per unita' di L10, sotto cap 260
+- **7.5 essenze** per ogni punto sopra il pareggio, in cap 260
+- soglie: 264.4 cap 260, 243.5 cap 220, 288.2 uncapped, 342.7 elite
+
+Manca **quanto valgono le essenze in euro**. Stima attuale **~3 EUR per 1000**,
+con due conferme deboli: il calcolo con le fasce di prezzo al minimo (3.06) e
+l'offerta di Sorare stessa (~3 dollari), che pero' **non e' un prezzo di
+mercato** — hanno interesse a offrirne poche.
+
+**Da fare**: tarare le quattro fasce (Reserve 0.5-2, Roster 2-15, Key 15-50,
+Star 30-100+) sui prezzi reali delle Limited in season, interrogando l'API.
+L'unico prezzo verificato finora e' **Micah Burton a 0.50 EUR**, che cadeva
+esattamente sul minimo della fascia piu' bassa.
+
+Con quel numero si chiude la catena: **euro -> carta -> punti sopra soglia ->
+essenze -> craft -> euro**, e si puo' rispondere a "quanto conviene spendere
+per una formazione da arena, ammortizzata su una stagione".
+
+---
+
+### 53.6 — Il resto del backlog
+
+1. **Il valore medio di un craft** in euro (vedi sezione 51): non misurabile
+   dallo storico dell'utente, che ha venduto le migliori. Va stimato dai prezzi
+   di mercato.
+2. **La correlazione fra AVVERSARI** nella stessa partita: spiegherebbe i 3.7
+   punti di divario fra l'errore di formazione calcolato (45.7) e quello
+   osservato (49.4).
+3. **La cache del backtest** era ferma a 306 arene su 673:
+   `cache_backtest_arene.yml` riprende da dove era, ma i giocatori rimasti
+   bloccano poche formazioni e il guadagno e' marginale.
+4. **Formazioni degli avversari** (6.730, pubbliche): campo piu' solido, e come
+   sono fatte quelle che vincono.
+5. **best_five** va verificato che sia allineato alla produzione prima di
+   costruirci sopra il criterio d'acquisto.
+6. **Rischio correlato da concentrare**: i giocatori della stessa squadra
+   andrebbero messi in poche formazioni invece che sparsi. Il generatore
+   ragiona solo dentro la singola formazione, mai sul portafoglio.
+7. **Sparse checkout**: 35.655 file scaricati da ogni job della matrice.
