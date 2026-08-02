@@ -352,6 +352,10 @@ PAGINA_SEARCH = int(os.environ.get('SCOUTING_PAGINA_SEARCH', '50'))
 # rivendono, e una stima seria del deprezzamento non e' possibile (Yamal da 187
 # in season a ~120 classic; per una carta di Liga MX non si sa nemmeno quante
 # giornate Sorare coprira'). Meglio una soglia prudente di una stima finta.
+# Quanto puo' essere vecchio un consiglio per valere ancora: oltre, l'atteso e'
+# di un'altra giornata e di un altro avversario.
+ORE_CONSIGLIO_VALIDO = float(os.environ.get('SCOUTING_ORE_CONSIGLIO', '12'))
+
 PUNTI_SLOT_MEDIO = float(os.environ.get('SCOUTING_PUNTI_SLOT', '51.8'))
 ESSENZE_PER_PUNTO = float(os.environ.get('SCOUTING_ESSENZE_PUNTO', '7.65'))
 EURO_PER_1000_ESSENZE = float(os.environ.get('SCOUTING_EURO_1000_ESSENZE', '2'))
@@ -1003,7 +1007,15 @@ def _atteso_dai_consigli(pool):
     Legge i file di consiglio delle leghe presenti nel pool. Se non ci sono
     (predict non ancora lanciato) la colonna resta vuota: il report si legge
     lo stesso, e non si finge un numero che non e' stato calcolato."""
-    per_slug = {}
+    # Solo consigli FRESCHI. Quelle cartelle conservano i consigli di tutte le
+    # giornate passate, e un atteso vecchio e' calcolato contro un ALTRO
+    # avversario: nel report sembrerebbe buono e sarebbe sbagliato. Misurato il
+    # 02/08: senza questo filtro il report leggeva 415 attesi ancor prima che i
+    # predict di quella run fossero partiti.
+    limite = time.time() - ORE_CONSIGLIO_VALIDO * 3600
+    inizio = (pool['fixture'].get('startDate') or '')[:10]
+    fine = (pool['fixture'].get('endDate') or '')[:10]
+    per_slug, scartati_vecchi, fuori_giornata = {}, 0, 0
     cartelle = {g.get('cartella') for g in pool['giocatori'] if g.get('cartella')}
     for cartella in sorted(cartelle):
         trovati = glob.glob(os.path.join(REPO_ROOT, f"formazione_{cartella}",
@@ -1018,6 +1030,9 @@ def _atteso_dai_consigli(pool):
             if d not in ultimo_per_dir or os.path.getmtime(path) > os.path.getmtime(ultimo_per_dir[d]):
                 ultimo_per_dir[d] = path
         for path in ultimo_per_dir.values():
+            if os.path.getmtime(path) < limite:
+                scartati_vecchi += 1
+                continue
             try:
                 with open(path, encoding='utf-8') as f:
                     testo = f.read()
@@ -1028,9 +1043,23 @@ def _atteso_dai_consigli(pool):
             # Il "pt" e' il punteggio atteso gia' calibrato. La prima versione
             # cercava "atteso=NN" e non matchava nulla: colonna sempre vuota,
             # senza un errore che lo dicesse.
-            for m in re.finditer(r'^\s*\d+\)\s*([a-z0-9\-]+):\s*([0-9]+(?:\.[0-9]+)?)\s*pt',
-                                 testo, re.M):
+            # Il KICKOFF nel blocco e' il controllo ESATTO, e riduce l'eta' del
+            # file a un semplice prefiltro: se la partita del consiglio non cade
+            # nella finestra della giornata target, quell'atteso e' di un'altra
+            # partita. Succede coi consigli di stanotte -- freschi di poche ore
+            # ma riferiti alla giornata precedente.
+            for m in re.finditer(
+                    r'^\s*\d+\)\s*([a-z0-9\-]+):\s*([0-9]+(?:\.[0-9]+)?)\s*pt'
+                    r'(?:(?!^\s*\d+\)).)*?KICKOFF:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})',
+                    testo, re.M | re.S):
+                if inizio and fine and not (inizio <= m.group(3) <= fine):
+                    fuori_giornata += 1
+                    continue
                 per_slug[m.group(1)] = float(m.group(2))
+    if scartati_vecchi or fuori_giornata:
+        log(f"Consigli ignorati: {scartati_vecchi} file piu' vecchi di "
+            f"{ORE_CONSIGLIO_VALIDO:.0f}h, {fuori_giornata} righe con kickoff "
+            f"fuori da {inizio}..{fine}. Sono attesi di altre giornate.")
     return per_slug
 
 
