@@ -295,10 +295,10 @@ query ScoutingGiornata($page: Int!, $pageSize: Int!,
         lastFifteenSo5Appearances
         lastFortySo5Appearances
         ... on Player { age ownedCardsCount nextClassicFixtureProjectedScore }
-        lowestPriceAnyCard {
+        lowestPriceAnyCard(rarity: limited) {
           rarityTyped
           liveSingleSaleOffer {
-            receiverSide { amounts { eurCents usdCents gbpCents wei referenceCurrency } }
+            receiverSide { amounts { eurCents usdCents gbpCents wei lamport referenceCurrency } }
           }
         }
       }
@@ -343,20 +343,50 @@ def _refinements(fixture_slug, stati=STATI_TITOLARE, solo_in_vendita=True):
     return ref
 
 
-def _prezzo(player):
-    """(centesimi, valuta) della carta piu' economica, o (None, None).
+# I cambi arrivano da frankfurter.app, la stessa fonte gia' usata da
+# bots/autobuy_sorare.py: una chiamata per valuta per run, poi in cache. Se non
+# risponde si usa un fallback statico -- un cambio approssimato e' meglio di un
+# prezzo mancante, e serve solo a ordinare i candidati.
+_CAMBI = {}
+_CAMBI_FALLBACK = {'USD': 0.92, 'GBP': 1.17}
 
-    Non e' necessariamente una classic limited: e' la piu' economica di
-    qualunque rarita' e stagione. Va trattato come ordine di grandezza per
-    ordinare i candidati, non come il prezzo da pagare."""
+
+def _cambio_in_eur(valuta):
+    if valuta in _CAMBI:
+        return _CAMBI[valuta]
+    tasso = _CAMBI_FALLBACK.get(valuta, 1.0)
+    try:
+        import requests
+        r = requests.get(f"https://api.frankfurter.app/latest?from={valuta}&to=EUR", timeout=5)
+        tasso = float(r.json()['rates']['EUR'])
+    except Exception as e:
+        log(f"ATTENZIONE: cambio {valuta}->EUR non recuperato ({e}), uso {tasso}.")
+    _CAMBI[valuta] = tasso
+    return tasso
+
+
+def _prezzo_eur(player):
+    """(euro, valuta_originale) della limited piu' economica in vendita.
+
+    Sempre e solo LIMITED: e' la rarita' che si usa in arena, e la query la
+    filtra a monte con `lowestPriceAnyCard(rarity: limited)`.
+
+    USD e GBP vengono convertiti. Le offerte in cripto (ETH, SOL) tornano
+    (None, 'CRIPTO') e il chiamante le scarta: l'utente compra solo in euro,
+    quindi una carta acquistabile solo in ETH non e' un candidato -- tenerla in
+    elenco con un prezzo finto sarebbe peggio che non averla."""
     card = player.get('lowestPriceAnyCard') or {}
     amounts = (((card.get('liveSingleSaleOffer') or {}).get('receiverSide') or {})
                .get('amounts')) or {}
-    for chiave, valuta in (('eurCents', 'EUR'), ('usdCents', 'USD'), ('gbpCents', 'GBP')):
+    if not amounts:
+        return None, None
+    if amounts.get('eurCents') is not None:
+        return amounts['eurCents'] / 100.0, 'EUR'
+    for chiave, valuta in (('usdCents', 'USD'), ('gbpCents', 'GBP')):
         if amounts.get(chiave) is not None:
-            return amounts[chiave], valuta
-    if amounts.get('wei') is not None:
-        return amounts['wei'], 'WEI'
+            return amounts[chiave] / 100.0 * _cambio_in_eur(valuta), valuta
+    if amounts.get('wei') is not None or amounts.get('lamport') is not None:
+        return None, 'CRIPTO'
     return None, None
 
 
@@ -401,6 +431,7 @@ def pool_da_search(gameweek=None, fixture_slug=None,
 
     giocatori, visti = [], set()
     leghe_senza_pipeline = defaultdict(set)
+    scartati_cripto = 0
     pagina, pagine_totali, nb_hits = 1, 1, None
     while pagina <= pagine_totali:
         d = _chiedi({"page": pagina, "pageSize": PAGINA_SEARCH,
@@ -431,7 +462,12 @@ def pool_da_search(gameweek=None, fixture_slug=None,
             if lega and not cartella:
                 leghe_senza_pipeline[lega].add(club)
             opp, data = avversario.get(club, (None, None))
-            centesimi, valuta = _prezzo(p)
+            prezzo, valuta = _prezzo_eur(p)
+            if valuta == 'CRIPTO':
+                # Acquistabile solo in ETH/SOL: non e' un candidato, l'utente
+                # compra in euro. Contato e riportato, non sparito in silenzio.
+                scartati_cripto += 1
+                continue
             giocatori.append({
                 'slug': slug, 'nome': p.get('displayName'), 'ruoli': ruoli,
                 'club': club, 'avversario': opp, 'data': data,
@@ -444,7 +480,8 @@ def pool_da_search(gameweek=None, fixture_slug=None,
                 'carte_mie': p.get('ownedCardsCount'),
                 'infortunato': bool(p.get('activeInjuries')),
                 'proiezione_sorare': p.get('nextClassicFixtureProjectedScore'),
-                'prezzo_minimo': centesimi, 'prezzo_valuta': valuta,
+                'prezzo_eur': round(prezzo, 2) if prezzo is not None else None,
+                'prezzo_valuta_originale': valuta,
                 'prezzo_rarita': (p.get('lowestPriceAnyCard') or {}).get('rarityTyped'),
             })
         pagina += 1
@@ -456,6 +493,9 @@ def pool_da_search(gameweek=None, fixture_slug=None,
             per_ruolo[r] += 1
     log(f"POOL: {len(giocatori)} giocatori "
         f"(GK {per_ruolo['GK']}, DEF {per_ruolo['DEF']}, MID {per_ruolo['MID']}, FWD {per_ruolo['FWD']})")
+    if scartati_cripto:
+        log(f"Scartati {scartati_cripto} giocatori la cui limited piu' economica "
+            f"e' in vendita solo in cripto (ETH/SOL): si compra in euro.")
     if leghe_senza_pipeline:
         for lega, clubs in sorted(leghe_senza_pipeline.items()):
             log(f"ATTENZIONE: lega '{lega}' senza cartella formazione_* "
@@ -712,9 +752,8 @@ def stampa_candidati(pool, limite=None):
         righe.sort(key=lambda g: -(g.get('l10') or 0))
         print(f"\n=== {ruolo} -- {len(righe)} candidati")
         for g in (righe[:limite] if limite else righe):
-            prezzo = ('--' if g.get('prezzo_minimo') is None
-                      else f"{g['prezzo_minimo'] / 100:.2f}{g.get('prezzo_valuta') or ''}"
-                      if g.get('prezzo_valuta') != 'WEI' else 'ETH')
+            prezzo = ('--' if g.get('prezzo_eur') is None
+                      else f"{g['prezzo_eur']:.2f}EUR")
             proiezione = ('--' if not g.get('proiezione_sorare')
                           else f"{g['proiezione_sorare']:.0f}")
             nota = ''
@@ -862,10 +901,8 @@ def scrivi_html(pool, dest):
                      "<th>Quando</th><th>Lega</th><th>Note</th></tr>")
         for g in righe:
             atteso = attesi.get(g['slug'])
-            prezzo = '&mdash;'
-            if g.get('prezzo_minimo') is not None:
-                prezzo = ('%.2f&nbsp;%s' % (g['prezzo_minimo'] / 100, g.get('prezzo_valuta') or '')
-                          if g.get('prezzo_valuta') != 'WEI' else 'in&nbsp;ETH')
+            prezzo = ('&mdash;' if g.get('prezzo_eur') is None
+                      else '%.2f&nbsp;&euro;' % g['prezzo_eur'])
             note = []
             if g.get('infortunato'):
                 note.append("<span class='ko'>infortunato</span>")
@@ -875,6 +912,9 @@ def scrivi_html(pool, dest):
                 note.append("<span class='muted'>non valutabile</span>")
             if g.get('carte_mie'):
                 note.append(f"<span class='mia'>ne ho {g['carte_mie']}</span>")
+
+            lega_txt = (g.get('cartella')
+                        or "<span class='warn'>senza pipeline</span>")
 
             def num(v, fmt='%.0f'):
                 return '&mdash;' if v in (None, '') else fmt % v
@@ -897,7 +937,7 @@ def scrivi_html(pool, dest):
                 f"<td>{g.get('club') or ''}</td>"
                 f"<td>{g.get('avversario') or ''}</td>"
                 f"<td>{(g.get('data') or '')[:10]}</td>"
-                f"<td>{g.get('cartella') or '<span class=\"warn\">senza pipeline</span>'}</td>"
+                f"<td>{lega_txt}</td>"
                 f"<td>{' '.join(note)}</td>"
                 "</tr>")
         pezzi.append("</table></div>")
