@@ -11,8 +11,7 @@ name: Scouting giornata (pool senza odds)
 #
 # Tre fasi:
 #   pool     1 query fixture + 1 per club (~75, mezzo minuto)
-#   scrematura  1 query a giocatore, divisa in quote parallele
-#   unione   nessuna query, solo il report
+#   scrematura  1 query a giocatore, un job solo col throttle di bot_profit
 #
 # La giornata si passa come numero (2, 3, ...) o come slug esatto, che ha la
 # precedenza. Entrambi vuoti = prossima giornata aperta.
@@ -89,11 +88,7 @@ jobs:
     needs: pool
     if: ${{ inputs.screma }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        quota: [0, 1, 2, 3, 4, 5, 6, 7]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -102,43 +97,26 @@ jobs:
           python-version: "3.11"
           cache: "pip"
           cache-dependency-path: requirements-formazione.txt
-      - run: pip install requests curl_cffi
+      - run: pip install requests curl_cffi websocket-client
       - uses: actions/download-artifact@v4
         with: { name: scouting-pool, path: pool }
 
-      - name: Screma la quota ${{ matrix.quota }}
+      # UN SOLO job, non una matrice. Misurato il 02/08: 8 job paralleli con
+      # pausa fissa hanno preso un 429 a testa nel giro di un minuto. Il tetto
+      # di Sorare e' sull'ACCOUNT (~60 richieste/minuto autenticato), non sul
+      # job, quindi spalmare su piu' runner non alza il tetto: lo sfonda prima.
+      # Il ritmo lo governa il throttle condiviso di bot_profit (barriera
+      # globale sui 429, ritmo adattivo, ripresa graduale), con pochi thread
+      # dentro lo stesso processo: 301 giocatori/minuto misurati, zero 429.
+      - name: Screma il pool
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          SCOUTING_SHARD: "${{ matrix.quota }}:8"
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
         run: |
           POOL=$(ls pool/scouting_*.json | head -1)
-          mkdir -p quote
-          python scouting_gw.py --da-pool "$POOL" \
-            --json "quote/$(basename ${POOL%.json})_q${{ matrix.quota }}.json"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: scouting-quota-${{ matrix.quota }}
-          path: quote/*.json
-          retention-days: 14
-          if-no-files-found: error
-
-  unione:
-    needs: scrematura
-    if: ${{ inputs.screma }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - uses: actions/download-artifact@v4
-        with: { pattern: scouting-quota-*, path: quote }
-
-      - name: Unisci le quote ed elenca i candidati
-        run: python scouting_gw.py --unisci quote --json dati_globali/scouting_idonei.json
+          python scouting_gw.py --da-pool "$POOL" --json dati_globali/scouting_idonei.json
 
       - uses: actions/upload-artifact@v4
         with:

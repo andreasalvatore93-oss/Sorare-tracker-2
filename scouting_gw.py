@@ -42,6 +42,7 @@ import json
 import time
 import argparse
 import datetime
+import concurrent.futures
 import importlib.util
 from collections import defaultdict
 
@@ -290,25 +291,43 @@ MINUTI_TITOLARE = int(os.environ.get('SCOUTING_MINUTI', '60'))
 IDONEI_SU = int(os.environ.get('SCOUTING_IDONEI_SU', '2'))
 
 
-class _Pacer:
-    """Pausa fra chiamate che parte bassa e si alza da sola al primo 429.
+# Il ritmo lo governa il throttle di scanners/bot_profit.py, non uno scritto
+# qui. Motivo, misurato sul campo il 02/08: la prima versione spalmava la
+# scrematura su 8 job paralleli con una pausa fissa di 0,2s, e tutti e otto
+# hanno preso un 429 quasi subito. Il tetto di Sorare e' sull'ACCOUNT (~60
+# richieste al minuto autenticato), non sul job: parallelizzare i runner non
+# alza il tetto, lo sfonda piu' in fretta.
+#
+# `bot_profit` quel problema lo ha gia' risolto, con numeri veri alle spalle
+# (run 66: 835 429 su ~2000 richieste; run 72 a regime: 36). Tre pezzi:
+#   - BARRIERA GLOBALE condivisa: a un 429 si fermano tutti i thread, non solo
+#     lo sfortunato, cosi' un'ondata non si moltiplica per il numero di worker;
+#   - RITMO adattivo: l'intervallo fra richieste sale a ogni ondata e
+#     ridiscende dopo 40 richieste consecutive andate a buon fine;
+#   - riconoscimento dell'header `Retry-After`, che Sorare valorizza a ~45s.
+#
+# Qui si riusa il suo `graphql_query` e basta: nessun throttle nostro da
+# tarare, e i miglioramenti futuri di quel file arrivano gratis.
+def _client_ritmato():
+    """Il client GraphQL di bot_profit, o None se non utilizzabile.
 
-    Stesso principio del pacing adattivo introdotto il 30/07 nella pipeline:
-    un valore fisso alto costa minuti di sola attesa autoimposta, uno fisso
-    basso paga i 429 (che costano 45-150 secondi l'uno). Il caso peggiore qui
-    e' il comportamento di una pausa fissa alta, mai uno peggiore."""
+    Non tocca nessuna delle sue strutture con effetti collaterali (blacklist,
+    cache): si usa solo la funzione di query."""
+    try:
+        path = os.path.join(REPO_ROOT, 'scanners', 'bot_profit.py')
+        spec = importlib.util.spec_from_file_location('scouting_bot_profit', path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        if not mod.COOKIES:
+            log("ATTENZIONE: SORARE_COOKIE assente, uso il client base senza throttle.")
+            return None
+        return mod
+    except Exception as e:
+        log(f"ATTENZIONE: throttle di bot_profit non disponibile ({e}), uso il client base.")
+        return None
 
-    def __init__(self, iniziale=0.2, massimo=1.2):
-        self.attesa = iniziale
-        self.massimo = massimo
-        self.rallentamenti = 0
 
-    def pausa(self):
-        time.sleep(self.attesa)
-
-    def rallenta(self):
-        self.attesa = min(self.massimo, self.attesa * 2)
-        self.rallentamenti += 1
+WORKER = int(os.environ.get('SCOUTING_WORKER', '6'))
 
 
 def _partite_valutabili(player, quante=None):
@@ -333,50 +352,70 @@ def _partite_valutabili(player, quante=None):
     return out
 
 
-def screma(giocatori, pacer=None):
+def _valuta(g, client):
+    """Una query, e l'esito della scrematura per un giocatore."""
+    if client is not None:
+        d = client.graphql_query(SCREEN_QUERY,
+                                 {"slug": g['slug'], "first": PARTITE_DA_CHIEDERE}) or {}
+    else:
+        d = _gql.graphql_query(SCREEN_QUERY,
+                               {"slug": g['slug'], "first": PARTITE_DA_CHIEDERE},
+                               operation_name="Screen") or {}
+    if d.get('errors') or not d.get('data'):
+        # Un errore non e' un "non idoneo": si segna come ignoto, cosi' non
+        # sparisce in silenzio (e' la classe di bug che in questo progetto ha
+        # gia' fatto perdere giocatori posseduti).
+        g['idoneo'] = None
+        g['errore'] = str(d.get('errors'))[:120]
+        return g
+    p = (d.get('data') or {}).get('anyPlayer') or {}
+    recenti = _partite_valutabili(p)
+    titolari = sum(1 for r in recenti if r['minuti'] >= MINUTI_TITOLARE)
+    g['l10'] = p.get('lastTenPlayedAvgScore')
+    g['partite_recenti'] = recenti
+    g['minuti_recenti'] = [r['minuti'] for r in recenti]
+    g['partite_da_titolare'] = titolari
+    # Chi non ha nemmeno una partita valutabile (mai sceso in campo, appena
+    # tesserato) non e' "non idoneo": e' non valutabile, e va detto.
+    g['idoneo'] = (titolari >= IDONEI_SU) if recenti else None
+    return g
+
+
+def screma(giocatori, worker=None):
     """Aggiunge a ogni giocatore L10, minuti recenti ed esito della scrematura.
 
     Una query per giocatore, che porta ENTRAMBE le cose (L10 e ultime partite)
     nello stesso `anyPlayer`: non e' l'alias multiplo che Sorare rifiuta
     ("Duplicated root field"), e' un solo nodo con due gruppi di campi. Stessa
     forma gia' usata in discovery_fixture.odds_e_l10_singola per dimezzare le
-    chiamate."""
-    pacer = pacer or _Pacer()
-    for i, g in enumerate(giocatori, 1):
-        # Il 429 non arriva fin qui: `graphql_query` lo assorbe e lo ritenta da
-        # solo, quindi il pacer non lo vedrebbe mai (misurato su una prova
-        # reale: un'attesa di 86 secondi e "rallentamenti 0"). Lo si riconosce
-        # dal TEMPO della chiamata, che e' l'unico sintomo che arriva.
-        _inizio = time.time()
-        d = _gql.graphql_query(SCREEN_QUERY,
-                               {"slug": g['slug'], "first": PARTITE_DA_CHIEDERE},
-                               operation_name="Screen")
-        if d.get('errors'):
-            # Un errore non e' un "non idoneo": si segna come ignoto, cosi'
-            # non sparisce in silenzio (e' la classe di bug che in questo
-            # progetto ha gia' fatto perdere giocatori posseduti).
-            g['idoneo'] = None
-            g['errore'] = str(d['errors'])[:120]
-            pacer.rallenta()
-        else:
-            p = (d.get('data') or {}).get('anyPlayer') or {}
-            recenti = _partite_valutabili(p)
-            titolari = sum(1 for r in recenti if r['minuti'] >= MINUTI_TITOLARE)
-            g['l10'] = p.get('lastTenPlayedAvgScore')
-            g['partite_recenti'] = recenti
-            g['minuti_recenti'] = [r['minuti'] for r in recenti]
-            g['partite_da_titolare'] = titolari
-            # Chi non ha nemmeno una partita valutabile (mai sceso in campo,
-            # appena tesserato) non e' "non idoneo": e' non valutabile, e va
-            # detto invece di sparire.
-            g['idoneo'] = (titolari >= IDONEI_SU) if recenti else None
-        if time.time() - _inizio > 5.0:
-            pacer.rallenta()
-        pacer.pausa()
-        if i % 200 == 0 or i == len(giocatori):
-            idonei = sum(1 for x in giocatori[:i] if x.get('idoneo'))
-            log(f"  scrematura {i}/{len(giocatori)} -- idonei finora {idonei} "
-                f"(pausa {pacer.attesa:.2f}s, rallentamenti {pacer.rallentamenti})")
+    chiamate.
+
+    Il ritmo lo detta il throttle condiviso di bot_profit (vedi
+    _client_ritmato): i worker qui sotto NON accelerano oltre quel tetto, gli
+    permettono solo di stare sempre pieno invece di lasciare la connessione
+    ferma fra una risposta e la successiva."""
+    client = _client_ritmato()
+    worker = worker or (WORKER if client is not None else 1)
+    log(f"Scrematura di {len(giocatori)} giocatori "
+        f"({'throttle bot_profit' if client else 'client base'}, {worker} worker)")
+    inizio = time.time()
+    fatti = [0]
+
+    def _uno(g):
+        _valuta(g, client)
+        fatti[0] += 1
+        if fatti[0] % 200 == 0 or fatti[0] == len(giocatori):
+            idonei = sum(1 for x in giocatori if x.get('idoneo'))
+            trascorso = time.time() - inizio
+            log(f"  {fatti[0]}/{len(giocatori)} -- idonei {idonei} "
+                f"({trascorso:.0f}s, {fatti[0] / max(trascorso, 1e-9) * 60:.0f} giocatori/min)")
+
+    if worker > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=worker) as pool:
+            list(pool.map(_uno, giocatori))
+    else:
+        for g in giocatori:
+            _uno(g)
     return giocatori
 
 
@@ -478,6 +517,7 @@ def main():
         log(f"IDONEI: {len(idonei)}/{len(pool['giocatori'])} "
             f"(GK {per_ruolo['GK']}, DEF {per_ruolo['DEF']}, MID {per_ruolo['MID']}, "
             f"FWD {per_ruolo['FWD']})" + (f" -- {len(ignoti)} non valutabili" if ignoti else ""))
+        stampa_idonei(pool)
 
     dest = args.json or os.path.join(
         REPO_ROOT, 'dati_globali', f"scouting_{pool['fixture']['slug']}.json")
